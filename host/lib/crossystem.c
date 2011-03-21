@@ -5,6 +5,10 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <ctype.h>
 
 #include "host_common.h"
 
@@ -12,6 +16,7 @@
 #include "utility.h"
 #include "vboot_common.h"
 #include "vboot_nvstorage.h"
+#include "vboot_struct.h"
 
 /* ACPI constants from Chrome OS Main Processor Firmware Spec */
 /* GPIO signal types */
@@ -68,6 +73,7 @@
 #define ACPI_FMAP_PATH ACPI_BASE_PATH "/FMAP"
 #define ACPI_GPIO_PATH ACPI_BASE_PATH "/GPIO"
 #define ACPI_VBNV_PATH ACPI_BASE_PATH "/VBNV"
+#define ACPI_VDAT_PATH ACPI_BASE_PATH "/VDAT"
 
 /* Base name for GPIO files */
 #define GPIO_BASE_PATH "/sys/class/gpio"
@@ -78,6 +84,31 @@
 
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"
+
+/* A structure to contain buffer data retrieved from the ACPI. */
+typedef struct {
+  int buffer_size;
+  uint8_t* buffer;
+} AcpiBuffer;
+
+
+/* Fields that GetVdatString() can get */
+typedef enum VdatStringField {
+  VDAT_STRING_TIMERS = 0,           /* Timer values */
+  VDAT_STRING_LOAD_FIRMWARE_DEBUG,  /* LoadFirmware() debug information */
+  VDAT_STRING_LOAD_KERNEL_DEBUG     /* LoadKernel() debug information */
+} VdatStringField;
+
+
+/* Fields that GetVdatInt() can get */
+typedef enum VdatIntField {
+  VDAT_INT_FLAGS = 0,                /* Flags */
+  VDAT_INT_FW_VERSION_TPM,           /* Current firmware version in TPM */
+  VDAT_INT_KERNEL_VERSION_TPM,       /* Current kernel version in TPM */
+  VDAT_INT_TRIED_FIRMWARE_B,         /* Tried firmware B due to fwb_tries */
+  VDAT_INT_KERNEL_KEY_VERIFIED       /* Kernel key verified using
+                                      * signature, not just hash */
+} VdatIntField;
 
 
 /* Copy up to dest_size-1 characters from src to dest, ensuring null
@@ -284,6 +315,97 @@ int VbSetCmosRebootField(uint8_t mask, int value) {
   return 0;
 }
 
+/*
+ * Get buffer data from ACPI.
+ *
+ * Buffer data is expected to be represented by a file which is a text dump of
+ * the buffer, representing each byte by two hex numbers, space and newline
+ * separated.
+ *
+ * Input - ACPI file name to get data from.
+ *
+ * Output: a pointer to AcpiBuffer structure containing the binary
+ *         representation of the data. The caller is responsible for
+ *         deallocating the pointer, this will take care of both the structure
+ *         and the buffer. Null in case of error.
+ */
+
+AcpiBuffer* VbGetBuffer(const char* filename)
+{
+  FILE* f = NULL;
+  char* file_buffer = NULL;
+  AcpiBuffer* acpi_buffer = NULL;
+  AcpiBuffer* return_value = NULL;
+
+  do {
+    struct stat fs;
+    uint8_t* output_ptr;
+    int rv, i, real_size;
+
+    rv = stat(filename, &fs);
+    if (rv || !S_ISREG(fs.st_mode))
+      break;
+
+    f = fopen(filename, "r");
+    if (!f)
+      break;
+
+    file_buffer = Malloc(fs.st_size + 1);
+    if (!file_buffer)
+      break;
+
+    real_size = fread(file_buffer, 1, fs.st_size, f);
+    if (!real_size)
+      break;
+    file_buffer[real_size] = '\0';
+
+    /* Each byte in the output will replace two characters and a space
+     * in the input, so the output size does not exceed input side/3
+     * (a little less if account for newline characters). */
+    acpi_buffer = Malloc(sizeof(AcpiBuffer) + real_size/3);
+    if (!acpi_buffer)
+      break;
+    acpi_buffer->buffer = (uint8_t*)(acpi_buffer + 1);
+    acpi_buffer->buffer_size = 0;
+    output_ptr = acpi_buffer->buffer;
+
+    /* process the file contents */
+    for (i = 0; i < real_size; i++) {
+      char* base, *end;
+
+      base = file_buffer + i;
+
+      if (!isxdigit(*base))
+        continue;
+
+      output_ptr[acpi_buffer->buffer_size++] = strtol(base, &end, 16) & 0xff;
+
+      if ((end - base) != 2)
+        /* Input file format error */
+        break;
+
+      i += 2; /* skip the second character and the following space */
+    }
+
+    if (i == real_size) {
+      /* all is well */
+      return_value = acpi_buffer;
+      acpi_buffer = NULL; /* prevent it from deallocating */
+    }
+  } while(0);
+
+  /* wrap up */
+  if (f)
+    fclose(f);
+
+  if (file_buffer)
+    Free(file_buffer);
+
+  if (acpi_buffer)
+    Free(acpi_buffer);
+
+  return return_value;
+}
 
 /* Read an integer property from VbNvStorage.
  *
@@ -497,6 +619,193 @@ int VbGetCrosDebug(void) {
 }
 
 
+char* GetVdatLoadFirmwareDebug(char* dest, int size,
+                               const VbSharedDataHeader* sh) {
+  snprintf(dest, size,
+           "Check A result=%d\n"
+           "Check B result=%d\n"
+           "Firmware index booted=0x%02x\n"
+           "TPM combined version at start=0x%08x\n"
+           "Lowest combined version from firmware=0x%08x\n",
+           sh->check_fw_a_result,
+           sh->check_fw_b_result,
+           sh->firmware_index,
+           sh->fw_version_tpm_start,
+           sh->fw_version_lowest);
+  return dest;
+}
+
+
+#define TRUNCATED "\n(truncated)\n"
+
+char* GetVdatLoadKernelDebug(char* dest, int size,
+                             const VbSharedDataHeader* sh) {
+  int used = 0;
+  int first_call_tracked = 0;
+  int call;
+
+  /* Make sure we have space for truncation warning */
+  if (size < strlen(TRUNCATED) + 1)
+    return NULL;
+  size -= strlen(TRUNCATED) + 1;
+
+  used += snprintf(
+      dest + used, size - used,
+      "Calls to LoadKernel()=%d\n",
+      sh->lk_call_count);
+  if (used > size)
+    goto LoadKernelDebugExit;
+
+  /* Report on the last calls */
+  if (sh->lk_call_count > VBSD_MAX_KERNEL_CALLS)
+    first_call_tracked = sh->lk_call_count - VBSD_MAX_KERNEL_CALLS;
+  for (call = first_call_tracked; call < sh->lk_call_count; call++) {
+    const VbSharedDataKernelCall* shc =
+        sh->lk_calls + (call & (VBSD_MAX_KERNEL_CALLS - 1));
+    int first_part_tracked = 0;
+    int part;
+
+    used += snprintf(
+        dest + used, size - used,
+        "Call %d:\n"
+        "  Boot flags=0x%02x\n"
+        "  Boot mode=%d\n"
+        "  Test error=%d\n"
+        "  Return code=%d\n"
+        "  Debug flags=0x%02x\n"
+        "  Drive sectors=%" PRIu64 "\n"
+        "  Sector size=%d\n"
+        "  Check result=%d\n"
+        "  Kernel partitions found=%d\n",
+        call + 1,
+        shc->boot_flags,
+        shc->boot_mode,
+        shc->test_error_num,
+        shc->return_code,
+        shc->flags,
+        shc->sector_count,
+        shc->sector_size,
+        shc->check_result,
+        shc->kernel_parts_found);
+    if (used > size)
+      goto LoadKernelDebugExit;
+
+    /* If we found too many partitions, only prints ones where the
+     * structure has info. */
+    if (shc->kernel_parts_found > VBSD_MAX_KERNEL_PARTS)
+      first_part_tracked = shc->kernel_parts_found - VBSD_MAX_KERNEL_PARTS;
+
+    /* Report on the partitions checked */
+    for (part = first_part_tracked; part < shc->kernel_parts_found; part++) {
+      const VbSharedDataKernelPart* shp =
+          shc->parts + (part & (VBSD_MAX_KERNEL_PARTS - 1));
+
+      used += snprintf(
+          dest + used, size - used,
+          "  Kernel %d:\n"
+          "    GPT index=%d\n"
+          "    Start sector=%" PRIu64 "\n"
+          "    Sector count=%" PRIu64 "\n"
+          "    Combined version=0x%08x\n"
+          "    Check result=%d\n"
+          "    Debug flags=0x%02x\n",
+          part + 1,
+          shp->gpt_index,
+          shp->sector_start,
+          shp->sector_count,
+          shp->combined_version,
+          shp->check_result,
+          shp->flags);
+      if (used > size)
+        goto LoadKernelDebugExit;
+    }
+  }
+
+LoadKernelDebugExit:
+
+  /* Warn if data was truncated; we left space for this above. */
+  if (used > size)
+    strcat(dest, TRUNCATED);
+
+  return dest;
+}
+
+
+char* GetVdatString(char* dest, int size, VdatStringField field)
+{
+  VbSharedDataHeader* sh;
+  AcpiBuffer* ab = VbGetBuffer(ACPI_VDAT_PATH);
+  char* value = dest;
+  if (!ab)
+    return NULL;
+
+  sh = (VbSharedDataHeader*)ab->buffer;
+
+  switch (field) {
+    case VDAT_STRING_TIMERS:
+      snprintf(dest, size,
+               "LFS=%" PRIu64 ",%" PRIu64
+               " LF=%" PRIu64 ",%" PRIu64
+               " LK=%" PRIu64 ",%" PRIu64,
+               sh->timer_load_firmware_start_enter,
+               sh->timer_load_firmware_start_exit,
+               sh->timer_load_firmware_enter,
+               sh->timer_load_firmware_exit,
+               sh->timer_load_kernel_enter,
+               sh->timer_load_kernel_exit);
+      break;
+
+    case VDAT_STRING_LOAD_FIRMWARE_DEBUG:
+      value = GetVdatLoadFirmwareDebug(dest, size, sh);
+      break;
+
+    case VDAT_STRING_LOAD_KERNEL_DEBUG:
+      value = GetVdatLoadKernelDebug(dest, size, sh);
+      break;
+
+    default:
+      Free(ab);
+      return NULL;
+  }
+
+  Free(ab);
+  return value;
+}
+
+
+int GetVdatInt(VdatIntField field) {
+  VbSharedDataHeader* sh;
+  AcpiBuffer* ab = VbGetBuffer(ACPI_VDAT_PATH);
+  int value = -1;
+
+  if (!ab)
+    return -1;
+
+  sh = (VbSharedDataHeader*)ab->buffer;
+
+  switch (field) {
+    case VDAT_INT_FLAGS:
+      value = (int)sh->flags;
+      break;
+    case VDAT_INT_FW_VERSION_TPM:
+      value = (int)sh->fw_version_tpm;
+      break;
+    case VDAT_INT_KERNEL_VERSION_TPM:
+      value = (int)sh->kernel_version_tpm;
+      break;
+    case VDAT_INT_TRIED_FIRMWARE_B:
+      value = (sh->flags & VBSD_FWB_TRIED ? 1 : 0);
+      break;
+    case VDAT_INT_KERNEL_KEY_VERIFIED:
+      value = (sh->flags & VBSD_KERNEL_KEY_VERIFIED ? 1 : 0);
+      break;
+  }
+
+  Free(ab);
+  return value;
+}
+
+
 /* Read a system property integer.
  *
  * Returns the property value, or -1 if error. */
@@ -531,12 +840,14 @@ int VbGetSystemPropertyInt(const char* name) {
     return (-1 == ReadFileInt(ACPI_CHSW_PATH) ? -1 : 0x00100000);
   }
   /* NV storage values with no defaults for older BIOS. */
-  else if (!strcasecmp(name,"tried_fwb")) {
-    value = VbGetNvStorage(VBNV_TRIED_FIRMWARE_B);
-  } else if (!strcasecmp(name,"kern_nv")) {
+  else if (!strcasecmp(name,"kern_nv")) {
     value = VbGetNvStorage(VBNV_KERNEL_FIELD);
   } else if (!strcasecmp(name,"nvram_cleared")) {
     value = VbGetNvStorage(VBNV_KERNEL_SETTINGS_RESET);
+  } else if (!strcasecmp(name,"vbtest_errfunc")) {
+    value = VbGetNvStorage(VBNV_TEST_ERROR_FUNC);
+  } else if (!strcasecmp(name,"vbtest_errno")) {
+    value = VbGetNvStorage(VBNV_TEST_ERROR_NUM);
   }
   /* NV storage values.  If unable to get from NV storage, fall back to the
    * CMOS reboot field used by older BIOS. */
@@ -560,11 +871,18 @@ int VbGetSystemPropertyInt(const char* name) {
     value = ReadFileInt(ACPI_FMAP_PATH);
   } else if (!strcasecmp(name,"cros_debug")) {
     value = VbGetCrosDebug();
+  } else if (!strcasecmp(name,"vdat_flags")) {
+    value = GetVdatInt(VDAT_INT_FLAGS);
+  } else if (!strcasecmp(name,"tpm_fwver")) {
+    value = GetVdatInt(VDAT_INT_FW_VERSION_TPM);
+  } else if (!strcasecmp(name,"tpm_kernver")) {
+    value = GetVdatInt(VDAT_INT_KERNEL_VERSION_TPM);
+  } else if (!strcasecmp(name,"tried_fwb")) {
+    value = GetVdatInt(VDAT_INT_TRIED_FIRMWARE_B);
   }
 
   return value;
 }
-
 
 /* Read a system property string into a destination buffer of the specified
  * size.
@@ -601,7 +919,7 @@ const char* VbGetSystemPropertyString(const char* name, char* dest, int size) {
         return NULL;
     }
   } else if (!strcasecmp(name,"kernkey_vfy")) {
-    switch(VbGetNvStorage(VBNV_FW_VERIFIED_KERNEL_KEY)) {
+    switch(GetVdatInt(VDAT_INT_KERNEL_KEY_VERIFIED)) {
       case 0:
         return "hash";
       case 1:
@@ -609,6 +927,12 @@ const char* VbGetSystemPropertyString(const char* name, char* dest, int size) {
       default:
         return NULL;
     }
+  } else if (!strcasecmp(name, "vdat_timers")) {
+    return GetVdatString(dest, size, VDAT_STRING_TIMERS);
+  } else if (!strcasecmp(name, "vdat_lfdebug")) {
+    return GetVdatString(dest, size, VDAT_STRING_LOAD_FIRMWARE_DEBUG);
+  } else if (!strcasecmp(name, "vdat_lkdebug")) {
+    return GetVdatString(dest, size, VDAT_STRING_LOAD_KERNEL_DEBUG);
   } else
     return NULL;
 }
@@ -625,6 +949,10 @@ int VbSetSystemPropertyInt(const char* name, int value) {
     return VbSetNvStorage(VBNV_KERNEL_SETTINGS_RESET, 0);
   } else if (!strcasecmp(name,"kern_nv")) {
     return VbSetNvStorage(VBNV_KERNEL_FIELD, value);
+  } else if (!strcasecmp(name,"vbtest_errfunc")) {
+    return VbSetNvStorage(VBNV_TEST_ERROR_FUNC, value);
+  } else if (!strcasecmp(name,"vbtest_errno")) {
+    return VbSetNvStorage(VBNV_TEST_ERROR_NUM, value);
   }
   /* NV storage values.  If unable to get from NV storage, fall back to the
    * CMOS reboot field used by older BIOS. */

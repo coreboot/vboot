@@ -9,27 +9,9 @@
 #include "rollback_index.h"
 
 #include "tlcl.h"
+#include "tpm_bootmode.h"
 #include "tss_constants.h"
 #include "utility.h"
-
-/* TPM PCR to use for storing dev mode measurements */
-#define DEV_REC_MODE_PCR 0
-/* Input digests for PCR extend */
-#define DEV_OFF_REC_OFF_SHA1_DIGEST ((uint8_t*) "\x14\x89\xf9\x23\xc4\xdc\xa7" \
-                                     "\x29\x17\x8b\x3e\x32\x33\x45\x85\x50" \
-                                     "\xd8\xdd\xdf\x29") /* SHA1("\x00\x00") */
-
-#define DEV_OFF_REC_ON_SHA1_DIGEST ((uint8_t*) "\x3f\x29\x54\x64\x53\x67\x8b" \
-                                    "\x85\x59\x31\xc1\x74\xa9\x7d\x6c\x08" \
-                                    "\x94\xb8\xf5\x46") /* SHA1("\x00\x01") */
-
-#define DEV_ON_REC_OFF_SHA1_DIGEST ((uint8_t*) "\x0e\x35\x6b\xa5\x05\x63\x1f" \
-                                    "\xbf\x71\x57\x58\xbe\xd2\x7d\x50\x3f" \
-                                    "\x8b\x26\x0e\x3a") /* SHA1("\x01\x00") */
-
-#define DEV_ON_REC_ON_SHA1_DIGEST ((uint8_t*) "\x91\x59\xcb\x8b\xce\xe7\xfc" \
-                                    "\xb9\x55\x82\xf1\x40\x96\x0c\xda\xe7" \
-                                    "\x27\x88\xd3\x26") /* SHA1("\x01\x01") */
 
 static int g_rollback_recovery_mode = 0;
 
@@ -121,6 +103,15 @@ static uint32_t OneTimeInitializeTPM(RollbackSpaceFirmware* rsf,
 
   VBDEBUG(("TPM: One-time initialization\n"));
 
+  /* Do a full test.  This only happens the first time the device is turned on
+   * in the factory, so performance is not an issue.  This is almost certainly
+   * not necessary, but it gives us more confidence about some code paths below
+   * that are difficult to test---specifically the ones that set lifetime
+   * flags, and are only executed once per physical TPM. */
+  result = TlclSelfTestFull();
+  if (result != TPM_SUCCESS)
+    return result;
+
   result = TlclGetPermanentFlags(&pflags);
   if (result != TPM_SUCCESS)
     return result;
@@ -200,12 +191,24 @@ uint32_t SetupTPM(int recovery_mode, int developer_mode,
   RETURN_ON_FAILURE(TlclLibInit());
 
   RETURN_ON_FAILURE(TlclStartup());
-  /* Use ContinueSelfTest rather than SelfTestFull().  It enables
-   * access to the subset of TPM commands we need in the firmware, and
-   * allows the full self test to run in paralle with firmware
-   * startup.  By the time we get to the OS, self test will have
-   * completed. */
+  /* Some TPMs start the self test automatically at power on.  In that case we
+   * don't need to call ContinueSelfTest.  On some (other) TPMs,
+   * ContinueSelfTest may block.  In that case, we definitely don't want to
+   * call it here.  For TPMs in the intersection of these two sets, we're
+   * screwed.  (In other words: TPMs that require manually starting the
+   * self-test AND block will have poor performance until we split
+   * TlclSendReceive() into Send() and Receive(), and have a state machine to
+   * control setup.)
+   *
+   * This comment is likely to become obsolete in the near future, so don't
+   * trust it.  It may have not been updated.
+   */
+#ifdef TPM_MANUAL_SELFTEST
+#ifdef TPM_BLOCKING_CONTINUESELFTEST
+#warning "lousy TPM!"
+#endif
   RETURN_ON_FAILURE(TlclContinueSelfTest());
+#endif
   result = TlclAssertPhysicalPresence();
   if (result != 0) {
     /* It is possible that the TPM was delivered with the physical presence
@@ -294,7 +297,11 @@ uint32_t RollbackFirmwareSetup(int developer_mode, uint32_t* version) {
   TlclStartup();
   TlclContinueSelfTest();
 #endif
+  *version = 0;
+  return TPM_SUCCESS;
+}
 
+uint32_t RollbackFirmwareRead(uint32_t* version) {
   *version = 0;
   return TPM_SUCCESS;
 }
@@ -348,20 +355,21 @@ uint32_t RollbackS3Resume(void) {
 
 uint32_t RollbackFirmwareSetup(int developer_mode, uint32_t* version) {
   RollbackSpaceFirmware rsf;
-  uint8_t out_digest[20];  /* For PCR extend output */
 
   RETURN_ON_FAILURE(SetupTPM(0, developer_mode, &rsf));
   *version = rsf.fw_versions;
   VBDEBUG(("TPM: RollbackFirmwareSetup %x\n", (int)rsf.fw_versions));
-  if (developer_mode)
-    RETURN_ON_FAILURE(TlclExtend(DEV_REC_MODE_PCR, DEV_ON_REC_OFF_SHA1_DIGEST,
-                                 out_digest));
-  else
-    RETURN_ON_FAILURE(TlclExtend(DEV_REC_MODE_PCR, DEV_OFF_REC_OFF_SHA1_DIGEST,
-                                 out_digest));
-  VBDEBUG(("TPM: RollbackFirmwareSetup dev mode PCR out_digest %02x %02x %02x "
-           "%02x\n", out_digest, out_digest+1, out_digest+2, out_digest+3));
+  return TPM_SUCCESS;
+}
 
+uint32_t RollbackFirmwareRead(uint32_t* version) {
+  RollbackSpaceFirmware rsf;
+
+  RETURN_ON_FAILURE(ReadSpaceFirmware(&rsf));
+  VBDEBUG(("TPM: RollbackFirmwareRead %x --> %x\n", (int)rsf.fw_versions,
+           (int)version));
+  *version = rsf.fw_versions;
+  VBDEBUG(("TPM: RollbackFirmwareRead %x\n", (int)rsf.fw_versions));
   return TPM_SUCCESS;
 }
 
@@ -382,7 +390,6 @@ uint32_t RollbackFirmwareLock(void) {
 uint32_t RollbackKernelRecovery(int developer_mode) {
   uint32_t rvs, rve;
   RollbackSpaceFirmware rsf;
-  uint8_t out_digest[20];  /* For PCR extend output */
 
   /* In recovery mode we ignore TPM malfunctions or corruptions, and *
    * leave the TPM complelely unlocked; we call neither
@@ -390,50 +397,40 @@ uint32_t RollbackKernelRecovery(int developer_mode) {
    * kernel will fix the TPM (if needed) and lock it ASAP.  We leave
    * Physical Presence on in either case. */
   rvs = SetupTPM(1, developer_mode, &rsf);
-  if (developer_mode)
-    rve = TlclExtend(DEV_REC_MODE_PCR, DEV_ON_REC_ON_SHA1_DIGEST, out_digest);
-  else
-    rve = TlclExtend(DEV_REC_MODE_PCR, DEV_OFF_REC_ON_SHA1_DIGEST, out_digest);
-  VBDEBUG(("TPM: RollbackKernelRecovery dev mode PCR out_digest %02x %02x %02x "
-           "%02x\n", out_digest, out_digest+1, out_digest+2, out_digest+3));
+  rve = SetTPMBootModeState(developer_mode,
+                            1,  /* Recovery Mode Status. */
+                            0);  /* In recovery mode, there is no RW firmware
+                                  * keyblock flag. */
   return (TPM_SUCCESS == rvs) ? rve : rvs;
 }
 
 uint32_t RollbackKernelRead(uint32_t* version) {
-  if (g_rollback_recovery_mode) {
-    *version = 0;
-  } else {
-    RollbackSpaceKernel rsk;
-    uint32_t perms;
+  RollbackSpaceKernel rsk;
+  uint32_t perms;
 
-    /* Read the kernel space and verify its permissions.  If the kernel
-     * space has the wrong permission, or it doesn't contain the right
-     * identifier, we give up.  This will need to be fixed by the
-     * recovery kernel.  We have to worry about this because at any time
-     * (even with PP turned off) the TPM owner can remove and redefine a
-     * PP-protected space (but not write to it). */
-    RETURN_ON_FAILURE(ReadSpaceKernel(&rsk));
-    RETURN_ON_FAILURE(TlclGetPermissions(KERNEL_NV_INDEX, &perms));
-    if (TPM_NV_PER_PPWRITE != perms || ROLLBACK_SPACE_KERNEL_UID != rsk.uid)
-      return TPM_E_CORRUPTED_STATE;
+  /* Read the kernel space and verify its permissions.  If the kernel
+   * space has the wrong permission, or it doesn't contain the right
+   * identifier, we give up.  This will need to be fixed by the
+   * recovery kernel.  We have to worry about this because at any time
+   * (even with PP turned off) the TPM owner can remove and redefine a
+   * PP-protected space (but not write to it). */
+  RETURN_ON_FAILURE(ReadSpaceKernel(&rsk));
+  RETURN_ON_FAILURE(TlclGetPermissions(KERNEL_NV_INDEX, &perms));
+  if (TPM_NV_PER_PPWRITE != perms || ROLLBACK_SPACE_KERNEL_UID != rsk.uid)
+    return TPM_E_CORRUPTED_STATE;
 
-    *version = rsk.kernel_versions;
-    VBDEBUG(("TPM: RollbackKernelRead %x\n", (int)rsk.kernel_versions));
-  }
+  *version = rsk.kernel_versions;
+  VBDEBUG(("TPM: RollbackKernelRead %x\n", (int)rsk.kernel_versions));
   return TPM_SUCCESS;
 }
 
 uint32_t RollbackKernelWrite(uint32_t version) {
-  if (g_rollback_recovery_mode) {
-    return TPM_SUCCESS;
-  } else {
-    RollbackSpaceKernel rsk;
-    RETURN_ON_FAILURE(ReadSpaceKernel(&rsk));
-    VBDEBUG(("TPM: RollbackKernelWrite %x --> %x\n", (int)rsk.kernel_versions,
-             (int)version));
-    rsk.kernel_versions = version;
-    return WriteSpaceKernel(&rsk);
-  }
+  RollbackSpaceKernel rsk;
+  RETURN_ON_FAILURE(ReadSpaceKernel(&rsk));
+  VBDEBUG(("TPM: RollbackKernelWrite %x --> %x\n", (int)rsk.kernel_versions,
+           (int)version));
+  rsk.kernel_versions = version;
+  return WriteSpaceKernel(&rsk);
 }
 
 uint32_t RollbackKernelLock(void) {

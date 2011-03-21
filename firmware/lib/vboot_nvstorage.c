@@ -27,8 +27,9 @@
 #define LOCALIZATION_OFFSET          3
 
 #define FIRMWARE_FLAGS_OFFSET        5
-#define FIRMWARE_TRIED_FIRMWARE_B       0x80
-#define FIRMWARE_FW_VERIFIED_KERNEL_KEY 0x40
+#define FIRMWARE_TEST_ERR_FUNC_MASK     0x38
+#define FIRMWARE_TEST_ERR_FUNC_SHIFT    3
+#define FIRMWARE_TEST_ERR_NUM_MASK      0x07
 
 #define KERNEL_FIELD_OFFSET         11
 #define CRC_OFFSET                  15
@@ -125,13 +126,13 @@ int VbNvGet(VbNvContext* context, VbNvParam param, uint32_t* dest) {
                | (raw[KERNEL_FIELD_OFFSET + 3] << 24));
       return 0;
 
-    case VBNV_TRIED_FIRMWARE_B:
-      *dest = (raw[FIRMWARE_FLAGS_OFFSET] & FIRMWARE_TRIED_FIRMWARE_B ? 1 : 0);
+    case VBNV_TEST_ERROR_FUNC:
+      *dest = (raw[FIRMWARE_FLAGS_OFFSET] & FIRMWARE_TEST_ERR_FUNC_MASK)
+          >> FIRMWARE_TEST_ERR_FUNC_SHIFT;
       return 0;
 
-    case VBNV_FW_VERIFIED_KERNEL_KEY:
-      *dest = (raw[FIRMWARE_FLAGS_OFFSET] & FIRMWARE_FW_VERIFIED_KERNEL_KEY ?
-               1 : 0);
+    case VBNV_TEST_ERROR_NUM:
+      *dest = raw[FIRMWARE_FLAGS_OFFSET] & FIRMWARE_TEST_ERR_NUM_MASK;
       return 0;
 
     default:
@@ -201,18 +202,15 @@ int VbNvSet(VbNvContext* context, VbNvParam param, uint32_t value) {
       raw[KERNEL_FIELD_OFFSET + 3] = (uint8_t)(value >> 24);
       break;
 
-    case VBNV_TRIED_FIRMWARE_B:
-      if (value)
-        raw[FIRMWARE_FLAGS_OFFSET] |= FIRMWARE_TRIED_FIRMWARE_B;
-      else
-        raw[FIRMWARE_FLAGS_OFFSET] &= ~FIRMWARE_TRIED_FIRMWARE_B;
+    case VBNV_TEST_ERROR_FUNC:
+      raw[FIRMWARE_FLAGS_OFFSET] &= ~FIRMWARE_TEST_ERR_FUNC_MASK;
+      raw[FIRMWARE_FLAGS_OFFSET] |= (value << FIRMWARE_TEST_ERR_FUNC_SHIFT)
+          & FIRMWARE_TEST_ERR_FUNC_MASK;
       break;
 
-    case VBNV_FW_VERIFIED_KERNEL_KEY:
-      if (value)
-        raw[FIRMWARE_FLAGS_OFFSET] |= FIRMWARE_FW_VERIFIED_KERNEL_KEY;
-      else
-        raw[FIRMWARE_FLAGS_OFFSET] &= ~FIRMWARE_FW_VERIFIED_KERNEL_KEY;
+    case VBNV_TEST_ERROR_NUM:
+      raw[FIRMWARE_FLAGS_OFFSET] &= ~FIRMWARE_TEST_ERR_NUM_MASK;
+      raw[FIRMWARE_FLAGS_OFFSET] |= (value & FIRMWARE_TEST_ERR_NUM_MASK);
       break;
 
     default:

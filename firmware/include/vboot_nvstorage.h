@@ -47,13 +47,11 @@ typedef enum VbNvParam {
   VBNV_LOCALIZATION_INDEX,
   /* Field reserved for kernel/user-mode use; 32-bit value. */
   VBNV_KERNEL_FIELD,
-  /* Firmware checked RW slot B before slot A on the current boot because
-   * VBNV_TRY_B_COUNT was non-zero at that time.  0=no; 1=yes. */
-  VBNV_TRIED_FIRMWARE_B,
-  /* Firmware verified the kernel key block signature using the key stored
-   * in the firmware.  0=no, just used the key block hash; 1=yes, used the
-   * key block signature. */
-  VBNV_FW_VERIFIED_KERNEL_KEY,
+  /* Verified boot API function which should generate a test error, if
+   * error number (below) is non-zero. */
+  VBNV_TEST_ERROR_FUNC,
+  /* Verified boot API error to generate for the function, if non-zero. */
+  VBNV_TEST_ERROR_NUM,
 } VbNvParam;
 
 
@@ -76,6 +74,12 @@ typedef enum VbNvParam {
 #define VBNV_RECOVERY_RO_TPM_ERROR    0x05
 /* Shared data error in read-only firmware */
 #define VBNV_RECOVERY_RO_SHARED_DATA  0x06
+/* Test error from S3Resume() */
+#define VBNV_RECOVERY_RO_TEST_S3      0x07
+/* Test error from LoadFirmwareSetup() */
+#define VBNV_RECOVERY_RO_TEST_LFS     0x08
+/* Test error from LoadFirmware() */
+#define VBNV_RECOVERY_RO_TEST_LF      0x09
 /* Unspecified/unknown error in read-only firmware */
 #define VBNV_RECOVERY_RO_UNSPECIFIED  0x3F
 /* User manually requested recovery by pressing a key at developer
@@ -91,6 +95,8 @@ typedef enum VbNvParam {
 #define VBNV_RECOVERY_RW_DEV_MISMATCH 0x45
 /* Shared data error in rewritable firmware */
 #define VBNV_RECOVERY_RW_SHARED_DATA  0x46
+/* Test error from LoadKernel() */
+#define VBNV_RECOVERY_RW_TEST_LK      0x47
 /* Unspecified/unknown error in rewritable firmware */
 #define VBNV_RECOVERY_RW_UNSPECIFIED  0x7F
 /* DM-verity error */
@@ -101,6 +107,13 @@ typedef enum VbNvParam {
 #define VBNV_RECOVERY_US_TEST         0xC1
 /* Unspecified/unknown error in user-mode */
 #define VBNV_RECOVERY_US_UNSPECIFIED  0xFF
+
+
+/* Function codes for VBNV_TEST_ERROR_FUNC */
+#define VBNV_TEST_ERROR_LOAD_FIRMWARE_SETUP  1
+#define VBNV_TEST_ERROR_LOAD_FIRMWARE        2
+#define VBNV_TEST_ERROR_LOAD_KERNEL          3
+#define VBNV_TEST_ERROR_S3_RESUME            4
 
 
 /* Initialize the NV storage library.  This must be called before any

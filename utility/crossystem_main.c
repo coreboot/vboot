@@ -11,10 +11,18 @@
 
 #include "crossystem.h"
 
+/* Max length of a string parameter */
+#define MAX_STRING 8192
+
+/* Flags for Param */
+#define IS_STRING      0x01  /* String (not present = integer) */
+#define CAN_WRITE      0x02  /* Writable (not present = read-only */
+#define NO_PRINT_ALL   0x04  /* Don't print contents of parameter when
+                              * doing a print-all */
+
 typedef struct Param {
   const char* name;  /* Parameter name */
-  int is_string;     /* 0 if integer, 1 if string */
-  int can_write;     /* 0 if read-only, 1 if writable */
+  int flags;         /* Flags (see above) */
   const char* desc;  /* Human-readable description */
   const char* format; /* Format string, if non-NULL and 0==is_string*/
 } Param;
@@ -22,40 +30,46 @@ typedef struct Param {
 /* List of parameters, terminated with a param with NULL name */
 const Param sys_param_list[] = {
   /* Read-only integers */
-  {"devsw_cur",  0, 0, "Developer switch current position"},
-  {"devsw_boot", 0, 0, "Developer switch position at boot"},
-  {"recoverysw_cur", 0, 0, "Recovery switch current position"},
-  {"recoverysw_boot", 0, 0, "Recovery switch position at boot"},
-  {"recoverysw_ec_boot", 0, 0, "Recovery switch position at EC boot"},
-  {"wpsw_cur",  0, 0, "Firmware write protect switch current position"},
-  {"wpsw_boot", 0, 0, "Firmware write protect switch position at boot"},
-  {"recovery_reason",  0, 0, "Recovery mode reason for current boot"},
-  {"savedmem_base", 0, 0, "RAM debug data area physical address", "0x%08x"},
-  {"savedmem_size", 0, 0, "RAM debug data area size in bytes"},
-  {"fmap_base", 0, 0, "Main firmware flashmap physical address", "0x%08x"},
-  {"tried_fwb", 0, 0, "Tried firmware B before A this boot"},
-  {"cros_debug", 0, 0, "OS should allow debug features"},
+  {"devsw_cur",  0, "Developer switch current position"},
+  {"devsw_boot", 0, "Developer switch position at boot"},
+  {"recoverysw_cur", 0, "Recovery switch current position"},
+  {"recoverysw_boot", 0, "Recovery switch position at boot"},
+  {"recoverysw_ec_boot", 0, "Recovery switch position at EC boot"},
+  {"wpsw_cur", 0, "Firmware write protect hardware switch current position"},
+  {"wpsw_boot", 0, "Firmware write protect hardware switch position at boot"},
+  {"recovery_reason", 0, "Recovery mode reason for current boot"},
+  {"savedmem_base", 0, "RAM debug data area physical address", "0x%08x"},
+  {"savedmem_size", 0, "RAM debug data area size in bytes"},
+  {"fmap_base", 0, "Main firmware flashmap physical address", "0x%08x"},
+  {"tried_fwb", 0, "Tried firmware B before A this boot"},
+  {"cros_debug", 0, "OS should allow debug features"},
+  {"vdat_flags", 0, "Flags from VbSharedData", "0x%08x"},
+  {"tpm_fwver", 0, "Firmware version stored in TPM", "0x%08x"},
+  {"tpm_kernver", 0, "Kernel version stored in TPM", "0x%08x"},
   /* Read-only strings */
-  {"hwid", 1, 0, "Hardware ID"},
-  {"fwid", 1, 0, "Active firmware ID"},
-  {"ro_fwid", 1, 0, "Read-only firmware ID"},
-  {"mainfw_act", 1, 0, "Active main firmware"},
-  {"mainfw_type", 1, 0, "Active main firmware type"},
-  {"ecfw_act", 1, 0, "Active EC firmware"},
-  {"kernkey_vfy", 1, 0, "Type of verification done on kernel key block"},
+  {"hwid", IS_STRING, "Hardware ID"},
+  {"fwid", IS_STRING, "Active firmware ID"},
+  {"ro_fwid", IS_STRING, "Read-only firmware ID"},
+  {"mainfw_act", IS_STRING, "Active main firmware"},
+  {"mainfw_type", IS_STRING, "Active main firmware type"},
+  {"ecfw_act", IS_STRING, "Active EC firmware"},
+  {"kernkey_vfy", IS_STRING, "Type of verification done on kernel key block"},
+  {"vdat_timers", IS_STRING, "Timer values from VbSharedData"},
   /* Writable integers */
-  {"nvram_cleared", 0, 1, "Have NV settings been lost?  Write 0 to clear"},
-  {"kern_nv", 0, 1, "Non-volatile field for kernel use", "0x%08x"},
-  {"recovery_request", 0, 1, "Recovery mode request (writable)"},
-  {"dbg_reset", 0, 1, "Debug reset mode request (writable)"},
-  {"fwb_tries", 0, 1, "Try firmware B count (writable)"},
-
-  /* TODO: implement the following:
-   *   nvram_cleared
-   */
-
+  {"nvram_cleared", CAN_WRITE, "Have NV settings been lost?  Write 0 to clear"},
+  {"kern_nv", CAN_WRITE, "Non-volatile field for kernel use", "0x%08x"},
+  {"recovery_request", CAN_WRITE, "Recovery mode request (writable)"},
+  {"dbg_reset", CAN_WRITE, "Debug reset mode request (writable)"},
+  {"fwb_tries", CAN_WRITE, "Try firmware B count (writable)"},
+  {"vbtest_errfunc", CAN_WRITE, "Verified boot test error function (writable)"},
+  {"vbtest_errno", CAN_WRITE, "Verified boot test error number (writable)"},
+  /* Fields not shown in a print-all list */
+  {"vdat_lfdebug", IS_STRING|NO_PRINT_ALL,
+   "LoadFirmware() debug data (not in print-all)"},
+  {"vdat_lkdebug", IS_STRING|NO_PRINT_ALL,
+   "LoadKernel() debug data (not in print-all)"},
   /* Terminate with null name */
-  {NULL, 0, 0, NULL}
+  {NULL, 0, NULL}
 };
 
 
@@ -97,10 +111,10 @@ const Param* FindParam(const char* name) {
  *
  * Returns 0 if success, non-zero if error. */
 int SetParam(const Param* p, const char* value) {
-  if (!p->can_write)
+  if (!(p->flags & CAN_WRITE))
     return 1;  /* Parameter is read-only */
 
-  if (p->is_string) {
+  if (p->flags & IS_STRING) {
     return (0 == VbSetSystemPropertyString(p->name, value) ? 0 : 1);
   } else {
     char* e;
@@ -116,8 +130,8 @@ int SetParam(const Param* p, const char* value) {
  *
  * Returns 0 if success (match), non-zero if error (mismatch). */
 int CheckParam(const Param* p, char* expect) {
-  if (p->is_string) {
-    char buf[256];
+  if (p->flags & IS_STRING) {
+    char buf[MAX_STRING];
     const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
     if (!v || 0 != strcmp(v, expect))
       return 1;
@@ -138,8 +152,8 @@ int CheckParam(const Param* p, char* expect) {
  *
  * Returns 0 if success, non-zero if error. */
 int PrintParam(const Param* p) {
-  if (p->is_string) {
-    char buf[256];
+  if (p->flags & IS_STRING) {
+    char buf[MAX_STRING];
     const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
     if (!v)
       return 1;
@@ -160,11 +174,13 @@ int PrintParam(const Param* p) {
 int PrintAllParams(void) {
   const Param* p;
   int retval = 0;
-  char buf[256];
+  char buf[MAX_STRING];
   const char* value;
 
   for (p = sys_param_list; p->name; p++) {
-    if (p->is_string) {
+    if (p->flags & NO_PRINT_ALL)
+      continue;
+    if (p->flags & IS_STRING) {
       value = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
     } else {
       int v = VbGetSystemPropertyInt(p->name);
@@ -175,7 +191,7 @@ int PrintAllParams(void) {
         value = buf;
       }
     }
-    printf("%-22s = %-20s # %s\n",
+    printf("%-22s = %-30s # %s\n",
            p->name, (value ? value : "(error)"), p->desc);
   }
   return retval;

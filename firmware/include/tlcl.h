@@ -35,6 +35,11 @@ void TlclSetLogLevel(int level);
  */
 uint32_t TlclStartup(void);
 
+/* Save the TPM state.  Normally done by the kernel before a suspend, included
+ * here for tests.  The TPM error code is returned (0 for success).
+ */
+uint32_t TlclSaveState(void);
+
 /* Resumes by sending a TPM_Startup(ST_STATE).  The TPM error code is returned
  * (0 for success).
  */
@@ -127,7 +132,7 @@ uint32_t TlclSetGlobalLock(void);
 
 /* Performs a TPM_Extend.
  */
-uint32_t TlclExtend(int pcr_num, uint8_t* in_digest, uint8_t* out_digest);
+uint32_t TlclExtend(int pcr_num, const uint8_t* in_digest, uint8_t* out_digest);
 
 /* Gets the permission bits for the NVRAM space with |index|.
  */
