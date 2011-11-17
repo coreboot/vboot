@@ -121,7 +121,6 @@ int WriteAndFreeGptData(VbExDiskHandle_t disk_handle, GptData* gptdata) {
 /* disable MSVC warning on const logical expression (as in } while(0);) */
 __pragma(warning(disable: 4127))
 
-
 VbError_t LoadKernel(LoadKernelParams* params) {
   VbSharedDataHeader* shared = (VbSharedDataHeader*)params->shared_data_blob;
   VbSharedDataKernelCall* shcall = NULL;
@@ -140,7 +139,6 @@ VbError_t LoadKernel(LoadKernelParams* params) {
   int rec_switch, dev_switch;
   BootMode boot_mode;
   uint32_t test_err = 0;
-  uint32_t allow_self_signed = 0;
 
   VbError_t retval = VBERROR_UNKNOWN;
   int recovery = VBNV_RECOVERY_RO_UNSPECIFIED;
@@ -164,14 +162,12 @@ VbError_t LoadKernel(LoadKernelParams* params) {
   /* Calculate switch positions and boot mode */
   rec_switch = (BOOT_FLAG_RECOVERY & params->boot_flags ? 1 : 0);
   dev_switch = (BOOT_FLAG_DEVELOPER & params->boot_flags ? 1 : 0);
-  if (rec_switch) {
+  if (rec_switch)
     boot_mode = kBootRecovery;
-  } else if (dev_switch) {
+  else if (dev_switch)
     boot_mode = kBootDev;
-    VbNvGet(vnc, VBNV_DEV_BOOT_CUSTOM, &allow_self_signed);
-  } else {
+  else
     boot_mode = kBootNormal;
-  }
 
   /* Set up tracking for this call.  This wraps around if called many times,
    * so we need to initialize the call entry each time. */
@@ -254,7 +250,7 @@ VbError_t LoadKernel(LoadKernelParams* params) {
       int key_block_valid = 1;
 
       VBDEBUG(("Found kernel entry at %" PRIu64 " size %" PRIu64 "\n",
-               part_start, part_size));
+              part_start, part_size));
 
       /* Set up tracking for this partition.  This wraps around if called
        * many times, so initialize the partition entry each time. */
@@ -297,14 +293,8 @@ VbError_t LoadKernel(LoadKernelParams* params) {
         if (kBootDev != boot_mode)
           goto bad_kernel;
 
-        /* In developer mode, we have to explictly allow self-signed kernels */
-        if (!allow_self_signed) {
-          VBDEBUG(("Self-signed custom kernels are not enabled.\n"));
-          shpart->check_result = VBSD_LKP_CHECK_SELF_SIGNED;
-          goto bad_kernel;
-        }
-
-        /* Allow the kernel if the SHA-512 hash of the key block is valid. */
+        /* In developer mode, we can continue if the SHA-512 hash of the key
+         * block is valid. */
         if (0 != KeyBlockVerify(key_block, KBUF_SIZE, kernel_subkey, 1)) {
           VBDEBUG(("Verifying key block hash failed.\n"));
           shpart->check_result = VBSD_LKP_CHECK_KEY_BLOCK_HASH;
@@ -499,7 +489,7 @@ VbError_t LoadKernel(LoadKernelParams* params) {
       /* Continue, so that we skip the error handling code below */
       continue;
 
-    bad_kernel:
+   bad_kernel:
       /* Handle errors parsing this kernel */
       if (NULL != data_key)
         RSAPublicKeyFree(data_key);
