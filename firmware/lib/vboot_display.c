@@ -357,18 +357,11 @@ VbError_t VbDisplayScreen(VbCommonParams* cparams, uint32_t screen, int force,
   disp_current_screen = screen;
 
   /* Look in the GBB first */
-  if (VBERROR_SUCCESS == VbDisplayScreenFromGBB(cparams, screen, vncptr)) {
-    if (VB_SCREEN_BLANK != screen)
-      VbDisplayDebugInfo(cparams, vncptr);
+  if (VBERROR_SUCCESS == VbDisplayScreenFromGBB(cparams, screen, vncptr))
     return VBERROR_SUCCESS;
-  }
 
   /* If the screen wasn't in the GBB bitmaps, fall back to a default screen. */
-  retval = VbExDisplayScreen(screen);
-  if (VB_SCREEN_BLANK != screen)
-    VbDisplayDebugInfo(cparams, vncptr);
-  return retval;
-
+  return VbExDisplayScreen(screen);
 }
 
 
@@ -487,7 +480,7 @@ VbError_t VbDisplayDebugInfo(VbCommonParams* cparams, VbNvContext *vncptr) {
   uint32_t i;
 
   /* Redisplay the current screen, to overwrite any previous debug output */
-  // VbDisplayScreen(cparams, disp_current_screen, 1, vncptr);
+  VbDisplayScreen(cparams, disp_current_screen, 1, vncptr);
 
   /* Add hardware ID */
   used += Strncat(buf + used, "HWID: ", DEBUG_INFO_SIZE - used);
