@@ -56,7 +56,7 @@ __pragma(pack(push, 1))  /* Support packing for MSVC. */
 #define BMPBLOCK_MAJOR_VERSION  (0x0001)
 #define BMPBLOCK_MINOR_VERSION  (0x0002)
 
-#define MAX_IMAGE_IN_LAYOUT     (8)
+#define MAX_IMAGE_IN_LAYOUT     (16)
 
 /* BMPBLOCK header, describing how many screen layouts and image infos */
 typedef struct BmpBlockHeader {
