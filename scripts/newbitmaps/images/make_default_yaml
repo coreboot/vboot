@@ -292,7 +292,7 @@ images:
   devmode_graphic:   Devmode_graphic.bmp
   divider_btm:       divider_btm.bmp
   divider_top:       divider_top.bmp
-  remove_graphic:    Remove_graphic.bmp
+  remove_graphic:    Remove_graphic_usbonly.bmp
   insert_graphic:    Insert_graphic.bmp
   white_bg:          Background_white.bmp
   yuck_graphic:      Yuck_graphic.bmp
@@ -309,7 +309,7 @@ EOF1
   divider_top='divider_top.bmp'
   hwid=$hwid_bmp
   insert_graphic='Insert_graphic.bmp'
-  remove_graphic='Remove_graphic.bmp'
+  remove_graphic='Remove_graphic_usbonly.bmp'
   url='Url.bmp'
   white_bg='Background_white.bmp'
   yuck_graphic='Yuck_graphic.bmp'

@@ -21,7 +21,8 @@ DEFAULT_LOCALES=en es_419 pt_BR en_GB fr es pt_PT ca it de \
 BACKGROUND_IMAGE=Background_white.bmp
 GRAYSCALE_IMAGES=arrow_left.bmp arrow_right.bmp divider_top.bmp divider_btm.bmp
 OTHER_IMAGES=Devmode_graphic.bmp Insert_graphic.bmp Remove_graphic.bmp \
-  Yuck_graphic.bmp Url.bmp hwid_unknown.bmp chrome_logo.bmp
+  Remove_graphic_usbonly.bmp Yuck_graphic.bmp Url.bmp hwid_unknown.bmp \
+  chrome_logo.bmp
 
 FONTS=hwid_fonts.bin
 
