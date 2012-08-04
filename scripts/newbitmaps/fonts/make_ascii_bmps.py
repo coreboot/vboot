@@ -26,7 +26,7 @@ def main():
   parser.add_option("--background", default='#ffffff',
                     dest="bg", action="store", metavar="COLOR",
                     help="background color (%default)")
-  parser.add_option("--font", default='Helvetica',
+  parser.add_option("--font", default='Droid Sans',
                     dest="font", action="store",
                     help="font to use (%default)")
   parser.add_option("--size", default='15', metavar="POINTSIZE",
@@ -36,7 +36,6 @@ def main():
                     dest="outdir", action="store",
                     help="output directory (%default)")
   (options, args) = parser.parse_args()
-
 
   if not os.path.isdir(options.outdir):
     os.mkdir(options.outdir)
@@ -59,24 +58,33 @@ def main():
 
   count=0
   for ascii in chars:
-    outfile = os.path.join(options.outdir,
+    pngfile = os.path.join(options.outdir,
+                           "idx%03d_%x.png" % (count,ord(ascii)))
+    bmpfile = os.path.join(options.outdir,
                            "idx%03d_%x.bmp" % (count,ord(ascii)))
-    print outfile
+    cmd = ('pango-view', '-q', '--no-auto-dir',
+           '--background=%s' % options.bg,
+           '--foreground=%s' % options.fg,
+           '--font="%s %s"' % (options.font, options.size),
+           '--dpi', '72',
+           '--margin', '0',
+           '--text="%s"' % ascii,
+           '-o', pngfile)
+
+    cmd = ' '.join(cmd)
+    print cmd
+    os.system(cmd) # This must be run in a subshell for correct font rendering.
+
     cmd = ('convert',
-           '-font', options.font,
-           '-background', options.bg,
-           '-fill', options.fg,
            '-bordercolor', options.bg,
            '-border', '0x3',
-           '-gravity', 'Center',
-           '-pointsize', options.size,
-           '-resize', '120%x100',               # Yes, magic.
-           '-scale', '59%x78%',                 # Here, too.
-           'label:%s' % ascii,
+           '-resize', '59%x78%',          # Scale the same as other images.
+           '-colors', '256',
            '-remap', gradient_file,
            '-compress', 'none',
            '-alpha', 'off',
-           outfile)
+           pngfile,
+           bmpfile)
     print ' '.join(cmd)
     count += 1
     subprocess.call(cmd)

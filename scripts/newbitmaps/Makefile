@@ -26,7 +26,7 @@ outside_chroot:
 
 fonts:
 	cd fonts && ./make_ascii_bmps.py
-	bmpblk_font --outfile images/hwid_fonts.bin fonts/outdir/*
+	bmpblk_font --outfile images/hwid_fonts.bin fonts/outdir/*.bmp
 
 x86:
 	$(MAKE) -C strings/localized_text PT=15
