@@ -58,33 +58,25 @@ def main():
 
   count=0
   for ascii in chars:
-    pngfile = os.path.join(options.outdir,
-                           "idx%03d_%x.png" % (count,ord(ascii)))
-    bmpfile = os.path.join(options.outdir,
+    outfile = os.path.join(options.outdir,
                            "idx%03d_%x.bmp" % (count,ord(ascii)))
-    cmd = ('pango-view', '-q', '--no-auto-dir',
-           '--background=%s' % options.bg,
-           '--foreground=%s' % options.fg,
-           '--font="%s %s"' % (options.font, options.size),
-           '--dpi', '72',
-           '--margin', '0',
-           '--text="%s"' % ascii,
-           '-o', pngfile)
-
-    cmd = ' '.join(cmd)
-    print cmd
-    os.system(cmd) # This must be run in a subshell for correct font rendering.
-
+    # TODO(hungte) Support assigning size & scaling for character images.
+    print outfile
     cmd = ('convert',
+           '-font', options.font,
+           '-background', options.bg,
+           '-fill', options.fg,
            '-bordercolor', options.bg,
            '-border', '0x3',
-           '-resize', '59%x78%',          # Scale the same as other images.
-           '-colors', '256',
+           '-gravity', 'Center',
+           '-pointsize', options.size,
+           '-resize', '120%x100',               # Yes, magic.
+           '-scale', '59%x78%',                 # Here, too.
+           'label:%s' % ascii,
            '-remap', gradient_file,
            '-compress', 'none',
            '-alpha', 'off',
-           pngfile,
-           bmpfile)
+           outfile)
     print ' '.join(cmd)
     count += 1
     subprocess.call(cmd)
@@ -95,3 +87,4 @@ def main():
 # Start it all off
 if __name__ == '__main__':
   main()
+
