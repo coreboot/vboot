@@ -246,7 +246,7 @@ add_footer_with_url() {
   local lc=$1
   set_centered_y_percent "white_bg" 80
   insert_centered_below "divider_btm"
-  insert_centered_below "${lc}_for_help_text" "url"
+  insert_centered_below "${lc}_help_left_text" "url" "${lc}_help_right_text"
   if echo "$rtol" | grep -q -w "$lc" ; then
     insert_centered_below 'hwid' "${lc}_model_text"
   else
@@ -321,10 +321,10 @@ EOF1
   ${lc}_devmode_text:     ${localedir}/$lc/devmode.bmp
   ${lc}_remove_text:      ${localedir}/$lc/remove.bmp
   ${lc}_yuck_text:        ${localedir}/$lc/yuck.bmp
-  ${lc}_insert_text:      ${localedir}/$lc/insert.bmp
-  ${lc}_insert_usb_text:  ${localedir}/$lc/insert_usb.bmp
+  ${lc}_insert_kiev_text: ${localedir}/$lc/insert_kiev.bmp
   ${lc}_language_text:    ${localedir}/$lc/language.bmp
-  ${lc}_for_help_text:    ${localedir}/$lc/for_help.bmp
+  ${lc}_help_left_text:    ${localedir}/$lc/for_help_left.bmp
+  ${lc}_help_right_text:    ${localedir}/$lc/for_help_right.bmp
 
 EOF2
 
@@ -333,10 +333,23 @@ EOF2
     eval "${lc}_devmode_text=${localedir}/$lc/devmode.bmp"
     eval "${lc}_remove_text=${localedir}/$lc/remove.bmp"
     eval "${lc}_yuck_text=${localedir}/$lc/yuck.bmp"
-    eval "${lc}_insert_text=${localedir}/$lc/insert.bmp"
-    eval "${lc}_insert_usb_text=${localedir}/$lc/insert_usb.bmp"
+    eval "${lc}_insert_kiev_text=${localedir}/$lc/insert_kiev.bmp"
     eval "${lc}_language_text=${localedir}/$lc/language.bmp"
-    eval "${lc}_for_help_text=${localedir}/$lc/for_help.bmp"
+    eval "${lc}_help_left_text=${localedir}/$lc/for_help_left.bmp"
+    eval "${lc}_help_right_text=${localedir}/$lc/for_help_right.bmp"
+
+    cat >>"$yaml_file" <<EOF2
+  ${lc}_model_text:       $(eval echo \$${lc}_model_text)
+  ${lc}_devmode_text:     $(eval echo \$${lc}_devmode_text)
+  ${lc}_remove_text:      $(eval echo \$${lc}_remove_text)
+  ${lc}_yuck_text:        $(eval echo \$${lc}_yuck_text)
+  ${lc}_insert_kiev_text: $(eval echo \$${lc}_insert_kiev_text)
+  ${lc}_language_text:    $(eval echo \$${lc}_language_text)
+  ${lc}_help_left_text:   $(eval echo \$${lc}_help_left_text)
+  ${lc}_help_right_text:  $(eval echo \$${lc}_help_right_text)
+
+EOF2
+
   done
 
   # List the screens. We need to composite four screens for each locale.
@@ -386,7 +399,7 @@ EOF2
     set_centered_y_percent "white_bg" 40
     add_centered "insert_graphic"
     set_centered_y_percent "white_bg" 50
-    add_centered_below "${lc}_insert_usb_text"
+    add_centered_below "${lc}_insert_kiev_text"
     add_footer_with_url ${lc}
 
   done
