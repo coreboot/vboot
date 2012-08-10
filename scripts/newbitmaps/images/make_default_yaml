@@ -267,6 +267,7 @@ add_footer_without_url() {
   echo "" >> "$yaml_file"
 }
 
+# TODO(hungte) Remove the unnecessary hwid_*.bmp loop below.
 # Generate a new yaml file for each specified hwid_*.bmp file.
 for hwid_bmp in hwid_unknown.bmp; do
   echo "$yaml_file"
@@ -300,7 +301,7 @@ images:
   # The following strings must be approved by the localization people
 EOF1
 
-  # some global variables matching the yaml definitions
+  # Global variables matching the yaml definitions
   arrow_left='arrow_left.bmp'
   arrow_right='arrow_right.bmp'
   chrome_logo='chrome_logo.bmp'
@@ -316,19 +317,7 @@ EOF1
 
   # Enumerate the bitmaps for each locale-specific string.
   for lc in $locales; do
-    cat >>"$yaml_file" <<EOF2
-  ${lc}_model_text:       ${localedir}/$lc/model.bmp
-  ${lc}_devmode_text:     ${localedir}/$lc/devmode.bmp
-  ${lc}_remove_text:      ${localedir}/$lc/remove.bmp
-  ${lc}_yuck_text:        ${localedir}/$lc/yuck.bmp
-  ${lc}_insert_kiev_text: ${localedir}/$lc/insert_kiev.bmp
-  ${lc}_language_text:    ${localedir}/$lc/language.bmp
-  ${lc}_help_left_text:    ${localedir}/$lc/for_help_left.bmp
-  ${lc}_help_right_text:    ${localedir}/$lc/for_help_right.bmp
-
-EOF2
-
-    # Also define global variables matching those in the yaml file.
+    # Locale-specific variables matching those in the yaml file.
     eval "${lc}_model_text=${localedir}/$lc/model.bmp"
     eval "${lc}_devmode_text=${localedir}/$lc/devmode.bmp"
     eval "${lc}_remove_text=${localedir}/$lc/remove.bmp"
@@ -437,5 +426,6 @@ EOF3
 done
 
 # Now replace the 'hwid' string with '$HWID'.
-perl -i -p -e 's/\bhwid\b/\$HWID/g;' "$yaml_file"
+sed -i 's/\bhwid\b/\$HWID/g' "$yaml_file"
+
 echo ""
