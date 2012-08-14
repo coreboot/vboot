@@ -10,8 +10,8 @@ ALL_LOCALES=en es_419 pt_BR en_GB fr es pt_PT ca it de \
   el nl da no sv fi et lv lt ru pl cs sk hu sl sr hr bg ro \
   uk tr iw ar fa hi th vi id fil zh_CN zh_TW ko ja
 
-# Here are the launch locales for Stumpy/Lumpy (issue 6595), same ordering.
-LOCALES=en es_419 pt_BR en_GB fr es it de nl da no sv ko ja
+# Probable locales for Kiev.
+LOCALES=en es_419 fr en_GB de nl
 
 default: outside_chroot strings x86 arm clean
 
