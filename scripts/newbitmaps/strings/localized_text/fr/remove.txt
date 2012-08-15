@@ -1,1 +1,2 @@
-Veuillez retirer tous les périphériques externes pour lancer la procédure de récupération.
+Veuillez retirer tous les périphériques externes pour lancer
+la procédure de récupération.
