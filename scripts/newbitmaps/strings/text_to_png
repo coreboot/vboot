@@ -16,13 +16,13 @@
 #    --markup           Render text as pango-view markup file
 #    --align            Override align settings
 #
-font="Droid Sans"
+font="Verdana"
 language=""
-pointsize=15
+pointsize=17
 margin=3
 align="center"
 bgcolor="#ffffff"
-color="#000000"
+color="#464646"
 params=""
 
 while true ; do
