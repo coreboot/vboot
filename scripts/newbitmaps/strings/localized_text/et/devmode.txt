@@ -1,2 +1,3 @@
 OS-i kinnitamine on VÄLJAS
-Selle uuesti lubamiseks vajutage TÜHIKUT.
+
+Taastamise alustamiseks vajutage tühikuklahvi.

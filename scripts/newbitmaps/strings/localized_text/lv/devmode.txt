@@ -1,2 +1,3 @@
 OS verifikācija ir IZSLĒGTA.
-Lai to atkārtoti iespējotu, nospiediet ATSTARPES taustiņu.
+
+Lai sāktu atkopšanu, nospiediet atstarpes taustiņu.

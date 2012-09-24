@@ -1,2 +1,3 @@
 Xác minh OS đang TẮT
-Nhấn SPACE để bật lại.
+
+Nhấn dấu cách để bắt đầu khôi phục.

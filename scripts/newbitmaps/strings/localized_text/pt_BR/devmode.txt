@@ -1,2 +1,3 @@
 A verificação do sistema operacional está DESATIVADA
-Pressione a tecla de espaço para reativá-la.
+
+Pressione a tecla de espaço para iniciar a recuperação.

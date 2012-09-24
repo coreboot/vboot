@@ -1,2 +1,3 @@
 A confirmação do SO está DESATIVADA
-Prima ESPAÇO para reativar.
+
+Prima a barra de espaços para iniciar a recuperação.

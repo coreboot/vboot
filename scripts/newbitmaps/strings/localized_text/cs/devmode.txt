@@ -1,2 +1,3 @@
 Ověření operačního systému je VYPNUTO.
-Chcete-li je znovu zapnout, stiskněte MEZERNÍK.
+
+Obnovení spustíte stisknutím mezerníku.

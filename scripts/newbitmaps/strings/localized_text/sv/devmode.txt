@@ -1,2 +1,3 @@
 Verifiering av operativsystemet är AV
-Aktivera verifieringen på nytt genom att trycka på MELLANSLAG.
+
+Tryck på blanksteg om du vill återställa enheten.

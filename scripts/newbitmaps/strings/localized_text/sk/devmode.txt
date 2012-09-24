@@ -1,2 +1,3 @@
 Verifikácia OS je VYPNUTÁ
-Ak ju chcete znova povoliť, stlačte MEDZERNÍK.
+
+Obnovenie spustíte stlačením medzerníka.

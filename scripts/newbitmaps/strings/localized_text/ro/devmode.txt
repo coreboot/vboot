@@ -1,2 +1,3 @@
 Verificarea SO este DEZACTIVATĂ
-Apăsaţi pe tasta SPACE pentru a o reactiva.
+
+Apăsaţi pe tasta Space pentru a iniţia procesul de recuperare.

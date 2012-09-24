@@ -1,2 +1,3 @@
 Käyttöjärjestelmän todentaminen on POIS KÄYTÖSTÄ.
-Ota se käyttöön painamalla välilyöntiä.
+
+Aloita palautus painamalla välilyöntiä.

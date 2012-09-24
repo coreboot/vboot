@@ -1,2 +1,3 @@
 OS-ellenőrzés KIKAPCSOLVA.
-Nyomja meg a SPACE billentyűt az újraengedélyezéshez.
+
+A helyreállítás megkezdéséhez nyomja meg a szóköz billentyűt.

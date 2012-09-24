@@ -1,3 +1,3 @@
 OS verification is <b>OFF</b>
 
-Press SPACE to re-enable.
+Press SPACE to begin recovery.

@@ -1,2 +1,3 @@
 OS-verifiseringen er AV
-Trykk på SPACE for å reaktivere den
+
+Trykk på mellomromstasten for å starte gjenoppretting.

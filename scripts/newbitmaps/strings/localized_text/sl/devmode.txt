@@ -1,2 +1,3 @@
 Preverjanje operacijskega sistema je IZKLOPLJENO
-Pritisnite preslednico, da ga spet vklopite.
+
+Pritisnite preslednico, da začnete obnovo.

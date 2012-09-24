@@ -1,2 +1,3 @@
 Sprawdzanie systemu operacyjnego jest WYŁĄCZONE.
-Naciśnij SPACJĘ, by je włączyć.
+
+Naciśnij spację, aby rozpocząć przywracanie systemu.

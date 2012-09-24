@@ -1,2 +1,3 @@
 OS doğrulama KAPALI
-Yeniden etkinleştirmek için BOŞLUK çubuğuna basın.
+
+Kurtarma işlemini başlatmak için boşluk tuşuna basın.

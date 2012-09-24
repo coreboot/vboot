@@ -1,2 +1,3 @@
 Bekræftelse af operativsystemet er slået FRA
-Tryk på MELLEMRUMSTASTEN for at genaktivere.
+
+Tryk på mellemrumstasten for at starte gendannelsen.

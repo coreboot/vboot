@@ -1,2 +1,3 @@
 Verifica del sistema operativo NON ATTIVA.
-Premi la BARRA SPAZIATRICE per riattivarla.
+
+Premi la barra spaziatrice per avviare il ripristino.

@@ -1,2 +1,3 @@
 OS patvirtinimas IŠJUNGTAS
-Kad iš naujo įgalintumėte, paspauskite TARPO klavišą.
+
+Jei norite pradėti atkūrimą, paspauskite tarpo klavišą.
