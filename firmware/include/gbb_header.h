@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+/* Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
@@ -51,7 +51,10 @@
 #define GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK  0x00000020
 /* Allow Enter key to trigger dev->tonorm screen transition */
 #define GBB_FLAG_ENTER_TRIGGERS_TONORM    0x00000040
-
+/* Allow booting Legacy OSes in dev mode even if dev_boot_legacy=0. */
+#define GBB_FLAG_FORCE_DEV_BOOT_LEGACY    0x00000080
+/* Allow booting using alternate keys for FAFT servo testing */
+#define GBB_FLAG_FAFT_KEY_OVERIDE         0x00000100
 
 #ifdef __cplusplus
 extern "C" {
