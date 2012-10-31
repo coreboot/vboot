@@ -51,7 +51,8 @@
 #define GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK  0x00000020
 /* Allow Enter key to trigger dev->tonorm screen transition */
 #define GBB_FLAG_ENTER_TRIGGERS_TONORM    0x00000040
-
+/* Allow booting using alternate keys for FAFT servo testing */
+#define GBB_FLAG_FAFT_KEY_OVERIDE         0x00000100
 
 #ifdef __cplusplus
 extern "C" {
