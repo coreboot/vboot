@@ -67,6 +67,10 @@ main() {
 
     local image="$1"
 
+    # A byte that should not appear in the command line to use as a sed
+    # marker when doing regular expression replacements.
+    local M=$'\001'
+
     # Default config location: same name/directory as this script,
     # with a .config file extension, ie ensure_secure_kernelparams.config.
     local configfile="$(dirname "$0")/${0/%.sh/.config}"
@@ -94,6 +98,7 @@ main() {
     eval "optional_kparams=(\${optional_kparams_$board[@]})"
     eval "optional_kparams_regex=(\${optional_kparams_regex_$board[@]})"
     eval "required_dmparams=(\"\${required_dmparams_$board[@]}\")"
+    eval "required_dmparams_regex=(\"\${required_dmparams_regex_$board[@]}\")"
     output+="required_kparams=(\n"
     output+="$(printf "\t'%s'\n" "${required_kparams[@]}")\n)\n"
     output+="optional_kparams=(\n"
@@ -102,6 +107,8 @@ main() {
     output+="$(printf "\t'%s'\n" "${optional_kparams_regex[@]}")\n)\n"
     output+="required_dmparams=(\n"
     output+="$(printf "\t'%s'\n" "${required_dmparams[@]}")\n)\n"
+    output+="required_dmparams_regex=(\n"
+    output+="$(printf "\t'%s'\n" "${required_dmparams_regex[@]}")\n)\n"
 
     # Divide the dm params from the rest and process seperately.
     local kparams=$(dump_kernel_config "$kernelblob")
@@ -115,10 +122,18 @@ main() {
     mangled_dmparams=$(dmparams_mangle "${dmparams}")
     output+="\nmangled_dmparams='${mangled_dmparams}'\n"
     # Special-case handling of the dm= param:
+    testfail=1
     for expected_dmparams in "${required_dmparams[@]}"; do
       # Filter out all dynamic parameters.
-      testfail=1
       if [ "$mangled_dmparams" = "$expected_dmparams" ]; then
+        testfail=0
+        break
+      fi
+    done
+
+    for expected_dmparams in "${required_dmparams_regex[@]}"; do
+      if [[ -z $(echo "${mangled_dmparams}" | \
+           sed "s${M}^${expected_dmparams}\$${M}${M}") ]]; then
         testfail=0
         break
       fi
@@ -129,10 +144,6 @@ main() {
         echo "Actual:   $dmparams"
         echo "Expected: ${required_dmparams[@]}"
     fi
-
-    # A byte that should not appear in the command line to use as a sed
-    # marker when doing regular expression replacements.
-    M=$'\001'
 
     # Ensure all other required params are present.
     for param in "${required_kparams[@]}"; do
