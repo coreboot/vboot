@@ -197,4 +197,7 @@ install-rbtest: $(BUILD_ROOT)/rollback_index_test
 	mkdir -p $(DESTDIR)
 	cp -f $(BUILD_ROOT)/rollback_index_test $(DESTDIR)
 
+futility:
+	./run_futility_tests.sh
+
 -include ${ALL_DEPS}

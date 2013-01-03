@@ -140,3 +140,8 @@ rbtest:
 
 runbmptests:
 	$(MAKE) -C tests runbmptests
+
+vboot_next: all
+	[ -d "${BUILD}/futility" ] || mkdir -p "${BUILD}/futility"
+	$(MAKE) -C futility all
+	$(MAKE) -C tests futility
