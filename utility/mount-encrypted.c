@@ -110,14 +110,21 @@ static gchar *encrypted_mount = NULL;
 static gchar *dmcrypt_name = NULL;
 static gchar *dmcrypt_dev = NULL;
 static int has_tpm = 0;
+static int tpm_init_called = 0;
 
 static void tpm_init(void)
 {
 	uint32_t result;
 
+	if (tpm_init_called)
+		return;
+
 	DEBUG("Opening TPM");
+
 	setenv("TPM_NO_EXIT", "1", 1);
 	result = TlclLibInit();
+
+	tpm_init_called = 1;
 	has_tpm = (result == TPM_SUCCESS);
 	INFO("TPM %s", has_tpm ? "ready" : "not available");
 }
@@ -129,6 +136,7 @@ static uint32_t tpm_owned(uint8_t *owned)
 {
 	uint32_t result;
 
+	tpm_init();
 	DEBUG("Reading TPM Ownership Flag");
 	if (!has_tpm)
 		result = TPM_E_NO_DEVICE;
@@ -141,7 +149,10 @@ static uint32_t tpm_owned(uint8_t *owned)
 
 static void tpm_close(void)
 {
+	if (!has_tpm || !tpm_init_called)
+		return;
 	TlclLibClose();
+	tpm_init_called = 0;
 }
 
 static void sha256(char *string, uint8_t *digest)
@@ -237,6 +248,7 @@ _read_nvram(uint8_t *buffer, size_t len, uint32_t index, uint32_t size)
 		return 0;
 	}
 
+	tpm_init();
 	DEBUG("Reading NVRAM area 0x%x (size %u)", index, size);
 	if (!has_tpm)
 		result = TPM_E_NO_DEVICE;
@@ -425,6 +437,7 @@ static int get_random_bytes_tpm(unsigned char *buffer, int wanted)
 {
 	uint32_t remaining = wanted;
 
+	tpm_init();
 	/* Read random bytes from TPM, which can return short reads. */
 	while (remaining) {
 		uint32_t result, size;
@@ -736,6 +749,7 @@ static int setup_encrypted(int mode)
 	int sparsefd;
 	struct statvfs stateful_statbuf;
 	uint64_t blocks_min, blocks_max;
+	int valid_keyfile = 0;
 
 	/* Use the "system key" to decrypt the "encryption key" stored in
 	 * the stateful partition.
@@ -753,6 +767,7 @@ static int setup_encrypted(int mode)
 		 * so migration is finished.
 		 */
 		migrate_allowed = 0;
+		valid_keyfile = 1;
 	} else {
 		uint8_t useless_key[DIGEST_LENGTH];
 		sha256((char *)kStaticKeyFinalizationNeeded, useless_key);
@@ -963,11 +978,16 @@ static int setup_encrypted(int mode)
 			needs_finalization(encryption_key);
 	} else {
 		/* If we're not rebuilding and we have a sane system
-		 * key, then we must have finalized. Force any required
-		 * clean up.
+		 * key, then we must either need finalization (if we
+		 * failed to finalize in Cryptohome), or we have already
+		 * finalized, but maybe failed to clean up.
 		 */
-		if (has_system_key)
-			finalized();
+		if (has_system_key) {
+			if (!valid_keyfile)
+				finalize(system_key, encryption_key);
+			else
+				finalized();
+		}
 	}
 
 	free(lodev);
@@ -1258,7 +1278,6 @@ int main(int argc, char *argv[])
 
 	INFO_INIT("Starting.");
 	prepare_paths();
-	tpm_init();
 
 	if (argc > 1) {
 		if (!strcmp(argv[1], "umount"))
