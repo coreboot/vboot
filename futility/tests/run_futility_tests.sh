@@ -37,22 +37,31 @@ for i in $PROGS; do
 
   # Try the real thing first
   echo -n "$i ... "
-  rc=$("${OLDDIR}/$i" 1>"${OUTDIR}/$i.stdout.0" 2>"${OUTDIR}/$i.stderr.0" \
+  rc=$("${OLDDIR}/$i" \
+    1>"${OUTDIR}/$i.stdout.orig" 2>"${OUTDIR}/$i.stderr.orig" \
     || echo "$?")
-  echo "${rc:-0}" > "${OUTDIR}/$i.return.0"
+  echo "${rc:-0}" > "${OUTDIR}/$i.return.orig"
 
-  # Now try the wrapper version
-  rc=$("$FUTILITY" "$i" 1>"${OUTDIR}/$i.stdout.1" \
-       2>"${OUTDIR}/$i.stderr.1" || echo "$?")
-  echo "${rc:-0}" > "${OUTDIR}/$i.return.1"
+  # Then try the symlink
+  rc=$("$BINDIR/$i" 1>"${OUTDIR}/$i.stdout.link" \
+       2>"${OUTDIR}/$i.stderr.link" || echo "$?")
+  echo "${rc:-0}" > "${OUTDIR}/$i.return.link"
+
+  # And finally try the explicit wrapper
+  rc=$("$FUTILITY" "$i" 1>"${OUTDIR}/$i.stdout.futil" \
+       2>"${OUTDIR}/$i.stderr.futil" || echo "$?")
+  echo "${rc:-0}" > "${OUTDIR}/$i.return.futil"
 
   # Different?
-  if cmp -s "${OUTDIR}/$i.return.0" "${OUTDIR}/$i.return.1" &&
-     cmp -s "${OUTDIR}/$i.stdout.0" "${OUTDIR}/$i.stdout.1" &&
-     cmp -s "${OUTDIR}/$i.stderr.0" "${OUTDIR}/$i.stderr.1" ; then
+  if cmp -s "${OUTDIR}/$i.return.orig" "${OUTDIR}/$i.return.link" &&
+     cmp -s "${OUTDIR}/$i.stdout.orig" "${OUTDIR}/$i.stdout.link" &&
+     cmp -s "${OUTDIR}/$i.stderr.orig" "${OUTDIR}/$i.stderr.link" &&
+     cmp -s "${OUTDIR}/$i.return.orig" "${OUTDIR}/$i.return.futil" &&
+     cmp -s "${OUTDIR}/$i.stdout.orig" "${OUTDIR}/$i.stdout.futil" &&
+     cmp -s "${OUTDIR}/$i.stderr.orig" "${OUTDIR}/$i.stderr.futil" ; then
     green "passed"
     : $(( pass++ ))
-    rm -f "${OUTDIR}/$i.*.[01]"
+    rm -f ${OUTDIR}/$i.{stdout,stderr,return}.{orig,link,futil}
   else
     red "failed"
   fi

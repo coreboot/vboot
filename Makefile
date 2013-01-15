@@ -714,8 +714,10 @@ runmisctests: tests utils
 	tests/run_vboot_common_tests.sh
 	tests/run_vbutil_tests.sh
 
+.PHONY: runfutiltests
 runfutiltests: DESTDIR := $(BUILD)/installerooney
 runfutiltests: install
+	futility/tests/setup_futility_symlinks.sh $(DESTDIR)
 	futility/tests/run_futility_tests.sh $(DESTDIR)
 
 # Run long tests, including all permutations of encryption keys (instead of

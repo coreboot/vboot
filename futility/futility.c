@@ -12,7 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DEBUG 1
+/* #define DEBUG 1 */
 #ifdef DEBUG
 #define debug(args...) printf(args)
 #else
@@ -33,7 +33,10 @@ int main(int argc, char *argv[], char *envp[])
   char *s;
   int i;
 
-  /* What program are we wrapping? */
+  for (i = 0; i < argc; i++)
+    debug("argv[%d] = %s\n", i, argv[i]);
+
+  /* How were we invoked? */
   progname = strrchr(argv[0], '/');
   if (progname)
     progname++;
@@ -52,6 +55,14 @@ int main(int argc, char *argv[], char *envp[])
     /* Going to just wrap existing utilities */
     argc--;
     argv++;
+
+    /* So now what name do we want to invoke? */
+    progname = strrchr(argv[0], '/');
+    if (progname)
+      progname++;
+    else
+      progname = argv[0];
+    debug("now progname is %s\n", progname);
 
     /* FIXME: diddle argv[0] so it has the right name? */
   }
@@ -80,7 +91,8 @@ int main(int argc, char *argv[], char *envp[])
   for (i = 0; i < argc; i++)
     debug("argv[%d] = %s\n", i, argv[i]);
 
-  execv(oldname, argv);
+  fflush(0);
+  execve(oldname, argv, envp);
 
   fprintf(stderr, "%s failed to exec: %s\n", oldname, strerror(errno));
   return 1;
