@@ -128,7 +128,7 @@ LDLIBS = $(CRYPTO_LIBS)
 
 # Create output directories if necessary.  Do this via explicit shell commands
 # so it happens before trying to generate/include dependencies.
-SUBDIRS := firmware host utility cgpt tests tests/tpm_lite
+SUBDIRS := firmware host cgpt utility futility tests tests/tpm_lite
 _dir_create := $(foreach d, \
 	$(shell find $(SUBDIRS) -name '*.c' -exec  dirname {} \; | sort -u), \
 	$(shell [ -d $(BUILD)/$(d) ] || mkdir -p $(BUILD)/$(d)))
@@ -139,14 +139,14 @@ all: fwlib $(if $(FIRMWARE_ARCH),,host_stuff)
 
 # Host targets
 .PHONY: host_stuff
-host_stuff: fwlib hostlib cgpt utils tests
+host_stuff: fwlib hostlib cgpt utils futil tests
 
 .PHONY: clean
 clean:
 	$(Q)/bin/rm -rf ${BUILD}
 
 .PHONY: install
-install: cgpt_install utils_install
+install: cgpt_install utils_install futil_install
 
 # Coverage
 COV_INFO = $(BUILD)/coverage.info
@@ -378,7 +378,7 @@ $(CGPT): $(CGPT_OBJS) $$(LIBS)
 	@printf "    LDcgpt        $(subst $(BUILD)/,,$(@))\n"
 	$(Q)$(LD) -o $(CGPT) $(CFLAGS) $(LDFLAGS) $^ $(LIBS) $(LDLIBS)
 
-C_DESTDIR = $(DESTDIR)
+C_DESTDIR = $(DESTDIR)/old_bins
 
 .PHONY: cgpt_install
 cgpt_install: $(CGPT)
@@ -447,13 +447,31 @@ utils: $(UTIL_BINS) $(UTIL_SCRIPTS)
 	$(Q)cp -f $(UTIL_SCRIPTS) $(BUILD)/utility
 	$(Q)chmod a+rx $(patsubst %,$(BUILD)/%,$(UTIL_SCRIPTS))
 
-U_DESTDIR = $(DESTDIR)
+U_DESTDIR = $(DESTDIR)/old_bins
 
 .PHONY: utils_install
 utils_install: $(UTIL_BINS) $(UTIL_SCRIPTS)
 	@printf "    INSTALL       UTILS\n"
 	${Q}mkdir -p $(U_DESTDIR)
 	${Q}$(INSTALL) -t $(U_DESTDIR) $^
+
+# -----------------------------------------------------------------------------
+# new Firmware Utility
+
+FUTIL_BIN = ${BUILD}/futility/futility
+
+.PHONY: futil
+futil : $(FUTIL_BIN)
+
+F_DESTDIR = $(DESTDIR)
+
+.PHONY: futil_install
+futil_install: ${FUTIL_BIN}
+	@printf "    INSTALL       futility\n"
+	${Q}mkdir -p $(F_DESTDIR)
+	${Q}$(INSTALL) -t $(F_DESTDIR) $^
+
+# -----------------------------------------------------------------------------
 
 ${BUILD}/utility/dump_kernel_config: LIBS += $(DUMPKERNELCONFIGLIB)
 
@@ -647,7 +665,7 @@ ${BUILD}/tests/tpm_lite/tpmtest_%: OBJS += ${BUILD}/tests/tpm_lite/tlcl_tests.o
 
 # Frequently-run tests
 .PHONY: runtests
-runtests: runbmptests runcgpttests runfuzztests runmisctests
+runtests : runbmptests runcgpttests runfuzztests runmisctests runfutiltests
 
 # Generate test keys
 .PHONY: genkeys
@@ -695,6 +713,10 @@ runmisctests: tests utils
 	tests/run_rsa_tests.sh
 	tests/run_vboot_common_tests.sh
 	tests/run_vbutil_tests.sh
+
+runfutiltests: DESTDIR := $(BUILD)/installerooney
+runfutiltests: install
+	futility/tests/run_futility_tests.sh $(DESTDIR)
 
 # Run long tests, including all permutations of encryption keys (instead of
 # just the ones we use) and tests of currently-unused code (e.g. vboot_ec).

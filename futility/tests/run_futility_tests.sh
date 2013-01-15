@@ -7,12 +7,14 @@
 . "$(dirname "$0")/common.sh"
 
 # Where are the programs I'm testing against?
-BPATH=$(readlink -f $(dirname "$0")/../build)
-PATH="${BPATH}/futility:${BPATH}/utility:${BPATH}/cgpt:${PATH}"
+[ -z "${1:-}" ] && error "Directory argument is required"
+BINDIR="$1"
+shift
 
-echo "PWD is $(pwd)"
-# This is the new wrapper program
-FUTILITY=futility
+FUTILITY="$BINDIR/futility"
+OLDDIR="$BINDIR/old_bins"
+
+BUILD=$(dirname "${BINDIR}")
 
 # Here are the old programs to be wrapped
 # FIXME(chromium-os:37062): There are others besides these.
@@ -24,7 +26,8 @@ PROGS=${*:-cgpt crossystem dev_debug_vboot dev_sign_file dumpRSAPublicKey
 # Get ready
 pass=0
 progs=0
-OUTDIR="${TEST_DIR}/futility_test_dir"
+pwd
+OUTDIR="${BUILD}/tests/futility_test_dir"
 [ -d "$OUTDIR" ] || mkdir -p "$OUTDIR"
 
 # For now just compare results of invoking each program with no args.
@@ -34,11 +37,12 @@ for i in $PROGS; do
 
   # Try the real thing first
   echo -n "$i ... "
-  rc=$("$i" 1>"${OUTDIR}/$i.stdout.0" 2>"${OUTDIR}/$i.stderr.0" || echo "$?")
+  rc=$("${OLDDIR}/$i" 1>"${OUTDIR}/$i.stdout.0" 2>"${OUTDIR}/$i.stderr.0" \
+    || echo "$?")
   echo "${rc:-0}" > "${OUTDIR}/$i.return.0"
 
   # Now try the wrapper version
-  rc=$("$FUTILITY" -C "$i" 1>"${OUTDIR}/$i.stdout.1" \
+  rc=$("$FUTILITY" "$i" 1>"${OUTDIR}/$i.stdout.1" \
        2>"${OUTDIR}/$i.stderr.1" || echo "$?")
   echo "${rc:-0}" > "${OUTDIR}/$i.return.1"
 
@@ -46,14 +50,19 @@ for i in $PROGS; do
   if cmp -s "${OUTDIR}/$i.return.0" "${OUTDIR}/$i.return.1" &&
      cmp -s "${OUTDIR}/$i.stdout.0" "${OUTDIR}/$i.stdout.1" &&
      cmp -s "${OUTDIR}/$i.stderr.0" "${OUTDIR}/$i.stderr.1" ; then
-    echo -e "${COL_GREEN}passed${COL_STOP}"
+    green "passed"
     : $(( pass++ ))
     rm -f "${OUTDIR}/$i.*.[01]"
   else
-    echo -e "${COL_RED}failed${COL_STOP}"
+    red "failed"
   fi
 done
 
 # done
-echo "$pass / $progs passed"
-[ "$pass" -eq "$progs" ]
+if [ "$pass" -eq "$progs" ]; then
+  green "Success: $pass / $progs passed"
+  exit 0
+fi
+
+red "FAIL: $pass / $progs passed"
+exit 1
