@@ -460,8 +460,22 @@ utils_install: $(UTIL_BINS) $(UTIL_SCRIPTS)
 
 FUTIL_BIN = ${BUILD}/futility/futility
 
+FUTIL_SRCS = \
+	futility/futility.c \
+	futility/cmd_foo.c
+
+FUTIL_LDS = futility/futility.lds
+
+FUTIL_OBJS = $(FUTIL_SRCS:%.c=${BUILD}/%.o)
+
 .PHONY: futil
 futil : $(FUTIL_BIN)
+
+$(FUTIL_BIN) : $(FUTIL_LDS) $(FUTIL_OBJS)
+	$(CC)  -o $@ $(CFLAGS) $^ $(LDFLAGS) $(LIBS) $(LDLIBS)
+
+ALL_DEPS += $(addsuffix .d,${FUTIL_BIN})
+ALL_OBJS += $(FUTIL_OBJS)
 
 F_DESTDIR = $(DESTDIR)
 
