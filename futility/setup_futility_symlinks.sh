@@ -3,17 +3,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Load common constants and variables.
-. "$(dirname "$0")/common.sh"
+# Fail on any unexpected nonsense.
+set -e -u
 
-# Where are the programs I'm testing against?
-[ -z "${1:-}" ] && error "Directory argument is required"
+# The one required argument is the directory where futility lives.
 BINDIR="$1"
 shift
 
+# We look here to see what names to use for the symlinks.
 OLDDIR="$BINDIR/old_bins"
 
-# create symlinks
+# Create the symlinks.
 for prog in $OLDDIR/*; do
   ln -sf futility "${BINDIR}/${prog##*/}"
 done

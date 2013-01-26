@@ -657,10 +657,11 @@ ${FUTIL_BIN}: ${FUTIL_LDS} ${FUTIL_OBJS}
 	${Q}${LD} -o $@ ${CFLAGS} $^ ${LDFLAGS} ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN}
+futil_install: ${FUTIL_BIN} cgpt_install utils_install
 	@printf "    INSTALL       futility\n"
 	${Q}mkdir -p ${F_DESTDIR}
-	${Q}${INSTALL} -t ${F_DESTDIR} $^
+	${Q}${INSTALL} -t ${F_DESTDIR} ${FUTIL_BIN}
+	futility/setup_futility_symlinks.sh ${F_DESTDIR}
 
 
 # ----------------------------------------------------------------------------
@@ -955,7 +956,6 @@ runmisctests: test_setup
 .PHONY: runfutiltests
 runfutiltests: DESTDIR := ${TEST_INSTALL_DIR}
 runfutiltests: test_setup install
-	futility/tests/setup_futility_symlinks.sh ${DESTDIR}
 	futility/tests/run_futility_tests.sh ${DESTDIR}
 
 # Run long tests, including all permutations of encryption keys (instead of
