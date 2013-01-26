@@ -6,24 +6,23 @@
 
 #define _GNU_SOURCE
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "futility.h"
 
-/* #define DEBUG 1 */
-#ifdef DEBUG
-#define debug(args...) printf(args)
-#else
-#define debug(args...)
-#endif
-
 #define MYNAME "futility"
 #define SUBDIR "old_bins"
+
+#define LOGFILE "/tmp/futility.log"
+
+/******************************************************************************/
 
 static const char * const usage= "\n\
 Usage: " MYNAME " PROGRAM|COMMAND [args...]\n\
@@ -70,6 +69,81 @@ static int help(int argc, char *argv[])
 DECLARE_FUTIL_COMMAND(help, help, "Show a bit of help");
 
 
+/******************************************************************************/
+/* Logging stuff */
+
+static int log_fd = -1;
+
+/* Write the string and a newline. Silently give up on errors */
+static void log_str(char *str)
+{
+  int len, done, n;
+
+  if (log_fd < 0)
+    return;
+
+  if (!str)
+    str = "(NULL)";
+
+  len = strlen(str);
+  if (len == 0) {
+    str = "(EMPTY)";
+    len = strlen(str);
+  }
+
+  for (done = 0; done < len; done += n) {
+    n = write(log_fd, str+done, len-done);
+    if (n < 0)
+      return;
+  }
+
+  write(log_fd, "\n", 1);
+}
+
+static void log_close(void)
+{
+  if (log_fd >= 0)
+    close(log_fd);
+  log_fd = -1;
+}
+
+static void log_open(void)
+{
+  struct flock lock;
+  int ret;
+
+  log_fd = open(LOGFILE, O_WRONLY|O_APPEND|O_CREAT, 0666);
+  if (log_fd < 0) {
+
+    if (errno != EACCES)
+      return;
+
+    /* Permission problems should improve shortly ... */
+    sleep(1);
+    log_fd = open(LOGFILE, O_WRONLY|O_APPEND|O_CREAT, 0666);
+    if (log_fd < 0)                     /* Nope, they didn't */
+      return;
+  }
+
+  /* Let anyone have a turn */
+  fchmod(log_fd, 0666);
+
+  /* But only one at a time */
+  memset(&lock, 0, sizeof(lock));
+  lock.l_type = F_WRLCK;
+  lock.l_whence = SEEK_END;
+
+  ret = fcntl(log_fd, F_SETLKW, &lock); /* this blocks */
+  if (ret < 0)
+    log_close();
+
+  /* delimiter */
+  log_str("##### HEY #####");
+}
+
+/******************************************************************************/
+/* Here we go */
+
 int main(int argc, char *argv[], char *envp[])
 {
   char *progname;
@@ -82,8 +156,9 @@ int main(int argc, char *argv[], char *envp[])
   int i;
   futil_cmd_t *cmd;
 
+  log_open();
   for (i = 0; i < argc; i++)
-    debug("argv[%d] = %s\n", i, argv[i]);
+    log_str(argv[i]);
 
   /* How were we invoked? */
   progname = strrchr(argv[0], '/');
@@ -91,7 +166,6 @@ int main(int argc, char *argv[], char *envp[])
     progname++;
   else
     progname = argv[0];
-  debug("progname is %s\n", progname);
 
   /* Invoked directly by name */
   if (0 == strcmp(progname, MYNAME)) {
@@ -110,7 +184,6 @@ int main(int argc, char *argv[], char *envp[])
       progname++;
     else
       progname = argv[0];
-    debug("now progname is %s\n", progname);
   }
 
   /* See if it's asking for something we know how to do ourselves */
@@ -129,7 +202,6 @@ int main(int argc, char *argv[], char *envp[])
             buf, strerror(errno));
     exit(1);
   }
-  debug("truename is %s\n", truename);
   s = strrchr(truename, '/');           /* Find the true directory */
   if (s) {
     *s = '\0';
@@ -140,10 +212,6 @@ int main(int argc, char *argv[], char *envp[])
   /* We've allocated PATH_MAX. If the old binary path doesn't fit, it can't be
    * in the filesystem. */
   snprintf(oldname, PATH_MAX, "%s/%s/%s", truename, SUBDIR, progname);
-  debug("oldname is %s\n", oldname);
-
-  for (i = 0; i < argc; i++)
-    debug("argv[%d] = %s\n", i, argv[i]);
 
   fflush(0);
   execve(oldname, argv, envp);

@@ -36,8 +36,8 @@
 # changed or appended. They must be defined before being used anywhere.
 
 # we should only run pwd once, not every time we refer to ${BUILD}.
-_whereami := $(shell pwd)
-BUILD ?= $(_whereami)/build
+SRCDIR := $(shell pwd)
+BUILD ?= $(SRCDIR)/build
 export BUILD
 
 # Target for 'make install'
@@ -50,6 +50,29 @@ TEST_INSTALL_DIR = ${BUILD}/install_for_test
 # Verbose? Use V=1
 ifeq (${V},)
 Q := @
+endif
+
+# Architecture detection
+_machname := $(shell uname -m)
+HOST_ARCH ?= ${_machname}
+
+# ARCH and/or FIRMWARE_ARCH are defined by the Chromium OS ebuild.
+# Pick a sane target architecture if none is defined.
+ifeq (${ARCH},)
+  ARCH := ${HOST_ARCH}
+else ifeq (${ARCH},i386)
+  override ARCH := x86
+else ifeq (${ARCH},amd64)
+  override ARCH := x86_64
+endif
+
+# FIRMWARE_ARCH is only defined by the Chromium OS ebuild if compiling
+# for a firmware target (such as u-boot or depthcharge). It must map
+# to the same consistent set of architectures as the host.
+ifeq (${FIRMWARE_ARCH},i386)
+  override FIRMWARE_ARCH := x86
+else ifeq (${FIRMWARE_ARCH},amd64)
+  override FIRMWARE_ARCH := x86_64
 endif
 
 # Provide default CC and CFLAGS for firmware builds; if you have any -D flags,
@@ -75,7 +98,7 @@ CFLAGS ?= -march=armv5 \
 	-fno-common -ffixed-r8 \
 	-mfloat-abi=hard -marm -mabi=aapcs-linux -mno-thumb-interwork \
 	${COMMON_FLAGS}
-else ifeq (${FIRMWARE_ARCH}, i386)
+else ifeq (${FIRMWARE_ARCH}, x86)
 CC ?= i686-pc-linux-gnu-gcc
 # Drop -march=i386 to permit use of SSE instructions
 CFLAGS ?= \
@@ -103,11 +126,12 @@ endif
 # Create / use dependency files
 CFLAGS += -MMD -MF $@.d
 
-# Code coverage. Run like this:  COV=1 make runtests coverage
+# Code coverage
 ifneq (${COV},)
-COV_FLAGS = -O0 --coverage
-CFLAGS += ${COV_FLAGS}
-LDFLAGS += ${COV_FLAGS}
+  COV_FLAGS = -O0 --coverage
+  CFLAGS += ${COV_FLAGS}
+  LDFLAGS += ${COV_FLAGS}
+  COV_INFO = ${BUILD}/coverage.info
 endif
 
 # And a few more default utilities
@@ -115,32 +139,13 @@ LD = ${CC}
 CXX ?= g++ # HEY: really?
 PKG_CONFIG ?= pkg-config
 
-# Architecture detection. If we're cross-compiling, we may need to run unit
-# tests inside QEMU.
-_machname := $(shell uname -m)
-HOST_ARCH ?= ${_machname}
-
-# Note: ARCH is defined by the Chromium OS ebuild. Pick a sane target
-# architecture if none is defined.
-ifeq (${ARCH},)
-  ARCH := ${HOST_ARCH}
-  ifeq (${ARCH}, x86_64)
-    ARCH := amd64
-  endif
-endif
-
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
   QEMU_ARCH :=
-else ifeq (${HOST_ARCH}-${ARCH},x86_64-i386)
+else ifeq (${HOST_ARCH}-${ARCH},x86_64-x86)
   # 64-bit host can run 32-bit targets directly
   QEMU_ARCH :=
-else ifeq (${HOST_ARCH}-${ARCH},x86_64-amd64)
-  # 64-bit host can run 64-bit directly
-  QEMU_ARCH :=
-else ifeq (${ARCH},amd64)
-  QEMU_ARCH := x86_64
 else
   QEMU_ARCH := ${ARCH}
 endif
@@ -152,21 +157,21 @@ endif
 ifeq (${QEMU_ARCH},)
   # Path to build output for running tests is same as for building
   BUILD_RUN = ${BUILD}
+  SRC_RUN = ${SRCDIR}
 else
   $(info Using qemu for testing.)
   # Path to build output for running tests is different in the chroot
   BUILD_RUN = $(subst ${SYSROOT},,${BUILD})
+  SRC_RUN = $(subst ${SYSROOT},,${SRCDIR})
 
   QEMU_BIN = qemu-${QEMU_ARCH}
-  QEMU_OPTS = -drop-ld-preload \
-	-E LD_LIBRARY_PATH=/lib64:/lib:/usr/lib64:/usr/lib \
-	-E HOME=${HOME} \
-	-E BUILD=${BUILD_RUN}
-  QEMU_CMD = sudo chroot ${SYSROOT} ${BUILD_RUN}/${QEMU_BIN} ${QEMU_OPTS} --
-  RUNTEST = ${QEMU_CMD}
+  QEMU_RUN = ${BUILD_RUN}/${QEMU_BIN}
+  export QEMU_RUN
+
+  RUNTEST = tests/test_using_qemu.sh
 endif
 
-
+export BUILD_RUN
 
 # Some things only compile inside the Chromium OS chroot.
 # TODO: Those things should be in their own repo, not part of vboot_reference
@@ -342,7 +347,6 @@ UTIL_NAMES = ${UTIL_NAMES_STATIC} \
 	signature_digest_utility \
 	tpm_init_temp_fix \
 	tpmc \
-	vbutil_ec \
 	vbutil_firmware \
 	vbutil_kernel \
 	vbutil_key \
@@ -401,6 +405,7 @@ ALL_OBJS += ${TESTLIB_OBJS}
 TEST_NAMES = \
 	cgptlib_test \
 	rollback_index2_tests \
+	rollback_index3_tests \
 	rsa_padding_test \
 	rsa_utility_tests \
 	rsa_verify_benchmark \
@@ -410,7 +415,6 @@ TEST_NAMES = \
 	tpm_bootmode_tests \
 	utility_string_tests \
 	utility_tests \
-	vboot_nvstorage_test \
 	vboot_api_init_tests \
 	vboot_api_devmode_tests \
 	vboot_api_firmware_tests \
@@ -419,8 +423,9 @@ TEST_NAMES = \
 	vboot_common_tests \
 	vboot_common2_tests \
 	vboot_common3_tests \
-	vboot_ec_tests \
-	vboot_firmware_tests
+	vboot_display_tests \
+	vboot_firmware_tests \
+	vboot_nvstorage_test
 
 # Grrr
 ifneq (${IN_CHROOT},)
@@ -466,6 +471,8 @@ TEST_NAMES += ${TLCL_TEST_NAMES}
 TEST_BINS = $(addprefix ${BUILD}/tests/,${TEST_NAMES})
 ALL_DEPS += $(addsuffix .d,${TEST_BINS})
 
+# Directory containing test keys
+TEST_KEYS = ${SRC_RUN}/tests/testkeys
 
 # ----------------------------------------------------------------------------
 # TODO: why not make this include *all* the cgpt files, and simply have
@@ -504,7 +511,7 @@ _dir_create := $(foreach d, \
 
 # Default target.
 .PHONY: all
-all: fwlib $(if ${FIRMWARE_ARCH},,host_stuff)
+all: fwlib $(if ${FIRMWARE_ARCH},,host_stuff) $(if ${COV},coverage)
 
 # Host targets
 .PHONY: host_stuff
@@ -520,17 +527,6 @@ clean:
 
 .PHONY: install
 install: cgpt_install utils_install futil_install
-
-# Coverage
-# TODO: only if COV=1
-# HEY - depend on runtests?
-COV_INFO = ${BUILD}/coverage.info
-.PHONY: coverage
-coverage:
-	rm -f ${COV_INFO}*
-	lcov --capture --directory . --base-directory . -o ${COV_INFO}.1
-	lcov --remove ${COV_INFO}.1 '/usr/*' -o ${COV_INFO}
-	genhtml ${COV_INFO} --output-directory ${BUILD}/coverage
 
 # Don't delete intermediate object files
 .SECONDARY:
@@ -551,7 +547,7 @@ ALL_DEPS += ${ALL_OBJS:%.o=%.o.d}
 # TPM_BLOCKING_CONTINUESELFTEST is defined if TPM_ContinueSelfTest blocks until
 # the self test has completed.
 
-${FWLIB}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
+${FWLIB_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 # TPM_MANUAL_SELFTEST is defined if the self test must be started manually
 # (with a call to TPM_ContinueSelfTest) instead of starting automatically at
@@ -564,24 +560,24 @@ ${FWLIB}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 ifeq (${FIRMWARE_ARCH},i386)
 # Unrolling loops in cryptolib makes it faster
-${FWLIB}: CFLAGS += -DUNROLL_LOOPS
+${FWLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
 
 # Workaround for coreboot on x86, which will power off asynchronously
 # without giving us a chance to react. This is not an example of the Right
 # Way to do things. See chrome-os-partner:7689, and the commit message
 # that made this change.
-${FWLIB}: CFLAGS += -DSAVE_LOCALE_IMMEDIATELY
+${FWLIB_OBJS}: CFLAGS += -DSAVE_LOCALE_IMMEDIATELY
 
 # On x86 we don't actually read the GBB data into RAM until it is needed.
 # Therefore it makes sense to cache it rather than reading it each time.
 # Enable this feature.
-${FWLIB}: CFLAGS += -DCOPY_BMP_DATA
+${FWLIB_OBJS}: CFLAGS += -DCOPY_BMP_DATA
 endif
 
 ifeq (${FIRMWARE_ARCH},)
 # Disable rollback TPM when compiling locally, since otherwise
 # load_kernel_test attempts to talk to the TPM.
-${FWLIB}: CFLAGS += -DDISABLE_ROLLBACK_TPM
+${FWLIB_OBJS}: CFLAGS += -DDISABLE_ROLLBACK_TPM
 endif
 
 .PHONY: fwlib
@@ -804,12 +800,15 @@ ${BUILD}/utility/dump_kernel_config: ${DUMPKERNELCONFIGLIB}
 # GBB utility needs C++ linker. TODO: It shouldn't.
 ${BUILD}/utility/gbb_utility: LD = ${CXX}
 
+# Because we play some clever linker script games to add new commands without
+# changing any header files, futility must be linked with ld.bfd, not gold.
+${FUTIL_BIN}: LDFLAGS += -fuse-ld=bfd
+
 # Some utilities need external crypto functions
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/dev_sign_file: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/utility/vbutil_ec: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/vbutil_firmware: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/vbutil_kernel: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/vbutil_key: LDLIBS += ${CRYPTO_LIBS}
@@ -818,8 +817,6 @@ ${BUILD}/utility/vbutil_keyblock: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/host/linktest/main: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common3_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vboot_ec_tests: LDLIBS += ${CRYPTO_LIBS}
-
 
 ${BUILD}/utility/bmpblk_utility: LD = ${CXX}
 ${BUILD}/utility/bmpblk_utility: LDLIBS = -llzma -lyaml
@@ -931,13 +928,13 @@ runtestscripts: test_setup genfuzztestcases
 	tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
 	tests/run_preamble_tests.sh
 	tests/run_rsa_tests.sh
-	tests/run_vboot_common_tests.sh
 	tests/run_vbutil_kernel_arg_tests.sh
 	tests/run_vbutil_tests.sh
 
 .PHONY: runmisctests
 runmisctests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/rollback_index2_tests
+	${RUNTEST} ${BUILD_RUN}/tests/rollback_index3_tests
 	${RUNTEST} ${BUILD_RUN}/tests/rsa_utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/sha_tests
 	${RUNTEST} ${BUILD_RUN}/tests/stateful_util_tests
@@ -948,7 +945,12 @@ runmisctests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_init_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_firmware_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_audio_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_common2_tests ${TEST_KEYS}
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_common3_tests ${TEST_KEYS}
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_firmware_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_nvstorage_test
 
 .PHONY: runfutiltests
 runfutiltests: DESTDIR := ${TEST_INSTALL_DIR}
@@ -957,13 +959,13 @@ runfutiltests: test_setup install
 	futility/tests/run_futility_tests.sh ${DESTDIR}
 
 # Run long tests, including all permutations of encryption keys (instead of
-# just the ones we use) and tests of currently-unused code (e.g. vboot_ec).
+# just the ones we use) and tests of currently-unused code.
 # Not run by automated build.
 .PHONY: runlongtests
 runlongtests: test_setup genkeys genfuzztestcases
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_common2_tests ${TEST_KEYS} --all
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_common3_tests ${TEST_KEYS} --all
 	tests/run_preamble_tests.sh --all
-	tests/run_vboot_common_tests.sh --all
-	tests/run_vboot_ec_tests.sh
 	tests/run_vbutil_tests.sh --all
 
 # TODO: tests to run when ported to new API
@@ -974,4 +976,30 @@ runlongtests: test_setup genkeys genfuzztestcases
 #	# Rollback Tests
 #	${BUILD}/tests/firmware_rollback_tests
 #	${BUILD}/tests/kernel_rollback_tests
+
+# Code coverage
+.PHONY: coverage_init
+coverage_init: test_setup
+	rm -f ${COV_INFO}*
+	lcov -c -i -d . -b . -o ${COV_INFO}.initial
+
+.PHONY: coverage_html
+coverage_html:
+	lcov -c -d . -b . -o ${COV_INFO}.tests
+	lcov -a ${COV_INFO}.initial -a ${COV_INFO}.tests -o ${COV_INFO}.total
+	lcov -r ${COV_INFO}.total '/usr/*' '*/linktest/*' -o ${COV_INFO}.local
+	genhtml ${COV_INFO}.local -o ${BUILD}/coverage
+
+# Generate addtional coverage stats just for firmware subdir, because the
+# per-directory stats for the whole project don't include their own subdirs.
+	lcov -e ${COV_INFO}.local '${SRCDIR}/firmware/*' \
+		-o ${COV_INFO}.firmware
+
+.PHONY: coverage
+ifeq (${COV},)
+coverage:
+	$(error Build coverage like this: make clean && COV=1 make)
+else
+coverage: coverage_init runtests coverage_html
+endif
 
