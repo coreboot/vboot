@@ -102,9 +102,18 @@ static void log_str(char *str)
 
 static void log_close(void)
 {
-  if (log_fd >= 0)
+  struct flock lock;
+
+  if (log_fd >= 0) {
+    memset(&lock, 0, sizeof(lock));
+    lock.l_type = F_UNLCK;
+    lock.l_whence = SEEK_SET;
+    if (fcntl(log_fd, F_SETLKW, &lock))
+      perror("Unable to unlock log file");
+
     close(log_fd);
-  log_fd = -1;
+    log_fd = -1;
+  }
 }
 
 static void log_open(void)
@@ -159,6 +168,7 @@ int main(int argc, char *argv[], char *envp[])
   log_open();
   for (i = 0; i < argc; i++)
     log_str(argv[i]);
+  log_close();
 
   /* How were we invoked? */
   progname = strrchr(argv[0], '/');

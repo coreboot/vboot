@@ -35,14 +35,15 @@
 # Our convention is that we only use := for variables that will never be
 # changed or appended. They must be defined before being used anywhere.
 
-# we should only run pwd once, not every time we refer to ${BUILD}.
+# We should only run pwd once, not every time we refer to ${BUILD}.
 SRCDIR := $(shell pwd)
 BUILD ?= $(SRCDIR)/build
 export BUILD
 
-# Target for 'make install'
-DESTDIR ?= /usr/bin
+# Stuff for 'make install'
 INSTALL ?= install
+DESTDIR ?= /usr/bin
+O_DESTDIR = ${DESTDIR}/old_bins
 
 # Where to install the (exportable) executables for testing?
 TEST_INSTALL_DIR = ${BUILD}/install_for_test
@@ -322,15 +323,19 @@ CGPT_SRCS = \
 CGPT_OBJS = ${CGPT_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${CGPT_OBJS}
 
-C_DESTDIR = ${DESTDIR}/old_bins
+C_DESTDIR = ${O_DESTDIR}
 
 
 # Scripts to install directly (not compiled)
 UTIL_SCRIPTS = \
 	utility/dev_debug_vboot \
-	utility/dev_make_keypair \
 	utility/enable_dev_usb_boot \
 	utility/vbutil_what_keys
+
+ifeq (${MINIMAL},)
+UTIL_SCRIPTS += \
+	utility/dev_make_keypair
+endif
 
 # These utilities should be linked statically.
 UTIL_NAMES_STATIC = \
@@ -342,38 +347,60 @@ UTIL_NAMES = ${UTIL_NAMES_STATIC} \
 	dev_sign_file \
 	dump_kernel_config \
 	dumpRSAPublicKey \
-	load_kernel_test \
-	pad_digest_utility \
-	signature_digest_utility \
 	tpm_init_temp_fix \
 	tpmc \
 	vbutil_firmware \
 	vbutil_kernel \
 	vbutil_key \
 	vbutil_keyblock \
-	verify_data
-
-ifneq (${IN_CHROOT},)
-UTIL_NAMES += mount-encrypted
-endif
 
 ifeq (${MINIMAL},)
 UTIL_NAMES += \
 	bmpblk_font \
 	bmpblk_utility \
 	eficompress \
-	efidecompress
+	efidecompress \
+	load_kernel_test \
+	pad_digest_utility \
+	signature_digest_utility \
+	verify_data
+endif
+
+ifneq (${IN_CHROOT},)
+UTIL_NAMES += mount-encrypted
 endif
 
 UTIL_BINS_STATIC := $(addprefix ${BUILD}/utility/,${UTIL_NAMES_STATIC})
 UTIL_BINS = $(addprefix ${BUILD}/utility/,${UTIL_NAMES})
 ALL_DEPS += $(addsuffix .d,${UTIL_BINS})
 
-U_DESTDIR = ${DESTDIR}/old_bins
+U_DESTDIR = ${O_DESTDIR}
 
+# Scripts for signing stuff.
+SIGNING_SCRIPTS = \
+	utility/tpm-nvsize \
+	utility/chromeos-tpm-recovery
+
+# We need these wrapped, but the symlinks go in different places.
+SIGNING_SCRIPTS_DEV = \
+	scripts/image_signing/resign_firmwarefd.sh \
+	scripts/image_signing/make_dev_firmware.sh \
+	scripts/image_signing/make_dev_ssd.sh \
+	scripts/image_signing/set_gbb_flags.sh
+
+# Installed, but not made executable.
+SIGNING_COMMON = scripts/image_signing/common_minimal.sh
 
 # The unified firmware utility will eventually replace all the others
 FUTIL_BIN = ${BUILD}/futility/futility
+
+# These are the others it will replace.
+FUTIL_OLD = $(notdir ${CGPT} ${UTIL_BINS} ${UTIL_SCRIPTS} ${SIGNING_SCRIPTS})
+
+# The ebuild will put these somewhere else on the target.
+ifeq (${MINIMAL},)
+FUTIL_OLD += $(notdir ${SIGNING_SCRIPTS_DEV})
+endif
 
 FUTIL_SRCS = \
 	futility/futility.c \
@@ -412,6 +439,7 @@ TEST_NAMES = \
 	sha_benchmark \
 	sha_tests \
 	stateful_util_tests \
+	tlcl_tests \
 	tpm_bootmode_tests \
 	utility_string_tests \
 	utility_tests \
@@ -419,12 +447,16 @@ TEST_NAMES = \
 	vboot_api_devmode_tests \
 	vboot_api_firmware_tests \
 	vboot_api_kernel_tests \
+	vboot_api_kernel2_tests \
+	vboot_api_kernel3_tests \
+	vboot_api_kernel4_tests \
 	vboot_audio_tests \
 	vboot_common_tests \
 	vboot_common2_tests \
 	vboot_common3_tests \
 	vboot_display_tests \
 	vboot_firmware_tests \
+	vboot_kernel_tests \
 	vboot_nvstorage_test
 
 # Grrr
@@ -646,6 +678,16 @@ utils_install: ${UTIL_BINS} ${UTIL_SCRIPTS}
 	${Q}mkdir -p ${U_DESTDIR}
 	${Q}${INSTALL} -t ${U_DESTDIR} $^
 
+# And some signing stuff...
+
+.PHONY: signing_install
+signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
+	@printf "    INSTALL       SIGNING\n"
+	${Q}mkdir -p ${U_DESTDIR}
+	${Q}${INSTALL} -t ${U_DESTDIR} ${SIGNING_SCRIPTS}
+	${Q}${INSTALL} -t ${U_DESTDIR} ${SIGNING_SCRIPTS_DEV}
+	${Q}${INSTALL} -t ${U_DESTDIR} -m 'u=rw,go=r,a-s' ${SIGNING_COMMON}
+
 # ----------------------------------------------------------------------------
 # new Firmware Utility
 
@@ -657,12 +699,13 @@ ${FUTIL_BIN}: ${FUTIL_LDS} ${FUTIL_OBJS}
 	${Q}${LD} -o $@ ${CFLAGS} $^ ${LDFLAGS} ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN} cgpt_install utils_install
+futil_install: ${FUTIL_BIN} cgpt_install utils_install signing_install
 	@printf "    INSTALL       futility\n"
 	${Q}mkdir -p ${F_DESTDIR}
 	${Q}${INSTALL} -t ${F_DESTDIR} ${FUTIL_BIN}
-	futility/setup_futility_symlinks.sh ${F_DESTDIR}
-
+	${Q}mkdir -p ${O_DESTDIR}
+	${Q}for prog in ${FUTIL_OLD}; do \
+		ln -sf futility "${F_DESTDIR}/$$prog"; done
 
 # ----------------------------------------------------------------------------
 # Mount-encrypted utility for cryptohome
@@ -844,6 +887,11 @@ ${BUILD}/tests/rollback_index2_tests: OBJS += \
 ${BUILD}/tests/rollback_index2_tests: \
 	${BUILD}/firmware/lib/rollback_index_for_test.o
 
+${BUILD}/tests/tlcl_tests: OBJS += \
+	${BUILD}/firmware/lib/tpm_lite/tlcl_for_test.o
+${BUILD}/tests/tlcl_tests: \
+	${BUILD}/firmware/lib/tpm_lite/tlcl_for_test.o
+
 ${BUILD}/tests/vboot_audio_tests: OBJS += \
 	${BUILD}/firmware/lib/vboot_audio_for_test.o
 ${BUILD}/tests/vboot_audio_tests: \
@@ -939,18 +987,24 @@ runmisctests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/rsa_utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/sha_tests
 	${RUNTEST} ${BUILD_RUN}/tests/stateful_util_tests
+	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 	${RUNTEST} ${BUILD_RUN}/tests/tpm_bootmode_tests
 	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
 	${RUNTEST} ${BUILD_RUN}/tests/utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_init_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_firmware_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_init_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel3_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_audio_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common2_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common3_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_firmware_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_nvstorage_test
 
 .PHONY: runfutiltests
@@ -992,7 +1046,8 @@ coverage_html:
 
 # Generate addtional coverage stats just for firmware subdir, because the
 # per-directory stats for the whole project don't include their own subdirs.
-	lcov -e ${COV_INFO}.local '${SRCDIR}/firmware/*' \
+	lcov -r ${COV_INFO}.local '*/stub/*' -o ${COV_INFO}.nostub
+	lcov -e ${COV_INFO}.nostub '${SRCDIR}/firmware/*' \
 		-o ${COV_INFO}.firmware
 
 .PHONY: coverage
