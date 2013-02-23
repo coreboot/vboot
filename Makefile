@@ -37,21 +37,24 @@
 
 # We should only run pwd once, not every time we refer to ${BUILD}.
 SRCDIR := $(shell pwd)
-BUILD ?= $(SRCDIR)/build
+BUILD = $(SRCDIR)/build
 export BUILD
 
 # Stuff for 'make install'
-INSTALL ?= install
-DESTDIR ?= /usr/local/bin
+INSTALL = install
+DESTDIR = /usr/local/bin
+OLDDIR = /old_bins
 
 ifeq (${MINIMAL},)
 # Host install just puts everything in one place
-UB_DIR=${DESTDIR}
-SB_DIR=${DESTDIR}
-VB_DIR=${DESTDIR}
+FT_DIR=${DESTDIR}
+F_DIR=${DESTDIR}
+UB_DIR=${DESTDIR}${OLDDIR}
 else
 # Target install puts things into DESTDIR subdirectories
-UB_DIR=${DESTDIR}/usr/bin
+FT_DIR=/usr/bin
+F_DIR=${DESTDIR}${FT_DIR}
+UB_DIR=${F_DIR}${OLDDIR}
 SB_DIR=${DESTDIR}/sbin
 VB_DIR=${DESTDIR}/usr/share/vboot/bin
 endif
@@ -403,8 +406,13 @@ SIGNING_COMMON = scripts/image_signing/common_minimal.sh
 # The unified firmware utility will eventually replace all the others
 FUTIL_BIN = ${BUILD}/futility/futility
 
+# These are the others it will replace.
+FUTIL_OLD = $(notdir ${CGPT} ${UTIL_BINS} ${UTIL_SCRIPTS} ${UTIL_SBINS} \
+		${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV})
+
 FUTIL_SRCS = \
-	futility/IGNOREME.c
+	futility/futility.c \
+	futility/cmd_foo.c
 
 FUTIL_LDS = futility/futility.lds
 
@@ -675,21 +683,27 @@ utils_install: ${UTIL_BINS} ${UTIL_SCRIPTS} ${UTIL_SBINS}
 	${Q}mkdir -p ${UB_DIR}
 	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_BINS} ${UTIL_SCRIPTS}
 ifneq (${UTIL_SBINS},)
+	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_SBINS}
+ifneq (${SB_DIR},)
 	${Q}mkdir -p ${SB_DIR}
-	${Q}${INSTALL} -t ${SB_DIR} ${UTIL_SBINS}
+	${Q}for prog in $(notdir ${UTIL_SBINS}); do \
+		ln -sf "${FT_DIR}/futility" "${SB_DIR}/$$prog"; done
+endif
 endif
 
 
 # And some signing stuff for the target
 .PHONY: signing_install
 signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
-ifneq (${MINIMAL},)
 	@printf "    INSTALL       SIGNING\n"
 	${Q}mkdir -p ${UB_DIR}
 	${Q}${INSTALL} -t ${UB_DIR} ${SIGNING_SCRIPTS}
+	${Q}${INSTALL} -t ${UB_DIR} ${SIGNING_SCRIPTS_DEV}
+	${Q}${INSTALL} -t ${UB_DIR} -m 'u=rw,go=r,a-s' ${SIGNING_COMMON}
+ifneq (${VB_DIR},)
 	${Q}mkdir -p ${VB_DIR}
-	${Q}${INSTALL} -t ${VB_DIR} ${SIGNING_SCRIPTS_DEV}
-	${Q}${INSTALL} -t ${VB_DIR} -m 'u=rw,go=r,a-s' ${SIGNING_COMMON}
+	${Q}for prog in $(notdir ${SIGNING_SCRIPTS_DEV}); do \
+		ln -sf "${FT_DIR}/futility" "${VB_DIR}/$$prog"; done
 endif
 
 # ----------------------------------------------------------------------------
@@ -705,9 +719,10 @@ ${FUTIL_BIN}: ${FUTIL_LDS} ${FUTIL_OBJS}
 .PHONY: futil_install
 futil_install: ${FUTIL_BIN}
 	@printf "    INSTALL       futility\n"
-	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} $^
-
+	${Q}mkdir -p ${F_DIR}
+	${Q}${INSTALL} -t ${F_DIR} ${FUTIL_BIN}
+	${Q}for prog in ${FUTIL_OLD}; do \
+		ln -sf futility "${F_DIR}/$$prog"; done
 
 # ----------------------------------------------------------------------------
 # Mount-encrypted utility for cryptohome
@@ -846,6 +861,10 @@ ${BUILD}/utility/dump_kernel_config: ${DUMPKERNELCONFIGLIB}
 # GBB utility needs C++ linker. TODO: It shouldn't.
 ${BUILD}/utility/gbb_utility: LD = ${CXX}
 
+# Because we play some clever linker script games to add new commands without
+# changing any header files, futility must be linked with ld.bfd, not gold.
+${FUTIL_BIN}: LDFLAGS += -fuse-ld=bfd
+
 # Some utilities need external crypto functions
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
@@ -919,7 +938,7 @@ test_targets:: runcgpttests runmisctests
 
 ifeq (${MINIMAL},)
 # Bitmap utility isn't compiled for minimal variant
-test_targets:: runbmptests
+test_targets:: runbmptests runfutiltests
 # Scripts don't work under qemu testing
 # TODO: convert scripts to makefile so they can be called directly
 test_targets:: runtestscripts
@@ -1006,9 +1025,9 @@ runmisctests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_nvstorage_test
 
 .PHONY: runfutiltests
-runfutiltests: DESTDIR := ${TEST_INSTALL_DIR}
+runfutiltests: override DESTDIR = ${TEST_INSTALL_DIR}
 runfutiltests: test_setup install
-	@echo "$@ passed"
+	futility/tests/run_futility_tests.sh ${DESTDIR}
 
 # Run long tests, including all permutations of encryption keys (instead of
 # just the ones we use) and tests of currently-unused code.

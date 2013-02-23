@@ -18,7 +18,8 @@ BUILD=$(dirname "${BINDIR}")
 
 # Here are the old programs to be wrapped
 # FIXME(chromium-os:37062): There are others besides these.
-PROGS=${*:-cgpt crossystem dev_debug_vboot dev_sign_file dumpRSAPublicKey
+# FIXME: dev_debug_vboot isn't tested right now.
+PROGS=${*:-cgpt crossystem dev_sign_file dumpRSAPublicKey
            dump_fmap dump_kernel_config enable_dev_usb_boot gbb_utility
            tpm_init_temp_fix tpmc vbutil_firmware vbutil_kernel vbutil_key
            vbutil_keyblock vbutil_what_keys}
