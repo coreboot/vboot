@@ -138,6 +138,10 @@ ifeq (${DISABLE_NDEBUG},)
 CFLAGS += -DNDEBUG
 endif
 
+ifneq (${WITH_LOGGING},)
+CFLAGS += -DWITH_LOGGING
+endif
+
 # Create / use dependency files
 CFLAGS += -MMD -MF $@.d
 
@@ -1074,4 +1078,3 @@ coverage:
 else
 coverage: coverage_init runtests coverage_html
 endif
-

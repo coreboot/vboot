@@ -20,7 +20,10 @@
 #define MYNAME "futility"
 #define SUBDIR "old_bins"
 
-#define LOGFILE "/tmp/futility.log"
+/* HEY: FIXME: Hardcoding logs on for now. Delete these lines for real use. */
+#ifndef WITH_LOGGING
+#define WITH_LOGGING
+#endif
 
 /******************************************************************************/
 
@@ -69,8 +72,11 @@ static int help(int argc, char *argv[])
 DECLARE_FUTIL_COMMAND(help, help, "Show a bit of help");
 
 
+#ifdef WITH_LOGGING
 /******************************************************************************/
 /* Logging stuff */
+
+#define LOGFILE "/tmp/futility.log"
 
 static int log_fd = -1;
 
@@ -143,29 +149,43 @@ static void log_open(void)
   lock.l_whence = SEEK_END;
 
   ret = fcntl(log_fd, F_SETLKW, &lock); /* this blocks */
-  if (ret < 0) {
+  if (ret < 0)
     log_close();
-    return;
-  }
+}
+
+static void log_args(int argc, char *argv[])
+{
+  int i;
+  ssize_t r;
+  pid_t parent;
+  char buf[80];
+  char truename[PATH_MAX+10];
+
+  log_open();
 
   /* delimiter */
   log_str("##### HEY #####");
 
-  {
   /* Can we tell who called us? */
-    char truename[PATH_MAX+10];
-    char buf[80];
-    ssize_t r;
-    pid_t parent = getppid();
-    snprintf(buf, 80, "/proc/%d/exe", parent);
-    strncat(truename, "CALLER:", 7);
-    r = readlink(buf, truename+7, PATH_MAX-1);
-    if (r >= 0) {
-      truename[r+7] = '\0';
-      log_str(truename);
-    }
+  parent = getppid();
+  snprintf(buf, 80, "/proc/%d/exe", parent);
+  strncat(truename, "CALLER:", 7);
+  r = readlink(buf, truename+7, PATH_MAX-1);
+  if (r >= 0) {
+    truename[r+7] = '\0';
+    log_str(truename);
   }
+
+  /* Now log the stuff about ourselves */
+  for (i = 0; i < argc; i++)
+    log_str(argv[i]);
+
+  log_close();
 }
+#else
+#define log_args(...)
+#endif /* WITH_LOGGING */
+
 
 /******************************************************************************/
 /* Here we go */
@@ -179,13 +199,9 @@ int main(int argc, char *argv[], char *envp[])
   pid_t myproc;
   ssize_t r;
   char *s;
-  int i;
   futil_cmd_t *cmd;
 
-  log_open();
-  for (i = 0; i < argc; i++)
-    log_str(argv[i]);
-  log_close();
+  log_args(argc, argv);
 
   /* How were we invoked? */
   progname = strrchr(argv[0], '/');
