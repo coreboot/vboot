@@ -143,11 +143,28 @@ static void log_open(void)
   lock.l_whence = SEEK_END;
 
   ret = fcntl(log_fd, F_SETLKW, &lock); /* this blocks */
-  if (ret < 0)
+  if (ret < 0) {
     log_close();
+    return;
+  }
 
   /* delimiter */
   log_str("##### HEY #####");
+
+  {
+  /* Can we tell who called us? */
+    char truename[PATH_MAX+10];
+    char buf[80];
+    ssize_t r;
+    pid_t parent = getppid();
+    snprintf(buf, 80, "/proc/%d/exe", parent);
+    strncat(truename, "CALLER:", 7);
+    r = readlink(buf, truename+7, PATH_MAX-1);
+    if (r >= 0) {
+      truename[r+7] = '\0';
+      log_str(truename);
+    }
+  }
 }
 
 /******************************************************************************/
@@ -212,6 +229,7 @@ int main(int argc, char *argv[], char *envp[])
             buf, strerror(errno));
     exit(1);
   }
+  truename[r] = '\0';
   s = strrchr(truename, '/');           /* Find the true directory */
   if (s) {
     *s = '\0';
