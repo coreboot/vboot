@@ -192,29 +192,8 @@ endif
 
 export BUILD_RUN
 
-# Some things only compile inside the Chromium OS chroot.
-# TODO: Those things should be in their own repo, not part of vboot_reference
-# TODO: Is there a better way to detect this?
-ifneq (${CROS_WORKON_SRCROOT},)
-IN_CHROOT := yes
-endif
-
-# TODO: Move to separate repo.
-ifneq (${IN_CHROOT},)
-PC_BASE_VER ?= 125070
-PC_DEPS := libchrome-${PC_BASE_VER}
-PC_CFLAGS := $(shell ${PKG_CONFIG} --cflags ${PC_DEPS})
-PC_LDLIBS := $(shell ${PKG_CONFIG} --libs ${PC_DEPS})
-endif
-
-
 ##############################################################################
 # Now we need to describe everything we might want or need to build
-
-# TODO: This should go in its own repo.
-AU_CGPTLIB = ${BUILD}/cgpt/libcgpt-cc.a
-# This is just ... Gah. There's no good place for it.
-DUMPKERNELCONFIGLIB = ${BUILD}/libdump_kernel_config.a
 
 # Everything wants these headers.
 INCLUDES += \
@@ -235,12 +214,16 @@ endif
 # Firmware library. TODO: Do we still need to export this?
 FWLIB = ${BUILD}/vboot_fw.a
 
-# find lib -iname '*.c' | sort
-FWLIB_SRCS = \
-	firmware/lib/cgptlib/cgptlib.c \
-	firmware/lib/cgptlib/cgptlib_internal.c \
-	firmware/lib/cgptlib/crc32.c \
+# Firmware library sources needed by VbInit() call
+VBINIT_SRCS = \
 	firmware/lib/crc8.c \
+	firmware/lib/utility.c \
+	firmware/lib/vboot_api_init.c \
+	firmware/lib/vboot_common_init.c \
+	firmware/lib/vboot_nvstorage.c \
+
+# Additional firmware library sources needed by VbSelectFirmware() call
+VBSF_SRCS = \
 	firmware/lib/cryptolib/padding.c \
 	firmware/lib/cryptolib/rsa.c \
 	firmware/lib/cryptolib/rsa_utility.c \
@@ -249,48 +232,75 @@ FWLIB_SRCS = \
 	firmware/lib/cryptolib/sha512.c \
 	firmware/lib/cryptolib/sha_utility.c \
 	firmware/lib/stateful_util.c \
-	firmware/lib/utility.c \
-	firmware/lib/utility_string.c \
-	firmware/lib/vboot_api_init.c \
 	firmware/lib/vboot_api_firmware.c \
+	firmware/lib/vboot_common.c \
+	firmware/lib/vboot_firmware.c
+
+# Additional firmware library sources needed by VbSelectAndLoadKernel() call
+VBSLK_SRCS = \
+	firmware/lib/cgptlib/cgptlib.c \
+	firmware/lib/cgptlib/cgptlib_internal.c \
+	firmware/lib/cgptlib/crc32.c \
+	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_audio.c \
-	firmware/lib/vboot_common.c \
 	firmware/lib/vboot_display.c \
-	firmware/lib/vboot_firmware.c \
-	firmware/lib/vboot_kernel.c \
-	firmware/lib/vboot_nvstorage.c
+	firmware/lib/vboot_kernel.c
 
 # Support real TPM unless BIOS sets MOCK_TPM
 ifeq (${MOCK_TPM},)
-FWLIB_SRCS += \
+VBINIT_SRCS += \
 	firmware/lib/rollback_index.c \
-	firmware/lib/tpm_bootmode.c \
 	firmware/lib/tpm_lite/tlcl.c
+
+VBSF_SRCS += \
+	firmware/lib/tpm_bootmode.c
 else
-FWLIB_SRCS += \
+VBINIT_SRCS += \
 	firmware/lib/mocked_rollback_index.c \
-	firmware/lib/mocked_tpm_bootmode.c \
 	firmware/lib/tpm_lite/mocked_tlcl.c
+
+VBSF_SRCS += \
+	firmware/lib/mocked_tpm_bootmode.c
 endif
 
 ifeq (${FIRMWARE_ARCH},)
 # Include BIOS stubs in the firmware library when compiling for host
-FWLIB_SRCS += \
+# TODO: split out other stub funcs too
+VBINIT_SRCS += \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/utility_stub.c \
+	firmware/stub/vboot_api_stub_init.c
+
+VBSF_SRCS += \
+	firmware/stub/vboot_api_stub_sf.c
+
+VBSLK_SRCS += \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c
 endif
+
+VBSF_SRCS += ${VBINIT_SRCS}
+FWLIB_SRCS += ${VBSF_SRCS} ${VBSLK_SRCS}
+
+VBINIT_OBJS = ${VBINIT_SRCS:%.c=${BUILD}/%.o}
+VBSF_OBJS = ${VBSF_SRCS:%.c=${BUILD}/%.o}
 
 FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${FWLIB_OBJS}
 
 
 # Library to build the utilities. "HOST" mostly means "userspace".
-HOSTLIB = ${BUILD}/vboot_host.a
+HOSTLIB = ${BUILD}/libvboot_host.a
 
 HOSTLIB_SRCS = \
+	cgpt/cgpt_create.c \
+	cgpt/cgpt_add.c \
+	cgpt/cgpt_boot.c \
+	cgpt/cgpt_show.c \
+	cgpt/cgpt_repair.c \
+	cgpt/cgpt_prioritize.c \
+	cgpt/cgpt_common.c \
 	host/arch/${ARCH}/lib/crossystem_arch.c \
 	host/lib/crossystem.c \
 	host/lib/file_keys.c \
@@ -300,11 +310,11 @@ HOSTLIB_SRCS = \
 	host/lib/host_keyblock.c \
 	host/lib/host_misc.c \
 	host/lib/host_signature.c \
-	host/lib/signature_digest.c
+	host/lib/signature_digest.c \
+	utility/dump_kernel_config_lib.c
 
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${HOSTLIB_OBJS}
-
 
 # Link with hostlib by default
 LIBS = $(HOSTLIB)
@@ -312,6 +322,25 @@ LIBS = $(HOSTLIB)
 # Might need this too.
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
 
+# Sigh. For historical reasons, the autoupdate installer must sometimes be a
+# 32-bit executable, even when everything else is 64-bit. But it only needs a
+# few functions, so let's just build those.
+TINYHOSTLIB = ${BUILD}/libtinyvboot_host.a
+
+TINYHOSTLIB_SRCS = \
+	cgpt/cgpt_create.c \
+	cgpt/cgpt_add.c \
+	cgpt/cgpt_boot.c \
+	cgpt/cgpt_show.c \
+	cgpt/cgpt_repair.c \
+	cgpt/cgpt_prioritize.c \
+	cgpt/cgpt_common.c \
+	utility/dump_kernel_config_lib.c \
+	firmware/lib/cgptlib/crc32.c \
+	firmware/lib/cgptlib/cgptlib_internal.c \
+	firmware/stub/utility_stub.c
+
+TINYHOSTLIB_OBJS = ${TINYHOSTLIB_SRCS:%.c=${BUILD}/%.o}
 
 # ----------------------------------------------------------------------------
 # Now for the userspace binaries
@@ -384,10 +413,6 @@ endif
 
 UTIL_BINS_STATIC := $(addprefix ${BUILD}/utility/,${UTIL_NAMES_STATIC})
 UTIL_BINS = $(addprefix ${BUILD}/utility/,${UTIL_NAMES})
-ifneq (${IN_CHROOT},)
-UTIL_SBINS = $(addprefix ${BUILD}/utility/,mount-encrypted)
-endif
-
 ALL_DEPS += $(addsuffix .d,${UTIL_BINS})
 
 
@@ -411,7 +436,7 @@ SIGNING_COMMON = scripts/image_signing/common_minimal.sh
 FUTIL_BIN = ${BUILD}/futility/futility
 
 # These are the others it will replace.
-FUTIL_OLD = $(notdir ${CGPT} ${UTIL_BINS} ${UTIL_SCRIPTS} ${UTIL_SBINS} \
+FUTIL_OLD = $(notdir ${CGPT} ${UTIL_BINS} ${UTIL_SCRIPTS} \
 		${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV})
 
 FUTIL_SRCS = \
@@ -469,11 +494,6 @@ TEST_NAMES = \
 	vboot_kernel_tests \
 	vboot_nvstorage_test
 
-# Grrr
-ifneq (${IN_CHROOT},)
-TEST_NAMES += CgptManagerTests
-endif
-
 # TODO: port these tests to new API, if not already eqivalent
 # functionality in other tests.  These don't even compile at present.
 #
@@ -516,29 +536,6 @@ ALL_DEPS += $(addsuffix .d,${TEST_BINS})
 # Directory containing test keys
 TEST_KEYS = ${SRC_RUN}/tests/testkeys
 
-# ----------------------------------------------------------------------------
-# TODO: why not make this include *all* the cgpt files, and simply have
-# cgpt link against it?
-# TODO: CgptManager.cc should move to the installer project.  Shouldn't be
-# in libcgpt-cc.a.
-AU_CGPTLIB_SRCS = \
-	cgpt/CgptManager.cc \
-	cgpt/cgpt_create.c \
-	cgpt/cgpt_add.c \
-	cgpt/cgpt_boot.c \
-	cgpt/cgpt_show.c \
-	cgpt/cgpt_repair.c \
-	cgpt/cgpt_prioritize.c \
-	cgpt/cgpt_common.c \
-	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/cgptlib/cgptlib_internal.c \
-	firmware/stub/utility_stub.c
-
-AU_CGPTLIB_OBJS = $(filter %.o, \
-	${AU_CGPTLIB_SRCS:%.c=${BUILD}/%.o} \
-	${AU_CGPTLIB_SRCS:%.cc=${BUILD}/%.o})
-ALL_OBJS += ${AU_CGPTLIB_OBJS}
-
 
 ##############################################################################
 # Finally, some targets. High-level ones first.
@@ -558,10 +555,6 @@ all: fwlib $(if ${FIRMWARE_ARCH},,host_stuff) $(if ${COV},coverage)
 # Host targets
 .PHONY: host_stuff
 host_stuff: hostlib cgpt utils futil tests
-
-# AU targets
-.PHONY: au_stuff
-au_stuff: libcgpt_cc libdump_kernel_config cgptmanager_tests
 
 .PHONY: clean
 clean:
@@ -622,8 +615,20 @@ ifeq (${FIRMWARE_ARCH},)
 ${FWLIB_OBJS}: CFLAGS += -DDISABLE_ROLLBACK_TPM
 endif
 
+# Link tests
+${BUILD}/firmware/linktest/main_vbinit: LIBS =
+${BUILD}/firmware/linktest/main_vbinit: OBJS = ${VBINIT_OBJS}
+${BUILD}/firmware/linktest/main_vbsf: LIBS =
+${BUILD}/firmware/linktest/main_vbsf: OBJS = ${VBSF_OBJS}
+
+.phony: fwlinktest
+fwlinktest: ${FWLIB} \
+	${BUILD}/firmware/linktest/main_vbinit \
+	${BUILD}/firmware/linktest/main_vbsf \
+	${BUILD}/firmware/linktest/main
+
 .PHONY: fwlib
-fwlib: ${FWLIB} $(if ${FIRMWARE_ARCH},,${BUILD}/firmware/linktest/main)
+fwlib: ${FWLIB} $(if ${FIRMWARE_ARCH},,fwlinktest)
 
 ${FWLIB}: ${FWLIB_OBJS}
 	@printf "    RM            $(subst ${BUILD}/,,$@)\n"
@@ -643,6 +648,18 @@ ${BUILD}/host/% ${HOSTLIB}: INCLUDES += \
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${HOSTLIB}: ${HOSTLIB_OBJS} ${FWLIB_OBJS}
+	@printf "    RM            $(subst ${BUILD}/,,$@)\n"
+	${Q}rm -f $@
+	@printf "    AR            $(subst ${BUILD}/,,$@)\n"
+	${Q}ar qc $@ $^
+
+
+# Ugh. This is a very cut-down version of HOSTLIB just for the installer.
+.PHONY: tinyhostlib
+tinyhostlib: ${TINYHOSTLIB}
+	${Q}cp -f ${TINYHOSTLIB} ${HOSTLIB}
+
+${TINYHOSTLIB}: ${TINYHOSTLIB_OBJS}
 	@printf "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@printf "    AR            $(subst ${BUILD}/,,$@)\n"
@@ -677,24 +694,15 @@ ${BUILD}/utility/%: INCLUDES += -Ihost/include -Iutility/include
 ${UTIL_BINS_STATIC}: LDFLAGS += -static
 
 .PHONY: utils
-utils: ${UTIL_BINS} ${UTIL_SCRIPTS} ${UTIL_SBINS}
+utils: ${UTIL_BINS} ${UTIL_SCRIPTS}
 	${Q}cp -f ${UTIL_SCRIPTS} ${BUILD}/utility
 	${Q}chmod a+rx $(patsubst %,${BUILD}/%,${UTIL_SCRIPTS})
 
 .PHONY: utils_install
-utils_install: ${UTIL_BINS} ${UTIL_SCRIPTS} ${UTIL_SBINS}
+utils_install: ${UTIL_BINS} ${UTIL_SCRIPTS}
 	@printf "    INSTALL       UTILS\n"
 	${Q}mkdir -p ${UB_DIR}
 	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_BINS} ${UTIL_SCRIPTS}
-ifneq (${UTIL_SBINS},)
-	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_SBINS}
-ifneq (${SB_DIR},)
-	${Q}mkdir -p ${SB_DIR}
-	${Q}for prog in $(notdir ${UTIL_SBINS}); do \
-		ln -sf "${FT_DIR}/futility" "${SB_DIR}/$$prog"; done
-endif
-endif
-
 
 # And some signing stuff for the target
 .PHONY: signing_install
@@ -729,44 +737,6 @@ futil_install: ${FUTIL_BIN}
 		ln -sf futility "${F_DIR}/$$prog"; done
 
 # ----------------------------------------------------------------------------
-# Mount-encrypted utility for cryptohome
-
-# TODO: mount-encrypted should move to cryptohome and just link against
-# vboot-host.a for tlcl and crossystem.
-
-# The embedded libcrypto conflicts with the shipped openssl,
-# so mount-* builds without the common CFLAGS (and those includes).
-
-${BUILD}/utility/mount-helpers.o: \
-		utility/mount-helpers.c \
-		utility/mount-helpers.h \
-		utility/mount-encrypted.h
-	@printf "    CCm-e         $(subst ${BUILD}/,,$@)\n"
-	${Q}${CC} -Wall -Werror -O2 -D_FORTIFY_SOURCE=2 -fstack-protector \
-		${COV_FLAGS} \
-		$(shell ${PKG_CONFIG} --cflags glib-2.0 openssl) \
-		-c $< -o $@
-
-${BUILD}/utility/mount-encrypted: \
-		utility/mount-encrypted.c \
-		utility/mount-encrypted.h \
-		${BUILD}/utility/mount-helpers.o ${LIBS}
-	@printf "    CCm-exe       $(subst ${BUILD}/,,$@)\n"
-	${Q}${CC} -Wall -Werror -O2 -D_FORTIFY_SOURCE=2 -fstack-protector \
-		$(shell ${PKG_CONFIG} --cflags glib-2.0 openssl) \
-		-Ifirmware/include \
-		-Ihost/include \
-		${COV_FLAGS} \
-		${LDFLAGS} \
-		$< -o $@ \
-		${BUILD}/utility/mount-helpers.o ${LIBS} \
-		$(shell ${PKG_CONFIG} --libs glib-2.0 openssl) \
-		-lm
-ifneq (${COV},)
-	${Q}mv -f mount-encrypted.gcno ${BUILD}/utility
-endif
-
-# ----------------------------------------------------------------------------
 # Utility to generate TLCL structure definition header file.
 
 ${BUILD}/utility/tlcl_generator: CFLAGS += -fpack-struct
@@ -781,32 +751,6 @@ update_tlcl_structures: ${BUILD}/utility/tlcl_generator
 	${Q}cmp -s ${STRUCTURES_TMP} ${STRUCTURES_SRC} || \
 		( echo "%% Updating structures.h %%" && \
 		  cp ${STRUCTURES_TMP} ${STRUCTURES_SRC} )
-
-# ----------------------------------------------------------------------------
-# Library to dump kernel config
-# Used by platform/installer, as well as standalone utility.
-
-.PHONY: libdump_kernel_config
-libdump_kernel_config: ${DUMPKERNELCONFIGLIB}
-
-${DUMPKERNELCONFIGLIB}: ${BUILD}/utility/dump_kernel_config_lib.o
-	@printf "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@printf "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-# ----------------------------------------------------------------------------
-# And this thing.
-
-.PHONY: libcgpt_cc
-libcgpt_cc: ${AU_CGPTLIB}
-
-${AU_CGPTLIB}: INCLUDES += -Ifirmware/lib/cgptlib/include
-${AU_CGPTLIB}: ${AU_CGPTLIB_OBJS}
-	@printf "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@printf "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
 
 # ----------------------------------------------------------------------------
 # Tests
@@ -857,10 +801,6 @@ ${BUILD}/%.o: %.cc
 
 # Linktest ensures firmware lib doesn't rely on outside libraries
 ${BUILD}/firmware/linktest/main: LIBS = ${FWLIB}
-
-# Specific dependency here.
-${BUILD}/utility/dump_kernel_config: LIBS += ${DUMPKERNELCONFIGLIB}
-${BUILD}/utility/dump_kernel_config: ${DUMPKERNELCONFIGLIB}
 
 # GBB utility needs C++ linker. TODO: It shouldn't.
 ${BUILD}/utility/gbb_utility: LD = ${CXX}
@@ -917,15 +857,6 @@ ${BUILD}/tests/vboot_audio_tests: OBJS += \
 	${BUILD}/firmware/lib/vboot_audio_for_test.o
 ${BUILD}/tests/vboot_audio_tests: \
 	${BUILD}/firmware/lib/vboot_audio_for_test.o
-
-.PHONY: cgptmanager_tests
-cgptmanager_tests: ${BUILD}/tests/CgptManagerTests
-
-${BUILD}/tests/CgptManagerTests: CFLAGS += ${PC_CFLAGS}
-${BUILD}/tests/CgptManagerTests: LD = ${CXX}
-${BUILD}/tests/CgptManagerTests: LDLIBS += -lgtest -lgflags ${PC_LDLIBS}
-${BUILD}/tests/CgptManagerTests: LIBS = ${AU_CGPTLIB}
-${BUILD}/tests/CgptManagerTests: ${AU_CGPTLIB}
 
 ${BUILD}/tests/rollback_index_test: INCLUDES += -I/usr/include
 ${BUILD}/tests/rollback_index_test: LIBS += -ltlcl
@@ -988,10 +919,6 @@ runbmptests: test_setup
 .PHONY: runcgpttests
 runcgpttests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/cgptlib_test
-# HEY - elsewhere
-ifneq (${IN_CHROOT},)
-	${RUNTEST} ${BUILD_RUN}/tests/CgptManagerTests --v=1
-endif
 
 .PHONY: runtestscripts
 runtestscripts: test_setup genfuzztestcases
