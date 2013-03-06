@@ -138,8 +138,8 @@ ifeq (${DISABLE_NDEBUG},)
 CFLAGS += -DNDEBUG
 endif
 
-ifneq (${WITH_LOGGING},)
-CFLAGS += -DWITH_LOGGING
+ifneq (${FORCE_LOGGING_ON},)
+CFLAGS += -DFORCE_LOGGING_ON=${FORCE_LOGGING_ON}
 endif
 
 # Create / use dependency files

@@ -20,10 +20,12 @@
 #define MYNAME "futility"
 #define SUBDIR "old_bins"
 
-/* HEY: FIXME: Hardcoding logs on for now. Delete these lines for real use. */
-#ifndef WITH_LOGGING
-#define WITH_LOGGING
-#endif
+/* File to use for logging, if present */
+#define LOGFILE "/tmp/futility.log"
+
+/* Normally logging will only happen if the logfile already exists. Uncomment
+ * this to force log file creation (and thus logging) always. */
+/* #define FORCE_LOGGING_ON */
 
 /******************************************************************************/
 
@@ -72,11 +74,8 @@ static int help(int argc, char *argv[])
 DECLARE_FUTIL_COMMAND(help, help, "Show a bit of help");
 
 
-#ifdef WITH_LOGGING
 /******************************************************************************/
 /* Logging stuff */
-
-#define LOGFILE "/tmp/futility.log"
 
 static int log_fd = -1;
 
@@ -127,7 +126,11 @@ static void log_open(void)
   struct flock lock;
   int ret;
 
+#ifdef FORCE_LOGGING_ON
   log_fd = open(LOGFILE, O_WRONLY|O_APPEND|O_CREAT, 0666);
+#else
+  log_fd = open(LOGFILE, O_WRONLY|O_APPEND);
+#endif
   if (log_fd < 0) {
 
     if (errno != EACCES)
@@ -182,9 +185,6 @@ static void log_args(int argc, char *argv[])
 
   log_close();
 }
-#else
-#define log_args(...)
-#endif /* WITH_LOGGING */
 
 
 /******************************************************************************/
