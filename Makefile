@@ -43,19 +43,23 @@ export BUILD
 # Stuff for 'make install'
 INSTALL = install
 DESTDIR = /usr/local/bin
-OLDDIR = /old_bins
+OLDDIR = old_bins
 
+# Where exactly do the pieces go?
+#  FT_DIR = futility target directory - where it will be on the target
+#  F_DIR  = futility install directory - where it gets put right now
+#  UB_DIR = userspace binary directory for futility's exec() targets
+#  VB_DIR = target vboot directory - for dev-mode-only helpers, keys, etc.
 ifeq (${MINIMAL},)
 # Host install just puts everything in one place
 FT_DIR=${DESTDIR}
 F_DIR=${DESTDIR}
-UB_DIR=${DESTDIR}${OLDDIR}
+UB_DIR=${DESTDIR}/${OLDDIR}
 else
 # Target install puts things into DESTDIR subdirectories
 FT_DIR=/usr/bin
 F_DIR=${DESTDIR}${FT_DIR}
-UB_DIR=${F_DIR}${OLDDIR}
-SB_DIR=${DESTDIR}/sbin
+UB_DIR=${F_DIR}/${OLDDIR}
 VB_DIR=${DESTDIR}/usr/share/vboot/bin
 endif
 
@@ -128,6 +132,10 @@ else
 # FIRMWARE_ARCH not defined; assuming local compile.
 CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT -Wall -Werror # HEY: always want last two?
+endif
+
+ifneq (${OLDDIR},)
+CFLAGS += -DOLDDIR=${OLDDIR}
 endif
 
 ifneq (${DEBUG},)

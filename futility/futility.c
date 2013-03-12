@@ -18,7 +18,13 @@
 #include "futility.h"
 
 #define MYNAME "futility"
+#ifdef OLDDIR
+#define XSTR(A) STR(A)
+#define STR(A) #A
+#define SUBDIR XSTR(OLDDIR)
+#else
 #define SUBDIR "old_bins"
+#endif
 
 /* File to use for logging, if present */
 #define LOGFILE "/tmp/futility.log"
@@ -41,8 +47,8 @@ do one of two things: either it will fully implement the original\n\
 behavior, or (until that functionality is complete) it will just exec\n\
 the original binary.\n\
 \n\
-In either case it may also record some usage information in /tmp to\n\
-help improve coverage and correctness.\n\
+In either case it can append some usage information to " LOGFILE "\n\
+to help improve coverage and correctness.\n\
 \n\
 If you invoke it directly instead of via a symlink, it requires one\n\
 argument, which is the name of the old binary to exec. That binary\n\
@@ -97,7 +103,7 @@ static void log_str(char *str)
   }
 
   for (done = 0; done < len; done += n) {
-    n = write(log_fd, str+done, len-done);
+    n = write(log_fd, str + done, len - done);
     if (n < 0)
       return;
   }
@@ -156,13 +162,17 @@ static void log_open(void)
     log_close();
 }
 
+#define CALLER_PREFIX "CALLER:"
 static void log_args(int argc, char *argv[])
 {
   int i;
   ssize_t r;
   pid_t parent;
   char buf[80];
-  char truename[PATH_MAX+10];
+  char str_caller[PATH_MAX + sizeof(CALLER_PREFIX)] = CALLER_PREFIX;
+  char *truename = str_caller + sizeof(CALLER_PREFIX) - 1;
+  /* Note: truename starts on the \0 from CALLER_PREFIX, so we can write
+   * PATH_MAX chars into truename and still append a \0 at the end. */
 
   log_open();
 
@@ -171,12 +181,11 @@ static void log_args(int argc, char *argv[])
 
   /* Can we tell who called us? */
   parent = getppid();
-  snprintf(buf, 80, "/proc/%d/exe", parent);
-  strncat(truename, "CALLER:", 7);
-  r = readlink(buf, truename+7, PATH_MAX-1);
+  snprintf(buf, sizeof(buf), "/proc/%d/exe", parent);
+  r = readlink(buf, truename, PATH_MAX);
   if (r >= 0) {
-    truename[r+7] = '\0';
-    log_str(truename);
+    truename[r] = '\0';
+    log_str(str_caller);
   }
 
   /* Now log the stuff about ourselves */
@@ -238,13 +247,20 @@ int main(int argc, char *argv[], char *envp[])
 
   /* The old binaries live under the true executable. Find out where that is. */
   myproc = getpid();
-  snprintf(buf, 80, "/proc/%d/exe", myproc);
-  r = readlink(buf, truename, PATH_MAX-1);
+  snprintf(buf, sizeof(buf), "/proc/%d/exe", myproc);
+  r = readlink(buf, truename, PATH_MAX - 1);
   if (r < 0) {
     fprintf(stderr, "%s is lost: %s => %s: %s\n", MYNAME, argv[0],
             buf, strerror(errno));
     exit(1);
+  } else if (r == PATH_MAX - 1) {
+    /* Yes, it might _just_ fit, but we'll count that as wrong anyway. We can't
+     * determine the right size using the example in the readlink manpage,
+     * because the /proc symlink returns an st_size of 0. */
+    fprintf(stderr, "%s is too long: %s => %s\n", MYNAME, argv[0], buf);
+    exit(1);
   }
+
   truename[r] = '\0';
   s = strrchr(truename, '/');           /* Find the true directory */
   if (s) {
@@ -253,9 +269,12 @@ int main(int argc, char *argv[], char *envp[])
     fprintf(stderr, "%s says %s doesn't make sense\n", MYNAME, truename);
     exit(1);
   }
-  /* We've allocated PATH_MAX. If the old binary path doesn't fit, it can't be
-   * in the filesystem. */
-  snprintf(oldname, PATH_MAX, "%s/%s/%s", truename, SUBDIR, progname);
+  /* If the old binary path doesn't fit, just give up. */
+  r = snprintf(oldname, PATH_MAX, "%s/%s/%s", truename, SUBDIR, progname);
+  if (r >= PATH_MAX) {
+    fprintf(stderr, "%s/%s/%s is too long\n", truename, SUBDIR, progname);
+    exit(1);
+  }
 
   fflush(0);
   execve(oldname, argv, envp);

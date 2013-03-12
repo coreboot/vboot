@@ -11,21 +11,22 @@ COL_BLUE='\E[34;1m'
 COL_STOP='\E[0;m'
 
 # args: [message]
-function green {
+green() {
   echo -e "${COL_GREEN}$*${COL_STOP}"
 }
 
 # args: [message]
-function yellow {
+yellow() {
   echo -e "${COL_YELLOW}WARNING: $*${COL_STOP}"
 }
 
-function red {
+# args: [message]
+red() {
   echo -e "${COL_RED}$*${COL_STOP}"
 }
 
-# args: [nested level [message]]
-function error {
+# args: [nested level] [message]
+error() {
   local lev=${1:-}
   case "${1:-}" in
     [0-9]*)
@@ -36,11 +37,11 @@ function error {
       ;;
   esac
   local x=$(caller $lev)
-  local cline=${x%% *}
-  local cfunc=${x#* }
-  cfunc=${cfunc##*/}
+  local cline="${x%% *}"
+  local cfile="${x#* }"
+  cfile="${cfile##*/}"
   local args="$*"
-  local spacer=${args:+: }
-  red "at ${cfunc}, line ${cline}${spacer}${args}" 1>&2
+  local spacer="${args:+: }"
+  red "at ${cfile}, line ${cline}${spacer}${args}" 1>&2
   exit 1
 }
