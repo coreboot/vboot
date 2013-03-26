@@ -151,12 +151,12 @@ void EntryDetails(GptEntry *entry, uint32_t index, int raw) {
 }
 
 
-void EntriesDetails(GptData *gpt, const int secondary, int raw) {
+void EntriesDetails(struct drive *drive, const int secondary, int raw) {
   uint32_t i;
 
-  for (i = 0; i < GetNumberOfEntries(gpt); ++i) {
+  for (i = 0; i < GetNumberOfEntries(drive); ++i) {
     GptEntry *entry;
-    entry = GetEntry(gpt, secondary, i);
+    entry = GetEntry(&drive->gpt, secondary, i);
 
     if (IsZero(&entry->type))
       continue;
@@ -184,7 +184,7 @@ int cgpt_get_num_non_empty_partitions(CgptShowParams *params) {
   }
 
   params->num_partitions = 0;
-  int numEntries = GetNumberOfEntries(&drive.gpt);
+  int numEntries = GetNumberOfEntries(&drive);
   int i;
   for(i = 0; i < numEntries; i++) {
       GptEntry *entry = GetEntry(&drive.gpt, ANY_VALID, i);
@@ -219,7 +219,7 @@ int cgpt_show(CgptShowParams *params) {
 
   if (params->partition) {                      // show single partition
 
-    if (params->partition > GetNumberOfEntries(&drive.gpt)) {
+    if (params->partition > GetNumberOfEntries(&drive)) {
       Error("invalid partition number: %d\n", params->partition);
       return CGPT_FAILED;
     }
@@ -250,13 +250,13 @@ int cgpt_show(CgptShowParams *params) {
         printf("%s\n", buf);
         break;
       case 'S':
-        printf("%d\n", GetSuccessful(&drive.gpt, ANY_VALID, index));
+        printf("%d\n", GetSuccessful(&drive, ANY_VALID, index));
         break;
       case 'T':
-        printf("%d\n", GetTries(&drive.gpt, ANY_VALID, index));
+        printf("%d\n", GetTries(&drive, ANY_VALID, index));
         break;
       case 'P':
-        printf("%d\n", GetPriority(&drive.gpt, ANY_VALID, index));
+        printf("%d\n", GetPriority(&drive, ANY_VALID, index));
         break;
       case 'A':
         printf("0x%x\n", entry->attrs.fields.gpt_att);
@@ -272,7 +272,7 @@ int cgpt_show(CgptShowParams *params) {
     GptEntry *entry;
     char type[GUID_STRLEN];
 
-    for (i = 0; i < GetNumberOfEntries(&drive.gpt); ++i) {
+    for (i = 0; i < GetNumberOfEntries(&drive); ++i) {
       entry = GetEntry(&drive.gpt, ANY_VALID, i);
 
       if (IsZero(&entry->type))
@@ -325,7 +325,7 @@ int cgpt_show(CgptShowParams *params) {
 
     if (params->debug ||
         (drive.gpt.valid_entries & MASK_PRIMARY))
-      EntriesDetails(&drive.gpt, PRIMARY, params->numeric);
+      EntriesDetails(&drive, PRIMARY, params->numeric);
 
     /****************************** Secondary *************************/
     printf(GPT_FMT, (int)(drive.gpt.drive_sectors - GPT_HEADER_SECTOR -
@@ -343,7 +343,7 @@ int cgpt_show(CgptShowParams *params) {
          (!(drive.gpt.valid_entries & MASK_PRIMARY) ||
           memcmp(drive.gpt.primary_entries, drive.gpt.secondary_entries,
                  TOTAL_ENTRIES_SIZE)))) {
-      EntriesDetails(&drive.gpt, SECONDARY, params->numeric);
+      EntriesDetails(&drive, SECONDARY, params->numeric);
     }
 
     if (drive.gpt.valid_headers & MASK_SECONDARY)

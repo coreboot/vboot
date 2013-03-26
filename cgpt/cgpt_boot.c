@@ -40,7 +40,7 @@ int cgpt_get_boot_partition_number(CgptBootParams *params) {
   char buf[GUID_STRLEN];
   GuidToStr(&drive.pmbr.boot_guid, buf, sizeof(buf));
 
-  int numEntries = GetNumberOfEntries(&drive.gpt);
+  int numEntries = GetNumberOfEntries(&drive);
   int i;
   for(i = 0; i < numEntries; i++) {
       GptEntry *entry = GetEntry(&drive.gpt, ANY_VALID, i);
@@ -110,7 +110,7 @@ int cgpt_boot(CgptBootParams *params) {
       goto done;
     }
 
-    if (params->partition > GetNumberOfEntries(&drive.gpt)) {
+    if (params->partition > GetNumberOfEntries(&drive)) {
       Error("invalid partition number: %d\n", params->partition);
       goto done;
     }

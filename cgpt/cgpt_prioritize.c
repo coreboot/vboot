@@ -98,7 +98,6 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
   int priority;
 
   int gpt_retval;
-  GptEntry *entry;
   uint32_t index;
   uint32_t max_part;
   int num_kernels;
@@ -117,7 +116,7 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
     return CGPT_FAILED;
   }
 
-  max_part = GetNumberOfEntries(&drive.gpt);
+  max_part = GetNumberOfEntries(&drive);
 
   if (params->set_partition) {
     if (params->set_partition < 1 || params->set_partition > max_part) {
@@ -127,8 +126,7 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
     }
     index = params->set_partition - 1;
     // it must be a kernel
-    entry = GetEntry(&drive.gpt, PRIMARY, index);
-    if (!GuidEqual(&entry->type, &guid_chromeos_kernel)) {
+    if (!IsKernel(&drive, PRIMARY, index)) {
       Error("partition %d is not a ChromeOS kernel\n", params->set_partition);
       goto bad;
     }
@@ -137,8 +135,7 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
   // How many kernel partitions do I have?
   num_kernels = 0;
   for (i = 0; i < max_part; i++) {
-    entry = GetEntry(&drive.gpt, PRIMARY, i);
-    if (GuidEqual(&entry->type, &guid_chromeos_kernel))
+    if (IsKernel(&drive, PRIMARY, i))
       num_kernels++;
   }
 
@@ -146,11 +143,10 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
     // Determine the current priority groups
     groups = NewGroupList(num_kernels);
     for (i = 0; i < max_part; i++) {
-      entry = GetEntry(&drive.gpt, PRIMARY, i);
-      if (!GuidEqual(&entry->type, &guid_chromeos_kernel))
+      if (!IsKernel(&drive, PRIMARY, i))
         continue;
 
-      priority = GetPriority(&drive.gpt, PRIMARY, i);
+      priority = GetPriority(&drive, PRIMARY, i);
 
       // Is this partition special?
       if (params->set_partition && (i+1 == params->set_partition)) {
@@ -195,19 +191,14 @@ int cgpt_prioritize(CgptPrioritizeParams *params) {
     // Now apply the ranking to the GPT
     for (i=0; i<groups->num_groups; i++)
       for (j=0; j<groups->group[i].num_parts; j++)
-        SetPriority(&drive.gpt, PRIMARY,
+        SetPriority(&drive, PRIMARY,
                     groups->group[i].part[j], groups->group[i].priority);
 
     FreeGroups(groups);
   }
 
   // Write it all out
-  RepairEntries(&drive.gpt, MASK_PRIMARY);
-  RepairHeader(&drive.gpt, MASK_PRIMARY);
-
-  drive.gpt.modified |= (GPT_MODIFIED_HEADER1 | GPT_MODIFIED_ENTRIES1 |
-                         GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES2);
-  UpdateCrc(&drive.gpt);
+  UpdateAllEntries(&drive);
 
   return DriveClose(&drive, 1);
 
