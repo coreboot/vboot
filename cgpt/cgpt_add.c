@@ -64,9 +64,9 @@ static const char* DumpCgptAddParams(const CgptAddParams *params) {
 }
 
 // This is the implementation-specific helper function.
-static int gpt_set_entry_attributes(struct drive *drive,
-                                    uint32_t index,
-                                    CgptAddParams *params) {
+static int GptSetEntryAttributes(struct drive *drive,
+                                 uint32_t index,
+                                 CgptAddParams *params) {
   GptEntry *entry;
 
   entry = GetEntry(&drive->gpt, PRIMARY, index);
@@ -95,11 +95,27 @@ static int gpt_set_entry_attributes(struct drive *drive,
   return 0;
 }
 
+static int MtdSetEntryAttributes(struct drive *drive,
+                                 uint32_t index,
+                                 CgptAddParams *params) {
+  MtdDiskPartition *entry;
+
+  entry = MtdGetEntry(&drive->mtd, PRIMARY, index);
+  if (params->set_begin)
+    entry->starting_lba = params->begin;
+  if (params->set_size)
+    entry->ending_lba = entry->starting_lba + params->size - 1;
+  if (params->set_type)
+    MtdSetEntryType(entry, LookupMtdTypeForGuid(&params->type_guid));
+
+  return 0;
+}
+
 // This is an internal helper function which assumes no NULL args are passed.
 // It sets the given attribute values for a single entry at the given index.
-static int set_entry_attributes(struct drive *drive,
-                                uint32_t index,
-                                CgptAddParams *params) {
+static int SetEntryAttributes(struct drive *drive,
+                              uint32_t index,
+                              CgptAddParams *params) {
   if (params->set_raw) {
     SetRaw(drive, PRIMARY, index, params->raw_value);
   } else {
@@ -126,25 +142,32 @@ static int set_entry_attributes(struct drive *drive,
   return 0;
 }
 
-static int cgpt_check_add_validity(struct drive *drive) {
-  int gpt_retval;
-  if (GPT_SUCCESS != (gpt_retval = GptSanityCheck(&drive->gpt))) {
-    Error("GptSanityCheck() returned %d: %s\n",
-          gpt_retval, GptError(gpt_retval));
-    return -1;
-  }
+static int CgptCheckAddValidity(struct drive *drive) {
+  if (drive->is_mtd) {
+    if (drive->mtd.primary.crc32 != MtdHeaderCrc(&drive->mtd.primary)) {
+      Error("MTD header CRC is invalid\n");
+      return -1;
+    }
+  } else {
+    int gpt_retval;
+    if (GPT_SUCCESS != (gpt_retval = GptSanityCheck(&drive->gpt))) {
+      Error("GptSanityCheck() returned %d: %s\n",
+            gpt_retval, GptError(gpt_retval));
+      return -1;
+    }
 
-  if (((drive->gpt.valid_headers & MASK_BOTH) != MASK_BOTH) ||
-      ((drive->gpt.valid_entries & MASK_BOTH) != MASK_BOTH)) {
-    Error("one of the GPT header/entries is invalid.\n"
-          "please run 'cgpt repair' before adding anything.\n");
-    return -1;
+    if (((drive->gpt.valid_headers & MASK_BOTH) != MASK_BOTH) ||
+        ((drive->gpt.valid_entries & MASK_BOTH) != MASK_BOTH)) {
+      Error("one of the GPT header/entries is invalid.\n"
+            "please run 'cgpt repair' before adding anything.\n");
+      return -1;
+    }
   }
   return 0;
 }
 
-static int cgpt_get_unused_partition(struct drive *drive, uint32_t *index,
-                                     CgptAddParams *params) {
+static int CgptGetUnusedPartition(struct drive *drive, uint32_t *index,
+                                  CgptAddParams *params) {
   uint32_t i;
   uint32_t max_part = GetNumberOfEntries(drive);
   if (params->partition) {
@@ -168,12 +191,55 @@ static int cgpt_get_unused_partition(struct drive *drive, uint32_t *index,
   }
 }
 
+int GptAdd(struct drive *drive, CgptAddParams *params, uint32_t index) {
+  GptEntry *entry, backup;
+  int rv;
+
+  entry = GetEntry(&drive->gpt, PRIMARY, index);
+  memcpy(&backup, entry, sizeof(backup));
+
+  if (SetEntryAttributes(drive, index, params) ||
+      GptSetEntryAttributes(drive, index, params)) {
+    memcpy(entry, &backup, sizeof(*entry));
+    return -1;
+  }
+
+  UpdateAllEntries(drive);
+
+  rv = CheckEntries((GptEntry*)drive->gpt.primary_entries,
+                    (GptHeader*)drive->gpt.primary_header);
+
+  if (0 != rv) {
+    // If the modified entry is illegal, recover it and return error.
+    memcpy(entry, &backup, sizeof(*entry));
+    Error("%s\n", GptErrorText(rv));
+    Error(DumpCgptAddParams(params));
+    return -1;
+  }
+
+  return 0;
+}
+
+int MtdAdd(struct drive *drive, CgptAddParams *params, uint32_t index) {
+  MtdDiskPartition *entry, backup;
+  entry = MtdGetEntry(&drive->mtd, PRIMARY, index);
+  memcpy(&backup, entry, sizeof(backup));
+
+  if (SetEntryAttributes(drive, index, params) ||
+      MtdSetEntryAttributes(drive, index, params)) {
+    memcpy(entry, &backup, sizeof(*entry));
+    return -1;
+  }
+
+  UpdateAllEntries(drive);
+
+  return 0;
+}
+
+
 int cgpt_add(CgptAddParams *params) {
   struct drive drive;
-
-  GptEntry *entry, backup;
   uint32_t index;
-  int rv;
 
   if (params == NULL)
     return CGPT_FAILED;
@@ -181,34 +247,20 @@ int cgpt_add(CgptAddParams *params) {
   if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
     return CGPT_FAILED;
 
-  if (cgpt_check_add_validity(&drive)) {
+  if (CgptCheckAddValidity(&drive)) {
     goto bad;
   }
 
-  if (cgpt_get_unused_partition(&drive, &index, params)) {
+  if (CgptGetUnusedPartition(&drive, &index, params)) {
     goto bad;
   }
 
-  entry = GetEntry(&drive.gpt, PRIMARY, index);
-  memcpy(&backup, entry, sizeof(backup));
-
-  if (set_entry_attributes(&drive, index, params) ||
-      gpt_set_entry_attributes(&drive, index, params)) {
-    memcpy(entry, &backup, sizeof(*entry));
-    goto bad;
-  }
-
-  UpdateAllEntries(&drive);
-
-  rv = CheckEntries((GptEntry*)drive.gpt.primary_entries,
-                    (GptHeader*)drive.gpt.primary_header);
-
-  if (0 != rv) {
-    // If the modified entry is illegal, recover it and return error.
-    memcpy(entry, &backup, sizeof(*entry));
-    Error("%s\n", GptErrorText(rv));
-    Error(DumpCgptAddParams(params));
-    goto bad;
+  if (drive.is_mtd) {
+    if (MtdAdd(&drive, params, index))
+      goto bad;
+  } else {
+    if (GptAdd(&drive, params, index))
+      goto bad;
   }
 
   // Write it all out.
