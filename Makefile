@@ -626,10 +626,12 @@ ${FWLIB_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 # CFLAGS += -DTPM_MANUAL_SELFTEST
 
-ifeq (${FIRMWARE_ARCH},i386)
+ifneq (${FIRMWARE_ARCH},)
 # Unrolling loops in cryptolib makes it faster
 ${FWLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
+endif
 
+ifeq (${FIRMWARE_ARCH},i386)
 # Workaround for coreboot on x86, which will power off asynchronously
 # without giving us a chance to react. This is not an example of the Right
 # Way to do things. See chrome-os-partner:7689, and the commit message
