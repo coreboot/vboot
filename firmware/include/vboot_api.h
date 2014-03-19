@@ -644,6 +644,8 @@ enum VbScreenType_t {
 	VB_SCREEN_WAIT              = 0x206,
 	/* Confirm after DEVELOPER_TO_NORM */
 	VB_SCREEN_TO_NORM_CONFIRMED = 0x207,
+        /* Prompt when wrong AC adpater is connected. */
+        VB_SCREEN_WRONG_ADAPTER     = 0x300,
 };
 
 /**
