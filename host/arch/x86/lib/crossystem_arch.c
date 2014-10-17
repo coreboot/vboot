@@ -625,6 +625,7 @@ struct GpioChipset {
   const char *name;
   int (*ChipOffsetAndGpioNumber)(unsigned *gpio_num, unsigned *chip_offset,
                                  const char *name);
+  const char *label;
 };
 
 static const struct GpioChipset chipsets_supported[] = {
@@ -632,8 +633,12 @@ static const struct GpioChipset chipsets_supported[] = {
   { "CougarPoint", FindGpioChipOffset },
   { "PantherPoint", FindGpioChipOffset },
   { "LynxPoint", FindGpioChipOffset },
-  { "PCH-LP", FindGpioChipOffset },
-  { "INT3437:00", FindGpioChipOffsetByLabel },
+  /*
+   * FIXME(crosbug.com/p/33098): Remove this label hack once Samus
+   * firmware can be updated to pass the proper name in ACPI tables.
+   */
+  { "PCH-LP", FindGpioChipOffsetByLabel, "INT3437:00" },
+  { "INT3437:00", FindGpioChipOffsetByLabel, "INT3437:00" },
   { "BayTrail", BayTrailFindGpioChipOffset },
   { NULL },
 };
@@ -693,7 +698,7 @@ static int ReadGpio(unsigned signal_type) {
 
   /* Modify GPIO number by driver's offset */
   if (!chipset->ChipOffsetAndGpioNumber(&controller_num, &controller_offset,
-                                        chipset->name))
+                                        chipset->label))
     return -1;
   controller_offset += controller_num;
 
