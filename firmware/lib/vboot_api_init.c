@@ -301,13 +301,7 @@ VbError_t VbInit(VbCommonParams *cparams, VbInitParams *iparams)
 		if ((iparams->flags & VB_INIT_FLAG_OPROM_MATTERS) &&
 		    !(iparams->flags & VB_INIT_FLAG_OPROM_LOADED)) {
 			VbNvSet(&vnc, VBNV_OPROM_NEEDED, 1);
-			/*
-			 * If not using RO_NORMAL mode then VbInit() is being
-			 * run from within firmware and can still respond to
-			 * the VbNV flag and does not need a reboot here.
-			 */
-			if (iparams->flags & VB_INIT_FLAG_RO_NORMAL_SUPPORT)
-				retval = VBERROR_VGA_OPROM_MISMATCH;
+			retval = VBERROR_VGA_OPROM_MISMATCH;
 			VBDEBUG(("VbInit() needs oprom, doesn't have it\n"));
 		}
 
