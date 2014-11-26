@@ -12,9 +12,8 @@
 #include "utility.h"
 #include "vboot_api.h"
 
-/* TPM PCRs to use for storing boot mode measurements. */
+/* TPM PCR to use for storing boot mode measurements. */
 #define BOOT_MODE_PCR 0
-#define HWID_DIGEST_PCR 1
 
 /*
  * Input digests for PCR extend.
@@ -135,10 +134,9 @@ static int GetBootStateIndex(int dev_mode, int rec_mode,
 }
 
 uint32_t SetTPMBootModeState(int developer_mode, int recovery_mode,
-			     uint64_t fw_keyblock_flags,
-			     GoogleBinaryBlockHeader *gbb)
+                             uint64_t fw_keyblock_flags)
 {
-	uint32_t result0, result1 = 0;
+	uint32_t result;
 	const uint8_t *in_digest = NULL;
 	uint8_t out_digest[20];  /* For PCR extend output. */
 	int digest_index = GetBootStateIndex(developer_mode, recovery_mode,
@@ -152,18 +150,9 @@ uint32_t SetTPMBootModeState(int developer_mode, int recovery_mode,
 		in_digest = kBootInvalidSHA1Digest;
 	}
 
-	result0 = TlclExtend(BOOT_MODE_PCR, in_digest, out_digest);
-	VBDEBUG(("TPM: SetTPMBootModeState boot mode PCR%d result %d\n",
-		 BOOT_MODE_PCR, result0));
-
-	/* Extend the HWID Digest into PCR1 (GBB v1.2 and later only) */
-	if (gbb && gbb->minor_version >= 2) {
-		result1 = TlclExtend(HWID_DIGEST_PCR, gbb->hwid_digest,
-				     out_digest);
-		VBDEBUG(("TPM: SetTPMBootModeState HWID PCR%d result %d\n",
-			 HWID_DIGEST_PCR, result1));
-	}
-
-	/* The caller only looks for nonzero results, not error codes. */
-	return result0 || result1;
+	result = TlclExtend(BOOT_MODE_PCR, in_digest, out_digest);
+	VBDEBUG(("TPM: SetTPMBootModeState boot mode PCR out_digest "
+		 "%02x %02x %02x %02x\n",
+		 out_digest[0], out_digest[1], out_digest[2], out_digest[3]));
+	return result;
 }

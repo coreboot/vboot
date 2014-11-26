@@ -116,8 +116,7 @@ static void ResetMocks(void) {
 /* Mocked verification functions */
 
 uint32_t SetTPMBootModeState(int developer_mode, int recovery_mode,
-			     uint64_t fw_keyblock_flags
-			     GoogleBinaryBlockHeader *gbb) {
+                             uint64_t fw_keyblock_flags) {
   return VBERROR_SUCCESS;
 }
 
