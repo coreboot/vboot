@@ -26,8 +26,7 @@
  * return default values for those fields.
  */
 #define GBB_MAJOR_VER      1
-#define GBB_MINOR_VER      2
-/* v1.2 - added field to hold sha256 digest of the HWID */
+#define GBB_MINOR_VER      1
 
 /* Maximum length of a HWID in bytes, counting terminating null. */
 #define GBB_HWID_MAX_SIZE  256
@@ -89,10 +88,8 @@ typedef struct GoogleBinaryBlockHeader
 	uint32_t bmpfv_size;
 	uint32_t recovery_key_offset;	/* Recovery key */
 	uint32_t recovery_key_size;
-	/* Added in version 1.2 */
-	uint8_t  hwid_digest[32];	/* sha256 */
 
-	uint8_t  pad[48]; /* To match GBB_HEADER_SIZE.  Initialize to 0. */
+	uint8_t  pad[80]; /* To match GBB_HEADER_SIZE.  Initialize to 0. */
 } __attribute__((packed)) GoogleBinaryBlockHeader;
 
 #ifdef __cplusplus
