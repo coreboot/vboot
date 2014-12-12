@@ -42,6 +42,23 @@ static void VbSetRecoveryRequest(uint32_t recovery_request)
 }
 
 /**
+ * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
+ * determine if a shutdown is required.
+ *
+ * Returns true if a shutdown is required and false if no shutdown is required.
+ */
+static int VbWantShutdown(uint32_t gbb_flags)
+{
+	uint32_t shutdown_request = VbExIsShutdownRequested();
+
+	/* If desired, ignore shutdown request due to lid closure. */
+	if (gbb_flags & GBB_FLAG_DISABLE_LID_SHUTDOWN)
+		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
+
+	return !!shutdown_request;
+}
+
+/**
  * Attempt loading a kernel from the specified type(s) of disks.
  *
  * If successful, sets p->disk_handle to the disk for the kernel and returns
@@ -138,7 +155,7 @@ int VbUserConfirms(VbCommonParams *cparams, int space_means_no)
 
 	/* Await further instructions */
 	while (1) {
-		if (VbExIsShutdownRequested())
+		if (VbWantShutdown(cparams->gbb->flags))
 			return -1;
 		key = VbExKeyboardRead();
 		switch (key) {
@@ -203,7 +220,7 @@ VbError_t VbBootDeveloper(VbCommonParams *cparams, LoadKernelParams *p)
 	do {
 		uint32_t key;
 
-		if (VbExIsShutdownRequested()) {
+		if (VbWantShutdown(gbb->flags)) {
 			VBDEBUG(("VbBootDeveloper() - shutdown requested!\n"));
 			VbAudioClose(audio);
 			return VBERROR_SHUTDOWN_REQUESTED;
@@ -457,7 +474,7 @@ VbError_t VbBootRecovery(VbCommonParams *cparams, LoadKernelParams *p)
 			for (i = 0; i < REC_DISK_DELAY; i += REC_KEY_DELAY) {
 				VbCheckDisplayKey(cparams, VbExKeyboardRead(),
 						  &vnc);
-				if (VbExIsShutdownRequested())
+				if (VbWantShutdown(cparams->gbb->flags))
 					return VBERROR_SHUTDOWN_REQUESTED;
 				VbExSleepMs(REC_KEY_DELAY);
 			}
@@ -536,7 +553,7 @@ VbError_t VbBootRecovery(VbCommonParams *cparams, LoadKernelParams *p)
 			} else {
 				VbCheckDisplayKey(cparams, key, &vnc);
 			}
-			if (VbExIsShutdownRequested())
+			if (VbWantShutdown(cparams->gbb->flags))
 				return VBERROR_SHUTDOWN_REQUESTED;
 			VbExSleepMs(REC_KEY_DELAY);
 		}
