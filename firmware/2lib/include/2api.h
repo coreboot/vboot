@@ -21,6 +21,8 @@
 #define VBOOT_2_API_H_
 #include <stdint.h>
 
+#include "2common.h"
+#include "2crypto.h"
 #include "2fw_hash_tags.h"
 #include "2guid.h"
 #include "2recovery_reasons.h"
