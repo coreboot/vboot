@@ -175,7 +175,7 @@ endif
 
 # And a few more default utilities
 LD = ${CC}
-CXX ?= g++ # HEY: really?
+CXX ?= g++
 PKG_CONFIG ?= pkg-config
 
 # Determine QEMU architecture needed, if any
@@ -291,6 +291,7 @@ FWLIB2_SRCS = \
 	firmware/2lib/2sha256.c \
 	firmware/2lib/2sha512.c \
 	firmware/2lib/2sha_utility.c \
+	firmware/2lib/2tpm_bootmode.c
 
 # Support real TPM unless BIOS sets MOCK_TPM
 ifeq (${MOCK_TPM},)
