@@ -59,9 +59,6 @@ usage() {
 }
 
 main() {
-    echo "Sorry, $0 is disabled on this factory branch."
-    exit 0
-
     # We want to catch all the discrepancies, not just the first one.
     # So, any time we find one, we set testfail=1 and continue.
     # When finished we will use testfail to determine our exit value.
