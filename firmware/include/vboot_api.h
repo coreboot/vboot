@@ -735,6 +735,10 @@ enum VbScreenType_t {
 	VB_SCREEN_WAIT              = 0x206,
 	/* Confirm after DEVELOPER_TO_NORM */
 	VB_SCREEN_TO_NORM_CONFIRMED = 0x207,
+	/* Fastboot menu */
+	VB_SCREEN_FASTBOOT_MENU = 0x301,
+	/* Fastboot mode */
+	VB_SCREEN_FASTBOOT_MODE = 0x302,
 };
 
 /**
