@@ -97,6 +97,7 @@ const Param sys_param_list[] = {
   {"wipeout_request", CAN_WRITE, "Firmware requested factory reset (wipeout)"},
   {"wpsw_boot", 0, "Firmware write protect hardware switch position at boot"},
   {"wpsw_cur", 0, "Firmware write protect hardware switch current position"},
+  {"fastboot_unlock_in_fw", CAN_WRITE, "Firmware allow fastboot unlock"},
   /* Terminate with null name */
   {NULL, 0, NULL}
 };
