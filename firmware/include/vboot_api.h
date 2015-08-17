@@ -717,6 +717,8 @@ void VbExStreamClose(VbExStream_t stream);
 enum VbScreenType_t {
 	/* Blank (clear) screen */
 	VB_SCREEN_BLANK = 0,
+	/* Splash Screen */
+	VB_SCREEN_SPLASH = 1,
 	/* Developer - warning */
 	VB_SCREEN_DEVELOPER_WARNING = 0x101,
 	/* Developer - easter egg */
