@@ -741,6 +741,10 @@ enum VbScreenType_t {
 	VB_SCREEN_FASTBOOT_MENU = 0x301,
 	/* Fastboot mode */
 	VB_SCREEN_FASTBOOT_MODE = 0x302,
+	/* Fastboot OEM lock confirmation */
+	VB_SCREEN_OEM_LOCK_CONFIRM = 0x303,
+	/* Fastboot OEM unlock confirmation */
+	VB_SCREEN_OEM_UNLOCK_CONFIRM = 0x304,
 };
 
 /**
