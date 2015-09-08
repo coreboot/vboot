@@ -586,8 +586,6 @@ static void VbInitTestBackup(void)
 	TEST_EQ(u, 0, "  NV dev_boot_signed_only");
 	VbNvGet(&vnc, VBNV_DEV_BOOT_FASTBOOT_FULL_CAP, &u);
 	TEST_EQ(u, 0, "  NV dev_boot_fastboot_full_cap");
-	VbNvGet(&vnc, VBNV_FASTBOOT_UNLOCK_IN_FW, &u);
-	TEST_EQ(u, 0, "  NV_fastboot_unlock_in_fw ");
 	/* So we should have written the backup */
 	TEST_EQ(backup_write_called, 1, "  Backup written once");
 	/* And the backup should reflect the persisent flags. */
@@ -605,8 +603,6 @@ static void VbInitTestBackup(void)
 	TEST_EQ(u, 0, "  BU dev_boot_signed_only");
 	VbNvGet(&tmp_vnc, VBNV_DEV_BOOT_FASTBOOT_FULL_CAP, &u);
 	TEST_EQ(u, 0, "  BU dev_boot_fastboot_full_cap");
-	VbNvGet(&tmp_vnc, VBNV_FASTBOOT_UNLOCK_IN_FW, &u);
-	TEST_EQ(u, 0, "  BU fastboot_unlock_in_fw");
 	/* but not the others */
 	VbNvGet(&tmp_vnc, VBNV_OPROM_NEEDED, &u);
 	TEST_EQ(u, 0, "  BU oprom_needed");
@@ -776,8 +772,6 @@ static void VbInitTestBackup(void)
 	TEST_EQ(u, 0, "  BU dev_boot_signed_only");
 	VbNvGet(&vnc, VBNV_DEV_BOOT_FASTBOOT_FULL_CAP, &u);
 	TEST_EQ(u, 0, "  BU dev_boot_fastboot_full_cap");
-	VbNvGet(&vnc, VBNV_FASTBOOT_UNLOCK_IN_FW, &u);
-	TEST_EQ(u, 0, "  BU fastboot_unlock_in_fw");
 }
 
 
