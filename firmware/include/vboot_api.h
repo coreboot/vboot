@@ -1033,17 +1033,19 @@ VbError_t VbExRegionRead(VbCommonParams *cparams,
  * override to allow full fastboot functionality, it checks image integrity, but
  * does not check the image signature.
  *
- * @param cparams	Common parameters, e.g. use member caller_context
- *			to point to useful context data
- * @param kparams	kernel params
- * @param boot_image	Image in memory that needs to be verified
- * @param image_size	Size of the image in memory
+ * @param cparams		Common parameters, e.g. use member
+ *				caller_context to point to useful context data
+ * @param kparams		kernel params
+ * @param boot_image		Image in memory that needs to be verified
+ * @param image_size		Size of the image in memory
+ * @param integrity_only	Request integrity-only check
  * @return VBERROR_... error, VBERROR_SUCCESS on success.
  */
 VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 				  VbSelectAndLoadKernelParams *kparams,
 				  void *boot_image,
-				  size_t image_size);
+				  size_t image_size,
+				  int integrity_only);
 
 /**
  * Fastboot API to enter dev mode.

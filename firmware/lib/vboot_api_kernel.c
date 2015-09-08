@@ -1199,7 +1199,8 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 				  VbSelectAndLoadKernelParams *kparams,
 				  void *boot_image,
-				  size_t image_size)
+				  size_t image_size,
+				  int integrity_only)
 {
 	VbError_t retval;
 	VbPublicKey* kernel_subkey = NULL;
@@ -1240,11 +1241,16 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 	 * 1. dev-mode switch is on and
 	 * 2. GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP is set.
 	 *
+	 * OR
+	 *
+	 * 1. integrity_only check is requested.
+	 *
 	 * Check only the integrity of the image.
 	 */
 	dev_switch = shared->flags & VBSD_BOOT_DEV_SWITCH_ON;
-	if (dev_switch && (cparams->gbb->flags &
-			   GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP)) {
+	if ((dev_switch && (cparams->gbb->flags &
+			    GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP)) ||
+	    integrity_only) {
 		VBDEBUG(("Only performing integrity-check.\n"));
 		hash_only = 1;
 	} else {
