@@ -745,6 +745,8 @@ enum VbScreenType_t {
 	VB_SCREEN_OEM_LOCK_CONFIRM = 0x303,
 	/* Fastboot OEM unlock confirmation */
 	VB_SCREEN_OEM_UNLOCK_CONFIRM = 0x304,
+	/* Warn user about device reboot. */
+	VB_SCREEN_RO_REBOOT_WARNING = 0x801,
 };
 
 /**
