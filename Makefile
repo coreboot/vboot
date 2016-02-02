@@ -590,7 +590,7 @@ SIGNING_SCRIPTS_DEV = \
 	scripts/image_signing/make_dev_firmware.sh \
 	scripts/image_signing/make_dev_ssd.sh \
 	scripts/image_signing/set_gbb_flags.sh \
-	scripts/image_signing/nv_pkc_signing.sh
+	scripts/image_signing/sign_nv_cbootimage.sh
 
 # Installed, but not made executable.
 SIGNING_COMMON = scripts/image_signing/common_minimal.sh
