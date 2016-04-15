@@ -20,6 +20,8 @@
 /* In recovery mode */
 #define BOOT_FLAG_RECOVERY  (0x02ULL)
 
+struct RollbackSpaceFwmp;
+
 typedef struct LoadKernelParams {
 	/* Inputs to LoadKernel() */
 	/*
@@ -53,6 +55,8 @@ typedef struct LoadKernelParams {
 	 * VbNvSetup() and VbNvTeardown() on the context.
 	 */
 	VbNvContext *nv_context;
+	/* Firmware management parameters; may be NULL if not present. */
+	const struct RollbackSpaceFwmp *fwmp;
 
 	/*
 	 * Outputs from LoadKernel(); valid only if LoadKernel() returns

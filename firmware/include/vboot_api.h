@@ -112,6 +112,8 @@ enum VbErrorPredefined_t {
 	VBERROR_UNSUPPORTED_REGION            = 0x10025,
 	/* No image present (returned from VbGbbReadImage() for missing image) */
 	VBERROR_NO_IMAGE_PRESENT              = 0x10026,
+	/* Error reading FWMP from TPM (note: not present is not an error) */
+	VBERROR_TPM_READ_FWMP                 = 0x10029,
 
 	/* VbExEcGetExpectedRWHash() may return the following codes */
 	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
