@@ -814,6 +814,7 @@ static int SanityCheckTest(void)
 {
 	GptData *gpt = GetEmptyGptData();
 	GptHeader *h1 = (GptHeader *)gpt->primary_header;
+	GptHeader *h2 = (GptHeader *)gpt->secondary_header;
 	GptEntry *e1 = (GptEntry *)gpt->primary_entries;
 	uint8_t *tempptr;
 
@@ -822,11 +823,13 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(MASK_NONE == gpt->ignored);
 	/* Repair doesn't damage it */
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(0 == gpt->modified);
 
 	/* Invalid sector size should fail */
@@ -841,11 +844,13 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_ERROR_INVALID_HEADERS == GptSanityCheck(gpt));
 	EXPECT(0 == gpt->valid_headers);
 	EXPECT(0 == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	/* Repair can't fix completely busted headers */
 	GptRepair(gpt);
 	EXPECT(GPT_ERROR_INVALID_HEADERS == GptSanityCheck(gpt));
 	EXPECT(0 == gpt->valid_headers);
 	EXPECT(0 == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(0 == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -853,10 +858,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(GPT_MODIFIED_HEADER1 == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -864,10 +871,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(GPT_MODIFIED_HEADER2 == gpt->modified);
 
 	/*
@@ -880,10 +889,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(GPT_MODIFIED_HEADER2 == gpt->modified);
 
 	/* Modify entries */
@@ -893,11 +904,13 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_ERROR_INVALID_ENTRIES == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_NONE == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	/* Repair can't fix both copies of entries being bad, either. */
 	GptRepair(gpt);
 	EXPECT(GPT_ERROR_INVALID_ENTRIES == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_NONE == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(0 == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -905,10 +918,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_SECONDARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(GPT_MODIFIED_ENTRIES1 == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -916,10 +931,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_PRIMARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT(GPT_MODIFIED_ENTRIES2 == gpt->modified);
 
 	/*
@@ -936,6 +953,7 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	gpt->primary_entries = tempptr;
 
 	/* Modify both header and entries */
@@ -945,10 +963,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
 	EXPECT(MASK_SECONDARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER1 | GPT_MODIFIED_ENTRIES1) == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -957,10 +977,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
 	EXPECT(MASK_PRIMARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
 
 	/* Test cross-correction (h1+e2, h2+e1) */
@@ -970,10 +992,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
 	EXPECT(MASK_PRIMARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER1 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
 
 	BuildTestGptData(gpt);
@@ -982,10 +1006,12 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
 	EXPECT(MASK_SECONDARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES1) == gpt->modified);
 
 	/*
@@ -998,35 +1024,90 @@ static int SanityCheckTest(void)
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
 	EXPECT(MASK_PRIMARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
 
 	/* Test unloaded entry array. */
-	gpt = GetEmptyGptData();
 	BuildTestGptData(gpt);
 	gpt->primary_entries = NULL;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
 	gpt = GetEmptyGptData();
 	BuildTestGptData(gpt);
 	gpt->secondary_entries = NULL;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_entries);
+	EXPECT(0 == gpt->ignored);
+	gpt = GetEmptyGptData();
 
 	/* Test unloaded header. */
-	gpt = GetEmptyGptData();
 	BuildTestGptData(gpt);
 	gpt->primary_header = NULL;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
+	EXPECT(0 == gpt->ignored);
 	gpt = GetEmptyGptData();
 	BuildTestGptData(gpt);
 	gpt->secondary_header = NULL;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
+	EXPECT(0 == gpt->ignored);
+	gpt = GetEmptyGptData();
+
+	/* Test correct recognition of IGNOREME in primary GPT. */
+	BuildTestGptData(gpt);
+	Memset(gpt->primary_entries, 0, PARTITION_ENTRIES_SIZE);
+	Memset(gpt->primary_header, 0, sizeof(GptHeader));
+	Memcpy(h1->signature, GPT_HEADER_SIGNATURE_IGNORED,
+	       GPT_HEADER_SIGNATURE_SIZE);
+	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
+	EXPECT(MASK_BOTH == gpt->valid_headers);
+	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(MASK_PRIMARY == gpt->ignored);
+	EXPECT(0 == gpt->modified);
+
+	/* Test correct recognition of IGNOREME in secondary GPT. */
+	BuildTestGptData(gpt);
+	Memset(gpt->secondary_entries, 0, PARTITION_ENTRIES_SIZE);
+	Memset(gpt->secondary_header, 0, sizeof(GptHeader));
+	Memcpy(h2->signature, GPT_HEADER_SIGNATURE_IGNORED,
+	       GPT_HEADER_SIGNATURE_SIZE);
+	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
+	EXPECT(MASK_BOTH == gpt->valid_headers);
+	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(MASK_SECONDARY == gpt->ignored);
+	EXPECT(0 == gpt->modified);
+
+	/* Test that two IGNOREME GPTs are invalid. */
+	ZeroHeadersEntries(gpt);
+	Memcpy(h1->signature, GPT_HEADER_SIGNATURE_IGNORED,
+	       GPT_HEADER_SIGNATURE_SIZE);
+	Memcpy(h2->signature, GPT_HEADER_SIGNATURE_IGNORED,
+	       GPT_HEADER_SIGNATURE_SIZE);
+	EXPECT(GPT_ERROR_INVALID_HEADERS == GptSanityCheck(gpt));
+	EXPECT(0 == gpt->valid_headers);
+	EXPECT(0 == gpt->valid_entries);
+	EXPECT(MASK_BOTH == gpt->ignored);
+	EXPECT(0 == gpt->modified);
+
+	/* Test that one IGNOREME GPT and one corrupted one are invalid. */
+	BuildTestGptData(gpt);
+	Memset(gpt->primary_entries, 0, PARTITION_ENTRIES_SIZE);
+	Memset(gpt->primary_header, 0, sizeof(GptHeader));
+	Memcpy(h1->signature, GPT_HEADER_SIGNATURE_IGNORED,
+	       GPT_HEADER_SIGNATURE_SIZE);
+	gpt->secondary_entries[0]++;
+	EXPECT(GPT_ERROR_INVALID_ENTRIES == GptSanityCheck(gpt));
+	EXPECT(MASK_SECONDARY == gpt->valid_headers);
+	EXPECT(0 == gpt->valid_entries);
+	EXPECT(MASK_PRIMARY == gpt->ignored);
+	EXPECT(0 == gpt->modified);
 
 	return TEST_OK;
 }

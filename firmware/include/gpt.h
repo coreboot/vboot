@@ -16,6 +16,9 @@
 #define GPT_HEADER_SIGNATURE_SIZE sizeof(GPT_HEADER_SIGNATURE)
 #define GPT_HEADER_REVISION 0x00010000
 
+/* From http://crosbug.com/p/52595 */
+#define GPT_HEADER_SIGNATURE_IGNORED "IGNOREME"
+
 /*
  * The first 3 numbers should be stored in network-endian format according to
  * the GUID RFC.  The UEFI spec appendix A claims they should be stored in
