@@ -21,7 +21,6 @@ GBB content:
     Algorithm:           11 RSA8192 SHA512
     Key Version:         1
     Key sha1sum:         9bd99a594c45b6739899a17ec29ac2289ee75463
-  BmpBlock:              <invalid>
 Firmware body:           FW_MAIN_A
   Offset:                0x00030000
   Size:                  0x000dffc0

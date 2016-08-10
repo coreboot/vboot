@@ -35,28 +35,22 @@ ${FUTILITY} gbb -g ${TMP}.blob | grep "0123456789ABCDE"
 # too long
 dd if=/dev/urandom bs=17 count=1 of=${TMP}.data1.toolong
 dd if=/dev/urandom bs=17 count=1 of=${TMP}.data2.toolong
-dd if=/dev/urandom bs=17 count=1 of=${TMP}.data3.toolong
 if ${FUTILITY} gbb -s --rootkey     ${TMP}.data1.toolong ${TMP}.blob; then false; fi
 if ${FUTILITY} gbb -s --recoverykey ${TMP}.data2.toolong ${TMP}.blob; then false; fi
-if ${FUTILITY} gbb -s --bmpfv       ${TMP}.data3.toolong ${TMP}.blob; then false; fi
 
 # shorter than max should be okay, though
 dd if=/dev/urandom bs=10 count=1 of=${TMP}.data1.short
 dd if=/dev/urandom bs=10 count=1 of=${TMP}.data2.short
-dd if=/dev/urandom bs=10 count=1 of=${TMP}.data3.short
 ${FUTILITY} gbb -s \
   --rootkey     ${TMP}.data1.short \
-  --recoverykey ${TMP}.data2.short \
-  --bmpfv       ${TMP}.data3.short ${TMP}.blob
+  --recoverykey ${TMP}.data2.short ${TMP}.blob
 # read 'em back
 ${FUTILITY} gbb -g \
   --rootkey     ${TMP}.read1 \
-  --recoverykey ${TMP}.read2 \
-  --bmpfv       ${TMP}.read3 ${TMP}.blob
+  --recoverykey ${TMP}.read2 ${TMP}.blob
 # Verify (but remember, it's short)
 cmp -n 10 ${TMP}.data1.short ${TMP}.read1
 cmp -n 10 ${TMP}.data2.short ${TMP}.read2
-cmp -n 10 ${TMP}.data3.short ${TMP}.read3
 
 # Okay
 dd if=/dev/urandom bs=16 count=1 of=${TMP}.data1
@@ -64,16 +58,13 @@ dd if=/dev/urandom bs=16 count=1 of=${TMP}.data2
 dd if=/dev/urandom bs=16 count=1 of=${TMP}.data3
 ${FUTILITY} gbb -s --rootkey     ${TMP}.data1 ${TMP}.blob
 ${FUTILITY} gbb -s --recoverykey ${TMP}.data2 ${TMP}.blob
-${FUTILITY} gbb -s --bmpfv       ${TMP}.data3 ${TMP}.blob
 
 # Read 'em back.
 ${FUTILITY} gbb -g --rootkey     ${TMP}.read1 ${TMP}.blob
 ${FUTILITY} gbb -g --recoverykey ${TMP}.read2 ${TMP}.blob
-${FUTILITY} gbb -g --bmpfv       ${TMP}.read3 ${TMP}.blob
 # Verify
 cmp ${TMP}.data1 ${TMP}.read1
 cmp ${TMP}.data2 ${TMP}.read2
-cmp ${TMP}.data3 ${TMP}.read3
 
 
 # Okay, creating GBB blobs seems to work. Now let's make sure that corrupted
@@ -147,12 +138,6 @@ if ${FUTILITY} gbb ${TMP}.blob.bad; then false; fi
 cat ${TMP}.blob | ${REPLACE} 0x18 0x00 > ${TMP}.blob.bad
 if ${FUTILITY} gbb ${TMP}.blob.bad; then false; fi
 
-#  bmpfv_offset < GBB_HEADER_SIZE is invalid
-cat ${TMP}.blob | ${REPLACE} 0x20 0x7f > ${TMP}.blob.bad
-if ${FUTILITY} gbb ${TMP}.blob.bad; then false; fi
-cat ${TMP}.blob | ${REPLACE} 0x20 0x00 > ${TMP}.blob.bad
-if ${FUTILITY} gbb ${TMP}.blob.bad; then false; fi
-
 #  recovery_key_offset < GBB_HEADER_SIZE is invalid
 cat ${TMP}.blob | ${REPLACE} 0x28 0x7f > ${TMP}.blob.bad
 if ${FUTILITY} gbb ${TMP}.blob.bad; then false; fi
@@ -171,12 +156,6 @@ ${FUTILITY} gbb -g ${TMP}.blob.bad
 cat ${TMP}.blob | ${REPLACE} 0x1c 0x31 > ${TMP}.blob.bad
 if ${FUTILITY} gbb -g ${TMP}.blob.bad; then false; fi
 
-#  bmpfv: offset + size  == end of file is okay; beyond is invalid
-cat ${TMP}.blob | ${REPLACE} 0x24 0x20 > ${TMP}.blob.bad
-${FUTILITY} gbb -g ${TMP}.blob.bad
-cat ${TMP}.blob | ${REPLACE} 0x24 0x21 > ${TMP}.blob.bad
-if ${FUTILITY} gbb -g ${TMP}.blob.bad; then false; fi
-
 #  recovery_key: offset + size  == end of file is okay; beyond is invalid
 cat ${TMP}.blob | ${REPLACE} 0x2c 0x10 > ${TMP}.blob.bad
 ${FUTILITY} gbb -g ${TMP}.blob.bad
@@ -192,11 +171,6 @@ if ${FUTILITY} gbb -s --hwid="A" ${TMP}.blob.bad; then false; fi
 cat ${TMP}.blob | ${REPLACE} 0x1c 0x00 > ${TMP}.blob.bad
 ${FUTILITY} gbb -g --rootkey     ${TMP}.read1 ${TMP}.blob.bad
 if ${FUTILITY} gbb -s --rootkey  ${TMP}.data1 ${TMP}.blob.bad; then false; fi
-
-# bmpfv_size == 0 gives warning, gets nothing, can't be set
-cat ${TMP}.blob | ${REPLACE} 0x24 0x00 > ${TMP}.blob.bad
-${FUTILITY} gbb -g --bmpfv       ${TMP}.read3 ${TMP}.blob.bad
-if ${FUTILITY} gbb -s --bmpfv    ${TMP}.data3 ${TMP}.blob.bad; then false; fi
 
 # recovery_key_size == 0 gives warning, gets nothing, can't be set
 cat ${TMP}.blob | ${REPLACE} 0x2c 0x00 > ${TMP}.blob.bad

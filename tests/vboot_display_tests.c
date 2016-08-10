@@ -14,7 +14,6 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
-#include "bmpblk_font.h"
 #include "gbb_access.h"
 #include "gbb_header.h"
 #include "host_common.h"

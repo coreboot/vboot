@@ -12,7 +12,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2sha.h"
-#include "bmpblk_font.h"
 #include "gbb_access.h"
 #include "gbb_header.h"
 #include "utility.h"

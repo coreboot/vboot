@@ -9,7 +9,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bmpblk_header.h"
 #include "fmap.h"
 #include "file_type.h"
 #include "file_type_bios.h"
@@ -55,7 +54,6 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 {
 	GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader *)buf;
 	struct bios_state_s *state = (struct bios_state_s *)data;
-	BmpBlockHeader *bmp;
 	int retval = 0;
 	uint32_t maxlen = 0;
 
@@ -128,23 +126,6 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 	} else {
 		retval = 1;
 		printf("  Recovery Key:          <invalid>\n");
-	}
-
-	bmp = (BmpBlockHeader *)(buf + gbb->bmpfv_offset);
-	if (0 != memcmp(bmp, BMPBLOCK_SIGNATURE, BMPBLOCK_SIGNATURE_SIZE)) {
-		printf("  BmpBlock:              <invalid>\n");
-		/* We don't support older BmpBlock formats, so we can't
-		 * be strict about this. */
-	} else {
-		printf("  BmpBlock:\n");
-		printf("    Version:             %d.%d\n",
-		       bmp->major_version, bmp->minor_version);
-		printf("    Localizations:       %d\n",
-		       bmp->number_of_localizations);
-		printf("    Screen layouts:      %d\n",
-		       bmp->number_of_screenlayouts);
-		printf("    Image infos:         %d\n",
-		       bmp->number_of_imageinfos);
 	}
 
 	if (!retval && state)
