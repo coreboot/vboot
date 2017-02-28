@@ -130,6 +130,10 @@ enum VbErrorPredefined_t {
 	/* VbExEcGetExpectedRWHash() may return the following codes */
 	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
 	VBERROR_EC_GET_EXPECTED_HASH_FROM_IMAGE = 0x20000,
+
+	/* EcUpdateImage() may return the following codes */
+	/* EC flash seemed to complete OK but region hash value is unexpected */
+	VBERROR_EC_HASH_CMP_FAILED            = 0x30000,
 };
 
 

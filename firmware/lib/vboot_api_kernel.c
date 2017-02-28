@@ -858,8 +858,12 @@ static VbError_t EcUpdateImage(int devidx, VbCommonParams *cparams,
 		VBDEBUG(("EcUpdateImage() - "
 			 "Failed to update EC-%s\n", rw_request ?
 			 "RW" : "RO"));
-		VbSetRecoveryRequest(VBNV_RECOVERY_EC_UPDATE);
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		if (rw_request) {
+			return VBERROR_EC_HASH_CMP_FAILED;
+		} else {
+			VbSetRecoveryRequest(VBNV_RECOVERY_EC_UPDATE);
+			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		}
 	}
 
 	return VBERROR_SUCCESS;
@@ -875,6 +879,7 @@ VbError_t VbEcSoftwareSync(int devidx, VbCommonParams *cparams)
 	enum VbSelectFirmware_t select_ro = VB_SELECT_FIRMWARE_READONLY;
 	int in_rw = 0;
 	int ro_try_count = 2;
+	int rw_try_count = 5;
 	int num_tries = 0;
 	uint32_t try_ro_sync, recovery_request;
 	int rv, updated_rw, updated_ro;
@@ -946,13 +951,33 @@ VbError_t VbEcSoftwareSync(int devidx, VbCommonParams *cparams)
 
 	VBDEBUG(("VbEcSoftwareSync() check for RW update.\n"));
 
-	/* Update the RW Image. */
-	rv = EcUpdateImage(devidx, cparams, select_rw, &updated_rw, in_rw);
+	/*
+	 * HACK(b:35587287): Retry EcUpdateImage on hash mismatch since
+	 * flashing is known to flake due to faulty EC RO.
+	 */
+	while (num_tries++ < rw_try_count) {
+		/* Update the RW Image. */
+		rv = EcUpdateImage(devidx,
+				   cparams,
+				   select_rw,
+				   &updated_rw,
+				   in_rw);
+
+		/* Stop on success, or error other than hash mismatch */
+		if (rv != VBERROR_EC_HASH_CMP_FAILED)
+			break;
+	}
 
 	if (rv != VBERROR_SUCCESS) {
 		VBDEBUG(("VbEcSoftwareSync() - "
 			 "EcUpdateImage() returned %d\n", rv));
-		return rv;
+
+		if (rv == VBERROR_EC_HASH_CMP_FAILED) {
+			/* All retries failed, go to recovery */
+			VbSetRecoveryRequest(VBNV_RECOVERY_EC_UPDATE);
+			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		} else
+			return rv;
 	}
 
 	/* Tell EC to jump to its RW image */
@@ -987,6 +1012,7 @@ VbError_t VbEcSoftwareSync(int devidx, VbCommonParams *cparams)
 		VbNvGet(&vnc, VBNV_RECOVERY_REQUEST, &recovery_request);
 
 		/* Update the RO Image. */
+		num_tries = 0;
 		while (num_tries < ro_try_count) {
 			VBDEBUG(("VbEcSoftwareSync() RO Software Sync\n"));
 
