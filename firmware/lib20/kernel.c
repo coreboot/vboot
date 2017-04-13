@@ -129,9 +129,13 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	}
 	if (!rec_switch && kb->data_key.key_version <
 	    (sd->kernel_version_secdata >> 16)) {
-		keyblock_is_valid = 0;
-		if (need_keyblock_valid)
-			return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
+		if (vb2api_gbb_get_flags(ctx) & VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK) {
+			VB2_DEBUG("Ignoring kernel key rollback due to GBB flag\n");
+		} else {
+			keyblock_is_valid = 0;
+			if (need_keyblock_valid)
+				return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
+		}
 	}
 
 	sd->kernel_version = kb->data_key.key_version << 16;

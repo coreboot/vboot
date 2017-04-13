@@ -48,6 +48,7 @@ static struct vb2_workbuf wb;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 
+static struct vb2_gbb_header gbb;
 static struct vb2_kernel_params lkp;
 static struct vb2_disk_info disk_info;
 static struct vb2_keyblock kbh;
@@ -86,6 +87,11 @@ static void reset_common_data(void)
 	sd = vb2_get_sd(ctx);
 	sd->kernel_version_secdata = 0xabcdef | (1 << 24);
 
+	memset(&gbb, 0, sizeof(gbb));
+	gbb.major_version = VB2_GBB_MAJOR_VER;
+	gbb.minor_version = VB2_GBB_MINOR_VER;
+	gbb.flags = 0;
+
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.kernel_buffer = kernel_buffer;
 	lkp.kernel_buffer_size = sizeof(kernel_buffer);
@@ -117,6 +123,10 @@ static void reset_common_data(void)
 }
 
 /* Mocks */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
 
 vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			   uint64_t lba_count, VbExStream_t *stream)

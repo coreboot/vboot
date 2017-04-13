@@ -531,6 +531,11 @@ static void load_kernel_tests(void)
 	test_load_kernel(VB2_SUCCESS, "Key version ignored in rec mode");
 
 	ResetMocks();
+	mock_parts[0].kbh.data_key.key_version = 1;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK;
+	test_load_kernel(VB2_SUCCESS, "Key version - disable rollback check");
+
+	ResetMocks();
 	unpack_key_fail = 2;
 	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data key");
 
@@ -569,6 +574,11 @@ static void load_kernel_tests(void)
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
 		      VB2_RECOVERY_RO_MANUAL);
 	test_load_kernel(VB2_SUCCESS, "Kernel version ignored in rec mode");
+
+	ResetMocks();
+	kph.kernel_version = 0;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK;
+	test_load_kernel(VB2_SUCCESS, "Kernel version - disable rollback check");
 
 	/* Check kernel version (dev mode + signed kernel required) */
 	ResetMocks();

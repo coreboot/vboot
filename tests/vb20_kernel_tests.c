@@ -162,6 +162,11 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &mock_gbb.h;
+}
+
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 				  const uint8_t *buf, uint32_t size)
 {

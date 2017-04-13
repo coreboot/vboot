@@ -143,9 +143,9 @@ vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
 		*name = "VB2_GBB_FLAG_FORCE_DEV_BOOT_USB";
 		*description = "Allow booting from external disk even if dev_boot_usb=0.";
 		break;
-	case VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK:
-		*name = "VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK";
-		*description = "Disable firmware rollback protection.";
+	case VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK:
+		*name = "VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK";
+		*description = "Disable rollback protection.";
 		break;
 	case VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM:
 		*name = "VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM";

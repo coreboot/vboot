@@ -49,8 +49,8 @@ enum vb2_gbb_flag {
 	 */
 	VB2_GBB_FLAG_FORCE_DEV_BOOT_USB = 1 << 4,
 
-	/* Disable firmware rollback protection. */
-	VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK = 1 << 5,
+	/* Disable rollback protection. */
+	VB2_GBB_FLAG_DISABLE_ROLLBACK_CHECK = 1 << 5,
 
 	/* Allow Enter key to trigger dev->tonorm screen transition */
 	VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM = 1 << 6,
