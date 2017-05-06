@@ -1023,6 +1023,7 @@ sign_image_file() {
 
   local loopdev=$(loopback_partscan "${output}")
   local loop_kern="${loopdev}p${dm_partno}"
+  local loop_rootfs="${loopdev}p3"
 
   resign_firmware_payload "${loopdev}"
   resign_android_image_if_exists "${loopdev}"
@@ -1039,7 +1040,7 @@ sign_image_file() {
   if [[ "${image_type}" != "factory_install" &&
         " ${kerna_config} " != *" cros_legacy "* &&
         " ${kerna_config} " != *" cros_efi "* ]]; then
-    "${SCRIPT_DIR}/strip_boot_from_image.sh" --image "${output}"
+    "${SCRIPT_DIR}/strip_boot_from_image.sh" --image "${loop_rootfs}"
   fi
   update_rootfs_hash "${loopdev}" "${loop_kern}" \
     "${kernA_keyblock}" "${kernA_privkey}" \

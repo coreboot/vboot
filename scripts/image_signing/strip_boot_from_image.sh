@@ -13,7 +13,7 @@
 load_shflags
 
 DEFINE_string image "chromiumos_image.bin" \
-  "Input file name of Chrome OS image to strip /boot from."
+  "Input file name of Chrome OS image to strip /boot from, or path to rootfs."
 
 # Parse command line.
 FLAGS "$@" || exit 1
@@ -21,10 +21,6 @@ eval set -- "${FLAGS_ARGV}"
 
 # Abort on error.
 set -e
-
-if [ -z "${FLAGS_image}" ] || [ ! -s "${FLAGS_image}" ] ; then
-  die "Error: need a valid file by --image"
-fi
 
 # Swiped/modifed from $SRC/src/scripts/base_library/base_image_util.sh.
 zero_free_space() {
@@ -38,9 +34,15 @@ zero_free_space() {
 strip_boot() {
   local image=$1
 
-  # Mount image so we can modify it.
   local rootfs_dir=$(make_temp_dir)
-  mount_image_partition ${image} 3 ${rootfs_dir}
+  if [[ -b "${image}" ]]; then
+    enable_rw_mount "${image}"
+    sudo mount "${image}" "${rootfs_dir}"
+    tag_as_needs_to_be_resigned "${rootfs_dir}"
+  else
+    # Mount image so we can modify it.
+    mount_image_partition ${image} 3 ${rootfs_dir}
+  fi
 
   sudo rm -rf "${rootfs_dir}/boot" &&
     info "/boot directory was removed."
@@ -52,9 +54,11 @@ strip_boot() {
   zero_free_space "${rootfs_dir}"
 }
 
-
 IMAGE=$(readlink -f "${FLAGS_image}")
-if [[ -z "${IMAGE}" || ! -f "${IMAGE}" ]]; then
+if [[ ! -f "${IMAGE}" && ! -b "${IMAGE}" ]]; then
+  IMAGE=
+fi
+if [[ -z "${IMAGE}" ]]; then
   die "Missing required argument: --from (image to update)"
 fi
 
