@@ -235,6 +235,14 @@ LDFLAGS += -static
 PKG_CONFIG += --static
 endif
 
+# Optional Libraries
+LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
+HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
+ifneq (${HAVE_LIBZIP},)
+  CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
+  LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
+endif
+
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
@@ -647,8 +655,6 @@ SIGNING_COMMON = scripts/image_signing/common_minimal.sh
 
 # The unified firmware utility will eventually replace all the others
 FUTIL_BIN = ${BUILD}/futility/futility
-# But we still need both static (tiny) and dynamic (with openssl) versions.
-FUTIL_STATIC_BIN = ${FUTIL_BIN}_s
 
 # These are the executables that are now built in to futility. We'll create
 # symlinks for these so the old names will still work.
@@ -661,43 +667,41 @@ FUTIL_SYMLINKS = \
 	vbutil_key \
 	vbutil_keyblock
 
-FUTIL_STATIC_SRCS = \
-	futility/futility.c \
-	futility/cmd_dump_fmap.c \
-	futility/cmd_gbb_utility.c \
-	futility/cmd_vbutil_firmware.c \
-	futility/cmd_vbutil_key.c \
-	futility/misc.c \
-	futility/ryu_root_header.c
-
 FUTIL_SRCS = \
-	${FUTIL_STATIC_SRCS} \
+	futility/futility.c \
+	futility/bdb_helper.c \
 	futility/cmd_bdb.c \
 	futility/cmd_create.c \
+	futility/cmd_dump_fmap.c \
 	futility/cmd_dump_kernel_config.c \
+	futility/cmd_gbb_utility.c \
 	futility/cmd_load_fmap.c \
 	futility/cmd_pcr.c \
 	futility/cmd_show.c \
 	futility/cmd_sign.c \
+	futility/cmd_update.c \
 	futility/cmd_validate_rec_mrc.c \
 	futility/cmd_vbutil_firmware.c \
+	futility/cmd_vbutil_firmware.c \
 	futility/cmd_vbutil_kernel.c \
-	futility/cmd_vbutil_key.c \
 	futility/cmd_vbutil_keyblock.c \
-	futility/file_type.c \
+	futility/cmd_vbutil_key.c \
+	futility/cmd_vbutil_key.c \
 	futility/file_type_bios.c \
+	futility/file_type.c \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
+	futility/misc.c \
+	futility/ryu_root_header.c \
+	futility/updater.c \
+	futility/updater_archive.c \
+	futility/updater_quirks.c \
 	futility/vb1_helper.c \
-	futility/vb2_helper.c \
-	futility/bdb_helper.c
+	futility/vb2_helper.c
 
-# List of commands built in futility and futility_s.
-FUTIL_STATIC_CMD_LIST = ${BUILD}/gen/futility_static_cmds.c
+# List of commands built in futility.
 FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c
 
-FUTIL_STATIC_OBJS = ${FUTIL_STATIC_SRCS:%.c=${BUILD}/%.o} \
-	${FUTIL_STATIC_CMD_LIST:%.c=%.o}
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
 ${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include \
@@ -1125,23 +1129,21 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 # new Firmware Utility
 
 .PHONY: futil
-futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
+futil: ${FUTIL_BIN}
 
-${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS}
-${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
-	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
+# FUTIL_LIBS is shared by FUTIL_BIN and TEST_FUTIL_BINS.
+FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
-${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS} ${FWLIB20}
+${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20} ${UTILBDB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+futil_install: ${FUTIL_BIN}
 	@${PRINTF} "    INSTALL       futility\n"
 	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN}
 	${Q}for prog in ${FUTIL_SYMLINKS}; do \
 		ln -sf futility "${UB_DIR}/$$prog"; done
 
@@ -1175,7 +1177,7 @@ ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 ${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
-${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS}
+${TEST_FUTIL_BINS}: LDLIBS += ${FUTIL_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
 ${TEST2X_BINS}: LIBS += ${FWLIB2X}
@@ -1326,9 +1328,7 @@ endif
 
 # Generates the list of commands defined in futility by running grep in the
 # source files looking for the DECLARE_FUTIL_COMMAND() macro usage.
-${FUTIL_STATIC_CMD_LIST}: ${FUTIL_STATIC_SRCS}
 ${FUTIL_CMD_LIST}: ${FUTIL_SRCS}
-${FUTIL_CMD_LIST} ${FUTIL_STATIC_CMD_LIST}:
 	@${PRINTF} "    GEN           $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@ $@_t $@_commands
 	${Q}mkdir -p ${BUILD}/gen
