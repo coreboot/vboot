@@ -24,12 +24,19 @@ VbError_t ec_sync_all(struct vb2_context *ctx, struct VbCommonParams *cparams)
 	VbAuxFwUpdateSeverity_t fw_update;
 	VbError_t rv;
 
-	rv = ec_sync_check_aux_fw(ctx, cparams, &fw_update);
-	if (rv)
-		return rv;
-
 	/* Do EC sync phase 1; this determines if we need an update */
 	VbError_t phase1_rv = ec_sync_phase1(ctx, cparams);
+
+	/*
+	 * Check for AUX firmware updates to be performed.
+	 * Continue on errors to prevent reboot loop on persistent failure.
+	 */
+	rv = ec_sync_check_aux_fw(ctx, cparams, &fw_update);
+	if (rv) {
+		VB2_DEBUG("Skipping AUX FW update.\n");
+		fw_update = VB_AUX_FW_NO_UPDATE;
+	}
+
 	int need_wait_screen = ec_will_update_slowly(ctx, cparams) ||
 		(fw_update == VB_AUX_FW_SLOW_UPDATE);
 
