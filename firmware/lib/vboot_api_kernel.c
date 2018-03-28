@@ -406,6 +406,101 @@ static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
 	shared->timer_vb_select_and_load_kernel_exit = VbExGetTimer();
 }
 
+int VbAltOSForceChromeOS(void) {
+	return 0;
+}
+
+VbError_t VbCheckAltOS(struct vb2_context *ctx, VbCommonParams *cparams,
+		       int trusted_ec) {
+	VbSharedDataHeader *shared =
+		(VbSharedDataHeader *)cparams->shared_data_blob;
+
+	int req_enable = vb2_nv_get(ctx, VB2_NV_ENABLE_ALT_OS_REQUEST);
+	int req_disable = vb2_nv_get(ctx, VB2_NV_DISABLE_ALT_OS_REQUEST);
+
+	/* Reset enable/disable requests right away to prevent cycles. */
+	vb2_nv_set(ctx, VB2_NV_ENABLE_ALT_OS_REQUEST, 0);
+	vb2_nv_set(ctx, VB2_NV_DISABLE_ALT_OS_REQUEST, 0);
+
+	uint8_t kflags;
+	uint8_t kflags_set;
+	int rv;
+	rv = GetAltOSFlags(&kflags);
+	if (rv) {
+		VB2_DEBUG("Unable to read Alt OS flags from TPM\n");
+		return rv;
+	}
+	kflags_set = kflags;
+
+	int need_oprom = 0;
+	int oprom_loaded = !(shared->flags & VBSD_OPROM_MATTERS) ||
+			     shared->flags & VBSD_OPROM_LOADED;
+	int hotkey_after_sync = vb2ex_get_alt_os_hotkey();
+	int hotkey_last_boot = !!(kflags & ALT_OS_HOTKEY);
+	int enabled = !!(kflags & ALT_OS_ENABLE);
+	int force_cros = VbAltOSForceChromeOS();
+
+
+	/* Case 1: Disable Alt OS mode.  Does not need UI. */
+	if (enabled && req_disable) {
+		VB2_DEBUG("Disabling Alt OS mode...\n");
+		/* Disable has priority over enable. */
+		req_enable = 0;
+		enabled = 0;
+		kflags_set &= ~ALT_OS_ENABLE;
+	}
+
+	/* Case 2: Enable Alt OS mode.  Needs UI. */
+	if (!enabled && ((req_enable && hotkey_after_sync && trusted_ec) ||
+	    hotkey_last_boot)) {
+		VB2_DEBUG("Setting flag to show confirm Alt OS mode\n");
+		shared->flags |= VBSD_ALT_OS_CONFIRM_ENABLE;
+		need_oprom = 1;
+		/* If we need to reboot to load VGA Option ROM, save Alt OS
+		 * hotkey state in TPM for next boot. */
+		kflags_set |= ALT_OS_HOTKEY;
+	}
+
+	/* Case 3: Show Alt OS picker.  Needs UI. */
+	if (enabled && !force_cros) {
+		VB2_DEBUG("Setting flag to show Alt OS picker\n");
+		shared->flags |= VBSD_ALT_OS_SHOW_PICKER;
+		need_oprom = 1;
+	}
+
+	/* If we don't need to store Alt OS hotkey state, then remove it. */
+	if (!need_oprom || oprom_loaded)
+		kflags_set &= ~ALT_OS_HOTKEY;
+
+	if (kflags_set != kflags) {
+		rv = SetAltOSFlags(kflags_set);
+		if (rv) {
+			VB2_DEBUG("Unable to write Alt OS flags to TPM\n");
+			return rv;
+		}
+	}
+
+	VB2_DEBUG("Alt OS: kflags=%d\n", kflags);
+	VB2_DEBUG("Alt OS: kflags_set=%d\n", kflags_set);
+	VB2_DEBUG("Alt OS: hotkey_after_sync=%d\n", hotkey_after_sync);
+	VB2_DEBUG("Alt OS: hotkey_last_boot=%d\n", hotkey_last_boot);
+	VB2_DEBUG("Alt OS: need_oprom=%d\n", need_oprom);
+	VB2_DEBUG("Alt OS: oprom_loaded=%d\n", oprom_loaded);
+	VB2_DEBUG("Alt OS: enabled=%d\n", enabled);
+	VB2_DEBUG("Alt OS: force_cros=%d\n", force_cros);
+	VB2_DEBUG("Alt OS: req_enable=%d\n", req_enable);
+	VB2_DEBUG("Alt OS: req_disable=%d\n", req_disable);
+	VB2_DEBUG("Alt OS: trusted_ec=%d\n", trusted_ec);
+
+	if (need_oprom && !oprom_loaded) {
+		VB2_DEBUG("Reboot to load VGA Option ROM\n");
+		vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
+		return VBERROR_VGA_OPROM_MISMATCH;
+	}
+
+	return VBERROR_SUCCESS;
+}
+
 VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
                                 VbSelectAndLoadKernelParams *kparams)
 {
@@ -417,11 +512,26 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		goto VbSelectAndLoadKernel_exit;
 
 	/*
+	 * Determine whether the EC is in RO or RW.  This information
+	 * will be used later on in Alt OS boot flow.
+	 */
+	int trusted_ec = VbExTrustEC(0);
+
+	/*
 	 * Do EC software sync if necessary.  This has UI, but it's just a
 	 * single non-interactive WAIT screen.
 	 */
 	retval = ec_sync_all(&ctx, cparams);
 	if (retval)
+		goto VbSelectAndLoadKernel_exit;
+
+	/*
+	 * Check whether confirmation screen or picker screen need to be
+	 * shown for Alt OS.  Ignore return value, and in the case of failure,
+	 * continue to a normal boot.
+	 */
+	retval = VbCheckAltOS(&ctx, cparams, trusted_ec);
+	if (retval == VBERROR_VGA_OPROM_MISMATCH)
 		goto VbSelectAndLoadKernel_exit;
 
 	/* Select boot path */
@@ -439,6 +549,12 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		else
 		    retval = VbBootDeveloper(&ctx, cparams);
 		VbExEcEnteringMode(0, VB_EC_DEVELOPER);
+	} else if (shared->flags & VBSD_ALT_OS_CONFIRM_ENABLE ||
+		   shared->flags & VBSD_ALT_OS_SHOW_PICKER) {
+		/* Alt OS boot.  This has UI. */
+		retval = VbBootAltOS(&ctx, cparams);
+		/* Report as normal mode to the EC. */
+		VbExEcEnteringMode(0, VB_EC_NORMAL);
 	} else {
 		/* Normal boot */
 		retval = VbBootNormal(&ctx, cparams);

@@ -34,6 +34,8 @@ static uint32_t rkr_version;
 static uint32_t new_version;
 static struct RollbackSpaceFwmp rfr_fwmp;
 static int rkr_retval, rkw_retval, rkl_retval, rfr_retval;
+static uint8_t gaf_val, saf_val;
+static int gah_retval, gaf_retval, saf_retval;
 static VbError_t vbboot_retval;
 
 /* Reset mock data (for use before each test) */
@@ -65,6 +67,9 @@ static void ResetMocks(void)
 	ecsync_retval = VBERROR_SUCCESS;
 	rkr_version = new_version = 0x10002;
 	rkr_retval = rkw_retval = rkl_retval = VBERROR_SUCCESS;
+	gaf_val = saf_val = 0;
+	gaf_retval = saf_retval = VBERROR_SUCCESS;
+	gah_retval = 0;
 	vbboot_retval = VBERROR_SUCCESS;
 }
 
@@ -85,6 +90,28 @@ VbError_t VbExNvStorageWrite(const uint8_t *buf)
 VbError_t VbExEcRunningRW(int devidx, int *in_rw)
 {
 	return ecsync_retval;
+}
+
+int VbExTrustEC(int devidx)
+{
+	return !ecsync_retval;
+}
+
+int vb2ex_get_alt_os_hotkey(void)
+{
+	return gah_retval;
+}
+
+uint32_t GetAltOSFlags(uint8_t *val)
+{
+	*val = gaf_val;
+	return gaf_retval;
+}
+
+uint32_t SetAltOSFlags(uint8_t val)
+{
+	saf_val = val;
+	return saf_retval;
 }
 
 uint32_t RollbackKernelRead(uint32_t *version)
@@ -137,6 +164,14 @@ VbError_t VbBootRecovery(struct vb2_context *ctx, VbCommonParams *cparams)
 	shared->kernel_version_tpm = new_version;
 
 	if (vbboot_retval == -3)
+		return VBERROR_SIMULATED;
+
+	return vbboot_retval;
+}
+
+VbError_t VbBootAltOS(struct vb2_context *ctx, VbCommonParams *cparams)
+{
+	if (vbboot_retval == -4)
 		return VBERROR_SIMULATED;
 
 	return vbboot_retval;
@@ -258,7 +293,86 @@ static void VbSlkTest(void)
 
 	// todo: rkr/w/l fail ignored if recovery
 
+	/* Boot alt OS */
+	uint32_t oprom_needed;
 
+	/*
+	 * Enable request without OPROM
+	 *   oprom matters:	Y
+	 *   oprom loaded:	N
+	 *   current hotkey:	Y
+	 *   stored hotkey:	N
+	 *   enable request:	Y
+	 *   disable request:	N
+	 *   enabled:		N
+	 * result: request reboot for OPROM
+	 */
+	ResetMocks();
+	shared->flags |= VBSD_OPROM_MATTERS;
+	gah_retval = 1;
+	VbNvSet(&vnc, VBNV_ENABLE_ALT_OS_REQUEST, 1);
+	VbNvTeardown(&vnc);
+	test_slk(VBERROR_VGA_OPROM_MISMATCH, 0, "Alt OS doesn't request OPROM");
+	VbNvGet(&vnc, VBNV_OPROM_NEEDED, &oprom_needed);
+	TEST_EQ(oprom_needed, 1, "Alt OS doesn't request OPROM");
+
+	/*
+	 * Enable request with OPROM
+	 *   oprom matters:	Y
+	 *   oprom loaded:	Y
+	 *   current hotkey:	N
+	 *   stored hotkey:	Y
+	 *   enable request:	Y
+	 *   disable request:	N
+	 *   enabled:		N
+	 * result: run VbBootAltOS
+	 */
+	ResetMocks();
+	shared->flags |= VBSD_OPROM_MATTERS;
+	shared->flags |= VBSD_OPROM_LOADED;
+	gaf_val |= ALT_OS_HOTKEY;
+	VbNvSet(&vnc, VBNV_ENABLE_ALT_OS_REQUEST, 1);
+	VbNvTeardown(&vnc);
+	vbboot_retval = -4;
+	test_slk(VBERROR_SIMULATED, 0, "Alt OS enable bad");
+
+	/*
+	 * Enabled with OPROM
+	 *   oprom matters:	Y
+	 *   oprom loaded:	Y
+	 *   current hotkey:	N
+	 *   stored hotkey:	Y
+	 *   enable request:	N
+	 *   disable request:	N
+	 *   enabled:		Y
+	 * result: run VbBootAltOS
+	 */
+	ResetMocks();
+	shared->flags |= VBSD_OPROM_MATTERS;
+	shared->flags |= VBSD_OPROM_LOADED;
+	gaf_val |= ALT_OS_ENABLE;
+	vbboot_retval = -4;
+	test_slk(VBERROR_SIMULATED, 0, "Alt OS boot bad");
+
+	/*
+	 * Disable request without OPROM
+	 *   oprom matters:	Y
+	 *   oprom loaded:	N
+	 *   current hotkey:	N
+	 *   stored hotkey:	N
+	 *   enable request:	N
+	 *   disable request:	Y
+	 *   enabled:		Y
+	 * result: disable Alt OS and boot normal mode
+	 */
+	ResetMocks();
+	shared->flags |= VBSD_OPROM_MATTERS;
+	gaf_val |= ALT_OS_ENABLE;
+	VbNvSet(&vnc, VBNV_DISABLE_ALT_OS_REQUEST, 1);
+	VbNvTeardown(&vnc);
+	vbboot_retval = -1;
+	test_slk(VBERROR_SIMULATED, 0, "Alt OS incorrect boot after disable");
+	TEST_FALSE(saf_val & ALT_OS_ENABLE, "Alt OS doesn't disable");
 }
 
 int main(void)

@@ -417,7 +417,8 @@ VBINIT_SRCS += \
 VBSLK_SRCS += \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
-	firmware/stub/vboot_api_stub_stream.c
+	firmware/stub/vboot_api_stub_stream.c \
+	firmware/stub/vboot_api_stub_switches.c
 
 FWLIB2X_SRCS += \
 	firmware/2lib/2stub.c

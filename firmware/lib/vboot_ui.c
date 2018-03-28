@@ -153,6 +153,103 @@ int VbUserConfirms(struct vb2_context *ctx, VbCommonParams *cparams,
 	return -1;
 }
 
+VbError_t vb2_alt_os_picker(struct vb2_context *ctx, VbCommonParams *cparams,
+			    uint32_t timeout_msec, int *index)
+{
+	/* Calibrate delay */
+	uint64_t a, b;
+	a = VbExGetTimer();
+	VbExSleepMs(10);
+	b = VbExGetTimer();
+	uint64_t ticks_per_msec = (b - a) / 10ULL ;
+	uint64_t show_until = VbExGetTimer() + timeout_msec * ticks_per_msec;
+
+	VB2_DEBUG("Alt OS picker: timeout_msec=%d\n", timeout_msec);
+	VB2_DEBUG("Alt OS picker: ticks_per_msec=%" PRIu64 "\n",
+		  ticks_per_msec);
+
+	*index = 0;
+	while (1) {
+		VbDisplayMenu(ctx, cparams, VB_SCREEN_ALT_OS, 0, *index);
+		if (VbWantShutdown(cparams->gbb->flags))
+			return VBERROR_SHUTDOWN_REQUESTED;
+		uint32_t key = VbExKeyboardRead();
+		if (key == VB_KEY_LEFT)
+			*index = 0;
+		else if (key == VB_KEY_RIGHT)
+			*index = 1;
+		else if (key == '\r' || key == ' ')
+			break;
+		VbExSleepMs(20);
+
+		if (timeout_msec > 0 && VbExGetTimer() > show_until) {
+			VB2_DEBUG("Alt OS picker: timed out\n");
+			break;
+		}
+	}
+	return VBERROR_SUCCESS;
+}
+
+VbError_t vb2_alt_os_ui(struct vb2_context *ctx, VbCommonParams *cparams)
+{
+	/* Note that OPROM will not be disabled until the next reboot. */
+	const int picker_timeout_msec = 20 * 1000;
+	VbSharedDataHeader *shared =
+		(VbSharedDataHeader *)cparams->shared_data_blob;
+	int boot_alt_os = 0;  /* 0 = Chrome OS; 1 = Alt OS */
+	uint8_t tpm_flags;
+
+	/* Confirm enabling Alt OS */
+	if (shared->flags & VBSD_ALT_OS_CONFIRM_ENABLE) {
+		VB2_DEBUG("Alt OS UI: Picker screen without timeout\n");
+		VbError_t ret = vb2_alt_os_picker(ctx, cparams,
+						  0, &boot_alt_os);
+		if (ret != VBERROR_SUCCESS) {
+			VB2_DEBUG("Error from Alt OS picker screen\n");
+			return ret;
+		}
+	}
+
+	/* Enable if Alt OS is chosen */
+	if (boot_alt_os) {
+		if (GetAltOSFlags(&tpm_flags)) {
+			VB2_DEBUG("Unable to read Alt OS flags from TPM\n");
+			return VBERROR_TPM_ALT_OS;
+		}
+		tpm_flags |= ALT_OS_ENABLE;
+		if (SetAltOSFlags(tpm_flags)) {
+			VB2_DEBUG("Unable to write Alt OS flags to TPM\n");
+			return VBERROR_TPM_ALT_OS;
+		}
+	}
+
+	/* Show Alt OS picker screen */
+	else if (shared->flags & VBSD_ALT_OS_SHOW_PICKER) {
+		VB2_DEBUG("Alt OS UI: Picker screen with timeout\n");
+		VbError_t ret = vb2_alt_os_picker(ctx, cparams,
+						  picker_timeout_msec,
+						  &boot_alt_os);
+		if (ret != VBERROR_SUCCESS) {
+			VB2_DEBUG("Error from Alt OS picker screen\n");
+			return ret;
+		}
+	}
+
+	if (boot_alt_os) {
+		/* Will only return on failure */
+		VbTryLegacy(ctx, 1);
+	}
+
+	/* Will only return on failure */
+	return VbBootNormal(ctx, cparams);
+}
+
+VbError_t VbBootAltOS(struct vb2_context *ctx, VbCommonParams *cparams)
+{
+	VbError_t retval = vb2_alt_os_ui(ctx, cparams);
+	return retval;
+}
+
 static const char dev_disable_msg[] =
 	"Developer mode is disabled on this device by system policy.\n"
 	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"

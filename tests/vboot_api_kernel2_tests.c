@@ -51,6 +51,8 @@ static uint32_t screens_displayed[8];
 static uint32_t screens_count = 0;
 static uint32_t mock_num_disks[8];
 static uint32_t mock_num_disks_count;
+static uint8_t gaf_val, saf_val;
+static int gaf_retval, saf_retval;
 
 extern enum VbEcBootMode_t VbGetMode(void);
 extern struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
@@ -89,6 +91,8 @@ static void ResetMocks(void)
 	trust_ec = 0;
 	virtdev_set = 0;
 	virtdev_retval = 0;
+	gaf_val = saf_val = 0;
+	gaf_retval = saf_retval = VBERROR_SUCCESS;
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
@@ -202,6 +206,18 @@ uint32_t SetVirtualDevMode(int val)
 {
 	virtdev_set = val;
 	return virtdev_retval;
+}
+
+uint32_t GetAltOSFlags(uint8_t *val)
+{
+	*val = gaf_val;
+	return gaf_retval;
+}
+
+uint32_t SetAltOSFlags(uint8_t val)
+{
+	saf_val = val;
+	return saf_retval;
 }
 
 /* Tests */
@@ -733,12 +749,38 @@ static void VbBootRecTest(void)
 }
 
 
+static void VbBootAltOSTest(void)
+{
+	printf("Testing VbBootAltOS()...\n");
+
+	/* Right arrow then enter means enable */
+	ResetMocks();
+	shared->flags = VBSD_ALT_OS_CONFIRM_ENABLE;
+	mock_keypress[0] = 0x103;
+	mock_keypress[1] = '\r';
+	TEST_EQ(VbBootAltOS(&ctx, &cparams), 1002, "Enable Alt OS failure");
+	TEST_EQ(vbexlegacy_called, 1, "  boot legacy");
+	TEST_TRUE(saf_val & ALT_OS_ENABLE, "  enable flag");
+
+	/* Right arrow then enter means boot Chrome OS */
+	ResetMocks();
+	shared->flags = VBSD_ALT_OS_SHOW_PICKER;
+	mock_keypress[0] = 0x102;
+	mock_keypress[1] = '\r';
+	TEST_EQ(VbBootAltOS(&ctx, &cparams), 1002, "Boot Chrome OS failure");
+	TEST_EQ(vbexlegacy_called, 0, "  boot normal");
+
+	printf("...done.\n");
+}
+
+
 int main(void)
 {
 	VbUserConfirmsTest();
 	VbBootTest();
 	VbBootDevTest();
 	VbBootRecTest();
+	VbBootAltOSTest();
 
 	return gTestSuccess ? 0 : 255;
 }

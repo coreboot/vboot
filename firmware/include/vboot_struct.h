@@ -241,6 +241,10 @@ typedef struct VbKernelPreambleHeader {
 #define VBSD_OPROM_LOADED                0x00020000
 /* Don't try for boot failures */
 #define VBSD_NOFAIL_BOOT                 0x00040000
+/* Confirm enabling Alt OS for this boot */
+#define VBSD_ALT_OS_CONFIRM_ENABLE       0x00080000
+/* Show Alt OS picker screen for this boot */
+#define VBSD_ALT_OS_SHOW_PICKER          0x00100000
 
 /*
  * Supported flags by header version.  It's ok to add new flags while keeping
