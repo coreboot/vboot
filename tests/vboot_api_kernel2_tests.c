@@ -37,6 +37,7 @@ static int shutdown_request_power_held;
 static int audio_looping_calls_left;
 static uint32_t vbtlk_retval;
 static int vbexlegacy_called;
+static int altfw_num;
 static int trust_ec;
 static int virtdev_set;
 static uint32_t virtdev_retval;
@@ -78,6 +79,7 @@ static void ResetMocks(void)
 	audio_looping_calls_left = 30;
 	vbtlk_retval = 1000;
 	vbexlegacy_called = 0;
+	altfw_num = -1;
 	trust_ec = 0;
 	virtdev_set = 0;
 	virtdev_retval = 0;
@@ -143,9 +145,11 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 		return 0;
 }
 
-int VbExLegacy(void)
+int VbExLegacy(int _altfw_num)
 {
 	vbexlegacy_called++;
+	altfw_num = _altfw_num;
+
 	return 0;
 }
 
@@ -282,6 +286,8 @@ static void VbBootTest(void)
 
 static void VbBootDevTest(void)
 {
+	int key;
+
 	printf("Testing VbBootDeveloper()...\n");
 
 	/* Proceed after timeout */
@@ -301,6 +307,15 @@ static void VbBootDevTest(void)
 			VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
 	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Timeout");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
+
+	/* Proceed to legacy after timeout if GBB flag set */
+	ResetMocks();
+	sd->gbb_flags |= VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY |
+			VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
+	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Timeout");
+	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 
 	/* Proceed to legacy after timeout if boot legacy and default boot
 	 * legacy are set */
@@ -310,6 +325,7 @@ static void VbBootDevTest(void)
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Timeout");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 
 	/* Proceed to legacy boot mode only if enabled */
 	ResetMocks();
@@ -474,6 +490,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloper(&ctx), 1002,
 		"Ctrl+L force legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 
 	ResetMocks();
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
@@ -481,6 +498,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloper(&ctx), 1002,
 		"Ctrl+L nv legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 
 	ResetMocks();
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_ENABLE_LEGACY;
@@ -488,6 +506,39 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloper(&ctx), 1002,
 		"Ctrl+L fwmp legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  fwmp legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
+
+	/* Pressing 1-9 boots alternative firmware only if enabled */
+	for (key = '1'; key <= '9'; key++) {
+		ResetMocks();
+		mock_keypress[0] = key;
+		TEST_EQ(VbBootDeveloper(&ctx), 1002, "'1' normal");
+		TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+
+		ResetMocks();
+		sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
+		mock_keypress[0] = key;
+		TEST_EQ(VbBootDeveloper(&ctx), 1002,
+			"Ctrl+L force legacy");
+		TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+		TEST_EQ(altfw_num, key - '0', "  check altfw_num");
+
+		ResetMocks();
+		vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
+		mock_keypress[0] = key;
+		TEST_EQ(VbBootDeveloper(&ctx), 1002,
+			"Ctrl+L nv legacy");
+		TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+		TEST_EQ(altfw_num, key - '0', "  check altfw_num");
+
+		ResetMocks();
+		VbApiKernelGetFwmp()->flags |= FWMP_DEV_ENABLE_LEGACY;
+		mock_keypress[0] = key;
+		TEST_EQ(VbBootDeveloper(&ctx), 1002,
+			"Ctrl+L fwmp legacy");
+		TEST_EQ(vbexlegacy_called, 1, "  fwmp legacy");
+		TEST_EQ(altfw_num, key - '0', "  check altfw_num");
+	}
 
 	/* Ctrl+U boots USB only if enabled */
 	ResetMocks();

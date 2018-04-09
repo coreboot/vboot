@@ -72,14 +72,22 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return !!shutdown_request;
 }
 
-static void VbTryLegacy(int allowed)
+/**
+ * Call out to firmware to boot a numbered boot loader
+ *
+ * Provided that it is permitted, this function starts up the numbered boot
+ * loader.
+ *
+ * @param altfw_num   Boot loader number to boot (0=any, 1=first, etc.)
+ */
+static void VbTryLegacy(int allowed, int altfw_num)
 {
 	if (!allowed)
 		VB2_DEBUG("VbBootDeveloper() - Legacy boot is disabled\n");
 	else if (0 != RollbackKernelLock(0))
 		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
 	else
-		VbExLegacy();	/* will not return if successful */
+		VbExLegacy(altfw_num);	/* will not return if successful */
 
 	/* If legacy boot fails, beep and return to calling UI loop. */
 	VbExBeep(120, 400);
@@ -337,7 +345,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		case 0x0c:
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+L; Try legacy boot\n");
-			VbTryLegacy(allow_legacy);
+			VbTryLegacy(allow_legacy, 0);
 			break;
 
 		case VB_KEY_CTRL_ENTER:
@@ -375,6 +383,12 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 				}
 			}
 			break;
+		case '1'...'9':
+			VB2_DEBUG("VbBootDeveloper() - "
+				  "user pressed key '%c': Boot alternative "
+				  "firmware\n", key);
+			VbTryLegacy(allow_legacy, key - '0');
+			break;
 		default:
 			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
 			VbCheckDisplayKey(ctx, key);
@@ -387,7 +401,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 	/* If defaulting to legacy boot, try that unless Ctrl+D was pressed */
 	if (use_legacy && !ctrl_d_pressed) {
 		VB2_DEBUG("VbBootDeveloper() - defaulting to legacy\n");
-		VbTryLegacy(allow_legacy);
+		VbTryLegacy(allow_legacy, 0);
 	}
 
 	if ((use_usb && !ctrl_d_pressed) && allow_usb) {

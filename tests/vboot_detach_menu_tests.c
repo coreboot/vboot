@@ -41,6 +41,7 @@ static VbError_t vbtlk_last_retval;
 static int vbtlk_retval_count;
 static const VbError_t vbtlk_retval_fixed = 1002;
 static int vbexlegacy_called;
+static int altfw_num;
 static int debug_info_displayed;
 static int trust_ec;
 static int virtdev_set;
@@ -84,6 +85,7 @@ static void ResetMocks(void)
 	shutdown_request_calls_left = 301;
 	audio_looping_calls_left = 60;
 	vbexlegacy_called = 0;
+	altfw_num = -1;
 	debug_info_displayed = 0;
 	trust_ec = 0;
 	virtdev_set = 0;
@@ -160,9 +162,11 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 		return 0;
 }
 
-int VbExLegacy(void)
+int VbExLegacy(int _altfw_num)
 {
 	vbexlegacy_called++;
+	altfw_num = _altfw_num;
+
 	return 0;
 }
 
@@ -271,6 +275,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"default legacy GBB");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
 	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
@@ -290,6 +295,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"default legacy NV");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
 	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
@@ -611,6 +617,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"Ctrl+L force legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
 	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
@@ -646,6 +653,7 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"Ctrl+L fwmp legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  fwmp legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
 	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
@@ -908,6 +916,7 @@ static void VbBootDevTest(void)
 		"Menu selected legacy boot");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_EQ(vbexlegacy_called, 2, "  tried legacy boot twice");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(audio_looping_calls_left, 0, "  audio timeout");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	i = 0;
@@ -2189,6 +2198,7 @@ static void VbNavigationTest(void)
 		"developer mode long navigation");
 	TEST_EQ(debug_info_displayed, 1, "  showed debug info");
 	TEST_EQ(vbexlegacy_called, 1, "  tried legacy");
+	TEST_EQ(altfw_num, 0, "  check altfw_num");
 	TEST_EQ(audio_looping_calls_left, 0, "  audio timeout");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	i = 0;
