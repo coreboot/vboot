@@ -145,7 +145,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 	}
 
 	if (0 == RollbackKernelLock(0))
-		VbExLegacy();	/* Will not return if successful */
+		VbExLegacy(0);/* Will not return if successful */
 	else
 		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
 

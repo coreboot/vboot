@@ -959,8 +959,11 @@ enum {
 
 /**
  * Execute legacy boot option.
+ *
+ * @param altfw_num	Bootloader sequence number to execute. Use
+ *	0 to boot the default payload, if any
  */
-int VbExLegacy(void);
+int VbExLegacy(int altfw_num);
 
 /* Regions for VbExRegionRead() */
 enum vb_firmware_region {
