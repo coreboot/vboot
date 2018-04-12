@@ -115,6 +115,10 @@ enum vb2_nv_param {
 	 * VB2_MAX_ROLLFORWARD_MAX_V1_DEFAULT for V1.
 	 */
 	VB2_NV_FW_MAX_ROLLFORWARD,
+	/* Enable AltOS Mode on next boot. */
+	VB2_NV_ENABLE_ALT_OS_REQUEST,
+	/* Disable AltOS Mode on next boot. */
+	VB2_NV_DISABLE_ALT_OS_REQUEST,
 };
 
 /* Set default boot in developer mode */

@@ -61,6 +61,8 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_BATTERY_CUTOFF_REQUEST, 0, 1, 0, "battery cutoff request"},
 	{VB2_NV_KERNEL_MAX_ROLLFORWARD, 0, 0x12345678, 0xFEDCBA98,
 	 "kernel max rollforward"},
+	{VB2_NV_ENABLE_ALT_OS_REQUEST, 0, 1, 0, "enable alt os request"},
+	{VB2_NV_DISABLE_ALT_OS_REQUEST, 0, 1, 0, "disable alt os request"},
 	{0, 0, 0, 0, NULL}
 };
 

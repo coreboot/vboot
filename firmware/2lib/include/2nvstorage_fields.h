@@ -101,10 +101,12 @@ enum vb2_nv_offset {
 #define VB2_NV_TPM_CLEAR_OWNER_DONE            0x02
 #define VB2_NV_TPM_REBOOTED                    0x04
 
-/* Fields in VB2_NV_OFFS_MISC (unused = 0xf0) */
+/* Fields in VB2_NV_OFFS_MISC (unused = 0xc0) */
 #define VB2_NV_MISC_UNLOCK_FASTBOOT            0x01
 #define VB2_NV_MISC_BOOT_ON_AC_DETECT          0x02
 #define VB2_NV_MISC_TRY_RO_SYNC		       0x04
 #define VB2_NV_MISC_BATTERY_CUTOFF             0x08
+#define VB2_NV_MISC_ENABLE_ALT_OS              0x10
+#define VB2_NV_MISC_DISABLE_ALT_OS             0x20
 
 #endif  /* VBOOT_REFERENCE_VBOOT_2NVSTORAGE_FIELDS_H_ */

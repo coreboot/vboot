@@ -573,6 +573,10 @@ int VbGetSystemPropertyInt(const char *name)
 		} else {
 			value = 0;
 		}
+	} else if (!strcasecmp(name, "enable_alt_os_request")) {
+		value = vb2_get_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST);
+	} else if (!strcasecmp(name, "disable_alt_os_request")) {
+		value = vb2_get_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST);
 	}
 
 	return value;
@@ -729,6 +733,10 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_BATTERY_CUTOFF_REQUEST, value);
 	} else if (!strcasecmp(name,"kernel_max_rollforward")) {
 		return vb2_set_nv_storage(VB2_NV_KERNEL_MAX_ROLLFORWARD, value);
+	} else if (!strcasecmp(name, "enable_alt_os_request")) {
+		return vb2_set_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST, value);
+	} else if (!strcasecmp(name, "disable_alt_os_request")) {
+		return vb2_set_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST, value);
 	}
 
 	return -1;

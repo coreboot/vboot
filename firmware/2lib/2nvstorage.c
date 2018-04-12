@@ -218,6 +218,10 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD2] << 8)
 			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD3] << 16)
 			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD4] << 24));
+	case VB2_NV_ENABLE_ALT_OS_REQUEST:
+		return GETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_ENABLE_ALT_OS);
+	case VB2_NV_DISABLE_ALT_OS_REQUEST:
+		return GETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_DISABLE_ALT_OS);
 	}
 
 	/*
@@ -418,6 +422,12 @@ void vb2_nv_set(struct vb2_context *ctx,
 		p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD2] = (uint8_t)(value >> 8);
 		p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD3] = (uint8_t)(value >> 16);
 		p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD4] = (uint8_t)(value >> 24);
+		break;
+	case VB2_NV_ENABLE_ALT_OS_REQUEST:
+		SETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_ENABLE_ALT_OS);
+		break;
+	case VB2_NV_DISABLE_ALT_OS_REQUEST:
+		SETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_DISABLE_ALT_OS);
 		break;
 	}
 
