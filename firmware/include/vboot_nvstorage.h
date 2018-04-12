@@ -124,6 +124,10 @@ typedef enum VbNvParam {
 	 * Finish mode transition (if requested), perform battery cut-off and
 	 * shutdown in next boot. */
 	VBNV_BATTERY_CUTOFF_REQUEST,
+	/* Enable AltOS Mode on next boot. */
+	VBNV_ENABLE_ALT_OS_REQUEST,
+	/* Disable AltOS Mode on next boot. */
+	VBNV_DISABLE_ALT_OS_REQUEST,
 } VbNvParam;
 
 /* Set default boot in developer mode */

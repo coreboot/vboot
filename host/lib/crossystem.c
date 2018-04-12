@@ -579,6 +579,10 @@ int VbGetSystemPropertyInt(const char *name)
 		} else {
 			value = 0;
 		}
+	} else if (!strcasecmp(name, "enable_alt_os_request")) {
+		value = VbGetNvStorage(VBNV_ENABLE_ALT_OS_REQUEST);
+	} else if (!strcasecmp(name, "disable_alt_os_request")) {
+		value = VbGetNvStorage(VBNV_DISABLE_ALT_OS_REQUEST);
 	}
 
 	return value;
@@ -724,6 +728,10 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		return VbSetNvStorage_WithBackup(VBNV_TRY_RO_SYNC, value);
 	} else if (!strcasecmp(name, "battery_cutoff_request")) {
 		return VbSetNvStorage(VBNV_BATTERY_CUTOFF_REQUEST, value);
+	} else if (!strcasecmp(name, "enable_alt_os_request")) {
+		return VbSetNvStorage(VBNV_ENABLE_ALT_OS_REQUEST, value);
+	} else if (!strcasecmp(name, "disable_alt_os_request")) {
+		return VbSetNvStorage(VBNV_DISABLE_ALT_OS_REQUEST, value);
 	}
 
 	return -1;
