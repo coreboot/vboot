@@ -45,3 +45,14 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	memset(fwmp, 0, sizeof(*fwmp));
 	return TPM_SUCCESS;
 }
+
+uint32_t SetAltOSModeFlags(uint8_t val)
+{
+	return TPM_SUCCESS;
+}
+
+uint32_t GetAltOSModeFlags(uint8_t *val)
+{
+	*val = 0;
+	return TPM_SUCCESS;
+}
