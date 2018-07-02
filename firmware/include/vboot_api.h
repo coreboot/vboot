@@ -130,6 +130,8 @@ enum VbErrorPredefined_t {
 	VBERROR_RW_JUMP_FAILED                = 0x10028,
 	/* Error reading FWMP from TPM (note: not present is not an error) */
 	VBERROR_TPM_READ_FWMP                 = 0x10029,
+	/* Peripheral busy. Cannot upgrade firmware at present. */
+	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 
 	/* VbExEcGetExpectedRWHash() may return the following codes */
 	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
