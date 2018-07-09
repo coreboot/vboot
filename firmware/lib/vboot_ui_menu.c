@@ -53,14 +53,14 @@ static int VbWantShutdownMenu(uint32_t gbb_flags)
 	return !!shutdown_request;
 }
 
-static void VbTryLegacyMenu(int allowed)
+static void VbTryLegacyMenu(struct vb2_context *ctx, int allowed)
 {
 	if (!allowed)
 		VB2_DEBUG("Legacy boot is disabled\n");
 	else if (0 != RollbackKernelLock(0))
 		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
 	else
-		VbExLegacy();	/* Will not return if successful */
+		VbExLegacy(ctx);	/* Will not return if successful */
 
 	/* If legacy boot fails, beep and return to calling UI loop. */
 	VbExBeep(120, 400);
@@ -724,7 +724,7 @@ VbError_t vb2_developer_menu(struct vb2_context *ctx, VbCommonParams *cparams)
 			break;
 		case 0x0c:
 			VB2_DEBUG("user pressed Ctrl+L; Try legacy boot\n");
-			VbTryLegacyMenu(allow_legacy);
+			VbTryLegacyMenu(ctx, allow_legacy);
 			break;
 		case 0x15:
 			/* Ctrl+U = try USB boot, or beep if failure */
@@ -824,7 +824,7 @@ VbError_t vb2_developer_menu(struct vb2_context *ctx, VbCommonParams *cparams)
 			    current_menu_idx == VB_DEV_LEGACY) {
 				VB2_DEBUG("user pressed Ctrl+L; "
 					  "Try legacy boot\n");
-				VbTryLegacyMenu(allow_legacy);
+				VbTryLegacyMenu(ctx, allow_legacy);
 			}
 
 			/* USB boot, or beep if failure */
@@ -904,7 +904,7 @@ fallout:
 	/* If defaulting to legacy boot, try that unless Ctrl+D was pressed */
 	if (use_legacy && !ctrl_d_pressed) {
 		VB2_DEBUG("defaulting to legacy\n");
-		VbTryLegacyMenu(allow_legacy);
+		VbTryLegacyMenu(ctx, allow_legacy);
 	}
 
 	if ((use_usb && !ctrl_d_pressed) && allow_usb) {

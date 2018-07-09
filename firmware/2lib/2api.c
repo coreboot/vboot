@@ -9,6 +9,7 @@
 #include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
+#include "2crypto.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"
@@ -205,4 +206,13 @@ int vb2api_get_pcr_digest(struct vb2_context *ctx,
 	*dest_size = digest_size;
 
 	return VB2_SUCCESS;
+}
+
+int vb2api_digest_buffer(const uint8_t *buf,
+			 uint32_t size,
+			 enum vb2_hash_algorithm hash_alg,
+			 uint8_t *digest,
+			 uint32_t digest_size)
+{
+	return vb2_digest_buffer(buf, size, hash_alg, digest, digest_size);
 }

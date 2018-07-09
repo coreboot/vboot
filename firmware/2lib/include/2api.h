@@ -670,4 +670,20 @@ int vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size);
  */
 int vb2ex_hwcrypto_digest_finalize(uint8_t *digest, uint32_t digest_size);
 
+/**
+ * Calculate the digest of a buffer and store the result.
+ *
+ * @param buf		Data to hash
+ * @param size		Length of data in bytes
+ * @param hash_alg	Hash algorithm
+ * @param digest	Destination for digest
+ * @param digest_size	Length of digest buffer in bytes.
+ * @return VB2_SUCCESS, or non-zero on error.
+ */
+int vb2api_digest_buffer(const uint8_t *buf,
+			 uint32_t size,
+			 enum vb2_hash_algorithm hash_alg,
+			 uint8_t *digest,
+			 uint32_t digest_size);
+
 #endif  /* VBOOT_2_API_H_ */

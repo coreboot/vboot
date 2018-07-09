@@ -203,7 +203,7 @@ enum VbEcBootMode_t VbGetMode(void)
 	return vboot_mode;
 }
 
-int VbExLegacy(void)
+int VbExLegacy(struct vb2_context *ctx)
 {
 	return 1;
 }
