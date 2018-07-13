@@ -1148,12 +1148,18 @@ elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
   futility sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
-  KEY_NAME="${KEY_DIR}/key_$(basename $(dirname ${INPUT_IMAGE}))"
+  # If one key is present in this container, assume it's the right one.
+  # See crbug.com/863464
   if [[ ! -e "${KEY_NAME}.vbprik2" ]]; then
-    KEY_NAME="${KEY_DIR}/key"
+    KEYS=( "${KEY_DIR}"/*.vbprik2 )
+    if [[ ${#KEYS[@]} -eq 1 ]]; then
+      KEY_NAME="${KEYS[0]}"
+    else
+      die "Expected exactly one key present in keyset for accessory_rwsig"
+    fi
   fi
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  futility sign --type rwsig --prikey "${KEY_NAME}.vbprik2" \
+  futility sign --type rwsig --prikey "${KEY_NAME}" \
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "oci-container" ]]; then
   sign_oci_container "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
