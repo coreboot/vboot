@@ -42,6 +42,8 @@ DEFINE_string partitions "" \
 DEFINE_boolean recovery_key "$FLAGS_FALSE" \
   "Use recovery key to sign image (to boot from USB)" ""
 DEFINE_boolean force "$FLAGS_FALSE" "Skip sanity checks and make the change" "f"
+DEFINE_boolean default_rw_root "${FLAGS_TRUE}" \
+  "When --remove_rootfs_verification is set, change root mount option to RW." ""
 
 # Parse command line
 FLAGS "$@" || exit 1
@@ -66,13 +68,18 @@ EXEC_LOG="$(make_temp_file)"
 remove_rootfs_verification() {
   local new_root="PARTUUID=%U/PARTNROFF=1"
   # the first line in sed is to strip out bootcache details
+  local rw_root_opt="s| ro | rw |"
+  if [ "${FLAGS_default_rw_root}" = "${FLAGS_FALSE}" ]; then
+    rw_root_opt="s| rw | ro |"
+  fi
+
   echo "$*" | sed '
     s| dm=\"2 [^"]*bootcache[^"]* vroot | dm=\"1 vroot |
     s| root=/dev/dm-[0-9] | root='"$new_root"' |
     s| dm_verity.dev_wait=1 | dm_verity.dev_wait=0 |
     s| payload=PARTUUID=%U/PARTNROFF=1 | payload=ROOT_DEV |
     s| hashtree=PARTUUID=%U/PARTNROFF=1 | hashtree=HASH_DEV |
-    s| ro | rw |'
+    '"${rw_root_opt}"
 }
 
 remove_legacy_boot_rootfs_verification() {
