@@ -237,7 +237,7 @@ VbError_t vb2_alt_os_ui(struct vb2_context *ctx, VbCommonParams *cparams)
 
 	if (boot_alt_os) {
 		/* Will only return on failure */
-		VbTryLegacy(ctx, 1);
+		VbTryLegacy(1);
 	}
 
 	/* Will only return on failure */
