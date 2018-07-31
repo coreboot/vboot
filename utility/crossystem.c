@@ -88,6 +88,7 @@ const Param sys_param_list[] = {
   {"recoverysw_boot", 0, "Recovery switch position at boot"},
   {"recoverysw_cur", 0, "Recovery switch current position"},
   {"recoverysw_ec_boot", 0, "Recovery switch position at EC boot"},
+  {"recoverysw_is_virtual", 0, "Recovery switch is virtual"},
   {"ro_fwid", IS_STRING, "Read-only firmware ID"},
   {"tpm_attack", CAN_WRITE, "TPM was interrupted since this flag was cleared"},
   {"tpm_fwver", 0, "Firmware version stored in TPM", "0x%08x"},
