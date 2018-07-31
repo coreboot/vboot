@@ -98,7 +98,7 @@ dofile() {
   file="$1"
   size=$(stat -c %s "$file")
 
-  if [ -f "$file" ] && [ "$size" -le 8388608 ]; then
+  if [ -f "$file" ] && [ "$size" -le 16777216 ]; then
     echo -e "\nBIOS: $file"
 
     showbios "$file" ""
