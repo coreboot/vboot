@@ -22,10 +22,10 @@
 #define FWMP_NV_MAX_SIZE 128
 #define REC_HASH_NV_INDEX                0x100b
 #define REC_HASH_NV_SIZE                 VB2_SHA256_DIGEST_SIZE
-/* Space to hold a temporary key for USB autoconfig; see crbug.com/793878. */
-#define OOBE_USB_AUTOCONFIG_KEY_NV_INDEX  0x100c
-/* Size of a P256 elliptic curve public key in compressed format. */
-#define OOBE_USB_AUTOCONFIG_KEY_NV_SIZE 33
+/* Space to hold a temporary SHA256 digest of a public key for USB autoconfig;
+ * see crbug.com/845589. */
+#define OOBE_USB_AUTOCONFIG_KEY_DIGEST_NV_INDEX  0x100c
+#define OOBE_USB_AUTOCONFIG_KEY_DIGEST_NV_SIZE   VB2_SHA256_DIGEST_SIZE
 
 /* Structure definitions for TPM spaces */
 
