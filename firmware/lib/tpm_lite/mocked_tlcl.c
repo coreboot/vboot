@@ -145,8 +145,8 @@ uint32_t TlclGetSTClearFlags(TPM_STCLEAR_FLAGS* vflags)
 }
 
 uint32_t TlclGetFlags(uint8_t* disable,
-                      uint8_t* deactivated,
-                      uint8_t *nvlocked)
+		      uint8_t* deactivated,
+		      uint8_t *nvlocked)
 {
 	*disable = 0;
 	*deactivated = 0;
@@ -160,7 +160,7 @@ uint32_t TlclSetGlobalLock(void)
 }
 
 uint32_t TlclExtend(int pcr_num, const uint8_t* in_digest,
-                    uint8_t* out_digest)
+		    uint8_t* out_digest)
 {
 	memcpy(out_digest, in_digest, kPcrDigestLength);
 	return TPM_SUCCESS;
@@ -187,8 +187,8 @@ uint32_t TlclGetRandom(uint8_t* data, uint32_t length, uint32_t *size)
 }
 
 uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
-                        uint8_t* vendor_specific_buf,
-                        size_t* vendor_specific_buf_size)
+			uint8_t* vendor_specific_buf,
+			size_t* vendor_specific_buf_size)
 {
 	*vendor = 0x4e4f4e45;
 	*firmware_version = 0x1;
@@ -206,7 +206,7 @@ int TlclPacketSize(const uint8_t* packet)
 }
 
 uint32_t TlclSendReceive(const uint8_t* request, uint8_t* response,
-                         int max_length)
+			 int max_length)
 {
 	return TPM_SUCCESS;
 }

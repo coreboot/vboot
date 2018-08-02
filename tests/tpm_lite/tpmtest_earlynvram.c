@@ -17,13 +17,13 @@
 #define INDEX0 0xcafe
 
 int main(int argc, char** argv) {
-  uint32_t x;
+	uint32_t x;
 
-  TlclLibInit();
-  TPM_CHECK(TlclStartup());
-  TPM_CHECK(TlclContinueSelfTest());
-  TPM_CHECK(TlclAssertPhysicalPresence());
-  TPM_CHECK(TlclRead(INDEX0, (uint8_t*) &x, sizeof(x)));
-  printf("TEST SUCCEEDED\n");
-  return 0;
+	TlclLibInit();
+	TPM_CHECK(TlclStartup());
+	TPM_CHECK(TlclContinueSelfTest());
+	TPM_CHECK(TlclAssertPhysicalPresence());
+	TPM_CHECK(TlclRead(INDEX0, (uint8_t*) &x, sizeof(x)));
+	printf("TEST SUCCEEDED\n");
+	return 0;
 }

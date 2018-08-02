@@ -96,7 +96,7 @@ typedef uint32_t TPM_FAMILY_FLAGS;
 #define TPM_LOC_ZERO   (((uint32_t)1)<<0)
 
 #define TPM_ALL_LOCALITIES (TPM_LOC_ZERO | TPM_LOC_ONE | TPM_LOC_TWO    \
-                            | TPM_LOC_THREE | TPM_LOC_FOUR)  /* 0x1f */
+			    | TPM_LOC_THREE | TPM_LOC_FOUR)  /* 0x1f */
 
 #define TPM_PHYSICAL_PRESENCE_LOCK          ((uint16_t) 0x0004)
 #define TPM_PHYSICAL_PRESENCE_PRESENT       ((uint16_t) 0x0008)
@@ -116,28 +116,28 @@ typedef uint32_t TPM_FAMILY_FLAGS;
 
 typedef struct tdTPM_DIGEST
 {
-    uint8_t  digest[TPM_SHA1_160_HASH_LEN];
+	uint8_t  digest[TPM_SHA1_160_HASH_LEN];
 } TPM_DIGEST;
 
 typedef TPM_DIGEST TPM_COMPOSITE_HASH;
 
 typedef struct tdTPM_PCR_SELECTION
 {
-    uint16_t  sizeOfSelect;
-    uint8_t   pcrSelect[3];
+	uint16_t  sizeOfSelect;
+	uint8_t   pcrSelect[3];
 } __attribute__((packed)) TPM_PCR_SELECTION;
 
 typedef struct tdTPM_NV_ATTRIBUTES
 {
-    TPM_STRUCTURE_TAG     tag;
-    TPM_NV_PER_ATTRIBUTES attributes;
+	TPM_STRUCTURE_TAG     tag;
+	TPM_NV_PER_ATTRIBUTES attributes;
 } __attribute__((packed)) TPM_NV_ATTRIBUTES;
 
 typedef struct tdTPM_PCR_INFO_SHORT
 {
-    TPM_PCR_SELECTION      pcrSelection;
-    TPM_LOCALITY_SELECTION localityAtRelease;
-    TPM_COMPOSITE_HASH     digestAtRelease;
+	TPM_PCR_SELECTION      pcrSelection;
+	TPM_LOCALITY_SELECTION localityAtRelease;
+	TPM_COMPOSITE_HASH     digestAtRelease;
 } __attribute__((packed)) TPM_PCR_INFO_SHORT;
 
 typedef struct tdTPM_PERMANENT_FLAGS
@@ -176,51 +176,51 @@ typedef struct tdTPM_STCLEAR_FLAGS{
 
 typedef struct tdTPM_NV_DATA_PUBLIC
 {
-    TPM_STRUCTURE_TAG  tag;
-    TPM_NV_INDEX       nvIndex;
-    TPM_PCR_INFO_SHORT pcrInfoRead;
-    TPM_PCR_INFO_SHORT pcrInfoWrite;
-    TPM_NV_ATTRIBUTES  permission;
-    TPM_BOOL           bReadSTClear;
-    TPM_BOOL           bWriteSTClear;
-    TPM_BOOL           bWriteDefine;
-    uint32_t           dataSize;
+	TPM_STRUCTURE_TAG  tag;
+	TPM_NV_INDEX       nvIndex;
+	TPM_PCR_INFO_SHORT pcrInfoRead;
+	TPM_PCR_INFO_SHORT pcrInfoWrite;
+	TPM_NV_ATTRIBUTES  permission;
+	TPM_BOOL           bReadSTClear;
+	TPM_BOOL           bWriteSTClear;
+	TPM_BOOL           bWriteDefine;
+	uint32_t           dataSize;
 } TPM_NV_DATA_PUBLIC;
 
 typedef struct tdTPM_NONCE
 {
-    uint8_t nonce[TPM_SHA1BASED_NONCE_LEN];
+	uint8_t nonce[TPM_SHA1BASED_NONCE_LEN];
 } TPM_NONCE;
 
 typedef struct tdTPM_FAMILY_TABLE_ENTRY
 {
-    TPM_STRUCTURE_TAG tag;
-    TPM_FAMILY_LABEL familyLabel;
-    TPM_FAMILY_ID familyID;
-    TPM_FAMILY_VERIFICATION verificationCount;
-    TPM_FAMILY_FLAGS flags;
+	TPM_STRUCTURE_TAG tag;
+	TPM_FAMILY_LABEL familyLabel;
+	TPM_FAMILY_ID familyID;
+	TPM_FAMILY_VERIFICATION verificationCount;
+	TPM_FAMILY_FLAGS flags;
 } TPM_FAMILY_TABLE_ENTRY;
 
 typedef struct tdTPM_IFX_FIRMWAREPACKAGE {
-    uint32_t FwPackageIdentifier;
-    uint32_t Version;
-    uint32_t StaleVersion;
+	uint32_t FwPackageIdentifier;
+	uint32_t Version;
+	uint32_t StaleVersion;
 } TPM_IFX_FIRMWAREPACKAGE;
 
 typedef struct tdTPM_IFX_FIELDUPGRADEINFO
 {
-    uint16_t wMaxDataSize;
-    TPM_IFX_FIRMWAREPACKAGE sBootloaderFirmwarePackage;
-    TPM_IFX_FIRMWAREPACKAGE sFirmwarePackages[2];
-    uint16_t wSecurityModuleStatus;
-    TPM_IFX_FIRMWAREPACKAGE sProcessFirmwarePackage;
-    uint16_t wFieldUpgradeCounter;
+	uint16_t wMaxDataSize;
+	TPM_IFX_FIRMWAREPACKAGE sBootloaderFirmwarePackage;
+	TPM_IFX_FIRMWAREPACKAGE sFirmwarePackages[2];
+	uint16_t wSecurityModuleStatus;
+	TPM_IFX_FIRMWAREPACKAGE sProcessFirmwarePackage;
+	uint16_t wFieldUpgradeCounter;
 } TPM_IFX_FIELDUPGRADEINFO;
 
 typedef struct tdTPM_NV_AUTH_POLICY
 {
-    TPM_PCR_INFO_SHORT pcr_info_read;
-    TPM_PCR_INFO_SHORT pcr_info_write;
+	TPM_PCR_INFO_SHORT pcr_info_read;
+	TPM_PCR_INFO_SHORT pcr_info_write;
 } TPM_NV_AUTH_POLICY;
 
 #define TPM_IFX_FieldUpgradeInfoRequest2  ((uint8_t) 0x11)

@@ -268,10 +268,10 @@ static void unmarshal_get_capability(void **buffer, int *size,
  * room in the buffer.
  */
 
- /*
-  * Marshaling an arbitrary blob requires its size in addition to common
-  * parameter set.
-  */
+/*
+ * Marshaling an arbitrary blob requires its size in addition to common
+ * parameter set.
+ */
 static void marshal_blob(void **buffer, void *blob,
 			 size_t blob_size, int *buffer_space)
 {

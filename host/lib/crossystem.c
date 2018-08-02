@@ -213,7 +213,7 @@ int VbGetCrosDebug(void)
 }
 
 char *GetVdatLoadFirmwareDebug(char *dest, int size,
-                               const VbSharedDataHeader *sh)
+			       const VbSharedDataHeader *sh)
 {
 	snprintf(dest, size,
 		 "Check A result=%d\n"
@@ -232,7 +232,7 @@ char *GetVdatLoadFirmwareDebug(char *dest, int size,
 #define TRUNCATED "\n(truncated)\n"
 
 char *GetVdatLoadKernelDebug(char *dest, int size,
-                             const VbSharedDataHeader *sh)
+			     const VbSharedDataHeader *sh)
 {
 	int used = 0;
 	int first_call_tracked = 0;
@@ -566,7 +566,7 @@ int VbGetSystemPropertyInt(const char *name)
 		if (!VbGetSystemPropertyString("hwid", hwid, sizeof(hwid))) {
 			char fwtype_buf[VB_MAX_STRING_PROPERTY];
 			const char *fwtype = VbGetSystemPropertyString(
-			    "mainfw_type", fwtype_buf, sizeof(fwtype_buf));
+				"mainfw_type", fwtype_buf, sizeof(fwtype_buf));
 			if (fwtype && !strcasecmp(fwtype, "nonchrome")) {
 				value = 1;
 			}
@@ -579,7 +579,7 @@ int VbGetSystemPropertyInt(const char *name)
 }
 
 const char *VbGetSystemPropertyString(const char *name, char *dest,
-                                      size_t size)
+				      size_t size)
 {
 	/* Check architecture-dependent properties first */
 	if (VbGetArchPropertyString(name, dest, size))
@@ -676,8 +676,8 @@ int VbSetSystemPropertyInt(const char *name, int value)
 			return -1;
 		kern_nv &= ~KERN_NV_FWUPDATE_TRIES_MASK;
 		kern_nv |= (value & KERN_NV_FWUPDATE_TRIES_MASK);
-		return vb2_set_nv_storage_with_backup(VB2_NV_KERNEL_FIELD,
-						      kern_nv);
+		return vb2_set_nv_storage_with_backup(
+			VB2_NV_KERNEL_FIELD, kern_nv);
 	} else if (!strcasecmp(name,"block_devmode")) {
 		int kern_nv = vb2_get_nv_storage(VB2_NV_KERNEL_FIELD);
 		if (kern_nv == -1)
@@ -685,8 +685,8 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		kern_nv &= ~KERN_NV_BLOCK_DEVMODE_FLAG;
 		if (value)
 			kern_nv |= KERN_NV_BLOCK_DEVMODE_FLAG;
-		return vb2_set_nv_storage_with_backup(VB2_NV_KERNEL_FIELD,
-						      kern_nv);
+		return vb2_set_nv_storage_with_backup(
+			VB2_NV_KERNEL_FIELD, kern_nv);
 	} else if (!strcasecmp(name,"tpm_attack")) {
 		/* This value should only be read and cleared, but we allow
 		 * setting it to 1 for testing. */
@@ -697,35 +697,34 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		if (value)
 			kern_nv |= KERN_NV_TPM_ATTACK_FLAG;
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_KERNEL_FIELD, kern_nv);
+			VB2_NV_KERNEL_FIELD, kern_nv);
 	} else if (!strcasecmp(name,"loc_idx")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_LOCALIZATION_INDEX,
-						 value);
+			VB2_NV_LOCALIZATION_INDEX, value);
 	} else if (!strcasecmp(name,"dev_boot_usb")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_DEV_BOOT_USB, value);
+			VB2_NV_DEV_BOOT_USB, value);
 	} else if (!strcasecmp(name,"dev_boot_legacy")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_DEV_BOOT_LEGACY, value);
+			VB2_NV_DEV_BOOT_LEGACY, value);
 	} else if (!strcasecmp(name,"dev_boot_signed_only")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_DEV_BOOT_SIGNED_ONLY, value);
+			VB2_NV_DEV_BOOT_SIGNED_ONLY, value);
 	} else if (!strcasecmp(name,"dev_boot_fastboot_full_cap")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, value);
+			VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, value);
 	} else if (!strcasecmp(name, "fastboot_unlock_in_fw")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_FASTBOOT_UNLOCK_IN_FW, value);
+			VB2_NV_FASTBOOT_UNLOCK_IN_FW, value);
 	} else if (!strcasecmp(name, "dev_enable_udc")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_DEV_ENABLE_UDC, value);
+			VB2_NV_DEV_ENABLE_UDC, value);
 	} else if (!strcasecmp(name, "boot_on_ac_detect")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_BOOT_ON_AC_DETECT, value);
+			VB2_NV_BOOT_ON_AC_DETECT, value);
 	} else if (!strcasecmp(name, "try_ro_sync")) {
 		return vb2_set_nv_storage_with_backup(
-		    VB2_NV_TRY_RO_SYNC, value);
+			VB2_NV_TRY_RO_SYNC, value);
 	} else if (!strcasecmp(name, "battery_cutoff_request")) {
 		return vb2_set_nv_storage(VB2_NV_BATTERY_CUTOFF_REQUEST, value);
 	} else if (!strcasecmp(name,"kernel_max_rollforward")) {
@@ -763,7 +762,7 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 		for (i = 0; i < ARRAY_SIZE(default_boot); i++) {
 			if (!strcasecmp(value, default_boot[i]))
 				return vb2_set_nv_storage(
-				    VB2_NV_DEV_DEFAULT_BOOT, i);
+					VB2_NV_DEV_DEFAULT_BOOT, i);
 		}
 		return -1;
 	}

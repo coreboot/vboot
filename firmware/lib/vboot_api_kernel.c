@@ -407,7 +407,7 @@ static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
 }
 
 VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
-                                VbSelectAndLoadKernelParams *kparams)
+				VbSelectAndLoadKernelParams *kparams)
 {
 	VbError_t retval = vb2_kernel_setup(cparams, kparams);
 	if (retval)
@@ -606,7 +606,7 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 
 	retval = VBERROR_SUCCESS;
 
-fail:
+ fail:
 	vb2_kernel_cleanup(&ctx, cparams);
 	if (NULL != kernel_subkey)
 		free(kernel_subkey);

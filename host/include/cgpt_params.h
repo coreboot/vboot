@@ -85,7 +85,7 @@ typedef struct CgptPrioritizeParams {
 
 struct CgptFindParams;
 typedef void (*CgptFindShowFn)(struct CgptFindParams *params, char *filename,
-                               int partnum, GptEntry *entry);
+			       int partnum, GptEntry *entry);
 typedef struct CgptFindParams {
 	char *drive_name;
 	uint64_t drive_size;

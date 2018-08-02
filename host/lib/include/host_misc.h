@@ -12,8 +12,8 @@
 #include "vboot_struct.h"
 
 /* Copy up to dest_size-1 characters from src to dest, ensuring null
-   termination (which strncpy() doesn't do).  Returns the destination
-   string. */
+ * termination (which strncpy() doesn't do).  Returns the destination
+ * string. */
 char* StrCopy(char* dest, const char* src, int dest_size);
 
 /* Read data from [filename].  Store the size of returned data in [size].

@@ -230,7 +230,7 @@ VbError_t VbExTpmOpen(void)
 }
 
 VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
-                             uint8_t* response, uint32_t* response_length)
+			     uint8_t* response, uint32_t* response_length)
 {
 	/*
 	 * In a real firmware implementation, this function should contain
@@ -280,12 +280,12 @@ VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 	tag = TpmTag(request);
 	response_tag = TpmTag(response);
 	assert(
-	    (tag == TPM_TAG_RQU_COMMAND &&
-	     response_tag == TPM_TAG_RSP_COMMAND) ||
-	    (tag == TPM_TAG_RQU_AUTH1_COMMAND &&
-	     response_tag == TPM_TAG_RSP_AUTH1_COMMAND) ||
-	    (tag == TPM_TAG_RQU_AUTH2_COMMAND &&
-	     response_tag == TPM_TAG_RSP_AUTH2_COMMAND));
+		(tag == TPM_TAG_RQU_COMMAND &&
+		 response_tag == TPM_TAG_RSP_COMMAND) ||
+		(tag == TPM_TAG_RQU_AUTH1_COMMAND &&
+		 response_tag == TPM_TAG_RSP_AUTH1_COMMAND) ||
+		(tag == TPM_TAG_RQU_AUTH2_COMMAND &&
+		 response_tag == TPM_TAG_RSP_AUTH2_COMMAND));
 	assert(*response_length == TpmResponseSize(response));
 #endif
 

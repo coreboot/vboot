@@ -11,22 +11,22 @@
 #include "tlcl.h"
 
 int main(int argc, char** argv) {
-  uint32_t result;
-  TlclLibInit();
-  result = TlclStartup();
-  if (result != 0) {
-    printf("tpm startup failed with 0x%x\n", result);
-  }
-  result = TlclGetFlags(NULL, NULL, NULL);
-  if (result != 0) {
-    printf("tpm getflags failed with 0x%x\n", result);
-  }
-  printf("executing SelfTestFull\n");
-  TlclSelfTestFull();
-  result = TlclGetFlags(NULL, NULL, NULL);
-  if (result != 0) {
-    printf("tpm getflags failed with 0x%x\n", result);
-  }
-  printf("TEST SUCCEEDED\n");
-  return 0;
+	uint32_t result;
+	TlclLibInit();
+	result = TlclStartup();
+	if (result != 0) {
+		printf("tpm startup failed with 0x%x\n", result);
+	}
+	result = TlclGetFlags(NULL, NULL, NULL);
+	if (result != 0) {
+		printf("tpm getflags failed with 0x%x\n", result);
+	}
+	printf("executing SelfTestFull\n");
+	TlclSelfTestFull();
+	result = TlclGetFlags(NULL, NULL, NULL);
+	if (result != 0) {
+		printf("tpm getflags failed with 0x%x\n", result);
+	}
+	printf("TEST SUCCEEDED\n");
+	return 0;
 }

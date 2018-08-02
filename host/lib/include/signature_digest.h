@@ -23,7 +23,7 @@ uint8_t* PrependDigestInfo(enum vb2_hash_algorithm hash_alg, uint8_t* digest);
  * pointer and must Free() it.
  */
 uint8_t* SignatureDigest(const uint8_t* buf, uint64_t len,
-                         unsigned int algorithm);
+			 unsigned int algorithm);
 
 /* Calculates the signature on a buffer [buf] of length [len] using
  * the private RSA key file from [key_file] and signature algorithm
@@ -32,5 +32,5 @@ uint8_t* SignatureDigest(const uint8_t* buf, uint64_t len,
  * Returns the signature. Caller owns the buffer and must Free() it.
  */
 uint8_t* SignatureBuf(const uint8_t* buf, uint64_t len, const char* key_file,
-                      unsigned int algorithm);
+		      unsigned int algorithm);
 #endif  /* VBOOT_REFERENCE_SIGNATURE_DIGEST_H_ */

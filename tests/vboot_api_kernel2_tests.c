@@ -139,7 +139,7 @@ int VbExLegacy(void)
 }
 
 VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
-                          uint32_t disk_flags)
+			  uint32_t disk_flags)
 {
 	if (mock_num_disks_count < ARRAY_SIZE(mock_num_disks)) {
 		if (mock_num_disks[mock_num_disks_count] == -1)
@@ -153,7 +153,7 @@ VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 }
 
 VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
-                           VbExDiskHandle_t preserve_handle)
+			   VbExDiskHandle_t preserve_handle)
 {
 	return VBERROR_SUCCESS;
 }
@@ -218,7 +218,7 @@ static void VbUserConfirmsTest(void)
 	mock_keypress[0] = ' ';
 	shutdown_request_calls_left = 1;
 	TEST_EQ(VbUserConfirms(&ctx, VB_CONFIRM_SPACE_MEANS_NO), 0,
-                "Space means no");
+		"Space means no");
 
 	ResetMocks();
 	mock_keypress[0] = ' ';

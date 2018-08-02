@@ -190,7 +190,7 @@ static void ResetMocks(void)
 /* Mocks */
 
 VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
-                       uint64_t lba_count, void *buffer)
+		       uint64_t lba_count, void *buffer)
 {
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
 
@@ -352,11 +352,11 @@ static void ReadWriteGptTest(void)
 	TEST_EQ(AllocAndReadGptData(handle, &g), 0,
 		"AllocAndRead primary invalid");
 	TEST_EQ(CheckHeader(mock_gpt_primary, 0, g.streaming_drive_sectors,
-                g.gpt_drive_sectors, 0, g.sector_bytes),
-                1, "Primary header is invalid");
+		g.gpt_drive_sectors, 0, g.sector_bytes),
+		1, "Primary header is invalid");
 	TEST_EQ(CheckHeader(mock_gpt_secondary, 1, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                0, "Secondary header is valid");
+		0, "Secondary header is valid");
 	TEST_CALLS("VbExDiskRead(h, 1, 1)\n"
 		   "VbExDiskRead(h, 1023, 1)\n"
 		   "VbExDiskRead(h, 991, 32)\n");
@@ -372,10 +372,10 @@ static void ReadWriteGptTest(void)
 		"AllocAndRead secondary invalid");
 	TEST_EQ(CheckHeader(mock_gpt_primary, 0, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                0, "Primary header is valid");
+		0, "Primary header is valid");
 	TEST_EQ(CheckHeader(mock_gpt_secondary, 1, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                1, "Secondary header is invalid");
+		1, "Secondary header is invalid");
 	TEST_CALLS("VbExDiskRead(h, 1, 1)\n"
 		   "VbExDiskRead(h, 2, 32)\n"
 		   "VbExDiskRead(h, 1023, 1)\n");
@@ -392,10 +392,10 @@ static void ReadWriteGptTest(void)
 		"AllocAndRead primary and secondary invalid");
 	TEST_EQ(CheckHeader(mock_gpt_primary, 0, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                1, "Primary header is invalid");
+		1, "Primary header is invalid");
 	TEST_EQ(CheckHeader(mock_gpt_secondary, 1, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                1, "Secondary header is invalid");
+		1, "Secondary header is invalid");
 	TEST_CALLS("VbExDiskRead(h, 1, 1)\n"
 		   "VbExDiskRead(h, 1023, 1)\n");
 	WriteAndFreeGptData(handle, &g);
@@ -423,7 +423,7 @@ static void ReadWriteGptTest(void)
 		   "VbExDiskWrite(h, 2, 32)\n");
 	TEST_EQ(CheckHeader(mock_gpt_primary, 0, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                0, "Fix Primary GPT: Primary header is valid");
+		0, "Fix Primary GPT: Primary header is valid");
 
 	/*
 	 * Invalidate secondary GPT header and check that it can be
@@ -448,7 +448,7 @@ static void ReadWriteGptTest(void)
 		   "VbExDiskWrite(h, 991, 32)\n");
 	TEST_EQ(CheckHeader(mock_gpt_secondary, 1, g.streaming_drive_sectors,
 		g.gpt_drive_sectors, 0, g.sector_bytes),
-                0, "Fix Secondary GPT: Secondary header is valid");
+		0, "Fix Secondary GPT: Secondary header is valid");
 
 	/* Data which is changed is written */
 	ResetMocks();

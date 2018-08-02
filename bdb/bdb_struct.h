@@ -126,7 +126,7 @@ struct bdb_key {
 	/* Key version */
 	uint32_t key_version;
 
- 	/* Description; null-terminated ASCII */
+	/* Description; null-terminated ASCII */
 	char description[128];
 
 	/*

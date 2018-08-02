@@ -1299,7 +1299,7 @@ static void FreeEntry(GptEntry *e)
 
 /* Set up an entry. */
 static void FillEntry(GptEntry *e, int is_kernel,
-                      int priority, int successful, int tries)
+		      int priority, int successful, int tries)
 {
 	memcpy(&e->type, (is_kernel ? &guid_kernel : &guid_zero), sizeof(Guid));
 	SetEntryPriority(e, priority);

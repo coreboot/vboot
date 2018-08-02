@@ -86,10 +86,10 @@ struct vb2_keyblock *vb2_create_keyblock(
  * the existing interface. */
 struct vb2_keyblock *vb2_create_keyblock_external(
 		const struct vb2_packed_key *data_key,
-                const char *signing_key_pem_file,
-                uint32_t algorithm,
-                uint32_t flags,
-                const char *external_signer)
+		const char *signing_key_pem_file,
+		uint32_t algorithm,
+		uint32_t flags,
+		const char *external_signer)
 {
 	if (!signing_key_pem_file || !data_key || !external_signer)
 		return NULL;

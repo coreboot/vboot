@@ -15,15 +15,15 @@
 
 
 int main(int argc, char** argv) {
-  TlclLibInit();
+	TlclLibInit();
 
-  TlclStartup();
-  TlclSelfTestFull();
+	TlclStartup();
+	TlclSelfTestFull();
 
-  TlclAssertPhysicalPresence();
+	TlclAssertPhysicalPresence();
 
-  TlclWriteLock(INDEX0);
+	TlclWriteLock(INDEX0);
 
-  printf("Locked 0x%x\n", INDEX0);
-  exit(0);
+	printf("Locked 0x%x\n", INDEX0);
+	exit(0);
 }

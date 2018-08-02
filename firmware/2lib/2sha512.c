@@ -170,8 +170,8 @@ void vb2_sha512_init(struct vb2_sha512_context *ctx)
 }
 
 static void vb2_sha512_transform(struct vb2_sha512_context *ctx,
-			     const uint8_t *message,
-                             unsigned int block_nb)
+				 const uint8_t *message,
+				 unsigned int block_nb)
 {
 	/* Note that these arrays use 88*8=704 bytes of stack */
 	uint64_t w[80];

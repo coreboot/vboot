@@ -140,7 +140,7 @@ VbError_t VbExEcEnteringMode(int devidx, enum VbEcBootMode_t mode)
 
 VbError_t VbExEcVbootDone(int in_recovery)
 {
-       return VBERROR_SUCCESS;
+	return VBERROR_SUCCESS;
 }
 
 VbError_t VbExEcBatteryCutOff(void)

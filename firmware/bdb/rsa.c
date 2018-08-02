@@ -50,9 +50,9 @@ static int mont_ge(const struct public_key *key, uint32_t *a)
  * Montgomery c[] += a * b[] / R % mod
  */
 static void montMulAdd(const struct public_key *key,
-                       uint32_t *c,
-                       const uint32_t a,
-                       const uint32_t *b)
+		       uint32_t *c,
+		       const uint32_t a,
+		       const uint32_t *b)
 {
 	uint64_t A = (uint64_t)a * b[0] + c[0];
 	uint32_t d0 = (uint32_t)A * key->n0inv;
@@ -78,9 +78,9 @@ static void montMulAdd(const struct public_key *key,
  * Montgomery c[] = a[] * b[] / R % mod
  */
 static void montMul(const struct public_key *key,
-                    uint32_t *c,
-                    const uint32_t *a,
-                    const uint32_t *b)
+		    uint32_t *c,
+		    const uint32_t *a,
+		    const uint32_t *b)
 {
 	uint32_t i;
 	for (i = 0; i < key->arrsize; ++i) {
@@ -133,7 +133,7 @@ static const uint8_t sha256_tail[] = {
 };
 
 static int check_padding(const uint8_t *sig, const struct public_key *key,
-		      uint32_t pad_size)
+			 uint32_t pad_size)
 {
 	/* Determine padding to use depending on the signature type */
 	const uint32_t tail_size = sizeof(sha256_tail);

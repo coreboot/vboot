@@ -48,9 +48,9 @@ int vb2_mont_ge(const struct vb2_public_key *key, uint32_t *a)
  * Montgomery c[] += a * b[] / R % mod
  */
 static void montMulAdd(const struct vb2_public_key *key,
-                       uint32_t *c,
-                       const uint32_t a,
-                       const uint32_t *b)
+		       uint32_t *c,
+		       const uint32_t a,
+		       const uint32_t *b)
 {
 	uint64_t A = (uint64_t)a * b[0] + c[0];
 	uint32_t d0 = (uint32_t)A * key->n0inv;
@@ -95,9 +95,9 @@ static void montMulAdd0(const struct vb2_public_key *key,
  * Montgomery c[] = a[] * b[] / R % mod
  */
 static void montMul(const struct vb2_public_key *key,
-                    uint32_t *c,
-                    const uint32_t *a,
-                    const uint32_t *b)
+		    uint32_t *c,
+		    const uint32_t *a,
+		    const uint32_t *b)
 {
 	uint32_t i;
 	for (i = 0; i < key->arrsize; ++i) {

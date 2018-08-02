@@ -306,7 +306,7 @@ typedef struct VbSelectAndLoadKernelParams {
  * Returns VBERROR_SUCCESS if success, non-zero if error; on error, caller
  * should reboot. */
 VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
-                                VbSelectAndLoadKernelParams *kparams);
+				VbSelectAndLoadKernelParams *kparams);
 
 /**
  * Verify Kernel Image loaded in memory.
@@ -419,7 +419,7 @@ VbError_t VbExTpmOpen(void);
  * exit, response_length is set to the actual received response length in
  * bytes. */
 VbError_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
-                             uint8_t *response, uint32_t *response_length);
+			     uint8_t *response, uint32_t *response_length);
 
 #ifdef CHROMEOS_ENVIRONMENT
 
@@ -538,7 +538,7 @@ typedef struct VbDiskInfo {
  * VbExDiskFreeInfo() is called.
  */
 VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
-                          uint32_t disk_flags);
+			  uint32_t disk_flags);
 
 /**
  * Free a disk information list [infos] previously returned by
@@ -547,7 +547,7 @@ VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
  * list need not remain valid after this call.
  */
 VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
-                           VbExDiskHandle_t preserve_handle);
+			   VbExDiskHandle_t preserve_handle);
 
 /**
  * Read lba_count LBA sectors, starting at sector lba_start, from the disk,
@@ -561,7 +561,7 @@ VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
  * crash.
  */
 VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
-                       uint64_t lba_count, void *buffer);
+		       uint64_t lba_count, void *buffer);
 
 /**
  * Write lba_count LBA sectors, starting at sector lba_start, to the disk, from
@@ -575,7 +575,7 @@ VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
  * crash.
  */
 VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
-                        uint64_t lba_count, const void *buffer);
+			uint64_t lba_count, const void *buffer);
 
 /* Streaming read interface */
 typedef void *VbExStream_t;

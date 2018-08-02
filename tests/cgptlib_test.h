@@ -9,8 +9,8 @@
 #include "sysincludes.h"
 
 enum {
-  TEST_FAIL = -1,
-  TEST_OK = 0,
+	TEST_FAIL = -1,
+	TEST_OK = 0,
 };
 
 #define TEST_CASE(func) #func, func
@@ -18,13 +18,13 @@ typedef int (*test_func)();
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
-#define EXPECT(expr) \
-  do { \
-    if (!(expr)) { \
-      printf(COL_RED " fail " COL_STOP "in expression %s in %s() line %d\n",\
-             #expr, __FUNCTION__, __LINE__); \
-      return TEST_FAIL; \
-    } \
-  } while (0)
+#define EXPECT(expr) do { \
+	if (!(expr)) { \
+		printf(COL_RED " fail " COL_STOP \
+		       "in expression %s in %s() line %d\n", \
+		       #expr, __FUNCTION__, __LINE__); \
+		return TEST_FAIL; \
+	} \
+} while (0)
 
-#endif  /* VBOOT_REFERENCE_CGPTLIB_TEST_H_ */
+#endif	/* VBOOT_REFERENCE_CGPTLIB_TEST_H_ */

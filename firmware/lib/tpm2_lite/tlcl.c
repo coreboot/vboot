@@ -51,7 +51,7 @@ static uint32_t tpm_get_response(TPM_CC command,
 	res = VbExTpmSendReceive(cr_buffer, out_size, cr_buffer, &in_size);
 	if (res != TPM_SUCCESS) {
 		VB2_DEBUG("tpm transaction failed for %#x with error %#x\n",
-		          command, res);
+			  command, res);
 		return res;
 	}
 
@@ -127,7 +127,7 @@ uint32_t TlclLibClose(void)
 }
 
 uint32_t TlclSendReceive(const uint8_t *request, uint8_t *response,
-                         int max_length)
+			 int max_length)
 {
 	uint32_t rv, resp_size;
 
@@ -255,8 +255,8 @@ uint32_t TlclSetEnable(void)
 }
 
 uint32_t TlclGetFlags(uint8_t* disable,
-                      uint8_t* deactivated,
-                      uint8_t *nvlocked)
+		      uint8_t* deactivated,
+		      uint8_t *nvlocked)
 {
 	/* For TPM2 the flags are always the same */
 	if (disable)
@@ -314,7 +314,7 @@ uint32_t TlclGetPermissions(uint32_t index, uint32_t *permissions)
 }
 
 uint32_t TlclGetSpaceInfo(uint32_t index, uint32_t *attributes, uint32_t *size,
-                          void* auth_policy, uint32_t* auth_policy_size)
+			  void* auth_policy, uint32_t* auth_policy_size)
 {
 	uint32_t rv;
 	struct nv_read_public_response *resp;
@@ -563,8 +563,8 @@ size_t tlcl_vendor_string_parse(uint32_t value, uint8_t* buf)
 }
 
 uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
-                        uint8_t* vendor_specific_buf,
-                        size_t* vendor_specific_buf_size)
+			uint8_t* vendor_specific_buf,
+			size_t* vendor_specific_buf_size)
 {
 	uint32_t result =  tlcl_get_tpm_property(TPM_PT_MANUFACTURER, vendor);
 	if (result != TPM_SUCCESS)

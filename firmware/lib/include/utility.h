@@ -16,8 +16,8 @@
 
 #ifdef VBOOT_DEBUG
 #define VbAssert(expr) do { if (!(expr)) { \
-    VbExError("assert fail: %s at %s:%d\n", \
-              #expr, __FILE__, __LINE__); }} while(0)
+	VbExError("assert fail: %s at %s:%d\n", \
+		  #expr, __FILE__, __LINE__); }} while(0)
 #else
 #define VbAssert(expr)
 #endif
@@ -34,7 +34,7 @@
  * forming the most and least signficant 16-bit words.
  */
 #define CombineUint16Pair(msw,lsw) (((uint32_t)(msw) << 16) |   \
-                                    (((lsw)) & 0xFFFF))
+				    (((lsw)) & 0xFFFF))
 
 /* Return the minimum of (a) or (b). */
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
@@ -52,7 +52,7 @@
  * Returns the length of the stored string, not counting the terminating null.
  */
 uint32_t Uint64ToString(char *buf, uint32_t bufsize, uint64_t value,
-                        uint32_t radix, uint32_t zero_pad_width);
+			uint32_t radix, uint32_t zero_pad_width);
 
 /**
  * Concatenate <src> onto <dest>, which has space for <destlen> characters

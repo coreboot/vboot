@@ -2003,7 +2003,7 @@ static void VbTestLanguageMenu(void)
 	TEST_EQ(screens_count, i, "  no extra screens");
 	TEST_EQ(beeps_count, 0, "  no beeps");
 
-  	printf("...done.\n");
+	printf("...done.\n");
 }
 
 static void VbNavigationTest(void)

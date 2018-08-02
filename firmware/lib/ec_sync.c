@@ -485,7 +485,7 @@ VbError_t ec_sync_phase3(struct vb2_context *ctx)
 		return rv;
 
 	/* Check if we need to cut-off battery. This must be done after EC
-         * firmware updating and before kernel started. */
+	 * firmware updating and before kernel started. */
 	if (vb2_nv_get(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST)) {
 		VB2_DEBUG("Request to cut-off battery\n");
 		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);

@@ -11,8 +11,8 @@
 #include <time.h>
 
 typedef struct ClockTimer {
-  struct timespec start_time;
-  struct timespec end_time;
+	struct timespec start_time;
+	struct timespec end_time;
 } ClockTimerState;
 
 /* Start timer and update [ct]. */

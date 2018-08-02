@@ -227,7 +227,7 @@ struct vb2_context {
 
 	/**********************************************************************
 	 * Fields caller may examine after calling vb2api_fw_phase1().  Caller
-         * must set these fields to 0 before calling any vboot functions.
+	 * must set these fields to 0 before calling any vboot functions.
 	 */
 
 	/*

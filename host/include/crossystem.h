@@ -30,7 +30,7 @@ int VbGetSystemPropertyInt(const char* name);
  *
  * Returns the passed buffer, or NULL if error. */
 const char* VbGetSystemPropertyString(const char* name, char* dest,
-                                      size_t size);
+				      size_t size);
 
 /* Sets a system property integer.
  *

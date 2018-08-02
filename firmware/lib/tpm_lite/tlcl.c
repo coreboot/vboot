@@ -65,7 +65,7 @@ static inline int TpmReturnCode(const uint8_t* buffer)
  * DOING_SELFTEST errors are returned.
  */
 static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
-                                       uint8_t* response, int max_length)
+				       uint8_t* response, int max_length)
 {
 
 	uint32_t response_length = max_length;
@@ -110,7 +110,7 @@ static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
  * error code if error. In the firmware, waits for the self test to complete
  * if needed. In the host, reports the first error without retries. */
 uint32_t TlclSendReceive(const uint8_t* request, uint8_t* response,
-                         int max_length)
+			 int max_length)
 {
 	uint32_t result = TlclSendReceiveNoRetry(request, response, max_length);
 	/* When compiling for the firmware, hide command failures due to the
@@ -560,7 +560,7 @@ uint32_t TlclInitNvAuthPolicy(uint32_t pcr_selection_bitmap,
 	 * the most unlikely one to be used in practice, i.e. the spec says
 	 * locality 3 is for "Auxiliary components. Use of this is optional and,
 	 * if used, it is implementation dependent."
-         */
+	 */
 	policy->pcr_info_read.localityAtRelease =
 		TPM_ALL_LOCALITIES & ~TPM_LOC_THREE;
 
@@ -786,8 +786,8 @@ uint32_t TlclGetSTClearFlags(TPM_STCLEAR_FLAGS* vflags)
 }
 
 uint32_t TlclGetFlags(uint8_t* disable,
-                      uint8_t* deactivated,
-                      uint8_t *nvlocked)
+		      uint8_t* deactivated,
+		      uint8_t *nvlocked)
 {
 	TPM_PERMANENT_FLAGS pflags;
 	uint32_t result = TlclGetPermanentFlags(&pflags);
@@ -813,7 +813,7 @@ uint32_t TlclSetGlobalLock(void)
 }
 
 uint32_t TlclExtend(int pcr_num, const uint8_t* in_digest,
-                    uint8_t* out_digest)
+		    uint8_t* out_digest)
 {
 	struct s_tpm_extend_cmd cmd;
 	uint8_t response[kTpmResponseHeaderLength + kPcrDigestLength];
@@ -990,8 +990,8 @@ uint32_t TlclGetRandom(uint8_t* data, uint32_t length, uint32_t *size)
 }
 
 uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
-                        uint8_t* vendor_specific_buf,
-                        size_t* vendor_specific_buf_size)
+			uint8_t* vendor_specific_buf,
+			size_t* vendor_specific_buf_size)
 {
 	uint8_t response[TPM_LARGE_ENOUGH_COMMAND_SIZE];
 	uint32_t result = TlclSendReceive(tpm_getversionval_cmd.buffer,
@@ -1313,7 +1313,7 @@ uint32_t TlclCreateDelegationFamily(uint8_t family_label)
 }
 
 uint32_t TlclReadDelegationFamilyTable(TPM_FAMILY_TABLE_ENTRY *table,
-                                       uint32_t* table_size)
+				       uint32_t* table_size)
 {
 	uint8_t response[TPM_LARGE_ENOUGH_COMMAND_SIZE];
 	uint32_t result = TlclSendReceive(tpm_delegate_read_table_cmd.buffer,

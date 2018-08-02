@@ -16,9 +16,9 @@
 #define TPM_E_NON_FATAL 0x800
 
 typedef struct tpm_error_info {
-  const char* name;
-  uint32_t code;
-  const char* description;
+	const char* name;
+	uint32_t code;
+	const char* description;
 } tpm_error_info;
 
 tpm_error_info tpm_error_table[] = {
@@ -245,6 +245,6 @@ because the ordinal required resources that have not been tested" },
 { "TPM_DEFEND_LOCK_RUNNING", TPM_E_BASE + TPM_E_NON_FATAL + 3,
 "The TPM is defending against dictionary attacks and is in some\n\
 time-out period" },
-  };
+};
 
 #endif  /* TPM_ERROR_MESSAGES_H */

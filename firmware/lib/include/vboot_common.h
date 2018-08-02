@@ -136,7 +136,7 @@ uint64_t VbSharedDataReserve(VbSharedDataHeader *header, uint64_t size);
  * Returns 0 if success, non-zero if error.
  */
 int VbSharedDataSetKernelKey(VbSharedDataHeader *header,
-                             const VbPublicKey *src);
+			     const VbPublicKey *src);
 
 /**
  * Check whether recovery is allowed or not.

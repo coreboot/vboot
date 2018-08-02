@@ -103,8 +103,8 @@ enum vb2_nv_param {
 	 * (0=no, 1=yes).
 	 */
 	VB2_NV_TRY_RO_SYNC,
-        /* Cut off battery and shutdown on next boot. */
-        VB2_NV_BATTERY_CUTOFF_REQUEST,
+	/* Cut off battery and shutdown on next boot. */
+	VB2_NV_BATTERY_CUTOFF_REQUEST,
 	/* Maximum kernel version to roll forward to */
 	VB2_NV_KERNEL_MAX_ROLLFORWARD,
 

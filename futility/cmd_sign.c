@@ -84,7 +84,7 @@ int ft_sign_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 				sign_option.pem_algo);
 			if (!sign_option.signprivate) {
 				fprintf(stderr,
- 					"Unable to read PEM signing key: %s\n",
+					"Unable to read PEM signing key: %s\n",
 					strerror(errno));
 				return 1;
 			}
@@ -1024,18 +1024,18 @@ static int do_sign(int argc, char *argv[])
 		}
 	} else {
 		/* We'll read-modify-write the output file */
-	       mapping = MAP_RW;
-	       if (sign_option.inout_file_count > 1)
-		       futil_copy_file_or_die(infile, sign_option.outfile);
-	       Debug("open RW %s\n", sign_option.outfile);
-	       infile = sign_option.outfile;
-	       ifd = open(sign_option.outfile, O_RDWR);
-	       if (ifd < 0) {
-		       errorcnt++;
-		       fprintf(stderr, "Can't open %s for writing: %s\n",
-			       sign_option.outfile, strerror(errno));
-		       goto done;
-	       }
+		mapping = MAP_RW;
+		if (sign_option.inout_file_count > 1)
+			futil_copy_file_or_die(infile, sign_option.outfile);
+		Debug("open RW %s\n", sign_option.outfile);
+		infile = sign_option.outfile;
+		ifd = open(sign_option.outfile, O_RDWR);
+		if (ifd < 0) {
+			errorcnt++;
+			fprintf(stderr, "Can't open %s for writing: %s\n",
+				sign_option.outfile, strerror(errno));
+			goto done;
+		}
 	}
 
 	if (0 != futil_map_file(ifd, mapping, &buf, &buf_len)) {

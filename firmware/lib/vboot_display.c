@@ -141,7 +141,7 @@ const char *RecoveryReasonString(uint8_t code)
 	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_NOT_DONE:
 		return "RW firmware check not done";
 	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_DEV_MISMATCH:
-	  return "RW firmware developer flag mismatch";
+		return "RW firmware developer flag mismatch";
 	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_REC_MISMATCH:
 		return "RW firmware recovery flag mismatch";
 	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
@@ -467,5 +467,5 @@ VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key)
 			(void)VbDisplayScreen(ctx, disp_current_screen, 1);
 	}
 
-  return VBERROR_SUCCESS;
+	return VBERROR_SUCCESS;
 }

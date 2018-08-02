@@ -19,28 +19,28 @@
 #include "tlcl_tests.h"
 
 int main(int argc, char** argv) {
-  uint8_t disable, deactivated;
-  int i;
+	uint8_t disable, deactivated;
+	int i;
 
-  TlclLibInit();
-  TPM_CHECK(TlclStartupIfNeeded());
-  TPM_CHECK(TlclSelfTestFull());
-  TPM_CHECK(TlclAssertPhysicalPresence());
-  TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
-  printf("disable is %d, deactivated is %d\n", disable, deactivated);
+	TlclLibInit();
+	TPM_CHECK(TlclStartupIfNeeded());
+	TPM_CHECK(TlclSelfTestFull());
+	TPM_CHECK(TlclAssertPhysicalPresence());
+	TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
+	printf("disable is %d, deactivated is %d\n", disable, deactivated);
 
-  for (i = 0; i < 2; i++) {
-    TPM_CHECK(TlclForceClear());
-    TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
-    printf("disable is %d, deactivated is %d\n", disable, deactivated);
-    VbAssert(disable == 1 && deactivated == 1);
-    TPM_CHECK(TlclSetEnable());
-    TPM_CHECK(TlclSetDeactivated(0));
-    TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
-    printf("disable is %d, deactivated is %d\n", disable, deactivated);
-    VbAssert(disable == 0 && deactivated == 0);
-  }
+	for (i = 0; i < 2; i++) {
+		TPM_CHECK(TlclForceClear());
+		TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
+		printf("disable is %d, deactivated is %d\n", disable, deactivated);
+		VbAssert(disable == 1 && deactivated == 1);
+		TPM_CHECK(TlclSetEnable());
+		TPM_CHECK(TlclSetDeactivated(0));
+		TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
+		printf("disable is %d, deactivated is %d\n", disable, deactivated);
+		VbAssert(disable == 0 && deactivated == 0);
+	}
 
-  printf("TEST SUCCEEDED\n");
-  return 0;
+	printf("TEST SUCCEEDED\n");
+	return 0;
 }

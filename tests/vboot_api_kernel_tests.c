@@ -263,7 +263,7 @@ int is_nonzero(const void *vptr, size_t count)
 /* Mocked verification functions */
 
 VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
-                          uint32_t disk_flags)
+			  uint32_t disk_flags)
 {
 	int i;
 	int num_disks = 0;
@@ -311,7 +311,7 @@ VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 }
 
 VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
-                           VbExDiskHandle_t preserve_handle)
+			   VbExDiskHandle_t preserve_handle)
 {
 	got_load_disk = (const char *)preserve_handle;
 	VB2_DEBUG("%s(): got_load_disk = %s\n", __FUNCTION__,

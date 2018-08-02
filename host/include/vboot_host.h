@@ -55,7 +55,7 @@ int GuidIsZero(const Guid *guid);
 
 /* Returns a new copy of the kernel cmdline. The caller must free it. */
 char *FindKernelConfig(const char *filename,
-                       uint64_t kernel_body_load_address);
+		       uint64_t kernel_body_load_address);
 
 /****************************************************************************/
 /* Kernel partition */

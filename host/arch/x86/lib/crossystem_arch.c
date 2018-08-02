@@ -481,7 +481,7 @@ static int VbGetRecoveryReason(void)
  * exactly one match for that, we're SOL.
  */
 static int FindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
-                              const char *name)
+			      const char *name)
 {
 	DIR *dir;
 	struct dirent *ent;
@@ -508,7 +508,7 @@ static int FindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
  * a 'label' file inside of it to find the expected the controller name.
  */
 static int FindGpioChipOffsetByLabel(unsigned *gpio_num, unsigned *offset,
-                                     const char *name)
+				     const char *name)
 {
 	DIR *dir;
 	struct dirent *ent;
@@ -618,7 +618,7 @@ static int FindGpioChipOffsetByNumber(unsigned *gpio_num, unsigned *offset,
  *   4  | 0x18000
  */
 static int BraswellFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
-                                      const char *name)
+				      const char *name)
 {
 	static Basemapping data[]={
 		{0x20000, 0},
@@ -641,7 +641,7 @@ static int BraswellFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
  *   3  | 0x2000
  */
 static int BayTrailFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
-                                      const char *name)
+				      const char *name)
 {
 	static Basemapping data[]={
 		{0x3000, 0},
@@ -860,7 +860,7 @@ int VbGetArchPropertyInt(const char* name)
 
 
 const char* VbGetArchPropertyString(const char* name, char* dest,
-                                    size_t size)
+				    size_t size)
 {
 	unsigned value;
 

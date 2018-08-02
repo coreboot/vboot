@@ -52,7 +52,7 @@ enum vb2_nv_offset {
 
 	/* CRC must be last field */
 	VB2_NV_OFFS_CRC_V2 = 63,
- };
+};
 
 /* Fields in VB2_NV_OFFS_HEADER (unused = 0x04) */
 #define VB2_NV_HEADER_WIPEOUT		       0x08

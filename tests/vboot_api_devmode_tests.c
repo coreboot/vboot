@@ -56,7 +56,7 @@ test_case_t test[] = {
 	  0, 0,
 	  1,
 	  {
-		  {0, 0, 2000},		// off and return at 2 seconds
+		{0, 0, 2000},		// off and return at 2 seconds
 	  }},
 
 	{ "VbBootDeveloperSoundTest( normal )",
@@ -64,9 +64,9 @@ test_case_t test[] = {
 	  0, 0,
 	  3,
 	  {
-		  {250, 400, 20000},	// first beep at 20 seconds
-		  {250, 400, 20510},	// second beep shortly after
-		  {0, 0, 30020},	// off and return at 30 seconds
+		{250, 400, 20000},	// first beep at 20 seconds
+		{250, 400, 20510},	// second beep shortly after
+		{0, 0, 30020},	// off and return at 30 seconds
 	  }},
 
 	// Now with some keypresses
@@ -76,8 +76,8 @@ test_case_t test[] = {
 	  4, 20400,			// Ctrl-D between beeps
 	  2,
 	  {
-		  {250, 400, 20000},	// first beep at 20 seconds
-		  {0, 0, 20400},	// sees Ctrl-D, sound off, return
+		{250, 400, 20000},	// first beep at 20 seconds
+		{0, 0, 20400},	// sees Ctrl-D, sound off, return
 	  }},
 
 	{ "VbBootDeveloperSoundTest( normal, Ctrl-U not allowed )",
@@ -85,11 +85,11 @@ test_case_t test[] = {
 	  21, 10000,                          // Ctrl-U at 10 seconds
 	  5,
 	  {
-		  {120, 400, 10000},	// complains about Ctrl-U (one beep)
-		  {120, 400, 10240},	// complains about Ctrl-U (two beeps)
-		  {250, 400, 20000},	// starts first beep at 20 seconds
-		  {250, 400, 20510},	// starts second beep
-		  {0, 0, 30020},	// returns at 30 seconds + 360ms
+		{120, 400, 10000},	// complains about Ctrl-U (one beep)
+		{120, 400, 10240},	// complains about Ctrl-U (two beeps)
+		{250, 400, 20000},	// starts first beep at 20 seconds
+		{250, 400, 20510},	// starts second beep
+		{0, 0, 30020},	// returns at 30 seconds + 360ms
 	  }},
 };
 
@@ -156,25 +156,25 @@ VbError_t VbExNvStorageWrite(const uint8_t* buf)
 }
 
 VbError_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
-                          uint32_t disk_flags)
+			  uint32_t disk_flags)
 {
 	return VBERROR_UNKNOWN;
 }
 
 VbError_t VbExDiskFreeInfo(VbDiskInfo* infos,
-                           VbExDiskHandle_t preserve_handle)
+			   VbExDiskHandle_t preserve_handle)
 {
 	return VBERROR_SUCCESS;
 }
 
 VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
-                       uint64_t lba_count, void* buffer)
+		       uint64_t lba_count, void* buffer)
 {
 	return VBERROR_UNKNOWN;
 }
 
 VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
-                        uint64_t lba_count, const void* buffer)
+			uint64_t lba_count, const void* buffer)
 {
 	return VBERROR_UNKNOWN;
 }

@@ -61,9 +61,9 @@ const uint8_t *GetSignatureDataC(const VbSignature *sig)
  */
 
 int VerifyMemberInside(const void *parent, uint64_t parent_size,
-                       const void *member, uint64_t member_size,
-                       uint64_t member_data_offset,
-                       uint64_t member_data_size)
+		       const void *member, uint64_t member_size,
+		       uint64_t member_data_offset,
+		       uint64_t member_data_size)
 {
 	uint64_t end = OffsetOf(parent, member);
 
@@ -90,7 +90,7 @@ int VerifyMemberInside(const void *parent, uint64_t parent_size,
 }
 
 int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
-                          const VbPublicKey *key)
+			  const VbPublicKey *key)
 {
 	return VerifyMemberInside(parent, parent_size,
 				  key, sizeof(VbPublicKey),
@@ -98,7 +98,7 @@ int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
 }
 
 int VerifySignatureInside(const void *parent, uint64_t parent_size,
-                          const VbSignature *sig)
+			  const VbSignature *sig)
 {
 	return VerifyMemberInside(parent, parent_size,
 				  sig, sizeof(VbSignature),

@@ -77,7 +77,7 @@ VbError_t VbExTpmClose(void)
 }
 
 VbError_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
-                             uint8_t *response, uint32_t *response_length)
+			     uint8_t *response, uint32_t *response_length)
 {
 	struct srcall *c = calls + ncalls++;
 

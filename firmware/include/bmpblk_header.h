@@ -112,7 +112,7 @@ typedef struct ImageInfo {
 	 */
 	uint32_t compressed_size;
 	uint32_t reserved;
-  /* NOTE: The actual image content (if any) follows immediately. */
+	/* NOTE: The actual image content (if any) follows immediately. */
 } __attribute__((packed)) ImageInfo;
 
 /* Constants for ImageInfo.tag */

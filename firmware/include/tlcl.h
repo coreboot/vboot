@@ -38,7 +38,7 @@ uint32_t TlclLibClose(void);
  * Perform a raw TPM request/response transaction.
  */
 uint32_t TlclSendReceive(const uint8_t *request, uint8_t *response,
-                         int max_length);
+			 int max_length);
 
 /**
  * Return the size of a TPM request or response packet.
@@ -91,8 +91,8 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size);
  * passed via [auth_policy]. The TPM error code is returned.
  */
 uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
-                           uint32_t index, uint32_t perm, uint32_t size,
-                           const void* auth_policy, uint32_t auth_policy_size);
+			   uint32_t index, uint32_t perm, uint32_t size,
+			   const void* auth_policy, uint32_t auth_policy_size);
 
 /**
  * Initializes [auth_policy] to require PCR binding of the given
@@ -104,8 +104,8 @@ uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
  * return, also for the case of insufficient buffer size.
  */
 uint32_t TlclInitNvAuthPolicy(uint32_t pcr_selection_bitmap,
-                              const uint8_t pcr_values[][TPM_PCR_DIGEST],
-                              void* auth_policy, uint32_t* auth_policy_size);
+			      const uint8_t pcr_values[][TPM_PCR_DIGEST],
+			      void* auth_policy, uint32_t* auth_policy_size);
 
 /**
  * Write [length] bytes of [data] to space at [index].  The TPM error code is
@@ -194,7 +194,7 @@ uint32_t TlclSetDeactivated(uint8_t flag);
  * be NULL.  The TPM error code is returned.
  */
 uint32_t TlclGetFlags(uint8_t *disable, uint8_t *deactivated,
-                      uint8_t *nvlocked);
+		      uint8_t *nvlocked);
 
 /**
  * Set the bGlobalLock flag, which only a reboot can clear.  The TPM error
@@ -221,7 +221,7 @@ uint32_t TlclGetPermissions(uint32_t index, uint32_t *permissions);
  * sufficient, the return value will be TPM_E_BUFFER_SIZE.
  */
 uint32_t TlclGetSpaceInfo(uint32_t index, uint32_t *attributes, uint32_t *size,
-                          void* auth_policy, uint32_t* auth_policy_size);
+			  void* auth_policy, uint32_t* auth_policy_size);
 
 /**
  * Get the entire set of permanent flags.
@@ -255,8 +255,8 @@ uint32_t TlclGetRandom(uint8_t *data, uint32_t length, uint32_t *size);
  *       *vendor_specific_buf_size to the length of the filled data.
  */
 uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
-                        uint8_t* vendor_specific_buf,
-                        size_t* vendor_specific_buf_size);
+			uint8_t* vendor_specific_buf,
+			size_t* vendor_specific_buf_size);
 
 /**
  * Issues the IFX specific FieldUpgradeInfoRequest2 TPM_FieldUpgrade subcommand
@@ -271,8 +271,8 @@ uint32_t TlclIFXFieldUpgradeInfo(TPM_IFX_FIELDUPGRADEINFO *info);
  * Read the public half of the EK.
  */
 uint32_t TlclReadPubek(uint32_t* public_exponent,
-                       uint8_t* modulus,
-                       uint32_t* modulus_size);
+		       uint8_t* modulus,
+		       uint32_t* modulus_size);
 
 /**
  * Takes ownership of the TPM. [enc_owner_auth] and [enc_srk_auth] are the owner
@@ -280,8 +280,8 @@ uint32_t TlclReadPubek(uint32_t* public_exponent,
  * text [owner_auth] needs to be passed as well for command auth.
  */
 uint32_t TlclTakeOwnership(uint8_t enc_owner_auth[TPM_RSA_2048_LEN],
-                           uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
-                           uint8_t owner_auth[TPM_AUTH_DATA_LEN]);
+			   uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
+			   uint8_t owner_auth[TPM_AUTH_DATA_LEN]);
 
 /**
  * Create a delegation family with the specified [family_label].
@@ -294,7 +294,7 @@ uint32_t TlclCreateDelegationFamily(uint8_t family_label);
  * updated to indicate actual number of table entries available.
  */
 uint32_t TlclReadDelegationFamilyTable(TPM_FAMILY_TABLE_ENTRY *table,
-                                       uint32_t* table_size);
+				       uint32_t* table_size);
 
 #endif  /* TPM2_MODE */
 #endif  /* CHROMEOS_ENVIRONMENT */

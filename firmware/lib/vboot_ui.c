@@ -474,10 +474,10 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 			    shared->flags & VBSD_HONOR_VIRT_DEV_SWITCH &&
 			    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
 			    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {
-                                if (!(shared->flags &
+				if (!(shared->flags &
 				      VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
 				    VbExGetSwitches(
-					     VB_INIT_FLAG_REC_BUTTON_PRESSED)) {
+				    VB_INIT_FLAG_REC_BUTTON_PRESSED)) {
 					/*
 					 * Is the recovery button stuck?  In
 					 * any case we don't like this.  Beep
