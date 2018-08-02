@@ -19,6 +19,7 @@
 /* partition table manipulation */
 int CgptCreate(CgptCreateParams *params);
 int CgptAdd(CgptAddParams *params);
+int CgptEdit(CgptEditParams *params);
 int CgptSetAttributes(CgptAddParams *params);
 int CgptGetPartitionDetails(CgptAddParams *params);
 int CgptBoot(CgptBootParams *params);

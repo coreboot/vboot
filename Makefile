@@ -550,6 +550,7 @@ CGPT_SRCS = \
 	cgpt/cgpt_boot.c \
 	cgpt/cgpt_common.c \
 	cgpt/cgpt_create.c \
+	cgpt/cgpt_edit.c \
 	cgpt/cgpt_find.c \
 	cgpt/cgpt_legacy.c \
 	cgpt/cgpt_nor.c \
@@ -559,6 +560,7 @@ CGPT_SRCS = \
 	cgpt/cmd_add.c \
 	cgpt/cmd_boot.c \
 	cgpt/cmd_create.c \
+	cgpt/cmd_edit.c \
 	cgpt/cmd_find.c \
 	cgpt/cmd_legacy.c \
 	cgpt/cmd_prioritize.c \

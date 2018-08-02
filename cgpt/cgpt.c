@@ -34,6 +34,7 @@ struct {
   {"repair", cmd_repair, "Repair damaged GPT headers and tables"},
   {"boot", cmd_boot, "Edit the PMBR sector for legacy BIOSes"},
   {"find", cmd_find, "Locate a partition by its GUID"},
+  {"edit", cmd_edit, "Edit a drive entry"},
   {"prioritize", cmd_prioritize,
    "Reorder the priority of all kernel partitions"},
   {"legacy", cmd_legacy, "Switch between GPT and Legacy GPT"},

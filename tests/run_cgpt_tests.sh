@@ -74,6 +74,8 @@ RANDOM_LABEL="random stuff"
 RANDOM_GUID='2364a860-bf63-42fb-a83d-9ad3e057fcf5'
 RANDOM_NUM=6
 
+RANDOM_DRIVE_GUID='12345678-0000-1111-2222-123456789ABC'
+
 $CGPT create $MTD ${DEV}
 
 run_basic_tests() {
@@ -144,9 +146,32 @@ run_basic_tests() {
   $CGPT add $MTD -i 1 -t data ${DEV} || error
   X=$($CGPT show $MTD -t -i 1 ${DEV} | tr 'A-Z' 'a-z')
   [ "$X" = "$DATA_GUID" ] || error
+
+  ORIG_ID=$($CGPT show $MTD -v ${DEV} | \
+    grep -i "disk uuid" | head -1 | awk ' { print $3 } ' )
+  [ ! "$ORIG_ID" = "$RANDOM_DRIVE_GUID" ] || error
+  $CGPT edit $MTD -u ${RANDOM_DRIVE_GUID} ${DEV} || error
+  X=$($CGPT show $MTD -v ${DEV} | grep -i "disk uuid" | \
+    head -1 | awk ' { print $3 } ' )
+  [ "$X" = "${RANDOM_DRIVE_GUID}" ] || error
+  $CGPT edit $MTD -u ${ORIG_ID} ${DEV} || error
+  X=$($CGPT show $MTD -v ${DEV} | grep -i "disk uuid" | \
+    head -1 | awk ' { print $3 } ' )
+  [ "$X" = "${ORIG_ID}" ] || error
 }
 run_basic_tests
 
+ORIG_ID=$($CGPT show $MTD -v ${DEV} | \
+  grep -i "disk uuid" | awk ' { print $3 } ' )
+[ ! "$ORIG_ID" = "$RANDOM_DRIVE_GUID" ] || error
+$CGPT edit $MTD -u ${RANDOM_DRIVE_GUID} ${DEV} || error
+X=$($CGPT show $MTD -v ${DEV} | grep -i "disk uuid" | \
+  head -1 | awk ' { print $3 } ' )
+[ "$X" = "${RANDOM_DRIVE_GUID}" ] || error
+$CGPT edit $MTD -u ${ORIG_ID} ${DEV} || error
+X=$($CGPT show $MTD -v ${DEV} | grep -i "disk uuid" | \
+  awk ' { print $3 } ' )
+[ "$X" = "${ORIG_ID}" ] || error
 
 echo "Set the boot partition.."
 $CGPT boot $MTD -i ${KERN_NUM} ${DEV} >/dev/null

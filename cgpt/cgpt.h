@@ -201,6 +201,7 @@ int cmd_create(int argc, char *argv[]);
 int cmd_add(int argc, char *argv[]);
 int cmd_boot(int argc, char *argv[]);
 int cmd_find(int argc, char *argv[]);
+int cmd_edit(int argc, char *argv[]);
 int cmd_prioritize(int argc, char *argv[]);
 int cmd_legacy(int argc, char *argv[]);
 
