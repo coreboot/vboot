@@ -328,7 +328,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params) {
        *   1. in debug mode.
        *   2. primary table is being ignored
        *   3. only secondary is valid.
-       *   4. secondary is not identical to promary.
+       *   4. secondary is not identical to primary.
        */
       if (params->debug || (drive->gpt.ignored & MASK_PRIMARY) ||
           ((drive->gpt.valid_entries & MASK_SECONDARY) &&
@@ -349,10 +349,11 @@ static int GptShow(struct drive *drive, CgptShowParams *params) {
       }
       /* We show secondary header if any of following is true:
        *   1. in debug mode.
-       *   2. only secondary is valid.
-       *   3. secondary is not synonymous to primary and not ignored.
+       *   2. primary table is being ignored
+       *   3. only secondary is valid.
+       *   4. secondary is not synonymous to primary and not ignored.
        */
-      if (params->debug ||
+      if (params->debug || (drive->gpt.ignored & MASK_PRIMARY) ||
           ((drive->gpt.valid_headers & MASK_SECONDARY) &&
            (!(drive->gpt.valid_headers & MASK_PRIMARY) ||
             !IsSynonymous((GptHeader*)drive->gpt.primary_header,
