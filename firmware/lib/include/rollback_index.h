@@ -40,8 +40,10 @@ typedef struct RollbackSpaceKernel {
 	uint32_t uid;
 	/* Kernel versions */
 	uint32_t kernel_versions;
+	/* Flags for Alt OS mode */
+	uint8_t alt_os_flags;
 	/* Reserved for future expansion */
-	uint8_t reserved[3];
+	uint8_t reserved[2];
 	/* Checksum (v2 and later only) */
 	uint8_t crc8;
 } __attribute__((packed)) RollbackSpaceKernel;

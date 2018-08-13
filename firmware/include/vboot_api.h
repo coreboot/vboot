@@ -132,6 +132,8 @@ enum VbErrorPredefined_t {
 	VBERROR_TPM_READ_FWMP                 = 0x10029,
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
+	/* Error reading or writing Alt OS flags to TPM */
+	VBERROR_TPM_ALT_OS                    = 0x10031,
 
 	/* VbExEcGetExpectedRWHash() may return the following codes */
 	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
@@ -659,6 +661,8 @@ enum VbScreenType_t {
 	VB_SCREEN_LANGUAGES_MENU = 0x20f,
 	/* Detachable Menu - Options */
 	VB_SCREEN_OPTIONS_MENU = 0x210,
+	/* Alt OS picker screen */
+	VB_SCREEN_ALT_OS = 0x211,
 };
 
 /**
