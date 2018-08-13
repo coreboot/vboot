@@ -65,7 +65,6 @@ check_keyval_in_list() {
 # - No space after key, no space before value.
 # - key is all A-Z or _, but not starting with _.
 # - value is made up of printable characters, or is empty.
-# - Each line is a reasonable size (<255 bytes).
 # - The whole file is a reasonable size (4kb).
 lsb_syntaxcheck() {
   local lsbfile="$1"
@@ -84,13 +83,6 @@ lsb_syntaxcheck() {
     error "${badlines}"
   fi
 
-  # Checks for a lines exceeding a reasonable overall length.
-  badlines=$(grep -E '^.{255}' "$lsbfile")
-  if [ -n "$badlines" ]; then
-    syntaxbad=1
-    error "${lsbfile}: Some lsb-release lines seem unreasonably long:"
-    error "${badlines}"
-  fi
   # Overall file size check:
   size=$(ls -sk "$lsbfile" | cut -d ' ' -f 1)
   if [ $size -gt 4 ]; then
