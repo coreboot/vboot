@@ -241,10 +241,14 @@ typedef struct VbKernelPreambleHeader {
 #define VBSD_OPROM_LOADED                0x00020000
 /* Don't try for boot failures */
 #define VBSD_NOFAIL_BOOT                 0x00040000
+/* VbInit() was told that the EC firmware supports EFS */
+#define VBSD_EC_EFS                      0x00080000
+/* NvStorage uses 64-byte record, not 16-byte */
+#define VBSD_NVDATA_V2                   0x00100000
 /* Confirm enabling Alt OS for this boot */
-#define VBSD_ALT_OS_CONFIRM_ENABLE       0x00080000
+#define VBSD_ALT_OS_CONFIRM_ENABLE       0x00200000
 /* Show Alt OS picker screen for this boot */
-#define VBSD_ALT_OS_SHOW_PICKER          0x00100000
+#define VBSD_ALT_OS_SHOW_PICKER          0x00400000
 
 /*
  * Supported flags by header version.  It's ok to add new flags while keeping
