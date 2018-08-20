@@ -633,6 +633,8 @@ static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
 	return VBERROR_KEEP_LOOPING;
 }
 
+/* Delay in developer menu */
+#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
 /**
  * Main function that handles developer warning menu functionality
  *
@@ -706,6 +708,8 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 		/* Reset 30 second timer whenever we see a new key. */
 		if (key != 0)
 			vb2_audio_start(ctx);
+
+		VbExSleepMs(DEV_KEY_DELAY);
 
 		/* If dev mode was disabled, loop forever (never timeout) */
 	} while(disable_dev_boot ? 1 : vb2_audio_looping());
