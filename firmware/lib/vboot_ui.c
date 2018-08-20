@@ -153,6 +153,9 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 	return -1;
 }
 
+/* Delay in developer ui */
+#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
+
 static const char dev_disable_msg[] =
 	"Developer mode is disabled on this device by system policy.\n"
 	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
@@ -360,6 +363,8 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			VbCheckDisplayKey(ctx, key);
 			break;
 		}
+
+		VbExSleepMs(DEV_KEY_DELAY);
 	} while(vb2_audio_looping());
 
  fallout:
