@@ -216,6 +216,14 @@ LDFLAGS += -static
 PKG_CONFIG += --static
 endif
 
+# Optional Libraries
+LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
+HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
+ifneq (${HAVE_LIBZIP},)
+  CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
+  LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
+endif
+
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
@@ -615,8 +623,12 @@ FUTIL_STATIC_SRCS = \
 	futility/futility.c \
 	futility/cmd_dump_fmap.c \
 	futility/cmd_gbb_utility.c \
+	futility/cmd_update.c \
 	futility/misc.c \
-	futility/ryu_root_header.c
+	futility/ryu_root_header.c \
+	futility/updater.c \
+	futility/updater_archive.c \
+	futility/updater_quirks.c \
 
 FUTIL_SRCS = \
 	${FUTIL_STATIC_SRCS} \
@@ -1084,7 +1096,7 @@ ${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
 
-${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS}
+${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
