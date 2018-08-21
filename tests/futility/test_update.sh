@@ -30,6 +30,8 @@ set -o pipefail
 # In all the test scenario, we want to test "updating from PEPPY to LINK".
 TO_IMAGE=${TMP}.src.link
 FROM_IMAGE=${TMP}.src.peppy
+TO_HWID="X86 LINK TEST 6638"
+FROM_HWID="X86 PEPPY TEST 4211"
 cp -f ${LINK_BIOS} ${TO_IMAGE}
 cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 
@@ -49,6 +51,10 @@ cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.a"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
+"${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full"
+"${FUTILITY}" load_fmap "${TMP}.expected.full" \
+	RW_VPD:${TMP}.from/RW_VPD \
+	RO_VPD:${TMP}.from/RO_VPD
 "${FUTILITY}" load_fmap "${TMP}.expected.rw" \
 	RW_SECTION_A:${TMP}.to/RW_SECTION_A \
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B \

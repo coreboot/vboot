@@ -22,12 +22,16 @@
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
+		  * const FMAP_RO_GBB = "GBB",
+		  * const FMAP_RO_VPD = "RO_VPD",
+		  * const FMAP_RW_VPD = "RW_VPD",
 		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
 		  * const FMAP_RW_SECTION_B = "RW_SECTION_B",
 		  * const FMAP_RW_FWID = "RW_FWID",
 		  * const FMAP_RW_FWID_A = "RW_FWID_A",
 		  * const FMAP_RW_FWID_B = "RW_FWID_B",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
+		  * const FMAP_RW_NVRAM = "RW_NVRAM",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY";
 
 /* System environment values. */
@@ -631,6 +635,110 @@ static int write_optional_firmware(struct updater_config *cfg,
 	return write_firmware(cfg, image, section_name);
 }
 
+/* Preserves (copies) the given section (by name) from image_from to image_to.
+ * The offset may be different, and the section data will be directly copied.
+ * If the section does not exist on all images, return as failure.
+ * If the source section is larger, contents on destination be truncated.
+ * If the source section is smaller, the remaining area is not modified.
+ * Returns 0 if success, non-zero if error.
+ */
+static int preserve_firmware_section(const struct firmware_image *image_from,
+				     struct firmware_image *image_to,
+				     const char *section_name)
+{
+	struct firmware_section from, to;
+
+	find_firmware_section(&from, image_from, section_name);
+	find_firmware_section(&to, image_to, section_name);
+	if (!from.data || !to.data)
+		return -1;
+	if (from.size > to.size) {
+		printf("WARNING: %s: Section %s is truncated after updated.\n",
+		       __FUNCTION__, section_name);
+	}
+	/* Use memmove in case if we need to deal with sections that overlap. */
+	memmove(to.data, from.data, Min(from.size, to.size));
+	return 0;
+}
+
+/*
+ * Finds the GBB (Google Binary Block) header on a given firmware image.
+ * Returns a pointer to valid GBB header, or NULL on not found.
+ */
+static struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
+{
+	struct firmware_section section;
+	struct vb2_gbb_header *gbb_header;
+
+	find_firmware_section(&section, image, FMAP_RO_GBB);
+	gbb_header = (struct vb2_gbb_header *)section.data;
+	/*
+	 * futil_valid_gbb_header needs v1 header (GoogleBinaryBlockHeader)
+	 * but that should be compatible with vb2_gbb_header
+	 */
+	if (!futil_valid_gbb_header((GoogleBinaryBlockHeader *)gbb_header,
+				    section.size, NULL)) {
+		Error("%s: Cannot find GBB in image: %s.\n", __FUNCTION__,
+		      image->file_name);
+		return NULL;
+	}
+	return gbb_header;
+}
+
+/*
+ * Preserve the GBB contents from image_from to image_to.
+ * Currently only GBB flags and HWID are preserved.
+ * Returns 0 if success, otherwise -1 if GBB header can't be found or if HWID is
+ * too large.
+ */
+static int preserve_gbb(const struct firmware_image *image_from,
+			struct firmware_image *image_to)
+{
+	int len;
+	uint8_t *hwid_to, *hwid_from;
+	struct vb2_gbb_header *gbb_from, *gbb_to;
+
+	gbb_from = find_gbb(image_from);
+	gbb_to = find_gbb(image_to);
+
+	if (!gbb_from || !gbb_to)
+		return -1;
+
+	/* Preserve flags. */
+	gbb_to->flags = gbb_from->flags;
+	hwid_to = (uint8_t *)gbb_to + gbb_to->hwid_offset;
+	hwid_from = (uint8_t *)gbb_from + gbb_from->hwid_offset;
+
+	/* Preserve HWID. */
+	len = strlen((const char *)hwid_from);
+	if (len >= gbb_to->hwid_size)
+		return -1;
+
+	/* Zero whole area so we won't have garbage after NUL. */
+	memset(hwid_to, 0, gbb_to->hwid_size);
+	memcpy(hwid_to, hwid_from, len);
+	return 0;
+}
+
+/*
+ * Preserves the critical sections from the current (active) firmware.
+ * Currently only GBB, VPD (RO+RW) and NVRAM sections are preserved.
+ * Returns 0 if success, non-zero if error.
+ */
+static int preserve_images(struct updater_config *cfg)
+{
+	int errcnt = 0;
+	struct firmware_image *from = &cfg->image_current, *to = &cfg->image;
+	errcnt += preserve_gbb(from, to);
+	errcnt += preserve_firmware_section(from, to, FMAP_RO_VPD);
+	errcnt += preserve_firmware_section(from, to, FMAP_RW_VPD);
+	errcnt += preserve_firmware_section(from, to, FMAP_RW_NVRAM);
+	return errcnt;
+}
+
+/*
+ * Returns true if the write protection is enabled on current system.
+ */
 static int is_write_protection_enabled(struct updater_config *cfg)
 {
 	/* Default to enabled. */
@@ -732,6 +840,7 @@ static enum updater_error_codes update_whole_firmware(
 		struct firmware_image *image_to)
 {
 	printf(">> FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
+	preserve_images(cfg);
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
