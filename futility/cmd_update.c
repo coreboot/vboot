@@ -270,10 +270,141 @@ static void free_image(struct firmware_image *image)
 	memset(image, 0, sizeof(*image));
 }
 
+/*
+ * Emulates writing to firmware.
+ * Returns 0 if success, non-zero if error.
+ */
+static int emulate_write_firmware(const char *filename,
+				  const struct firmware_image *image,
+				  const char *section_name)
+{
+	struct firmware_image to_image = {0};
+	struct firmware_section from, to;
+	int errorcnt = 0;
+
+	from.data = image->data;
+	from.size = image->size;
+
+	if (load_image(filename, &to_image)) {
+		Error("%s: Cannot load image from %s.\n", __FUNCTION__,
+		      filename);
+		return -1;
+	}
+
+	if (section_name) {
+		find_firmware_section(&from, image, section_name);
+		if (!from.data) {
+			Error("%s: No section %s in source image %s.\n",
+			      __FUNCTION__, section_name, image->file_name);
+			errorcnt++;
+		}
+		find_firmware_section(&to, &to_image, section_name);
+		if (!to.data) {
+			Error("%s: No section %s in destination image %s.\n",
+			      __FUNCTION__, section_name, filename);
+			errorcnt++;
+		}
+	} else if (image->size != to_image.size) {
+		Error("%s: Image size is different (%s:%d != %s:%d)\n",
+		      __FUNCTION__, image->file_name, image->size,
+		      to_image.file_name, to_image.size);
+		errorcnt++;
+	} else {
+		to.data = to_image.data;
+		to.size = to_image.size;
+	}
+
+	if (!errorcnt) {
+		size_t to_write = Min(to.size, from.size);
+
+		assert(from.data && to.data);
+		Debug("%s: Writing %d bytes\n", __FUNCTION__, to_write);
+		memcpy(to.data, from.data, to_write);
+	}
+
+	if (!errorcnt && vb2_write_file(
+			filename, to_image.data, to_image.size)) {
+		Error("%s: Failed writing to file: %s\n", __FUNCTION__,
+		      filename);
+		errorcnt++;
+	}
+
+	free_image(&to_image);
+	return errorcnt;
+}
+
+/*
+ * Writes a section from given firmware image to system firmware.
+ * If section_name is NULL, write whole image.
+ * Returns 0 if success, non-zero if error.
+ */
+static int write_firmware(struct updater_config *cfg,
+			  const struct firmware_image *image,
+			  const char *section_name)
+{
+	/* TODO(hungte) replace by mkstemp */
+	const char *tmp_file = "/tmp/.fwupdate.write";
+	const char *programmer = cfg->emulate ? image->emulation :
+			image->programmer;
+
+	if (cfg->emulate) {
+		printf("%s: (emulation) %s %s from %s to %s.\n",
+		       __FUNCTION__,
+		       image->emulation ? "Writing" : "Skipped writing",
+		       section_name ? section_name : "whole image",
+		       image->file_name, programmer);
+
+		if (!image->emulation)
+			return 0;
+
+		/*
+		 * TODO(hungte): Extract the real target from image->emulation,
+		 * and allow to emulate writing with flashrom.
+		 */
+		return emulate_write_firmware(
+				cfg->image_current.file_name, image,
+				section_name);
+
+	}
+	if (vb2_write_file(tmp_file, image->data, image->size) != VB2_SUCCESS) {
+		Error("%s: Cannot write temporary file for output: %s\n",
+		      __FUNCTION__, tmp_file);
+		return -1;
+	}
+	return host_flashrom(FLASHROM_WRITE, tmp_file, programmer, 1,
+			     section_name);
+}
+
+/*
+ * Write a section from given firmware image to system firmware if possible.
+ * If section_name is NULL, write whole image.  If the image has no data or if
+ * the section does not exist, ignore and return success.
+ * Returns 0 if success, non-zero if error.
+ */
+static int write_optional_firmware(struct updater_config *cfg,
+				   const struct firmware_image *image,
+				   const char *section_name)
+{
+	if (!image->data) {
+		Debug("%s: No data in <%s> image.\n", __FUNCTION__,
+		      image->programmer);
+		return 0;
+	}
+	if (section_name && !firmware_section_exists(image, section_name)) {
+		Debug("%s: Image %s<%s> does not have section %s.\n",
+		      __FUNCTION__, image->file_name, image->programmer,
+		      section_name);
+		return 0;
+	}
+
+	return write_firmware(cfg, image, section_name);
+}
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NO_IMAGE,
 	UPDATE_ERR_SYSTEM_IMAGE,
+	UPDATE_ERR_WRITE_FIRMWARE,
 	UPDATE_ERR_UNKNOWN,
 };
 
@@ -281,8 +412,30 @@ static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
 	[UPDATE_ERR_NO_IMAGE] = "No image to update; try specify with -i.",
 	[UPDATE_ERR_SYSTEM_IMAGE] = "Cannot load system active firmware.",
+	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
+
+/*
+ * The main updater for "Full update".
+ * This was also known as "--mode=factory" or "--mode=recovery, --wp=0" in
+ * legacy updater.
+ * Returns UPDATE_ERR_DONE if success, otherwise error.
+ */
+static enum updater_error_codes update_whole_firmware(
+		struct updater_config *cfg,
+		struct firmware_image *image_to)
+{
+	printf(">> FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
+
+	/* FMAP may be different so we should just update all. */
+	if (write_firmware(cfg, image_to, NULL) ||
+	    write_optional_firmware(cfg, &cfg->ec_image, NULL) ||
+	    write_optional_firmware(cfg, &cfg->pd_image, NULL))
+		return UPDATE_ERR_WRITE_FIRMWARE;
+
+	return UPDATE_ERR_DONE;
+}
 
 /*
  * The main updater to update system firmware using the configuration parameter.
@@ -312,7 +465,7 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
-	return UPDATE_ERR_DONE;
+	return update_whole_firmware(cfg, image_to);
 }
 
 /*

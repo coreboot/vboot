@@ -6,25 +6,37 @@
 me=${0##*/}
 TMP="$me.tmp"
 
-# Include /usr/sbin for flahsrom(8)
-PATH=/usr/sbin:"${PATH}"
-
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
 PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
-LINK_VERSION="Google_Link.2695.1.133"
-PEPPY_VERSION="Google_Peppy.4389.89.0"
 
 # Work in scratch directory
 cd "$OUTDIR"
 set -o pipefail
 
-# Prepare temporary files.
-cp -f "${LINK_BIOS}" "${TMP}.emu"
+# In all the test scenario, we want to test "updating from PEPPY to LINK".
+TO_IMAGE=${TMP}.src.link
+FROM_IMAGE=${TMP}.src.peppy
+cp -f ${LINK_BIOS} ${TO_IMAGE}
+cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 
-# Test command execution.
-versions="$("${FUTILITY}" update -i "${PEPPY_BIOS}" --emulate "${TMP}.emu" |
-	    sed -n 's/.*(//; s/).*//p')"
-test "${versions}" = \
-"RO:${PEPPY_VERSION}, RW/A:${PEPPY_VERSION}, RW/B:${PEPPY_VERSION}
-RO:${LINK_VERSION}, RW/A:${LINK_VERSION}, RW/B:${LINK_VERSION}"
+cp -f "${TO_IMAGE}" "${TMP}.expected.full"
+
+test_update() {
+	local test_name="$1"
+	local emu_src="$2"
+	local expected="$3"
+	local error_msg="${expected#!}"
+	local msg
+
+	shift 3
+	cp -f "${emu_src}" "${TMP}.emu"
+	echo "*** Test Item: ${test_name}"
+	"${FUTILITY}" update --emulate "${TMP}.emu" "$@"
+	cmp "${TMP}.emu" "${expected}"
+}
+
+# Test Full update.
+test_update "Full update" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}"
