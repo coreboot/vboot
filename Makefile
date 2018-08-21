@@ -667,6 +667,7 @@ FUTIL_STATIC_SRCS = \
 	futility/futility.c \
 	futility/cmd_dump_fmap.c \
 	futility/cmd_gbb_utility.c \
+	futility/cmd_update.c \
 	futility/cmd_vbutil_firmware.c \
 	futility/cmd_vbutil_key.c \
 	futility/misc.c \
