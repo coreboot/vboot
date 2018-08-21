@@ -91,6 +91,9 @@ extern const struct futil_cmd_t *const futil_cmds[];
 	} while (0)
 #endif
 
+/* Print error messages (similar to VbExError but won't exit). */
+#define Error(format, ...) fprintf(stderr, "ERROR: " format, ##__VA_ARGS__ )
+
 /* Debug output (off by default) */
 extern int debugging_enabled;
 void Debug(const char *format, ...);
