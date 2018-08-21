@@ -6,8 +6,14 @@
 me=${0##*/}
 TMP="$me.tmp"
 
+# Test data files
+LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
+
 # Work in scratch directory
 cd "$OUTDIR"
 
+set -o pipefail
+
 # Test command execution.
 "${FUTILITY}" update
+"${FUTILITY}" --debug update -i "${LINK_BIOS}" | grep 8388608
