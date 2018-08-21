@@ -16,6 +16,6 @@ cd "$OUTDIR"
 set -o pipefail
 
 # Test command execution.
-"${FUTILITY}" update -i "${LINK_BIOS}" |
-	grep "RO:${LINK_VERSION}, RW/A:${LINK_VERSION}, RW/B:${LINK_VERSION}"
-"${FUTILITY}" --debug update -i "${LINK_BIOS}" | grep 8388608
+
+# The updater is now currently always loading system firmware using flashrom(8)
+# and can't be tested until an emulation interface is implemented.
