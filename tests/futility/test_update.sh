@@ -99,3 +99,7 @@ test_update "RW update (A->B)" \
 test_update "RW update (B->A)" \
 	"${FROM_IMAGE}" "${TMP}.expected.a" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1
+
+test_update "RW update -> fallback to RO+RW Full update" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1

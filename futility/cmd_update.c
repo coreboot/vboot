@@ -22,6 +22,7 @@
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
+		  * const FMAP_RO_SECTION = "RO_SECTION",
 		  * const FMAP_RO_GBB = "GBB",
 		  * const FMAP_RO_VPD = "RO_VPD",
 		  * const FMAP_RW_VPD = "RW_VPD",
@@ -97,6 +98,7 @@ struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
 	int try_update;
+	int force_update;
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
@@ -737,6 +739,43 @@ static int preserve_images(struct updater_config *cfg)
 }
 
 /*
+ * Compares if two sections have same size and data.
+ * Returns 0 if given sections are the same, otherwise non-zero.
+ */
+static int compare_section(const struct firmware_section *a,
+			   const struct firmware_section *b)
+{
+	if (a->size != b->size)
+		return a->size - b->size;
+	return memcmp(a->data, b->data, a->size);
+}
+
+/*
+ * Returns if the images are different (should be updated) in given section.
+ * If the section contents are the same or if the section does not exist on both
+ * images, return value is 0 (no need to update). Otherwise the return value is
+ * non-zero, indicating an update should be performed.
+ * If section_name is NULL, compare whole images.
+ */
+static int section_needs_update(const struct firmware_image *image_from,
+				const struct firmware_image *image_to,
+				const char *section_name)
+{
+	struct firmware_section from, to;
+
+	if (!section_name) {
+		if (image_from->size != image_to->size)
+			return -1;
+		return memcmp(image_from->data, image_to->data, image_to->size);
+	}
+
+	find_firmware_section(&from, image_from, section_name);
+	find_firmware_section(&to, image_to, section_name);
+
+	return compare_section(&from, &to);
+}
+
+/*
  * Returns true if the write protection is enabled on current system.
  */
 static int is_write_protection_enabled(struct updater_config *cfg)
@@ -757,6 +796,7 @@ enum updater_error_codes {
 	UPDATE_ERR_NEED_RO_UPDATE,
 	UPDATE_ERR_NO_IMAGE,
 	UPDATE_ERR_SYSTEM_IMAGE,
+	UPDATE_ERR_INVALID_IMAGE,
 	UPDATE_ERR_SET_COOKIES,
 	UPDATE_ERR_WRITE_FIRMWARE,
 	UPDATE_ERR_TARGET,
@@ -768,9 +808,10 @@ static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
 	[UPDATE_ERR_NO_IMAGE] = "No image to update; try specify with -i.",
 	[UPDATE_ERR_SYSTEM_IMAGE] = "Cannot load system active firmware.",
+	[UPDATE_ERR_INVALID_IMAGE] = "The given firmware image is not valid.",
 	[UPDATE_ERR_SET_COOKIES] = "Failed writing system flags to try update.",
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
-	[UPDATE_ERR_TARGET] = "Cannot find target section to update.",
+	[UPDATE_ERR_TARGET] = "No valid RW target to update. Abort.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
 
@@ -787,18 +828,43 @@ static enum updater_error_codes update_try_rw_firmware(
 		int wp_enabled)
 {
 	const char *target;
+	int has_update = 1;
+
+	preserve_gbb(image_from, image_to);
+	if (!wp_enabled && section_needs_update(
+			image_from, image_to, FMAP_RO_SECTION))
+		return UPDATE_ERR_NEED_RO_UPDATE;
 
 	/* TODO(hungte): Support vboot1. */
-	target = decide_rw_target(cfg, TARGET_UPDATE);
-	if (!target) {
+	target = decide_rw_target(cfg, TARGET_SELF);
+	if (target == NULL) {
 		Error("TRY-RW update needs system to boot in RW firmware.\n");
 		return UPDATE_ERR_TARGET;
 	}
-	printf(">> TRY-RW UPDATE: Updating %s to try on reboot.\n", target);
-	if (write_firmware(cfg, image_to, target))
-		return UPDATE_ERR_WRITE_FIRMWARE;
-	if (set_try_cookies(cfg, target))
-		return UPDATE_ERR_SET_COOKIES;
+
+	printf("Checking %s contents...\n", target);
+	if (!firmware_section_exists(image_to, target)) {
+		Error("Cannot find section '%s' on firmware image: %s\n",
+		      target, image_to->file_name);
+		return UPDATE_ERR_INVALID_IMAGE;
+	}
+	if (!cfg->force_update)
+		has_update = section_needs_update(image_from, image_to, target);
+
+	if (has_update) {
+		target = decide_rw_target(cfg, TARGET_UPDATE);
+		printf(">> TRY-RW UPDATE: Updating %s to try on reboot.\n",
+		       target);
+
+		if (write_firmware(cfg, image_to, target))
+			return UPDATE_ERR_WRITE_FIRMWARE;
+		if (set_try_cookies(cfg, target))
+			return UPDATE_ERR_SET_COOKIES;
+	}
+
+	/* TODO(hungte): Add optional checks here that may change has_update. */
+	if (!has_update)
+		printf(">> No need to update.\n");
 
 	return UPDATE_ERR_DONE;
 }
@@ -928,6 +994,7 @@ static struct option const long_opts[] = {
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
 	{"try", 0, NULL, 't'},
+	{"force", 0, NULL, 'F'},
 	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
 	{"sys_props", 1, NULL, 'S'},
@@ -947,6 +1014,9 @@ static void print_help(int argc, char *argv[])
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"\n"
+		"Legacy and compatibility options:\n"
+		"    --force         \tForce update (skip checking contents)\n"
+		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
@@ -964,6 +1034,7 @@ static int do_update(int argc, char *argv[])
 		.ec_image = { .programmer = PROG_EC, },
 		.pd_image = { .programmer = PROG_PD, },
 		.try_update = 0,
+		.force_update = 0,
 		.emulate = 0,
 		.system_properties = {
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
@@ -1003,6 +1074,9 @@ static int do_update(int argc, char *argv[])
 				cfg.image.emulation = strdup(
 						cfg.image_current.emulation);
 			}
+			break;
+		case 'F':
+			cfg.force_update = 1;
 			break;
 		case 'S':
 			override_properties_from_list(optarg, &cfg);
