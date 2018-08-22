@@ -79,7 +79,7 @@ test_update() {
 	cmp "${TMP}.emu" "${expected}"
 }
 
-# --sys_props: mainfw_act, [wp_hw, wp_sw]
+# --sys_props: mainfw_act, is_vboot2, [wp_hw, wp_sw]
 
 # Test Full update.
 test_update "Full update" \
@@ -94,12 +94,21 @@ test_update "RW update" \
 # Test Try-RW update (vboot2).
 test_update "RW update (A->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,1
 
 test_update "RW update (B->A)" \
 	"${FROM_IMAGE}" "${TMP}.expected.a" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,1
 
 test_update "RW update -> fallback to RO+RW Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1
+	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1,1
+
+# Test Try-RW update (vboot1).
+test_update "RW update (vboot1, A->B)" \
+	"${FROM_IMAGE}" "${TMP}.expected.b" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0
+
+test_update "RW update (vboot1, B->B)" \
+	"${FROM_IMAGE}" "${TMP}.expected.b" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0

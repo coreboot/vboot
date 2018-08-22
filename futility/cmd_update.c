@@ -96,6 +96,7 @@ struct system_property {
 
 enum system_property_type {
 	SYS_PROP_MAINFW_ACT,
+	SYS_PROP_FW_VBOOT2,
 	SYS_PROP_WP_HW,
 	SYS_PROP_WP_SW,
 	SYS_PROP_MAX
@@ -190,6 +191,12 @@ static int host_get_wp_hw()
 		v = VbGetSystemPropertyInt("wpsw_boot");
 
 	return v;
+}
+
+/* A helper function to return "fw_vboot2" system property. */
+static int host_get_fw_vboot2()
+{
+	return VbGetSystemPropertyInt("fw_vboot2");
 }
 
 /*
@@ -545,10 +552,15 @@ static void free_image(struct firmware_image *image)
  * Returns the section name if success, otherwise NULL.
  */
 static const char *decide_rw_target(struct updater_config *cfg,
-				    enum target_type target)
+				    enum target_type target,
+				    int is_vboot2)
 {
 	const char *a = FMAP_RW_SECTION_A, *b = FMAP_RW_SECTION_B;
 	int slot = get_system_property(SYS_PROP_MAINFW_ACT, cfg);
+
+	/* In vboot1, always update B and check content with A. */
+	if (!is_vboot2)
+		return target == TARGET_UPDATE ? b : a;
 
 	switch (slot) {
 	case SLOT_A:
@@ -567,7 +579,8 @@ static const char *decide_rw_target(struct updater_config *cfg,
  * The `target` argument is an FMAP section name indicating which to try.
  * Returns 0 if success, non-zero if error.
  */
-static int set_try_cookies(struct updater_config *cfg, const char *target)
+static int set_try_cookies(struct updater_config *cfg, const char *target,
+			   int is_vboot2)
 {
 	int tries = 6;
 	const char *slot;
@@ -592,8 +605,14 @@ static int set_try_cookies(struct updater_config *cfg, const char *target)
 		return 0;
 	}
 
-	RETURN_ON_FAILURE(VbSetSystemPropertyString("fw_try_next", slot));
-	RETURN_ON_FAILURE(VbSetSystemPropertyInt("fw_try_count", tries));
+	if (is_vboot2 && VbSetSystemPropertyString("fw_try_next", slot)) {
+		Error("Failed to set fw_try_next to %s.\n", slot);
+		return -1;
+	}
+	if (VbSetSystemPropertyInt("fw_try_count", tries)) {
+		Error("Failed to set fw_try_count to %d.\n", tries);
+		return -1;
+	}
 	return 0;
 }
 
@@ -919,14 +938,16 @@ static enum updater_error_codes update_try_rw_firmware(
 {
 	const char *target;
 	int has_update = 1;
+	int is_vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
 
 	preserve_gbb(image_from, image_to);
 	if (!wp_enabled && section_needs_update(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
 
-	/* TODO(hungte): Support vboot1. */
-	target = decide_rw_target(cfg, TARGET_SELF);
+	Debug("%s: Firmware %s vboot2.\n", __FUNCTION__,
+	      is_vboot2 ?  "is" : "is NOT");
+	target = decide_rw_target(cfg, TARGET_SELF, is_vboot2);
 	if (target == NULL) {
 		Error("TRY-RW update needs system to boot in RW firmware.\n");
 		return UPDATE_ERR_TARGET;
@@ -942,14 +963,18 @@ static enum updater_error_codes update_try_rw_firmware(
 		has_update = section_needs_update(image_from, image_to, target);
 
 	if (has_update) {
-		target = decide_rw_target(cfg, TARGET_UPDATE);
+		target = decide_rw_target(cfg, TARGET_UPDATE, is_vboot2);
 		printf(">> TRY-RW UPDATE: Updating %s to try on reboot.\n",
 		       target);
 
 		if (write_firmware(cfg, image_to, target))
 			return UPDATE_ERR_WRITE_FIRMWARE;
-		if (set_try_cookies(cfg, target))
+		if (set_try_cookies(cfg, target, is_vboot2))
 			return UPDATE_ERR_SET_COOKIES;
+	} else {
+		/* Clear trial cookies for vboot1. */
+		if (!is_vboot2 && !cfg->emulate)
+			VbSetSystemPropertyInt("fwb_tries", 0);
 	}
 
 	/* TODO(hungte): Add optional checks here that may change has_update. */
@@ -1128,6 +1153,7 @@ static int do_update(int argc, char *argv[])
 		.emulate = 0,
 		.system_properties = {
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
+			[SYS_PROP_FW_VBOOT2] = {.getter = host_get_fw_vboot2},
 			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
 		},
