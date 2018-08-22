@@ -26,6 +26,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
+		  * const PROG_EMULATE = "dummy:emulate",
 		  * const PROG_EC = "ec",
 		  * const PROG_PD = "ec:dev=1";
 
@@ -36,6 +37,7 @@ enum flashrom_ops {
 
 struct firmware_image {
 	const char *programmer;
+	char *emulation;
 	uint32_t size;
 	uint8_t *data;
 	char *file_name;
@@ -51,6 +53,7 @@ struct firmware_section {
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
+	int emulate;
 };
 
 /*
@@ -62,7 +65,7 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 			 const char *section_name)
 {
 	char *command;
-	const char *op_cmd, *dash_i = "-i", *postfix = "";
+	const char *op_cmd, *dash_i = "-i", *postfix = "", *ignore_lock = "";
 	int r;
 
 	if (debugging_enabled)
@@ -74,6 +77,10 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	if (!section_name || !*section_name) {
 		dash_i = "";
 		section_name = "";
+	}
+
+	if (strncmp(programmer, PROG_EMULATE, strlen(PROG_EMULATE)) == 0) {
+		ignore_lock = "--ignore-lock";
 	}
 
 	switch (op) {
@@ -93,8 +100,9 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	}
 
 	/* TODO(hungte) In future we should link with flashrom directly. */
-	r = asprintf(&command, "flashrom %s %s -p %s %s %s %s", op_cmd,
-		     image_path, programmer, dash_i, section_name, postfix);
+	r = asprintf(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
+		     image_path, programmer, dash_i, section_name, ignore_lock,
+		     postfix);
 
 	if (r == -1) {
 		/* `command` will be not available. */
@@ -212,6 +220,28 @@ static int load_image(const char *file_name, struct firmware_image *image)
 }
 
 /*
+ * Loads and emulates system firmware by an image file.
+ * This will set a emulation programmer in image->emulation so flashrom
+ * can access the file as system firmware storage.
+ * Returns 0 if success, non-zero if error.
+ */
+static int emulate_system_image(const char *file_name,
+				struct firmware_image *image)
+{
+	if (load_image(file_name, image))
+		return -1;
+
+	if (asprintf(&image->emulation,
+		     "%s=VARIABLE_SIZE,image=%s,size=%u",
+		     PROG_EMULATE, file_name, image->size) < 0) {
+		Error("%s: Failed to allocate buffer for programmer: %s.\n",
+		      __FUNCTION__, file_name);
+		return -1;
+	}
+	return 0;
+}
+
+/*
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
@@ -236,6 +266,7 @@ static void free_image(struct firmware_image *image)
 	free(image->ro_version);
 	free(image->rw_version_a);
 	free(image->rw_version_b);
+	free(image->emulation);
 	memset(image, 0, sizeof(*image));
 }
 
@@ -293,6 +324,7 @@ static void unload_updater_config(struct updater_config *cfg)
 	free_image(&cfg->image_current);
 	free_image(&cfg->ec_image);
 	free_image(&cfg->pd_image);
+	cfg->emulate = 0;
 }
 
 /* Command line options */
@@ -301,6 +333,7 @@ static struct option const long_opts[] = {
 	{"image", 1, NULL, 'i'},
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
+	{"emulate", 1, NULL, 'E'},
 	{"help", 0, NULL, 'h'},
 	{NULL, 0, NULL, 0},
 };
@@ -315,6 +348,9 @@ static void print_help(int argc, char *argv[])
 		"-i, --image=FILE    \tAP (host) firmware image (image.bin)\n"
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
+		"\n"
+		"Debugging and testing options:\n"
+		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"",
 		argv[0]);
 }
@@ -342,6 +378,16 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'P':
 			errorcnt += load_image(optarg, &cfg.pd_image);
+			break;
+		case 'E':
+			cfg.emulate = 1;
+			errorcnt += emulate_system_image(
+					optarg, &cfg.image_current);
+			/* Both image and image_current need emulation. */
+			if (!errorcnt) {
+				cfg.image.emulation = strdup(
+						cfg.image_current.emulation);
+			}
 			break;
 
 		case 'h':

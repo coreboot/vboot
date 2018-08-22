@@ -6,16 +6,25 @@
 me=${0##*/}
 TMP="$me.tmp"
 
+# Include /usr/sbin for flahsrom(8)
+PATH=/usr/sbin:"${PATH}"
+
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
+PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
 LINK_VERSION="Google_Link.2695.1.133"
+PEPPY_VERSION="Google_Peppy.4389.89.0"
 
 # Work in scratch directory
 cd "$OUTDIR"
-
 set -o pipefail
 
-# Test command execution.
+# Prepare temporary files.
+cp -f "${LINK_BIOS}" "${TMP}.emu"
 
-# The updater is now currently always loading system firmware using flashrom(8)
-# and can't be tested until an emulation interface is implemented.
+# Test command execution.
+versions="$("${FUTILITY}" update -i "${PEPPY_BIOS}" --emulate "${TMP}.emu" |
+	    sed -n 's/.*(//; s/).*//p')"
+test "${versions}" = \
+"RO:${PEPPY_VERSION}, RW/A:${PEPPY_VERSION}, RW/B:${PEPPY_VERSION}
+RO:${LINK_VERSION}, RW/A:${LINK_VERSION}, RW/B:${LINK_VERSION}"
