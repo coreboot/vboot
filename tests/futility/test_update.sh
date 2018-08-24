@@ -67,6 +67,8 @@ test_update() {
 	cmp "${TMP}.emu" "${expected}"
 }
 
+# --sys_props: mainfw_act, [wp_hw, wp_sw]
+
 # Test Full update.
 test_update "Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \

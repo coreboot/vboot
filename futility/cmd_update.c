@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "crossystem.h"
 #include "fmap.h"
 #include "futility.h"
 #include "host_misc.h"
@@ -29,6 +30,10 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY";
 
+/* System environment values. */
+static CONST_STRING FWACT_A = "A",
+		    FWACT_B = "B";
+
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
 		  * const PROG_EMULATE = "dummy:emulate",
@@ -38,6 +43,17 @@ static const char * const PROG_HOST = "host",
 enum wp_state {
 	WP_DISABLED,
 	WP_ENABLED,
+};
+
+enum target_type {
+	TARGET_SELF,
+	TARGET_UPDATE,
+};
+
+enum active_slot {
+	SLOT_UNKNOWN = -1,
+	SLOT_A = 0,
+	SLOT_B,
 };
 
 enum flashrom_ops {
@@ -67,8 +83,7 @@ struct system_property {
 };
 
 enum system_property_type {
-	/* TODO(hungte) Remove SYS_PROP_TEST* when we have more properties. */
-	SYS_PROP_TEST1,
+	SYS_PROP_MAINFW_ACT,
 	SYS_PROP_WP_HW,
 	SYS_PROP_WP_SW,
 	SYS_PROP_MAX
@@ -80,6 +95,22 @@ struct updater_config {
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
+
+/* An helper function to return "mainfw_act" system property.  */
+static int host_get_mainfw_act()
+{
+	char buf[VB_MAX_STRING_PROPERTY];
+
+	if (!VbGetSystemPropertyString("mainfw_act", buf, sizeof(buf)))
+		return SLOT_UNKNOWN;
+
+	if (strcmp(buf, FWACT_A) == 0)
+		return SLOT_A;
+	else if (strcmp(buf, FWACT_B) == 0)
+		return SLOT_B;
+
+	return SLOT_UNKNOWN;
+}
 
 /* A helper function to return the "hardware write protection" status. */
 static int host_get_wp_hw()
@@ -719,6 +750,7 @@ static int do_update(int argc, char *argv[])
 		.pd_image = { .programmer = PROG_PD, },
 		.emulate = 0,
 		.system_properties = {
+			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
 			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
 		},
