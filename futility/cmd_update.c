@@ -7,6 +7,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,10 +51,25 @@ struct firmware_section {
 	size_t size;
 };
 
+struct system_property {
+	int (*getter)();
+	int value;
+	int initialized;
+};
+
+enum system_property_type {
+	/* TODO(hungte) Remove SYS_PROP_TEST* when we have more properties. */
+	SYS_PROP_TEST1,
+	SYS_PROP_TEST2,
+	SYS_PROP_TEST3,
+	SYS_PROP_MAX
+};
+
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
 	int emulate;
+	struct system_property system_properties[SYS_PROP_MAX];
 };
 
 /*
@@ -117,6 +133,107 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	r = system(command);
 	free(command);
 	return r;
+}
+
+/*
+ * Gets the system property by given type.
+ * If the property was not loaded yet, invoke the property getter function
+ * and cache the result.
+ * Returns the property value.
+ */
+static int get_system_property(enum system_property_type property_type,
+			       struct updater_config *cfg)
+{
+	struct system_property *prop;
+
+	assert(property_type < SYS_PROP_MAX);
+	prop = &cfg->system_properties[property_type];
+	if (!prop->initialized) {
+		prop->initialized = 1;
+		prop->value = prop->getter();
+	}
+	return prop->value;
+}
+
+static void print_system_properties(struct updater_config *cfg)
+{
+	int i;
+
+	/*
+	 * There may be error messages when fetching properties from active
+	 * system, so we want to peek at them first and then print out.
+	 */
+	Debug("Scanning system properties...\n");
+	for (i = 0; i < SYS_PROP_MAX; i++) {
+		get_system_property((enum system_property_type)i, cfg);
+	}
+
+	printf("System properties: [");
+	for (i = 0; i < SYS_PROP_MAX; i++) {
+		printf("%d,",
+		       get_system_property((enum system_property_type)i, cfg));
+	}
+	printf("]\n");
+}
+
+/*
+ * Overrides the return value of a system property.
+ * After invoked, next call to get_system_property(type, cfg) will return
+ * the given value.
+ */
+static void override_system_property(enum system_property_type property_type,
+				     struct updater_config *cfg,
+				     int value)
+{
+	struct system_property *prop;
+
+	assert(property_type < SYS_PROP_MAX);
+	prop = &cfg->system_properties[property_type];
+	prop->initialized = 1;
+	prop->value = value;
+}
+
+/*
+ * Overrides system properties from a given list.
+ * The list should be string of integers eliminated by comma and/or space.
+ * For example, "1 2 3" and "1,2,3" both overrides first 3 properties.
+ * To skip some properties you have to use comma, for example
+ * "1, , 3" will only override the first and 3rd properties.
+ * Invalid characters and fields will be ignored.
+ *
+ * The current implementation is only for unit testing.
+ * In future we may extend this with name=value so users can use it easily on
+ * actual systems.
+ */
+static void override_properties_from_list(const char *override_list,
+					  struct updater_config *cfg)
+{
+	const char *s = override_list;
+	char *e, c;
+	int i = 0, wait_comma = 0;
+	long int v;
+
+	Debug("%s: Input is <%s>\n", __FUNCTION__, override_list);
+	for (c = *s; c; c = *++s) {
+		if (c == ',') {
+			if (!wait_comma)
+				i++;
+			wait_comma = 0;
+		}
+		if (!isascii(c) || !isdigit(c))
+			continue;
+		if (i >= SYS_PROP_MAX) {
+			Error("%s: Too many fields (max is %d): %s.\n",
+			      __FUNCTION__, SYS_PROP_MAX, override_list);
+			return;
+		}
+		v = strtol(s, &e, 0);
+		s = e - 1;
+		Debug("%s: property[%d].value = %d\n", __FUNCTION__, i, v);
+		override_system_property((enum system_property_type)i, cfg, v);
+		wait_comma = 1;
+		i++;
+	}
 }
 
 /*
@@ -465,6 +582,9 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
+	if (debugging_enabled)
+		print_system_properties(cfg);
+
 	return update_whole_firmware(cfg, image_to);
 }
 
@@ -473,6 +593,11 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
  */
 static void unload_updater_config(struct updater_config *cfg)
 {
+	int i;
+	for (i = 0; i < SYS_PROP_MAX; i++) {
+		cfg->system_properties[i].initialized = 0;
+		cfg->system_properties[i].value = 0;
+	}
 	free_image(&cfg->image);
 	free_image(&cfg->image_current);
 	free_image(&cfg->ec_image);
@@ -487,6 +612,7 @@ static struct option const long_opts[] = {
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
 	{"emulate", 1, NULL, 'E'},
+	{"sys_props", 1, NULL, 'S'},
 	{"help", 0, NULL, 'h'},
 	{NULL, 0, NULL, 0},
 };
@@ -504,6 +630,7 @@ static void print_help(int argc, char *argv[])
 		"\n"
 		"Debugging and testing options:\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
+		"    --sys_props=LIST\tList of system properties to override\n"
 		"",
 		argv[0]);
 }
@@ -516,6 +643,9 @@ static int do_update(int argc, char *argv[])
 		.image_current = { .programmer = PROG_HOST, },
 		.ec_image = { .programmer = PROG_EC, },
 		.pd_image = { .programmer = PROG_PD, },
+		.emulate = 0,
+		.system_properties = {
+		},
 	};
 
 	printf(">> Firmware updater started.\n");
@@ -541,6 +671,9 @@ static int do_update(int argc, char *argv[])
 				cfg.image.emulation = strdup(
 						cfg.image_current.emulation);
 			}
+			break;
+		case 'S':
+			override_properties_from_list(optarg, &cfg);
 			break;
 
 		case 'h':

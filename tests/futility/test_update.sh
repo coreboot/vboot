@@ -6,6 +6,19 @@
 me=${0##*/}
 TMP="$me.tmp"
 
+# Test --sys_props (primitive test needed for future updating tests).
+test_sys_props() {
+	! "${FUTILITY}" --debug update --sys_props "$*" |
+		sed -n 's/.*property\[\(.*\)].value = \(.*\)/\1,\2,/p' |
+		tr '\n' ' '
+}
+
+test "$(test_sys_props "1,2,3")" = "0,1, 1,2, 2,3, "
+test "$(test_sys_props "1 2 3")" = "0,1, 1,2, 2,3, "
+test "$(test_sys_props "1, 2,3 ")" = "0,1, 1,2, 2,3, "
+test "$(test_sys_props "   1,, 2")" = "0,1, 2,2, "
+test "$(test_sys_props " , 4,")" = "1,4, "
+
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
 PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
