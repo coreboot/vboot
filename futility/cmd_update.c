@@ -31,8 +31,8 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY";
 
 /* System environment values. */
-static CONST_STRING FWACT_A = "A",
-		    FWACT_B = "B";
+static const char * const FWACT_A = "A",
+		  * const FWACT_B = "B";
 
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
@@ -92,6 +92,7 @@ enum system_property_type {
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
+	int try_update;
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
@@ -442,6 +443,65 @@ static void free_image(struct firmware_image *image)
 }
 
 /*
+ * Decides which target in RW firmware to manipulate.
+ * The `target` argument specifies if we want to know "the section to be
+ * update" (TARGET_UPDATE), or "the (active) section * to check" (TARGET_SELF).
+ * Returns the section name if success, otherwise NULL.
+ */
+static const char *decide_rw_target(struct updater_config *cfg,
+				    enum target_type target)
+{
+	const char *a = FMAP_RW_SECTION_A, *b = FMAP_RW_SECTION_B;
+	int slot = get_system_property(SYS_PROP_MAINFW_ACT, cfg);
+
+	switch (slot) {
+	case SLOT_A:
+		return target == TARGET_UPDATE ? b : a;
+
+	case SLOT_B:
+		return target == TARGET_UPDATE ? a : b;
+	}
+
+	return NULL;
+}
+
+/*
+ * Sets any needed system properties to indicate system should try the new
+ * firmware on next boot.
+ * The `target` argument is an FMAP section name indicating which to try.
+ * Returns 0 if success, non-zero if error.
+ */
+static int set_try_cookies(struct updater_config *cfg, const char *target)
+{
+	int tries = 6;
+	const char *slot;
+
+	/* EC Software Sync needs few more reboots. */
+	if (cfg->ec_image.data)
+		tries += 2;
+
+	/* Find new slot according to target (section) name. */
+	if (strcmp(target, FMAP_RW_SECTION_A) == 0)
+		slot = FWACT_A;
+	else if (strcmp(target, FMAP_RW_SECTION_B) == 0)
+		slot = FWACT_B;
+	else {
+		Error("%s: Unknown target: %s\n", __FUNCTION__, target);
+		return -1;
+	}
+
+	if (cfg->emulate) {
+		printf("(emulation) Setting try_next to %s, try_count to %d.\n",
+		       slot, tries);
+		return 0;
+	}
+
+	RETURN_ON_FAILURE(VbSetSystemPropertyString("fw_try_next", slot));
+	RETURN_ON_FAILURE(VbSetSystemPropertyInt("fw_try_count", tries));
+	return 0;
+}
+
+/*
  * Emulates writing to firmware.
  * Returns 0 if success, non-zero if error.
  */
@@ -586,19 +646,54 @@ static int is_write_protection_enabled(struct updater_config *cfg)
 }
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
+	UPDATE_ERR_NEED_RO_UPDATE,
 	UPDATE_ERR_NO_IMAGE,
 	UPDATE_ERR_SYSTEM_IMAGE,
+	UPDATE_ERR_SET_COOKIES,
 	UPDATE_ERR_WRITE_FIRMWARE,
+	UPDATE_ERR_TARGET,
 	UPDATE_ERR_UNKNOWN,
 };
 
 static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
+	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
 	[UPDATE_ERR_NO_IMAGE] = "No image to update; try specify with -i.",
 	[UPDATE_ERR_SYSTEM_IMAGE] = "Cannot load system active firmware.",
+	[UPDATE_ERR_SET_COOKIES] = "Failed writing system flags to try update.",
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
+	[UPDATE_ERR_TARGET] = "Cannot find target section to update.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
+
+/*
+ * The main updater for "Try-RW update", to update only one RW section
+ * and try if it can boot properly on reboot.
+ * This was also known as --mode=autoupdate,--wp=1 in legacy updater.
+ * Returns UPDATE_ERR_DONE if success, otherwise error.
+ */
+static enum updater_error_codes update_try_rw_firmware(
+		struct updater_config *cfg,
+		struct firmware_image *image_from,
+		struct firmware_image *image_to,
+		int wp_enabled)
+{
+	const char *target;
+
+	/* TODO(hungte): Support vboot1. */
+	target = decide_rw_target(cfg, TARGET_UPDATE);
+	if (!target) {
+		Error("TRY-RW update needs system to boot in RW firmware.\n");
+		return UPDATE_ERR_TARGET;
+	}
+	printf(">> TRY-RW UPDATE: Updating %s to try on reboot.\n", target);
+	if (write_firmware(cfg, image_to, target))
+		return UPDATE_ERR_WRITE_FIRMWARE;
+	if (set_try_cookies(cfg, target))
+		return UPDATE_ERR_SET_COOKIES;
+
+	return UPDATE_ERR_DONE;
+}
 
 /*
  * The main updater for "RW update".
@@ -685,6 +780,15 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (debugging_enabled)
 		print_system_properties(cfg);
 
+	if (cfg->try_update) {
+		enum updater_error_codes r;
+		r = update_try_rw_firmware(cfg, image_from, image_to,
+					   wp_enabled);
+		if (r != UPDATE_ERR_NEED_RO_UPDATE)
+			return r;
+		printf("Warning: %s\n", updater_error_messages[r]);
+	}
+
 	if (wp_enabled)
 		return update_rw_firmrware(cfg, image_from, image_to);
 	else
@@ -714,6 +818,7 @@ static struct option const long_opts[] = {
 	{"image", 1, NULL, 'i'},
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
+	{"try", 0, NULL, 't'},
 	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
 	{"sys_props", 1, NULL, 'S'},
@@ -721,7 +826,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static const char * const short_opts = "hi:e:";
+static const char * const short_opts = "hi:e:t";
 
 static void print_help(int argc, char *argv[])
 {
@@ -731,6 +836,7 @@ static void print_help(int argc, char *argv[])
 		"-i, --image=FILE    \tAP (host) firmware image (image.bin)\n"
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
+		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
@@ -748,6 +854,7 @@ static int do_update(int argc, char *argv[])
 		.image_current = { .programmer = PROG_HOST, },
 		.ec_image = { .programmer = PROG_EC, },
 		.pd_image = { .programmer = PROG_PD, },
+		.try_update = 0,
 		.emulate = 0,
 		.system_properties = {
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
@@ -769,6 +876,10 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'P':
 			errorcnt += load_image(optarg, &cfg.pd_image);
+			break;
+		case 't':
+			cfg.try_update = 1;
+			break;
 		case 'W':
 			r = strtol(optarg, NULL, 0);
 			override_system_property(SYS_PROP_WP_HW, &cfg, r);

@@ -47,11 +47,17 @@ unpack_image "from" "${FROM_IMAGE}"
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
+cp -f "${FROM_IMAGE}" "${TMP}.expected.a"
+cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
 "${FUTILITY}" load_fmap "${TMP}.expected.rw" \
 	RW_SECTION_A:${TMP}.to/RW_SECTION_A \
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B \
 	RW_SHARED:${TMP}.to/RW_SHARED \
 	RW_LEGACY:${TMP}.to/RW_LEGACY
+"${FUTILITY}" load_fmap "${TMP}.expected.a" \
+	RW_SECTION_A:${TMP}.to/RW_SECTION_A
+"${FUTILITY}" load_fmap "${TMP}.expected.b" \
+	RW_SECTION_B:${TMP}.to/RW_SECTION_B
 
 test_update() {
 	local test_name="$1"
@@ -78,3 +84,12 @@ test_update "Full update" \
 test_update "RW update" \
 	"${FROM_IMAGE}" "${TMP}.expected.rw" \
 	-i "${TO_IMAGE}" --wp=1
+
+# Test Try-RW update (vboot2).
+test_update "RW update (A->B)" \
+	"${FROM_IMAGE}" "${TMP}.expected.b" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0
+
+test_update "RW update (B->A)" \
+	"${FROM_IMAGE}" "${TMP}.expected.a" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1
