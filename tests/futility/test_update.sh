@@ -33,7 +33,25 @@ FROM_IMAGE=${TMP}.src.peppy
 cp -f ${LINK_BIOS} ${TO_IMAGE}
 cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 
+unpack_image() {
+	local folder="${TMP}.$1"
+	local image="$2"
+	mkdir -p "${folder}"
+	(cd "${folder}" && ${FUTILITY} dump_fmap -x "../${image}")
+}
+
+# Unpack images so we can prepare expected results by individual sections.
+unpack_image "to" "${TO_IMAGE}"
+unpack_image "from" "${FROM_IMAGE}"
+
+# Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
+cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
+"${FUTILITY}" load_fmap "${TMP}.expected.rw" \
+	RW_SECTION_A:${TMP}.to/RW_SECTION_A \
+	RW_SECTION_B:${TMP}.to/RW_SECTION_B \
+	RW_SHARED:${TMP}.to/RW_SHARED \
+	RW_LEGACY:${TMP}.to/RW_LEGACY
 
 test_update() {
 	local test_name="$1"
@@ -52,4 +70,9 @@ test_update() {
 # Test Full update.
 test_update "Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-i "${TO_IMAGE}"
+	-i "${TO_IMAGE}" --wp=0
+
+# Test RW-only update.
+test_update "RW update" \
+	"${FROM_IMAGE}" "${TMP}.expected.rw" \
+	-i "${TO_IMAGE}" --wp=1

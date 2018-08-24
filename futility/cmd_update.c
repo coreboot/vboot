@@ -21,15 +21,24 @@
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
+		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
+		  * const FMAP_RW_SECTION_B = "RW_SECTION_B",
 		  * const FMAP_RW_FWID = "RW_FWID",
 		  * const FMAP_RW_FWID_A = "RW_FWID_A",
-		  * const FMAP_RW_FWID_B = "RW_FWID_B";
+		  * const FMAP_RW_FWID_B = "RW_FWID_B",
+		  * const FMAP_RW_SHARED = "RW_SHARED",
+		  * const FMAP_RW_LEGACY = "RW_LEGACY";
 
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
 		  * const PROG_EMULATE = "dummy:emulate",
 		  * const PROG_EC = "ec",
 		  * const PROG_PD = "ec:dev=1";
+
+enum wp_state {
+	WP_DISABLED,
+	WP_ENABLED,
+};
 
 enum flashrom_ops {
 	FLASHROM_READ,
@@ -60,8 +69,8 @@ struct system_property {
 enum system_property_type {
 	/* TODO(hungte) Remove SYS_PROP_TEST* when we have more properties. */
 	SYS_PROP_TEST1,
-	SYS_PROP_TEST2,
-	SYS_PROP_TEST3,
+	SYS_PROP_WP_HW,
+	SYS_PROP_WP_SW,
 	SYS_PROP_MAX
 };
 
@@ -71,6 +80,13 @@ struct updater_config {
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
+
+/* A helper function to return the "hardware write protection" status. */
+static int host_get_wp_hw()
+{
+	/* TODO(hungte) Implement this with calling VbGetSystemPropertyInt . */
+	return WP_ENABLED;
+}
 
 /*
  * A helper function to invoke flashrom(8) command.
@@ -133,6 +149,13 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	r = system(command);
 	free(command);
 	return r;
+}
+
+/* Helper function to return software write protection switch status. */
+static int host_get_wp_sw()
+{
+	/* TODO(hungte) Implement this with calling flashrom. */
+	return WP_ENABLED;
 }
 
 /*
@@ -517,6 +540,19 @@ static int write_optional_firmware(struct updater_config *cfg,
 	return write_firmware(cfg, image, section_name);
 }
 
+static int is_write_protection_enabled(struct updater_config *cfg)
+{
+	/* Default to enabled. */
+	int wp = get_system_property(SYS_PROP_WP_HW, cfg);
+	if (wp == WP_DISABLED)
+		return wp;
+	/* For error or enabled, check WP SW. */
+	wp = get_system_property(SYS_PROP_WP_SW, cfg);
+	/* Consider all errors as enabled. */
+	if (wp != WP_DISABLED)
+		return WP_ENABLED;
+	return wp;
+}
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NO_IMAGE,
@@ -532,6 +568,32 @@ static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
+
+/*
+ * The main updater for "RW update".
+ * This was also known as --mode=recovery, --wp=1 in legacy updater.
+ * Returns UPDATE_ERR_DONE if success, otherwise error.
+ */
+static enum updater_error_codes update_rw_firmrware(
+		struct updater_config *cfg,
+		struct firmware_image *image_from,
+		struct firmware_image *image_to)
+{
+	printf(">> RW UPDATE: Updating RW sections (%s, %s, and %s).\n",
+	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED);
+
+	/*
+	 * TODO(hungte) Speed up by flashing multiple sections in one
+	 * command, or provide diff file.
+	 */
+	if (write_firmware(cfg, image_to, FMAP_RW_SECTION_A) ||
+	    write_firmware(cfg, image_to, FMAP_RW_SECTION_B) ||
+	    write_firmware(cfg, image_to, FMAP_RW_SHARED) ||
+	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY))
+		return UPDATE_ERR_WRITE_FIRMWARE;
+
+	return UPDATE_ERR_DONE;
+}
 
 /*
  * The main updater for "Full update".
@@ -560,6 +622,7 @@ static enum updater_error_codes update_whole_firmware(
  */
 static enum updater_error_codes update_firmware(struct updater_config *cfg)
 {
+	int wp_enabled;
 	struct firmware_image *image_from = &cfg->image_current,
 			      *image_to = &cfg->image;
 	if (!image_to->data)
@@ -582,10 +645,19 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
+	wp_enabled = is_write_protection_enabled(cfg);
+	printf(">> Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
+	       wp_enabled ? "enabled" : "disabled",
+	       get_system_property(SYS_PROP_WP_HW, cfg),
+	       get_system_property(SYS_PROP_WP_SW, cfg));
+
 	if (debugging_enabled)
 		print_system_properties(cfg);
 
-	return update_whole_firmware(cfg, image_to);
+	if (wp_enabled)
+		return update_rw_firmrware(cfg, image_from, image_to);
+	else
+		return update_whole_firmware(cfg, image_to);
 }
 
 /*
@@ -611,6 +683,7 @@ static struct option const long_opts[] = {
 	{"image", 1, NULL, 'i'},
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
+	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
 	{"sys_props", 1, NULL, 'S'},
 	{"help", 0, NULL, 'h'},
@@ -629,6 +702,7 @@ static void print_help(int argc, char *argv[])
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"\n"
 		"Debugging and testing options:\n"
+		"    --wp=1|0        \tSpecify write protection status\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
 		"",
@@ -637,7 +711,7 @@ static void print_help(int argc, char *argv[])
 
 static int do_update(int argc, char *argv[])
 {
-	int i, errorcnt = 0;
+	int i, r, errorcnt = 0;
 	struct updater_config cfg = {
 		.image = { .programmer = PROG_HOST, },
 		.image_current = { .programmer = PROG_HOST, },
@@ -645,6 +719,8 @@ static int do_update(int argc, char *argv[])
 		.pd_image = { .programmer = PROG_PD, },
 		.emulate = 0,
 		.system_properties = {
+			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
+			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
 		},
 	};
 
@@ -661,6 +737,10 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'P':
 			errorcnt += load_image(optarg, &cfg.pd_image);
+		case 'W':
+			r = strtol(optarg, NULL, 0);
+			override_system_property(SYS_PROP_WP_HW, &cfg, r);
+			override_system_property(SYS_PROP_WP_SW, &cfg, r);
 			break;
 		case 'E':
 			cfg.emulate = 1;
