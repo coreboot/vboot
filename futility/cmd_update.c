@@ -17,6 +17,7 @@
 #include "futility.h"
 #include "host_misc.h"
 #include "utility.h"
+#include "vb2_struct.h"
 
 #define COMMAND_BUFFER_SIZE 256
 #define RETURN_ON_FAILURE(x) do {int r = (x); if (r) return r;} while (0);
@@ -28,6 +29,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RO_GBB = "GBB",
 		  * const FMAP_RO_VPD = "RO_VPD",
 		  * const FMAP_RW_VPD = "RW_VPD",
+		  * const FMAP_RW_VBLOCK_A = "VBLOCK_A",
 		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
 		  * const FMAP_RW_SECTION_B = "RW_SECTION_B",
 		  * const FMAP_RW_FWID = "RW_FWID",
@@ -96,6 +98,7 @@ struct system_property {
 
 enum system_property_type {
 	SYS_PROP_MAINFW_ACT,
+	SYS_PROP_TPM_FWVER,
 	SYS_PROP_FW_VBOOT2,
 	SYS_PROP_WP_HW,
 	SYS_PROP_WP_SW,
@@ -178,6 +181,12 @@ static int host_get_mainfw_act()
 		return SLOT_B;
 
 	return SLOT_UNKNOWN;
+}
+
+/* A helper function to return the "tpm_fwver" system property. */
+static int host_get_tpm_fwver()
+{
+	return VbGetSystemPropertyInt("tpm_fwver");
 }
 
 /* A helper function to return the "hardware write protection" status. */
@@ -924,6 +933,93 @@ static int check_compatible_platform(struct updater_config *cfg)
 	      image_from->ro_version);
 	return strncmp(image_from->ro_version, image_to->ro_version, len);
 }
+
+/*
+ * Returns a key block key from given image section, or NULL on failure.
+ */
+static const struct vb2_keyblock *get_keyblock(
+		const struct firmware_image *image,
+		const char *section_name)
+{
+	struct firmware_section section;
+
+	find_firmware_section(&section, image, section_name);
+	/* A keyblock must be followed by a vb2_fw_preamble. */
+	if (section.size < sizeof(struct vb2_keyblock) +
+	    sizeof(struct vb2_fw_preamble)) {
+		Error("%s: Invalid section: %s\n", __FUNCTION__, section_name);
+		return NULL;
+	}
+	return (const struct vb2_keyblock *)section.data;
+}
+
+/*
+ * Gets the data key and firmware version from a section on firmware image.
+ * The section should contain a vb2_keyblock and a vb2_fw_preamble immediately
+ * after key block so we can decode and save the data key and firmware version
+ * into argument `data_key_version` and `firmware_version`.
+ * Returns 0 for success, otherwise failure.
+ */
+static int get_key_versions(const struct firmware_image *image,
+			    const char *section_name,
+			    unsigned int *data_key_version,
+			    unsigned int *firmware_version)
+{
+	const struct vb2_keyblock *keyblock = get_keyblock(image, section_name);
+	const struct vb2_fw_preamble *pre;
+
+	if (!keyblock)
+		return -1;
+	*data_key_version = keyblock->data_key.key_version;
+	pre = (struct vb2_fw_preamble *)((uint8_t*)keyblock +
+					 keyblock->keyblock_size);
+	*firmware_version = pre->firmware_version;
+	Debug("%s: %s: data key version = %d, firmware version = %d\n",
+	      __FUNCTION__, image->file_name, *data_key_version,
+	      *firmware_version);
+	return 0;
+}
+
+/*
+ * Checks if the given firmware image is signed with a key that won't be
+ * blocked by TPM's anti-rollback detection.
+ * Returns 0 for success, otherwise failure.
+ */
+static int check_compatible_tpm_keys(struct updater_config *cfg,
+				     const struct firmware_image *rw_image)
+{
+	unsigned int data_key_version = 0, firmware_version = 0,
+		     tpm_data_key_version = 0, tpm_firmware_version = 0,
+		     tpm_fwver = 0;
+
+	tpm_fwver = get_system_property(SYS_PROP_TPM_FWVER, cfg);
+	if (tpm_fwver <= 0) {
+		Error("%s: Invalid tpm_fwver: %d.\n", __FUNCTION__, tpm_fwver);
+		return -1;
+	}
+
+	tpm_data_key_version = tpm_fwver >> 16;
+	tpm_firmware_version = tpm_fwver & 0xffff;
+	Debug("%s: TPM: data_key_version = %d, firmware_version = %d\n",
+	      __FUNCTION__, tpm_data_key_version, tpm_firmware_version);
+
+	if (get_key_versions(rw_image, FMAP_RW_VBLOCK_A, &data_key_version,
+			     &firmware_version) != 0)
+		return -1;
+
+	if (tpm_data_key_version > data_key_version) {
+		Error("%s: Data key version rollback detected (%d->%d).\n",
+		      __FUNCTION__, tpm_data_key_version, data_key_version);
+		return -1;
+	}
+	if (tpm_firmware_version > firmware_version) {
+		Error("%s: Firmware version rollback detected (%d->%d).\n",
+		      __FUNCTION__, tpm_firmware_version, firmware_version);
+		return -1;
+	}
+	return 0;
+}
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -934,6 +1030,7 @@ enum updater_error_codes {
 	UPDATE_ERR_WRITE_FIRMWARE,
 	UPDATE_ERR_PLATFORM,
 	UPDATE_ERR_TARGET,
+	UPDATE_ERR_TPM_ROLLBACK,
 	UPDATE_ERR_UNKNOWN,
 };
 
@@ -947,6 +1044,7 @@ static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
 	[UPDATE_ERR_PLATFORM] = "Your system platform is not compatible.",
 	[UPDATE_ERR_TARGET] = "No valid RW target to update. Abort.",
+	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
 
@@ -970,6 +1068,10 @@ static enum updater_error_codes update_try_rw_firmware(
 	if (!wp_enabled && section_needs_update(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
+
+	printf("Checking compatibility...\n");
+	if (check_compatible_tpm_keys(cfg, image_to))
+		return UPDATE_ERR_TPM_ROLLBACK;
 
 	Debug("%s: Firmware %s vboot2.\n", __FUNCTION__,
 	      is_vboot2 ?  "is" : "is NOT");
@@ -1023,6 +1125,9 @@ static enum updater_error_codes update_rw_firmrware(
 	printf(">> RW UPDATE: Updating RW sections (%s, %s, and %s).\n",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED);
 
+	printf("Checking compatibility...\n");
+	if (check_compatible_tpm_keys(cfg, image_to))
+		return UPDATE_ERR_TPM_ROLLBACK;
 	/*
 	 * TODO(hungte) Speed up by flashing multiple sections in one
 	 * command, or provide diff file.
@@ -1048,6 +1153,10 @@ static enum updater_error_codes update_whole_firmware(
 {
 	printf(">> FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
 	preserve_images(cfg);
+
+	printf("Checking compatibility...\n");
+	if (check_compatible_tpm_keys(cfg, image_to))
+		return UPDATE_ERR_TPM_ROLLBACK;
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
@@ -1182,6 +1291,7 @@ static int do_update(int argc, char *argv[])
 		.emulate = 0,
 		.system_properties = {
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
+			[SYS_PROP_TPM_FWVER] = {.getter = host_get_tpm_fwver},
 			[SYS_PROP_FW_VBOOT2] = {.getter = host_get_fw_vboot2},
 			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},

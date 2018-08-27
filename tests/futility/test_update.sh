@@ -106,48 +106,77 @@ test_update() {
 	fi
 }
 
-# --sys_props: mainfw_act, is_vboot2, [wp_hw, wp_sw]
+# --sys_props: mainfw_act, tpm_fwver, is_vboot2, [wp_hw, wp_sw]
+# tpm_fwver = <data key version:16><firmware version:16>.
+# TO_IMAGE is signed with data key version = 1, firmware version = 4 => 0x10004.
 
 # Test Full update.
 test_update "Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-i "${TO_IMAGE}" --wp=0
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 test_update "Full update (incompatible platform)" \
 	"${FROM_IMAGE}" "!platform is not compatible" \
-	-i "${LINK_BIOS}" --wp=0
+	-i "${LINK_BIOS}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (TPM Anti-rollback: data key)" \
+	"${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 1,0x20001,1
+
+test_update "Full update (TPM Anti-rollback: kernel key)" \
+	"${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 1,0x10005,1
 
 # Test RW-only update.
 test_update "RW update" \
 	"${FROM_IMAGE}" "${TMP}.expected.rw" \
-	-i "${TO_IMAGE}" --wp=1
+	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (incompatible platform)" \
 	"${FROM_IMAGE}" "!platform is not compatible" \
-	-i "${LINK_BIOS}" --wp=1
+	-i "${LINK_BIOS}" --wp=1 --sys_props 0,0x10001,1
+
+test_update "RW update (TPM Anti-rollback: data key)" \
+	"${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+	-i "${TO_IMAGE}" --wp=1 --sys_props 1,0x20001,1
+
+test_update "RW update (TPM Anti-rollback: kernel key)" \
+	"${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+	-i "${TO_IMAGE}" --wp=1 --sys_props 1,0x10005,1
 
 # Test Try-RW update (vboot2).
 test_update "RW update (A->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,1
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (B->A)" \
 	"${FROM_IMAGE}" "${TMP}.expected.a" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,1
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x10001,1
 
 test_update "RW update -> fallback to RO+RW Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1,1
+	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10002,1
 test_update "RW update (incompatible platform)" \
 	"${FROM_IMAGE}" "!platform is not compatible" \
-	-i "${LINK_BIOS}" -t --wp=1
+	-i "${LINK_BIOS}" -t --wp=1 --sys_props 0x10001,1
 
+test_update "RW update (TPM Anti-rollback: data key)" \
+	"${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x20001,1
+
+test_update "RW update (TPM Anti-rollback: kernel key)" \
+	"${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x10005,1
+
+test_update "RW update -> fallback to RO+RW Full update (TPM Anti-rollback)" \
+	"${TO_IMAGE}" "!Firmware version rollback detected (4->2)" \
+	-i "${FROM_IMAGE}" -t --wp=0 --sys_props 1,0x10004,1
 
 # Test Try-RW update (vboot1).
 test_update "RW update (vboot1, A->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0 --sys_props 0,0x10001,0
 
 test_update "RW update (vboot1, B->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
-	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0 --sys_props 0,0x10001,0
