@@ -62,11 +62,17 @@ unpack_image() {
 	local image="$2"
 	mkdir -p "${folder}"
 	(cd "${folder}" && ${FUTILITY} dump_fmap -x "../${image}")
+	${FUTILITY} gbb -g --rootkey="${folder}/rootkey" "${image}"
 }
 
 # Unpack images so we can prepare expected results by individual sections.
 unpack_image "to" "${TO_IMAGE}"
 unpack_image "from" "${FROM_IMAGE}"
+
+# Hack FROM_IMAGE so it has same root key as TO_IMAGE (for RW update).
+FROM_DIFFERENT_ROOTKEY_IMAGE="${FROM_IMAGE}2"
+cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
+"${FUTILITY}" gbb -s --rootkey="${TMP}.to/rootkey" "${FROM_IMAGE}"
 
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
@@ -136,6 +142,10 @@ test_update "RW update (incompatible platform)" \
 	"${FROM_IMAGE}" "!platform is not compatible" \
 	-i "${LINK_BIOS}" --wp=1 --sys_props 0,0x10001,1
 
+test_update "RW update (incompatible rootkey)" \
+	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW not signed by same RO root key" \
+	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
+
 test_update "RW update (TPM Anti-rollback: data key)" \
 	"${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
 	-i "${TO_IMAGE}" --wp=1 --sys_props 1,0x20001,1
@@ -159,6 +169,10 @@ test_update "RW update -> fallback to RO+RW Full update" \
 test_update "RW update (incompatible platform)" \
 	"${FROM_IMAGE}" "!platform is not compatible" \
 	-i "${LINK_BIOS}" -t --wp=1 --sys_props 0x10001,1
+
+test_update "RW update (incompatible rootkey)" \
+	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW not signed by same RO root key" \
+	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
 	"${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \

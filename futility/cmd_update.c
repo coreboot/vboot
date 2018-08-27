@@ -12,11 +12,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "2rsa.h"
 #include "crossystem.h"
 #include "fmap.h"
 #include "futility.h"
 #include "host_misc.h"
 #include "utility.h"
+#include "util_misc.h"
+#include "vb2_common.h"
 #include "vb2_struct.h"
 
 #define COMMAND_BUFFER_SIZE 256
@@ -935,6 +938,22 @@ static int check_compatible_platform(struct updater_config *cfg)
 }
 
 /*
+ * Returns a valid root key from GBB header, or NULL on failure.
+ */
+static const struct vb2_packed_key *get_rootkey(
+		const struct vb2_gbb_header *gbb)
+{
+	struct vb2_packed_key *key = NULL;
+
+	key = (struct vb2_packed_key *)((uint8_t *)gbb + gbb->rootkey_offset);
+	if (!packed_key_looks_ok(key, gbb->rootkey_size)) {
+		Error("%s: Invalid root key.\n", __FUNCTION__);
+		return NULL;
+	}
+	return key;
+}
+
+/*
  * Returns a key block key from given image section, or NULL on failure.
  */
 static const struct vb2_keyblock *get_keyblock(
@@ -951,6 +970,57 @@ static const struct vb2_keyblock *get_keyblock(
 		return NULL;
 	}
 	return (const struct vb2_keyblock *)section.data;
+}
+
+/*
+ * Duplicates a key block and returns the duplicated block.
+ * The caller must free the returned key block after being used.
+ */
+static struct vb2_keyblock *dupe_keyblock(const struct vb2_keyblock *block)
+{
+	struct vb2_keyblock *new_block;
+
+	new_block = (struct vb2_keyblock *)malloc(block->keyblock_size);
+	assert(new_block);
+	memcpy(new_block, block, block->keyblock_size);
+	return new_block;
+}
+
+/*
+ * Verifies if keyblock is signed with given key.
+ * Returns 0 on success, otherwise failure.
+ */
+static int verify_keyblock(const struct vb2_keyblock *block,
+			   const struct vb2_packed_key *sign_key) {
+	int r;
+	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE];
+	struct vb2_workbuf wb;
+	struct vb2_public_key key;
+	struct vb2_keyblock *new_block;
+
+	if (block->keyblock_signature.sig_size == 0) {
+		Error("%s: Keyblock is not signed.\n", __FUNCTION__);
+		return -1;
+	}
+	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
+	if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
+		Error("%s: Invalid signing key,\n", __FUNCTION__);
+		return -1;
+	}
+
+	/*
+	 * vb2_verify_keyblock will destroy the signature inside keyblock
+	 * so we have to verify with a local copy.
+	 */
+	new_block = dupe_keyblock(block);
+	r = vb2_verify_keyblock(new_block, new_block->keyblock_size, &key, &wb);
+	free(new_block);
+
+	if (r != VB2_SUCCESS) {
+		Error("%s: Error verifying key block.\n", __FUNCTION__);
+		return -1;
+	}
+	return 0;
 }
 
 /*
@@ -977,6 +1047,61 @@ static int get_key_versions(const struct firmware_image *image,
 	Debug("%s: %s: data key version = %d, firmware version = %d\n",
 	      __FUNCTION__, image->file_name, *data_key_version,
 	      *firmware_version);
+	return 0;
+}
+
+/*
+ * Checks if the root key in ro_image can verify vblocks in rw_image.
+ * Returns 0 for success, otherwise failure.
+ */
+static int check_compatible_root_key(const struct firmware_image *ro_image,
+				     const struct firmware_image *rw_image)
+{
+	const struct vb2_gbb_header *gbb = find_gbb(ro_image);
+	const struct vb2_packed_key *rootkey;
+	const struct vb2_keyblock *keyblock;
+
+	if (!gbb)
+		return -1;
+
+	rootkey = get_rootkey(gbb);
+	if (!rootkey)
+		return -1;
+
+	/* Assume VBLOCK_A and VBLOCK_B are signed in same way. */
+	keyblock = get_keyblock(rw_image, FMAP_RW_VBLOCK_A);
+	if (!keyblock)
+		return -1;
+
+	if (verify_keyblock(keyblock, rootkey) != 0) {
+		const struct vb2_gbb_header *gbb_rw = find_gbb(rw_image);
+		const struct vb2_packed_key *rootkey_rw = NULL;
+		int is_same_key = 0;
+		/*
+		 * Try harder to provide more info.
+		 * packed_key_sha1_string uses static buffer so don't call
+		 * it twice in args list of one expression.
+		 */
+		if (gbb_rw)
+			rootkey_rw = get_rootkey(gbb_rw);
+		if (rootkey_rw) {
+			if (rootkey->key_offset == rootkey_rw->key_offset &&
+			    rootkey->key_size == rootkey_rw->key_size &&
+			    memcmp(rootkey, rootkey_rw, rootkey->key_size +
+				   rootkey->key_offset) == 0)
+				is_same_key = 1;
+		}
+		printf("Current (RO) image root key is %s, ",
+		       packed_key_sha1_string(rootkey));
+		if (is_same_key)
+			printf("same with target (RW) image. "
+			       "Maybe RW corrupted?\n");
+		else
+			printf("target (RW) image is signed with rootkey %s.\n",
+			       rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
+			       "<invalid>");
+		return -1;
+	}
 	return 0;
 }
 
@@ -1030,6 +1155,7 @@ enum updater_error_codes {
 	UPDATE_ERR_WRITE_FIRMWARE,
 	UPDATE_ERR_PLATFORM,
 	UPDATE_ERR_TARGET,
+	UPDATE_ERR_ROOT_KEY,
 	UPDATE_ERR_TPM_ROLLBACK,
 	UPDATE_ERR_UNKNOWN,
 };
@@ -1044,6 +1170,7 @@ static const char * const updater_error_messages[] = {
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
 	[UPDATE_ERR_PLATFORM] = "Your system platform is not compatible.",
 	[UPDATE_ERR_TARGET] = "No valid RW target to update. Abort.",
+	[UPDATE_ERR_ROOT_KEY] = "RW not signed by same RO root key",
 	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
@@ -1070,6 +1197,8 @@ static enum updater_error_codes update_try_rw_firmware(
 		return UPDATE_ERR_NEED_RO_UPDATE;
 
 	printf("Checking compatibility...\n");
+	if (check_compatible_root_key(image_from, image_to))
+		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 
@@ -1126,6 +1255,8 @@ static enum updater_error_codes update_rw_firmrware(
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED);
 
 	printf("Checking compatibility...\n");
+	if (check_compatible_root_key(image_from, image_to))
+		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 	/*
