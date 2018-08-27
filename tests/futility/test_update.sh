@@ -35,6 +35,28 @@ FROM_HWID="X86 PEPPY TEST 4211"
 cp -f ${LINK_BIOS} ${TO_IMAGE}
 cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 
+patch_file() {
+	local file="$1"
+	local section="$2"
+	local data="$3"
+
+	# NAME OFFSET SIZE
+	local fmap_info="$(${FUTILITY} dump_fmap -p ${file} ${section})"
+	local offset="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
+	echo "offset: ${offset}"
+	echo -n "${data}" | dd of="${file}" bs=1 seek="${offset}" conv=notrunc
+}
+
+# PEPPY and LINK have different platform element ("Google_Link" and
+# "Google_Peppy") in firmware ID so we want to hack them by changing
+# "Google_" to "Google.".
+patch_file ${TO_IMAGE} RW_FWID_A Google.
+patch_file ${TO_IMAGE} RW_FWID_B Google.
+patch_file ${TO_IMAGE} RO_FRID Google.
+patch_file ${FROM_IMAGE} RW_FWID_A Google.
+patch_file ${FROM_IMAGE} RW_FWID_B Google.
+patch_file ${FROM_IMAGE} RO_FRID Google.
+
 unpack_image() {
 	local folder="${TMP}.$1"
 	local image="$2"
@@ -75,8 +97,13 @@ test_update() {
 	shift 3
 	cp -f "${emu_src}" "${TMP}.emu"
 	echo "*** Test Item: ${test_name}"
-	"${FUTILITY}" update --emulate "${TMP}.emu" "$@"
-	cmp "${TMP}.emu" "${expected}"
+	if [ "${error_msg}" != "${expected}" ] && [ -n "${error_msg}" ]; then
+		msg="$(! "${FUTILITY}" update --emulate "${TMP}.emu" "$@" 2>&1)"
+		echo "${msg}" | grep -qF -- "${error_msg}"
+	else
+		"${FUTILITY}" update --emulate "${TMP}.emu" "$@"
+		cmp "${TMP}.emu" "${expected}"
+	fi
 }
 
 # --sys_props: mainfw_act, is_vboot2, [wp_hw, wp_sw]
@@ -86,10 +113,18 @@ test_update "Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" --wp=0
 
+test_update "Full update (incompatible platform)" \
+	"${FROM_IMAGE}" "!platform is not compatible" \
+	-i "${LINK_BIOS}" --wp=0
+
 # Test RW-only update.
 test_update "RW update" \
 	"${FROM_IMAGE}" "${TMP}.expected.rw" \
 	-i "${TO_IMAGE}" --wp=1
+
+test_update "RW update (incompatible platform)" \
+	"${FROM_IMAGE}" "!platform is not compatible" \
+	-i "${LINK_BIOS}" --wp=1
 
 # Test Try-RW update (vboot2).
 test_update "RW update (A->B)" \
@@ -103,6 +138,10 @@ test_update "RW update (B->A)" \
 test_update "RW update -> fallback to RO+RW Full update" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1,1
+test_update "RW update (incompatible platform)" \
+	"${FROM_IMAGE}" "!platform is not compatible" \
+	-i "${LINK_BIOS}" -t --wp=1
+
 
 # Test Try-RW update (vboot1).
 test_update "RW update (vboot1, A->B)" \
