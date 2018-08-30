@@ -40,7 +40,9 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_FWID_B = "RW_FWID_B",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
 		  * const FMAP_RW_NVRAM = "RW_NVRAM",
-		  * const FMAP_RW_LEGACY = "RW_LEGACY";
+		  * const FMAP_RW_LEGACY = "RW_LEGACY",
+		  * const FMAP_SI_DESC = "SI_DESC",
+		  * const FMAP_SI_ME = "SI_ME";
 
 /* System environment values. */
 static const char * const FWACT_A = "A",
@@ -439,6 +441,23 @@ static int firmware_section_exists(const struct firmware_image *image,
 	struct firmware_section section;
 	find_firmware_section(&section, image, section_name);
 	return section.data != NULL;
+}
+
+/*
+ * Checks if the section is filled with given character.
+ * If section size is 0, return 0. If section is not empty, return non-zero if
+ * the section is filled with same character c, otherwise 0.
+ */
+static int section_is_filled_with(const struct firmware_section *section,
+				  uint8_t c)
+{
+	uint32_t i;
+	if (!section->size)
+		return 0;
+	for (i = 0; i < section->size; i++)
+		if (section->data[i] != c)
+			return 0;
+	return 1;
 }
 
 /*
@@ -844,6 +863,29 @@ static int preserve_gbb(const struct firmware_image *image_from,
 }
 
 /*
+ * Preserves the regions locked by Intel management engine.
+ */
+static int preserve_management_engine(const struct firmware_image *image_from,
+				      struct firmware_image *image_to)
+{
+	struct firmware_section section;
+
+	find_firmware_section(&section, image_from, FMAP_SI_ME);
+	if (!section.data) {
+		Debug("%s: Skipped because no section %s\n", __FUNCTION__,
+		      FMAP_SI_ME);
+		return 0;
+	}
+	if (section_is_filled_with(&section, 0xFF)) {
+		Debug("%s: ME is probably locked - preserving %s.\n",
+		      __FUNCTION__, FMAP_SI_DESC);
+		return preserve_firmware_section(
+				image_from, image_to, FMAP_SI_DESC);
+	}
+	return 0;
+}
+
+/*
  * Preserves the critical sections from the current (active) firmware.
  * Currently only GBB, VPD (RO+RW) and NVRAM sections are preserved.
  * Returns 0 if success, non-zero if error.
@@ -853,6 +895,7 @@ static int preserve_images(struct updater_config *cfg)
 	int errcnt = 0;
 	struct firmware_image *from = &cfg->image_current, *to = &cfg->image;
 	errcnt += preserve_gbb(from, to);
+	errcnt += preserve_management_engine(from, to);
 	errcnt += preserve_firmware_section(from, to, FMAP_RO_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_NVRAM);
