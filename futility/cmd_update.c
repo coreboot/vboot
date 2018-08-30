@@ -1106,6 +1106,56 @@ static int check_compatible_root_key(const struct firmware_image *ro_image,
 }
 
 /*
+ * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
+ * section of an image file, otherwise 0.
+ */
+static int cbfs_file_exists(const char *image_file,
+			    const char *section_name,
+			    const char *cbfs_entry_name)
+{
+	char *cmd;
+	int r;
+
+	if (asprintf(&cmd,
+		     "cbfstool '%s' print -r %s 2>/dev/null | grep -q '^%s '",
+		     image_file, section_name, cbfs_entry_name) < 0) {
+		Error("%s: Failed to allocate buffer.\n", __FUNCTION__);
+		return 0;
+	}
+	r = system(cmd);
+	free(cmd);
+	return !r;
+}
+
+/*
+ * Returns non-zero if the RW_LEGACY needs to be updated, otherwise 0.
+ */
+static int legacy_needs_update(struct updater_config *cfg)
+{
+	int has_from, has_to;
+	const char * const tag = "cros_allow_auto_update";
+	const char *section = FMAP_RW_LEGACY;
+
+	Debug("%s: Checking %s contents...\n", __FUNCTION__, FMAP_RW_LEGACY);
+
+	/* TODO(hungte): Save image_current as temp file and use it. */
+	has_to = cbfs_file_exists(cfg->image.file_name, section, tag);
+	has_from = cbfs_file_exists(cfg->image_current.file_name, section, tag);
+
+	/* TODO)hungte): Add a quirk so we can upgrade systems without tags. */
+	if (!has_from || !has_to) {
+		Debug("%s: Current legacy firmware has%s updater tag (%s) "
+		      "and target firmware has%s updater tag, won't update.\n",
+		      __FUNCTION__, has_from ? "" : " no", tag,
+		      has_to ? "" : " no");
+		return 0;
+	}
+
+	return section_needs_update(
+			&cfg->image_current, &cfg->image, FMAP_RW_LEGACY);
+}
+
+/*
  * Checks if the given firmware image is signed with a key that won't be
  * blocked by TPM's anti-rollback detection.
  * Returns 0 for success, otherwise failure.
@@ -1234,7 +1284,13 @@ static enum updater_error_codes update_try_rw_firmware(
 			VbSetSystemPropertyInt("fwb_tries", 0);
 	}
 
-	/* TODO(hungte): Add optional checks here that may change has_update. */
+	/* Do not fail on updating legacy. */
+	if (legacy_needs_update(cfg)) {
+		has_update = 1;
+		printf(">> LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
+		write_firmware(cfg, image_to, FMAP_RW_LEGACY);
+	}
+
 	if (!has_update)
 		printf(">> No need to update.\n");
 
@@ -1251,8 +1307,9 @@ static enum updater_error_codes update_rw_firmrware(
 		struct firmware_image *image_from,
 		struct firmware_image *image_to)
 {
-	printf(">> RW UPDATE: Updating RW sections (%s, %s, and %s).\n",
-	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED);
+	printf(">> RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
+	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
+	       FMAP_RW_LEGACY);
 
 	printf("Checking compatibility...\n");
 	if (check_compatible_root_key(image_from, image_to))
