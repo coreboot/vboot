@@ -25,9 +25,10 @@ test_quirks() {
 		tr '\n' ' '
 }
 
-test "$(test_quirks "test")" = "test,1 "
-test "$(test_quirks "test=2")" = "test,2 "
-test "$(test_quirks " test, test=2")" = "test,1 test,2 "
+test "$(test_quirks "enlarge_image")" = "enlarge_image,1 "
+test "$(test_quirks "enlarge_image=2")" = "enlarge_image,2 "
+test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
+	"enlarge_image,1 enlarge_image,2 "
 
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
@@ -84,6 +85,10 @@ FROM_DIFFERENT_ROOTKEY_IMAGE="${FROM_IMAGE}2"
 cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
 "${FUTILITY}" gbb -s --rootkey="${TMP}.to/rootkey" "${FROM_IMAGE}"
 
+# Hack for quirks
+cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.large"
+truncate -s $((8388608 * 2)) "${FROM_IMAGE}.large"
+
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
@@ -105,6 +110,8 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
 	RW_LEGACY:${TMP}.to/RW_LEGACY
+cp -f "${TMP}.expected.full" "${TMP}.expected.large"
+dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 
 test_update() {
 	local test_name="$1"
@@ -212,3 +219,12 @@ test_update "RW update (vboot1, B->B)" \
 test_update "Legacy update" \
 	"${FROM_IMAGE}" "${TMP}.expected.legacy" \
 	-i "${TO_IMAGE}" --mode=legacy
+
+# Test quirks
+test_update "Full update (wrong size)" \
+	"${FROM_IMAGE}.large" "!Image size is different" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks enlarge_image)" \
+	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1

@@ -122,7 +122,7 @@ struct quirk_entry {
 };
 
 enum quirk_types {
-	QUIRK_TEST,
+	QUIRK_ENLARGE_IMAGE,
 	QUIRK_MAX,
 };
 
@@ -731,6 +731,28 @@ static void free_image(struct firmware_image *image)
 	free(image->rw_version_b);
 	free(image->emulation);
 	memset(image, 0, sizeof(*image));
+}
+/*
+ * Reloads a firmware image from file.
+ * Keeps special configuration like emulation.
+ * Returns 0 on success, otherwise failure.
+ */
+static int reload_image(const char *file_name, struct firmware_image *image)
+{
+	char *emulation = image->emulation;
+	int r;
+
+	/*
+	 * All values except emulation and programmer will be re-constructed
+	 * in load_image. `programmer` is not touched in free_image so we only
+	 * need to keep `emulation`.
+	 */
+	image->emulation = NULL;
+	free_image(image);
+	r = load_image(file_name, image);
+	if (r == 0)
+		image->emulation = emulation;
+	return r;
 }
 
 /*
@@ -1385,6 +1407,41 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 	return 0;
 }
 
+/*
+ * Quirk to enlarge a firmware image to match flash size. This is needed by
+ * devices using multiple SPI flash with different sizes, for example 8M and
+ * 16M. The image_to will be padded with 0xFF using the size of image_from.
+ * Returns 0 on success, otherwise failure.
+ */
+static int quirk_enlarge_image(struct updater_config *cfg)
+{
+	struct firmware_image *image_from = &cfg->image_current,
+			      *image_to = &cfg->image;
+	const char *tmp_path;
+	size_t to_write;
+	FILE *fp;
+
+	if (image_from->size <= image_to->size)
+		return 0;
+
+	tmp_path = create_temp_file();
+	if (!tmp_path)
+		return -1;
+
+	DEBUG("Resize image from %u to %u.", image_to->size, image_from->size);
+	to_write = image_from->size - image_to->size;
+	vb2_write_file(tmp_path, image_to->data, image_to->size);
+	fp = fopen(tmp_path, "ab");
+	if (!fp) {
+		ERROR("Cannot open temporary file %s.", tmp_path);
+		return -1;
+	}
+	while (to_write-- > 0)
+		fputc('\xff', fp);
+	fclose(fp);
+	return reload_image(tmp_path, image_to);
+}
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -1599,6 +1656,9 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       get_system_property(SYS_PROP_WP_HW, cfg),
 	       get_system_property(SYS_PROP_WP_SW, cfg));
 
+	if (try_apply_quirk(QUIRK_ENLARGE_IMAGE, cfg))
+		return UPDATE_ERR_SYSTEM_IMAGE;
+
 	if (debugging_enabled)
 		print_system_properties(cfg);
 
@@ -1701,7 +1761,12 @@ static int do_update(int argc, char *argv[])
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
 		},
 		.quirks = {
-			[QUIRK_TEST] = {.name="test", .help="Dummy quirk"},
+			[QUIRK_ENLARGE_IMAGE] = {
+				.name="enlarge_image",
+				.help="Enlarge firmware image by flash size.",
+				.apply=quirk_enlarge_image,
+			},
+
 		},
 	};
 
@@ -1727,8 +1792,6 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'L':
 			list_config_quirks(&cfg);
-			/* TODO(hungte): Remove this experimental quirk. */
-			try_apply_quirk(QUIRK_TEST, &cfg);
 			return 0;
 		case 'm':
 			if (strcmp(optarg, "autoupdate") == 0) {
