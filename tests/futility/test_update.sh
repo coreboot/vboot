@@ -79,6 +79,7 @@ cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.a"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
+cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 "${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full"
 "${FUTILITY}" load_fmap "${TMP}.expected.full" \
 	RW_VPD:${TMP}.from/RW_VPD \
@@ -92,6 +93,8 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
 	RW_SECTION_A:${TMP}.to/RW_SECTION_A
 "${FUTILITY}" load_fmap "${TMP}.expected.b" \
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B
+"${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
+	RW_LEGACY:${TMP}.to/RW_LEGACY
 
 test_update() {
 	local test_name="$1"
@@ -194,3 +197,8 @@ test_update "RW update (vboot1, A->B)" \
 test_update "RW update (vboot1, B->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0 --sys_props 0,0x10001,0
+
+# Test legacy update
+test_update "Legacy update" \
+	"${FROM_IMAGE}" "${TMP}.expected.legacy" \
+	-i "${TO_IMAGE}" --mode=legacy

@@ -117,6 +117,7 @@ struct updater_config {
 	struct firmware_image ec_image, pd_image;
 	int try_update;
 	int force_update;
+	int legacy_update;
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
@@ -1175,7 +1176,6 @@ static int legacy_needs_update(struct updater_config *cfg)
 	has_to = cbfs_file_exists(cfg->image.file_name, section, tag);
 	has_from = cbfs_file_exists(cfg->image_current.file_name, section, tag);
 
-	/* TODO)hungte): Add a quirk so we can upgrade systems without tags. */
 	if (!has_from || !has_to) {
 		DEBUG("Current legacy firmware has%s updater tag (%s) "
 		      "and target firmware has%s updater tag, won't update.",
@@ -1361,6 +1361,23 @@ static enum updater_error_codes update_rw_firmrware(
 }
 
 /*
+ * The main updater for "Legacy update".
+ * This is equivalent to --mode=legacy.
+ * Returns UPDATE_ERR_DONE if success, otherwise error.
+ */
+static enum updater_error_codes update_legacy_firmware(
+		struct updater_config *cfg,
+		struct firmware_image *image_to)
+{
+	printf(">> LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
+
+	if (write_firmware(cfg, image_to, FMAP_RW_LEGACY))
+		return UPDATE_ERR_WRITE_FIRMWARE;
+
+	return UPDATE_ERR_DONE;
+}
+
+/*
  * The main updater for "Full update".
  * This was also known as "--mode=factory" or "--mode=recovery, --wp=0" in
  * legacy updater.
@@ -1426,6 +1443,9 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	if (debugging_enabled)
 		print_system_properties(cfg);
+
+	if (cfg->legacy_update)
+		return update_legacy_firmware(cfg, image_to);
 
 	if (cfg->try_update) {
 		enum updater_error_codes r;
@@ -1545,7 +1565,10 @@ static int do_update(int argc, char *argv[])
 				cfg.try_update = 1;
 			} else if (strcmp(optarg, "recovery") == 0) {
 				cfg.try_update = 0;
-			} else if (strcmp(optarg, "factory") == 0) {
+			} else if (strcmp(optarg, "legacy") == 0) {
+				cfg.legacy_update = 1;
+			} else if (strcmp(optarg, "factory") == 0 ||
+				   strcmp(optarg, "factory_install") == 0) {
 				cfg.try_update = 0;
 				if (!is_write_protection_enabled(&cfg)) {
 					errorcnt++;
