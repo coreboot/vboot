@@ -113,14 +113,28 @@ enum system_property_type {
 	SYS_PROP_MAX
 };
 
+struct updater_config;
+struct quirk_entry {
+	const char *name;
+	const char *help;
+	int (*apply)(struct updater_config *cfg);
+	int value;
+};
+
+enum quirk_types {
+	QUIRK_TEST,
+	QUIRK_MAX,
+};
+
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
+	struct system_property system_properties[SYS_PROP_MAX];
+	struct quirk_entry quirks[QUIRK_MAX];
 	int try_update;
 	int force_update;
 	int legacy_update;
 	int emulate;
-	struct system_property system_properties[SYS_PROP_MAX];
 };
 
 struct tempfile {
@@ -464,6 +478,91 @@ static void override_properties_from_list(const char *override_list,
 		wait_comma = 1;
 		i++;
 	}
+}
+
+/* Gets the value (setting) of specified quirks from updater configuration. */
+static int get_config_quirk(enum quirk_types quirk,
+			    const struct updater_config *cfg)
+{
+	assert(quirk < QUIRK_MAX);
+	return cfg->quirks[quirk].value;
+}
+
+/* Prints the name and description from all supported quirks. */
+static void list_config_quirks(const struct updater_config *cfg)
+{
+	const struct quirk_entry *entry = cfg->quirks;
+	int i;
+
+	printf("Supported quirks:\n");
+	for (i = 0; i < QUIRK_MAX; i++, entry++) {
+		printf(" '%s': %s (default: %d)\n", entry->name,
+		       entry->help ? entry->help : "(no description)",
+		       get_config_quirk((enum quirk_types)i, cfg));
+	}
+}
+
+/*
+ * Applies a quirk if applicable (the value should be non-zero).
+ * Returns 0 on success, otherwise failure.
+ */
+static int try_apply_quirk(enum quirk_types quirk, struct updater_config *cfg)
+{
+	const struct quirk_entry *entry = cfg->quirks + quirk;
+	assert(quirk < QUIRK_MAX);
+
+	if (!entry->value)
+		return 0;
+
+	if (!entry->apply) {
+		ERROR("<%s> not implemented.", entry->name);
+		return -1;
+	}
+	DEBUG("Applying quirk <%s>.", entry->name);
+	return entry->apply(cfg);
+}
+
+/*
+ * Initialize the updater_config quirks from a list of settings.
+ * Returns 0 on success, otherwise failure.
+ */
+static int setup_config_quirks(const char *quirks, struct updater_config *cfg)
+{
+	/*
+	 * The list should be in NAME[=VALUE],...
+	 * Value defaults to 1 if not specified.
+	 */
+	int r = 0;
+	char *buf = strdup(quirks);
+	char *token;
+
+	token = strtok(buf, ", ");
+	for (; token; token = strtok(NULL, ", ")) {
+		const char *name = token;
+		char *equ = strchr(token, '=');
+		int i, value = 1;
+		struct quirk_entry *entry = cfg->quirks;
+
+		if (equ) {
+			*equ = '\0';
+			value = strtol(equ + 1, NULL, 0);
+		}
+
+		DEBUG("Looking for quirk <%s=%d>.", name, value);
+		for (i = 0; i < QUIRK_MAX; i++, entry++) {
+			if (strcmp(name, entry->name))
+				continue;
+			entry->value = value;
+			DEBUG("Set quirk %s to %d.", entry->name, value);
+			break;
+		}
+		if (i >= QUIRK_MAX) {
+			ERROR("Unknown quirk: %s", name);
+			r++;
+		}
+	}
+	free(buf);
+	return r;
 }
 
 /*
@@ -1545,6 +1644,8 @@ static struct option const long_opts[] = {
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
 	{"try", 0, NULL, 't'},
+	{"quirks", 1, NULL, 'f'},
+	{"list-quirks", 0, NULL, 'L'},
 	{"mode", 1, NULL, 'm'},
 	{"force", 0, NULL, 'F'},
 	{"wp", 1, NULL, 'W'},
@@ -1567,6 +1668,8 @@ static void print_help(int argc, char *argv[])
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
+		"    --quirks=LIST   \tSpecify the quirks to apply\n"
+		"    --list-quirks   \tPrint all available quirks\n"
 		"\n"
 		"Legacy and compatibility options:\n"
 		"-m, --mode=MODE     \tRun updater in given mode\n"
@@ -1590,15 +1693,15 @@ static int do_update(int argc, char *argv[])
 		.image_current = { .programmer = PROG_HOST, },
 		.ec_image = { .programmer = PROG_EC, },
 		.pd_image = { .programmer = PROG_PD, },
-		.try_update = 0,
-		.force_update = 0,
-		.emulate = 0,
 		.system_properties = {
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
 			[SYS_PROP_TPM_FWVER] = {.getter = host_get_tpm_fwver},
 			[SYS_PROP_FW_VBOOT2] = {.getter = host_get_fw_vboot2},
 			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
+		},
+		.quirks = {
+			[QUIRK_TEST] = {.name="test", .help="Dummy quirk"},
 		},
 	};
 
@@ -1619,6 +1722,14 @@ static int do_update(int argc, char *argv[])
 		case 't':
 			cfg.try_update = 1;
 			break;
+		case 'f':
+			errorcnt += !!setup_config_quirks(optarg, &cfg);
+			break;
+		case 'L':
+			list_config_quirks(&cfg);
+			/* TODO(hungte): Remove this experimental quirk. */
+			try_apply_quirk(QUIRK_TEST, &cfg);
+			return 0;
 		case 'm':
 			if (strcmp(optarg, "autoupdate") == 0) {
 				cfg.try_update = 1;

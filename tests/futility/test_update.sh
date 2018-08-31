@@ -19,6 +19,16 @@ test "$(test_sys_props "1, 2,3 ")" = "0,1, 1,2, 2,3, "
 test "$(test_sys_props "   1,, 2")" = "0,1, 2,2, "
 test "$(test_sys_props " , 4,")" = "1,4, "
 
+test_quirks() {
+	! "${FUTILITY}" --debug update --quirks "$*" |
+		sed -n 's/.*Set quirk \(.*\) to \(.*\)./\1,\2/p' |
+		tr '\n' ' '
+}
+
+test "$(test_quirks "test")" = "test,1 "
+test "$(test_quirks "test=2")" = "test,2 "
+test "$(test_quirks " test, test=2")" = "test,1 test,2 "
+
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
 PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
