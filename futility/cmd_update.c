@@ -50,6 +50,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 /* System environment values. */
 static const char * const FWACT_A = "A",
 		  * const FWACT_B = "B",
+		  * const STR_REV = "rev",
 		  * const FLASHROM_OUTPUT_WP_ENABLED =
 			  FLASHROM_OUTPUT_WP_PATTERN "enabled",
 		  * const FLASHROM_OUTPUT_WP_DISABLED =
@@ -108,6 +109,7 @@ enum system_property_type {
 	SYS_PROP_MAINFW_ACT,
 	SYS_PROP_TPM_FWVER,
 	SYS_PROP_FW_VBOOT2,
+	SYS_PROP_PLATFORM_VER,
 	SYS_PROP_WP_HW,
 	SYS_PROP_WP_SW,
 	SYS_PROP_MAX
@@ -124,6 +126,7 @@ struct quirk_entry {
 enum quirk_types {
 	QUIRK_ENLARGE_IMAGE,
 	QUIRK_UNLOCK_ME_FOR_UPDATE,
+	QUIRK_MIN_PLATFORM_VERSION,
 	QUIRK_MAX,
 };
 
@@ -285,6 +288,21 @@ static int host_get_wp_hw()
 static int host_get_fw_vboot2()
 {
 	return VbGetSystemPropertyInt("fw_vboot2");
+}
+
+/* A help function to get $(mosys platform version). */
+static int host_get_platform_version()
+{
+	char *result = host_shell("mosys platform version");
+	int rev = -1;
+
+	/* Result should be 'revN' */
+	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
+		rev = strtol(result + strlen(STR_REV), NULL, 0);
+	DEBUG("Raw data = [%s], parsed version is %d", result, rev);
+
+	free(result);
+	return rev;
 }
 
 /*
@@ -1479,6 +1497,26 @@ static int quirk_unlock_me_for_update(struct updater_config *cfg)
 	return 0;
 }
 
+/*
+ * Checks and returns 0 if the platform version of current system is larger
+ * or equal to given number, otherwise non-zero.
+ */
+static int quirk_min_platform_version(struct updater_config *cfg)
+{
+	int min_version = get_config_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg);
+	int platform_version = get_system_property(SYS_PROP_PLATFORM_VER, cfg);
+
+	DEBUG("Minimum required version=%d, current platform version=%d",
+	      min_version, platform_version);
+
+	if (platform_version >= min_version)
+		return 0;
+	ERROR("Need platform version >= %d (current is %d). "
+	      "This firmware will only run on newer systems.",
+	      min_version, platform_version);
+	return -1;
+}
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -1671,6 +1709,9 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_to->file_name, image_to->ro_version,
 	       image_to->rw_version_a, image_to->rw_version_b);
 
+	if (try_apply_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg))
+		return UPDATE_ERR_PLATFORM;
+
 	if (!image_from->data) {
 		/*
 		 * TODO(hungte) Read only RO_SECTION, VBLOCK_A, VBLOCK_B,
@@ -1794,6 +1835,8 @@ static int do_update(int argc, char *argv[])
 			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
 			[SYS_PROP_TPM_FWVER] = {.getter = host_get_tpm_fwver},
 			[SYS_PROP_FW_VBOOT2] = {.getter = host_get_fw_vboot2},
+			[SYS_PROP_PLATFORM_VER] = {
+				.getter = host_get_platform_version},
 			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
 			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
 		},
@@ -1808,6 +1851,12 @@ static int do_update(int argc, char *argv[])
 				.help="b/35568719: Only lock management engine "
 				      "by board-postinst.",
 				.apply=quirk_unlock_me_for_update,
+			},
+			[QUIRK_MIN_PLATFORM_VERSION] = {
+				.name="min_platform_version",
+				.help="Minimum compatible platform version "
+				      "(also known as Board ID version).",
+				.apply=quirk_min_platform_version,
 			},
 		},
 	};

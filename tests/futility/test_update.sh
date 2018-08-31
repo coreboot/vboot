@@ -137,7 +137,7 @@ test_update() {
 	fi
 }
 
-# --sys_props: mainfw_act, tpm_fwver, is_vboot2, [wp_hw, wp_sw]
+# --sys_props: mainfw_act, tpm_fwver, is_vboot2, platform_ver, [wp_hw, wp_sw]
 # tpm_fwver = <data key version:16><firmware version:16>.
 # TO_IMAGE is signed with data key version = 1, firmware version = 4 => 0x10004.
 
@@ -238,3 +238,13 @@ test_update "Full update (--quirks unlock_me_for_update)" \
 	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
 	--quirks unlock_me_for_update \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (failure by --quirks min_platform_version)" \
+	"${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
+	--quirks min_platform_version=3 \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,2
+
+test_update "Full update (--quirks min_platform_version)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	--quirks min_platform_version=3 \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
