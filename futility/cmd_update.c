@@ -123,6 +123,7 @@ struct quirk_entry {
 
 enum quirk_types {
 	QUIRK_ENLARGE_IMAGE,
+	QUIRK_UNLOCK_ME_FOR_UPDATE,
 	QUIRK_MAX,
 };
 
@@ -1040,7 +1041,8 @@ static int preserve_gbb(const struct firmware_image *image_from,
 /*
  * Preserves the regions locked by Intel management engine.
  */
-static int preserve_management_engine(const struct firmware_image *image_from,
+static int preserve_management_engine(struct updater_config *cfg,
+				      const struct firmware_image *image_from,
 				      struct firmware_image *image_to)
 {
 	struct firmware_section section;
@@ -1055,7 +1057,8 @@ static int preserve_management_engine(const struct firmware_image *image_from,
 		return preserve_firmware_section(
 				image_from, image_to, FMAP_SI_DESC);
 	}
-	return 0;
+
+	return try_apply_quirk(QUIRK_UNLOCK_ME_FOR_UPDATE, cfg);
 }
 
 /*
@@ -1068,7 +1071,7 @@ static int preserve_images(struct updater_config *cfg)
 	int errcnt = 0;
 	struct firmware_image *from = &cfg->image_current, *to = &cfg->image;
 	errcnt += preserve_gbb(from, to);
-	errcnt += preserve_management_engine(from, to);
+	errcnt += preserve_management_engine(cfg, from, to);
 	errcnt += preserve_firmware_section(from, to, FMAP_RO_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_NVRAM);
@@ -1442,6 +1445,40 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	return reload_image(tmp_path, image_to);
 }
 
+/*
+ * Quirk to unlock a firmware image with SI_ME (management engine) when updating
+ * so the system has a chance to make sure SI_ME won't be corrupted on next boot
+ * before locking the Flash Master values in SI_DESC.
+ * Returns 0 on success, otherwise failure.
+ */
+static int quirk_unlock_me_for_update(struct updater_config *cfg)
+{
+	struct firmware_section section;
+	struct firmware_image *image_to = &cfg->image;
+	const int flash_master_offset = 128;
+	const uint8_t flash_master[] = {
+		0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff,
+		0xff, 0xff
+	};
+
+	find_firmware_section(&section, image_to, FMAP_SI_DESC);
+	if (section.size < flash_master_offset + ARRAY_SIZE(flash_master))
+		return 0;
+	if (memcmp(section.data + flash_master_offset, flash_master,
+		   ARRAY_SIZE(flash_master)) == 0) {
+		DEBUG("Target ME not locked.");
+		return 0;
+	}
+	/*
+	 * b/35568719: We should only update with unlocked ME and let
+	 * board-postinst lock it.
+	 */
+	printf("%s: Changed Flash Master Values to unlocked.\n", __FUNCTION__);
+	memcpy(section.data + flash_master_offset, flash_master,
+	       ARRAY_SIZE(flash_master));
+	return 0;
+}
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -1766,7 +1803,12 @@ static int do_update(int argc, char *argv[])
 				.help="Enlarge firmware image by flash size.",
 				.apply=quirk_enlarge_image,
 			},
-
+			[QUIRK_UNLOCK_ME_FOR_UPDATE] = {
+				.name="unlock_me_for_update",
+				.help="b/35568719: Only lock management engine "
+				      "by board-postinst.",
+				.apply=quirk_unlock_me_for_update,
+			},
 		},
 	};
 

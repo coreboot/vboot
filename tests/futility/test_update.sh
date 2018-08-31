@@ -49,24 +49,26 @@ cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 patch_file() {
 	local file="$1"
 	local section="$2"
-	local data="$3"
+	local section_offset="$3"
+	local data="$4"
 
 	# NAME OFFSET SIZE
 	local fmap_info="$(${FUTILITY} dump_fmap -p ${file} ${section})"
-	local offset="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
+	local base="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
+	local offset=$((base + section_offset))
 	echo "offset: ${offset}"
-	echo -n "${data}" | dd of="${file}" bs=1 seek="${offset}" conv=notrunc
+	printf "${data}" | dd of="${file}" bs=1 seek="${offset}" conv=notrunc
 }
 
 # PEPPY and LINK have different platform element ("Google_Link" and
 # "Google_Peppy") in firmware ID so we want to hack them by changing
 # "Google_" to "Google.".
-patch_file ${TO_IMAGE} RW_FWID_A Google.
-patch_file ${TO_IMAGE} RW_FWID_B Google.
-patch_file ${TO_IMAGE} RO_FRID Google.
-patch_file ${FROM_IMAGE} RW_FWID_A Google.
-patch_file ${FROM_IMAGE} RW_FWID_B Google.
-patch_file ${FROM_IMAGE} RO_FRID Google.
+patch_file ${TO_IMAGE} RW_FWID_A 0 Google.
+patch_file ${TO_IMAGE} RW_FWID_B 0 Google.
+patch_file ${TO_IMAGE} RO_FRID 0 Google.
+patch_file ${FROM_IMAGE} RW_FWID_A 0 Google.
+patch_file ${FROM_IMAGE} RW_FWID_B 0 Google.
+patch_file ${FROM_IMAGE} RO_FRID 0 Google.
 
 unpack_image() {
 	local folder="${TMP}.$1"
@@ -112,6 +114,9 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 	RW_LEGACY:${TMP}.to/RW_LEGACY
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
+cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
+patch_file "${TMP}.expected.me_unlocked" SI_DESC 128 \
+	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
 
 test_update() {
 	local test_name="$1"
@@ -227,4 +232,9 @@ test_update "Full update (wrong size)" \
 
 test_update "Full update (--quirks enlarge_image)" \
 	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks unlock_me_for_update)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
+	--quirks unlock_me_for_update \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
