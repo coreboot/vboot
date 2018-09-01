@@ -45,6 +45,10 @@
 #define VBOOT_REFERENCE_BMPBLK_HEADER_H_
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 #define BMPBLOCK_SIGNATURE      "$BMP"
 #define BMPBLOCK_SIGNATURE_SIZE (4)
 
@@ -137,5 +141,9 @@ typedef enum ImageFormat {
  */
 #define RENDER_HWID       "$HWID"
 #define RENDER_HWID_RTOL  "$HWID.rtol"
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_BMPBLK_HEADER_H_ */

@@ -9,6 +9,10 @@
 #include "gpt.h"
 #include "vboot_api.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 enum {
 	GPT_SUCCESS = 0,
 	GPT_ERROR_NO_VALID_KERNEL,
@@ -208,5 +212,9 @@ void SetEntryLegacyBoot(GptEntry *e, int legacy_boot);
 void SetEntrySuccessful(GptEntry *e, int successful);
 void SetEntryPriority(GptEntry *e, int priority);
 void SetEntryTries(GptEntry *e, int tries);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_CGPT_MISC_H_ */

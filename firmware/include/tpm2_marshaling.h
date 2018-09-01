@@ -8,6 +8,10 @@
 
 #include "tss_constants.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /* The below functions are used to serialize/deserialize TPM2 commands. */
 
 /**
@@ -85,5 +89,9 @@ void tpm_set_ph_disabled(int flag);
  * Returns 1 if platform hierarchy is disabled, 0 otherwise
  */
 int tpm_is_ph_disabled(void);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif // __SRC_LIB_TPM2_MARSHALING_H

@@ -13,6 +13,10 @@
 #include "2struct.h"
 #include "vb21_struct.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /**
  * Return the description of an object starting with a vb21_struct_common
  * header.
@@ -176,5 +180,9 @@ int vb21_verify_fw_preamble(struct vb21_fw_preamble *preamble,
 			    uint32_t size,
 			    const struct vb2_public_key *key,
 			    const struct vb2_workbuf *wb);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_VB21_COMMON_H_ */

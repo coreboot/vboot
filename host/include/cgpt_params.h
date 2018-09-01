@@ -5,9 +5,14 @@
 
 #ifndef VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_
 #define VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_
+
 #include <stdint.h>
 
 #include "gpt.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
 
 enum {
 	CGPT_OK = 0,
@@ -127,5 +132,9 @@ typedef struct CgptLegacyParams {
 	uint64_t drive_size;
 	int mode;
 } CgptLegacyParams;
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_ */

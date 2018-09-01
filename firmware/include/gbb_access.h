@@ -10,6 +10,10 @@
 
 #include "vboot_api.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 struct vb2_context;
 struct VbPublicKey;
 
@@ -46,5 +50,9 @@ VbError_t VbGbbReadRecoveryKey(struct vb2_context *ctx,
  * @return VBERROR_... error, VBERROR_SUCCESS on success,
  */
 VbError_t VbGbbReadHWID(struct vb2_context *ctx, char *hwid, uint32_t max_size);
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif
