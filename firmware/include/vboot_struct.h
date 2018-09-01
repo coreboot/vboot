@@ -10,6 +10,10 @@
 #define VBOOT_REFERENCE_VBOOT_STRUCT_H_
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /* Public key data */
 typedef struct VbPublicKey {
 	/* Offset of key data from start of this struct */
@@ -494,5 +498,9 @@ typedef struct VbSharedDataHeader {
 #define VB_SHARED_DATA_HEADER_SIZE_V2 1096
 
 #define VB_SHARED_DATA_VERSION 2      /* Version for struct_version */
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_VBOOT_STRUCT_H_ */

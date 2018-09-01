@@ -10,6 +10,10 @@
 #ifndef __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H
 #define __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 #define TPM_BUFFER_SIZE 256
 
 /* Tpm2 command tags. */
@@ -294,5 +298,9 @@ typedef struct tdTPM_IFX_FIELDUPGRADEINFO
  */
 #define TPM_MAX_COMMAND_SIZE	4096
 #define TPM_PCR_DIGEST		32
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* ! __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H */

@@ -11,6 +11,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 #define TPM_MAX_COMMAND_SIZE 4096
 #define TPM_LARGE_ENOUGH_COMMAND_SIZE 256  /* saves space in the firmware */
 #define TPM_PUBEK_SIZE 256
@@ -250,5 +254,9 @@ typedef struct tdTPM_NV_AUTH_POLICY
 #define TPM_ORD_SelfTestFull            ((uint32_t) 0x00000050)
 #define TPM_ORD_Startup                 ((uint32_t) 0x00000099)
 #define TPM_ORD_TakeOwnership           ((uint32_t) 0x0000000D)
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* ! __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM1_TSS_CONSTANTS_H */

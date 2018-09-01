@@ -16,6 +16,10 @@
 
 #include "cgpt_params.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /* partition table manipulation */
 int CgptCreate(CgptCreateParams *params);
 int CgptAdd(CgptAddParams *params);
@@ -68,5 +72,8 @@ char *FindKernelConfig(const char *filename,
 int ExtractVmlinuz(void *kpart_data, size_t kpart_size,
 		   void **vmlinuz_out, size_t *vmlinuz_size);
 
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_HOST_H_ */

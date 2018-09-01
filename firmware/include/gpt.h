@@ -11,6 +11,10 @@
 #define VBOOT_REFERENCE_CGPTLIB_GPT_H_
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /* From the specification */
 #define GPT_HEADER_SIGNATURE_SIZE 8
 #define GPT_HEADER_REVISION 0x00010000
@@ -123,5 +127,9 @@ typedef struct {
 } __attribute__((packed)) GptEntry;
 
 #define GPTENTRY_EXPECTED_SIZE 128
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_CGPTLIB_GPT_H_ */

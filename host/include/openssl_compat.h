@@ -6,6 +6,10 @@
 #ifndef VBOOT_REFERENCE_OPENSSL_COMPAT_H_
 #define VBOOT_REFERENCE_OPENSSL_COMPAT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 #include <openssl/rsa.h>
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -22,5 +26,9 @@ static inline void RSA_get0_key(const RSA *rsa, const BIGNUM **n,
 }
 
 #endif  /* OPENSSL_VERSION_NUMBER < 0x10100000L */
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_OPENSSL_COMPAT_H_ */

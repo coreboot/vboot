@@ -14,6 +14,10 @@
 
 #include "2id.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif  /* __cplusplus */
+
 /*
  * Magic numbers used by vb21_struct_common.magic.
  *
@@ -338,5 +342,9 @@ struct vb21_fw_preamble {
 } __attribute__((packed));
 
 #define EXPECTED_VB21_FW_PREAMBLE_SIZE (EXPECTED_VB21_STRUCT_COMMON_SIZE + 20)
+
+#ifdef __cplusplus
+}
+#endif  /* __cplusplus */
 
 #endif  /* VBOOT_REFERENCE_VB21_STRUCT_H_ */
