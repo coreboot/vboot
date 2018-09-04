@@ -11,6 +11,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "2rsa.h"
 #include "crossystem.h"
@@ -121,6 +122,61 @@ struct updater_config {
 	int emulate;
 	struct system_property system_properties[SYS_PROP_MAX];
 };
+
+struct tempfile {
+	char *filepath;
+	struct tempfile *next;
+};
+
+static struct tempfile *tempfiles;
+
+/*
+ * Helper function to create a new temporary file.
+ * All files created will be removed by function remove_all_temp_files().
+ * Returns the path of new file, or NULL on failure.
+ */
+static const char *create_temp_file()
+{
+	struct tempfile *new_temp;
+	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
+	int fd;
+
+	fd = mkstemp(new_path);
+	if (fd < 0) {
+		ERROR("Failed to create new temp file in %s", new_path);
+		return NULL;
+	}
+	close(fd);
+	new_temp = (struct tempfile *)malloc(sizeof(*new_temp));
+	if (new_temp)
+		new_temp->filepath = strdup(new_path);
+	if (!new_temp || !new_temp->filepath) {
+		remove(new_path);
+		free(new_temp);
+		ERROR("Failed to allocate buffer for new temp file.");
+		return NULL;
+	}
+	DEBUG("Created new temporary file: %s.", new_path);
+	new_temp->next = tempfiles;
+	tempfiles = new_temp;
+	return new_temp->filepath;
+}
+
+/*
+ * Helper function to remove all files created by create_temp_file().
+ * This is intended to be called only once at end of program execution.
+ */
+static void remove_all_temp_files()
+{
+	while (tempfiles != NULL) {
+		struct tempfile *target = tempfiles;
+		DEBUG("Remove temporary file: %s.", target->filepath);
+		remove(target->filepath);
+		free(target->filepath);
+		tempfiles = target->next;
+		free(target);
+	}
+}
 
 /*
  * Strip a string (usually from shell execution output) by removing all the
@@ -555,9 +611,10 @@ static int emulate_system_image(const char *file_name,
 static int load_system_image(struct updater_config *cfg,
 			     struct firmware_image *image)
 {
-	/* TODO(hungte) replace by mkstemp */
-	const char *tmp_file = "/tmp/.fwupdate.read";
+	const char *tmp_file = create_temp_file();
 
+	if (!tmp_file)
+		return -1;
 	RETURN_ON_FAILURE(host_flashrom(
 			FLASHROM_READ, tmp_file, image->programmer, 0, NULL));
 	return load_image(tmp_file, image);
@@ -718,10 +775,12 @@ static int write_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char *section_name)
 {
-	/* TODO(hungte) replace by mkstemp */
-	const char *tmp_file = "/tmp/.fwupdate.write";
+	const char *tmp_file = create_temp_file();
 	const char *programmer = cfg->emulate ? image->emulation :
 			image->programmer;
+
+	if (!tmp_file)
+		return -1;
 
 	if (cfg->emulate) {
 		printf("%s: (emulation) %s %s from %s to %s.\n",
@@ -1642,8 +1701,8 @@ static int do_update(int argc, char *argv[])
 	printf(">> %s: Firmware updater %s.\n",
 	       errorcnt ? "FAILED": "DONE",
 	       errorcnt ? "stopped due to error" : "exited successfully");
-
 	unload_updater_config(&cfg);
+	remove_all_temp_files();
 	return !!errorcnt;
 }
 
