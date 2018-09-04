@@ -1529,13 +1529,13 @@ static int do_update(int argc, char *argv[])
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
 		switch (i) {
 		case 'i':
-			errorcnt += load_image(optarg, &cfg.image);
+			errorcnt += !!load_image(optarg, &cfg.image);
 			break;
 		case 'e':
-			errorcnt += load_image(optarg, &cfg.ec_image);
+			errorcnt += !!load_image(optarg, &cfg.ec_image);
 			break;
 		case 'P':
-			errorcnt += load_image(optarg, &cfg.pd_image);
+			errorcnt += !!load_image(optarg, &cfg.pd_image);
 			break;
 		case 't':
 			cfg.try_update = 1;
@@ -1564,7 +1564,7 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'E':
 			cfg.emulate = 1;
-			errorcnt += emulate_system_image(
+			errorcnt += !!emulate_system_image(
 					optarg, &cfg.image_current);
 			/* Both image and image_current need emulation. */
 			if (!errorcnt) {
