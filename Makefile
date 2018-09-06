@@ -649,8 +649,6 @@ SIGNING_COMMON = scripts/image_signing/common_minimal.sh
 
 # The unified firmware utility will eventually replace all the others
 FUTIL_BIN = ${BUILD}/futility/futility
-# But we still need both static (tiny) and dynamic (with openssl) versions.
-FUTIL_STATIC_BIN = ${FUTIL_BIN}_s
 
 # These are the executables that are now built in to futility. We'll create
 # symlinks for these so the old names will still work.
@@ -1124,12 +1122,7 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 # new Firmware Utility
 
 .PHONY: futil
-futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
-
-${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS} -lpthread
-${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
-	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
+futil: ${FUTIL_BIN}
 
 ${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20} ${UTILBDB}
@@ -1137,10 +1130,10 @@ ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20} ${UTILBDB}
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+futil_install: ${FUTIL_BIN}
 	@${PRINTF} "    INSTALL       futility\n"
 	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN}
 	${Q}for prog in ${FUTIL_SYMLINKS}; do \
 		ln -sf futility "${UB_DIR}/$$prog"; done
 
