@@ -84,6 +84,12 @@ unsigned long compute_ip_checksum(const void *addr, unsigned long length)
 static int verify_mrc_slot(struct mrc_metadata *md, unsigned long slot_len)
 {
 	uint32_t header_checksum;
+
+	if (slot_len < sizeof(*md)) {
+		fprintf(stderr, "Slot too small!\n");
+		return 1;
+	}
+
 	if (md->signature != MRC_DATA_SIGNATURE) {
 		fprintf(stderr, "MRC signature mismatch\n");
 		return 1;
