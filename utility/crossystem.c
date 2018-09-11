@@ -35,51 +35,45 @@ const Param sys_param_list[] = {
   {"backup_nvram_request", CAN_WRITE,
    "Backup the nvram somewhere at the next boot. Cleared on success."},
   {"battery_cutoff_request", CAN_WRITE,
-   "Cut off battery and shutdown on next boot."},
+   "Cut off battery and shutdown on next boot"},
   {"block_devmode", CAN_WRITE, "Block all use of developer mode"},
   {"clear_tpm_owner_done", CAN_WRITE, "Clear TPM owner done"},
   {"clear_tpm_owner_request", CAN_WRITE, "Clear TPM owner on next boot"},
   {"cros_debug", 0, "OS should allow debug features"},
-  {"dbg_reset", CAN_WRITE, "Debug reset mode request (writable)"},
+  {"dbg_reset", CAN_WRITE, "Debug reset mode request"},
   {"debug_build", 0, "OS image built for debug features"},
-  {"dev_boot_legacy", CAN_WRITE,
-   "Enable developer mode boot Legacy OSes (writable)"},
+  {"dev_boot_legacy", CAN_WRITE, "Enable developer mode boot Legacy OSes"},
   {"dev_boot_signed_only", CAN_WRITE,
-   "Enable developer mode boot only from official kernels (writable)"},
-  {"dev_boot_usb", CAN_WRITE,
-   "Enable developer mode boot from USB/SD (writable)"},
+   "Enable developer mode boot only from official kernels"},
+  {"dev_boot_usb", CAN_WRITE, "Enable developer mode boot from USB/SD"},
   {"dev_default_boot", IS_STRING|CAN_WRITE,
-   "default boot from disk, legacy or usb (writable)"},
+   "Default boot from disk, legacy or usb"},
   {"dev_enable_udc", CAN_WRITE, "Enable USB Device Controller"},
   {"devsw_boot", 0, "Developer switch position at boot"},
   {"devsw_cur",  0, "Developer switch current position"},
-  {"disable_alt_os_request", CAN_WRITE,
-   "Disable AltOS mode on next boot (writable)"},
+  {"disable_alt_os_request", CAN_WRITE, "Disable AltOS mode on next boot"},
   {"disable_dev_request", CAN_WRITE, "Disable virtual dev-mode on next boot"},
   {"ecfw_act", IS_STRING, "Active EC firmware"},
-  {"enable_alt_os_request", CAN_WRITE,
-   "Enable AltOS mode on next boot (writable)"},
+  {"enable_alt_os_request", CAN_WRITE, "Enable AltOS mode on next boot"},
   {"fmap_base", 0, "Main firmware flashmap physical address", "0x%08x"},
   {"fw_prev_result", IS_STRING, "Firmware result of previous boot (vboot2)"},
   {"fw_prev_tried", IS_STRING, "Firmware tried on previous boot (vboot2)"},
-  {"fw_result", IS_STRING|CAN_WRITE,
-   "Firmware result this boot (vboot2,writable)"},
+  {"fw_result", IS_STRING|CAN_WRITE, "Firmware result this boot (vboot2)"},
   {"fw_tried", IS_STRING, "Firmware tried this boot (vboot2)"},
-  {"fw_try_count", CAN_WRITE, "Number of times to try fw_try_next (writable)"},
-  {"fw_try_next", IS_STRING|CAN_WRITE,
-   "Firmware to try next (vboot2,writable)"},
+  {"fw_try_count", CAN_WRITE, "Number of times to try fw_try_next"},
+  {"fw_try_next", IS_STRING|CAN_WRITE, "Firmware to try next (vboot2)"},
   {"fw_vboot2", 0, "1 if firmware was selected by vboot2 or 0 otherwise"},
-  {"fwb_tries", CAN_WRITE, "Try firmware B count (writable)"},
+  {"fwb_tries", CAN_WRITE, "Try firmware B count"},
   {"fwid", IS_STRING, "Active firmware ID"},
   {"fwupdate_tries", CAN_WRITE,
-   "Times to try OS firmware update (writable, inside kern_nv)"},
+   "Times to try OS firmware update (inside kern_nv)"},
   {"hwid", IS_STRING, "Hardware ID"},
   {"inside_vm", 0, "Running in a VM?"},
   {"kern_nv", 0, "Non-volatile field for kernel use", "0x%04x"},
   {"kernel_max_rollforward", CAN_WRITE, "Max kernel version to store into TPM",
    "0x%08x"},
   {"kernkey_vfy", IS_STRING, "Type of verification done on kernel key block"},
-  {"loc_idx", CAN_WRITE, "Localization index for firmware screens (writable)"},
+  {"loc_idx", CAN_WRITE, "Localization index for firmware screens"},
   {"mainfw_act", IS_STRING, "Active main firmware"},
   {"mainfw_type", IS_STRING, "Active main firmware type"},
   {"nvram_cleared", CAN_WRITE, "Have NV settings been lost?  Write 0 to clear"},
@@ -87,8 +81,8 @@ const Param sys_param_list[] = {
   {"phase_enforcement", 0,
     "Board should have full security settings applied"},
   {"recovery_reason", 0, "Recovery mode reason for current boot"},
-  {"recovery_request", CAN_WRITE, "Recovery mode request (writable)"},
-  {"recovery_subcode", CAN_WRITE, "Recovery reason subcode (writable)"},
+  {"recovery_request", CAN_WRITE, "Recovery mode request"},
+  {"recovery_subcode", CAN_WRITE, "Recovery reason subcode"},
   {"recoverysw_boot", 0, "Recovery switch position at boot"},
   {"recoverysw_cur", 0, "Recovery switch current position"},
   {"recoverysw_ec_boot", 0, "Recovery switch position at EC boot"},
@@ -134,8 +128,12 @@ void PrintHelp(const char *progname) {
          "Stops at the first error."
          "\n"
          "Valid parameters:\n", progname, progname, progname, progname);
-  for (p = sys_param_list; p->name; p++)
-    printf("  %-*s  %s\n", kNameWidth, p->name, p->desc);
+  for (p = sys_param_list; p->name; p++) {
+    printf("  %-*s  [%s/%s] %s\n", kNameWidth, p->name,
+           (p->flags & CAN_WRITE) ? "RW" : "RO",
+           (p->flags & IS_STRING) ? "str" : "int",
+           p->desc);
+  }
 }
 
 
@@ -239,8 +237,11 @@ int PrintAllParams(int force_all) {
         value = buf;
       }
     }
-    printf("%-*s = %-30s # %s\n",
-           kNameWidth, p->name, (value ? value : "(error)"), p->desc);
+    printf("%-*s = %-30s # [%s/%s] %s\n", kNameWidth, p->name,
+           (value ? value : "(error)"),
+           (p->flags & CAN_WRITE) ? "RW" : "RO",
+           (p->flags & IS_STRING) ? "str" : "int",
+           p->desc);
   }
   return retval;
 }
