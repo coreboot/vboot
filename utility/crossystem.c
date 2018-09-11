@@ -113,6 +113,9 @@ const Param sys_param_list[] = {
   {NULL, 0, NULL}
 };
 
+/* Longest Param name. */
+static const int kNameWidth = 23;
+
 
 /* Print help */
 void PrintHelp(const char *progname) {
@@ -132,7 +135,7 @@ void PrintHelp(const char *progname) {
          "\n"
          "Valid parameters:\n", progname, progname, progname, progname);
   for (p = sys_param_list; p->name; p++)
-    printf("  %-22s  %s\n", p->name, p->desc);
+    printf("  %-*s  %s\n", kNameWidth, p->name, p->desc);
 }
 
 
@@ -236,8 +239,8 @@ int PrintAllParams(int force_all) {
         value = buf;
       }
     }
-    printf("%-22s = %-30s # %s\n",
-           p->name, (value ? value : "(error)"), p->desc);
+    printf("%-*s = %-30s # %s\n",
+           kNameWidth, p->name, (value ? value : "(error)"), p->desc);
   }
   return retval;
 }
