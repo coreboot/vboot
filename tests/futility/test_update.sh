@@ -220,6 +220,15 @@ test_update "RW update (vboot1, B->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0 --sys_props 0,0x10001,0
 
+# Test 'factory mode'
+test_update "Factory mode update (WP=0)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Factory mode update (WP=1)" \
+	"${FROM_IMAGE}" "!needs WP disabled" \
+	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
+
 # Test legacy update
 test_update "Legacy update" \
 	"${FROM_IMAGE}" "${TMP}.expected.legacy" \

@@ -1894,7 +1894,7 @@ static int do_update(int argc, char *argv[])
 			} else if (strcmp(optarg, "factory") == 0 ||
 				   strcmp(optarg, "factory_install") == 0) {
 				cfg.try_update = 0;
-				if (!is_write_protection_enabled(&cfg)) {
+				if (is_write_protection_enabled(&cfg)) {
 					errorcnt++;
 					Error("Mode %s needs WP disabled.\n",
 					      optarg);
