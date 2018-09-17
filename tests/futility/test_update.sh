@@ -8,7 +8,7 @@ TMP="$me.tmp"
 
 # Test --sys_props (primitive test needed for future updating tests).
 test_sys_props() {
-	! "${FUTILITY}" --debug update --sys_props "$*" |
+	! "${FUTILITY}" --debug update --sys_props "$*" 2>&1 |
 		sed -n 's/.*property\[\(.*\)].value = \(.*\)/\1,\2,/p' |
 		tr '\n' ' '
 }
@@ -20,7 +20,7 @@ test "$(test_sys_props "   1,, 2")" = "0,1, 2,2, "
 test "$(test_sys_props " , 4,")" = "1,4, "
 
 test_quirks() {
-	! "${FUTILITY}" --debug update --quirks "$*" |
+	! "${FUTILITY}" --debug update --quirks "$*" 2>&1 |
 		sed -n 's/.*Set quirk \(.*\) to \(.*\)./\1,\2/p' |
 		tr '\n' ' '
 }
@@ -112,6 +112,10 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
 	RW_LEGACY:${TMP}.to/RW_LEGACY
+cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0"
+"${FUTILITY}" gbb -s --flags=0 "${TMP}.expected.full.gbb0"
+cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
+"${FUTILITY}" gbb -s --flags=0 "${FROM_IMAGE}.gbb0"
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
@@ -157,6 +161,31 @@ test_update "Full update (TPM Anti-rollback: data key)" \
 test_update "Full update (TPM Anti-rollback: kernel key)" \
 	"${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 1,0x10005,1
+
+test_update "Full update (TPM Anti-rollback: 0 as tpm_fwver)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x0,1
+
+test_update "Full update (TPM check failure due to invalid tpm_fwver)" \
+	"${FROM_IMAGE}" "!Invalid tpm_fwver: -1" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,-1,1
+
+test_update "Full update (Skip TPM check with --force)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,-1,1 --force
+
+test_update "Full update (from stdin)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i - --wp=0 --sys_props 0,-1,1 --force <"${TO_IMAGE}"
+
+test_update "Full update (GBB=0 -> 0)" \
+	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full.gbb0" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--host_only)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
+	--host_only --ec_image non-exist.bin --pd_image non_exist.bin
 
 # Test RW-only update.
 test_update "RW update" \
@@ -220,6 +249,27 @@ test_update "RW update (vboot1, B->B)" \
 	"${FROM_IMAGE}" "${TMP}.expected.b" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0 --sys_props 0,0x10001,0
 
+# Test 'factory mode'
+test_update "Factory mode update (WP=0)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 --mode=factory
+
+test_update "Factory mode update (WP=0)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Factory mode update (WP=1)" \
+	"${FROM_IMAGE}" "!needs WP disabled" \
+	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1 --mode=factory
+
+test_update "Factory mode update (WP=1)" \
+	"${FROM_IMAGE}" "!needs WP disabled" \
+	--factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
+
+test_update "Factory mode update (GBB=0 -> 39)" \
+	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full" \
+	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
 # Test legacy update
 test_update "Legacy update" \
 	"${FROM_IMAGE}" "${TMP}.expected.legacy" \
@@ -248,3 +298,115 @@ test_update "Full update (--quirks min_platform_version)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	--quirks min_platform_version=3 \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
+
+# Test archive and manifest.
+A="${TMP}.archive"
+mkdir -p "${A}/bin"
+echo 'echo "${WL_TAG}"' >"${A}/bin/vpd"
+chmod +x "${A}/bin/vpd"
+
+cp -f "${LINK_BIOS}" "${A}/bios.bin"
+echo "TEST: Manifest (--manifest)"
+${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
+cmp "${TMP}.json.out" "${SCRIPTDIR}/link.manifest.json"
+
+cp -f "${TO_IMAGE}" "${A}/bios.bin"
+test_update "Full update (--archive, single package)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+echo "TEST: Output (--mode=output)"
+mkdir -p "${TMP}.output"
+${FUTILITY} update -i "${LINK_BIOS}" --mode=output --output_dir="${TMP}.output"
+cmp "${LINK_BIOS}" "${TMP}.output/bios.bin"
+
+mkdir -p "${A}/keyset"
+cp -f "${LINK_BIOS}" "${A}/bios.bin"
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.WL"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.WL"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.WL"
+${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/bios.bin"
+${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
+${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
+
+test_update "Full update (--archive, whitelabel, no VPD)" \
+	"${A}/bios.bin" "!Need VPD set for white" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+test_update "Full update (--archive, whitelabel, no VPD - factory mode)" \
+	"${LINK_BIOS}" "${A}/bios.bin" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --mode=factory
+
+test_update "Full update (--archive, WL, single package)" \
+	"${A}/bios.bin" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=WL
+
+WL_TAG="WL" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (--archive, WL, fake vpd)" \
+	"${A}/bios.bin" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+echo "TEST: Output (-a, --mode=output)"
+mkdir -p "${TMP}.outa"
+cp -f "${A}/bios.bin" "${TMP}.emu"
+WL_TAG="WL" PATH="${A}/bin:${PATH}" \
+	${FUTILITY} update -a "${A}" --mode=output --emu="${TMP}.emu" \
+	--output_dir="${TMP}.outa"
+cmp "${LINK_BIOS}" "${TMP}.outa/bios.bin"
+
+# Test archive with Unified Build contents.
+cp -r "${SCRIPTDIR}/models" "${A}/"
+mkdir -p "${A}/images"
+mv "${A}/bios.bin" "${A}/images/bios_coral.bin"
+cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
+cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip-wl"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.whitetip-wl"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.whitetip-wl"
+cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
+cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
+patch_file ${FROM_IMAGE}.ap FW_MAIN_A 0 "corrupted"
+patch_file ${FROM_IMAGE}.al FW_MAIN_A 0 "corrupted"
+test_update "Full update (--archive, model=link)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=link
+test_update "Full update (--archive, model=peppy)" \
+	"${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=peppy
+test_update "Full update (--archive, model=unknown)" \
+	"${FROM_IMAGE}.ap" "!Model 'unknown' is not defined" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=unknown
+test_update "Full update (--archive, model=whitetip, signature_id=WL)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip \
+	--signature_id=whitetip-wl
+
+WL_TAG="wl" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (-a, model=WL, fake VPD)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+
+# Test special programmer
+if type flashrom >/dev/null 2>&1; then
+	echo "TEST: Full update (dummy programmer)"
+	cp -f "${FROM_IMAGE}" "${TMP}.emu"
+	sudo "${FUTILITY}" update --programmer \
+		dummy:emulate=VARIABLE_SIZE,image=${TMP}.emu,size=8388608 \
+		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3 >&2
+	cmp "${TMP}.emu" "${TMP}.expected.full"
+fi
+
+if type cbfstool >/dev/null 2>&1; then
+	echo "SMM STORE" >"${TMP}.smm"
+	truncate -s 262144 "${TMP}.smm"
+	cp -f "${FROM_IMAGE}" "${TMP}.from.smm"
+	cp -f "${TMP}.expected.full" "${TMP}.expected.full_smm"
+	cbfstool "${TMP}.from.smm" add -r RW_LEGACY -n "smm store" \
+		-f "${TMP}.smm" -t raw
+	cbfstool "${TMP}.expected.full_smm" add -r RW_LEGACY -n "smm store" \
+		-f "${TMP}.smm" -t raw -b 0x1bf000
+	test_update "Legacy update (--quirks eve_smm_store)" \
+		"${TMP}.from.smm" "${TMP}.expected.full_smm" \
+		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
+		--quirks eve_smm_store
+fi
