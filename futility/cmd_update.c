@@ -1785,6 +1785,7 @@ static struct option const long_opts[] = {
 	{"quirks", 1, NULL, 'f'},
 	{"list-quirks", 0, NULL, 'L'},
 	{"mode", 1, NULL, 'm'},
+	{"factory", 0, NULL, 'Y'},
 	{"force", 0, NULL, 'F'},
 	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
@@ -1811,6 +1812,7 @@ static void print_help(int argc, char *argv[])
 		"\n"
 		"Legacy and compatibility options:\n"
 		"-m, --mode=MODE     \tRun updater in given mode\n"
+		"    --factory       \tAlias for --mode=factory\n"
 		"    --force         \tForce update (skip checking contents)\n"
 		"\n"
 		"Debugging and testing options:\n"
@@ -1826,6 +1828,7 @@ static void print_help(int argc, char *argv[])
 static int do_update(int argc, char *argv[])
 {
 	int i, r, errorcnt = 0;
+	int check_wp_disabled = 0;
 	struct updater_config cfg = {
 		.image = { .programmer = PROG_HOST, },
 		.image_current = { .programmer = PROG_HOST, },
@@ -1894,15 +1897,15 @@ static int do_update(int argc, char *argv[])
 			} else if (strcmp(optarg, "factory") == 0 ||
 				   strcmp(optarg, "factory_install") == 0) {
 				cfg.try_update = 0;
-				if (is_write_protection_enabled(&cfg)) {
-					errorcnt++;
-					Error("Mode %s needs WP disabled.\n",
-					      optarg);
-				}
+				check_wp_disabled = 1;
 			} else {
 				errorcnt++;
 				Error("Invalid mode: %s\n", optarg);
 			}
+			break;
+		case 'Y':
+			cfg.try_update = 0;
+			check_wp_disabled = 1;
 			break;
 		case 'W':
 			r = strtol(optarg, NULL, 0);
@@ -1954,6 +1957,10 @@ static int do_update(int argc, char *argv[])
 	if (optind < argc) {
 		errorcnt++;
 		Error("Unexpected arguments.\n");
+	}
+	if (check_wp_disabled && is_write_protection_enabled(&cfg)) {
+		errorcnt++;
+		Error("Factory mode needs WP disabled.\n");
 	}
 	if (!errorcnt) {
 		int r = update_firmware(&cfg);

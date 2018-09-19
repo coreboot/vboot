@@ -223,11 +223,19 @@ test_update "RW update (vboot1, B->B)" \
 # Test 'factory mode'
 test_update "Factory mode update (WP=0)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 --mode=factory
+
+test_update "Factory mode update (WP=0)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 test_update "Factory mode update (WP=1)" \
 	"${FROM_IMAGE}" "!needs WP disabled" \
-	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
+	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1 --mode=factory
+
+test_update "Factory mode update (WP=1)" \
+	"${FROM_IMAGE}" "!needs WP disabled" \
+	--factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
 
 # Test legacy update
 test_update "Legacy update" \
