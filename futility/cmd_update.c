@@ -1400,20 +1400,26 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 		     tpm_data_key_version = 0, tpm_firmware_version = 0,
 		     tpm_fwver = 0;
 
+	/* Fail if the given image does not look good. */
+	if (get_key_versions(rw_image, FMAP_RW_VBLOCK_A, &data_key_version,
+			     &firmware_version) != 0)
+		return -1;
+
 	tpm_fwver = get_system_property(SYS_PROP_TPM_FWVER, cfg);
 	if (tpm_fwver <= 0) {
-		ERROR("Invalid tpm_fwver: %d.", tpm_fwver);
-		return -1;
+		ERROR("Invalid tpm_fwver: %#x (skipped checking).", tpm_fwver);
+		/*
+		 * This is an error, but it may be common for early proto
+		 * devices so we don't want to fail here. Just skip checking TPM
+		 * if system tpm_fwver can't be fetched.
+		 */
+		return 0;
 	}
 
 	tpm_data_key_version = tpm_fwver >> 16;
 	tpm_firmware_version = tpm_fwver & 0xffff;
 	DEBUG("TPM: data_key_version = %d, firmware_version = %d",
 	      tpm_data_key_version, tpm_firmware_version);
-
-	if (get_key_versions(rw_image, FMAP_RW_VBLOCK_A, &data_key_version,
-			     &firmware_version) != 0)
-		return -1;
 
 	if (tpm_data_key_version > data_key_version) {
 		ERROR("Data key version rollback detected (%d->%d).",
