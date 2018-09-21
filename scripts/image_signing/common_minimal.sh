@@ -137,6 +137,20 @@ make_partition_dev() {
   fi
 }
 
+# Find the block size of a device in bytes
+# Args: DEVICE (e.g. /dev/sda)
+# Return: block size in bytes
+blocksize() {
+  local output=''
+  local path="$1"
+  if [ -b "${path}" ]; then
+    local dev="${path##*/}"
+    local sys="/sys/block/${dev}/queue/logical_block_size"
+    output="$(cat "${sys}" 2>/dev/null)"
+  fi
+  echo "${output:-512}"
+}
+
 # Read GPT table to find the starting location of a specific partition.
 # Args: DEVICE PARTNUM
 # Returns: offset (in sectors) of partition PARTNUM
@@ -186,7 +200,8 @@ _mount_image_partition_retry() {
   local partnum=$2
   local mount_dir=$3
   local ro=$4
-  local offset=$(( $(partoffset "${image}" "${partnum}") * 512 ))
+  local bs="$(blocksize "${image}")"
+  local offset=$(( $(partoffset "${image}" "${partnum}") * bs ))
   local out try
 
   set -- sudo LC_ALL=C mount -o loop,offset=${offset},${ro} \
@@ -225,7 +240,8 @@ _mount_image_partition() {
   local partnum=$2
   local mount_dir=$3
   local ro=$4
-  local offset=$(( $(partoffset "${image}" "${partnum}") * 512 ))
+  local bs="$(blocksize "${image}")"
+  local offset=$(( $(partoffset "${image}" "${partnum}") * bs ))
 
   if [ "$ro" != "ro" ]; then
     # Forcibly call enable_rw_mount.  It should fail on unsupported

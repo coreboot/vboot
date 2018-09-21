@@ -144,13 +144,12 @@ find_valid_kernel_partitions() {
 
 # Resigns a kernel on SSD or image.
 resign_ssd_kernel() {
-  # bs=512 is the fixed block size for dd and cgpt
-  local bs=512
   local ssd_device="$1"
+  local bs="$(blocksize "${ssd_device}")"
 
   # reasonable size for current kernel partition
-  local min_kernel_size=16000
-  local max_kernel_size=65536
+  local min_kernel_size=$((8000 * 1024 / bs))
+  local max_kernel_size=$((32768 * 1024 / bs))
   local resigned_kernels=0
 
   for kernel_index in $FLAGS_partitions; do
@@ -302,7 +301,7 @@ resign_ssd_kernel() {
     # (3) change kernel config to rw
     if [ ${FLAGS_remove_rootfs_verification} = $FLAGS_TRUE ]; then
       local root_offset_sector=$(partoffset "$ssd_device" $rootfs_index)
-      local root_offset_bytes=$((root_offset_sector * 512))
+      local root_offset_bytes=$((root_offset_sector * bs))
       if ! is_ext2 "$ssd_device" "$root_offset_bytes"; then
         debug_msg "Non-ext2 partition: $ssd_device$rootfs_index, skip."
       elif ! rw_mount_disabled "$ssd_device" "$root_offset_bytes"; then
