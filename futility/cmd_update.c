@@ -1098,6 +1098,11 @@ static int preserve_images(struct updater_config *cfg)
 		FMAP_RO_PRESERVE,
 		FMAP_RW_PRESERVE,
 		FMAP_RW_NVRAM,
+		/*
+		 * TODO(hungte): b/116326638: Remove RO_FSG after the migration
+		 * is finished.
+		 */
+		"RO_FSG",
 	};
 
 	errcnt += preserve_gbb(from, to);
