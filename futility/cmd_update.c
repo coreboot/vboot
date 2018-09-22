@@ -1777,6 +1777,7 @@ static struct option const long_opts[] = {
 	{"mode", 1, NULL, 'm'},
 	{"factory", 0, NULL, 'Y'},
 	{"force", 0, NULL, 'F'},
+	{"programmer", 1, NULL, 'p'},
 	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
 	{"sys_props", 1, NULL, 'S'},
@@ -1786,7 +1787,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static const char * const short_opts = "hi:e:tm:dv";
+static const char * const short_opts = "hi:e:tm:p:dv";
 
 static void print_help(int argc, char *argv[])
 {
@@ -1797,6 +1798,7 @@ static void print_help(int argc, char *argv[])
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
+		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
 		"    --list-quirks   \tPrint all available quirks\n"
 		"\n"
@@ -1817,8 +1819,9 @@ static void print_help(int argc, char *argv[])
 
 static int do_update(int argc, char *argv[])
 {
-	int i, r, errorcnt = 0;
+	int i, r, single_image = 0, errorcnt = 0;
 	int check_wp_disabled = 0;
+	char *opt_programmer = NULL;
 	struct updater_config cfg = {
 		.image = { .programmer = PROG_HOST, },
 		.image_current = { .programmer = PROG_HOST, },
@@ -1907,6 +1910,9 @@ static int do_update(int argc, char *argv[])
 			cfg.emulation = strdup(optarg);
 			DEBUG("Emulate with file: %s", cfg.emulation);
 			break;
+		case 'p':
+			opt_programmer = strdup(optarg);
+			break;
 		case 'F':
 			cfg.force_update = 1;
 			break;
@@ -1943,13 +1949,19 @@ static int do_update(int argc, char *argv[])
 		errorcnt++;
 		Error("Unexpected arguments.\n");
 	}
+	if (opt_programmer) {
+		single_image = 1;
+		cfg.image.programmer = opt_programmer;
+		cfg.image_current.programmer = opt_programmer;
+		DEBUG("AP (host) programmer changed to %s.", opt_programmer);
+	}
 	if (cfg.emulation) {
-		if (cfg.ec_image.data || cfg.pd_image.data) {
-			errorcnt++;
-			Error("EC/PD images are not supported in emulation.\n");
-		}
-		/* We only support emulating AP firmware. */
+		single_image = 1;
 		errorcnt += load_image(cfg.emulation, &cfg.image_current);
+	}
+	if (single_image && (cfg.ec_image.data || cfg.pd_image.data)) {
+		errorcnt++;
+		Error("EC/PD images are not supported in current mode.\n");
 	}
 	if (check_wp_disabled && is_write_protection_enabled(&cfg)) {
 		errorcnt++;
@@ -1967,6 +1979,11 @@ static int do_update(int argc, char *argv[])
 	       errorcnt ? "FAILED": "DONE",
 	       errorcnt ? "stopped due to error" : "exited successfully");
 	unload_updater_config(&cfg);
+	if (opt_programmer) {
+		cfg.image.programmer = PROG_HOST;
+		cfg.image_current.programmer = PROG_HOST;
+		free(opt_programmer);
+	}
 	remove_all_temp_files();
 	return !!errorcnt;
 }

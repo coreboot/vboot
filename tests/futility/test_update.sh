@@ -277,3 +277,13 @@ test_update "Full update (--quirks min_platform_version)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	--quirks min_platform_version=3 \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
+
+# Test special programmer
+if type flashrom >/dev/null 2>&1; then
+	echo "TEST: Full update (dummy programmer)"
+	cp -f "${FROM_IMAGE}" "${TMP}.emu"
+	sudo "${FUTILITY}" update --programmer \
+		dummy:emulate=VARIABLE_SIZE,image=${TMP}.emu,size=8388608 \
+		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3 >&2
+	cmp "${TMP}.emu" "${TMP}.expected.full"
+fi
