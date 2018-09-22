@@ -33,6 +33,7 @@
 static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RO_SECTION = "RO_SECTION",
 		  * const FMAP_RO_GBB = "GBB",
+		  * const FMAP_RO_PRESERVE = "RO_PRESERVE",
 		  * const FMAP_RO_VPD = "RO_VPD",
 		  * const FMAP_RW_VPD = "RW_VPD",
 		  * const FMAP_RW_VBLOCK_A = "VBLOCK_A",
@@ -43,6 +44,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_FWID_B = "RW_FWID_B",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
 		  * const FMAP_RW_NVRAM = "RW_NVRAM",
+		  * const FMAP_RW_PRESERVE = "RW_PRESERVE",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY",
 		  * const FMAP_SI_DESC = "SI_DESC",
 		  * const FMAP_SI_ME = "SI_ME";
@@ -974,7 +976,7 @@ static int write_optional_firmware(struct updater_config *cfg,
 
 /* Preserves (copies) the given section (by name) from image_from to image_to.
  * The offset may be different, and the section data will be directly copied.
- * If the section does not exist on all images, return as failure.
+ * If the section does not exist on either images, return as failure.
  * If the source section is larger, contents on destination be truncated.
  * If the source section is smaller, the remaining area is not modified.
  * Returns 0 if success, non-zero if error.
@@ -987,8 +989,11 @@ static int preserve_firmware_section(const struct firmware_image *image_from,
 
 	find_firmware_section(&from, image_from, section_name);
 	find_firmware_section(&to, image_to, section_name);
-	if (!from.data || !to.data)
+	if (!from.data || !to.data) {
+		DEBUG("Cannot find section %s: from=%p, to=%p", section_name,
+		      from.data, to.data);
 		return -1;
+	}
 	if (from.size > to.size) {
 		printf("WARNING: %s: Section %s is truncated after updated.\n",
 		       __FUNCTION__, section_name);
@@ -1081,18 +1086,30 @@ static int preserve_management_engine(struct updater_config *cfg,
 
 /*
  * Preserves the critical sections from the current (active) firmware.
- * Currently only GBB, VPD (RO+RW) and NVRAM sections are preserved.
+ * Currently preserved sections: GBB (HWID and flags), x86 ME, {RO,RW}_PRESERVE,
+ * {RO,RW}_VPD, RW_NVRAM.
  * Returns 0 if success, non-zero if error.
  */
 static int preserve_images(struct updater_config *cfg)
 {
-	int errcnt = 0;
+	int errcnt = 0, i;
 	struct firmware_image *from = &cfg->image_current, *to = &cfg->image;
+	const char * const optional_sections[] = {
+		FMAP_RO_PRESERVE,
+		FMAP_RW_PRESERVE,
+		FMAP_RW_NVRAM,
+	};
+
 	errcnt += preserve_gbb(from, to);
 	errcnt += preserve_management_engine(cfg, from, to);
 	errcnt += preserve_firmware_section(from, to, FMAP_RO_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_VPD);
-	errcnt += preserve_firmware_section(from, to, FMAP_RW_NVRAM);
+	for (i = 0; i < ARRAY_SIZE(optional_sections); i++) {
+		if (!firmware_section_exists(from, optional_sections[i]))
+			continue;
+		errcnt += preserve_firmware_section(
+				from, to, optional_sections[i]);
+	}
 	return errcnt;
 }
 
@@ -1684,7 +1701,10 @@ static enum updater_error_codes update_whole_firmware(
 		struct firmware_image *image_to)
 {
 	printf(">> FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
-	preserve_images(cfg);
+
+	if (preserve_images(cfg))
+		DEBUG("Failed to preserve some sections - ignore.");
+
 
 	printf("Checking compatibility...\n");
 	if (check_compatible_tpm_keys(cfg, image_to))
