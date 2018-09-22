@@ -61,7 +61,6 @@ static const char * const FWACT_A = "A",
 
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
-		  * const PROG_EMULATE = "dummy:emulate",
 		  * const PROG_EC = "ec",
 		  * const PROG_PD = "ec:dev=1";
 
@@ -89,7 +88,6 @@ enum flashrom_ops {
 
 struct firmware_image {
 	const char *programmer;
-	char *emulation;
 	uint32_t size;
 	uint8_t *data;
 	char *file_name;
@@ -141,7 +139,7 @@ struct updater_config {
 	int try_update;
 	int force_update;
 	int legacy_update;
-	int emulate;
+	char *emulation;
 };
 
 struct tempfile {
@@ -329,10 +327,6 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	if (!section_name || !*section_name) {
 		dash_i = "";
 		section_name = "";
-	}
-
-	if (strncmp(programmer, PROG_EMULATE, strlen(PROG_EMULATE)) == 0) {
-		ignore_lock = "--ignore-lock";
 	}
 
 	switch (op) {
@@ -705,27 +699,6 @@ static int load_image(const char *file_name, struct firmware_image *image)
 }
 
 /*
- * Loads and emulates system firmware by an image file.
- * This will set a emulation programmer in image->emulation so flashrom
- * can access the file as system firmware storage.
- * Returns 0 if success, non-zero if error.
- */
-static int emulate_system_image(const char *file_name,
-				struct firmware_image *image)
-{
-	if (load_image(file_name, image))
-		return -1;
-
-	if (asprintf(&image->emulation,
-		     "%s=VARIABLE_SIZE,image=%s,size=%u",
-		     PROG_EMULATE, file_name, image->size) < 0) {
-		ERROR("Failed to allocate programmer buffer: %s.", file_name);
-		return -1;
-	}
-	return 0;
-}
-
-/*
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
@@ -751,30 +724,7 @@ static void free_image(struct firmware_image *image)
 	free(image->ro_version);
 	free(image->rw_version_a);
 	free(image->rw_version_b);
-	free(image->emulation);
 	memset(image, 0, sizeof(*image));
-}
-/*
- * Reloads a firmware image from file.
- * Keeps special configuration like emulation.
- * Returns 0 on success, otherwise failure.
- */
-static int reload_image(const char *file_name, struct firmware_image *image)
-{
-	char *emulation = image->emulation;
-	int r;
-
-	/*
-	 * All values except emulation and programmer will be re-constructed
-	 * in load_image. `programmer` is not touched in free_image so we only
-	 * need to keep `emulation`.
-	 */
-	image->emulation = NULL;
-	free_image(image);
-	r = load_image(file_name, image);
-	if (r == 0)
-		image->emulation = emulation;
-	return r;
 }
 
 /*
@@ -831,7 +781,7 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 		return -1;
 	}
 
-	if (cfg->emulate) {
+	if (cfg->emulation) {
 		printf("(emulation) Setting try_next to %s, try_count to %d.\n",
 		       slot, tries);
 		return 0;
@@ -919,29 +869,19 @@ static int write_firmware(struct updater_config *cfg,
 			  const char *section_name)
 {
 	const char *tmp_file = create_temp_file();
-	const char *programmer = cfg->emulate ? image->emulation :
-			image->programmer;
+	const char *programmer = image->programmer;
 
 	if (!tmp_file)
 		return -1;
 
-	if (cfg->emulate) {
-		printf("%s: (emulation) %s %s from %s to %s.\n",
+	if (cfg->emulation) {
+		printf("%s: (emulation) Writing %s from %s to %s (emu=%s).\n",
 		       __FUNCTION__,
-		       image->emulation ? "Writing" : "Skipped writing",
 		       section_name ? section_name : "whole image",
-		       image->file_name, programmer);
+		       image->file_name, programmer, cfg->emulation);
 
-		if (!image->emulation)
-			return 0;
-
-		/*
-		 * TODO(hungte): Extract the real target from image->emulation,
-		 * and allow to emulate writing with flashrom.
-		 */
 		return emulate_write_firmware(
-				cfg->image_current.file_name, image,
-				section_name);
+				cfg->emulation, image, section_name);
 
 	}
 	if (vb2_write_file(tmp_file, image->data, image->size) != VB2_SUCCESS) {
@@ -1505,7 +1445,8 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	while (to_write-- > 0)
 		fputc('\xff', fp);
 	fclose(fp);
-	return reload_image(tmp_path, image_to);
+	free_image(image_to);
+	return load_image(tmp_path, image_to);
 }
 
 /*
@@ -1646,7 +1587,7 @@ static enum updater_error_codes update_try_rw_firmware(
 			return UPDATE_ERR_SET_COOKIES;
 	} else {
 		/* Clear trial cookies for vboot1. */
-		if (!is_vboot2 && !cfg->emulate)
+		if (!is_vboot2 && !cfg->emulation)
 			VbSetSystemPropertyInt("fwb_tries", 0);
 	}
 
@@ -1820,7 +1761,8 @@ static void unload_updater_config(struct updater_config *cfg)
 	free_image(&cfg->image_current);
 	free_image(&cfg->ec_image);
 	free_image(&cfg->pd_image);
-	cfg->emulate = 0;
+	free(cfg->emulation);
+	cfg->emulation = NULL;
 }
 
 /* Command line options */
@@ -1961,14 +1903,9 @@ static int do_update(int argc, char *argv[])
 			override_system_property(SYS_PROP_WP_SW, &cfg, r);
 			break;
 		case 'E':
-			cfg.emulate = 1;
-			errorcnt += !!emulate_system_image(
-					optarg, &cfg.image_current);
-			/* Both image and image_current need emulation. */
-			if (!errorcnt) {
-				cfg.image.emulation = strdup(
-						cfg.image_current.emulation);
-			}
+			free(cfg.emulation);
+			cfg.emulation = strdup(optarg);
+			DEBUG("Emulate with file: %s", cfg.emulation);
 			break;
 		case 'F':
 			cfg.force_update = 1;
@@ -2005,6 +1942,14 @@ static int do_update(int argc, char *argv[])
 	if (optind < argc) {
 		errorcnt++;
 		Error("Unexpected arguments.\n");
+	}
+	if (cfg.emulation) {
+		if (cfg.ec_image.data || cfg.pd_image.data) {
+			errorcnt++;
+			Error("EC/PD images are not supported in emulation.\n");
+		}
+		/* We only support emulating AP firmware. */
+		errorcnt += load_image(cfg.emulation, &cfg.image_current);
 	}
 	if (check_wp_disabled && is_write_protection_enabled(&cfg)) {
 		errorcnt++;
