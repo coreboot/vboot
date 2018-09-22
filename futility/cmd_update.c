@@ -486,7 +486,7 @@ static void override_properties_from_list(const char *override_list,
 				i++;
 			wait_comma = 0;
 		}
-		if (!isascii(c) || !isdigit(c))
+		if (!isascii(c) || !(isdigit(c) || c == '-'))
 			continue;
 		if (i >= SYS_PROP_MAX) {
 			ERROR("Too many fields (max is %d): %s.",
@@ -1417,27 +1417,23 @@ static int legacy_needs_update(struct updater_config *cfg)
  * blocked by TPM's anti-rollback detection.
  * Returns 0 for success, otherwise failure.
  */
-static int check_compatible_tpm_keys(struct updater_config *cfg,
-				     const struct firmware_image *rw_image)
+static int do_check_compatible_tpm_keys(struct updater_config *cfg,
+					const struct firmware_image *rw_image)
 {
 	unsigned int data_key_version = 0, firmware_version = 0,
-		     tpm_data_key_version = 0, tpm_firmware_version = 0,
-		     tpm_fwver = 0;
+		     tpm_data_key_version = 0, tpm_firmware_version = 0;
+	int tpm_fwver = 0;
 
 	/* Fail if the given image does not look good. */
 	if (get_key_versions(rw_image, FMAP_RW_VBLOCK_A, &data_key_version,
 			     &firmware_version) != 0)
 		return -1;
 
+	/* The stored tpm_fwver can be 0 (b/116298359#comment3). */
 	tpm_fwver = get_system_property(SYS_PROP_TPM_FWVER, cfg);
-	if (tpm_fwver <= 0) {
-		ERROR("Invalid tpm_fwver: %#x (skipped checking).", tpm_fwver);
-		/*
-		 * This is an error, but it may be common for early proto
-		 * devices so we don't want to fail here. Just skip checking TPM
-		 * if system tpm_fwver can't be fetched.
-		 */
-		return 0;
+	if (tpm_fwver < 0) {
+		ERROR("Invalid tpm_fwver: %d.", tpm_fwver);
+		return -1;
 	}
 
 	tpm_data_key_version = tpm_fwver >> 16;
@@ -1455,6 +1451,25 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 		      tpm_firmware_version, firmware_version);
 		return -1;
 	}
+	return 0;
+}
+
+/*
+ * Wrapper for do_check_compatible_tpm_keys.
+ * Will return 0 if do_check_compatible_tpm_keys success or if cfg.force_update
+ * is set; otherwise non-zero.
+ */
+static int check_compatible_tpm_keys(struct updater_config *cfg,
+				     const struct firmware_image *rw_image)
+{
+	int r = do_check_compatible_tpm_keys(cfg, rw_image);
+	if (!r)
+		return r;
+	if (!cfg->force_update) {
+		ERROR("Add --force if you want to waive TPM checks.");
+		return r;
+	}
+	printf("TPM KEYS CHECK IS WAIVED BY --force. YOU ARE ON YOUR OWN.\n");
 	return 0;
 }
 

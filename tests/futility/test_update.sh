@@ -158,13 +158,17 @@ test_update "Full update (TPM Anti-rollback: kernel key)" \
 	"${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 1,0x10005,1
 
-test_update "Full update (Skip TPM check due to invalid tpm_fwver)" \
+test_update "Full update (TPM Anti-rollback: 0 as tpm_fwver)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x0,1
 
-test_update "Full update (Skip TPM check due to tpm_fwver error)" \
-	"${FROM_IMAGE}" "${TMP}.expected.full" \
+test_update "Full update (TPM check failure due to invalid tpm_fwver)" \
+	"${FROM_IMAGE}" "!Invalid tpm_fwver: -1" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,-1,1
+
+test_update "Full update (Skip TPM check with --force)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,-1,1 --force
 
 # Test RW-only update.
 test_update "RW update" \
