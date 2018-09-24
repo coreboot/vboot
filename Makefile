@@ -143,7 +143,7 @@ COMMON_FLAGS := -nostdinc -pipe \
 
 # Note: FIRMWARE_ARCH is defined by the Chromium OS ebuild.
 ifeq (${FIRMWARE_ARCH}, arm)
-CC ?= armv7a-cros-linux-gnueabi-gcc
+CC ?= armv7a-cros-linux-gnueabihf-gcc
 CFLAGS ?= -march=armv5 \
 	-fno-common -ffixed-r8 \
 	-mfloat-abi=hard -marm -mabi=aapcs-linux -mno-thumb-interwork \
