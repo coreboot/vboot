@@ -44,6 +44,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_FWID_B = "RW_FWID_B",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
 		  * const FMAP_RW_NVRAM = "RW_NVRAM",
+		  * const FMAP_RW_ELOG = "RW_ELOG",
 		  * const FMAP_RW_PRESERVE = "RW_PRESERVE",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY",
 		  * const FMAP_SI_DESC = "SI_DESC",
@@ -1098,6 +1099,7 @@ static int preserve_images(struct updater_config *cfg)
 		FMAP_RO_PRESERVE,
 		FMAP_RW_PRESERVE,
 		FMAP_RW_NVRAM,
+		FMAP_RW_ELOG,
 		/*
 		 * TODO(hungte): b/116326638: Remove RO_FSG after the migration
 		 * is finished.
