@@ -1605,14 +1605,13 @@ int updater_setup_config(struct updater_config *cfg,
 {
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
+	const char *default_quirks = NULL;
 
 	if (try_update)
 		cfg->try_update = 1;
 	if (force_update)
 		cfg->force_update = 1;
 
-	if (quirks)
-		errorcnt += !!setup_config_quirks(quirks, cfg);
 	if (sys_props)
 		override_properties_from_list(sys_props, cfg);
 
@@ -1622,6 +1621,17 @@ int updater_setup_config(struct updater_config *cfg,
 		errorcnt += !!load_image(ec_image, &cfg->ec_image);
 	if (pd_image)
 		errorcnt += !!load_image(pd_image, &cfg->pd_image);
+
+	/*
+	 * Quirks must be loaded after images are loaded because we use image
+	 * contents to decide default quirks to load. Also, we have to load
+	 * default quirks first so user can override them using command line.
+	 */
+	default_quirks = updater_get_default_quirks(cfg);
+	if (default_quirks)
+		errorcnt += !!setup_config_quirks(default_quirks, cfg);
+	if (quirks)
+		errorcnt += !!setup_config_quirks(quirks, cfg);
 
 	if (mode) {
 		if (strcmp(mode, "autoupdate") == 0) {

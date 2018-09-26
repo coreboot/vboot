@@ -8,9 +8,32 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "updater.h"
 #include "host_misc.h"
+
+struct quirks_record {
+	const char * const match;
+	const char * const quirks;
+};
+
+static const struct quirks_record quirks_records[] = {
+	{ .match = "Google_Whirlwind.", .quirks = "enlarge_image" },
+	{ .match = "Google_Arkham.", .quirks = "enlarge_image" },
+	{ .match = "Google_Storm.", .quirks = "enlarge_image" },
+	{ .match = "Google_Gale.", .quirks = "enlarge_image" },
+
+	{ .match = "Google_Chell.", .quirks = "unlock_me_for_update" },
+	{ .match = "Google_Lars.", .quirks = "unlock_me_for_update" },
+	{ .match = "Google_Sentry.", .quirks = "unlock_me_for_update" },
+	{ .match = "Google_Asuka.", .quirks = "unlock_me_for_update" },
+	{ .match = "Google_Caroline.", .quirks = "unlock_me_for_update" },
+	{ .match = "Google_Cave.", .quirks = "unlock_me_for_update" },
+
+	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
+	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
+};
 
 /*
  * Helper function to write a firmware image into file on disk.
@@ -144,4 +167,28 @@ void updater_register_quirks(struct updater_config *cfg)
 			"board-postinst.";
 	quirks->apply = quirk_unlock_me_for_update;
 
+}
+
+/*
+ * Gets the default quirk config string for target image.
+ * Returns a string (in same format as --quirks) to load or NULL if no quirks.
+ */
+const char * const updater_get_default_quirks(struct updater_config *cfg)
+{
+	const char *pattern = cfg->image.ro_version;
+	int i;
+
+	if (!pattern) {
+		DEBUG("Cannot identify system for default quirks.");
+		return NULL;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(quirks_records); i++) {
+		const struct quirks_record *r = &quirks_records[i];
+		if (strncmp(r->match, pattern, strlen(r->match)) != 0)
+		    continue;
+		DEBUG("Found system default quirks: %s", r->quirks);
+		return r->quirks;
+	}
+	return NULL;
 }

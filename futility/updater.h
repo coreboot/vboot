@@ -187,5 +187,10 @@ int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg);
 /* Gets the system property by given type. Returns the property value. */
 int get_system_property(enum system_property_type property_type,
 			struct updater_config *cfg);
+/*
+ * Gets the default quirk config string for target image.
+ * Returns a string (in same format as --quirks) to load or NULL if no quirks.
+ */
+const char * const updater_get_default_quirks(struct updater_config *cfg);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */
