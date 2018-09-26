@@ -1277,7 +1277,7 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 	free(new_block);
 
 	if (r != VB2_SUCCESS) {
-		ERROR("Error verifying key block.");
+		ERROR("Failed verifying key block.");
 		return -1;
 	}
 	return 0;
@@ -1628,7 +1628,7 @@ static enum updater_error_codes update_try_rw_firmware(
 
 	printf("Checking %s contents...\n", target);
 	if (!firmware_section_exists(image_to, target)) {
-		Error("Cannot find section '%s' on firmware image: %s\n",
+		ERROR("Cannot find section '%s' on firmware image: %s",
 		      target, image_to->file_name);
 		return UPDATE_ERR_INVALID_IMAGE;
 	}
