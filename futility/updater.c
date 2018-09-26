@@ -129,30 +129,30 @@ enum quirk_types {
 	QUIRK_MAX,
 };
 
+struct tempfile {
+	char *filepath;
+	struct tempfile *next;
+};
+
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
 	struct system_property system_properties[SYS_PROP_MAX];
 	struct quirk_entry quirks[QUIRK_MAX];
+	struct tempfile *tempfiles;
 	int try_update;
 	int force_update;
 	int legacy_update;
 	const char *emulation;
 };
 
-struct tempfile {
-	char *filepath;
-	struct tempfile *next;
-};
-
-static struct tempfile *tempfiles;
 
 /*
  * Helper function to create a new temporary file.
  * All files created will be removed by function remove_all_temp_files().
  * Returns the path of new file, or NULL on failure.
  */
-static const char *create_temp_file()
+static const char *create_temp_file(struct updater_config *cfg)
 {
 	struct tempfile *new_temp;
 	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
@@ -174,8 +174,8 @@ static const char *create_temp_file()
 		return NULL;
 	}
 	DEBUG("Created new temporary file: %s.", new_path);
-	new_temp->next = tempfiles;
-	tempfiles = new_temp;
+	new_temp->next = cfg->tempfiles;
+	cfg->tempfiles = new_temp;
 	return new_temp->filepath;
 }
 
@@ -183,8 +183,9 @@ static const char *create_temp_file()
  * Helper function to remove all files created by create_temp_file().
  * This is intended to be called only once at end of program execution.
  */
-void remove_all_temp_files()
+static void remove_all_temp_files(struct updater_config *cfg)
 {
+	struct tempfile *tempfiles = cfg->tempfiles;
 	while (tempfiles != NULL) {
 		struct tempfile *target = tempfiles;
 		DEBUG("Remove temporary file: %s.", target->filepath);
@@ -193,6 +194,7 @@ void remove_all_temp_files()
 		tempfiles = target->next;
 		free(target);
 	}
+	cfg->tempfiles = NULL;
 }
 
 /*
@@ -703,7 +705,7 @@ static int load_image(const char *file_name, struct firmware_image *image)
 static int load_system_image(struct updater_config *cfg,
 			     struct firmware_image *image)
 {
-	const char *tmp_file = create_temp_file();
+	const char *tmp_file = create_temp_file(cfg);
 
 	if (!tmp_file)
 		return -1;
@@ -866,7 +868,7 @@ static int write_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char *section_name)
 {
-	const char *tmp_file = create_temp_file();
+	const char *tmp_file = create_temp_file(cfg);
 	const char *programmer = image->programmer;
 
 	if (!tmp_file)
@@ -1428,7 +1430,7 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	if (image_from->size <= image_to->size)
 		return 0;
 
-	tmp_path = create_temp_file();
+	tmp_path = create_temp_file(cfg);
 	if (!tmp_path)
 		return -1;
 
@@ -1873,5 +1875,6 @@ void updater_delete_config(struct updater_config *cfg)
 	free_image(&cfg->image_current);
 	free_image(&cfg->ec_image);
 	free_image(&cfg->pd_image);
+	remove_all_temp_files(cfg);
 	free(cfg);
 }

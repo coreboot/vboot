@@ -178,7 +178,6 @@ static int do_update(int argc, char *argv[])
 	       errorcnt ? "stopped due to error" : "exited successfully");
 
 	updater_delete_config(cfg);
-	remove_all_temp_files();  /* TODO(hungte) Move this to updater */
 	return !!errorcnt;
 }
 

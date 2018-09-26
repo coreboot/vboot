@@ -68,12 +68,6 @@ int updater_setup_config(struct updater_config *cfg,
 			  int try_update,
 			  int force_update);
 
-/*
- * Helper function to remove all files created by create_temp_file().
- * This is intended to be called only once at end of program execution.
- */
-void remove_all_temp_files();
-
 /* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg);
 
