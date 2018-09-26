@@ -8,16 +8,16 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "2rsa.h"
 #include "crossystem.h"
 #include "fmap.h"
-#include "futility.h"
 #include "host_misc.h"
+#include "updater.h"
 #include "utility.h"
 #include "util_misc.h"
 #include "vb2_common.h"
@@ -26,8 +26,6 @@
 #define COMMAND_BUFFER_SIZE 256
 #define RETURN_ON_FAILURE(x) do {int r = (x); if (r) return r;} while (0);
 #define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
-#define DEBUG(format, ...) Debug("%s: " format "\n", __FUNCTION__,##__VA_ARGS__)
-#define ERROR(format, ...) Error("%s: " format "\n", __FUNCTION__,##__VA_ARGS__)
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
@@ -139,7 +137,7 @@ struct updater_config {
 	int try_update;
 	int force_update;
 	int legacy_update;
-	char *emulation;
+	const char *emulation;
 };
 
 struct tempfile {
@@ -185,7 +183,7 @@ static const char *create_temp_file()
  * Helper function to remove all files created by create_temp_file().
  * This is intended to be called only once at end of program execution.
  */
-static void remove_all_temp_files()
+void remove_all_temp_files()
 {
 	while (tempfiles != NULL) {
 		struct tempfile *target = tempfiles;
@@ -505,7 +503,7 @@ static int get_config_quirk(enum quirk_types quirk,
 }
 
 /* Prints the name and description from all supported quirks. */
-static void list_config_quirks(const struct updater_config *cfg)
+void updater_list_config_quirks(const struct updater_config *cfg)
 {
 	const struct quirk_entry *entry = cfg->quirks;
 	int i;
@@ -1503,22 +1501,7 @@ static int quirk_min_platform_version(struct updater_config *cfg)
 	return -1;
 }
 
-enum updater_error_codes {
-	UPDATE_ERR_DONE,
-	UPDATE_ERR_NEED_RO_UPDATE,
-	UPDATE_ERR_NO_IMAGE,
-	UPDATE_ERR_SYSTEM_IMAGE,
-	UPDATE_ERR_INVALID_IMAGE,
-	UPDATE_ERR_SET_COOKIES,
-	UPDATE_ERR_WRITE_FIRMWARE,
-	UPDATE_ERR_PLATFORM,
-	UPDATE_ERR_TARGET,
-	UPDATE_ERR_ROOT_KEY,
-	UPDATE_ERR_TPM_ROLLBACK,
-	UPDATE_ERR_UNKNOWN,
-};
-
-static const char * const updater_error_messages[] = {
+const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
 	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
 	[UPDATE_ERR_NO_IMAGE] = "No image to update; try specify with -i.",
@@ -1686,7 +1669,7 @@ static enum updater_error_codes update_whole_firmware(
  * The main updater to update system firmware using the configuration parameter.
  * Returns UPDATE_ERR_DONE if success, otherwise failure.
  */
-static enum updater_error_codes update_firmware(struct updater_config *cfg)
+enum updater_error_codes update_firmware(struct updater_config *cfg)
 {
 	int wp_enabled;
 	struct firmware_image *image_from = &cfg->image_current,
@@ -1748,245 +1731,147 @@ static enum updater_error_codes update_firmware(struct updater_config *cfg)
 }
 
 /*
- * Releases all loaded images in an updater configuration object.
+ * Allocates and initializes a updater_config object with default values.
+ * Returns the newly allocated object, or NULL on error.
  */
-static void unload_updater_config(struct updater_config *cfg)
+struct updater_config *updater_new_config()
 {
-	int i;
-	for (i = 0; i < SYS_PROP_MAX; i++) {
-		cfg->system_properties[i].initialized = 0;
-		cfg->system_properties[i].value = 0;
+	struct system_property *props;
+	struct quirk_entry *quirks;
+	struct updater_config *cfg = (struct updater_config *)calloc(
+			1, sizeof(struct updater_config));
+	if (!cfg)
+		return cfg;
+	cfg->image.programmer = PROG_HOST;
+	cfg->image_current.programmer = PROG_HOST;
+	cfg->ec_image.programmer = PROG_EC;
+	cfg->pd_image.programmer = PROG_PD;
+
+	props = cfg->system_properties;
+	props[SYS_PROP_MAINFW_ACT].getter = host_get_mainfw_act;
+	props[SYS_PROP_TPM_FWVER].getter = host_get_tpm_fwver;
+	props[SYS_PROP_FW_VBOOT2].getter = host_get_fw_vboot2;
+	props[SYS_PROP_PLATFORM_VER].getter = host_get_platform_version;
+	props[SYS_PROP_WP_HW].getter = host_get_wp_hw;
+	props[SYS_PROP_WP_SW].getter = host_get_wp_sw;
+
+	quirks = &cfg->quirks[QUIRK_ENLARGE_IMAGE];
+	quirks->name = "enlarge_image";
+	quirks->help = "Enlarge firmware image by flash size.";
+	quirks->apply = quirk_enlarge_image;
+
+	quirks = &cfg->quirks[QUIRK_UNLOCK_ME_FOR_UPDATE];
+	quirks->name = "unlock_me_for_update";
+	quirks->help = "b/35568719: Only lock management engine by "
+			"board-postinst.";
+	quirks->apply = quirk_unlock_me_for_update;
+
+	quirks = &cfg->quirks[QUIRK_MIN_PLATFORM_VERSION];
+	quirks->name = "min_platform_version";
+	quirks->help = "Minimum compatible platform version "
+			"(also known as Board ID version).";
+	quirks->apply = quirk_min_platform_version;
+
+	return cfg;
+}
+
+/*
+ * Helper function to setup an allocated updater_config object.
+ * Returns number of failures, or 0 on success.
+ */
+int updater_setup_config(struct updater_config *cfg,
+			 const char *image,
+			 const char *ec_image,
+			 const char *pd_image,
+			 const char *quirks,
+			 const char *mode,
+			 const char *programmer,
+			 const char *emulation,
+			 const char *sys_props,
+			 const char *write_protection,
+			 int is_factory,
+			 int try_update,
+			 int force_update)
+{
+	int errorcnt = 0;
+	int check_single_image = 0, check_wp_disabled = 0;
+
+	if (try_update)
+		cfg->try_update = 1;
+	if (force_update)
+		cfg->force_update = 1;
+
+	if (quirks)
+		errorcnt += !!setup_config_quirks(quirks, cfg);
+	if (sys_props)
+		override_properties_from_list(sys_props, cfg);
+
+	if (image)
+		errorcnt += !!load_image(image, &cfg->image);
+	if (ec_image)
+		errorcnt += !!load_image(ec_image, &cfg->ec_image);
+	if (pd_image)
+		errorcnt += !!load_image(pd_image, &cfg->pd_image);
+
+	if (mode) {
+		if (strcmp(mode, "autoupdate") == 0) {
+			cfg->try_update = 1;
+		} else if (strcmp(mode, "recovery") == 0) {
+			cfg->try_update = 0;
+		} else if (strcmp(mode, "legacy") == 0) {
+			cfg->legacy_update = 1;
+		} else if (strcmp(mode, "factory") == 0 ||
+			   strcmp(mode, "factory_install") == 0) {
+			is_factory = 1;
+		} else {
+			errorcnt++;
+			ERROR("Invalid mode: %s", mode);
+		}
 	}
+	/* Must be checked after mode selection. */
+	if (is_factory) {
+		check_wp_disabled = 1;
+		cfg->try_update = 0;
+	}
+	if (write_protection) {
+		int r = strtol(write_protection, NULL, 0);
+		override_system_property(SYS_PROP_WP_HW, cfg, r);
+		override_system_property(SYS_PROP_WP_SW, cfg, r);
+	}
+	if (programmer) {
+		check_single_image = 1;
+		cfg->image.programmer = programmer;
+		cfg->image_current.programmer = programmer;
+		DEBUG("AP (host) programmer changed to %s.", programmer);
+	}
+	if (emulation) {
+		check_single_image = 1;
+		cfg->emulation = emulation;
+		DEBUG("Using file %s for emulation.", emulation);
+		errorcnt += load_image(emulation, &cfg->image_current);
+	}
+
+	/* Additional checks. */
+	if (check_single_image && (cfg->ec_image.data || cfg->pd_image.data)) {
+		errorcnt++;
+		ERROR("EC/PD images are not supported in current mode.");
+	}
+	if (check_wp_disabled && is_write_protection_enabled(cfg)) {
+		errorcnt++;
+		ERROR("Factory mode needs WP disabled.");
+	}
+	return errorcnt;
+}
+
+/*
+ * Releases all resources in an updater configuration object.
+ */
+void updater_delete_config(struct updater_config *cfg)
+{
+	assert(cfg);
 	free_image(&cfg->image);
 	free_image(&cfg->image_current);
 	free_image(&cfg->ec_image);
 	free_image(&cfg->pd_image);
-	free(cfg->emulation);
-	cfg->emulation = NULL;
+	free(cfg);
 }
-
-/* Command line options */
-static struct option const long_opts[] = {
-	/* name  has_arg *flag val */
-	{"image", 1, NULL, 'i'},
-	{"ec_image", 1, NULL, 'e'},
-	{"pd_image", 1, NULL, 'P'},
-	{"try", 0, NULL, 't'},
-	{"quirks", 1, NULL, 'f'},
-	{"list-quirks", 0, NULL, 'L'},
-	{"mode", 1, NULL, 'm'},
-	{"factory", 0, NULL, 'Y'},
-	{"force", 0, NULL, 'F'},
-	{"programmer", 1, NULL, 'p'},
-	{"wp", 1, NULL, 'W'},
-	{"emulate", 1, NULL, 'E'},
-	{"sys_props", 1, NULL, 'S'},
-	{"debug", 0, NULL, 'd'},
-	{"verbose", 0, NULL, 'v'},
-	{"help", 0, NULL, 'h'},
-	{NULL, 0, NULL, 0},
-};
-
-static const char * const short_opts = "hi:e:tm:p:dv";
-
-static void print_help(int argc, char *argv[])
-{
-	printf("\n"
-		"Usage:  " MYNAME " %s [OPTIONS]\n"
-		"\n"
-		"-i, --image=FILE    \tAP (host) firmware image (image.bin)\n"
-		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
-		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
-		"-t, --try           \tTry A/B update on reboot if possible\n"
-		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
-		"    --quirks=LIST   \tSpecify the quirks to apply\n"
-		"    --list-quirks   \tPrint all available quirks\n"
-		"\n"
-		"Legacy and compatibility options:\n"
-		"-m, --mode=MODE     \tRun updater in given mode\n"
-		"    --factory       \tAlias for --mode=factory\n"
-		"    --force         \tForce update (skip checking contents)\n"
-		"\n"
-		"Debugging and testing options:\n"
-		"    --wp=1|0        \tSpecify write protection status\n"
-		"    --emulate=FILE  \tEmulate system firmware using file\n"
-		"    --sys_props=LIST\tList of system properties to override\n"
-		"-d, --debug         \tPrint debugging messages\n"
-		"-v, --verbose       \tPrint verbose messages\n"
-		"",
-		argv[0]);
-}
-
-static int do_update(int argc, char *argv[])
-{
-	int i, r, single_image = 0, errorcnt = 0;
-	int check_wp_disabled = 0;
-	char *opt_programmer = NULL;
-	struct updater_config cfg = {
-		.image = { .programmer = PROG_HOST, },
-		.image_current = { .programmer = PROG_HOST, },
-		.ec_image = { .programmer = PROG_EC, },
-		.pd_image = { .programmer = PROG_PD, },
-		.system_properties = {
-			[SYS_PROP_MAINFW_ACT] = {.getter = host_get_mainfw_act},
-			[SYS_PROP_TPM_FWVER] = {.getter = host_get_tpm_fwver},
-			[SYS_PROP_FW_VBOOT2] = {.getter = host_get_fw_vboot2},
-			[SYS_PROP_PLATFORM_VER] = {
-				.getter = host_get_platform_version},
-			[SYS_PROP_WP_HW] = {.getter = host_get_wp_hw},
-			[SYS_PROP_WP_SW] = {.getter = host_get_wp_sw},
-		},
-		.quirks = {
-			[QUIRK_ENLARGE_IMAGE] = {
-				.name="enlarge_image",
-				.help="Enlarge firmware image by flash size.",
-				.apply=quirk_enlarge_image,
-			},
-			[QUIRK_UNLOCK_ME_FOR_UPDATE] = {
-				.name="unlock_me_for_update",
-				.help="b/35568719: Only lock management engine "
-				      "by board-postinst.",
-				.apply=quirk_unlock_me_for_update,
-			},
-			[QUIRK_MIN_PLATFORM_VERSION] = {
-				.name="min_platform_version",
-				.help="Minimum compatible platform version "
-				      "(also known as Board ID version).",
-				.apply=quirk_min_platform_version,
-			},
-		},
-	};
-
-	printf(">> Firmware updater started.\n");
-
-	opterr = 0;
-	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
-		switch (i) {
-		case 'i':
-			errorcnt += !!load_image(optarg, &cfg.image);
-			break;
-		case 'e':
-			errorcnt += !!load_image(optarg, &cfg.ec_image);
-			break;
-		case 'P':
-			errorcnt += !!load_image(optarg, &cfg.pd_image);
-			break;
-		case 't':
-			cfg.try_update = 1;
-			break;
-		case 'f':
-			errorcnt += !!setup_config_quirks(optarg, &cfg);
-			break;
-		case 'L':
-			list_config_quirks(&cfg);
-			return 0;
-		case 'm':
-			if (strcmp(optarg, "autoupdate") == 0) {
-				cfg.try_update = 1;
-			} else if (strcmp(optarg, "recovery") == 0) {
-				cfg.try_update = 0;
-			} else if (strcmp(optarg, "legacy") == 0) {
-				cfg.legacy_update = 1;
-			} else if (strcmp(optarg, "factory") == 0 ||
-				   strcmp(optarg, "factory_install") == 0) {
-				cfg.try_update = 0;
-				check_wp_disabled = 1;
-			} else {
-				errorcnt++;
-				Error("Invalid mode: %s\n", optarg);
-			}
-			break;
-		case 'Y':
-			cfg.try_update = 0;
-			check_wp_disabled = 1;
-			break;
-		case 'W':
-			r = strtol(optarg, NULL, 0);
-			override_system_property(SYS_PROP_WP_HW, &cfg, r);
-			override_system_property(SYS_PROP_WP_SW, &cfg, r);
-			break;
-		case 'E':
-			free(cfg.emulation);
-			cfg.emulation = strdup(optarg);
-			DEBUG("Emulate with file: %s", cfg.emulation);
-			break;
-		case 'p':
-			opt_programmer = strdup(optarg);
-			break;
-		case 'F':
-			cfg.force_update = 1;
-			break;
-		case 'S':
-			override_properties_from_list(optarg, &cfg);
-			break;
-		case 'v':
-			/* TODO(hungte) Change to better verbosity control. */
-			debugging_enabled = 1;
-			break;
-		case 'd':
-			debugging_enabled = 1;
-			break;
-
-		case 'h':
-			print_help(argc, argv);
-			return !!errorcnt;
-		case '?':
-			errorcnt++;
-			if (optopt)
-				Error("Unrecognized option: -%c\n", optopt);
-			else if (argv[optind - 1])
-				Error("Unrecognized option (possibly '%s')\n",
-				      argv[optind - 1]);
-			else
-				Error("Unrecognized option.\n");
-			break;
-		default:
-			errorcnt++;
-			Error("Failed parsing options.\n");
-		}
-	}
-	if (optind < argc) {
-		errorcnt++;
-		Error("Unexpected arguments.\n");
-	}
-	if (opt_programmer) {
-		single_image = 1;
-		cfg.image.programmer = opt_programmer;
-		cfg.image_current.programmer = opt_programmer;
-		DEBUG("AP (host) programmer changed to %s.", opt_programmer);
-	}
-	if (cfg.emulation) {
-		single_image = 1;
-		errorcnt += load_image(cfg.emulation, &cfg.image_current);
-	}
-	if (single_image && (cfg.ec_image.data || cfg.pd_image.data)) {
-		errorcnt++;
-		Error("EC/PD images are not supported in current mode.\n");
-	}
-	if (check_wp_disabled && is_write_protection_enabled(&cfg)) {
-		errorcnt++;
-		Error("Factory mode needs WP disabled.\n");
-	}
-	if (!errorcnt) {
-		int r = update_firmware(&cfg);
-		if (r != UPDATE_ERR_DONE) {
-			r = Min(r, UPDATE_ERR_UNKNOWN);
-			Error("%s\n", updater_error_messages[r]);
-			errorcnt++;
-		}
-	}
-	printf(">> %s: Firmware updater %s.\n",
-	       errorcnt ? "FAILED": "DONE",
-	       errorcnt ? "stopped due to error" : "exited successfully");
-	unload_updater_config(&cfg);
-	if (opt_programmer) {
-		cfg.image.programmer = PROG_HOST;
-		cfg.image_current.programmer = PROG_HOST;
-		free(opt_programmer);
-	}
-	remove_all_temp_files();
-	return !!errorcnt;
-}
-
-DECLARE_FUTIL_COMMAND(update, do_update, VBOOT_VERSION_ALL,
-		      "Update system firmware");
