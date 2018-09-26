@@ -673,7 +673,6 @@ FUTIL_SRCS = \
 	futility/cmd_pcr.c \
 	futility/cmd_show.c \
 	futility/cmd_sign.c \
-	futility/cmd_update.c \
 	futility/cmd_validate_rec_mrc.c \
 	futility/cmd_vbutil_firmware.c \
 	futility/cmd_vbutil_firmware.c \
@@ -687,6 +686,7 @@ FUTIL_SRCS = \
 	futility/file_type_usbpd1.c \
 	futility/misc.c \
 	futility/ryu_root_header.c \
+	futility/updater.c \
 	futility/vb1_helper.c \
 	futility/vb2_helper.c
 
