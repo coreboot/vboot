@@ -15,7 +15,6 @@
 
 #include "2rsa.h"
 #include "crossystem.h"
-#include "fmap.h"
 #include "host_misc.h"
 #include "updater.h"
 #include "utility.h"
@@ -26,27 +25,6 @@
 #define COMMAND_BUFFER_SIZE 256
 #define RETURN_ON_FAILURE(x) do {int r = (x); if (r) return r;} while (0);
 #define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
-
-/* FMAP section names. */
-static const char * const FMAP_RO_FRID = "RO_FRID",
-		  * const FMAP_RO_SECTION = "RO_SECTION",
-		  * const FMAP_RO_GBB = "GBB",
-		  * const FMAP_RO_PRESERVE = "RO_PRESERVE",
-		  * const FMAP_RO_VPD = "RO_VPD",
-		  * const FMAP_RW_VPD = "RW_VPD",
-		  * const FMAP_RW_VBLOCK_A = "VBLOCK_A",
-		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
-		  * const FMAP_RW_SECTION_B = "RW_SECTION_B",
-		  * const FMAP_RW_FWID = "RW_FWID",
-		  * const FMAP_RW_FWID_A = "RW_FWID_A",
-		  * const FMAP_RW_FWID_B = "RW_FWID_B",
-		  * const FMAP_RW_SHARED = "RW_SHARED",
-		  * const FMAP_RW_NVRAM = "RW_NVRAM",
-		  * const FMAP_RW_ELOG = "RW_ELOG",
-		  * const FMAP_RW_PRESERVE = "RW_PRESERVE",
-		  * const FMAP_RW_LEGACY = "RW_LEGACY",
-		  * const FMAP_SI_DESC = "SI_DESC",
-		  * const FMAP_SI_ME = "SI_ME";
 
 /* System environment values. */
 static const char * const FWACT_A = "A",
@@ -84,75 +62,13 @@ enum flashrom_ops {
 	FLASHROM_WP_STATUS,
 };
 
-struct firmware_image {
-	const char *programmer;
-	uint32_t size;
-	uint8_t *data;
-	char *file_name;
-	char *ro_version, *rw_version_a, *rw_version_b;
-	FmapHeader *fmap_header;
-};
-
-struct firmware_section {
-	uint8_t *data;
-	size_t size;
-};
-
-struct system_property {
-	int (*getter)();
-	int value;
-	int initialized;
-};
-
-enum system_property_type {
-	SYS_PROP_MAINFW_ACT,
-	SYS_PROP_TPM_FWVER,
-	SYS_PROP_FW_VBOOT2,
-	SYS_PROP_PLATFORM_VER,
-	SYS_PROP_WP_HW,
-	SYS_PROP_WP_SW,
-	SYS_PROP_MAX
-};
-
-struct updater_config;
-struct quirk_entry {
-	const char *name;
-	const char *help;
-	int (*apply)(struct updater_config *cfg);
-	int value;
-};
-
-enum quirk_types {
-	QUIRK_ENLARGE_IMAGE,
-	QUIRK_UNLOCK_ME_FOR_UPDATE,
-	QUIRK_MIN_PLATFORM_VERSION,
-	QUIRK_MAX,
-};
-
-struct tempfile {
-	char *filepath;
-	struct tempfile *next;
-};
-
-struct updater_config {
-	struct firmware_image image, image_current;
-	struct firmware_image ec_image, pd_image;
-	struct system_property system_properties[SYS_PROP_MAX];
-	struct quirk_entry quirks[QUIRK_MAX];
-	struct tempfile *tempfiles;
-	int try_update;
-	int force_update;
-	int legacy_update;
-	const char *emulation;
-};
-
 
 /*
  * Helper function to create a new temporary file.
  * All files created will be removed by function remove_all_temp_files().
  * Returns the path of new file, or NULL on failure.
  */
-static const char *create_temp_file(struct updater_config *cfg)
+const char *create_temp_file(struct updater_config *cfg)
 {
 	struct tempfile *new_temp;
 	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
@@ -401,8 +317,8 @@ static int host_get_wp_sw()
  * and cache the result.
  * Returns the property value.
  */
-static int get_system_property(enum system_property_type property_type,
-			       struct updater_config *cfg)
+int get_system_property(enum system_property_type property_type,
+			struct updater_config *cfg)
 {
 	struct system_property *prop;
 
@@ -497,8 +413,7 @@ static void override_properties_from_list(const char *override_list,
 }
 
 /* Gets the value (setting) of specified quirks from updater configuration. */
-static int get_config_quirk(enum quirk_types quirk,
-			    const struct updater_config *cfg)
+int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg)
 {
 	assert(quirk < QUIRK_MAX);
 	return cfg->quirks[quirk].value;
@@ -586,9 +501,9 @@ static int setup_config_quirks(const char *quirks, struct updater_config *cfg)
  * If successful, return zero and *section argument contains the address and
  * size of the section; otherwise failure.
  */
-static int find_firmware_section(struct firmware_section *section,
-				 const struct firmware_image *image,
-				 const char *section_name)
+int find_firmware_section(struct firmware_section *section,
+			  const struct firmware_image *image,
+			  const char *section_name)
 {
 	FmapAreaHeader *fah = NULL;
 	uint8_t *ptr;
@@ -658,7 +573,7 @@ static int load_firmware_version(struct firmware_image *image,
  * Loads a firmware image from file.
  * Returns 0 on success, otherwise failure.
  */
-static int load_image(const char *file_name, struct firmware_image *image)
+int load_image(const char *file_name, struct firmware_image *image)
 {
 	DEBUG("Load image file from %s...", file_name);
 
@@ -717,7 +632,7 @@ static int load_system_image(struct updater_config *cfg,
 /*
  * Frees the allocated resource from a firmware image object.
  */
-static void free_image(struct firmware_image *image)
+void free_image(struct firmware_image *image)
 {
 	free(image->data);
 	free(image->file_name);
@@ -1413,96 +1328,6 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 	return 0;
 }
 
-/*
- * Quirk to enlarge a firmware image to match flash size. This is needed by
- * devices using multiple SPI flash with different sizes, for example 8M and
- * 16M. The image_to will be padded with 0xFF using the size of image_from.
- * Returns 0 on success, otherwise failure.
- */
-static int quirk_enlarge_image(struct updater_config *cfg)
-{
-	struct firmware_image *image_from = &cfg->image_current,
-			      *image_to = &cfg->image;
-	const char *tmp_path;
-	size_t to_write;
-	FILE *fp;
-
-	if (image_from->size <= image_to->size)
-		return 0;
-
-	tmp_path = create_temp_file(cfg);
-	if (!tmp_path)
-		return -1;
-
-	DEBUG("Resize image from %u to %u.", image_to->size, image_from->size);
-	to_write = image_from->size - image_to->size;
-	vb2_write_file(tmp_path, image_to->data, image_to->size);
-	fp = fopen(tmp_path, "ab");
-	if (!fp) {
-		ERROR("Cannot open temporary file %s.", tmp_path);
-		return -1;
-	}
-	while (to_write-- > 0)
-		fputc('\xff', fp);
-	fclose(fp);
-	free_image(image_to);
-	return load_image(tmp_path, image_to);
-}
-
-/*
- * Quirk to unlock a firmware image with SI_ME (management engine) when updating
- * so the system has a chance to make sure SI_ME won't be corrupted on next boot
- * before locking the Flash Master values in SI_DESC.
- * Returns 0 on success, otherwise failure.
- */
-static int quirk_unlock_me_for_update(struct updater_config *cfg)
-{
-	struct firmware_section section;
-	struct firmware_image *image_to = &cfg->image;
-	const int flash_master_offset = 128;
-	const uint8_t flash_master[] = {
-		0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff,
-		0xff, 0xff
-	};
-
-	find_firmware_section(&section, image_to, FMAP_SI_DESC);
-	if (section.size < flash_master_offset + ARRAY_SIZE(flash_master))
-		return 0;
-	if (memcmp(section.data + flash_master_offset, flash_master,
-		   ARRAY_SIZE(flash_master)) == 0) {
-		DEBUG("Target ME not locked.");
-		return 0;
-	}
-	/*
-	 * b/35568719: We should only update with unlocked ME and let
-	 * board-postinst lock it.
-	 */
-	printf("%s: Changed Flash Master Values to unlocked.\n", __FUNCTION__);
-	memcpy(section.data + flash_master_offset, flash_master,
-	       ARRAY_SIZE(flash_master));
-	return 0;
-}
-
-/*
- * Checks and returns 0 if the platform version of current system is larger
- * or equal to given number, otherwise non-zero.
- */
-static int quirk_min_platform_version(struct updater_config *cfg)
-{
-	int min_version = get_config_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg);
-	int platform_version = get_system_property(SYS_PROP_PLATFORM_VER, cfg);
-
-	DEBUG("Minimum required version=%d, current platform version=%d",
-	      min_version, platform_version);
-
-	if (platform_version >= min_version)
-		return 0;
-	ERROR("Need platform version >= %d (current is %d). "
-	      "This firmware will only run on newer systems.",
-	      min_version, platform_version);
-	return -1;
-}
-
 const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
 	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
@@ -1739,7 +1564,6 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 struct updater_config *updater_new_config()
 {
 	struct system_property *props;
-	struct quirk_entry *quirks;
 	struct updater_config *cfg = (struct updater_config *)calloc(
 			1, sizeof(struct updater_config));
 	if (!cfg)
@@ -1757,23 +1581,7 @@ struct updater_config *updater_new_config()
 	props[SYS_PROP_WP_HW].getter = host_get_wp_hw;
 	props[SYS_PROP_WP_SW].getter = host_get_wp_sw;
 
-	quirks = &cfg->quirks[QUIRK_ENLARGE_IMAGE];
-	quirks->name = "enlarge_image";
-	quirks->help = "Enlarge firmware image by flash size.";
-	quirks->apply = quirk_enlarge_image;
-
-	quirks = &cfg->quirks[QUIRK_UNLOCK_ME_FOR_UPDATE];
-	quirks->name = "unlock_me_for_update";
-	quirks->help = "b/35568719: Only lock management engine by "
-			"board-postinst.";
-	quirks->apply = quirk_unlock_me_for_update;
-
-	quirks = &cfg->quirks[QUIRK_MIN_PLATFORM_VERSION];
-	quirks->name = "min_platform_version";
-	quirks->help = "Minimum compatible platform version "
-			"(also known as Board ID version).";
-	quirks->apply = quirk_min_platform_version;
-
+	updater_register_quirks(cfg);
 	return cfg;
 }
 
