@@ -77,6 +77,7 @@ enum quirk_types {
 	QUIRK_ENLARGE_IMAGE,
 	QUIRK_MIN_PLATFORM_VERSION,
 	QUIRK_UNLOCK_ME_FOR_UPDATE,
+	QUIRK_DAISY_SNOW_DUAL_MODEL,
 	QUIRK_MAX,
 };
 
@@ -175,8 +176,26 @@ int find_firmware_section(struct firmware_section *section,
 			  const struct firmware_image *image,
 			  const char *section_name);
 
+/*
+ * Preserves (copies) the given section (by name) from image_from to image_to.
+ * The offset may be different, and the section data will be directly copied.
+ * If the section does not exist on either images, return as failure.
+ * If the source section is larger, contents on destination be truncated.
+ * If the source section is smaller, the remaining area is not modified.
+ * Returns 0 if success, non-zero if error.
+ */
+int preserve_firmware_section(const struct firmware_image *image_from,
+			      struct firmware_image *image_to,
+			      const char *section_name);
+
 /* Loads a firmware image from file. Returns 0 on success, otherwise failure. */
 int load_image(const char *file_name, struct firmware_image *image);
+
+/*
+ * Loads the active system firmware image (usually from SPI flash chip).
+ * Returns 0 if success, non-zero if error.
+ */
+int load_system_image(struct updater_config *cfg, struct firmware_image *image);
 
 /* Frees the allocated resource from a firmware image object. */
 void free_image(struct firmware_image *image);
@@ -192,5 +211,12 @@ int get_system_property(enum system_property_type property_type,
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
  */
 const char * const updater_get_default_quirks(struct updater_config *cfg);
+
+/*
+ * Executes a command on current host and returns stripped command output.
+ * If the command has failed (exit code is not zero), returns an empty string.
+ * The caller is responsible for releasing the returned string.
+ */
+char *host_shell(const char *command);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */

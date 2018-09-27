@@ -135,7 +135,7 @@ static void strip(char *s)
  * If the command has failed (exit code is not zero), returns an empty string.
  * The caller is responsible for releasing the returned string.
  */
-static char *host_shell(const char *command)
+char *host_shell(const char *command)
 {
 	/* Currently all commands we use do not have large output. */
 	char buf[COMMAND_BUFFER_SIZE];
@@ -617,8 +617,7 @@ int load_image(const char *file_name, struct firmware_image *image)
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-static int load_system_image(struct updater_config *cfg,
-			     struct firmware_image *image)
+int load_system_image(struct updater_config *cfg, struct firmware_image *image)
 {
 	const char *tmp_file = create_temp_file(cfg);
 
@@ -830,16 +829,17 @@ static int write_optional_firmware(struct updater_config *cfg,
 	return write_firmware(cfg, image, section_name);
 }
 
-/* Preserves (copies) the given section (by name) from image_from to image_to.
+/*
+ * Preserves (copies) the given section (by name) from image_from to image_to.
  * The offset may be different, and the section data will be directly copied.
  * If the section does not exist on either images, return as failure.
  * If the source section is larger, contents on destination be truncated.
  * If the source section is smaller, the remaining area is not modified.
  * Returns 0 if success, non-zero if error.
  */
-static int preserve_firmware_section(const struct firmware_image *image_from,
-				     struct firmware_image *image_to,
-				     const char *section_name)
+int preserve_firmware_section(const struct firmware_image *image_from,
+			      struct firmware_image *image_to,
+			      const char *section_name)
 {
 	struct firmware_section from, to;
 
@@ -1503,6 +1503,9 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 			      *image_to = &cfg->image;
 	if (!image_to->data)
 		return UPDATE_ERR_NO_IMAGE;
+
+	if (try_apply_quirk(QUIRK_DAISY_SNOW_DUAL_MODEL, cfg))
+		return UPDATE_ERR_PLATFORM;
 
 	printf(">> Target image: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
 	       image_to->file_name, image_to->ro_version,
