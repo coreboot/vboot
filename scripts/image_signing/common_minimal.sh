@@ -443,6 +443,18 @@ store_file_in_cbfs() {
   local file="$2"
   local name="$3"
   local compression=$(get_cbfs_compression "$1" "${name}")
+
+  # Don't re-add a file to a section if it's unchanged.  Otherwise this seems
+  # to break signature of existing contents.  https://crbug.com/889716
+  if cbfstool "${image}" extract -r "FW_MAIN_A,FW_MAIN_B" \
+       -f "${file}.orig" -n "${name}"; then
+    if cmp -s "${file}" "${file}.orig"; then
+      rm -f "${file}.orig"
+      return
+    fi
+    rm -f "${file}.orig"
+  fi
+
   cbfstool "${image}" remove -r "FW_MAIN_A,FW_MAIN_B" -n "${name}" || return
   # This add can fail if
   # 1. Size of a signature after compression is larger
