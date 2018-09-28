@@ -12,8 +12,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "updater.h"
+#include "futility.h"
 #include "host_misc.h"
+#include "updater.h"
 
 struct quirks_record {
 	const char * const match;

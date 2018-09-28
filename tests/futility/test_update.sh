@@ -8,7 +8,7 @@ TMP="$me.tmp"
 
 # Test --sys_props (primitive test needed for future updating tests).
 test_sys_props() {
-	! "${FUTILITY}" --debug update --sys_props "$*" |
+	! "${FUTILITY}" --debug update --sys_props "$*" 2>&1 |
 		sed -n 's/.*property\[\(.*\)].value = \(.*\)/\1,\2,/p' |
 		tr '\n' ' '
 }
@@ -20,7 +20,7 @@ test "$(test_sys_props "   1,, 2")" = "0,1, 2,2, "
 test "$(test_sys_props " , 4,")" = "1,4, "
 
 test_quirks() {
-	! "${FUTILITY}" --debug update --quirks "$*" |
+	! "${FUTILITY}" --debug update --quirks "$*" 2>&1 |
 		sed -n 's/.*Set quirk \(.*\) to \(.*\)./\1,\2/p' |
 		tr '\n' ' '
 }

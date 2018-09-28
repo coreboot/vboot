@@ -78,7 +78,8 @@ static int do_update(int argc, char *argv[])
 		   *opt_emulation = NULL,
 		   *opt_sys_props = NULL,
 		   *opt_write_protection = NULL;
-	int opt_is_factory = 0, opt_try_update = 0, opt_force_update = 0;
+	int opt_is_factory = 0, opt_try_update = 0, opt_force_update = 0,
+	    opt_verbosity = 0;
 	int i, errorcnt = 0;
 	struct updater_config *cfg;
 
@@ -129,11 +130,11 @@ static int do_update(int argc, char *argv[])
 			opt_sys_props = optarg;
 			break;
 		case 'v':
-			/* TODO(hungte) Change to better verbosity control. */
-			debugging_enabled = 1;
+			opt_verbosity++;
 			break;
 		case 'd':
 			debugging_enabled = 1;
+			opt_verbosity++;
 			break;
 
 		case 'h':
@@ -164,7 +165,8 @@ static int do_update(int argc, char *argv[])
 				opt_quirks, opt_mode, opt_programmer,
 				opt_emulation, opt_sys_props,
 				opt_write_protection, opt_is_factory,
-				opt_try_update, opt_force_update);
+				opt_try_update, opt_force_update,
+				opt_verbosity);
 	if (!errorcnt) {
 		int r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {

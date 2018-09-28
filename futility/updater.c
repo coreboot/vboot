@@ -15,6 +15,7 @@
 
 #include "2rsa.h"
 #include "crossystem.h"
+#include "futility.h"
 #include "host_misc.h"
 #include "updater.h"
 #include "utility.h"
@@ -234,11 +235,22 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	const char *op_cmd, *dash_i = "-i", *postfix = "", *ignore_lock = "";
 	int r;
 
-	if (debugging_enabled)
-		verbose = 1;
-
-	if (!verbose)
+	switch (verbose) {
+	case 0:
 		postfix = " >/dev/null 2>&1";
+		break;
+	case 1:
+		break;
+	case 2:
+		postfix = "-V";
+		break;
+	case 3:
+		postfix = "-V -V";
+		break;
+	default:
+		postfix = "-V -V -V";
+		break;
+	}
 
 	if (!section_name || !*section_name) {
 		dash_i = "";
@@ -405,7 +417,7 @@ static void override_properties_from_list(const char *override_list,
 		}
 		v = strtol(s, &e, 0);
 		s = e - 1;
-		DEBUG("property[%d].value = %d", i, v);
+		DEBUG("property[%d].value = %ld", i, v);
 		override_system_property((enum system_property_type)i, cfg, v);
 		wait_comma = 1;
 		i++;
@@ -624,7 +636,8 @@ int load_system_image(struct updater_config *cfg, struct firmware_image *image)
 	if (!tmp_file)
 		return -1;
 	RETURN_ON_FAILURE(host_flashrom(
-			FLASHROM_READ, tmp_file, image->programmer, 0, NULL));
+			FLASHROM_READ, tmp_file, image->programmer,
+			cfg->verbosity, NULL));
 	return load_image(tmp_file, image);
 }
 
@@ -759,7 +772,7 @@ static int emulate_write_firmware(const char *filename,
 		size_t to_write = Min(to.size, from.size);
 
 		assert(from.data && to.data);
-		DEBUG("Writing %d bytes", to_write);
+		DEBUG("Writing %zu bytes", to_write);
 		memcpy(to.data, from.data, to_write);
 	}
 
@@ -802,8 +815,8 @@ static int write_firmware(struct updater_config *cfg,
 		ERROR("Cannot write temporary file for output: %s", tmp_file);
 		return -1;
 	}
-	return host_flashrom(FLASHROM_WRITE, tmp_file, programmer, 1,
-			     section_name);
+	return host_flashrom(FLASHROM_WRITE, tmp_file, programmer,
+			     cfg->verbosity + 1, section_name);
 }
 
 /*
@@ -1630,11 +1643,14 @@ int updater_setup_config(struct updater_config *cfg,
 			 const char *write_protection,
 			 int is_factory,
 			 int try_update,
-			 int force_update)
+			 int force_update,
+			 int verbosity)
 {
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
 	const char *default_quirks = NULL;
+
+	cfg->verbosity = verbosity;
 
 	if (try_update)
 		cfg->try_update = 1;

@@ -8,11 +8,15 @@
 #ifndef VBOOT_REFERENCE_FUTILITY_UPDATER_H_
 #define VBOOT_REFERENCE_FUTILITY_UPDATER_H_
 
-#include "fmap.h"
-#include "futility.h"
+#include <stdio.h>
 
-#define DEBUG(format, ...) Debug("%s: " format "\n", __FUNCTION__,##__VA_ARGS__)
-#define ERROR(format, ...) Error("%s: " format "\n", __FUNCTION__,##__VA_ARGS__)
+#include "fmap.h"
+
+extern int debugging_enabled;
+#define DEBUG(format, ...) do { if (debugging_enabled) fprintf(stderr, \
+	"DEBUG: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__); } while (0)
+#define ERROR(format, ...) fprintf(stderr, \
+	"ERROR: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__)
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
@@ -97,6 +101,7 @@ struct updater_config {
 	int try_update;
 	int force_update;
 	int legacy_update;
+	int verbosity;
 	const char *emulation;
 };
 
@@ -153,7 +158,8 @@ int updater_setup_config(struct updater_config *cfg,
 			  const char *write_protection,
 			  int is_factory,
 			  int try_update,
-			  int force_update);
+			  int force_update,
+			  int verbosity);
 
 /* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg);
