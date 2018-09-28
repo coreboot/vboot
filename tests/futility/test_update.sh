@@ -287,3 +287,18 @@ if type flashrom >/dev/null 2>&1; then
 		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3 >&2
 	cmp "${TMP}.emu" "${TMP}.expected.full"
 fi
+
+if type cbfstool >/dev/null 2>&1; then
+	echo "SMM STORE" >"${TMP}.smm"
+	truncate -s 262144 "${TMP}.smm"
+	cp -f "${FROM_IMAGE}" "${TMP}.from.smm"
+	cp -f "${TMP}.expected.full" "${TMP}.expected.full_smm"
+	cbfstool "${TMP}.from.smm" add -r RW_LEGACY -n "smm store" \
+		-f "${TMP}.smm" -t raw
+	cbfstool "${TMP}.expected.full_smm" add -r RW_LEGACY -n "smm store" \
+		-f "${TMP}.smm" -t raw -b 0x1bf000
+	test_update "Legacy update (--quirks eve_smm_store)" \
+		"${TMP}.from.smm" "${TMP}.expected.full_smm" \
+		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
+		--quirks eve_smm_store
+fi

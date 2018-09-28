@@ -955,6 +955,7 @@ static int preserve_images(struct updater_config *cfg)
 		FMAP_RW_PRESERVE,
 		FMAP_RW_NVRAM,
 		FMAP_RW_ELOG,
+		FMAP_RW_SMMSTORE,
 		/*
 		 * TODO(hungte): b/116326638: Remove RO_FSG after the migration
 		 * is finished.
@@ -1538,6 +1539,9 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	if (try_apply_quirk(QUIRK_ENLARGE_IMAGE, cfg))
 		return UPDATE_ERR_SYSTEM_IMAGE;
+
+	if (try_apply_quirk(QUIRK_EVE_SMM_STORE, cfg))
+		return UPDATE_ERR_INVALID_IMAGE;
 
 	if (debugging_enabled)
 		print_system_properties(cfg);

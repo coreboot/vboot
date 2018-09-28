@@ -32,6 +32,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RW_ELOG = "RW_ELOG",
 		  * const FMAP_RW_PRESERVE = "RW_PRESERVE",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY",
+		  * const FMAP_RW_SMMSTORE = "SMMSTORE",
 		  * const FMAP_SI_DESC = "SI_DESC",
 		  * const FMAP_SI_ME = "SI_ME";
 
@@ -78,6 +79,7 @@ enum quirk_types {
 	QUIRK_MIN_PLATFORM_VERSION,
 	QUIRK_UNLOCK_ME_FOR_UPDATE,
 	QUIRK_DAISY_SNOW_DUAL_MODEL,
+	QUIRK_EVE_SMM_STORE,
 	QUIRK_MAX,
 };
 

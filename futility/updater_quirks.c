@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "updater.h"
 #include "host_misc.h"
@@ -30,6 +32,9 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Asuka.", .quirks = "unlock_me_for_update" },
 	{ .match = "Google_Caroline.", .quirks = "unlock_me_for_update" },
 	{ .match = "Google_Cave.", .quirks = "unlock_me_for_update" },
+
+	{ .match = "Google_Eve.",
+	  .quirks = "unlock_me_for_update,eve_smm_store" },
 
 	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
@@ -220,6 +225,81 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 }
 
 /*
+ * Extracts files from a CBFS on given region (section) of image_file.
+ * Returns the path to a temporary file on success, otherwise NULL.
+ */
+static const char *extract_cbfs_file(struct updater_config *cfg,
+				     const char *image_file,
+				     const char *cbfs_region,
+				     const char *cbfs_name)
+{
+	const char *output = create_temp_file(cfg);
+	char *command, *result;
+
+	if (asprintf(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
+		     "-f \"%s\" 2>&1", image_file, cbfs_region,
+		     cbfs_name, output) < 0) {
+		ERROR("Failed to allocate internal buffer.");
+		return NULL;
+	}
+	result = host_shell(command);
+	free(command);
+
+	if (!*result)
+		output = NULL;
+
+	free(result);
+	return output;
+}
+
+/*
+ * Quirk to help preserving SMM store on devices without a dedicated "SMMSTORE"
+ * FMAP section. These devices will store "smm store" file in same CBFS where
+ * the legacy boot loader lives (i.e, FMAP RW_LEGACY).
+ * Note this currently has dependency on external program "cbstool".
+ * Returns 0 if the SMM store is properly preserved, or if the system is not
+ * available to do that (problem in cbfstool, or no "smm store" in current
+ * system firmware). Otherwise non-zero as failure.
+ */
+static int quirk_eve_smm_store(struct updater_config *cfg)
+{
+	const char *smm_store_name = "smm store";
+	const char *temp_image = create_temp_file(cfg);
+	const char *old_store;
+	char *command;
+
+	if (write_image(temp_image, &cfg->image_current) != VBERROR_SUCCESS)
+		return -1;
+
+	old_store = extract_cbfs_file(cfg, temp_image, FMAP_RW_LEGACY,
+				      smm_store_name);
+	if (!old_store) {
+		DEBUG("cbfstool failure or SMM store not available. "
+		      "Don't preserve.");
+		return 0;
+	}
+
+	/* Reuse temp_image. */
+	if (write_image(temp_image, &cfg->image) != VBERROR_SUCCESS)
+		return -1;
+
+	/* crosreview.com/1165109: The offset is fixed at 0x1bf000. */
+	if (asprintf(&command,
+		     "cbfstool \"%s\" remove -r %s -n \"%s\" 2>/dev/null; "
+		     "cbfstool \"%s\" add -r %s -n \"%s\" -f \"%s\" "
+		     " -t raw -b 0x1bf000", temp_image, FMAP_RW_LEGACY,
+		     smm_store_name, temp_image, FMAP_RW_LEGACY,
+		     smm_store_name, old_store) < 0) {
+		ERROR("Failed to allocate internal buffer.");
+		return -1;
+	}
+	host_shell(command);
+	free(command);
+
+	return reload_image(temp_image, &cfg->image);
+}
+
+/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -248,6 +328,12 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "daisy_snow_dual_model";
 	quirks->help = "b/35525858; needs an image RW A=[model x16], B=x8.";
 	quirks->apply = quirk_daisy_snow_dual_model;
+
+	quirks = &cfg->quirks[QUIRK_EVE_SMM_STORE];
+	quirks->name = "eve_smm_store";
+	quirks->help = "b/70682365; preserve UEFI SMM store without "
+		       "dedicated FMAP section.";
+	quirks->apply = quirk_eve_smm_store;
 }
 
 /*
