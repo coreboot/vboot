@@ -1593,6 +1593,28 @@ struct updater_config *updater_new_config()
 }
 
 /*
+ * Saves everything from stdin to given output file.
+ * Returns 0 on success, otherwise failure.
+ */
+static int save_from_stdin(const char *output)
+{
+	FILE *in = stdin, *out = fopen(output, "wb");
+	char buffer[4096];
+	size_t sz;
+
+	assert(in);
+	if (!out)
+		return -1;
+
+	while (!feof(in)) {
+		sz = fread(buffer, 1, sizeof(buffer), in);
+		fwrite(buffer, 1, sz, out);
+	}
+	fclose(out);
+	return 0;
+}
+
+/*
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
  */
@@ -1622,8 +1644,15 @@ int updater_setup_config(struct updater_config *cfg,
 	if (sys_props)
 		override_properties_from_list(sys_props, cfg);
 
-	if (image)
+	if (image && strcmp(image, "-") == 0) {
+		fprintf(stderr, "Reading image from stdin...\n");
+		image = create_temp_file(cfg);
+		if (image)
+			errorcnt += !!save_from_stdin(image);
+	}
+	if (image) {
 		errorcnt += !!load_image(image, &cfg->image);
+	}
 	if (ec_image)
 		errorcnt += !!load_image(ec_image, &cfg->ec_image);
 	if (pd_image)

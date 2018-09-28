@@ -170,6 +170,10 @@ test_update "Full update (Skip TPM check with --force)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,-1,1 --force
 
+test_update "Full update (from stdin)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i - --wp=0 --sys_props 0,-1,1 --force <"${TO_IMAGE}"
+
 # Test RW-only update.
 test_update "RW update" \
 	"${FROM_IMAGE}" "${TMP}.expected.rw" \
