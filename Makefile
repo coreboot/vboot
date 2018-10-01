@@ -233,6 +233,14 @@ LDFLAGS += -static
 PKG_CONFIG += --static
 endif
 
+# Optional Libraries
+LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
+HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
+ifneq (${HAVE_LIBZIP},)
+  CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
+  LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
+endif
+
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
@@ -688,6 +696,7 @@ FUTIL_SRCS = \
 	futility/misc.c \
 	futility/ryu_root_header.c \
 	futility/updater.c \
+	futility/updater_archive.c \
 	futility/updater_quirks.c \
 	futility/vb1_helper.c \
 	futility/vb2_helper.c
@@ -1120,7 +1129,10 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 .PHONY: futil
 futil: ${FUTIL_BIN}
 
-${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS}
+# FUTIL_LIBS is shared by FUTIL_BIN and TEST_FUTIL_BINS.
+FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
+
+${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20} ${UTILBDB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
@@ -1163,7 +1175,7 @@ ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 ${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
-${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS}
+${TEST_FUTIL_BINS}: LDLIBS += ${FUTIL_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
 ${TEST2X_BINS}: LIBS += ${FWLIB2X}

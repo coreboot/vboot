@@ -22,6 +22,7 @@ static struct option const long_opts[] = {
 	{"ec_image", 1, NULL, 'e'},
 	{"pd_image", 1, NULL, 'P'},
 	{"try", 0, NULL, 't'},
+	{"archive", 1, NULL, 'a'},
 	{"quirks", 1, NULL, 'f'},
 	{"list-quirks", 0, NULL, 'L'},
 	{"mode", 1, NULL, 'm'},
@@ -37,7 +38,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static const char * const short_opts = "hi:e:tm:p:dv";
+static const char * const short_opts = "hi:e:ta:m:p:dv";
 
 static void print_help(int argc, char *argv[])
 {
@@ -48,6 +49,7 @@ static void print_help(int argc, char *argv[])
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
+		"-a, --archive=PATH  \tRead resources from archive\n"
 		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
 		"    --list-quirks   \tPrint all available quirks\n"
@@ -72,6 +74,7 @@ static int do_update(int argc, char *argv[])
 	const char *opt_image = NULL,
 	           *opt_ec_image = NULL,
 		   *opt_pd_image = NULL,
+		   *opt_archive = NULL,
 		   *opt_quirks = NULL,
 		   *opt_mode = NULL,
 		   *opt_programmer = NULL,
@@ -101,6 +104,9 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 't':
 			opt_try_update = 1;
+			break;
+		case 'a':
+			opt_archive = optarg;
 			break;
 		case 'f':
 			opt_quirks = optarg;
@@ -162,8 +168,8 @@ static int do_update(int argc, char *argv[])
 	if (!errorcnt)
 		errorcnt += updater_setup_config(
 				cfg, opt_image, opt_ec_image, opt_pd_image,
-				opt_quirks, opt_mode, opt_programmer,
-				opt_emulation, opt_sys_props,
+				opt_archive, opt_quirks, opt_mode,
+				opt_programmer, opt_emulation, opt_sys_props,
 				opt_write_protection, opt_is_factory,
 				opt_try_update, opt_force_update,
 				opt_verbosity);

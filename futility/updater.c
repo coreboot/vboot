@@ -577,14 +577,21 @@ static int load_firmware_version(struct firmware_image *image,
 
 /*
  * Loads a firmware image from file.
+ * If archive is provided and file_name is a relative path, read the file from
+ * archive.
  * Returns 0 on success, otherwise failure.
  */
-int load_firmware_image(struct firmware_image *image, const char *file_name)
+int load_firmware_image(struct firmware_image *image, const char *file_name,
+			struct archive *archive)
 {
 	DEBUG("Load image file from %s...", file_name);
 
-	if (vb2_read_file(file_name, &image->data, &image->size) != VB2_SUCCESS)
-	{
+	if (!archive_has_entry(archive, file_name)) {
+		ERROR("Does not exist: %s", file_name);
+		return -1;
+	}
+	if (archive_read_file(archive, file_name, &image->data, &image->size) !=
+	    VB2_SUCCESS) {
 		ERROR("Failed to load %s", file_name);
 		return -1;
 	}
@@ -632,7 +639,7 @@ int load_system_firmware(struct updater_config *cfg, struct firmware_image *imag
 	RETURN_ON_FAILURE(host_flashrom(
 			FLASHROM_READ, tmp_file, image->programmer,
 			cfg->verbosity, NULL));
-	return load_firmware_image(image, tmp_file);
+	return load_firmware_image(image, tmp_file, NULL);
 }
 
 /*
@@ -734,7 +741,7 @@ static int emulate_write_firmware(const char *filename,
 	from.data = image->data;
 	from.size = image->size;
 
-	if (load_firmware_image(&to_image, filename)) {
+	if (load_firmware_image(&to_image, filename, NULL)) {
 		ERROR("Cannot load image from %s.", filename);
 		return -1;
 	}
@@ -1254,12 +1261,17 @@ static int legacy_needs_update(struct updater_config *cfg)
 	int has_from, has_to;
 	const char * const tag = "cros_allow_auto_update";
 	const char *section = FMAP_RW_LEGACY;
+	const char *tmp_path = updater_create_temp_file(cfg);
 
 	DEBUG("Checking %s contents...", FMAP_RW_LEGACY);
+	if (!tmp_path ||
+	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
+		ERROR("Failed to create temporary file for image contents.");
+		return 0;
+	}
 
-	/* TODO(hungte): Save image_current as temp file and use it. */
-	has_to = cbfs_file_exists(cfg->image.file_name, section, tag);
-	has_from = cbfs_file_exists(cfg->image_current.file_name, section, tag);
+	has_to = cbfs_file_exists(tmp_path, section, tag);
+	has_from = cbfs_file_exists(tmp_path, section, tag);
 
 	if (!has_from || !has_to) {
 		DEBUG("Current legacy firmware has%s updater tag (%s) "
@@ -1626,6 +1638,7 @@ int updater_setup_config(struct updater_config *cfg,
 			 const char *image,
 			 const char *ec_image,
 			 const char *pd_image,
+			 const char *archive,
 			 const char *quirks,
 			 const char *mode,
 			 const char *programmer,
@@ -1640,8 +1653,16 @@ int updater_setup_config(struct updater_config *cfg,
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
 	const char *default_quirks = NULL;
+	struct archive *ar;
 
 	cfg->verbosity = verbosity;
+
+	cfg->archive = archive_open(archive ? archive : ".");
+	if (!cfg->archive) {
+		ERROR("Failed to open archive: %s", archive);
+		return ++errorcnt;
+	}
+	ar = cfg->archive;
 
 	if (try_update)
 		cfg->try_update = 1;
@@ -1658,12 +1679,12 @@ int updater_setup_config(struct updater_config *cfg,
 			errorcnt += !!save_from_stdin(image);
 	}
 	if (image) {
-		errorcnt += !!load_firmware_image(&cfg->image, image);
+		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
 	}
 	if (ec_image)
-		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image);
+		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
 	if (pd_image)
-		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image);
+		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image, ar);
 
 	/*
 	 * Quirks must be loaded after images are loaded because we use image
@@ -1711,7 +1732,8 @@ int updater_setup_config(struct updater_config *cfg,
 		check_single_image = 1;
 		cfg->emulation = emulation;
 		DEBUG("Using file %s for emulation.", emulation);
-		errorcnt += load_firmware_image(&cfg->image_current, emulation);
+		errorcnt += load_firmware_image(
+				&cfg->image_current, emulation, NULL);
 	}
 
 	/* Additional checks. */
@@ -1737,5 +1759,7 @@ void updater_delete_config(struct updater_config *cfg)
 	free_firmware_image(&cfg->ec_image);
 	free_firmware_image(&cfg->pd_image);
 	updater_remove_all_temp_files(cfg);
+	if (cfg->archive)
+		archive_close(cfg->archive);
 	free(cfg);
 }

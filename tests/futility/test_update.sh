@@ -282,6 +282,13 @@ test_update "Full update (--quirks min_platform_version)" \
 	--quirks min_platform_version=3 \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
 
+mkdir -p "${TMP}.archive"
+cp -f "${TO_IMAGE}" "${TMP}.archive/image_in_archive"
+test_update "Full update (--archive)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-a "${TMP}.archive" \
+	-i "image_in_archive" --wp=0 --sys_props 0,0x10001,1,3
+
 # Test special programmer
 if type flashrom >/dev/null 2>&1; then
 	echo "TEST: Full update (dummy programmer)"
