@@ -177,33 +177,12 @@ calculate_rootfs_hash() {
   fi
   local vroot_dev=$(get_dm_slave "${dm_config}" vroot)
 
-  local rootfs_sectors
-  local verity_depth
-  local verity_algorithm
-  local root_dev
-  local hash_dev
-  local verity_bin="verity"
-  if is_old_verity_argv "${vroot_dev}"; then
-    # dm="0 2097152 verity ROOT_DEV HASH_DEV 2097152 1 \
-    # sha1 63b7ad16cb9db4b70b28593f825aa6b7825fdcf2"
-    rootfs_sectors=$(echo ${vroot_dev} | cut -f2 -d' ')
-    verity_depth=$(echo ${vroot_dev} | cut -f7 -d' ')
-    verity_algorithm=$(echo ${vroot_dev} | cut -f8 -d' ')
-    root_dev=$(echo ${vroot_dev} | cut -f4 -d ' ')
-    hash_dev=$(echo ${vroot_dev} | cut -f5 -d ' ')
-    # Hack around the fact that the signer needs to use the old version of
-    # verity to generate legacy verity kernel parameters. If we find it,
-    # we use it.
-    type -P "verity-old" &>/dev/null && verity_bin="verity-old"
-  else
-    # Key-value parameters.
-    rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
-    verity_depth=0
-    verity_algorithm=$(get_verity_arg "${vroot_dev}" alg)
-    root_dev=$(get_verity_arg "${vroot_dev}" payload)
-    hash_dev=$(get_verity_arg "${vroot_dev}" hashtree)
-    salt=$(get_verity_arg "${vroot_dev}" salt)
-  fi
+  # Extract the key-value parameters from the kernel command line.
+  local rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
+  local verity_depth=0
+  local verity_algorithm=$(get_verity_arg "${vroot_dev}" alg)
+  local root_dev=$(get_verity_arg "${vroot_dev}" payload)
+  local hash_dev=$(get_verity_arg "${vroot_dev}" hashtree)
 
   local salt_arg
   if [ -n "$salt" ]; then
@@ -211,7 +190,7 @@ calculate_rootfs_hash() {
   fi
 
   # Run the verity tool on the rootfs partition.
-  local slave=$(sudo ${verity_bin} mode=create \
+  local slave=$(sudo verity mode=create \
     alg=${verity_algorithm} \
     payload="${rootfs_image}" \
     payload_blocks=$((rootfs_sectors / 8)) \
