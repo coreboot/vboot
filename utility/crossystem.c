@@ -58,6 +58,8 @@ const Param sys_param_list[] = {
   {"ecfw_act", IS_STRING, "Active EC firmware"},
   {"enable_alt_os_request", CAN_WRITE,
    "Enable AltOS mode on next boot (writable)"},
+  {"post_ec_sync_delay", CAN_WRITE,
+   "Short delay after EC software sync (persistent, writable)"},
   {"fmap_base", 0, "Main firmware flashmap physical address", "0x%08x"},
   {"fwb_tries", CAN_WRITE, "Try firmware B count (writable)"},
   {"fw_vboot2", 0, "1 if firmware was selected by vboot2 or 0 otherwise"},

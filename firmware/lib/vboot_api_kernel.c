@@ -406,6 +406,25 @@ static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
 	shared->timer_vb_select_and_load_kernel_exit = VbExGetTimer();
 }
 
+VbError_t vb2_post_ec_sync_hooks(struct vb2_context *ctx,
+				 VbCommonParams *cparams) {
+	/*
+	 * Pause for any events to be sent to EC-RW, after it is guaranteed
+	 * to be running.  Can be used for simulating boot hotkeys.
+	 *
+	 * TODO(b/117140648): Accept keyboard input to skip/disable the delay.
+	 */
+	const int post_ec_sync_delay_msec = 5 * 1000;
+	if (vb2_nv_get(ctx, VB2_NV_POST_EC_SYNC_DELAY)) {
+		VB2_DEBUG("vb2_post_ec_sync_hooks: "
+			  "post_ec_sync_delay %d ms...\n",
+			  post_ec_sync_delay_msec);
+		VbExSleepMs(post_ec_sync_delay_msec);
+	}
+
+	return VBERROR_SUCCESS;
+}
+
 int VbAltOSForceChromeOS(void) {
 	return 0;
 }
@@ -519,9 +538,13 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 
 	/*
 	 * Do EC software sync if necessary.  This has UI, but it's just a
-	 * single non-interactive WAIT screen.
+	 * single non-interactive WAIT screen.  Perform any post-EC software
+	 * sync hooks, if early interaction with EC-RW is necessary.
 	 */
 	retval = ec_sync_all(&ctx, cparams);
+	if (retval)
+		goto VbSelectAndLoadKernel_exit;
+	retval = vb2_post_ec_sync_hooks(&ctx, cparams);
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 

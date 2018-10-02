@@ -67,6 +67,7 @@
 #define MISC_BATTERY_CUTOFF_REQUEST	0x08
 #define MISC_ENABLE_ALT_OS_REQUEST      0x10
 #define MISC_DISABLE_ALT_OS_REQUEST     0x20
+#define MISC_POST_EC_SYNC_DELAY         0x40
 
 #define KERNEL_FIELD_OFFSET         11
 #define CRC_OFFSET                  15
@@ -246,6 +247,11 @@ int VbNvGet(VbNvContext *context, VbNvParam param, uint32_t *dest)
 
 	case VBNV_DISABLE_ALT_OS_REQUEST:
 		*dest = (raw[MISC_OFFSET] & MISC_DISABLE_ALT_OS_REQUEST)
+			 ?  1 : 0;
+		return 0;
+
+	case VBNV_POST_EC_SYNC_DELAY:
+		*dest = (raw[MISC_OFFSET] & MISC_POST_EC_SYNC_DELAY)
 			 ?  1 : 0;
 		return 0;
 
@@ -493,6 +499,13 @@ int VbNvSet(VbNvContext *context, VbNvParam param, uint32_t value)
 			raw[MISC_OFFSET] |= MISC_DISABLE_ALT_OS_REQUEST;
 		else
 			raw[MISC_OFFSET] &= ~MISC_DISABLE_ALT_OS_REQUEST;
+		break;
+
+	case VBNV_POST_EC_SYNC_DELAY:
+		if (value)
+			raw[MISC_OFFSET] |= MISC_POST_EC_SYNC_DELAY;
+		else
+			raw[MISC_OFFSET] &= ~MISC_POST_EC_SYNC_DELAY;
 		break;
 
 	default:

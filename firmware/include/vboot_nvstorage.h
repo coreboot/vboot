@@ -128,6 +128,11 @@ typedef enum VbNvParam {
 	VBNV_ENABLE_ALT_OS_REQUEST,
 	/* Disable AltOS Mode on next boot. */
 	VBNV_DISABLE_ALT_OS_REQUEST,
+	/*
+	 * Add a short delay after EC software sync for any interaction
+	 * with EC-RW (persistent).
+	 */
+	VBNV_POST_EC_SYNC_DELAY,
 } VbNvParam;
 
 /* Set default boot in developer mode */

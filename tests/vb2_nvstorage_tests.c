@@ -58,6 +58,7 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_TRY_RO_SYNC, 0, 1, 0, "try read only software sync"},
 	{VB2_NV_ENABLE_ALT_OS_REQUEST, 0, 1, 0, "enable alt-os request"},
 	{VB2_NV_DISABLE_ALT_OS_REQUEST, 0, 1, 0, "disable alt-os request"},
+	{VB2_NV_POST_EC_SYNC_DELAY, 0, 1, 0, "enable post-ec sync delay"},
 	{0, 0, 0, 0, NULL}
 };
 

@@ -181,6 +181,10 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 
 	case VB2_NV_DISABLE_ALT_OS_REQUEST:
 		return GETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_DISABLE_ALT_OS);
+
+	case VB2_NV_POST_EC_SYNC_DELAY:
+		return GETBIT(VB2_NV_OFFS_MISC,
+			      VB2_NV_MISC_POST_EC_SYNC_DELAY);
 	}
 
 	/*
@@ -369,6 +373,10 @@ void vb2_nv_set(struct vb2_context *ctx,
 
 	case VB2_NV_DISABLE_ALT_OS_REQUEST:
 		SETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_DISABLE_ALT_OS);
+		break;
+
+	case VB2_NV_POST_EC_SYNC_DELAY:
+		SETBIT(VB2_NV_OFFS_MISC, VB2_NV_MISC_POST_EC_SYNC_DELAY);
 		break;
 	}
 
