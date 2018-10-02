@@ -577,6 +577,8 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST);
 	} else if (!strcasecmp(name, "disable_alt_os_request")) {
 		value = vb2_get_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST);
+	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
+		value = vb2_get_nv_storage(VB2_NV_POST_EC_SYNC_DELAY);
 	}
 
 	return value;
@@ -737,6 +739,8 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST, value);
 	} else if (!strcasecmp(name, "disable_alt_os_request")) {
 		return vb2_set_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST, value);
+	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
+		return vb2_set_nv_storage(VB2_NV_POST_EC_SYNC_DELAY, value);
 	}
 
 	return -1;

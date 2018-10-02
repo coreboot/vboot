@@ -119,6 +119,12 @@ enum vb2_nv_param {
 	VB2_NV_ENABLE_ALT_OS_REQUEST,
 	/* Disable AltOS Mode on next boot. */
 	VB2_NV_DISABLE_ALT_OS_REQUEST,
+	/*
+	 * Add a short delay after EC software sync for any interaction
+	 * with EC-RW (persistent).  Currently used on eve for programmatically
+	 * testing Alt OS booting.
+	 */
+	VB2_NV_POST_EC_SYNC_DELAY,
 };
 
 /* Set default boot in developer mode */
