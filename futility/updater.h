@@ -17,6 +17,8 @@ extern int debugging_enabled;
 	"DEBUG: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__); } while (0)
 #define ERROR(format, ...) fprintf(stderr, \
 	"ERROR: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__)
+#define ASPRINTF(strp, ...) do { if (asprintf(strp, __VA_ARGS__) >= 0) break; \
+	ERROR("Failed to allocate memory, abort."); exit(1); } while (0)
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",

@@ -237,12 +237,10 @@ static const char *extract_cbfs_file(struct updater_config *cfg,
 	const char *output = create_temp_file(cfg);
 	char *command, *result;
 
-	if (asprintf(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
-		     "-f \"%s\" 2>&1", image_file, cbfs_region,
-		     cbfs_name, output) < 0) {
-		ERROR("Failed to allocate internal buffer.");
-		return NULL;
-	}
+	ASPRINTF(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
+		 "-f \"%s\" 2>&1", image_file, cbfs_region,
+		 cbfs_name, output);
+
 	result = host_shell(command);
 	free(command);
 
@@ -285,15 +283,12 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 		return -1;
 
 	/* crosreview.com/1165109: The offset is fixed at 0x1bf000. */
-	if (asprintf(&command,
-		     "cbfstool \"%s\" remove -r %s -n \"%s\" 2>/dev/null; "
-		     "cbfstool \"%s\" add -r %s -n \"%s\" -f \"%s\" "
-		     " -t raw -b 0x1bf000", temp_image, FMAP_RW_LEGACY,
-		     smm_store_name, temp_image, FMAP_RW_LEGACY,
-		     smm_store_name, old_store) < 0) {
-		ERROR("Failed to allocate internal buffer.");
-		return -1;
-	}
+	ASPRINTF(&command,
+		 "cbfstool \"%s\" remove -r %s -n \"%s\" 2>/dev/null; "
+		 "cbfstool \"%s\" add -r %s -n \"%s\" -f \"%s\" "
+		 " -t raw -b 0x1bf000", temp_image, FMAP_RW_LEGACY,
+		 smm_store_name, temp_image, FMAP_RW_LEGACY,
+		 smm_store_name, old_store);
 	host_shell(command);
 	free(command);
 

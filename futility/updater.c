@@ -283,15 +283,9 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	}
 
 	/* TODO(hungte) In future we should link with flashrom directly. */
-	r = asprintf(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
-		     image_path, programmer, dash_i, section_name, ignore_lock,
-		     postfix);
-
-	if (r == -1) {
-		/* `command` will be not available. */
-		ERROR("Cannot allocate memory for command to execute.");
-		return -1;
-	}
+	ASPRINTF(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
+		 image_path, programmer, dash_i, section_name, ignore_lock,
+		 postfix);
 
 	if (verbose)
 		printf("Executing: %s\n", command);
@@ -1244,12 +1238,9 @@ static int cbfs_file_exists(const char *image_file,
 	char *cmd;
 	int r;
 
-	if (asprintf(&cmd,
-		     "cbfstool '%s' print -r %s 2>/dev/null | grep -q '^%s '",
-		     image_file, section_name, cbfs_entry_name) < 0) {
-		ERROR("Failed to allocate buffer.");
-		return 0;
-	}
+	ASPRINTF(&cmd,
+		 "cbfstool '%s' print -r %s 2>/dev/null | grep -q '^%s '",
+		 image_file, section_name, cbfs_entry_name);
 	r = system(cmd);
 	free(cmd);
 	return !r;
