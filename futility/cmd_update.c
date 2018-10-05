@@ -26,6 +26,7 @@ static struct option const long_opts[] = {
 	{"quirks", 1, NULL, 'f'},
 	{"list-quirks", 0, NULL, 'L'},
 	{"mode", 1, NULL, 'm'},
+	{"manifest", 0, NULL, 'A'},
 	{"factory", 0, NULL, 'Y'},
 	{"force", 0, NULL, 'F'},
 	{"programmer", 1, NULL, 'p'},
@@ -50,6 +51,7 @@ static void print_help(int argc, char *argv[])
 		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"-a, --archive=PATH  \tRead resources from archive\n"
+		"    --manifest      \tPrint out a JSON manifest and exit\n"
 		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
 		"    --list-quirks   \tPrint all available quirks\n"
@@ -75,7 +77,7 @@ static int do_update(int argc, char *argv[])
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0;
 
-	printf(">> Firmware updater started.\n");
+	fprintf(stderr, ">> Firmware updater started.\n");
 	cfg = updater_new_config();
 	assert(cfg);
 
@@ -106,6 +108,8 @@ static int do_update(int argc, char *argv[])
 		case 'm':
 			args.mode = optarg;
 			break;
+		case 'A':
+			args.do_manifest = 1;
 			break;
 		case 'Y':
 			args.is_factory = 1;
@@ -157,7 +161,7 @@ static int do_update(int argc, char *argv[])
 	}
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args);
-	if (!errorcnt) {
+	if (!errorcnt && !args.do_manifest) {
 		int r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
 			r = Min(r, UPDATE_ERR_UNKNOWN);
@@ -165,9 +169,9 @@ static int do_update(int argc, char *argv[])
 			errorcnt++;
 		}
 	}
-	printf(">> %s: Firmware updater %s.\n",
-	       errorcnt ? "FAILED": "DONE",
-	       errorcnt ? "stopped due to error" : "exited successfully");
+	fprintf(stderr, ">> %s: Firmware updater %s.\n",
+		errorcnt ? "FAILED": "DONE",
+		errorcnt ? "stopped due to error" : "exited successfully");
 
 	updater_delete_config(cfg);
 	return !!errorcnt;

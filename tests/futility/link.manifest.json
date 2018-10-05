@@ -1,0 +1,6 @@
+{
+  "default": {
+    "host": { "versions": { "ro": "Google_Link.2695.1.133", "rw": "Google_Link.2695.1.133" },
+      "image": "bios.bin" }
+  }
+}

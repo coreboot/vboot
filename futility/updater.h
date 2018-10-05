@@ -118,6 +118,20 @@ struct updater_config_arguments {
 	int verbosity;
 };
 
+struct model_config {
+	char *name;
+	char *image, *ec_image, *pd_image;
+	char *signature_id;
+};
+
+struct manifest {
+	int num;
+	int default_model;
+	int has_keyset;
+	struct model_config *models;
+	struct archive *archive;
+};
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -264,5 +278,17 @@ int archive_has_entry(struct archive *ar, const char *name);
  */
 int archive_read_file(struct archive *ar, const char *fname,
 		      uint8_t **data, uint32_t *size);
+
+/*
+ * Creates a new manifest object by scanning files in archive.
+ * Returns the manifest on success, otherwise NULL for failure.
+ */
+struct manifest *new_manifest_from_archive(struct archive *archive);
+
+/* Releases all resources allocated by given manifest object. */
+void delete_manifest(struct manifest *manifest);
+
+/* Prints the information of objects in manifest (models and images) in JSON. */
+void print_json_manifest(const struct manifest *manifest);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */
