@@ -109,6 +109,15 @@ struct updater_config {
 	const char *emulation;
 };
 
+struct updater_config_arguments {
+	char *image, *ec_image, *pd_image;
+	char *archive, *quirks, *mode;
+	char *programmer, *model;
+	char *emulation, *sys_props, *write_protection;
+	int is_factory, try_update, force_update, do_manifest;
+	int verbosity;
+};
+
 enum updater_error_codes {
 	UPDATE_ERR_DONE,
 	UPDATE_ERR_NEED_RO_UPDATE,
@@ -151,20 +160,7 @@ void updater_delete_config(struct updater_config *cfg);
  * Returns number of failures, or 0 on success.
  */
 int updater_setup_config(struct updater_config *cfg,
-			  const char *image,
-			  const char *ec_image,
-			  const char *pd_image,
-			  const char *archive,
-			  const char *quirks,
-			  const char *mode,
-			  const char *programmer,
-			  const char *emulation,
-			  const char *sys_props,
-			  const char *write_protection,
-			  int is_factory,
-			  int try_update,
-			  int force_update,
-			  int verbosity);
+			 const struct updater_config_arguments *arg);
 
 /* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg);

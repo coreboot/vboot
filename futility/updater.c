@@ -1631,60 +1631,112 @@ static int save_from_stdin(const char *output)
 }
 
 /*
+ * Loads images into updater configuration.
+ * Returns 0 on success, otherwise number of failures.
+ */
+static int updater_load_images(struct updater_config *cfg,
+			       const char *image,
+			       const char *ec_image,
+			       const char *pd_image)
+{
+	int errorcnt = 0;
+	struct archive *ar = cfg->archive;
+
+	if (!cfg->image.data && image) {
+		if (image && strcmp(image, "-") == 0) {
+			fprintf(stderr, "Reading image from stdin...\n");
+			image = updater_create_temp_file(cfg);
+			if (image)
+				errorcnt += !!save_from_stdin(image);
+		}
+		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
+	}
+	if (cfg->emulation)
+		return errorcnt;
+
+	if (!cfg->ec_image.data && ec_image)
+		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
+	if (!cfg->pd_image.data && pd_image)
+		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image, ar);
+	return errorcnt;
+}
+
+/*
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
  */
 int updater_setup_config(struct updater_config *cfg,
-			 const char *image,
-			 const char *ec_image,
-			 const char *pd_image,
-			 const char *archive,
-			 const char *quirks,
-			 const char *mode,
-			 const char *programmer,
-			 const char *emulation,
-			 const char *sys_props,
-			 const char *write_protection,
-			 int is_factory,
-			 int try_update,
-			 int force_update,
-			 int verbosity)
+			 const struct updater_config_arguments *arg)
 {
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
 	const char *default_quirks = NULL;
-	struct archive *ar;
+	int is_factory = arg->is_factory;
+	const char *archive_path = arg->archive;
 
-	cfg->verbosity = verbosity;
-
-	cfg->archive = archive_open(archive ? archive : ".");
-	if (!cfg->archive) {
-		ERROR("Failed to open archive: %s", archive);
-		return ++errorcnt;
-	}
-	ar = cfg->archive;
-
-	if (try_update)
-		cfg->try_update = 1;
-	if (force_update)
+	/* Setup values that may change output or decision of other argument. */
+	cfg->verbosity = arg->verbosity;
+	if (arg->force_update)
 		cfg->force_update = 1;
 
-	if (sys_props)
-		override_properties_from_list(sys_props, cfg);
+	/* Setup update mode. */
+	if (arg->try_update)
+		cfg->try_update = 1;
+	if (arg->mode) {
+		if (strcmp(arg->mode, "autoupdate") == 0) {
+			cfg->try_update = 1;
+		} else if (strcmp(arg->mode, "recovery") == 0) {
+			cfg->try_update = 0;
+		} else if (strcmp(arg->mode, "legacy") == 0) {
+			cfg->legacy_update = 1;
+		} else if (strcmp(arg->mode, "factory") == 0 ||
+			   strcmp(arg->mode, "factory_install") == 0) {
+			is_factory = 1;
+		} else {
+			errorcnt++;
+			ERROR("Invalid mode: %s", arg->mode);
+		}
+	}
+	if (is_factory) {
+		/* is_factory must be processed after arg->mode. */
+		check_wp_disabled = 1;
+		cfg->try_update = 0;
+	}
 
-	if (image && strcmp(image, "-") == 0) {
-		fprintf(stderr, "Reading image from stdin...\n");
-		image = updater_create_temp_file(cfg);
-		if (image)
-			errorcnt += !!save_from_stdin(image);
+	/* Setup properties and fields that do not have external dependency. */
+	if (arg->programmer) {
+		check_single_image = 1;
+		cfg->image.programmer = arg->programmer;
+		cfg->image_current.programmer = arg->programmer;
+		DEBUG("AP (host) programmer changed to %s.", arg->programmer);
 	}
-	if (image) {
-		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
+	if (arg->sys_props)
+		override_properties_from_list(arg->sys_props, cfg);
+	if (arg->write_protection) {
+		/* arg->write_protection must be done after arg->sys_props. */
+		int r = strtol(arg->write_protection, NULL, 0);
+		override_system_property(SYS_PROP_WP_HW, cfg, r);
+		override_system_property(SYS_PROP_WP_SW, cfg, r);
 	}
-	if (ec_image)
-		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
-	if (pd_image)
-		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image, ar);
+
+	/* Set up archive and load images. */
+	if (arg->emulation) {
+		/* Process emulation file first. */
+		check_single_image = 1;
+		cfg->emulation = arg->emulation;
+		DEBUG("Using file %s for emulation.", arg->emulation);
+		errorcnt += !!load_firmware_image(
+				&cfg->image_current, arg->emulation, NULL);
+	}
+	if (!archive_path)
+		archive_path = ".";
+	cfg->archive = archive_open(archive_path);
+	if (!cfg->archive) {
+		ERROR("Failed to open archive: %s", archive_path);
+		return ++errorcnt;
+	}
+	errorcnt += updater_load_images(
+			cfg, arg->image, arg->ec_image, arg->pd_image);
 
 	/*
 	 * Quirks must be loaded after images are loaded because we use image
@@ -1694,47 +1746,8 @@ int updater_setup_config(struct updater_config *cfg,
 	default_quirks = updater_get_default_quirks(cfg);
 	if (default_quirks)
 		errorcnt += !!setup_config_quirks(default_quirks, cfg);
-	if (quirks)
-		errorcnt += !!setup_config_quirks(quirks, cfg);
-
-	if (mode) {
-		if (strcmp(mode, "autoupdate") == 0) {
-			cfg->try_update = 1;
-		} else if (strcmp(mode, "recovery") == 0) {
-			cfg->try_update = 0;
-		} else if (strcmp(mode, "legacy") == 0) {
-			cfg->legacy_update = 1;
-		} else if (strcmp(mode, "factory") == 0 ||
-			   strcmp(mode, "factory_install") == 0) {
-			is_factory = 1;
-		} else {
-			errorcnt++;
-			ERROR("Invalid mode: %s", mode);
-		}
-	}
-	/* Must be checked after mode selection. */
-	if (is_factory) {
-		check_wp_disabled = 1;
-		cfg->try_update = 0;
-	}
-	if (write_protection) {
-		int r = strtol(write_protection, NULL, 0);
-		override_system_property(SYS_PROP_WP_HW, cfg, r);
-		override_system_property(SYS_PROP_WP_SW, cfg, r);
-	}
-	if (programmer) {
-		check_single_image = 1;
-		cfg->image.programmer = programmer;
-		cfg->image_current.programmer = programmer;
-		DEBUG("AP (host) programmer changed to %s.", programmer);
-	}
-	if (emulation) {
-		check_single_image = 1;
-		cfg->emulation = emulation;
-		DEBUG("Using file %s for emulation.", emulation);
-		errorcnt += load_firmware_image(
-				&cfg->image_current, emulation, NULL);
-	}
+	if (arg->quirks)
+		errorcnt += !!setup_config_quirks(arg->quirks, cfg);
 
 	/* Additional checks. */
 	if (check_single_image && (cfg->ec_image.data || cfg->pd_image.data)) {

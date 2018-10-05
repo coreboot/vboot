@@ -71,20 +71,9 @@ static void print_help(int argc, char *argv[])
 
 static int do_update(int argc, char *argv[])
 {
-	const char *opt_image = NULL,
-	           *opt_ec_image = NULL,
-		   *opt_pd_image = NULL,
-		   *opt_archive = NULL,
-		   *opt_quirks = NULL,
-		   *opt_mode = NULL,
-		   *opt_programmer = NULL,
-		   *opt_emulation = NULL,
-		   *opt_sys_props = NULL,
-		   *opt_write_protection = NULL;
-	int opt_is_factory = 0, opt_try_update = 0, opt_force_update = 0,
-	    opt_verbosity = 0;
-	int i, errorcnt = 0;
 	struct updater_config *cfg;
+	struct updater_config_arguments args = {0};
+	int i, errorcnt = 0;
 
 	printf(">> Firmware updater started.\n");
 	cfg = updater_new_config();
@@ -94,53 +83,54 @@ static int do_update(int argc, char *argv[])
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
 		switch (i) {
 		case 'i':
-			opt_image = optarg;
+			args.image = optarg;
 			break;
 		case 'e':
-			opt_ec_image = optarg;
+			args.ec_image = optarg;
 			break;
 		case 'P':
-			opt_pd_image = optarg;
+			args.pd_image = optarg;
 			break;
 		case 't':
-			opt_try_update = 1;
+			args.try_update = 1;
 			break;
 		case 'a':
-			opt_archive = optarg;
+			args.archive = optarg;
 			break;
 		case 'f':
-			opt_quirks = optarg;
+			args.quirks = optarg;
 			break;
 		case 'L':
 			updater_list_config_quirks(cfg);
 			return 0;
 		case 'm':
-			opt_mode = optarg;
+			args.mode = optarg;
+			break;
 			break;
 		case 'Y':
-			opt_is_factory = 1;
+			args.is_factory = 1;
 			break;
 		case 'W':
-			opt_write_protection = optarg;
+			args.write_protection = optarg;
 			break;
 		case 'E':
-			opt_emulation = optarg;
+			args.emulation = optarg;
 			break;
 		case 'p':
-			opt_programmer = optarg;
+			args.programmer = optarg;
 			break;
 		case 'F':
-			opt_force_update = 1;
+			args.force_update = 1;
 			break;
 		case 'S':
-			opt_sys_props = optarg;
+			args.sys_props = optarg;
 			break;
 		case 'v':
-			opt_verbosity++;
+			args.verbosity++;
 			break;
 		case 'd':
 			debugging_enabled = 1;
-			opt_verbosity++;
+			args.verbosity++;
 			break;
 
 		case 'h':
@@ -166,13 +156,7 @@ static int do_update(int argc, char *argv[])
 		Error("Unexpected arguments.\n");
 	}
 	if (!errorcnt)
-		errorcnt += updater_setup_config(
-				cfg, opt_image, opt_ec_image, opt_pd_image,
-				opt_archive, opt_quirks, opt_mode,
-				opt_programmer, opt_emulation, opt_sys_props,
-				opt_write_protection, opt_is_factory,
-				opt_try_update, opt_force_update,
-				opt_verbosity);
+		errorcnt += updater_setup_config(cfg, &args);
 	if (!errorcnt) {
 		int r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
