@@ -28,6 +28,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RO_VPD = "RO_VPD",
 		  * const FMAP_RW_VPD = "RW_VPD",
 		  * const FMAP_RW_VBLOCK_A = "VBLOCK_A",
+		  * const FMAP_RW_VBLOCK_B = "VBLOCK_B",
 		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
 		  * const FMAP_RW_SECTION_B = "RW_SECTION_B",
 		  * const FMAP_RW_FWID = "RW_FWID",
@@ -118,9 +119,16 @@ struct updater_config_arguments {
 	int verbosity;
 };
 
+struct patch_config {
+	char *rootkey;
+	char *vblock_a;
+	char *vblock_b;
+};
+
 struct model_config {
 	char *name;
 	char *image, *ec_image, *pd_image;
+	struct patch_config patches;
 	char *signature_id;
 };
 
@@ -241,6 +249,13 @@ int get_system_property(enum system_property_type property_type,
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
  */
 const char * const updater_get_default_quirks(struct updater_config *cfg);
+
+/*
+ * Finds the GBB (Google Binary Block) header on a given firmware image.
+ * Returns a pointer to valid GBB header, or NULL on not found.
+ */
+struct vb2_gbb_header;
+const struct vb2_gbb_header *find_gbb(const struct firmware_image *image);
 
 /*
  * Executes a command on current host and returns stripped command output.

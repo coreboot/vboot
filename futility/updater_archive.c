@@ -20,6 +20,7 @@
 
 #include "host_misc.h"
 #include "updater.h"
+#include "util_misc.h"
 #include "vb2_common.h"
 
 /*
@@ -428,6 +429,141 @@ static int model_config_parse_setvars_file(
 }
 
 /*
+ * Changes the rootkey in firmware GBB to given new key.
+ * Returns 0 on success, otherwise failure.
+ */
+static int change_gbb_rootkey(struct firmware_image *image,
+			      const char *section_name,
+			      const uint8_t *rootkey, uint32_t rootkey_len)
+{
+	const struct vb2_gbb_header *gbb = find_gbb(image);
+	uint8_t *gbb_rootkey;
+	if (!gbb) {
+		ERROR("Cannot find GBB in image %s.", image->file_name);
+		return -1;
+	}
+	if (gbb->rootkey_size < rootkey_len) {
+		ERROR("New root key (%u bytes) larger than GBB (%u bytes).",
+		      rootkey_len, gbb->rootkey_size);
+		return -1;
+	}
+
+	gbb_rootkey = (uint8_t *)gbb + gbb->rootkey_offset;
+	/* See cmd_gbb_utility: root key must be first cleared with zero. */
+	memset(gbb_rootkey, 0, gbb->rootkey_size);
+	memcpy(gbb_rootkey, rootkey, rootkey_len);
+	return 0;
+}
+
+/*
+ * Changes the VBlock in firmware section to new data.
+ * Returns 0 on success, otherwise failure.
+ */
+static int change_vblock(struct firmware_image *image, const char *section_name,
+			 const uint8_t *vblock, uint32_t vblock_len)
+{
+	struct firmware_section section;
+
+	find_firmware_section(&section, image, section_name);
+	if (!section.data) {
+		ERROR("Need section %s in image %s.", section_name,
+		      image->file_name);
+		return -1;
+	}
+	if (section.size < vblock_len) {
+		ERROR("Section %s too small (%zu bytes) for vblock (%u bytes).",
+		      section_name, section.size, vblock_len);
+		return -1;
+	}
+	memcpy(section.data, vblock, vblock_len);
+	return 0;
+}
+
+/*
+ * Applies a key file to firmware image.
+ * Returns 0 on success, otherwise failure.
+ */
+static int apply_key_file(
+		struct firmware_image *image, const char *path,
+		struct archive *archive, const char *section_name,
+		int (*apply)(struct firmware_image *image, const char *section,
+			     const uint8_t *data, uint32_t len))
+{
+	int r = 0;
+	uint8_t *data = NULL;
+	uint32_t len;
+
+	r = archive_read_file(archive, path, &data, &len);
+	if (r == 0) {
+		DEBUG("Loaded file: %s", path);
+		r = apply(image, section_name, data, len);
+		if (r)
+			ERROR("Failed applying %s to %s", path, section_name);
+	} else {
+		ERROR("Failed reading: %s", path);
+	}
+	free(data);
+	return r;
+}
+
+/*
+ * Modifies a firmware image from patch information specified in model config.
+ * Returns 0 on success, otherwise number of failures.
+ */
+static int patch_image_by_model(
+		struct firmware_image *image, const struct model_config *model,
+		struct archive *archive)
+{
+	int err = 0;
+	if (model->patches.rootkey)
+		err += !!apply_key_file(
+				image, model->patches.rootkey, archive,
+				FMAP_RO_GBB, change_gbb_rootkey);
+	if (model->patches.vblock_a)
+		err += !!apply_key_file(
+				image, model->patches.vblock_a, archive,
+				FMAP_RW_VBLOCK_A, change_vblock);
+	if (model->patches.vblock_b)
+		err += !!apply_key_file(
+				image, model->patches.vblock_b, archive,
+				FMAP_RW_VBLOCK_B, change_vblock);
+	return err;
+}
+
+/*
+ * Finds available patch files by given model.
+ * Updates `model` argument with path of patch files.
+ */
+static void find_patches_for_model(struct model_config *model,
+				   struct archive *archive,
+				   const char *signature_id)
+{
+	char *path;
+	int i;
+
+	const char *names[] = {
+		"rootkey",
+		"vblock_A",
+		"vblock_B",
+	};
+
+	char **targets[] = {
+		&model->patches.rootkey,
+		&model->patches.vblock_a,
+		&model->patches.vblock_b,
+	};
+
+	assert(ARRAY_SIZE(names) == ARRAY_SIZE(targets));
+	for (i = 0; i < ARRAY_SIZE(names); i++) {
+		ASPRINTF(&path, "%s/%s.%s", DIR_KEYSET, names[i], signature_id);
+		if (archive_has_entry(archive, path))
+			*targets[i] = path;
+		else
+			free(path);
+	}
+}
+
+/*
  * Adds and copies one new model config to the existing list of given manifest.
  * Returns a pointer to the newly allocated config, or NULL on failure.
  */
@@ -487,6 +623,11 @@ static int manifest_scan_entries(const char *name, void *arg)
 		free(model.pd_image);
 		model.pd_image = NULL;
 	}
+
+	/* Find patch files. */
+	if (model.signature_id)
+		find_patches_for_model(&model, archive, model.signature_id);
+
 	return !manifest_add_model(manifest, &model);
 }
 
@@ -545,25 +686,56 @@ void delete_manifest(struct manifest *manifest)
 		free(model->image);
 		free(model->ec_image);
 		free(model->pd_image);
+		free(model->patches.rootkey);
+		free(model->patches.vblock_a);
+		free(model->patches.vblock_b);
 	}
 	free(manifest->models);
 	free(manifest);
 }
 
+static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
+				    int32_t offset, int32_t size)
+{
+	struct vb2_packed_key *key;
+
+	if (!gbb)
+		return "<No GBB>";
+	key = (struct vb2_packed_key *)((uint8_t *)gbb + offset);
+	if (!packed_key_looks_ok(key, size))
+	    return "<Invalid key>";
+	return packed_key_sha1_string(key);
+}
+
 /* Prints the information of given image file in JSON format. */
 static void print_json_image(
-		const char *name, const char *fpath, struct archive *archive,
-		int indent, int is_host)
+		const char *name, const char *fpath, struct model_config *m,
+		struct archive *archive, int indent, int is_host)
 {
 	struct firmware_image image = {0};
+	const struct vb2_gbb_header *gbb = NULL;
 	if (!fpath)
 		return;
 	load_firmware_image(&image, fpath, archive);
-	if (!is_host)
+	if (is_host)
+		gbb = find_gbb(&image);
+	else
 		printf(",\n");
 	printf("%*s\"%s\": { \"versions\": { \"ro\": \"%s\", \"rw\": \"%s\" },",
 	       indent, "", name, image.ro_version, image.rw_version_a);
-	printf("\n%*s\"image\": \"%s\" }", indent + 2, "", fpath);
+	indent += 2;
+	if (is_host && patch_image_by_model(&image, m, archive) != 0) {
+		ERROR("Failed to patch images by model: %s", m->name);
+	} else if (gbb) {
+		printf("\n%*s\"keys\": { \"root\": \"%s\", ",
+		       indent, "",
+		       get_gbb_key_hash(gbb, gbb->rootkey_offset,
+					gbb->rootkey_size));
+		printf("\"recovery\": \"%s\" },",
+		       get_gbb_key_hash(gbb, gbb->recovery_key_offset,
+					gbb->recovery_key_size));
+	}
+	printf("\n%*s\"image\": \"%s\" }", indent, "", fpath);
 	free_firmware_image(&image);
 }
 
@@ -578,9 +750,16 @@ void print_json_manifest(const struct manifest *manifest)
 		struct model_config *m = &manifest->models[i];
 		printf("%s%*s\"%s\": {\n", i ? ",\n" : "", indent, "", m->name);
 		indent += 2;
-		print_json_image("host", m->image, ar, indent, 1);
-		print_json_image("ec", m->ec_image, ar, indent, 0);
-		print_json_image("pd", m->pd_image, ar, indent, 0);
+		print_json_image("host", m->image, m, ar, indent, 1);
+		print_json_image("ec", m->ec_image, m, ar, indent, 0);
+		print_json_image("pd", m->pd_image, m, ar, indent, 0);
+		if (m->patches.rootkey) {
+			struct patch_config *p = &m->patches;
+			printf(",\n%*s\"patches\": { \"rootkey\": \"%s\", "
+			       "\"vblock_a\": \"%s\", \"vblock_b\": \"%s\" }",
+			       indent, "", p->rootkey, p->vblock_a,
+			       p->vblock_b);
+		}
 		if (m->signature_id)
 			printf(",\n%*s\"signature_id\": \"%s\"", indent, "",
 			       m->signature_id);
