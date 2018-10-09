@@ -53,12 +53,12 @@ static int write_image(const char *file_path, struct firmware_image *image)
 }
 
 /* Preserves meta data and reload image contents from given file path. */
-static int reload_image(const char *file_path, struct firmware_image *image)
+static int reload_firmware_image(const char *file_path, struct firmware_image *image)
 {
 	const char *programmer = image->programmer;
-	free_image(image);
+	free_firmware_image(image);
 	image->programmer = programmer;
-	return load_image(file_path, image);
+	return load_firmware_image(image, file_path);
 }
 
 /*
@@ -78,7 +78,7 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	if (image_from->size <= image_to->size)
 		return 0;
 
-	tmp_path = create_temp_file(cfg);
+	tmp_path = updater_create_temp_file(cfg);
 	if (!tmp_path)
 		return -1;
 
@@ -93,7 +93,7 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	while (to_write-- > 0)
 		fputc('\xff', fp);
 	fclose(fp);
-	return reload_image(tmp_path, image_to);
+	return reload_firmware_image(tmp_path, image_to);
 }
 
 /*
@@ -212,7 +212,7 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		cfg->image.rw_version_a = strdup(cfg->image.rw_version_b);
 		/* Need to use RO from current system. */
 		if (!cfg->image_current.data &&
-		    load_system_image(cfg, &cfg->image_current) != 0) {
+		    load_system_firmware(cfg, &cfg->image_current) != 0) {
 			ERROR("Cannot get system RO contents");
 			return -1;
 		}
@@ -234,7 +234,7 @@ static const char *extract_cbfs_file(struct updater_config *cfg,
 				     const char *cbfs_region,
 				     const char *cbfs_name)
 {
-	const char *output = create_temp_file(cfg);
+	const char *output = updater_create_temp_file(cfg);
 	char *command, *result;
 
 	ASPRINTF(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
@@ -263,7 +263,7 @@ static const char *extract_cbfs_file(struct updater_config *cfg,
 static int quirk_eve_smm_store(struct updater_config *cfg)
 {
 	const char *smm_store_name = "smm store";
-	const char *temp_image = create_temp_file(cfg);
+	const char *temp_image = updater_create_temp_file(cfg);
 	const char *old_store;
 	char *command;
 
@@ -292,7 +292,7 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	host_shell(command);
 	free(command);
 
-	return reload_image(temp_image, &cfg->image);
+	return reload_firmware_image(temp_image, &cfg->image);
 }
 
 /*

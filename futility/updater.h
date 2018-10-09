@@ -172,10 +172,10 @@ void updater_list_config_quirks(const struct updater_config *cfg);
 void updater_register_quirks(struct updater_config *cfg);
 
 /*
- * Helper function to create a new temporary file.
+ * Helper function to create a new temporary file within updater's life cycle.
  * Returns the path of new file, or NULL on failure.
  */
-const char *create_temp_file(struct updater_config *cfg);
+const char *updater_create_temp_file(struct updater_config *cfg);
 
 /*
  * Finds a firmware section by given name in the firmware image.
@@ -199,16 +199,17 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 			      const char *section_name);
 
 /* Loads a firmware image from file. Returns 0 on success, otherwise failure. */
-int load_image(const char *file_name, struct firmware_image *image);
+int load_firmware_image(struct firmware_image *image, const char *file_name);
 
 /*
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-int load_system_image(struct updater_config *cfg, struct firmware_image *image);
+int load_system_firmware(struct updater_config *cfg,
+			 struct firmware_image *image);
 
 /* Frees the allocated resource from a firmware image object. */
-void free_image(struct firmware_image *image);
+void free_firmware_image(struct firmware_image *image);
 
 /* Gets the value (setting) of specified quirks from updater configuration. */
 int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg);

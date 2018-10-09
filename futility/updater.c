@@ -66,10 +66,10 @@ enum flashrom_ops {
 
 /*
  * Helper function to create a new temporary file.
- * All files created will be removed by function remove_all_temp_files().
+ * All files created will be removed by updater_remove_all_temp_files().
  * Returns the path of new file, or NULL on failure.
  */
-const char *create_temp_file(struct updater_config *cfg)
+const char *updater_create_temp_file(struct updater_config *cfg)
 {
 	struct tempfile *new_temp;
 	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
@@ -100,7 +100,7 @@ const char *create_temp_file(struct updater_config *cfg)
  * Helper function to remove all files created by create_temp_file().
  * This is intended to be called only once at end of program execution.
  */
-static void remove_all_temp_files(struct updater_config *cfg)
+static void updater_remove_all_temp_files(struct updater_config *cfg)
 {
 	struct tempfile *tempfiles = cfg->tempfiles;
 	while (tempfiles != NULL) {
@@ -579,7 +579,7 @@ static int load_firmware_version(struct firmware_image *image,
  * Loads a firmware image from file.
  * Returns 0 on success, otherwise failure.
  */
-int load_image(const char *file_name, struct firmware_image *image)
+int load_firmware_image(struct firmware_image *image, const char *file_name)
 {
 	DEBUG("Load image file from %s...", file_name);
 
@@ -623,22 +623,22 @@ int load_image(const char *file_name, struct firmware_image *image)
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-int load_system_image(struct updater_config *cfg, struct firmware_image *image)
+int load_system_firmware(struct updater_config *cfg, struct firmware_image *image)
 {
-	const char *tmp_file = create_temp_file(cfg);
+	const char *tmp_file = updater_create_temp_file(cfg);
 
 	if (!tmp_file)
 		return -1;
 	RETURN_ON_FAILURE(host_flashrom(
 			FLASHROM_READ, tmp_file, image->programmer,
 			cfg->verbosity, NULL));
-	return load_image(tmp_file, image);
+	return load_firmware_image(image, tmp_file);
 }
 
 /*
  * Frees the allocated resource from a firmware image object.
  */
-void free_image(struct firmware_image *image)
+void free_firmware_image(struct firmware_image *image)
 {
 	free(image->data);
 	free(image->file_name);
@@ -734,7 +734,7 @@ static int emulate_write_firmware(const char *filename,
 	from.data = image->data;
 	from.size = image->size;
 
-	if (load_image(filename, &to_image)) {
+	if (load_firmware_image(&to_image, filename)) {
 		ERROR("Cannot load image from %s.", filename);
 		return -1;
 	}
@@ -776,7 +776,7 @@ static int emulate_write_firmware(const char *filename,
 		errorcnt++;
 	}
 
-	free_image(&to_image);
+	free_firmware_image(&to_image);
 	return errorcnt;
 }
 
@@ -789,7 +789,7 @@ static int write_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char *section_name)
 {
-	const char *tmp_file = create_temp_file(cfg);
+	const char *tmp_file = updater_create_temp_file(cfg);
 	const char *programmer = image->programmer;
 
 	if (!tmp_file)
@@ -1525,7 +1525,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		 * RO_VPD, RW_VPD, RW_NVRAM, RW_LEGACY.
 		 */
 		printf("Loading current system firmware...\n");
-		if (load_system_image(cfg, image_from) != 0)
+		if (load_system_firmware(cfg, image_from) != 0)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
 	printf(">> Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
@@ -1653,17 +1653,17 @@ int updater_setup_config(struct updater_config *cfg,
 
 	if (image && strcmp(image, "-") == 0) {
 		fprintf(stderr, "Reading image from stdin...\n");
-		image = create_temp_file(cfg);
+		image = updater_create_temp_file(cfg);
 		if (image)
 			errorcnt += !!save_from_stdin(image);
 	}
 	if (image) {
-		errorcnt += !!load_image(image, &cfg->image);
+		errorcnt += !!load_firmware_image(&cfg->image, image);
 	}
 	if (ec_image)
-		errorcnt += !!load_image(ec_image, &cfg->ec_image);
+		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image);
 	if (pd_image)
-		errorcnt += !!load_image(pd_image, &cfg->pd_image);
+		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image);
 
 	/*
 	 * Quirks must be loaded after images are loaded because we use image
@@ -1711,7 +1711,7 @@ int updater_setup_config(struct updater_config *cfg,
 		check_single_image = 1;
 		cfg->emulation = emulation;
 		DEBUG("Using file %s for emulation.", emulation);
-		errorcnt += load_image(emulation, &cfg->image_current);
+		errorcnt += load_firmware_image(&cfg->image_current, emulation);
 	}
 
 	/* Additional checks. */
@@ -1732,10 +1732,10 @@ int updater_setup_config(struct updater_config *cfg,
 void updater_delete_config(struct updater_config *cfg)
 {
 	assert(cfg);
-	free_image(&cfg->image);
-	free_image(&cfg->image_current);
-	free_image(&cfg->ec_image);
-	free_image(&cfg->pd_image);
-	remove_all_temp_files(cfg);
+	free_firmware_image(&cfg->image);
+	free_firmware_image(&cfg->image_current);
+	free_firmware_image(&cfg->ec_image);
+	free_firmware_image(&cfg->pd_image);
+	updater_remove_all_temp_files(cfg);
 	free(cfg);
 }
