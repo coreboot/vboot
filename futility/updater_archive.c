@@ -7,6 +7,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <fts.h>
 #include <string.h>
 #include <stdio.h>
@@ -363,6 +364,19 @@ int archive_read_file(struct archive *ar, const char *fname,
  * -- End of archive implementations --
  */
 
+/* Utility function to convert a string to all lowercase. */
+static void str_tolower(char *s)
+{
+	int c;
+
+	for (; *s; s++) {
+		c = *s;
+		if (!isascii(c) || !isalpha(c))
+			continue;
+		*s = tolower(c);
+	}
+}
+
 /* Returns 1 if name ends by given pattern, otherwise 0. */
 static int str_endswith(const char *name, const char *pattern)
 {
@@ -647,6 +661,7 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 	manifest.default_model = -1;
 	archive_walk(archive, &manifest, manifest_scan_entries);
 	if (manifest.num == 0) {
+		struct firmware_image image = {0};
 		/* Try to load from current folder. */
 		if (!archive_has_entry(archive, image_name))
 			return 0;
@@ -655,7 +670,19 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 			model.ec_image = strdup(ec_name);
 		if (archive_has_entry(archive, pd_name))
 			model.pd_image = strdup(pd_name);
-		model.name = strdup(DEFAULT_MODEL_NAME);
+		/* Extract model name from FWID: $Vendor_$Platform.$Version */
+		if (!load_firmware_image(&image, image_name, archive)) {
+			char *token = NULL;
+			if (strtok(image.ro_version, "_"))
+				token = strtok(NULL, ".");
+			if (token && *token) {
+				str_tolower(token);
+				model.name = strdup(token);
+			}
+			free_firmware_image(&image);
+		}
+		if (!model.name)
+			model.name = strdup(DEFAULT_MODEL_NAME);
 		manifest_add_model(&manifest, &model);
 		manifest.default_model = manifest.num - 1;
 	}
