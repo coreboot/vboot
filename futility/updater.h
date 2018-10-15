@@ -135,10 +135,10 @@ struct model_config {
 
 struct manifest {
 	int num;
-	int default_model;
-	int has_keyset;
 	struct model_config *models;
 	struct archive *archive;
+	int default_model;
+	int has_keyset;
 };
 
 enum updater_error_codes {
@@ -183,7 +183,8 @@ void updater_delete_config(struct updater_config *cfg);
  * Returns number of failures, or 0 on success.
  */
 int updater_setup_config(struct updater_config *cfg,
-			 const struct updater_config_arguments *arg);
+			 const struct updater_config_arguments *arg,
+			 int *do_update);
 
 /* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg);
@@ -306,5 +307,21 @@ void delete_manifest(struct manifest *manifest);
 
 /* Prints the information of objects in manifest (models and images) in JSON. */
 void print_json_manifest(const struct manifest *manifest);
+
+/*
+ * Modifies a firmware image from patch information specified in model config.
+ * Returns 0 on success, otherwise number of failures.
+ */
+int patch_image_by_model(
+		struct firmware_image *image, const struct model_config *model,
+		struct archive *archive);
+
+/*
+ * Finds the existing model_config from manifest that best matches current
+ * system (as defined by model_name).
+ * Returns a model_config from manifest, or NULL if not found.
+ */
+const struct model_config *manifest_find_model(const struct manifest *manifest,
+					       const char *model_name);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */

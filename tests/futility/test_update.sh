@@ -294,16 +294,38 @@ test_update "Full update (--quirks min_platform_version)" \
 	--quirks min_platform_version=3 \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
 
-mkdir -p "${TMP}.archive"
-cp -f "${LINK_BIOS}" "${TMP}.archive/bios.bin"
-cp -f "${TO_IMAGE}" "${TMP}.archive/image_in_archive"
-test_update "Full update (--archive)" \
-	"${FROM_IMAGE}" "${TMP}.expected.full" \
-	-a "${TMP}.archive" \
-	-i "image_in_archive" --wp=0 --sys_props 0,0x10001,1,3
+# Test archive and manifest.
+A="${TMP}.archive"
+mkdir -p "${A}"
+cp -f "${LINK_BIOS}" "${A}/bios.bin"
 echo "TEST: Manifest (--manifest)"
-${FUTILITY} update -a "${TMP}.archive" --manifest >"${TMP}.json.out"
+${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
 cmp "${TMP}.json.out" "${SCRIPTDIR}/link.manifest.json"
+
+cp -f "${TO_IMAGE}" "${A}/bios.bin"
+test_update "Full update (--archive, single package)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+rm -f "${A}/bios.bin"
+cp -r "${SCRIPTDIR}/models" "${A}/"
+mkdir -p "${A}/images"
+cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
+cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
+
+cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
+cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
+patch_file ${FROM_IMAGE}.ap FW_MAIN_A 0 "corrupted"
+patch_file ${FROM_IMAGE}.al FW_MAIN_A 0 "corrupted"
+test_update "Full update (--archive, model=link)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=link
+test_update "Full update (--archive, model=peppy)" \
+	"${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=peppy
+test_update "Full update (--archive, model=unknown)" \
+	"${FROM_IMAGE}.ap" "!Model 'unknown' is not defined" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=unknown
 
 # Test special programmer
 if type flashrom >/dev/null 2>&1; then
