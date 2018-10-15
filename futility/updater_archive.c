@@ -65,6 +65,7 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const DIR_KEYSET = "keyset",
 		  * const DIR_MODELS = "models",
 		  * const DEFAULT_MODEL_NAME = "default",
+		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
 		  * const PATH_ENDSWITH_SERVARS = "/setvars.sh";
 
@@ -418,6 +419,9 @@ static int model_config_parse_setvars_file(
 
 	for (line = strtok_r((char *)data, "\n\r", &ptr_line); line;
 	     line = strtok_r(NULL, "\n\r", &ptr_line)) {
+		char *expand_path = NULL;
+		int found_valid = 1;
+
 		/* Format: KEY="value" */
 		k = strtok_r(line, "=", &ptr_token);
 		if (!k)
@@ -425,6 +429,12 @@ static int model_config_parse_setvars_file(
 		v = strtok_r(NULL, "\"", &ptr_token);
 		if (!v)
 			continue;
+
+		/* Some legacy updaters may be still using ${MODEL_DIR}. */
+		if (str_startswith(v, ENV_VAR_MODEL_DIR)) {
+			ASPRINTF(&expand_path, "%s%s%s", "models/", cfg->name,
+				 v + strlen(ENV_VAR_MODEL_DIR));
+		}
 
 		if (strcmp(k, SETVARS_IMAGE_MAIN) == 0)
 			cfg->image = strdup(v);
@@ -435,8 +445,9 @@ static int model_config_parse_setvars_file(
 		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0)
 			cfg->signature_id = strdup(v);
 		else
-			continue;
-		valid++;
+			found_valid = 0;
+		free(expand_path);
+		valid += found_valid;
 	}
 	free(data);
 	return valid == 0;
@@ -524,7 +535,7 @@ static int apply_key_file(
  * Modifies a firmware image from patch information specified in model config.
  * Returns 0 on success, otherwise number of failures.
  */
-static int patch_image_by_model(
+int patch_image_by_model(
 		struct firmware_image *image, const struct model_config *model,
 		struct archive *archive)
 {
@@ -643,6 +654,39 @@ static int manifest_scan_entries(const char *name, void *arg)
 		find_patches_for_model(&model, archive, model.signature_id);
 
 	return !manifest_add_model(manifest, &model);
+}
+
+/*
+ * Finds the existing model_config from manifest that best matches current
+ * system (as defined by model_name).
+ * Returns a model_config from manifest, or NULL if not found.
+ */
+const struct model_config *manifest_find_model(const struct manifest *manifest,
+					       const char *model_name)
+{
+	char *sys_model_name = NULL;
+	const struct model_config *model = NULL;
+	int i;
+
+	/* Match if the manifest has only one package without signature. */
+	if (manifest->num == 1 && !manifest->models[0].signature_id)
+		model = &manifest->models[0];
+
+	if (!model && !model_name) {
+		sys_model_name = host_shell("mosys platform name");
+		DEBUG("System model name: '%s'", sys_model_name);
+		model_name = sys_model_name;
+	}
+
+	for (i = 0; !model && i < manifest->num; i++) {
+		if (strcmp(model_name, manifest->models[i].name) == 0)
+			model = &manifest->models[i];
+	}
+	if (!model)
+		ERROR("Model '%s' is not defined in manifest.", model_name);
+
+	free(sys_model_name);
+	return model;
 }
 
 /*
