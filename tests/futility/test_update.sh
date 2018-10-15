@@ -296,7 +296,10 @@ test_update "Full update (--quirks min_platform_version)" \
 
 # Test archive and manifest.
 A="${TMP}.archive"
-mkdir -p "${A}"
+mkdir -p "${A}/bin"
+echo 'echo "${WL_TAG}"' >"${A}/bin/vpd"
+chmod +x "${A}/bin/vpd"
+
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
 echo "TEST: Manifest (--manifest)"
 ${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
@@ -307,12 +310,41 @@ test_update "Full update (--archive, single package)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
-rm -f "${A}/bios.bin"
+mkdir -p "${A}/keyset"
+cp -f "${LINK_BIOS}" "${A}/bios.bin"
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.WL"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.WL"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.WL"
+${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/bios.bin"
+${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
+${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
+
+test_update "Full update (--archive, whitelabel, no VPD)" \
+	"${A}/bios.bin" "!Need VPD set for white" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+test_update "Full update (--archive, whitelabel, no VPD - factory mode)" \
+	"${LINK_BIOS}" "${A}/bios.bin" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --mode=factory
+
+test_update "Full update (--archive, WL, single package)" \
+	"${A}/bios.bin" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=WL
+
+WL_TAG="WL" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (--archive, WL, fake vpd)" \
+	"${A}/bios.bin" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+# Test archive with Unified Build contents.
 cp -r "${SCRIPTDIR}/models" "${A}/"
 mkdir -p "${A}/images"
+mv "${A}/bios.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
 cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
-
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip-wl"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.whitetip-wl"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.whitetip-wl"
 cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
 cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
 patch_file ${FROM_IMAGE}.ap FW_MAIN_A 0 "corrupted"
@@ -326,6 +358,15 @@ test_update "Full update (--archive, model=peppy)" \
 test_update "Full update (--archive, model=unknown)" \
 	"${FROM_IMAGE}.ap" "!Model 'unknown' is not defined" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=unknown
+test_update "Full update (--archive, model=whitetip, signature_id=WL)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip \
+	--signature_id=whitetip-wl
+
+WL_TAG="wl" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (-a, model=WL, fake VPD)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
 
 # Test special programmer
 if type flashrom >/dev/null 2>&1; then

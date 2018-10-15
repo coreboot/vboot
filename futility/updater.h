@@ -114,7 +114,7 @@ struct updater_config {
 struct updater_config_arguments {
 	char *image, *ec_image, *pd_image;
 	char *archive, *quirks, *mode;
-	char *programmer, *model;
+	char *programmer, *model, *signature_id;
 	char *emulation, *sys_props, *write_protection;
 	int is_factory, try_update, force_update, do_manifest;
 	int verbosity;
@@ -131,6 +131,7 @@ struct model_config {
 	char *image, *ec_image, *pd_image;
 	struct patch_config patches;
 	char *signature_id;
+	int is_white_label;
 };
 
 struct manifest {
@@ -323,5 +324,17 @@ int patch_image_by_model(
  */
 const struct model_config *manifest_find_model(const struct manifest *manifest,
 					       const char *model_name);
+
+/*
+ * Applies white label information to an existing model configuration.
+ * Collects signature ID information from either parameter signature_id or
+ * image file (via VPD) and updates model.patches for key files.
+ * Returns 0 on success, otherwise failure.
+ */
+int model_apply_white_label(
+		struct model_config *model,
+		struct archive *archive,
+		const char *signature_id,
+		const char *image);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */

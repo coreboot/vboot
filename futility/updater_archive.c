@@ -65,6 +65,8 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const DIR_KEYSET = "keyset",
 		  * const DIR_MODELS = "models",
 		  * const DEFAULT_MODEL_NAME = "default",
+		  * const VPD_WHITELABEL_TAG = "whitelabel_tag",
+		  * const VPD_CUSTOMIZATION_ID = "customization_id",
 		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
 		  * const PATH_ENDSWITH_SERVARS = "/setvars.sh";
@@ -365,16 +367,16 @@ int archive_read_file(struct archive *ar, const char *fname,
  * -- End of archive implementations --
  */
 
-/* Utility function to convert a string to all lowercase. */
-static void str_tolower(char *s)
+/* Utility function to convert a string. */
+static void str_convert(char *s, int (*convert)(int c))
 {
 	int c;
 
 	for (; *s; s++) {
 		c = *s;
-		if (!isascii(c) || !isalpha(c))
+		if (!isascii(c))
 			continue;
-		*s = tolower(c);
+		*s = convert(c);
 	}
 }
 
@@ -391,6 +393,23 @@ static int str_endswith(const char *name, const char *pattern)
 static int str_startswith(const char *name, const char *pattern)
 {
 	return strncmp(name, pattern, strlen(pattern)) == 0;
+}
+
+/* Returns the VPD value by given key name, or NULL on error (or no value). */
+static char *vpd_get_value(const char *fpath, const char *key)
+{
+	char *command, *result;
+
+	assert(fpath);
+	ASPRINTF(&command, "vpd -g %s -f %s 2>/dev/null", key, fpath);
+	result = host_shell(command);
+	free(command);
+
+	if (result && !*result) {
+		free(result);
+		result = NULL;
+	}
+	return result;
 }
 
 /*
@@ -442,9 +461,11 @@ static int model_config_parse_setvars_file(
 			cfg->ec_image = strdup(v);
 		else if (strcmp(k, SETVARS_IMAGE_PD) == 0)
 			cfg->pd_image = strdup(v);
-		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0)
+		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0) {
 			cfg->signature_id = strdup(v);
-		else
+			if (str_startswith(v, SIG_ID_IN_VPD_PREFIX))
+				cfg->is_white_label = 1;
+		} else
 			found_valid = 0;
 		free(expand_path);
 		valid += found_valid;
@@ -690,6 +711,65 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 }
 
 /*
+ * Applies white label information to an existing model configuration.
+ * Collects signature ID information from either parameter signature_id or
+ * image file (via VPD) and updates model.patches for key files.
+ * Returns 0 on success, otherwise failure.
+ */
+int model_apply_white_label(
+		struct model_config *model,
+		struct archive *archive,
+		const char *signature_id,
+		const char *image)
+{
+	char *sig_id = NULL;
+	int r = 0;
+
+	if (!signature_id) {
+		int remove_dash = 0, prefix_model = model->signature_id ? 1 : 0;
+		char *wl_tag = vpd_get_value(image, VPD_WHITELABEL_TAG);
+
+		if (!wl_tag) {
+			if (model->signature_id)
+				return -1;
+			wl_tag = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
+			/* customization_id in format LOEM[-VARIANT]. */
+			remove_dash = 1;
+
+		}
+		if (!wl_tag)
+			return 1;
+
+		if (remove_dash) {
+			char *dash = strchr(wl_tag, '-');
+			if (dash)
+				*dash = '\0';
+		}
+		if (!prefix_model)
+			str_convert(wl_tag, toupper);
+
+		sig_id = wl_tag;
+		if (prefix_model)
+			ASPRINTF(&sig_id, "%s-%s", model->name, wl_tag);
+		else
+			wl_tag = NULL;
+		free(wl_tag);
+		signature_id = sig_id;
+	}
+
+	DEBUG("Find white label patches by signature ID: '%s'.", signature_id);
+	find_patches_for_model(model, archive, signature_id);
+	if (!model->patches.rootkey) {
+		ERROR("No keys found for signature_id: '%s'", signature_id);
+		r = 1;
+	} else {
+		printf("Applied for white label: %s\n", signature_id);
+	}
+	free(sig_id);
+	return r;
+}
+
+/*
  * Creates a new manifest object by scanning files in archive.
  * Returns the manifest on success, otherwise NULL for failure.
  */
@@ -720,13 +800,15 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 			if (strtok(image.ro_version, "_"))
 				token = strtok(NULL, ".");
 			if (token && *token) {
-				str_tolower(token);
+				str_convert(token, tolower);
 				model.name = strdup(token);
 			}
 			free_firmware_image(&image);
 		}
 		if (!model.name)
 			model.name = strdup(DEFAULT_MODEL_NAME);
+		if (manifest.has_keyset)
+			model.is_white_label = 1;
 		manifest_add_model(&manifest, &model);
 		manifest.default_model = manifest.num - 1;
 	}
