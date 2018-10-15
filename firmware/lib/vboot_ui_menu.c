@@ -362,6 +362,100 @@ static VbError_t power_off_action(struct vb2_context *ctx)
 	return VBERROR_SHUTDOWN_REQUESTED;
 }
 
+/**
+ * Updates current_menu_idx upon an up/down key press, taking into
+ * account disabled indices (from disabled_idx_mask).  The cursor
+ * will not wrap, meaning that we block on the 0 or max index when
+ * we hit the ends of the menu.
+ *
+ * @param  key      VOL_KEY_UP = increase index selection
+ *                  VOL_KEY_DOWN = decrease index selection.
+ *                  Every other key has no effect now.
+ */
+static void vb2_update_selection(uint32_t key) {
+	int idx;
+
+	switch (key) {
+	case VB_BUTTON_VOL_UP_SHORT_PRESS:
+	case VB_KEY_UP:
+		idx = current_menu_idx - 1;
+		while (idx >= 0 &&
+		       ((1 << idx) & disabled_idx_mask))
+		  idx--;
+		/* Only update if idx is valid */
+		if (idx >= 0)
+			current_menu_idx = idx;
+		break;
+	case VB_BUTTON_VOL_DOWN_SHORT_PRESS:
+	case VB_KEY_DOWN:
+		idx = current_menu_idx + 1;
+		while (idx < menus[current_menu].size &&
+		       ((1 << idx) & disabled_idx_mask))
+		  idx++;
+		/* Only update if idx is valid */
+		if (idx < menus[current_menu].size)
+			current_menu_idx = idx;
+		break;
+	default:
+		VB2_DEBUG("ERROR: %s called with key 0x%x!\n", __func__, key);
+		break;
+	}
+}
+
+static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
+				       uint32_t key, uint32_t key_flags)
+{
+	switch (key) {
+	case 0:
+		/* nothing pressed */
+		break;
+	case '\t':
+		/* Tab = display debug info */
+		return debug_info_action(ctx);
+	case VB_KEY_UP:
+	case VB_KEY_DOWN:
+	case VB_BUTTON_VOL_UP_SHORT_PRESS:
+	case VB_BUTTON_VOL_DOWN_SHORT_PRESS:
+		/* Untrusted (USB keyboard) input disabled for TO_DEV menu. */
+		if (current_menu == VB_MENU_TO_DEV &&
+		    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
+			vb2_flash_screen(ctx);
+			vb2_error_beep();
+			break;
+		}
+
+		/* Menuless screens enter OPTIONS on volume button press. */
+		if (!menus[current_menu].size) {
+			enter_options_menu(ctx);
+			break;
+		}
+
+		vb2_update_selection(key);
+		vb2_draw_current_screen(ctx);
+		break;
+	case VB_BUTTON_POWER_SHORT_PRESS:
+	case '\r':
+		/* Menuless screens shut down on power button press. */
+		if (!menus[current_menu].size)
+			return VBERROR_SHUTDOWN_REQUESTED;
+
+		return menus[current_menu].items[current_menu_idx].action(ctx);
+	default:
+		VB2_DEBUG("pressed key 0x%x\n", key);
+		break;
+	}
+
+	if (VbWantShutdownMenu(ctx)) {
+		VB2_DEBUG("shutdown requested!\n");
+		return VBERROR_SHUTDOWN_REQUESTED;
+	}
+
+	return VBERROR_KEEP_LOOPING;
+}
+
+/* Delay in developer menu */
+#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
+
 /* Master table of all menus. Menus with size == 0 count as menuless screens. */
 static struct vb2_menu menus[VB_MENU_COUNT] = {
 	[VB_MENU_DEV_WARNING] = {
@@ -542,99 +636,6 @@ static VbError_t vb2_init_menus(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
-/**
- * Updates current_menu_idx upon an up/down key press, taking into
- * account disabled indices (from disabled_idx_mask).  The cursor
- * will not wrap, meaning that we block on the 0 or max index when
- * we hit the ends of the menu.
- *
- * @param  key      VOL_KEY_UP = increase index selection
- *                  VOL_KEY_DOWN = decrease index selection.
- *                  Every other key has no effect now.
- */
-static void vb2_update_selection(uint32_t key) {
-	int idx;
-
-	switch (key) {
-	case VB_BUTTON_VOL_UP_SHORT_PRESS:
-	case VB_KEY_UP:
-		idx = current_menu_idx - 1;
-		while (idx >= 0 &&
-		       ((1 << idx) & disabled_idx_mask))
-		  idx--;
-		/* Only update if idx is valid */
-		if (idx >= 0)
-			current_menu_idx = idx;
-		break;
-	case VB_BUTTON_VOL_DOWN_SHORT_PRESS:
-	case VB_KEY_DOWN:
-		idx = current_menu_idx + 1;
-		while (idx < menus[current_menu].size &&
-		       ((1 << idx) & disabled_idx_mask))
-		  idx++;
-		/* Only update if idx is valid */
-		if (idx < menus[current_menu].size)
-			current_menu_idx = idx;
-		break;
-	default:
-		VB2_DEBUG("ERROR: %s called with key 0x%x!\n", __func__, key);
-		break;
-	}
-}
-
-static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
-				       uint32_t key, uint32_t key_flags)
-{
-	switch (key) {
-	case 0:
-		/* nothing pressed */
-		break;
-	case '\t':
-		/* Tab = display debug info */
-		return debug_info_action(ctx);
-	case VB_KEY_UP:
-	case VB_KEY_DOWN:
-	case VB_BUTTON_VOL_UP_SHORT_PRESS:
-	case VB_BUTTON_VOL_DOWN_SHORT_PRESS:
-		/* Untrusted (USB keyboard) input disabled for TO_DEV menu. */
-		if (current_menu == VB_MENU_TO_DEV &&
-		    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
-			vb2_flash_screen(ctx);
-			vb2_error_beep();
-			break;
-		}
-
-		/* Menuless screens enter OPTIONS on volume button press. */
-		if (!menus[current_menu].size) {
-			enter_options_menu(ctx);
-			break;
-		}
-
-		vb2_update_selection(key);
-		vb2_draw_current_screen(ctx);
-		break;
-	case VB_BUTTON_POWER_SHORT_PRESS:
-	case '\r':
-		/* Menuless screens shut down on power button press. */
-		if (!menus[current_menu].size)
-			return VBERROR_SHUTDOWN_REQUESTED;
-
-		return menus[current_menu].items[current_menu_idx].action(ctx);
-	default:
-		VB2_DEBUG("pressed key 0x%x\n", key);
-		break;
-	}
-
-	if (VbWantShutdownMenu(ctx)) {
-		VB2_DEBUG("shutdown requested!\n");
-		return VBERROR_SHUTDOWN_REQUESTED;
-	}
-
-	return VBERROR_KEEP_LOOPING;
-}
-
-/* Delay in developer menu */
-#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
 /**
  * Main function that handles developer warning menu functionality
  *
