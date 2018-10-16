@@ -122,4 +122,9 @@ void vb2_exit_altfw(void);
  */
 void vb2_try_alt_fw(int allowed, int altfw_num);
 
+/**
+ * Emit two short beeps to indicate an error
+ */
+void vb2_error_beep(void);
+
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */

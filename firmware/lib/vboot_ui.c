@@ -72,6 +72,14 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return !!shutdown_request;
 }
 
+/* Two short beeps to notify the user that attempted action was disallowed. */
+void vb2_error_beep(void)
+{
+	VbExBeep(120, 400);
+	VbExSleepMs(120);
+	VbExBeep(120, 400);
+}
+
 int vb2_prepare_alt_fw(int allowed)
 {
 	if (!allowed) {
@@ -90,9 +98,7 @@ int vb2_prepare_alt_fw(int allowed)
 
 void vb2_exit_altfw(void)
 {
-	VbExBeep(120, 400);
-	VbExSleepMs(120);
-	VbExBeep(120, 400);
+	vb2_error_beep();
 }
 
 void vb2_try_alt_fw(int allowed, int altfw_num)
@@ -375,9 +381,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 					"(USB/SD) has not been enabled. Refer "
 					"to the developer-mode documentation "
 					"for details.\n");
-				VbExBeep(120, 400);
-				VbExSleepMs(120);
-				VbExBeep(120, 400);
+				vb2_error_beep();
 			} else {
 				/*
 				 * Clear the screen to show we get the Ctrl+U
