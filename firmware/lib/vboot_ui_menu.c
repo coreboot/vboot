@@ -74,14 +74,6 @@ static void vb2_flash_screen(struct vb2_context *ctx)
 	vb2_draw_current_screen(ctx);
 }
 
-/* Two short beeps to notify the user that attempted action was disallowed. */
-static void vb2_error_beep(void)
-{
-	VbExBeep(120, 400);
-	VbExSleepMs(120);
-	VbExBeep(120, 400);
-}
-
 /**
  * Switch to a new menu (but don't draw it yet).
  *
