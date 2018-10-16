@@ -116,6 +116,7 @@ struct updater_config_arguments {
 	char *archive, *quirks, *mode;
 	char *programmer, *model, *signature_id;
 	char *emulation, *sys_props, *write_protection;
+	char *output_dir;
 	int is_factory, try_update, force_update, do_manifest;
 	int verbosity;
 };

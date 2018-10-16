@@ -310,6 +310,11 @@ test_update "Full update (--archive, single package)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
+echo "TEST: Output (--mode=output)"
+mkdir -p "${TMP}.output"
+${FUTILITY} update -i "${LINK_BIOS}" --mode=output --output_dir="${TMP}.output"
+cmp "${LINK_BIOS}" "${TMP}.output/bios.bin"
+
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.WL"
@@ -335,6 +340,14 @@ WL_TAG="WL" PATH="${A}/bin:${PATH}" \
 	test_update "Full update (--archive, WL, fake vpd)" \
 	"${A}/bios.bin" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
+
+echo "TEST: Output (-a, --mode=output)"
+mkdir -p "${TMP}.outa"
+cp -f "${A}/bios.bin" "${TMP}.emu"
+WL_TAG="WL" PATH="${A}/bin:${PATH}" \
+	${FUTILITY} update -a "${A}" --mode=output --emu="${TMP}.emu" \
+	--output_dir="${TMP}.outa"
+cmp "${LINK_BIOS}" "${TMP}.outa/bios.bin"
 
 # Test archive with Unified Build contents.
 cp -r "${SCRIPTDIR}/models" "${A}/"

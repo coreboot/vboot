@@ -34,6 +34,7 @@ static struct option const long_opts[] = {
 	{"programmer", 1, NULL, 'p'},
 	{"wp", 1, NULL, 'W'},
 	{"emulate", 1, NULL, 'E'},
+	{"output_dir", 1, NULL, 'U'},
 	{"sys_props", 1, NULL, 'S'},
 	{"debug", 0, NULL, 'd'},
 	{"verbose", 0, NULL, 'v'},
@@ -62,6 +63,7 @@ static void print_help(int argc, char *argv[])
 		"-m, --mode=MODE     \tRun updater in given mode\n"
 		"    --factory       \tAlias for --mode=factory\n"
 		"    --force         \tForce update (skip checking contents)\n"
+		"    --output_dir=DIR\tSpecify the target for --mode=output\n"
 		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
@@ -111,6 +113,9 @@ static int do_update(int argc, char *argv[])
 			return 0;
 		case 'm':
 			args.mode = optarg;
+			break;
+		case 'U':
+			args.output_dir = optarg;
 			break;
 		case 'M':
 			args.model = optarg;
