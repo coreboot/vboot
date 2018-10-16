@@ -88,4 +88,38 @@ uint32_t vb2_get_fwmp_flags(void);
  */
 void vb2_nv_commit(struct vb2_context *ctx);
 
+/**
+ * Prepare to start a bootloader
+ *
+ * Get ready to jump into a bootloader if allowed, calling RollbackKernelLock().
+ *
+ * @param allowed 1 if allowed, 0 if not allowed (in which case this function
+ *	prints a debug error)
+ * @return 0 if allowed, -1 if not allowed
+ *
+ */
+int vb2_prepare_alt_fw(int allowed);
+
+/**
+ * Tidy up after failing to start a bootloader
+ *
+ * This beeps twice to indicate failure
+ */
+void vb2_exit_altfw(void);
+
+/**
+ * Jump to a bootloader if possible
+ *
+ * This calls vb2_prepare_alt_fw() to check the operation is permitted. If it
+ * is, then it jumps to the selected bootloader and execution continues there,
+ * never returning.
+ *
+ * If the operation is not permitted, or it is permitted but the bootloader
+ * cannot be found, it calls vb2_exit_altfw() and returns.
+ *
+ * @allowed	1 if allowed, 0 if not allowed
+ * @altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
+ */
+void vb2_try_alt_fw(int allowed, int altfw_num);
+
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */

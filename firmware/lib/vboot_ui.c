@@ -72,27 +72,34 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return !!shutdown_request;
 }
 
-/**
- * Call out to firmware to boot a numbered boot loader
- *
- * Provided that it is permitted, this function starts up the numbered boot
- * loader.
- *
- * @param altfw_num   Boot loader number to boot (0=any, 1=first, etc.)
- */
-static void VbTryLegacy(int allowed, int altfw_num)
+int vb2_prepare_alt_fw(int allowed)
 {
-	if (!allowed)
+	if (!allowed) {
 		VB2_DEBUG("VbBootDeveloper() - Legacy boot is disabled\n");
-	else if (0 != RollbackKernelLock(0))
+		VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not "
+				     "been enabled. Refer to the developer"
+				     "-mode documentation for details.\n");
+		return -1;
+	} else if (0 != RollbackKernelLock(0)) {
 		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
-	else
-		VbExLegacy(altfw_num);	/* will not return if successful */
+		return -1;
+	}
 
-	/* If legacy boot fails, beep and return to calling UI loop. */
+	return 0;
+}
+
+void vb2_exit_altfw(void)
+{
 	VbExBeep(120, 400);
 	VbExSleepMs(120);
 	VbExBeep(120, 400);
+}
+
+void vb2_try_alt_fw(int allowed, int altfw_num)
+{
+	if (!vb2_prepare_alt_fw(allowed))
+		VbExLegacy(altfw_num);	/* will not return if found */
+	vb2_exit_altfw();
 }
 
 uint32_t VbTryUsb(struct vb2_context *ctx)
@@ -348,7 +355,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		case 0x0c:
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+L; Try legacy boot\n");
-			VbTryLegacy(allow_legacy, 0);
+			vb2_try_alt_fw(allow_legacy, 0);
 			break;
 
 		case VB_KEY_CTRL_ENTER:
@@ -390,7 +397,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
-			VbTryLegacy(allow_legacy, key - '0');
+			vb2_try_alt_fw(allow_legacy, key - '0');
 			break;
 		default:
 			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
@@ -406,7 +413,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 	/* If defaulting to legacy boot, try that unless Ctrl+D was pressed */
 	if (use_legacy && !ctrl_d_pressed) {
 		VB2_DEBUG("VbBootDeveloper() - defaulting to legacy\n");
-		VbTryLegacy(allow_legacy, 0);
+		vb2_try_alt_fw(allow_legacy, 0);
 	}
 
 	if ((use_usb && !ctrl_d_pressed) && allow_usb) {
