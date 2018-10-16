@@ -33,6 +33,7 @@ static VB_MENU current_menu, prev_menu;
 static int current_menu_idx, disabled_idx_mask, usb_nogood;
 static uint32_t default_boot;
 static uint32_t disable_dev_boot;
+static uint32_t altfw_allowed;
 static struct vb2_menu menus[];
 
 /**
@@ -132,9 +133,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 		return VBERROR_KEEP_LOOPING;
 	}
 
-	if (!vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY) &&
-	    !(vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY)
-	    && !(vb2_get_fwmp_flags() & FWMP_DEV_ENABLE_LEGACY)) {
+	if (!altfw_allowed) {
 		vb2_flash_screen(ctx);
 		VB2_DEBUG("Legacy boot is disabled\n");
 		VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not "
@@ -664,6 +663,9 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 			VB2_DEBUG("dev_disable_boot is set.\n");
 		}
 	}
+	altfw_allowed = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY) ||
+	    (vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY) ||
+	    (vb2_get_fwmp_flags() & FWMP_DEV_ENABLE_LEGACY);
 
 	/* Show appropriate initial menu */
 	if (disable_dev_boot)
