@@ -715,11 +715,12 @@ VbError_t VbExDisplayDebugInfo(const char *info_str);
 
 /* Key codes for required non-printable-ASCII characters. */
 enum VbKeyCode_t {
+	VB_KEY_ESC = 0x1b,
 	VB_KEY_UP = 0x100,
 	VB_KEY_DOWN = 0x101,
 	VB_KEY_LEFT = 0x102,
 	VB_KEY_RIGHT = 0x103,
-	VB_KEY_CTRL_ENTER = 0x104
+	VB_KEY_CTRL_ENTER = 0x104,
 };
 
 /*
@@ -756,7 +757,7 @@ enum VbKeyFlags_t {
  *    0x09          Tab
  *    0x0D          Enter (carriage return)
  *    0x01 - 0x1A   Ctrl+A - Ctrl+Z (yes, those alias with backspace/tab/enter)
- *    0x1B          Esc
+ *    0x1B          Esc (VB_KEY_ESC)
  *    0x20          Space
  *    0x30 - 0x39   '0' - '9'
  *    0x60 - 0x7A   'a' - 'z'
