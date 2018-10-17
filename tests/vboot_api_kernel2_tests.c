@@ -226,7 +226,7 @@ static void VbUserConfirmsTest(void)
 	TEST_EQ(VbUserConfirms(&ctx, 0), 1, "Enter");
 
 	ResetMocks();
-	mock_keypress[0] = 0x1b;
+	mock_keypress[0] = VB_KEY_ESC;
 	TEST_EQ(VbUserConfirms(&ctx, 0), 0, "Esc");
 
 	ResetMocks();
@@ -407,7 +407,7 @@ static void VbBootDevTest(void)
 	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = ' ';
-	mock_keypress[2] = 0x1b;
+	mock_keypress[2] = VB_KEY_ESC;
 	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Space-space");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING,
 		"  warning screen");

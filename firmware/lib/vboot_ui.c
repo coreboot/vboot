@@ -167,7 +167,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			if (confirm_flags & VB_CONFIRM_SPACE_MEANS_NO)
 				return 0;
 			break;
-		case 0x1b:
+		case VB_KEY_ESC:
 			VB2_DEBUG("No (0)\n");
 			return 0;
 			break;
