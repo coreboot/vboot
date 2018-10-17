@@ -56,6 +56,8 @@ static uint32_t screens_displayed[64];
 static uint32_t screens_count = 0;
 static uint32_t beeps_played[64];
 static uint32_t beeps_count = 0;
+static uint32_t mock_altfw_mask;
+static int vbexaltfwmask_called;
 
 extern enum VbEcBootMode_t VbGetMode(void);
 extern struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
@@ -107,6 +109,9 @@ static void ResetMocks(void)
 	memset(mock_switches, 0, sizeof(mock_switches));
 	mock_switches_count = 0;
 	mock_switches_are_stuck = 0;
+
+	mock_altfw_mask = 3 << 1;	/* This mask selects 1 and 2 */
+	vbexaltfwmask_called = 0;
 }
 
 static void ResetMocksForDeveloper(void)
@@ -126,6 +131,13 @@ static void ResetMocksForManualRecovery(void)
 }
 
 /* Mock functions */
+
+uint32_t VbExGetAltFwIdxMask() {
+
+	vbexaltfwmask_called++;
+
+	return mock_altfw_mask;
+}
 
 uint32_t VbExIsShutdownRequested(void)
 {
@@ -614,17 +626,18 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	sd->gbb_flags |= GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
 	mock_keypress[0] = 'L' & 0x1f;
+	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"Ctrl+L force legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
-	TEST_EQ(altfw_num, 0, "  check altfw_num");
+	TEST_EQ(altfw_num, 1, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
-	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
-	TEST_EQ(screens_displayed[2], VB_SCREEN_DEVELOPER_WARNING_MENU,
-		"  warning screen");
-	TEST_EQ(screens_displayed[3], VB_SCREEN_BLANK, "  final blank screen");
-	TEST_EQ(screens_count, 4, "  no extra screens");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[2], VB_SCREEN_BLANK, "  blank (error flash)");
+	TEST_EQ(screens_displayed[3], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[4], VB_SCREEN_BLANK, "  blank (error flash)");
+	TEST_EQ(screens_count, 5, "  no extra screens");
 	TEST_EQ(beeps_count, 1, "  error beep: legacy BIOS not found");
 	TEST_EQ(beeps_played[0], 200, "    low-frequency error beep");
 
@@ -632,17 +645,18 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	mock_keypress[0] = 'L' & 0x1f;
+	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"Ctrl+L nv legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
-	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
-	TEST_EQ(screens_displayed[2], VB_SCREEN_DEVELOPER_WARNING_MENU,
-		"  warning screen");
-	TEST_EQ(screens_displayed[3], VB_SCREEN_BLANK, "  final blank screen");
-	TEST_EQ(screens_count, 4, "  no extra screens");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[2], VB_SCREEN_BLANK, "  blank (error flash)");
+	TEST_EQ(screens_displayed[3], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[4], VB_SCREEN_BLANK, "  blank (error flash)");
+	TEST_EQ(screens_count, 5, "  no extra screens");
 	TEST_EQ(beeps_count, 1, "  error beep: legacy BIOS not found");
 	TEST_EQ(beeps_played[0], 200, "    low-frequency error beep");
 
@@ -650,19 +664,22 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_ENABLE_LEGACY;
 	mock_keypress[0] = 'L' & 0x1f;
+	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"Ctrl+L fwmp legacy");
 	TEST_EQ(vbexlegacy_called, 1, "  fwmp legacy");
-	TEST_EQ(altfw_num, 0, "  check altfw_num");
+	TEST_EQ(altfw_num, 1, "  check altfw_num");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
-	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  blank (error flash)");
-	TEST_EQ(screens_displayed[2], VB_SCREEN_DEVELOPER_WARNING_MENU,
-		"  warning screen");
-	TEST_EQ(screens_displayed[3], VB_SCREEN_BLANK, "  final blank screen");
-	TEST_EQ(screens_count, 4, "  no extra screens");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[2], VB_SCREEN_BLANK, "  blank (error flash)");
+	TEST_EQ(screens_displayed[3], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[4], VB_SCREEN_BLANK, "  final blank screen");
+	TEST_EQ(screens_count, 5, "  no extra screens");
 	TEST_EQ(beeps_count, 1, "  error beep: legacy BIOS not found");
 	TEST_EQ(beeps_played[0], 200, "    low-frequency error beep");
+
+	/* TODO(sjg@chromium.org): Add a test for there being no bootloaders */
 
 	/* Ctrl+U boots USB only if enabled */
 	ResetMocksForDeveloper();
@@ -908,8 +925,9 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Enable OS Verif
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Show Debug Info
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Developer Options
-	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Enter altfw menu
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Select first option
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // and again
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	vb2_nv_set(&ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_LEGACY);
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
@@ -930,13 +948,12 @@ static void VbBootDevTest(void)
 		"  dev warning menu: developer options");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
 		"  dev menu: legacy boot");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK, "  blank (flash)");
-	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
-		"  dev menu: legacy boot");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK, "  blank (flash)");
-	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
-		"  dev menu: legacy boot");
-	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK,"  final blank screen");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK, "  blank (flash)");
 	TEST_EQ(screens_count, i, "  no extra screens");
 	TEST_EQ(beeps_count, 2, "  two error beeps: legacy BIOS not found");
 	TEST_EQ(beeps_played[0], 200, "    low-frequency error beep");
@@ -1282,6 +1299,7 @@ static void VbBootRecTest(void)
 	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK, "  final blank screen");
 	TEST_EQ(screens_count, 2, "  no extra screens");
 	TEST_EQ(beeps_count, 0, "  no beep on shutdown");
+	TEST_EQ(vbexaltfwmask_called, 0, "  VbExGetAltFwIdxMask not called");
 
 	/* BROKEN screen with disks inserted */
 	ResetMocks();
@@ -2192,13 +2210,23 @@ static void VbNavigationTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From USB
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot Legacy
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // (end of menu)
-	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Select altfw menu
+	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Second altfw
+	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Cancel
+	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // (end of menu)
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Back to dev options
+	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From Disk
+	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From USB
+	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot Legacy
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Select altfw menu
+	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Second altfw
+	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Select 2nd altfw
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"developer mode long navigation");
 	TEST_EQ(debug_info_displayed, 1, "  showed debug info");
 	TEST_EQ(vbexlegacy_called, 1, "  tried legacy");
-	TEST_EQ(altfw_num, 0, "  check altfw_num");
+	TEST_EQ(altfw_num, 2, "  check altfw_num");
 	TEST_EQ(audio_looping_calls_left, 0, "  audio timeout");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	i = 0;
@@ -2280,9 +2308,24 @@ static void VbNavigationTest(void)
 		"  dev menu: boot legacy");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
 		"  dev menu: boot legacy");
-	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK, "  blank (flash)");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw 1");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw 2");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU,
+		"  altfw cancel");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU,
+		"  altfw end");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
+		"  dev menu: cancel");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
+		"  dev menu: boot from disk");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
+		"  dev menu: boot from USB");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_DEVELOPER_MENU,
 		"  dev menu: boot legacy");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK, "  blank (flash)");
+	TEST_EQ(screens_displayed[i++], VB_SCREEN_ALT_FW_MENU, "  altfw");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK,"  final blank screen");
 	TEST_EQ(screens_count, i, "  no extra screens");
 	TEST_EQ(beeps_count, 1, "  error beep: legacy BIOS not found");

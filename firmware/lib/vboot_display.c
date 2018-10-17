@@ -30,6 +30,11 @@ VbError_t VbExGetLocalizationCount(uint32_t *count) {
 	return VBERROR_UNKNOWN;
 }
 
+__attribute__((weak))
+VbError_t VbExGetAltFwIdxMask(void) {
+	return 0;
+}
+
 VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force)
 {
 	uint32_t locale;
