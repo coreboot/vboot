@@ -33,6 +33,7 @@ static struct vb2_context ctx;
 struct vb2_shared_data *sd;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static uint32_t mock_localization_count;
+static uint32_t mock_altfw_mask;
 
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
@@ -51,6 +52,7 @@ static void ResetMocks(void)
 	gbb_used = (gbb_used + gbb->hwid_size + 7) & ~7;
 
 	mock_localization_count = 3;
+	mock_altfw_mask = 3 << 1;	/* This mask selects 1 and 2 */
 
 	gbb->header_size = sizeof(*gbb);
 	gbb->rootkey_offset = gbb_used;
@@ -86,6 +88,10 @@ VbError_t VbExGetLocalizationCount(uint32_t *count) {
 
 	*count = mock_localization_count;
 	return VBERROR_SUCCESS;
+}
+
+uint32_t VbExGetAltFwIdxMask() {
+	return mock_altfw_mask;
 }
 
 VbError_t VbExDisplayDebugInfo(const char *info_str)

@@ -73,31 +73,6 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return !!shutdown_request;
 }
 
-/**
- * Jump to a bootloader if possible
- *
- * This checks if the operation is permitted. If it is, then it jumps to the
- * selected bootloader and execution continues there, never returning.
- *
- * If the operation is not permitted, or it is permitted but the bootloader
- * cannot be found, it beeps and returns.
- *
- * @allowed	1 if allowed, 0 if not allowed
- * @altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
- */
-static void vb2_try_alt_fw(int allowed, int altfw_num)
-{
-	if (allowed) {
-		vb2_run_altfw(altfw_num);	/* will not return if found */
-	} else {
-		VB2_DEBUG("VbBootDeveloper() - Legacy boot is disabled\n");
-		VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not "
-				     "been enabled. Refer to the developer"
-				     "-mode documentation for details.\n");
-		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
-	}
-}
-
 uint32_t VbTryUsb(struct vb2_context *ctx)
 {
 	uint32_t retval = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
@@ -185,6 +160,62 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 
 /* Delay in developer ui */
 #define DEV_KEY_DELAY        20       /* Check keys every 20ms */
+
+/*
+ * User interface for selecting alternative firmware
+ *
+ * This shows the user a list of bootloaders and allows selection of one of
+ * them. We loop forever until something is chosen or Escape is pressed.
+ */
+VbError_t vb2_altfw_ui(struct vb2_context *ctx)
+{
+	int active = 1;
+
+	VbDisplayScreen(ctx, VB_SCREEN_ALT_FW_PICK, 0);
+
+	/* We'll loop until the user decides what to do */
+	do {
+		uint32_t key = VbExKeyboardRead();
+
+		if (VbWantShutdown(ctx, key)) {
+			VB2_DEBUG("VbBootDeveloper() - shutdown requested!\n");
+			return VBERROR_SHUTDOWN_REQUESTED;
+		}
+		switch (key) {
+		case 0:
+			/* nothing pressed */
+			break;
+		case VB_KEY_ESC:
+			/* Escape pressed - return to developer screen */
+			VB2_DEBUG("VbBootDeveloper() - user pressed Esc:"
+				  "exit to Developer screen\n");
+			active = 0;
+			break;
+		/* We allow selection of the default '0' bootloader here */
+		case '0'...'9':
+			VB2_DEBUG("VbBootDeveloper() - "
+				  "user pressed key '%c': Boot alternative "
+				  "firmware\n", key);
+			/*
+			 * This will not return if successful. Drop out to
+			 * developer mode on failure.
+			 */
+			vb2_run_altfw(key - '0');
+			active = 0;
+			break;
+		default:
+			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
+			VbCheckDisplayKey(ctx, key);
+			break;
+		}
+		VbExSleepMs(DEV_KEY_DELAY);
+	} while (active);
+
+	/* Back to developer screen */
+	VbDisplayScreen(ctx, VB_SCREEN_DEVELOPER_WARNING, 0);
+
+	return 0;
+}
 
 static const char dev_disable_msg[] =
 	"Developer mode is disabled on this device by system policy.\n"
@@ -349,10 +380,17 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		case 0x0c:
 			VB2_DEBUG("VbBootDeveloper() - "
-				  "user pressed Ctrl+L; Try legacy boot\n");
-			vb2_try_alt_fw(allow_legacy, 0);
-			break;
+				  "user pressed Ctrl+L; Try alt firmware\n");
+			if (allow_legacy) {
+				int ret;
 
+				ret = vb2_altfw_ui(ctx);
+				if (ret)
+					return ret;
+			} else {
+				vb2_error_no_altfw();
+			}
+			break;
 		case VB_KEY_CTRL_ENTER:
 			/*
 			 * The Ctrl-Enter is special for Lumpy test purpose;
@@ -386,7 +424,8 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 				}
 			}
 			break;
-		case '1'...'9':
+		/* We allow selection of the default '0' bootloader here */
+		case '0'...'9':
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
