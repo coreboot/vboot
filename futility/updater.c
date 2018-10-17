@@ -1816,6 +1816,13 @@ int updater_setup_config(struct updater_config *cfg,
 		}
 		*do_update = 0;
 	}
+	if (arg->repack || arg->unpack) {
+		if (!arg->archive) {
+			ERROR("--{re,un}pack needs --archive.");
+			return ++errorcnt;
+		}
+		*do_update = 0;
+	}
 
 	/* Setup update mode. */
 	if (arg->try_update)
@@ -1880,6 +1887,29 @@ int updater_setup_config(struct updater_config *cfg,
 	if (!cfg->archive) {
 		ERROR("Failed to open archive: %s", archive_path);
 		return ++errorcnt;
+	}
+
+	/* Process archives which may not have valid contents. */
+	if (arg->repack || arg->unpack) {
+		const char *work_name = arg->repack ? arg->repack : arg->unpack;
+		struct archive *from, *to, *work;
+
+		work = archive_open(work_name);
+		if (arg->repack) {
+			from = work;
+			to = cfg->archive;
+		} else {
+			to = work;
+			from = cfg->archive;
+		}
+		if (!work) {
+			ERROR("Failed to open: %s", work_name);
+			return ++errorcnt;
+		}
+		errorcnt += !!archive_copy(from, to);
+		/* TODO(hungte) Update manifest after copied. */
+		archive_close(work);
+		return errorcnt;
 	}
 
 	/* Load images from archive. */

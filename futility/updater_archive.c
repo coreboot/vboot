@@ -82,6 +82,8 @@ struct archive {
 	int (*has_entry)(void *handle, const char *name);
 	int (*read_file)(void *handle, const char *fname,
 			 uint8_t **data, uint32_t *size);
+	int (*write_file)(void *handle, const char *fname,
+			  uint8_t *data, uint32_t size);
 };
 
 /*
@@ -125,6 +127,8 @@ static int archive_fallback_walk(
 
 	while ((ent = fts_read(fts_handle)) != NULL) {
 		char *path = ent->fts_path + root_len;
+		if (ent->fts_info != FTS_F && ent->fts_info != FTS_SL)
+			continue;
 		while (*path == '/')
 			path++;
 		if (!*path)
@@ -135,17 +139,23 @@ static int archive_fallback_walk(
 	return 0;
 }
 
+/* Callback for fallback drivers to get full path easily. */
+static const char *archive_fallback_get_path(void *handle, const char *fname,
+					     char **temp_path)
+{
+	if (handle && *fname != '/') {
+		ASPRINTF(temp_path, "%s/%s", (char *)handle, fname);
+		return *temp_path;
+	}
+	return fname;
+}
+
 /* Callback for archive_has_entry on a general file system. */
 static int archive_fallback_has_entry(void *handle, const char *fname)
 {
 	int r;
-	const char *path = fname;
 	char *temp_path = NULL;
-
-	if (handle && *fname != '/') {
-		ASPRINTF(&temp_path, "%s/%s", (char *)handle, fname);
-		path = temp_path;
-	}
+	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
 
 	DEBUG("Checking %s", path);
 	r = access(path, R_OK);
@@ -158,17 +168,39 @@ static int archive_fallback_read_file(void *handle, const char *fname,
 				      uint8_t **data, uint32_t *size)
 {
 	int r;
-	const char *path = fname;
 	char *temp_path = NULL;
+	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
 
+	DEBUG("Reading %s", path);
 	*data = NULL;
 	*size = 0;
-	if (handle && *fname != '/') {
-		ASPRINTF(&temp_path, "%s/%s", (char *)handle, fname);
-		path = temp_path;
-	}
-	DEBUG("Reading %s", path);
 	r = vb2_read_file(path, data, size) != VB2_SUCCESS;
+	free(temp_path);
+	return r;
+}
+
+/* Callback for archive_write_file on a general file system. */
+static int archive_fallback_write_file(void *handle, const char *fname,
+				       uint8_t *data, uint32_t size)
+{
+	int r;
+	char *temp_path = NULL;
+	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
+
+	DEBUG("Writing %s", path);
+	if (strchr(path, '/')) {
+		char *dirname = strdup(path);
+		*strrchr(dirname, '/') = '\0';
+		/* TODO(hungte): call mkdir(2) instead of shell invocation. */
+		if (access(dirname, W_OK) != 0) {
+			char *command;
+			ASPRINTF(&command, "mkdir -p %s", dirname);
+			free(host_shell(command));
+			free(command);
+		}
+		free(dirname);
+	}
+	r = vb2_write_file(path, data, size) != VB2_SUCCESS;
 	free(temp_path);
 	return r;
 }
@@ -212,7 +244,10 @@ static int archive_zip_walk(
 	if (num < 0)
 		return 1;
 	for (i = 0; i < num; i++) {
-		if (callback(zip_get_name(zip, i, 0), arg))
+		const char *name = zip_get_name(zip, i, 0);
+		if (*name && name[strlen(name) - 1] == '/')
+			continue;
+		if (callback(name, arg))
 			break;
 	}
 	return 0;
@@ -252,6 +287,33 @@ static int archive_zip_read_file(void *handle, const char *fname,
 	zip_fclose(fp);
 	return *data == NULL;
 }
+
+/* Callback for archive_zip_write_file on a ZIP file. */
+static int archive_zip_write_file(void *handle, const char *fname,
+				  uint8_t *data, uint32_t size)
+{
+	struct zip *zip = (struct zip *)handle;
+	struct zip_source *src;
+
+	DEBUG("Writing %s", fname);
+	assert(zip);
+	src = zip_source_buffer(zip, data, size, 0);
+	if (!src) {
+		ERROR("Internal error: cannot allocate buffer: %s", fname);
+		return 1;
+	}
+
+	if (zip_file_add(zip, fname, src, ZIP_FL_OVERWRITE) < 0) {
+		zip_source_free(src);
+		ERROR("Internal error: failed to add: %s", fname);
+		return 1;
+	}
+	/* zip_source_free is not needed if zip_file_add success. */
+#if LIBZIP_VERSION_MAJOR >= 1
+	zip_file_set_mtime(zip, zip_name_locate(zip, fname, 0), 0, 0);
+#endif
+	return 0;
+}
 #endif
 
 /*
@@ -284,6 +346,7 @@ struct archive *archive_open(const char *path)
 		ar->walk = archive_fallback_walk;
 		ar->has_entry = archive_fallback_has_entry;
 		ar->read_file = archive_fallback_read_file;
+		ar->write_file = archive_fallback_write_file;
 	} else {
 #ifdef HAVE_LIBZIP
 		DEBUG("Found file, use ZIP driver: %s", path);
@@ -292,6 +355,7 @@ struct archive *archive_open(const char *path)
 		ar->walk = archive_zip_walk;
 		ar->has_entry = archive_zip_has_entry;
 		ar->read_file = archive_zip_read_file;
+		ar->write_file = archive_zip_write_file;
 #else
 		ERROR("Found file, but no drivers were enabled: %s", path);
 		free(ar);
@@ -332,11 +396,10 @@ int archive_has_entry(struct archive *ar, const char *name)
 }
 
 /*
- * Traverses all entries within archive.
+ * Traverses all files within archive (directories are ignored).
  * For every entry, the path (relative the archive root) will be passed to
  * callback function, until the callback returns non-zero.
  * The arg argument will also be passed to callback.
- * Be aware that some archive may not store "directory" type entries.
  * Returns 0 on success otherwise non-zero as failure.
  */
 int archive_walk(
@@ -361,6 +424,53 @@ int archive_read_file(struct archive *ar, const char *fname,
 	if (!ar || *fname == '/')
 		return archive_fallback_read_file(NULL, fname, data, size);
 	return ar->read_file(ar->handle, fname, data, size);
+}
+
+/*
+ * Writes a file into archive.
+ * If entry name (fname) is an absolute path (/file), always write into real
+ * file system.
+ * Returns 0 on success, otherwise non-zero as failure.
+ */
+int archive_write_file(struct archive *ar, const char *fname,
+		       uint8_t *data, uint32_t size)
+{
+	if (!ar || *fname == '/')
+		return archive_fallback_write_file(NULL, fname, data, size);
+	return ar->write_file(ar->handle, fname, data, size);
+}
+
+struct _copy_arg {
+	struct archive *from, *to;
+};
+
+/* Callback for archive_copy. */
+static int archive_copy_callback(const char *path, void *_arg)
+{
+	const struct _copy_arg *arg = (const struct _copy_arg*)_arg;
+	uint32_t size;
+	uint8_t *data;
+	int r;
+
+	printf("Copying: %s\n", path);
+	if (archive_read_file(arg->from, path, &data, &size)) {
+		ERROR("Failed reading: %s", path);
+		return 1;
+	}
+	r = archive_write_file(arg->to, path, data, size);
+	DEBUG("result=%d", r);
+	free(data);
+	return r;
+}
+
+/*
+ * Copies all entries from one archive to another.
+ * Returns 0 on success, otherwise non-zero as failure.
+ */
+int archive_copy(struct archive *from, struct archive *to)
+{
+	struct _copy_arg arg = { .from = from, .to = to };
+	return archive_walk(from, &arg, archive_copy_callback);
 }
 
 /*
@@ -451,7 +561,7 @@ static int model_config_parse_setvars_file(
 
 		/* Some legacy updaters may be still using ${MODEL_DIR}. */
 		if (str_startswith(v, ENV_VAR_MODEL_DIR)) {
-			ASPRINTF(&expand_path, "%s%s%s", "models/", cfg->name,
+			ASPRINTF(&expand_path, "%s/%s%s", DIR_MODELS, cfg->name,
 				 v + strlen(ENV_VAR_MODEL_DIR));
 		}
 

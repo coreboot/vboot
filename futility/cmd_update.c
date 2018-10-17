@@ -29,6 +29,8 @@ static struct option const long_opts[] = {
 	{"model", 1, NULL, 'M'},
 	{"signature_id", 1, NULL, 'G'},
 	{"manifest", 0, NULL, 'A'},
+	{"repack", 1, NULL, 'k'},
+	{"unpack", 1, NULL, 'u'},
 	{"factory", 0, NULL, 'Y'},
 	{"force", 0, NULL, 'F'},
 	{"programmer", 1, NULL, 'p'},
@@ -56,6 +58,8 @@ static void print_help(int argc, char *argv[])
 		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"-a, --archive=PATH  \tRead resources from archive\n"
 		"    --manifest      \tPrint out a JSON manifest and exit\n"
+		"    --repack=DIR    \tUpdates archive from DIR\n"
+		"    --unpack=DIR    \tExtracts archive to DIR\n"
 		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
 		"    --list-quirks   \tPrint all available quirks\n"
@@ -106,6 +110,12 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'a':
 			args.archive = optarg;
+			break;
+		case 'k':
+			args.repack = optarg;
+			break;
+		case 'u':
+			args.unpack = optarg;
 			break;
 		case 'f':
 			args.quirks = optarg;

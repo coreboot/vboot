@@ -117,6 +117,7 @@ struct updater_config_arguments {
 	char *programmer, *model, *signature_id;
 	char *emulation, *sys_props, *write_protection;
 	char *output_dir;
+	char *repack, *unpack;
 	int is_factory, try_update, force_update, do_manifest, host_only;
 	int verbosity;
 };
@@ -297,6 +298,21 @@ int archive_has_entry(struct archive *ar, const char *name);
  */
 int archive_read_file(struct archive *ar, const char *fname,
 		      uint8_t **data, uint32_t *size);
+
+/*
+ * Writes a file into archive.
+ * If entry name (fname) is an absolute path (/file), always write into real
+ * file system.
+ * Returns 0 on success, otherwise non-zero as failure.
+ */
+int archive_write_file(struct archive *ar, const char *fname,
+		       uint8_t *data, uint32_t size);
+
+/*
+ * Copies all entries from one archive to another.
+ * Returns 0 on success, otherwise non-zero as failure.
+ */
+int archive_copy(struct archive *from, struct archive *to);
 
 /*
  * Creates a new manifest object by scanning files in archive.
