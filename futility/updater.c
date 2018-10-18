@@ -898,12 +898,13 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 
 /*
  * Preserve the GBB contents from image_from to image_to.
- * Currently only GBB flags and HWID are preserved.
+ * HWID is always preserved, and flags are preserved only if preserve_flags set.
  * Returns 0 if success, otherwise -1 if GBB header can't be found or if HWID is
  * too large.
  */
 static int preserve_gbb(const struct firmware_image *image_from,
-			struct firmware_image *image_to)
+			struct firmware_image *image_to,
+			int preserve_flags)
 {
 	int len;
 	uint8_t *hwid_to, *hwid_from;
@@ -917,8 +918,10 @@ static int preserve_gbb(const struct firmware_image *image_from,
 	if (!gbb_from || !gbb_to)
 		return -1;
 
-	/* Preserve flags. */
-	gbb_to->flags = gbb_from->flags;
+	/* Preserve flags (for non-factory mode). */
+	if (preserve_flags)
+		gbb_to->flags = gbb_from->flags;
+
 	hwid_to = (uint8_t *)gbb_to + gbb_to->hwid_offset;
 	hwid_from = (uint8_t *)gbb_from + gbb_from->hwid_offset;
 
@@ -979,7 +982,7 @@ static int preserve_images(struct updater_config *cfg)
 		"RO_FSG",
 	};
 
-	errcnt += preserve_gbb(from, to);
+	errcnt += preserve_gbb(from, to, !cfg->factory_update);
 	errcnt += preserve_management_engine(cfg, from, to);
 	errcnt += preserve_firmware_section(from, to, FMAP_RO_VPD);
 	errcnt += preserve_firmware_section(from, to, FMAP_RW_VPD);
@@ -1378,7 +1381,7 @@ static enum updater_error_codes update_try_rw_firmware(
 	int has_update = 1;
 	int is_vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
 
-	preserve_gbb(image_from, image_to);
+	preserve_gbb(image_from, image_to, 1);
 	if (!wp_enabled && section_needs_update(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
@@ -1673,12 +1676,12 @@ int updater_setup_config(struct updater_config *cfg,
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
 	const char *default_quirks = NULL;
-	int is_factory = arg->is_factory;
 	const char *archive_path = arg->archive;
 	struct manifest *manifest = NULL;
 
 	/* Setup values that may change output or decision of other argument. */
 	cfg->verbosity = arg->verbosity;
+	cfg->factory_update = arg->is_factory;
 	if (arg->force_update)
 		cfg->force_update = 1;
 
@@ -1700,14 +1703,14 @@ int updater_setup_config(struct updater_config *cfg,
 			cfg->legacy_update = 1;
 		} else if (strcmp(arg->mode, "factory") == 0 ||
 			   strcmp(arg->mode, "factory_install") == 0) {
-			is_factory = 1;
+			cfg->factory_update = 1;
 		} else {
 			errorcnt++;
 			ERROR("Invalid mode: %s", arg->mode);
 		}
 	}
-	if (is_factory) {
-		/* is_factory must be processed after arg->mode. */
+	if (cfg->factory_update) {
+		/* factory_update must be processed after arg->mode. */
 		check_wp_disabled = 1;
 		cfg->try_update = 0;
 	}

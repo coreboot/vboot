@@ -112,6 +112,10 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
 	RW_LEGACY:${TMP}.to/RW_LEGACY
+cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0"
+"${FUTILITY}" gbb -s --flags=0 "${TMP}.expected.full.gbb0"
+cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
+"${FUTILITY}" gbb -s --flags=0 "${FROM_IMAGE}.gbb0"
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
@@ -173,6 +177,10 @@ test_update "Full update (Skip TPM check with --force)" \
 test_update "Full update (from stdin)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i - --wp=0 --sys_props 0,-1,1 --force <"${TO_IMAGE}"
+
+test_update "Full update (GBB=0 -> 0)" \
+	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full.gbb0" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 # Test RW-only update.
 test_update "RW update" \
@@ -252,6 +260,10 @@ test_update "Factory mode update (WP=1)" \
 test_update "Factory mode update (WP=1)" \
 	"${FROM_IMAGE}" "!needs WP disabled" \
 	--factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
+
+test_update "Factory mode update (GBB=0 -> 39)" \
+	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full" \
+	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 # Test legacy update
 test_update "Legacy update" \
