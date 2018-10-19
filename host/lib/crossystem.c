@@ -579,6 +579,11 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST);
 	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
 		value = vb2_get_nv_storage(VB2_NV_POST_EC_SYNC_DELAY);
+	} else if (!strcasecmp(name, "alt_os_enabled")) {
+		/* TODO(b/117195332): Change this to read from a field
+		 * dedicated to storing Alt OS state. */
+		value = !!(GetVdatInt(VDAT_INT_FLAGS)
+			   & VBSD_ALT_OS_SHOW_PICKER);
 	}
 
 	return value;

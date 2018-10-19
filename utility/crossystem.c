@@ -57,6 +57,7 @@ const Param sys_param_list[] = {
   {"enable_alt_os_request", CAN_WRITE, "Enable AltOS mode on next boot"},
   {"post_ec_sync_delay", CAN_WRITE,
    "Short delay after EC software sync (persistent, writable, eve only)"},
+  {"alt_os_enabled", 0, "Alt OS state (1 if enabled, 0 if disabled)"},
   {"fmap_base", 0, "Main firmware flashmap physical address", "0x%08x"},
   {"fw_prev_result", IS_STRING, "Firmware result of previous boot (vboot2)"},
   {"fw_prev_tried", IS_STRING, "Firmware tried on previous boot (vboot2)"},
