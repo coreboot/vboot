@@ -462,6 +462,32 @@ static void marshal_nv_define_space(void **buffer,
 	marshal_TPMS_NV_PUBLIC(buffer, &command_body->publicInfo, buffer_space);
 }
 
+static void marshal_nv_undefine_space(void **buffer,
+				      struct tpm2_nv_undefine_space_cmd
+				          *command_body,
+				      int *buffer_space)
+{
+	struct tpm2_session_header session_header;
+
+	/* Use platform authorization if PLATFORMCREATE is set, and owner
+	 * authorization otherwise (per TPM2 Spec. Part 2. Section 31.3.1).
+	 * Owner authorization with empty password will work only until
+	 * ownership is taken. Platform authorization will work only until
+	 * platform hierarchy is disabled (i.e. in firmware or in recovery
+	 * mode).
+	 */
+	if (command_body->use_platform_auth)
+		marshal_TPM_HANDLE(buffer, TPM_RH_PLATFORM, buffer_space);
+	else
+		marshal_TPM_HANDLE(buffer, TPM_RH_OWNER, buffer_space);
+	marshal_TPM_HANDLE(buffer, command_body->nvIndex, buffer_space);
+
+	memset(&session_header, 0, sizeof(session_header));
+	session_header.session_handle = TPM_RS_PW;
+	marshal_session_header(buffer, &session_header, buffer_space);
+	tpm_tag = TPM_ST_SESSIONS;
+}
+
 /* Determine which authorization should be used when writing or write-locking
  * an NV index.
  *
@@ -650,6 +676,10 @@ int tpm_marshal_command(TPM_CC command, void *tpm_command_body,
 		marshal_nv_define_space(&cmd_body, tpm_command_body, &body_size);
 		break;
 
+	case TPM2_NV_UndefineSpace:
+		marshal_nv_undefine_space(&cmd_body, tpm_command_body, &body_size);
+		break;
+
 	case TPM2_NV_Read:
 		marshal_nv_read(&cmd_body, tpm_command_body, &body_size);
 		break;
@@ -760,6 +790,7 @@ int tpm_unmarshal_response(TPM_CC command,
 	case TPM2_Startup:
 	case TPM2_Shutdown:
 	case TPM2_NV_DefineSpace:
+	case TPM2_NV_UndefineSpace:
 		/* Session data included in response can be safely ignored. */
 		cr_size = 0;
 		break;

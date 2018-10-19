@@ -34,6 +34,7 @@ int main(void)
 	TlclSelfTestFull();
 	TlclContinueSelfTest();
 	TlclDefineSpace(0, 0, 0);
+	TlclUndefineSpace(0);
 	TlclWrite(0, 0, 0);
 	TlclRead(0, 0, 0);
 	TlclWriteLock(0);

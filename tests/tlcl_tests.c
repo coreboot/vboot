@@ -241,6 +241,11 @@ static void ReadWriteTest(void)
 	TEST_EQ(calls[0].req_cmd, TPM_ORD_NV_DefineSpace, "  cmd");
 
 	ResetMocks();
+	TEST_EQ(TlclUndefineSpace(1), 0, "UndefineSpace");
+	// TPM1.2 use TPM_ORD_NV_DefineSpace with size 0 to delete space
+	TEST_EQ(calls[0].req_cmd, TPM_ORD_NV_DefineSpace, "  cmd");
+
+	ResetMocks();
 	TEST_EQ(TlclSetNvLocked(), 0, "SetNvLocked");
 	TEST_EQ(calls[0].req_cmd, TPM_ORD_NV_DefineSpace, "  cmd");
 

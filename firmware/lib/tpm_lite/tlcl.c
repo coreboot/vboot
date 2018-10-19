@@ -439,6 +439,25 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 	return TlclDefineSpaceEx(NULL, 0, index, perm, size, NULL, 0);
 }
 
+#ifdef CHROMEOS_ENVIRONMENT
+
+uint32_t TlclUndefineSpace(uint32_t index)
+{
+	VB2_DEBUG("TPM: TlclUndefineSpace(0x%x)\n", index);
+	return TlclUndefineSpaceEx(NULL, 0, index);
+}
+
+uint32_t TlclUndefineSpaceEx(const uint8_t* owner_auth,
+			     uint32_t owner_auth_size,
+			     uint32_t index)
+{
+	return TlclDefineSpaceEx(owner_auth, owner_auth_size,
+				 index, 0, 0,
+				 NULL, 0);
+}
+
+#endif  /* CHROMEOS_ENVIRONMENT */
+
 uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
 			   uint32_t index, uint32_t perm, uint32_t size,
 			   const void* auth_policy, uint32_t auth_policy_size)

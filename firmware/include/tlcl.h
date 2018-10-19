@@ -265,6 +265,25 @@ uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
 uint32_t TlclIFXFieldUpgradeInfo(TPM_IFX_FIELDUPGRADEINFO *info);
 
 #ifdef CHROMEOS_ENVIRONMENT
+
+/**
+ * Undefine the space. [index] is the index for the space. The TPM error code
+ * is returned.
+ */
+uint32_t TlclUndefineSpace(uint32_t index);
+
+/**
+ * Undefine a space. For TPM 2.0, it will use platform authrorization when the
+ * space is created by TPMA_NV_PLATFORMCREATE flag, or use owner authorization
+ * secret [owner_auth] otherwise. For TPM 1.2, only avaible when physical
+ * presence is set or TPM_PERMANENT_FLAGS->nvLocked is not set.
+ * [index] is the index for the space
+ * The TPM error code is returned.
+ */
+uint32_t TlclUndefineSpaceEx(const uint8_t* owner_auth,
+			     uint32_t owner_auth_size,
+			     uint32_t index);
+
 #ifndef TPM2_MODE
 
 /**

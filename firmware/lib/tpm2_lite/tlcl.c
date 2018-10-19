@@ -193,6 +193,37 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 	return TlclDefineSpaceEx(NULL, 0, index, perm, size, NULL, 0);
 }
 
+#ifdef CHROMEOS_ENVIRONMENT
+
+uint32_t TlclUndefineSpace(uint32_t index)
+{
+	return TlclUndefineSpaceEx(NULL, 0, index);
+}
+
+uint32_t TlclUndefineSpaceEx(const uint8_t* owner_auth,
+			     uint32_t owner_auth_size,
+			     uint32_t index)
+{
+	struct tpm2_nv_undefine_space_cmd undefine_space;
+	uint32_t permissions;
+	uint32_t rv;
+
+	/* Authentication support is not implemented. */
+	VbAssert(owner_auth == NULL && owner_auth_size == 0);
+
+	/* get the publicInfo of index */
+	rv = TlclGetPermissions(index, &permissions);
+	if (rv != TPM_SUCCESS) {
+		return rv;
+	}
+	undefine_space.nvIndex = HR_NV_INDEX + index;
+	undefine_space.use_platform_auth =
+		(permissions & TPMA_NV_PLATFORMCREATE) > 0;
+	return tpm_get_response_code(TPM2_NV_UndefineSpace, &undefine_space);
+}
+
+#endif  /* CHROMEOS_ENVIRONMENT */
+
 uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
 			   uint32_t index, uint32_t perm, uint32_t size,
 			   const void* auth_policy, uint32_t auth_policy_size)

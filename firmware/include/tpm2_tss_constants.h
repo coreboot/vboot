@@ -22,6 +22,7 @@ extern "C" {
 
 /* TPM2 command codes. */
 #define TPM2_Hierarchy_Control ((TPM_CC)0x00000121)
+#define TPM2_NV_UndefineSpace  ((TPM_CC)0x00000122)
 #define TPM2_Clear             ((TPM_CC)0x00000126)
 #define TPM2_NV_DefineSpace    ((TPM_CC)0x0000012A)
 #define TPM2_NV_Write          ((TPM_CC)0x00000137)
@@ -164,6 +165,11 @@ typedef struct {
 struct tpm2_nv_define_space_cmd {
 	TPM2B auth;
 	TPMS_NV_PUBLIC publicInfo;
+};
+
+struct tpm2_nv_undefine_space_cmd {
+	TPMI_RH_NV_INDEX nvIndex;
+	uint8_t use_platform_auth;
 };
 
 struct tpm2_nv_read_cmd {
