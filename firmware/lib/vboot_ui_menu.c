@@ -107,7 +107,7 @@ static VbError_t boot_disk_action(struct vb2_context *ctx)
 {
 	if (disable_dev_boot) {
 		vb2_flash_screen(ctx);
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 	VB2_DEBUG("trying fixed disk\n");
@@ -121,7 +121,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 
 	if (disable_dev_boot) {
 		vb2_flash_screen(ctx);
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 
@@ -131,7 +131,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 		VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not "
 				     "been enabled. Refer to the developer"
 				     "-mode documentation for details.\n");
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 
@@ -143,7 +143,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 	vb2_flash_screen(ctx);
 	VB2_DEBUG(no_legacy);
 	VbExDisplayDebugInfo(no_legacy);
-	VbExBeep(250, 200);
+	vb2_error_beep(VB_BEEP_FAILED);
 	return VBERROR_KEEP_LOOPING;
 }
 
@@ -154,7 +154,7 @@ static VbError_t boot_usb_action(struct vb2_context *ctx)
 
 	if (disable_dev_boot) {
 		vb2_flash_screen(ctx);
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 
@@ -167,7 +167,7 @@ static VbError_t boot_usb_action(struct vb2_context *ctx)
 				     "(USB/SD) has not been enabled. Refer "
 				     "to the developer-mode documentation "
 				     "for details.\n");
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 
@@ -181,7 +181,7 @@ static VbError_t boot_usb_action(struct vb2_context *ctx)
 	vb2_flash_screen(ctx);
 	VB2_DEBUG(no_kernel);
 	VbExDisplayDebugInfo(no_kernel);
-	VbExBeep(250, 200);
+	vb2_error_beep(VB_BEEP_FAILED);
 	return VBERROR_KEEP_LOOPING;
 }
 
@@ -247,7 +247,7 @@ static VbError_t enter_to_dev_menu(struct vb2_context *ctx)
 		vb2_flash_screen(ctx);
 		VB2_DEBUG(dev_already_on);
 		VbExDisplayDebugInfo(dev_already_on);
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 	vb2_change_menu(VB_MENU_TO_DEV, VB_TO_DEV_CANCEL);
@@ -333,7 +333,7 @@ static VbError_t to_norm_action(struct vb2_context *ctx)
 		VB2_DEBUG("TONORM rejected by FORCE_DEV_SWITCH_ON\n");
 		VbExDisplayDebugInfo("WARNING: TONORM prohibited by "
 				     "GBB FORCE_DEV_SWITCH_ON.\n\n");
-		vb2_error_beep();
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
 	}
 
@@ -411,7 +411,7 @@ static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
 		if (current_menu == VB_MENU_TO_DEV &&
 		    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
 			vb2_flash_screen(ctx);
-			vb2_error_beep();
+			vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 			break;
 		}
 

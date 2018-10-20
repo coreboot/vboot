@@ -122,9 +122,14 @@ void vb2_exit_altfw(void);
  */
 void vb2_try_alt_fw(int allowed, int altfw_num);
 
+enum vb2_beep_type {
+	VB_BEEP_FAILED,		/* Permitted but the operation failed */
+	VB_BEEP_NOT_ALLOWED,	/* Operation disabled by user setting */
+};
+
 /**
- * Emit two short beeps to indicate an error
+ * Emit beeps to indicate an error
  */
-void vb2_error_beep(void);
+void vb2_error_beep(enum vb2_beep_type beep);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */
