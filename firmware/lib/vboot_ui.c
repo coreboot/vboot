@@ -73,11 +73,19 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 }
 
 /* Two short beeps to notify the user that attempted action was disallowed. */
-void vb2_error_beep(void)
+void vb2_error_beep(enum vb2_beep_type beep)
 {
-	VbExBeep(120, 400);
-	VbExSleepMs(120);
-	VbExBeep(120, 400);
+	switch (beep) {
+	case VB_BEEP_FAILED:
+		VbExBeep(250, 200);
+		break;
+	default:
+	case VB_BEEP_NOT_ALLOWED:
+		VbExBeep(120, 400);
+		VbExSleepMs(120);
+		VbExBeep(120, 400);
+		break;
+	}
 }
 
 int vb2_prepare_alt_fw(int allowed)
@@ -98,7 +106,7 @@ int vb2_prepare_alt_fw(int allowed)
 
 void vb2_exit_altfw(void)
 {
-	vb2_error_beep();
+	vb2_error_beep(VB_BEEP_FAILED);
 }
 
 void vb2_try_alt_fw(int allowed, int altfw_num)
@@ -115,8 +123,7 @@ uint32_t VbTryUsb(struct vb2_context *ctx)
 		VB2_DEBUG("VbBootDeveloper() - booting USB\n");
 	} else {
 		VB2_DEBUG("VbBootDeveloper() - no kernel found on USB\n");
-		VbExBeep(250, 200);
-		VbExSleepMs(120);
+		vb2_error_beep(VB_BEEP_FAILED);
 		/*
 		 * Clear recovery requests from failed
 		 * kernel loading, so that powering off
@@ -381,7 +388,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 					"(USB/SD) has not been enabled. Refer "
 					"to the developer-mode documentation "
 					"for details.\n");
-				vb2_error_beep();
+				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 			} else {
 				/*
 				 * Clear the screen to show we get the Ctrl+U
