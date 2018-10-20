@@ -73,32 +73,29 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return !!shutdown_request;
 }
 
-int vb2_prepare_alt_fw(int allowed)
+/**
+ * Jump to a bootloader if possible
+ *
+ * This checks if the operation is permitted. If it is, then it jumps to the
+ * selected bootloader and execution continues there, never returning.
+ *
+ * If the operation is not permitted, or it is permitted but the bootloader
+ * cannot be found, it beeps and returns.
+ *
+ * @allowed	1 if allowed, 0 if not allowed
+ * @altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
+ */
+static void vb2_try_alt_fw(int allowed, int altfw_num)
 {
-	if (!allowed) {
+	if (allowed) {
+		vb2_run_altfw(altfw_num);	/* will not return if found */
+	} else {
 		VB2_DEBUG("VbBootDeveloper() - Legacy boot is disabled\n");
 		VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not "
 				     "been enabled. Refer to the developer"
 				     "-mode documentation for details.\n");
-		return -1;
-	} else if (0 != RollbackKernelLock(0)) {
-		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
-		return -1;
+		vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 	}
-
-	return 0;
-}
-
-void vb2_exit_altfw(void)
-{
-	vb2_error_beep(VB_BEEP_FAILED);
-}
-
-void vb2_try_alt_fw(int allowed, int altfw_num)
-{
-	if (!vb2_prepare_alt_fw(allowed))
-		VbExLegacy(altfw_num);	/* will not return if found */
-	vb2_exit_altfw();
 }
 
 uint32_t VbTryUsb(struct vb2_context *ctx)

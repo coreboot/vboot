@@ -136,15 +136,10 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 		return VBERROR_KEEP_LOOPING;
 	}
 
-	if (0 == RollbackKernelLock(0))
-		VbExLegacy(0);/* Will not return if successful */
-	else
-		VB2_DEBUG("Error locking kernel versions on legacy boot.\n");
-
+	vb2_run_altfw(0);
 	vb2_flash_screen(ctx);
 	VB2_DEBUG(no_legacy);
 	VbExDisplayDebugInfo(no_legacy);
-	vb2_error_beep(VB_BEEP_FAILED);
 	return VBERROR_KEEP_LOOPING;
 }
 
