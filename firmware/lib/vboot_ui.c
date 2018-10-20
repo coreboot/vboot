@@ -162,7 +162,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			 */
 			if (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD &&
 			    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
-				VbExBeep(120, 400);
+				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 				break;
 			}
 			VB2_DEBUG("Yes (1)\n");
@@ -321,7 +321,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 					VbExDisplayDebugInfo(
 						"WARNING: TONORM prohibited by "
 						"GBB FORCE_DEV_SWITCH_ON.\n\n");
-					VbExBeep(120, 400);
+					vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 					break;
 				}
 				VbDisplayScreen(ctx,
@@ -543,7 +543,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 					 */
 					VB2_DEBUG("^D but rec switch "
 						  "is pressed\n");
-					VbExBeep(120, 400);
+					vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 					continue;
 				}
 
