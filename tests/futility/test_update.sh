@@ -182,6 +182,11 @@ test_update "Full update (GBB=0 -> 0)" \
 	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full.gbb0" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
+test_update "Full update (--host_only)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
+	--host_only --ec_image non-exist.bin --pd_image non_exist.bin
+
 # Test RW-only update.
 test_update "RW update" \
 	"${FROM_IMAGE}" "${TMP}.expected.rw" \

@@ -33,6 +33,7 @@ static struct option const long_opts[] = {
 	{"force", 0, NULL, 'F'},
 	{"programmer", 1, NULL, 'p'},
 	{"wp", 1, NULL, 'W'},
+	{"host_only", 0, NULL, 'H'},
 	{"emulate", 1, NULL, 'E'},
 	{"output_dir", 1, NULL, 'U'},
 	{"sys_props", 1, NULL, 'S'},
@@ -67,6 +68,7 @@ static void print_help(int argc, char *argv[])
 		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
+		"    --host_only     \tUpdate only AP (host) firmware\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"    --model=MODEL   \tOverride system model for images\n"
 		"    --signature_id=S\tOverride signature ID for key files\n"
@@ -131,6 +133,9 @@ static int do_update(int argc, char *argv[])
 			break;
 		case 'W':
 			args.write_protection = optarg;
+			break;
+		case 'H':
+			args.host_only = 1;
 			break;
 		case 'E':
 			args.emulation = optarg;

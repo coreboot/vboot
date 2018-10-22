@@ -1641,6 +1641,7 @@ static int save_from_stdin(const char *output)
  * Returns 0 on success, otherwise number of failures.
  */
 static int updater_load_images(struct updater_config *cfg,
+			       int host_only,
 			       const char *image,
 			       const char *ec_image,
 			       const char *pd_image)
@@ -1657,7 +1658,7 @@ static int updater_load_images(struct updater_config *cfg,
 		}
 		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
 	}
-	if (cfg->emulation)
+	if (cfg->emulation || host_only)
 		return errorcnt;
 
 	if (!cfg->ec_image.data && ec_image)
@@ -1769,7 +1770,8 @@ static int updater_setup_archive(
 	}
 
 	errorcnt += updater_load_images(
-			cfg, model->image, model->ec_image, model->pd_image);
+			cfg, arg->host_only, model->image, model->ec_image,
+			model->pd_image);
 	errorcnt += patch_image_by_model(&cfg->image, model, ar);
 	return errorcnt;
 }
@@ -1862,7 +1864,8 @@ int updater_setup_config(struct updater_config *cfg,
 
 	/* Always load images specified from command line directly. */
 	errorcnt += updater_load_images(
-			cfg, arg->image, arg->ec_image, arg->pd_image);
+			cfg, arg->host_only, arg->image, arg->ec_image,
+			arg->pd_image);
 
 	if (!archive_path)
 		archive_path = ".";
