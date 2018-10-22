@@ -648,12 +648,19 @@ int load_system_firmware(struct updater_config *cfg,
  */
 void free_firmware_image(struct firmware_image *image)
 {
+	/*
+	 * The programmer is not allocated by load_firmware_image and must be
+	 * preserved explicitly.
+	 */
+	const char *programmer = image->programmer;
+
 	free(image->data);
 	free(image->file_name);
 	free(image->ro_version);
 	free(image->rw_version_a);
 	free(image->rw_version_b);
 	memset(image, 0, sizeof(*image));
+	image->programmer = programmer;
 }
 
 /*
