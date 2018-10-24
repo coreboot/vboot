@@ -3,18 +3,21 @@
  * found in the LICENSE file.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
 #ifndef HAVE_MACOS
 #include <linux/fs.h>
+#include <linux/gpio.h>
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <sys/wait.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -29,8 +32,10 @@
 #define FDT_BASE_PATH "/proc/device-tree/firmware/chromeos"
 /* Path to compatible FDT entry */
 #define FDT_COMPATIBLE_PATH "/proc/device-tree/compatible"
-/* Path to the chromeos_arm platform device */
+/* Path to the chromeos_arm platform device (deprecated) */
 #define PLATFORM_DEV_PATH "/sys/devices/platform/chromeos_arm"
+/* This should match the Linux GPIO name (i.e., 'gpio-line-names'). */
+#define GPIO_NAME_WP_L "AP_FLASH_WP_L"
 /* Device for NVCTX write */
 #define NVCTX_PATH "/dev/mmcblk%d"
 /* Base name for GPIO files */
@@ -244,6 +249,137 @@ out:
 	return ret;
 }
 
+#ifndef HAVE_MACOS
+static int gpioline_read_value(int chip_fd, int idx, bool active_low)
+{
+	struct gpiohandle_request request = {
+		.lineoffsets = { idx },
+		.flags = GPIOHANDLE_REQUEST_INPUT | \
+			 (active_low ? GPIOHANDLE_REQUEST_ACTIVE_LOW : 0),
+		.lines = 1,
+	};
+	struct gpiohandle_data data;
+	int ret;
+
+	ret = ioctl(chip_fd, GPIO_GET_LINEHANDLE_IOCTL, &request);
+	if (ret < 0) {
+		perror("GPIO_GET_LINEHANDLE_IOCTL");
+		return -1;
+	}
+	if (request.fd < 0) {
+		fprintf(stderr, "bad LINEHANDLE fd %d\n", request.fd);
+		return -1;
+	}
+
+	ret = ioctl(request.fd, GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data);
+	if (ret < 0) {
+		perror("GPIOHANDLE_GET_LINE_VALUES_IOCTL");
+		close(request.fd);
+		return -1;
+	}
+	close(request.fd);
+	return data.values[0];
+}
+
+/* Return 1 if @idx line matches name; 0 if no match; negative if error. */
+static int gpioline_name_match(int chip_fd, int idx, const char *name)
+{
+	struct gpioline_info info = {
+		.line_offset = idx,
+	};
+	int ret;
+
+	ret = ioctl(chip_fd, GPIO_GET_LINEINFO_IOCTL, &info);
+	if (ret < 0) {
+		perror("GPIO_GET_LINEINFO_IOCTL");
+		return -1;
+	}
+
+	return strncmp(info.name, name, sizeof(info.name)) == 0;
+}
+
+/* Return value of gpio, if found. Negative for error codes. */
+static int gpiochip_read_value(int chip_fd, const char *name, bool active_low)
+{
+	struct gpiochip_info info;
+	int i, ret;
+
+	ret = ioctl(chip_fd, GPIO_GET_CHIPINFO_IOCTL, &info);
+	if (ret < 0) {
+		perror("GPIO_GET_CHIPINFO_IOCTL");
+		return -1;
+	}
+
+	for (i = 0; i < info.lines; i++) {
+		if (gpioline_name_match(chip_fd, i, name) != 1)
+			continue;
+		return gpioline_read_value(chip_fd, i, active_low);
+	}
+
+	return -1;
+}
+
+/* Return nonzero for entries with a 'gpiochip'-prefixed name. */
+static int gpiochip_scan_filter(const struct dirent *d)
+{
+	const char prefix[] = "gpiochip";
+	return !strncmp(prefix, d->d_name, strlen(prefix));
+}
+
+/*
+ * Read a named GPIO via the Linux /dev/gpiochip* API, supported in recent
+ * kernels (e.g., ChromeOS kernel 4.14+). This method is preferred over the
+ * downstream chromeos_arm driver.
+ *
+ * Returns -1 for errors (e.g., API not supported, or @name not found); 1 for
+ * active; 0 for inactive.
+ */
+static int gpiod_read(const char *name, bool active_low)
+{
+	struct dirent **list;
+	int i, max, ret;
+
+	ret = scandir("/dev", &list, gpiochip_scan_filter, alphasort);
+	if (ret < 0) {
+		perror("scandir");
+		return -1;
+	}
+	max = ret;
+	/* No /dev/gpiochip* -- API not supported. */
+	if (!max)
+		return -1;
+
+	for (i = 0; i < max; i++) {
+		char buf[30];
+		int fd;
+
+		snprintf(buf, sizeof(buf), "/dev/%s", list[i]->d_name);
+		ret = open(buf, O_RDWR);
+		if (ret < 0) {
+			perror("open");
+			break;
+		}
+		fd = ret;
+
+		ret = gpiochip_read_value(fd, name, active_low);
+		close(fd);
+		if (ret >= 0)
+			break;
+	}
+
+	for (i = 0; i < max; i++)
+		free(list[i]);
+	free(list);
+
+	return ret >= 0 ? ret : -1;
+}
+#else
+static int gpiod_read(const char *name, bool active_low)
+{
+	return -1;
+}
+#endif /* HAVE_MACOS */
+
 static int vb2_read_nv_storage_disk(struct vb2_context *ctx)
 {
 	int nvctx_fd = -1;
@@ -418,8 +554,11 @@ int VbGetArchPropertyInt(const char* name)
 		return VbGetVarGpio("recovery-switch");
 	} else if (!strcasecmp(name, "wpsw_cur")) {
 		int value;
-		/* Try finding the GPIO through the chromeos_arm platform
-		 * device first. */
+		/* Try GPIO chardev API first. */
+		value = gpiod_read(GPIO_NAME_WP_L, true);
+		if (value != -1)
+			return value;
+		/* Try the deprecated chromeos_arm platform device next. */
 		value = VbGetPlatformGpioStatus("write-protect");
 		if (value != -1)
 			return value;
