@@ -893,12 +893,14 @@ VbError_t VbExEcBatteryCutOff(void);
  * severity levels for an auxiliary firmware update request
  */
 typedef enum {
+	/* no update needed and no protection needed */
+	VB_AUX_FW_NO_DEVICE = 0,
 	/* no update needed */
-	VB_AUX_FW_NO_UPDATE = 0,
+	VB_AUX_FW_NO_UPDATE = 1,
 	/* update needed, can be done quickly */
-	VB_AUX_FW_FAST_UPDATE = 1,
+	VB_AUX_FW_FAST_UPDATE = 2,
 	/* update needed, "this would take a while..." */
-	VB_AUX_FW_SLOW_UPDATE = 2,
+	VB_AUX_FW_SLOW_UPDATE = 3,
 } VbAuxFwUpdateSeverity_t;
 
 /**
