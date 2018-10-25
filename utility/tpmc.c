@@ -181,6 +181,20 @@ static uint32_t HandlerDefineSpace(void) {
   return TlclDefineSpace(index, perm, size);
 }
 
+static uint32_t HandlerUndefineSpace(void) {
+  uint32_t index;
+  if (nargs != 3) {
+    fprintf(stderr, "usage: tpmc undef <index>\n");
+    exit(OTHER_ERROR);
+  }
+  if (HexStringToUint32(args[2], &index) != 0) {
+    fprintf(stderr, "<index> must be "
+            "32-bit hex (0x[0-9a-f]+)\n");
+    exit(OTHER_ERROR);
+  }
+  return TlclUndefineSpace(index);
+}
+
 static uint32_t HandlerWrite(void) {
   uint32_t index, size;
   uint8_t value[TPM_MAX_COMMAND_SIZE];
@@ -575,6 +589,10 @@ command_record command_table[] = {
     TlclSetGlobalLock },
   { "definespace", "def", "define a space (def <index> <size> <perm>)",
     HandlerDefineSpace },
+  { "undefinespace", "undef",
+    "undefine a space (undef <index>)"
+    TPM_MODE_SELECT(" only succeeds when NvLocked is not set", ""),
+    HandlerUndefineSpace },
   { "write", "write", "write to a space (write <index> [<byte0> <byte1> ...])",
     HandlerWrite },
   { "read", "read", "read from a space (read <index> <size>)",
