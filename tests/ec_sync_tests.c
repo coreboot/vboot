@@ -219,8 +219,10 @@ VbError_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
 
 VbError_t VbExUpdateAuxFw()
 {
-	ec_aux_fw_update_req = ec_aux_fw_update_severity != VB_AUX_FW_NO_UPDATE;
-	ec_aux_fw_protected = 1;
+	if (ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE &&
+	    ec_aux_fw_update_severity != VB_AUX_FW_NO_UPDATE)
+		ec_aux_fw_update_req = 1;
+	ec_aux_fw_protected = ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE;
 	return ec_aux_fw_retval;
 }
 
@@ -403,6 +405,15 @@ static void VbSoftwareSyncTest(void)
 		   " disables auxiliary FW update request");
 	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
 	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+
+	ResetMocks();
+	ec_aux_fw_mock_severity = VB_AUX_FW_NO_DEVICE;
+	test_ssync(VBERROR_SUCCESS, 0,
+		   "No auxiliary FW update needed");
+	TEST_EQ(screens_count, 0,
+		"  wait screen skipped");
+	TEST_EQ(ec_aux_fw_update_req, 0, "  no aux fw update requested");
+	TEST_EQ(ec_aux_fw_protected, 0, "  no aux fw protected");
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_NO_UPDATE;
