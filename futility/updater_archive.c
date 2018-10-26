@@ -694,7 +694,7 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 		model = &manifest->models[0];
 
 	if (!model && !model_name) {
-		sys_model_name = host_shell("mosys platform name");
+		sys_model_name = host_shell("mosys platform model");
 		DEBUG("System model name: '%s'", sys_model_name);
 		model_name = sys_model_name;
 	}
