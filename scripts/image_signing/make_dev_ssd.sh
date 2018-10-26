@@ -14,8 +14,15 @@ load_shflags || exit 1
 # Constants used by DEFINE_*
 VBOOT_BASE='/usr/share/vboot'
 DEFAULT_KEYS_FOLDER="$VBOOT_BASE/devkeys"
-DEFAULT_BACKUP_FOLDER='/mnt/stateful_partition/backups'
 DEFAULT_PARTITIONS='2 4'
+
+# Only store backup in stateful partition if available.
+if [ -d /mnt/stateful_partition ]; then
+  DEFAULT_BACKUP_FOLDER="/mnt/stateful_partition"
+else
+  DEFAULT_BACKUP_FOLDER="$(pwd)"
+fi
+DEFAULT_BACKUP_FOLDER="${DEFAULT_BACKUP_FOLDER}/cros_sign_backups"
 
 # TODO(hungte) The default image selection is no longer a SSD, so the script
 # works more like "make_dev_image".  We may change the file name in future.
@@ -281,7 +288,7 @@ resign_ssd_kernel() {
       cp -f "$old_blob" "$backup_file_path"; then
       info "Backup of ${name} is stored in: ${backup_file_path}"
     else
-      warning "Cannot create file in ${FLAGS_backup_dir} ... Ignore backups."
+      warn "Cannot create file in ${FLAGS_backup_dir} ... Ignore backups."
     fi
 
     debug_msg "Writing $name to partition $kernel_index"
