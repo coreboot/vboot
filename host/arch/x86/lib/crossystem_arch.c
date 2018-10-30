@@ -673,6 +673,7 @@ static const struct GpioChipset chipsets_supported[] = {
 	{ "INT3452:01", FindGpioChipOffsetByLabel },
 	{ "INT3452:02", FindGpioChipOffsetByLabel },
 	{ "INT3452:03", FindGpioChipOffsetByLabel },
+	{ "INT3455:00", FindGpioChipOffsetByLabel },
 	{ "INT34BB:00", FindGpioChipOffsetByLabel },
 	/* INT3453 are for GLK */
 	{ "INT3453:00", FindGpioChipOffsetByLabel },
