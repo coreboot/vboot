@@ -14,6 +14,9 @@
 #include "updater.h"
 #include "utility.h"
 
+enum {
+	OPT_DUMMY = 0x100,
+};
 
 /* Command line options */
 static struct option const long_opts[] = {
@@ -42,6 +45,13 @@ static struct option const long_opts[] = {
 	{"debug", 0, NULL, 'd'},
 	{"verbose", 0, NULL, 'v'},
 	{"help", 0, NULL, 'h'},
+	/* TODO(hungte) Remove following deprecated options. */
+	{"noupdate_ec", 0, NULL, 'H'},  /* --host_only */
+	{"noupdate_pd", 0, NULL, 'H'},  /* --host_only */
+	{"nocheck_keys", 0, NULL, 'F'},  /* --force */
+	{"update_main", 0, NULL, OPT_DUMMY},
+	{"update_ec", 0, NULL, OPT_DUMMY},
+	{"update_pd", 0, NULL, OPT_DUMMY},
 	{NULL, 0, NULL, 0},
 };
 
@@ -167,6 +177,8 @@ static int do_update(int argc, char *argv[])
 			args.verbosity++;
 			break;
 
+		case OPT_DUMMY:
+			break;
 		case 'h':
 			print_help(argc, argv);
 			return !!errorcnt;
