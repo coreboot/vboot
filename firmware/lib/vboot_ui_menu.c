@@ -22,6 +22,7 @@
 #include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
+#include "vboot_ui_common.h"
 #include "vboot_ui_menu_private.h"
 
 static const char dev_disable_msg[] =

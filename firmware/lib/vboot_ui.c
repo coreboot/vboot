@@ -24,6 +24,7 @@
 #include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
+#include "vboot_ui_common.h"
 
 /* Global variables */
 static int power_button_released;
@@ -70,22 +71,6 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
 	return !!shutdown_request;
-}
-
-/* Two short beeps to notify the user that attempted action was disallowed. */
-void vb2_error_beep(enum vb2_beep_type beep)
-{
-	switch (beep) {
-	case VB_BEEP_FAILED:
-		VbExBeep(250, 200);
-		break;
-	default:
-	case VB_BEEP_NOT_ALLOWED:
-		VbExBeep(120, 400);
-		VbExSleepMs(120);
-		VbExBeep(120, 400);
-		break;
-	}
 }
 
 int vb2_prepare_alt_fw(int allowed)
