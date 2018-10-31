@@ -42,6 +42,7 @@ where <type> is one of:
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
              oci-container (sign an OCI container)
+             cr50_firmware (sign a cr50 firmware image)
 
 output_image: File name of the signed output image
 version_file: File name of where to read the kernel and firmware versions.
@@ -818,6 +819,17 @@ sign_oci_container() {
     "${image}" "${key_dir}" --output "${output}"
 }
 
+# Sign a cr50 firmware image with the given keys.
+# Args: CONTAINER KEY_DIR [OUTPUT_CONTAINER]
+sign_cr50_firmware() {
+  local image=$1
+  local key_dir=$2
+  local output=$3
+
+  "${SCRIPT_DIR}/sign_cr50_firmware.sh" \
+    "${image}" "${key_dir}" "${output}"
+}
+
 # Verify an image including rootfs hash using the specified keys.
 verify_image() {
   local loopdev=$(loopback_partscan "${INPUT_IMAGE}")
@@ -1131,6 +1143,8 @@ elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "oci-container" ]]; then
   sign_oci_container "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+elif [[ "${TYPE}" == "cr50_firmware" ]]; then
+  sign_cr50_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 else
   die "Invalid type ${TYPE}"
 fi
