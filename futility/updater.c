@@ -41,6 +41,9 @@ static const char * const PROG_HOST = "host",
 		  * const PROG_EC = "ec",
 		  * const PROG_PD = "ec:dev=1";
 
+static const char ROOTKEY_HASH_DEV[] =
+		"b11d74edd286c144e1135b49e7f0bc20cf041f10";
+
 enum wp_state {
 	WP_DISABLED,
 	WP_ENABLED,
@@ -63,6 +66,12 @@ enum flashrom_ops {
 	FLASHROM_WP_STATUS,
 };
 
+enum rootkey_compat_result {
+	ROOTKEY_COMPAT_OK,
+	ROOTKEY_COMPAT_ERROR,
+	ROOTKEY_COMPAT_REKEY,
+	ROOTKEY_COMPAT_REKEY_TO_DEV,
+};
 
 /*
  * Helper function to create a new temporary file.
@@ -1178,29 +1187,30 @@ static int get_key_versions(const struct firmware_image *image,
  * Checks if the root key in ro_image can verify vblocks in rw_image.
  * Returns 0 for success, otherwise failure.
  */
-static int check_compatible_root_key(const struct firmware_image *ro_image,
-				     const struct firmware_image *rw_image)
+static enum rootkey_compat_result check_compatible_root_key(
+		const struct firmware_image *ro_image,
+		const struct firmware_image *rw_image)
 {
 	const struct vb2_gbb_header *gbb = find_gbb(ro_image);
 	const struct vb2_packed_key *rootkey;
 	const struct vb2_keyblock *keyblock;
 
 	if (!gbb)
-		return -1;
+		return ROOTKEY_COMPAT_ERROR;
 
 	rootkey = get_rootkey(gbb);
 	if (!rootkey)
-		return -1;
+		return ROOTKEY_COMPAT_ERROR;
 
 	/* Assume VBLOCK_A and VBLOCK_B are signed in same way. */
 	keyblock = get_keyblock(rw_image, FMAP_RW_VBLOCK_A);
 	if (!keyblock)
-		return -1;
+		return ROOTKEY_COMPAT_ERROR;
 
 	if (verify_keyblock(keyblock, rootkey) != 0) {
 		const struct vb2_gbb_header *gbb_rw = find_gbb(rw_image);
 		const struct vb2_packed_key *rootkey_rw = NULL;
-		int is_same_key = 0;
+		int is_same_key = 0, to_dev = 0;
 		/*
 		 * Try harder to provide more info.
 		 * packed_key_sha1_string uses static buffer so don't call
@@ -1214,19 +1224,25 @@ static int check_compatible_root_key(const struct firmware_image *ro_image,
 			    memcmp(rootkey, rootkey_rw, rootkey->key_size +
 				   rootkey->key_offset) == 0)
 				is_same_key = 1;
+			if (strcmp(packed_key_sha1_string(rootkey_rw),
+				   ROOTKEY_HASH_DEV) == 0)
+				to_dev = 1;
 		}
 		printf("Current (RO) image root key is %s, ",
 		       packed_key_sha1_string(rootkey));
-		if (is_same_key)
+
+		if (is_same_key) {
 			printf("same with target (RW) image. "
 			       "Maybe RW corrupted?\n");
-		else
-			printf("target (RW) image is signed with rootkey %s.\n",
-			       rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
-			       "<invalid>");
-		return -1;
+			return ROOTKEY_COMPAT_ERROR;
+		}
+		printf("target (RW) image is signed with rootkey %s.\n",
+		       rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
+		       "<invalid>");
+		return to_dev ? ROOTKEY_COMPAT_REKEY_TO_DEV :
+				ROOTKEY_COMPAT_REKEY;
 	}
-	return 0;
+	return ROOTKEY_COMPAT_OK;
 }
 
 /*
@@ -1494,6 +1510,24 @@ static enum updater_error_codes update_whole_firmware(
 	printf("Checking compatibility...\n");
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
+	if (!cfg->force_update) {
+		enum rootkey_compat_result r = check_compatible_root_key(
+				&cfg->image_current, image_to);
+		/* We only allow re-key to non-dev keys. */
+		switch (r) {
+		case ROOTKEY_COMPAT_OK:
+			break;
+		case ROOTKEY_COMPAT_REKEY:
+			printf("Will change firmware signing key.\n");
+			break;
+		case ROOTKEY_COMPAT_REKEY_TO_DEV:
+			ERROR("Re-key to DEV is not allowed. "
+			      "Add --force if you really want to do that.");
+			return UPDATE_ERR_ROOT_KEY;
+		default:
+			return UPDATE_ERR_ROOT_KEY;
+		}
+	}
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
