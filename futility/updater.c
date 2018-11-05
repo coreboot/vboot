@@ -116,17 +116,23 @@ static void updater_remove_all_temp_files(struct updater_config *cfg)
 
 /*
  * Strip a string (usually from shell execution output) by removing all the
- * trailing space characters (space, new line, tab, ... etc).
+ * trailing characters in pattern. If pattern is NULL, match by space type
+ * characters (space, new line, tab, ... etc).
  */
-static void strip(char *s)
+static void strip(char *s, const char *pattern)
 {
 	int len;
 	assert(s);
 
 	len = strlen(s);
 	while (len-- > 0) {
-		if (!isascii(s[len]) || !isspace(s[len]))
-			break;
+		if (pattern) {
+			if (!strchr(pattern, s[len]))
+				break;
+		} else {
+			if (!isascii(s[len]) || !isspace(s[len]))
+				break;
+		}
 		s[len] = '\0';
 	}
 }
@@ -152,7 +158,7 @@ char *host_shell(const char *command)
 	}
 
 	if (fgets(buf, sizeof(buf), fp))
-		strip(buf);
+		strip(buf, NULL);
 	result = pclose(fp);
 	if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
 		DEBUG("Execution failure with exit code %d: %s",
@@ -297,7 +303,7 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	}
 
 	result = host_shell(command);
-	strip(result);
+	strip(result, NULL);
 	free(command);
 	DEBUG("wp-status: %s", result);
 
@@ -569,6 +575,11 @@ static int load_firmware_version(struct firmware_image *image,
 	find_firmware_section(&fwid, image, section_name);
 	if (fwid.size) {
 		*version = strndup((const char*)fwid.data, fwid.size);
+		/*
+		 * For 'system current' images, the version string may contain
+		 * invalid characters that we do want to strip.
+		 */
+		strip(*version, "\xff");
 		return 0;
 	}
 	*version = strdup("");
