@@ -23,6 +23,41 @@ eval set -- "${FLAGS_ARGV}"
 set -e
 set -u
 
+PRE_PVT_BID_FLAG=0x10
+MP_BID_FLAG=0x10000
+# This function accepts one argument, the name of the Cr50 manifest file which
+# needs to be verified.
+#
+# The function verifies that the manifest is a proper json file, and that the
+# manifest conforms to Cr50 version numbering and board ID flags convention:
+# when signing pre-pvt images (major version number is even) the 0x10 flags
+# bit must be set. When signing mp images (major version number is odd), the
+# 0x10000 flags bit must be set.
+verify_cr50_manifest() {
+  if [[ $# -ne 1 ]]; then
+    die "Usage: verify_cr50_manifest <manifest .json file>"
+  fi
+
+  local manifest_json="$1"
+  local major
+  local bid_flags
+
+  major="$(jq '.major' "${manifest_json}")"
+  bid_flags="$(jq '.board_id_flags' "${manifest_json}")"
+
+  if (( major & 1 )); then
+    if (( bid_flags & MP_BID_FLAG )); then
+      return 0
+    fi
+  else
+    if (( bid_flags & PRE_PVT_BID_FLAG )); then
+      return 0
+    fi
+  fi
+  die "Inconsistent manifest ${manifest_source}: major = '${major}'," \
+      "board_id_flags = '${bid_flags}'"
+}
+
 # This function accepts two arguments, names of two binary files.
 #
 # It searches the first passed-in file for the first 8 bytes of the second
@@ -242,6 +277,8 @@ sign_cr50_firmware() {
        --output "${manifest_file}"; then
     die "failed to convert ${manifest_source} into valid json"
   fi
+
+  verify_cr50_manifest "${manifest_file}"
 
   dd if=/dev/zero bs="${IMAGE_SIZE}" count=1 status=none |
     tr '\000' '\377' > "${output_file}"
