@@ -161,6 +161,10 @@ CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT -Wall ${WERROR} ${DEBUG_FLAGS}
 endif
 
+ifneq (${ALT_OS},)
+CFLAGS += -DALT_OS
+endif
+
 ifneq (${CUSTOM_MUSIC},)
 CFLAGS += -DCUSTOM_MUSIC
 endif

@@ -748,7 +748,7 @@ static void VbBootRecTest(void)
 	printf("...done.\n");
 }
 
-
+#ifdef ALT_OS
 static void VbBootAltOSTest(void)
 {
 	printf("Testing VbBootAltOS()...\n");
@@ -772,6 +772,7 @@ static void VbBootAltOSTest(void)
 
 	printf("...done.\n");
 }
+#endif  /* ALT_OS */
 
 
 int main(void)
@@ -780,7 +781,9 @@ int main(void)
 	VbBootTest();
 	VbBootDevTest();
 	VbBootRecTest();
+#ifdef ALT_OS
 	VbBootAltOSTest();
+#endif  /* ALT_OS */
 
 	return gTestSuccess ? 0 : 255;
 }

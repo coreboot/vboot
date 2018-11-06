@@ -425,6 +425,7 @@ VbError_t vb2_post_ec_sync_hooks(struct vb2_context *ctx,
 	return VBERROR_SUCCESS;
 }
 
+#ifdef ALT_OS
 int VbAltOSForceChromeOS(void) {
 	return 0;
 }
@@ -519,6 +520,7 @@ VbError_t VbCheckAltOS(struct vb2_context *ctx, VbCommonParams *cparams,
 
 	return VBERROR_SUCCESS;
 }
+#endif  /* ALT_OS */
 
 VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
                                 VbSelectAndLoadKernelParams *kparams)
@@ -530,11 +532,13 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
+#ifdef ALT_OS
 	/*
 	 * Determine whether the EC is in RO or RW.  This information
 	 * will be used later on in Alt OS boot flow.
 	 */
 	int trusted_ec = VbExTrustEC(0);
+#endif  /* ALT_OS */
 
 	/*
 	 * Do EC software sync if necessary.  This has UI, but it's just a
@@ -548,6 +552,7 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
+#ifdef ALT_OS
 	/*
 	 * Check whether confirmation screen or picker screen need to be
 	 * shown for Alt OS.  Ignore return value, and in the case of failure,
@@ -556,6 +561,7 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 	retval = VbCheckAltOS(&ctx, cparams, trusted_ec);
 	if (retval == VBERROR_VGA_OPROM_MISMATCH)
 		goto VbSelectAndLoadKernel_exit;
+#endif  /* ALT_OS */
 
 	/* Select boot path */
 	if (shared->recovery_reason) {
@@ -572,12 +578,14 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		else
 		    retval = VbBootDeveloper(&ctx, cparams);
 		VbExEcEnteringMode(0, VB_EC_DEVELOPER);
+#ifdef ALT_OS
 	} else if (shared->flags & VBSD_ALT_OS_CONFIRM_ENABLE ||
 		   shared->flags & VBSD_ALT_OS_SHOW_PICKER) {
 		/* Alt OS boot.  This has UI. */
 		retval = VbBootAltOS(&ctx, cparams);
 		/* Report as normal mode to the EC. */
 		VbExEcEnteringMode(0, VB_EC_NORMAL);
+#endif  /* ALT_OS */
 	} else {
 		/* Normal boot */
 		retval = VbBootNormal(&ctx, cparams);

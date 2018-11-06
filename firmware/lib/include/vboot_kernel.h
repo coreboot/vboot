@@ -82,10 +82,12 @@ VbError_t VbBootDeveloperMenu(struct vb2_context *ctx, VbCommonParams *cparams);
  */
 VbError_t VbBootRecoveryMenu(struct vb2_context *ctx, VbCommonParams *cparams);
 
+#ifdef ALT_OS
 /**
  * Handle an Alt OS-mode boot.
  */
 VbError_t VbBootAltOS(struct vb2_context *ctx, VbCommonParams *cparams);
+#endif  /* ALT_OS */
 
 /**
  * Return the current FWMP flags.  Valid only inside VbSelectAndLoadKernel().
