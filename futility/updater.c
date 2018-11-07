@@ -317,10 +317,16 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	return r;
 }
 
-/* Helper function to return software write protection switch status. */
+/* Helper function to return write protection status via given programmer. */
+static int host_get_wp(const char *programmer)
+{
+	return host_flashrom(FLASHROM_WP_STATUS, NULL, programmer, 0, NULL);
+}
+
+/* Helper function to return host software write protection status. */
 static int host_get_wp_sw()
 {
-	return host_flashrom(FLASHROM_WP_STATUS, NULL, PROG_HOST, 0, NULL);
+	return host_get_wp(PROG_HOST);
 }
 
 /*
@@ -847,7 +853,8 @@ static int write_firmware(struct updater_config *cfg,
  */
 static int write_optional_firmware(struct updater_config *cfg,
 				   const struct firmware_image *image,
-				   const char *section_name)
+				   const char *section_name,
+				   int check_programmer_wp)
 {
 	if (!image->data) {
 		DEBUG("No data in <%s> image.", image->programmer);
@@ -856,6 +863,18 @@ static int write_optional_firmware(struct updater_config *cfg,
 	if (section_name && !firmware_section_exists(image, section_name)) {
 		DEBUG("Image %s<%s> does not have section %s.",
 		      image->file_name, image->programmer, section_name);
+		return 0;
+	}
+
+	/*
+	 * EC & PD may have different WP settings and we want to write
+	 * only if it is OK.
+	 */
+	if (check_programmer_wp &&
+	    get_system_property(SYS_PROP_WP_HW, cfg) == WP_ENABLED &&
+	    host_get_wp(image->programmer) == WP_ENABLED) {
+		ERROR("Target %s has write protection enabled, skip updating.",
+		      image->programmer);
 		return 0;
 	}
 
@@ -1481,7 +1500,7 @@ static enum updater_error_codes update_rw_firmrware(
 	if (write_firmware(cfg, image_to, FMAP_RW_SECTION_A) ||
 	    write_firmware(cfg, image_to, FMAP_RW_SECTION_B) ||
 	    write_firmware(cfg, image_to, FMAP_RW_SHARED) ||
-	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY))
+	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY, 0))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1526,8 +1545,8 @@ static enum updater_error_codes update_whole_firmware(
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
-	    write_optional_firmware(cfg, &cfg->ec_image, NULL) ||
-	    write_optional_firmware(cfg, &cfg->pd_image, NULL))
+	    write_optional_firmware(cfg, &cfg->ec_image, NULL, 1) ||
+	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
