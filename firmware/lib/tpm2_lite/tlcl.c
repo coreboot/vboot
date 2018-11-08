@@ -572,9 +572,30 @@ uint32_t TlclReadLock(uint32_t index)
 
 uint32_t TlclGetRandom(uint8_t *data, uint32_t length, uint32_t *size)
 {
-	*size = 0;
-	VB2_DEBUG("NOT YET IMPLEMENTED\n");
-	return TPM_E_IOERROR;
+	uint32_t rv;
+	struct tpm2_get_random_cmd random;
+	struct get_random_response *response = &tpm2_resp.random;
+	size_t max_len, offset;
+
+	offset = offsetof(struct tpm2_response, random.random_bytes.buffer);
+	max_len = TPM_BUFFER_SIZE - offset;
+
+	if (length > max_len)
+		return TPM_E_BUFFER_SIZE;
+
+	random.bytes_requested = length;
+
+	rv = tpm_send_receive(TPM2_GetRandom, &random, &tpm2_resp);
+	if (rv != TPM_SUCCESS)
+		return rv;
+
+	*size = response->random_bytes.size;
+	if (*size > length)
+		return TPM_E_RESPONSE_TOO_LARGE;
+
+	memcpy(data, response->random_bytes.buffer, *size);
+
+	return rv;
 }
 
 // Converts TPM_PT_VENDOR_STRING_x |value| to an array of bytes in |buf|.

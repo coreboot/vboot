@@ -34,6 +34,7 @@ extern "C" {
 #define TPM2_NV_ReadLock       ((TPM_CC)0x0000014F)
 #define TPM2_NV_ReadPublic     ((TPM_CC)0x00000169)
 #define TPM2_GetCapability     ((TPM_CC)0x0000017A)
+#define TPM2_GetRandom         ((TPM_CC)0x0000017B)
 
 #define HR_SHIFT               24
 #define TPM_HT_NV_INDEX        0x01
@@ -207,6 +208,10 @@ struct tpm2_get_capability_cmd {
 	uint32_t property_count;
 };
 
+struct tpm2_get_random_cmd {
+	uint16_t bytes_requested;
+};
+
 struct tpm2_self_test_cmd {
 	TPMI_YES_NO full_test;
 };
@@ -258,6 +263,10 @@ struct get_capability_response {
 	TPMS_CAPABILITY_DATA capability_data;
 } __attribute__((packed));
 
+struct get_random_response {
+	TPM2B_DIGEST random_bytes;
+} __attribute__((packed));
+
 struct nv_read_public_response {
 	TPMS_NV_PUBLIC nvPublic;
 	TPM2B_NAME nvName;
@@ -269,6 +278,7 @@ struct tpm2_response {
 		struct nv_read_response nvr;
 		struct tpm2_session_header def_space;
 		struct get_capability_response cap;
+		struct get_random_response random;
 		struct nv_read_public_response nv_read_public;
 	};
 };
