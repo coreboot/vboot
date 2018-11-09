@@ -498,6 +498,7 @@ main() {
     # signed something at least
     info "Successfully re-signed ${num_signed} of ${num_given} kernel(s)" \
       " on device ${FLAGS_image}."
+    info "Please remember to reboot before updating the kernel on this device."
   else
     die "Failed re-signing kernels."
   fi
