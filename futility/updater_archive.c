@@ -31,7 +31,7 @@
  *
  * A package for single board (i.e., not Unified Build) will have all the image
  * files in top folder:
- *  - host: 'bios.bin'
+ *  - host: 'image.bin' (or 'bios.bin' as legacy name before CL:1318712)
  *  - ec: 'ec.bin'
  *  - pd: 'pd.bin'
  * If white label is supported, a 'keyset/' folder will be available, with key
@@ -905,7 +905,8 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 {
 	struct manifest manifest = {0}, *new_manifest;
 	struct model_config model = {0};
-	const char * const image_name = "bios.bin",
+	const char * const host_image_name = "image.bin",
+		   * const old_host_image_name = "bios.bin",
 	           * const ec_name = "ec.bin",
 		   * const pd_name = "pd.bin";
 
@@ -913,10 +914,17 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 	manifest.default_model = -1;
 	archive_walk(archive, &manifest, manifest_scan_entries);
 	if (manifest.num == 0) {
+		const char *image_name = NULL;
 		struct firmware_image image = {0};
+
 		/* Try to load from current folder. */
-		if (!archive_has_entry(archive, image_name))
+		if (archive_has_entry(archive, old_host_image_name))
+			image_name = old_host_image_name;
+		else if (archive_has_entry(archive, host_image_name))
+			image_name = host_image_name;
+		else
 			return 0;
+
 		model.image = strdup(image_name);
 		if (archive_has_entry(archive, ec_name))
 			model.ec_image = strdup(ec_name);

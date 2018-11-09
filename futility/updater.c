@@ -2055,7 +2055,9 @@ int updater_setup_config(struct updater_config *cfg,
 		const char *r = arg->output_dir;
 		if (!r)
 			r = ".";
+		/* TODO(hungte) Remove bios.bin when migration is done. */
 		errorcnt += updater_output_image(&cfg->image, "bios.bin", r);
+		errorcnt += updater_output_image(&cfg->image, "image.bin", r);
 		errorcnt += updater_output_image(&cfg->ec_image, "ec.bin", r);
 		errorcnt += updater_output_image(&cfg->pd_image, "pd.bin", r);
 		*do_update = 0;

@@ -306,11 +306,17 @@ echo 'echo "${WL_TAG}"' >"${A}/bin/vpd"
 chmod +x "${A}/bin/vpd"
 
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
-echo "TEST: Manifest (--manifest)"
+echo "TEST: Manifest (--manifest, bios.bin)"
 ${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
-cmp "${TMP}.json.out" "${SCRIPTDIR}/link.manifest.json"
+cmp "${TMP}.json.out" "${SCRIPTDIR}/link_bios.manifest.json"
 
-cp -f "${TO_IMAGE}" "${A}/bios.bin"
+mv -f "${A}/bios.bin" "${A}/image.bin"
+echo "TEST: Manifest (--manifest, image.bin)"
+${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
+cmp "${TMP}.json.out" "${SCRIPTDIR}/link_image.manifest.json"
+
+
+cp -f "${TO_IMAGE}" "${A}/image.bin"
 test_update "Full update (--archive, single package)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
@@ -318,50 +324,50 @@ test_update "Full update (--archive, single package)" \
 echo "TEST: Output (--mode=output)"
 mkdir -p "${TMP}.output"
 ${FUTILITY} update -i "${LINK_BIOS}" --mode=output --output_dir="${TMP}.output"
-cmp "${LINK_BIOS}" "${TMP}.output/bios.bin"
+cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
-cp -f "${LINK_BIOS}" "${A}/bios.bin"
+cp -f "${LINK_BIOS}" "${A}/image.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.WL"
 cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.WL"
 cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.WL"
-${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/bios.bin"
-${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
-${FUTILITY} load_fmap "${A}/bios.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
+${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/image.bin"
+${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
+${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
 
 test_update "Full update (--archive, whitelabel, no VPD)" \
-	"${A}/bios.bin" "!Need VPD set for white" \
+	"${A}/image.bin" "!Need VPD set for white" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
 test_update "Full update (--archive, whitelabel, no VPD - factory mode)" \
-	"${LINK_BIOS}" "${A}/bios.bin" \
+	"${LINK_BIOS}" "${A}/image.bin" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --mode=factory
 
 test_update "Full update (--archive, whitelabel, no VPD - quirk mode)" \
-	"${LINK_BIOS}" "${A}/bios.bin" \
+	"${LINK_BIOS}" "${A}/image.bin" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --quirks=allow_empty_wltag
 
 test_update "Full update (--archive, WL, single package)" \
-	"${A}/bios.bin" "${LINK_BIOS}" \
+	"${A}/image.bin" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=WL
 
 WL_TAG="WL" PATH="${A}/bin:${PATH}" \
 	test_update "Full update (--archive, WL, fake vpd)" \
-	"${A}/bios.bin" "${LINK_BIOS}" \
+	"${A}/image.bin" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
 echo "TEST: Output (-a, --mode=output)"
 mkdir -p "${TMP}.outa"
-cp -f "${A}/bios.bin" "${TMP}.emu"
+cp -f "${A}/image.bin" "${TMP}.emu"
 WL_TAG="WL" PATH="${A}/bin:${PATH}" \
 	${FUTILITY} update -a "${A}" --mode=output --emu="${TMP}.emu" \
 	--output_dir="${TMP}.outa"
-cmp "${LINK_BIOS}" "${TMP}.outa/bios.bin"
+cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
 
 # Test archive with Unified Build contents.
 cp -r "${SCRIPTDIR}/models" "${A}/"
 mkdir -p "${A}/images"
-mv "${A}/bios.bin" "${A}/images/bios_coral.bin"
+mv "${A}/image.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
 cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip-wl"
