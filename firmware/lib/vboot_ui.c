@@ -79,8 +79,9 @@ uint32_t VbTryUsb(struct vb2_context *ctx)
 	if (VBERROR_SUCCESS == retval) {
 		VB2_DEBUG("VbBootDeveloper() - booting USB\n");
 	} else {
-		VB2_DEBUG("VbBootDeveloper() - no kernel found on USB\n");
-		vb2_error_beep(VB_BEEP_FAILED);
+		vb2_error_notify("Could not boot from USB",
+				 "VbBootDeveloper() - no kernel found on USB\n",
+				 VB_BEEP_FAILED);
 		/*
 		 * Clear recovery requests from failed
 		 * kernel loading, so that powering off
@@ -119,7 +120,11 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			 */
 			if (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD &&
 			    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
-				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
+				vb2_error_notify("Please use internal keyboard "
+					"to confirm\n",
+					"VbUserConfirms() - "
+					"Trusted keyboard is requierd\n",
+					VB_BEEP_NOT_ALLOWED);
 				break;
 			}
 			VB2_DEBUG("Yes (1)\n");
@@ -329,12 +334,11 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 					 * TONORM won't work (only for
 					 * non-shipping devices).
 					 */
-					VB2_DEBUG("TONORM rejected by "
-						  "FORCE_DEV_SWITCH_ON\n");
-					VbExDisplayDebugInfo(
+					vb2_error_notify(
 						"WARNING: TONORM prohibited by "
-						"GBB FORCE_DEV_SWITCH_ON.\n\n");
-					vb2_error_beep(VB_BEEP_NOT_ALLOWED);
+						"GBB FORCE_DEV_SWITCH_ON.\n",
+						NULL,
+						VB_BEEP_NOT_ALLOWED);
 					break;
 				}
 				VbDisplayScreen(ctx,
@@ -401,14 +405,14 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+U; try USB\n");
 			if (!allow_usb) {
-				VB2_DEBUG("VbBootDeveloper() - "
-					  "USB booting is disabled\n");
-				VbExDisplayDebugInfo(
+				vb2_error_notify(
 					"WARNING: Booting from external media "
 					"(USB/SD) has not been enabled. Refer "
 					"to the developer-mode documentation "
-					"for details.\n");
-				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
+					"for details.\n",
+					"VbBootDeveloper() - "
+					"USB booting is disabled\n",
+					VB_BEEP_NOT_ALLOWED);
 			} else {
 				/*
 				 * Clear the screen to show we get the Ctrl+U
@@ -479,6 +483,10 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 	uint32_t retval;
 	uint32_t key;
 	int i;
+	const char release_button_msg[] =
+		"Release the recovery button and try again\n";
+	const char recovery_pressed_msg[] =
+		"^D but recovery switch is pressed\n";
 
 	VB2_DEBUG("VbBootRecovery() start\n");
 
@@ -562,9 +570,9 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 					 * any case we don't like this.  Beep
 					 * and ignore.
 					 */
-					VB2_DEBUG("^D but rec switch "
-						  "is pressed\n");
-					vb2_error_beep(VB_BEEP_NOT_ALLOWED);
+					vb2_error_notify(release_button_msg,
+							 recovery_pressed_msg,
+							 VB_BEEP_NOT_ALLOWED);
 					continue;
 				}
 
