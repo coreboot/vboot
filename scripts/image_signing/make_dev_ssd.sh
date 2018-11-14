@@ -156,7 +156,6 @@ resign_ssd_kernel() {
 
   # reasonable size for current kernel partition
   local min_kernel_size=$((8000 * 1024 / bs))
-  local max_kernel_size=$((32768 * 1024 / bs))
   local resigned_kernels=0
 
   for kernel_index in $FLAGS_partitions; do
@@ -173,10 +172,6 @@ resign_ssd_kernel() {
       die "Failed to get partition ${kernel_index} size from ${ssd_device}"
     if [ ! $size -gt $min_kernel_size ]; then
       info "${name} seems too small (${size}), ignored."
-      continue
-    fi
-    if [ ! $size -le $max_kernel_size ]; then
-      info "${name} seems too large (${size}), ignored."
       continue
     fi
 
