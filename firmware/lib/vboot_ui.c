@@ -236,9 +236,13 @@ VbError_t vb2_alt_os_ui(struct vb2_context *ctx, VbCommonParams *cparams)
 		}
 	}
 
+
 	if (boot_alt_os) {
+		shared->flags |= VBSD_ALT_OS_LEGACY_BOOT;
 		/* Will only return on failure */
 		VbTryLegacy(ctx, 1);
+		/* We don't get failure reasons from VbExLegacy */
+		return VBERROR_UNKNOWN;
 	}
 
 	/* Will only return on failure */

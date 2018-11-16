@@ -758,9 +758,12 @@ static void VbBootAltOSTest(void)
 	shared->flags = VBSD_ALT_OS_CONFIRM_ENABLE;
 	mock_keypress[0] = 0x103;
 	mock_keypress[1] = '\r';
-	TEST_EQ(VbBootAltOS(&ctx, &cparams), 1002, "Enable Alt OS failure");
+	/* Alt OS *should* return VBERROR_UNKNOWN after VbExLegacy returns. */
+	TEST_EQ(VbBootAltOS(&ctx, &cparams), 0x10000, "Enable Alt OS failure");
 	TEST_EQ(vbexlegacy_called, 1, "  boot legacy");
 	TEST_TRUE(saf_val & ALT_OS_ENABLE, "  enable flag");
+	TEST_TRUE(shared->flags & VBSD_ALT_OS_LEGACY_BOOT,
+		  "  legacy_boot flag");
 
 	/* Right arrow then enter means boot Chrome OS */
 	ResetMocks();
