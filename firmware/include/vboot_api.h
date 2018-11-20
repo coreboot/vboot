@@ -435,6 +435,15 @@ VbError_t VbUnlockDevice(void);
  */
 VbError_t VbLockDevice(void);
 
+/**
+ * Save the TPM state.
+ *
+ * Exposes a function to save TPM state.  Expected to be used in depthcharge
+ * right before disabling the TPM, so that the next time TPM is asked to wake
+ * up and restore its state (S3 resume), it will have state available.
+ */
+uint32_t VbSaveTpmState(void);
+
 /*****************************************************************************/
 /* Debug output (from utility.h) */
 

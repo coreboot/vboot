@@ -343,6 +343,7 @@ VBSLK_SRCS = \
 	firmware/lib/vboot_audio.c \
 	firmware/lib/vboot_display.c \
 	firmware/lib/vboot_kernel.c \
+	firmware/lib/vboot_tpm.c \
 	firmware/lib/vboot_ui.c \
 	firmware/lib/vboot_ui_menu.c \
 	firmware/lib/region-kernel.c \
