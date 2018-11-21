@@ -6,6 +6,8 @@
  * The board-specific quirks needed by firmware updater.
  */
 
+#include "host_common.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

@@ -6,6 +6,11 @@
  * A reference implementation for AP (and supporting images) firmware updater.
  */
 
+#include "host_common.h"
+#define vb2_unpack_key2(key, packed) \
+	vb2_unpack_key(key, (const uint8_t *)packed, \
+		       packed->key_offset + packed->key_size)
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -1139,7 +1144,7 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 		return -1;
 	}
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
-	if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
+	if (VB2_SUCCESS != vb2_unpack_key2(&key, sign_key)) {
 		ERROR("Invalid signing key,");
 		return -1;
 	}

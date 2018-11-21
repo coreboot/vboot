@@ -1142,6 +1142,7 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 .PHONY: futil
 futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
 
+${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS}
 ${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
@@ -1256,6 +1257,7 @@ ${UTIL_DEFAULTS}:
 
 # Some utilities need external crypto functions
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
+CRYPTO_STATIC_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto --static)
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
