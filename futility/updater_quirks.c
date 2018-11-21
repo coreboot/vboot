@@ -12,7 +12,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#define _STUB_IMPLEMENTATION_
 #include "futility.h"
 #include "host_misc.h"
 #include "updater.h"

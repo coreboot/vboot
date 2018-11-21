@@ -19,7 +19,6 @@
 #include <zip.h>
 #endif
 
-#define _STUB_IMPLEMENTATION_
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"
@@ -961,9 +960,6 @@ void delete_manifest(struct manifest *manifest)
 static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
 				    int32_t offset, int32_t size)
 {
-#if 1
-	return "<Something>";
-#else
 	struct vb2_packed_key *key;
 
 	if (!gbb)
@@ -972,7 +968,6 @@ static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
 	if (!packed_key_looks_ok(key, size))
 	    return "<Invalid key>";
 	return packed_key_sha1_string(key);
-#endif
 }
 
 /* Prints the information of given image file in JSON format. */

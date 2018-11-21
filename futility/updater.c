@@ -13,7 +13,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define _STUB_IMPLEMENTATION_
 #include "2rsa.h"
 #include "crossystem.h"
 #include "futility.h"
@@ -1083,12 +1082,10 @@ static const struct vb2_packed_key *get_rootkey(
 	struct vb2_packed_key *key = NULL;
 
 	key = (struct vb2_packed_key *)((uint8_t *)gbb + gbb->rootkey_offset);
-#if 0
 	if (!packed_key_looks_ok(key, gbb->rootkey_size)) {
 		ERROR("Invalid root key.");
 		return NULL;
 	}
-#endif
 	return key;
 }
 
@@ -1111,7 +1108,6 @@ static const struct vb2_keyblock *get_keyblock(
 	return (const struct vb2_keyblock *)section.data;
 }
 
-#if 0
 /*
  * Duplicates a key block and returns the duplicated block.
  * The caller must free the returned key block after being used.
@@ -1188,7 +1184,6 @@ static int get_key_versions(const struct firmware_image *image,
 	      image->file_name, *data_key_version, *firmware_version);
 	return 0;
 }
-#endif
 
 /*
  * Checks if the root key in ro_image can verify vblocks in rw_image.
@@ -1213,7 +1208,6 @@ static int check_compatible_root_key(const struct firmware_image *ro_image,
 	if (!keyblock)
 		return -1;
 
-#if 0
 	if (verify_keyblock(keyblock, rootkey) != 0) {
 		const struct vb2_gbb_header *gbb_rw = find_gbb(rw_image);
 		const struct vb2_packed_key *rootkey_rw = NULL;
@@ -1243,7 +1237,6 @@ static int check_compatible_root_key(const struct firmware_image *ro_image,
 			       "<invalid>");
 		return -1;
 	}
-#endif
 	return 0;
 }
 
@@ -1305,7 +1298,6 @@ static int legacy_needs_update(struct updater_config *cfg)
 static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 					const struct firmware_image *rw_image)
 {
-#if 0
 	unsigned int data_key_version = 0, firmware_version = 0,
 		     tpm_data_key_version = 0, tpm_firmware_version = 0;
 	int tpm_fwver = 0;
@@ -1337,7 +1329,6 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 		      tpm_firmware_version, firmware_version);
 		return -1;
 	}
-#endif
 	return 0;
 }
 
