@@ -41,6 +41,17 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
 
 	{ .match = "Google_Snow.", .quirks = "daisy_snow_dual_model" },
+
+        /* Legacy white label units. */
+        { .match = "Google_Enguarde.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Expresso.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Hana.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Jaq.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Jerry.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Mighty.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Reks.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Relm.", .quirks = "allow_empty_wltag" },
+        { .match = "Google_Wizpig.", .quirks = "allow_empty_wltag" },
 };
 
 /*
@@ -330,6 +341,12 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "b/70682365; preserve UEFI SMM store without "
 		       "dedicated FMAP section.";
 	quirks->apply = quirk_eve_smm_store;
+
+	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_WLTAG];
+	quirks->name = "allow_empty_wltag";
+	quirks->help = "chromium/906962; allow devices without white label "
+		       "tags set to use default keys.";
+	quirks->apply = NULL;  /* Simple config. */
 }
 
 /*

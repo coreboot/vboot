@@ -353,6 +353,10 @@ test_update "Full update (--archive, whitelabel, no VPD - factory mode)" \
 	"${LINK_BIOS}" "${A}/bios.bin" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --mode=factory
 
+test_update "Full update (--archive, whitelabel, no VPD - quirk mode)" \
+	"${LINK_BIOS}" "${A}/bios.bin" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --quirks=allow_empty_wltag
+
 test_update "Full update (--archive, WL, single package)" \
 	"${A}/bios.bin" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=WL
