@@ -8,15 +8,10 @@
 #ifndef VBOOT_REFERENCE_FUTILITY_UPDATER_COMPAT_H_
 #define VBOOT_REFERENCE_FUTILITY_UPDATER_COMPAT_H_
 
-#ifdef _FILE_OFFSET_BITS
-#undef _FILE_OFFSET_BITS
-#endif
-#define _FILE_OFFSET_BITS 32
-
 #define _STUB_IMPLEMENTATION_
-typedef int64_t ptrdiff_t;
 #include <stdio.h>
 #include <unistd.h>
+#include "2sysincludes.h"
 #include "2rsa.h"
 #include "2sha.h"
 #include "vb2_common.h"

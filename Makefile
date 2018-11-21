@@ -1105,7 +1105,7 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 # new Firmware Utility
 
 .PHONY: futil
-futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
+futil: ${FUTIL_BIN} # ${FUTIL_STATIC_BIN}
 
 ${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS} ${UTILLIB21} ${FWLIB2X} ${FWLIB20}
 ${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB} ${UTILLIB21} ${FWLIB2X} ${FWLIB20}
@@ -1118,10 +1118,10 @@ ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB2X} ${FWLIB20}
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+futil_install: ${FUTIL_BIN} #${FUTIL_STATIC_BIN}
 	@${PRINTF} "    INSTALL       futility\n"
 	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} #${FUTIL_STATIC_BIN}
 	${Q}for prog in ${FUTIL_SYMLINKS}; do \
 		ln -sf futility "${UB_DIR}/$$prog"; done
 
