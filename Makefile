@@ -227,7 +227,7 @@ endif
 
 # Optional Libraries
 LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
-HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
+# HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
 ifneq (${HAVE_LIBZIP},)
   CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
@@ -651,22 +651,24 @@ FUTIL_STATIC_SRCS = \
 
 FUTIL_SRCS = \
 	${FUTIL_STATIC_SRCS} \
-	futility/cmd_create.c \
 	futility/cmd_dump_kernel_config.c \
 	futility/cmd_load_fmap.c \
 	futility/cmd_pcr.c \
-	futility/cmd_show.c \
-	futility/cmd_sign.c \
 	futility/cmd_vbutil_firmware.c \
-	futility/cmd_vbutil_kernel.c \
 	futility/cmd_vbutil_key.c \
 	futility/cmd_vbutil_keyblock.c \
-	futility/file_type.c \
-	futility/file_type_bios.c \
+	futility/vb1_helper.c \
+
+DUMMY_SRC = \
+	futility/cmd_vbutil_kernel.c \
+	futility/cmd_create.c \
+	futility/cmd_show.c \
+	futility/cmd_sign.c \
+	futility/vb2_helper.c \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
-	futility/vb1_helper.c \
-	futility/vb2_helper.c
+	futility/file_type_bios.c \
+	futility/file_type.c \
 
 # List of commands built in futility and futility_s.
 FUTIL_STATIC_CMD_LIST = ${BUILD}/gen/futility_static_cmds.c
@@ -680,9 +682,9 @@ FUTIL_STATIC_OBJS = ${FUTIL_STATIC_SRCS:%.c=${BUILD}/%.o} \
 	${FUTIL_STATIC_CMD_LIST:%.c=%.o}
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
-${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include
-${FUTIL_BIN}: ${UTILLIB21}
-${FUTIL_BIN}: LIBS += ${UTILLIB21}
+${FUTIL_OBJS}: INCLUDES += -Ihost/lib20/include -Ifirmware/lib20/include
+${FUTIL_BIN}: ${UTILLIB20}
+${FUTIL_BIN}: LIBS += ${UTILLIB20}
 
 ALL_OBJS += ${FUTIL_OBJS}
 
@@ -1105,12 +1107,13 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 .PHONY: futil
 futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
 
-${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
+${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS} ${UTILLIB21} ${FWLIB2X} ${FWLIB20}
+${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB} ${UTILLIB21} ${FWLIB2X} ${FWLIB20}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
 
-${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
-${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB}
+${FUTIL_BIN}: LDLIBS += ${CRYPTO_LIBS} ${FWLIB2X} ${FWLIB20}
+${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB2X} ${FWLIB20}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
@@ -1220,6 +1223,7 @@ ${UTIL_DEFAULTS}:
 
 # Some utilities need external crypto functions
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
+CRYPTO_STATIC_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto --static)
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}

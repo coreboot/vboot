@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "updater_compat.h"
+
 #include "futility.h"
 #include "host_misc.h"
 #include "updater.h"

@@ -19,6 +19,8 @@
 #include <zip.h>
 #endif
 
+#include "updater_compat.h"
+
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"

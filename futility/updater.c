@@ -13,6 +13,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "updater_compat.h"
+
 #include "2rsa.h"
 #include "crossystem.h"
 #include "futility.h"
@@ -1127,7 +1129,8 @@ static struct vb2_keyblock *dupe_keyblock(const struct vb2_keyblock *block)
  * Returns 0 on success, otherwise failure.
  */
 static int verify_keyblock(const struct vb2_keyblock *block,
-			   const struct vb2_packed_key *sign_key) {
+			   const struct vb2_packed_key *sign_key)
+{
 	int r;
 	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE];
 	struct vb2_workbuf wb;
@@ -1139,7 +1142,7 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 		return -1;
 	}
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
-	if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
+	if (VB2_SUCCESS != vb2_unpack_key2(&key, sign_key)) {
 		ERROR("Invalid signing key,");
 		return -1;
 	}
