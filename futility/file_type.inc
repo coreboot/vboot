@@ -47,6 +47,7 @@ FILE_TYPE(PRIVKEY,          "prikey",        "VbPrivateKey (.vbprivk)",
 	  R_(ft_recognize_vb1_key),
 	  S_(ft_show_privkey),
 	  NONE)
+#if 0
 FILE_TYPE(VB2_PUBKEY,       "pubkey21",      "vb21 public key (.vbpubk2)",
 	  R_(ft_recognize_vb2_key),
 	  S_(ft_show_vb2_pubkey),
@@ -59,6 +60,7 @@ FILE_TYPE(PEM,		    "pem",           "RSA private key (.pem)",
 	  R_(ft_recognize_pem),
 	  S_(ft_show_pem),
 	  NONE)
+#endif
 FILE_TYPE(RAW_FIRMWARE,     "fwblob",        "raw firmware blob (FW_MAIN_A/B)",
 	  NONE,
 	  NONE,
@@ -71,6 +73,7 @@ FILE_TYPE(CHROMIUMOS_DISK,  "disk_img",      "chromiumos disk image",
 	  NONE,
 	  NONE,
 	  NONE)
+#if 0
 FILE_TYPE(RWSIG,            "rwsig",         "RW device image",
 	  R_(ft_recognize_rwsig),
 	  S_(ft_show_rwsig),
@@ -80,3 +83,4 @@ FILE_TYPE(USBPD1,           "usbpd1",        "USB-PD charger image (v1.0)",
 	  R_(ft_recognize_usbpd1),
 	  S_(ft_show_usbpd1),
 	  S_(ft_sign_usbpd1))
+#endif

@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <fts.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +19,7 @@
 #endif
 
 #include "updater_compat.h"
+#include <fts.h>
 
 #include "host_misc.h"
 #include "updater.h"

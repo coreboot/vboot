@@ -28,7 +28,7 @@
 #include "util_misc.h"
 #include "vb1_helper.h"
 #include "vb2_common.h"
-#include "host_key2.h"
+// #include "host_key2.h"
 #include "vboot_common.h"
 
 /* Options */
@@ -414,6 +414,7 @@ static void print_help_kern_preamble(int argc, char *argv[])
 	printf(usage_old_kpart, sign_option.padding);
 }
 
+#if 0
 static void print_help_usbpd1(int argc, char *argv[])
 {
 	struct vb2_text_vs_enum *entry;
@@ -499,6 +500,7 @@ static void print_help_rwsig(int argc, char *argv[])
 	       futil_file_type_name(FILE_TYPE_RWSIG),
 	       futil_file_type_desc(FILE_TYPE_RWSIG));
 }
+#endif
 
 static void (*help_type[NUM_FILE_TYPES])(int argc, char *argv[]) = {
 	[FILE_TYPE_PUBKEY] = &print_help_pubkey,
@@ -506,8 +508,8 @@ static void (*help_type[NUM_FILE_TYPES])(int argc, char *argv[]) = {
 	[FILE_TYPE_BIOS_IMAGE] = &print_help_bios_image,
 	[FILE_TYPE_RAW_KERNEL] = &print_help_raw_kernel,
 	[FILE_TYPE_KERN_PREAMBLE] = &print_help_kern_preamble,
-	[FILE_TYPE_USBPD1] = &print_help_usbpd1,
-	[FILE_TYPE_RWSIG] = &print_help_rwsig,
+	// [FILE_TYPE_USBPD1] = &print_help_usbpd1,
+	// [FILE_TYPE_RWSIG] = &print_help_rwsig,
 };
 
 static const char usage_default[] = "\n"
@@ -797,12 +799,17 @@ static int do_sign(int argc, char *argv[])
 			}
 			break;
 		case OPT_HASH_ALG:
+#if 0
 			if (!vb2_lookup_hash_alg(optarg,
 						 &sign_option.hash_alg)) {
 				fprintf(stderr,
 					"invalid hash_alg \"%s\"\n", optarg);
 				errorcnt++;
 			}
+#else
+			fprintf(stderr, "Unsupported option.\n");
+			errorcnt++;
+#endif
 			break;
 		case OPT_PEM_EXTERNAL:
 			sign_option.pem_external = optarg;
@@ -818,11 +825,16 @@ static int do_sign(int argc, char *argv[])
 			}
 			break;
 		case OPT_PRIKEY:
+#if 0
 			if (vb2_private_key_read(&sign_option.prikey,
 						 optarg)) {
 				fprintf(stderr, "Error reading %s\n", optarg);
 				errorcnt++;
 			}
+#else
+			fprintf(stderr, "Unsupported option.\n");
+			errorcnt++;
+#endif
 			break;
 		case OPT_HELP:
 			helpind = optind - 1;
@@ -952,6 +964,7 @@ static int do_sign(int argc, char *argv[])
 		errorcnt += no_opt_if(sign_option.arch == ARCH_UNSPECIFIED,
 				      "arch");
 		break;
+#if 0
 	case FILE_TYPE_USBPD1:
 		errorcnt += no_opt_if(!sign_option.pem_signpriv, "pem");
 		errorcnt += no_opt_if(sign_option.hash_alg == VB2_HASH_INVALID,
@@ -960,6 +973,7 @@ static int do_sign(int argc, char *argv[])
 	case FILE_TYPE_RWSIG:
 		errorcnt += no_opt_if(!sign_option.prikey, "prikey");
 		break;
+#endif
 	default:
 		/* Anything else we don't care */
 		break;

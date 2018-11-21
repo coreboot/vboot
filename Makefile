@@ -654,21 +654,21 @@ FUTIL_SRCS = \
 	futility/cmd_dump_kernel_config.c \
 	futility/cmd_load_fmap.c \
 	futility/cmd_pcr.c \
+	futility/cmd_sign.c \
+	futility/cmd_show.c \
 	futility/cmd_vbutil_firmware.c \
+	futility/cmd_vbutil_kernel.c \
 	futility/cmd_vbutil_key.c \
 	futility/cmd_vbutil_keyblock.c \
+	futility/file_type.c \
+	futility/file_type_bios.c \
 	futility/vb1_helper.c \
 
 DUMMY_SRC = \
-	futility/cmd_vbutil_kernel.c \
 	futility/cmd_create.c \
-	futility/cmd_show.c \
-	futility/cmd_sign.c \
-	futility/vb2_helper.c \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
-	futility/file_type_bios.c \
-	futility/file_type.c \
+	futility/vb2_helper.c \
 
 # List of commands built in futility and futility_s.
 FUTIL_STATIC_CMD_LIST = ${BUILD}/gen/futility_static_cmds.c

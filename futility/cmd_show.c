@@ -20,6 +20,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "updater_compat.h"
+
 #include "file_type.h"
 #include "file_type_bios.h"
 #include "fmap.h"
@@ -30,7 +32,7 @@
 #include "vb1_helper.h"
 #include "vboot_common.h"
 #include "2api.h"
-#include "host_key2.h"
+// #include "host_key2.h"
 
 /* Options */
 struct show_option_s show_option = {

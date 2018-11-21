@@ -8,10 +8,18 @@
 #ifndef VBOOT_REFERENCE_FUTILITY_UPDATER_COMPAT_H_
 #define VBOOT_REFERENCE_FUTILITY_UPDATER_COMPAT_H_
 
+#ifdef _FILE_OFFSET_BITS
+#undef _FILE_OFFSET_BITS
+#endif
+#define _FILE_OFFSET_BITS 32
+
 #define _STUB_IMPLEMENTATION_
+typedef int64_t ptrdiff_t;
 #include <stdio.h>
 #include <unistd.h>
+#include "2rsa.h"
 #include "2sha.h"
+#include "vb2_common.h"
 #include "vb2_struct.h"
 #include "host_key.h"
 #include "vboot_api.h"
@@ -102,6 +110,28 @@ static inline int vb2_write_file(
 
 	fclose(f);
 	return 0;
+}
+
+static inline
+int vb2_packed_key_read(struct vb2_packed_key **key_ptr,
+                        const char *filename)
+{
+        struct vb2_public_key key;
+        uint8_t *buf;
+        uint32_t size;
+
+        *key_ptr = NULL;
+
+        if (vb2_read_file(filename, &buf, &size))
+                return 1;
+
+        /* Sanity check: make sure key unpacks properly */
+        if (vb2_unpack_key(&key, buf, size))
+                return 1;
+
+        *key_ptr = (struct vb2_packed_key *)buf;
+
+        return 0;
 }
 
 #define vb2_unpack_key2(key, packed_key) \
