@@ -89,7 +89,6 @@ static int do_update(int argc, char *argv[])
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0, do_update = 1;
 
-	fprintf(stderr, ">> Firmware updater started.\n");
 	cfg = updater_new_config();
 	assert(cfg);
 
@@ -192,16 +191,19 @@ static int do_update(int argc, char *argv[])
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &do_update);
 	if (!errorcnt && do_update) {
-		int r = update_firmware(cfg);
+		int r;
+		STATUS("Starting firmware updater.");
+		r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
 			r = Min(r, UPDATE_ERR_UNKNOWN);
 			Error("%s\n", updater_error_messages[r]);
 			errorcnt++;
 		}
+		/* Use stdout for the final result. */
+		printf(">> %s: Firmware updater %s.\n",
+			errorcnt ? "FAILED": "DONE",
+			errorcnt ? "aborted" : "exits successfully");
 	}
-	fprintf(stderr, ">> %s: Firmware updater %s.\n",
-		errorcnt ? "FAILED": "DONE",
-		errorcnt ? "stopped due to error" : "exited successfully");
 
 	updater_delete_config(cfg);
 	return !!errorcnt;

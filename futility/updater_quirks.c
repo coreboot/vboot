@@ -135,7 +135,7 @@ static int quirk_unlock_me_for_update(struct updater_config *cfg)
 	 * b/35568719: We should only update with unlocked ME and let
 	 * board-postinst lock it.
 	 */
-	printf("%s: Changed Flash Master Values to unlocked.\n", __FUNCTION__);
+	INFO("%s: Changed Flash Master Values to unlocked.", __FUNCTION__);
 	memcpy(section.data + flash_master_offset, flash_master,
 	       ARRAY_SIZE(flash_master));
 	return 0;
@@ -193,8 +193,8 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		if (strcmp(x16_versions[i], platform_version) == 0)
 			is_x16 = 1;
 	}
-	printf("%s: Platform version: %s (original value: %s)\n", __FUNCTION__,
-	      is_x8 ? "x8" : is_x16 ? "x16": "unknown", platform_version);
+	INFO("%s: Platform version: %s (original value: %s)", __FUNCTION__,
+	     is_x8 ? "x8" : is_x16 ? "x16": "unknown", platform_version);
 	free(platform_version);
 
 	find_firmware_section(&a, &cfg->image, FMAP_RW_SECTION_A);

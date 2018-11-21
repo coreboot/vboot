@@ -297,7 +297,7 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 		 postfix);
 
 	if (verbose)
-		printf("Executing: %s\n", command);
+		INFO("Executing: %s", command);
 
 	if (op != FLASHROM_WP_STATUS) {
 		r = system(command);
@@ -720,8 +720,8 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	}
 
 	if (cfg->emulation) {
-		printf("(emulation) Setting try_next to %s, try_count to %d.\n",
-		       slot, tries);
+		INFO("(emulation) Setting try_next to %s, try_count to %d.",
+		     slot, tries);
 		return 0;
 	}
 
@@ -813,10 +813,10 @@ static int write_firmware(struct updater_config *cfg,
 		return -1;
 
 	if (cfg->emulation) {
-		printf("%s: (emulation) Writing %s from %s to %s (emu=%s).\n",
-		       __FUNCTION__,
-		       section_name ? section_name : "whole image",
-		       image->file_name, programmer, cfg->emulation);
+		INFO("%s: (emulation) Writing %s from %s to %s (emu=%s).",
+		     __FUNCTION__,
+		     section_name ? section_name : "whole image",
+		     image->file_name, programmer, cfg->emulation);
 
 		return emulate_write_firmware(
 				cfg->emulation, image, section_name);
@@ -875,8 +875,8 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 		return -1;
 	}
 	if (from.size > to.size) {
-		printf("WARNING: %s: Section %s is truncated after updated.\n",
-		       __FUNCTION__, section_name);
+		WARN("%s: Section %s is truncated after updated.",
+		     __FUNCTION__, section_name);
 	}
 	/* Use memmove in case if we need to deal with sections that overlap. */
 	memmove(to.data, from.data, Min(from.size, to.size));
@@ -1228,17 +1228,16 @@ static enum rootkey_compat_result check_compatible_root_key(
 				   ROOTKEY_HASH_DEV) == 0)
 				to_dev = 1;
 		}
-		printf("Current (RO) image root key is %s, ",
-		       packed_key_sha1_string(rootkey));
-
+		INFO("Current (RO) firmware image has root key: %s",
+		     packed_key_sha1_string(rootkey));
 		if (is_same_key) {
-			printf("same with target (RW) image. "
-			       "Maybe RW corrupted?\n");
+			ERROR("Rootkey is same as target (RW) image. "
+			      "Maybe RW corrupted?");
 			return ROOTKEY_COMPAT_ERROR;
 		}
-		printf("target (RW) image is signed with rootkey %s.\n",
-		       rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
-		       "<invalid>");
+		WARN("Target (RW) image is signed by rootkey: %s.",
+		     rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
+		     "<invalid>");
 		return to_dev ? ROOTKEY_COMPAT_REKEY_TO_DEV :
 				ROOTKEY_COMPAT_REKEY;
 	}
@@ -1352,7 +1351,7 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 		ERROR("Add --force if you want to waive TPM checks.");
 		return r;
 	}
-	printf("TPM KEYS CHECK IS WAIVED BY --force. YOU ARE ON YOUR OWN.\n");
+	WARN("TPM KEYS CHECK IS WAIVED BY --force. YOU ARE ON YOUR OWN.");
 	return 0;
 }
 
@@ -1392,7 +1391,7 @@ static enum updater_error_codes update_try_rw_firmware(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
 
-	printf("Checking compatibility...\n");
+	INFO("Checking compatibility...");
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
@@ -1405,7 +1404,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		return UPDATE_ERR_TARGET;
 	}
 
-	printf("Checking %s contents...\n", target);
+	INFO("Checking %s contents...", target);
 	if (!firmware_section_exists(image_to, target)) {
 		ERROR("Cannot find section '%s' on firmware image: %s",
 		      target, image_to->file_name);
@@ -1416,8 +1415,7 @@ static enum updater_error_codes update_try_rw_firmware(
 
 	if (has_update) {
 		target = decide_rw_target(cfg, TARGET_UPDATE, is_vboot2);
-		printf(">> TRY-RW UPDATE: Updating %s to try on reboot.\n",
-		       target);
+		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.", target);
 
 		if (write_firmware(cfg, image_to, target))
 			return UPDATE_ERR_WRITE_FIRMWARE;
@@ -1432,12 +1430,12 @@ static enum updater_error_codes update_try_rw_firmware(
 	/* Do not fail on updating legacy. */
 	if (legacy_needs_update(cfg)) {
 		has_update = 1;
-		printf(">> LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
+		STATUS("LEGACY UPDATE: Updating %s.", FMAP_RW_LEGACY);
 		write_firmware(cfg, image_to, FMAP_RW_LEGACY);
 	}
 
 	if (!has_update)
-		printf(">> No need to update.\n");
+		STATUS("NO UPDATE: No need to update.");
 
 	return UPDATE_ERR_DONE;
 }
@@ -1452,11 +1450,11 @@ static enum updater_error_codes update_rw_firmrware(
 		struct firmware_image *image_from,
 		struct firmware_image *image_to)
 {
-	printf(">> RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
+	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
 	       FMAP_RW_LEGACY);
 
-	printf("Checking compatibility...\n");
+	INFO("Checking compatibility...");
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
@@ -1483,7 +1481,7 @@ static enum updater_error_codes update_legacy_firmware(
 		struct updater_config *cfg,
 		struct firmware_image *image_to)
 {
-	printf(">> LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
+	STATUS("LEGACY UPDATE: Updating firmware %s.", FMAP_RW_LEGACY);
 
 	if (write_firmware(cfg, image_to, FMAP_RW_LEGACY))
 		return UPDATE_ERR_WRITE_FIRMWARE;
@@ -1501,13 +1499,13 @@ static enum updater_error_codes update_whole_firmware(
 		struct updater_config *cfg,
 		struct firmware_image *image_to)
 {
-	printf(">> FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
+	STATUS("FULL UPDATE: Updating whole firmware image(s), RO+RW.");
 
 	if (preserve_images(cfg))
 		DEBUG("Failed to preserve some sections - ignore.");
 
 
-	printf("Checking compatibility...\n");
+	INFO("Checking compatibility...");
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 	if (!cfg->force_update) {
@@ -1518,7 +1516,7 @@ static enum updater_error_codes update_whole_firmware(
 		case ROOTKEY_COMPAT_OK:
 			break;
 		case ROOTKEY_COMPAT_REKEY:
-			printf("Will change firmware signing key.\n");
+			INFO("Will change firmware signing key.");
 			break;
 		case ROOTKEY_COMPAT_REKEY_TO_DEV:
 			ERROR("Re-key to DEV is not allowed. "
@@ -1553,9 +1551,9 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (try_apply_quirk(QUIRK_DAISY_SNOW_DUAL_MODEL, cfg))
 		return UPDATE_ERR_PLATFORM;
 
-	printf(">> Target image: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
-	       image_to->file_name, image_to->ro_version,
-	       image_to->rw_version_a, image_to->rw_version_b);
+	STATUS("Target image: %s (RO:%s, RW/A:%s, RW/B:%s).",
+	     image_to->file_name, image_to->ro_version,
+	     image_to->rw_version_a, image_to->rw_version_b);
 
 	if (try_apply_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg))
 		return UPDATE_ERR_PLATFORM;
@@ -1565,11 +1563,11 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		 * TODO(hungte) Read only RO_SECTION, VBLOCK_A, VBLOCK_B,
 		 * RO_VPD, RW_VPD, RW_NVRAM, RW_LEGACY.
 		 */
-		printf("Loading current system firmware...\n");
+		INFO("Loading current system firmware...");
 		if (load_system_firmware(cfg, image_from) != 0)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
-	printf(">> Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
+	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).",
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
@@ -1577,7 +1575,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		return UPDATE_ERR_PLATFORM;
 
 	wp_enabled = is_write_protection_enabled(cfg);
-	printf(">> Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
+	STATUS("Write protection: %d (%s; HW=%d, SW=%d).", wp_enabled,
 	       wp_enabled ? "enabled" : "disabled",
 	       get_system_property(SYS_PROP_WP_HW, cfg),
 	       get_system_property(SYS_PROP_WP_SW, cfg));
@@ -1600,7 +1598,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 					   wp_enabled);
 		if (r != UPDATE_ERR_NEED_RO_UPDATE)
 			return r;
-		printf("Warning: %s\n", updater_error_messages[r]);
+		WARN("%s", updater_error_messages[r]);
 	}
 
 	if (wp_enabled)
@@ -1696,7 +1694,7 @@ static int updater_load_images(struct updater_config *cfg,
 
 	if (!cfg->image.data && image) {
 		if (image && strcmp(image, "-") == 0) {
-			fprintf(stderr, "Reading image from stdin...\n");
+			INFO("Reading image from stdin...");
 			image = updater_create_temp_file(cfg);
 			if (image)
 				errorcnt += !!save_from_stdin(image);
@@ -1761,7 +1759,7 @@ static int updater_apply_white_label(struct updater_config *cfg,
 				return 1;
 			}
 		} else {
-			printf("Loading system firmware for white label..\n");
+			INFO("Loading system firmware for white label...");
 			load_system_firmware(cfg, &cfg->image_current);
 			tmp_image = cfg->image_current.file_name;
 		}
@@ -1816,8 +1814,7 @@ static int updater_setup_archive(
 			if (is_factory ||
 			    is_write_protection_enabled(cfg) ||
 			    get_config_quirk(QUIRK_ALLOW_EMPTY_WLTAG, cfg)) {
-				fprintf(stderr,
-					"Warning: No VPD for white label.\n");
+				WARN("No VPD for white label.");
 			} else {
 				ERROR("Need VPD set for white label.");
 				return ++errorcnt;
