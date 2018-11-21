@@ -784,7 +784,7 @@ int model_apply_white_label(
 		ERROR("No keys found for signature_id: '%s'", signature_id);
 		r = 1;
 	} else {
-		printf("Applied for white label: %s\n", signature_id);
+		INFO("Applied for white label: %s", signature_id);
 	}
 	free(sig_id);
 	return r;

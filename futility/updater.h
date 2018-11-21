@@ -17,6 +17,10 @@ extern int debugging_enabled;
 	"DEBUG: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__); } while (0)
 #define ERROR(format, ...) fprintf(stderr, \
 	"ERROR: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__)
+#define WARN(format, ...) fprintf(stderr, \
+	"WARNING: " format "\n", ##__VA_ARGS__)
+#define INFO(format, ...) fprintf(stderr, "INFO: " format "\n", ##__VA_ARGS__)
+#define STATUS(format, ...) fprintf(stderr, ">> " format "\n", ##__VA_ARGS__)
 #define ASPRINTF(strp, ...) do { if (asprintf(strp, __VA_ARGS__) >= 0) break; \
 	ERROR("Failed to allocate memory, abort."); exit(1); } while (0)
 
