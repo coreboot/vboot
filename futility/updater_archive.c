@@ -813,8 +813,26 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 		if (strcmp(model_name, manifest->models[i].name) == 0)
 			model = &manifest->models[i];
 	}
-	if (!model)
-		ERROR("Model '%s' is not defined in manifest.", model_name);
+	if (!model) {
+		if (!*model_name)
+			ERROR("Cannot get model name.");
+		else
+			ERROR("Unsupported model: '%s'.", model_name);
+
+		fprintf(stderr,
+			"You are probably running an image for wrong board, or "
+			"a device in early stage that 'mosys' command is not "
+			"ready, or image from old (or factory) branches that "
+			"Unified Build config is not updated yet for 'mosys'.\n"
+			"Please check command 'mosys platform model', "
+			"which should output one of the supported models below:"
+			"\n");
+
+		for (i = 0; i < manifest->num; i++)
+			fprintf(stderr, " %s", manifest->models[i].name);
+		fprintf(stderr, "\n");
+	}
+
 
 	free(sys_model_name);
 	return model;
