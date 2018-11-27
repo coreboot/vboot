@@ -263,16 +263,16 @@ static const char *extract_cbfs_file(struct updater_config *cfg,
 
 /*
  * Quirk to help preserving SMM store on devices without a dedicated "SMMSTORE"
- * FMAP section. These devices will store "smm store" file in same CBFS where
+ * FMAP section. These devices will store "smm_store" file in same CBFS where
  * the legacy boot loader lives (i.e, FMAP RW_LEGACY).
  * Note this currently has dependency on external program "cbstool".
  * Returns 0 if the SMM store is properly preserved, or if the system is not
- * available to do that (problem in cbfstool, or no "smm store" in current
+ * available to do that (problem in cbfstool, or no "smm_store" in current
  * system firmware). Otherwise non-zero as failure.
  */
 static int quirk_eve_smm_store(struct updater_config *cfg)
 {
-	const char *smm_store_name = "smm store";
+	const char *smm_store_name = "smm_store";
 	const char *temp_image = updater_create_temp_file(cfg);
 	const char *old_store;
 	char *command;
