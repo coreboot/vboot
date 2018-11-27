@@ -520,6 +520,40 @@ VbError_t VbCheckAltOS(struct vb2_context *ctx, VbCommonParams *cparams,
 
 	return VBERROR_SUCCESS;
 }
+
+VbError_t VbCheckTPM(void)
+{
+	const int cr50_reset_delay_msec = 500;
+	enum vb2_tpm_mode tpm_mode;
+	int ret;
+	int need_reset = 0;
+
+	VB2_DEBUG("Checking if TPM needs resetting (TPM_MODE)\n");
+	ret = vb2ex_tpm_get_mode(&tpm_mode);
+	if (ret == VB2_ERROR_EX_TPM_NO_SUCH_COMMAND) {
+		VB2_DEBUG("TPM does not support command, assume good state\n");
+	} else if (ret != VB2_SUCCESS) {
+		VB2_DEBUG("TPM encountered some error; reset Cr50\n");
+		need_reset = 1;
+	} else if (tpm_mode != VB2_TPM_MODE_ENABLED_TENTATIVE) {
+		VB2_DEBUG("Invalid TPM mode (%d, expected: %d); reset Cr50\n",
+			  tpm_mode, VB2_TPM_MODE_ENABLED_TENTATIVE);
+		need_reset = 1;
+	} else {
+		VB2_DEBUG("TPM is in good state\n");
+	}
+
+	if (!need_reset)
+		return VBERROR_SUCCESS;
+
+	if (vb2ex_tpm_cr50_reset(cr50_reset_delay_msec)) {
+		VB2_DEBUG("Reset Cr50 failed\n");
+		return VBERROR_UNKNOWN;
+	} else {
+		VB2_DEBUG("Shut down AP and wait for Cr50 reset\n");
+		return VBERROR_SHUTDOWN_REQUESTED;
+	}
+}
 #endif  /* ALT_OS */
 
 VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
@@ -527,8 +561,19 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 {
 	VbSharedDataHeader *shared =
 		(VbSharedDataHeader *)cparams->shared_data_blob;
+	VbError_t retval;
 
-	VbError_t retval = vb2_kernel_setup(cparams, kparams);
+#ifdef ALT_OS
+	/*
+	 * TPM may be disabled from a previous untrusted Alt OS boot.
+	 * Check the TPM state and request a Cr50 reset if necessary.
+	 */
+	retval = VbCheckTPM();
+	if (retval)
+		goto VbSelectAndLoadKernel_exit;
+#endif  /* ALT_OS */
+
+	retval = vb2_kernel_setup(cparams, kparams);
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
