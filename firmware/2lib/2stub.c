@@ -58,3 +58,15 @@ int vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 {
 	return VB2_ERROR_SHA_FINALIZE_ALGORITHM; /* Should not be called. */
 }
+
+__attribute__((weak))
+int vb2ex_tpm_get_mode(enum vb2_tpm_mode *mode_val)
+{
+	return VB2_ERROR_EX_TPM_GET_MODE_UNIMPLEMENTED;
+}
+
+__attribute__((weak))
+int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
+{
+	return VB2_ERROR_EX_TPM_SET_MODE_UNIMPLEMENTED;
+}
