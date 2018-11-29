@@ -70,3 +70,9 @@ int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
 	return VB2_ERROR_EX_TPM_SET_MODE_UNIMPLEMENTED;
 }
+
+__attribute__((weak))
+int vb2ex_tpm_cr50_reset(uint16_t delay_ms)
+{
+	return VB2_ERROR_EX_TPM_RESET_UNIMPLEMENTED;
+}

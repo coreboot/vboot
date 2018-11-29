@@ -727,4 +727,11 @@ int vb2ex_tpm_get_mode(enum vb2_tpm_mode *mode_val);
  */
 int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
 
+/*
+ * Ask the Cr50 to reset after the delay specified.
+ *
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+int vb2ex_tpm_cr50_reset(uint16_t delay_ms);
+
 #endif  /* VBOOT_2_API_H_ */
