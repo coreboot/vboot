@@ -147,7 +147,7 @@ uint32_t SetVirtualDevMode(int val)
 {
 	RollbackSpaceFirmware rsf;
 
-	VB2_DEBUG("TPM: Entering");
+	VB2_DEBUG("TPM: Entering\n");
 	if (TPM_SUCCESS != ReadSpaceFirmware(&rsf))
 		return VBERROR_TPM_FIRMWARE_SETUP;
 
