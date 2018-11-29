@@ -173,7 +173,7 @@ uint32_t SetAltOSFlags(uint8_t val)
 {
 	RollbackSpaceKernel rsk;
 
-	VB2_DEBUG("TPM: Entering");
+	VB2_DEBUG("TPM: Entering\n");
 	if (TPM_SUCCESS != ReadSpaceKernel(&rsk))
 		return VBERROR_TPM_FIRMWARE_SETUP;
 
@@ -192,7 +192,7 @@ uint32_t GetAltOSFlags(uint8_t *val)
 {
 	RollbackSpaceKernel rsk;
 
-	VB2_DEBUG("TPM: Entering");
+	VB2_DEBUG("TPM: Entering\n");
 	if (TPM_SUCCESS != ReadSpaceKernel(&rsk))
 		return VBERROR_TPM_FIRMWARE_SETUP;
 
