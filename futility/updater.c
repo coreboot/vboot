@@ -1850,7 +1850,14 @@ static int updater_setup_archive(
 			cfg, arg, model->image, model->ec_image,
 			model->pd_image);
 
-	if (model->is_white_label) {
+	if (model->is_white_label && !manifest->has_keyset) {
+		/*
+		 * Developers running unsigned updaters (usually local build)
+		 * won't be able match any white label tags.
+		 */
+		WARN("No keysets found - this is probably a local build of "
+		     "unsigned firmware updater. Skip applying white label.");
+	} else if (model->is_white_label) {
 		/*
 		 * It is fine to fail in updater_apply_white_label for factory
 		 * mode so we are not checking the return value; instead we
