@@ -765,7 +765,7 @@ static void VbBootAltOSTest(void)
 	TEST_TRUE(shared->flags & VBSD_ALT_OS_LEGACY_BOOT,
 		  "  legacy_boot flag");
 
-	/* Right arrow then enter means boot Chrome OS */
+	/* Left arrow then enter means boot Chrome OS */
 	ResetMocks();
 	shared->flags = VBSD_ALT_OS_SHOW_PICKER;
 	mock_keypress[0] = 0x102;
