@@ -772,6 +772,8 @@ static void VbBootAltOSTest(void)
 	mock_keypress[1] = '\r';
 	TEST_EQ(VbBootAltOS(&ctx, &cparams), 1002, "Boot Chrome OS failure");
 	TEST_EQ(vbexlegacy_called, 0, "  boot normal");
+	TEST_FALSE(shared->flags & VBSD_ALT_OS_LEGACY_BOOT,
+		   "  legacy_boot flag");
 
 	printf("...done.\n");
 }
