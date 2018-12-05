@@ -453,6 +453,7 @@ UTILLIB_SRCS = \
 	cgpt/cgpt_create.c \
 	cgpt/cgpt_add.c \
 	cgpt/cgpt_boot.c \
+	cgpt/cgpt_edit.c \
 	cgpt/cgpt_show.c \
 	cgpt/cgpt_repair.c \
 	cgpt/cgpt_prioritize.c \
@@ -496,6 +497,7 @@ HOSTLIB_SRCS = \
 	cgpt/cgpt_boot.c \
 	cgpt/cgpt_common.c \
 	cgpt/cgpt_create.c \
+	cgpt/cgpt_edit.c \
 	cgpt/cgpt_prioritize.c \
 	firmware/2lib/2common.c \
 	firmware/2lib/2crc8.c \

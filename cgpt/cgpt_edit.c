@@ -30,7 +30,9 @@ int CgptEdit(CgptEditParams *params) {
   }
 
   h = (GptHeader *)drive.gpt.primary_header;
-  memcpy(&h->disk_uuid, &params->unique_guid, sizeof(h->disk_uuid));
+  if (params->set_unique) {
+    memcpy(&h->disk_uuid, &params->unique_guid, sizeof(h->disk_uuid));
+  }
   // Copy to secondary
   RepairHeader(&drive.gpt, MASK_PRIMARY);
   drive.gpt.modified |= (GPT_MODIFIED_HEADER1 | GPT_MODIFIED_HEADER2);

@@ -35,6 +35,7 @@ int main(void)
 	CgptAdd(0);
 	CgptBoot(0);
 	CgptCreate(0);
+	CgptEdit(0);
 	CgptGetBootPartitionNumber(0);
 	CgptGetNumNonEmptyPartitions(0);
 	CgptGetPartitionDetails(0);
