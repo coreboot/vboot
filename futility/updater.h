@@ -113,6 +113,7 @@ struct updater_config {
 	int legacy_update;
 	int factory_update;
 	int check_platform;
+	int fast_update;
 	int verbosity;
 	const char *emulation;
 };
@@ -125,6 +126,7 @@ struct updater_config_arguments {
 	char *output_dir;
 	char *repack, *unpack;
 	int is_factory, try_update, force_update, do_manifest, host_only;
+	int fast_update;
 	int verbosity;
 };
 

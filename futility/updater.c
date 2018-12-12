@@ -244,10 +244,10 @@ static int host_get_platform_version()
  */
 static int host_flashrom(enum flashrom_ops op, const char *image_path,
 			 const char *programmer, int verbose,
-			 const char *section_name)
+			 const char *section_name, const char *extra)
 {
 	char *command, *result;
-	const char *op_cmd, *dash_i = "-i", *postfix = "", *ignore_lock = "";
+	const char *op_cmd, *dash_i = "-i", *postfix = "";
 	int r;
 
 	switch (verbose) {
@@ -297,9 +297,12 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 		return -1;
 	}
 
+	if (!extra)
+		extra = "";
+
 	/* TODO(hungte) In future we should link with flashrom directly. */
 	ASPRINTF(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
-		 image_path, programmer, dash_i, section_name, ignore_lock,
+		 image_path, programmer, dash_i, section_name, extra,
 		 postfix);
 
 	if (verbose)
@@ -329,7 +332,8 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 /* Helper function to return write protection status via given programmer. */
 static int host_get_wp(const char *programmer)
 {
-	return host_flashrom(FLASHROM_WP_STATUS, NULL, programmer, 0, NULL);
+	return host_flashrom(FLASHROM_WP_STATUS, NULL, programmer, 0, NULL,
+			     NULL);
 }
 
 /* Helper function to return host software write protection status. */
@@ -665,7 +669,7 @@ int load_system_firmware(struct updater_config *cfg,
 		return -1;
 	RETURN_ON_FAILURE(host_flashrom(
 			FLASHROM_READ, tmp_file, image->programmer,
-			cfg->verbosity, NULL));
+			cfg->verbosity, NULL, NULL));
 	return load_firmware_image(image, tmp_file, NULL);
 }
 
@@ -831,7 +835,10 @@ static int write_firmware(struct updater_config *cfg,
 			  const char *section_name)
 {
 	const char *tmp_file = updater_create_temp_file(cfg);
+	const char *tmp_diff_file = NULL;
 	const char *programmer = image->programmer;
+	char *extra = NULL;
+	int r;
 
 	if (!tmp_file)
 		return -1;
@@ -850,8 +857,20 @@ static int write_firmware(struct updater_config *cfg,
 		ERROR("Cannot write temporary file for output: %s", tmp_file);
 		return -1;
 	}
-	return host_flashrom(FLASHROM_WRITE, tmp_file, programmer,
-			     cfg->verbosity + 1, section_name);
+	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
+	{
+		tmp_diff_file = updater_create_temp_file(cfg);
+		if (vb2_write_file(tmp_diff_file, cfg->image_current.data,
+				   cfg->image_current.size) != VB2_SUCCESS) {
+			ERROR("Cannot write temporary file for diff image");
+			return -1;
+		}
+		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff_file);
+	}
+	r = host_flashrom(FLASHROM_WRITE, tmp_file, programmer,
+			  cfg->verbosity + 1, section_name, extra);
+	free(extra);
+	return r;
 }
 
 /*
@@ -1897,6 +1916,7 @@ int updater_setup_config(struct updater_config *cfg,
 
 	/* Setup values that may change output or decision of other argument. */
 	cfg->verbosity = arg->verbosity;
+	cfg->fast_update = arg->fast_update;
 	cfg->factory_update = arg->is_factory;
 	if (arg->force_update)
 		cfg->force_update = 1;

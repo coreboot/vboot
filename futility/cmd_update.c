@@ -16,6 +16,7 @@
 
 enum {
 	OPT_DUMMY = 0x100,
+	OPT_FAST,
 };
 
 /* Command line options */
@@ -35,6 +36,7 @@ static struct option const long_opts[] = {
 	{"repack", 1, NULL, 'k'},
 	{"unpack", 1, NULL, 'u'},
 	{"factory", 0, NULL, 'Y'},
+	{"fast", 0, NULL, OPT_FAST},
 	{"force", 0, NULL, 'F'},
 	{"programmer", 1, NULL, 'p'},
 	{"wp", 1, NULL, 'W'},
@@ -69,6 +71,7 @@ static void print_help(int argc, char *argv[])
 		"    --repack=DIR    \tUpdates archive from DIR\n"
 		"    --unpack=DIR    \tExtracts archive to DIR\n"
 		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
+		"    --fast          \tReduce read cycles and do not verify\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
 		"    --list-quirks   \tPrint all available quirks\n"
 		"\n"
@@ -172,6 +175,10 @@ static int do_update(int argc, char *argv[])
 		case 'd':
 			debugging_enabled = 1;
 			args.verbosity++;
+			break;
+
+		case OPT_FAST:
+			args.fast_update = 1;
 			break;
 
 		case OPT_DUMMY:
