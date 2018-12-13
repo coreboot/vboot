@@ -179,10 +179,10 @@ calculate_rootfs_hash() {
 
   # Extract the key-value parameters from the kernel command line.
   local rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
-  local verity_depth=0
   local verity_algorithm=$(get_verity_arg "${vroot_dev}" alg)
   local root_dev=$(get_verity_arg "${vroot_dev}" payload)
   local hash_dev=$(get_verity_arg "${vroot_dev}" hashtree)
+  local salt=$(get_verity_arg "${vroot_dev}" salt)
 
   local salt_arg
   if [ -n "$salt" ]; then
