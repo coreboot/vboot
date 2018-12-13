@@ -411,9 +411,9 @@ if type cbfstool >/dev/null 2>&1; then
 	truncate -s 262144 "${TMP}.smm"
 	cp -f "${FROM_IMAGE}" "${TMP}.from.smm"
 	cp -f "${TMP}.expected.full" "${TMP}.expected.full_smm"
-	cbfstool "${TMP}.from.smm" add -r RW_LEGACY -n "smm store" \
+	cbfstool "${TMP}.from.smm" add -r RW_LEGACY -n "smm_store" \
 		-f "${TMP}.smm" -t raw
-	cbfstool "${TMP}.expected.full_smm" add -r RW_LEGACY -n "smm store" \
+	cbfstool "${TMP}.expected.full_smm" add -r RW_LEGACY -n "smm_store" \
 		-f "${TMP}.smm" -t raw -b 0x1bf000
 	test_update "Legacy update (--quirks eve_smm_store)" \
 		"${TMP}.from.smm" "${TMP}.expected.full_smm" \
