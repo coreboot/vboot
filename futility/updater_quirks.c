@@ -228,6 +228,8 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		}
 		preserve_firmware_section(&cfg->image_current, &cfg->image,
 					  FMAP_RO_SECTION);
+		free(cfg->image.ro_version);
+		cfg->image.ro_version = strdup(cfg->image_current.ro_version);
 	} else {
 		ERROR("Unknown platform, cannot update.");
 		return -1;
