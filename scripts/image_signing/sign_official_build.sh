@@ -110,14 +110,6 @@ get_verity_arg() {
   echo "$1" | sed -n "s/.*\b$2=\([^ \"]*\).*/\1/p"
 }
 
-is_old_verity_argv() {
-  local depth=$(echo "$1" | cut -f7 -d' ')
-  if [ "$depth" = "0" ]; then
-    return 0
-  fi
-  return 1
-}
-
 # Get the dmparams parameters from a kernel config.
 get_dmparams_from_config() {
   local kernel_config=$1
@@ -128,11 +120,7 @@ get_hash_from_config() {
   local kernel_config=$1
   local dm_config=$(get_dmparams_from_config "${kernel_config}")
   local vroot_dev=$(get_dm_slave "${dm_config}" vroot)
-  if is_old_verity_argv "${vroot_dev}"; then
-    echo ${vroot_dev} | cut -f9 -d ' '
-  else
-    echo $(get_verity_arg "${vroot_dev}" root_hexdigest)
-  fi
+  echo $(get_verity_arg "${vroot_dev}" root_hexdigest)
 }
 
 # Get the slave device and its args
