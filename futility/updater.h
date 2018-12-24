@@ -101,6 +101,7 @@ struct updater_config {
 	int try_update;
 	int force_update;
 	int legacy_update;
+	int check_platform;
 	int verbosity;
 	const char *emulation;
 };

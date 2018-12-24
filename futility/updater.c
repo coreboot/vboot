@@ -1541,7 +1541,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
-	if (check_compatible_platform(cfg))
+	if (cfg->check_platform && check_compatible_platform(cfg))
 		return UPDATE_ERR_PLATFORM;
 
 	wp_enabled = is_write_protection_enabled(cfg);
@@ -1592,6 +1592,8 @@ struct updater_config *updater_new_config()
 	cfg->image_current.programmer = PROG_HOST;
 	cfg->ec_image.programmer = PROG_EC;
 	cfg->pd_image.programmer = PROG_PD;
+
+	cfg->check_platform = 1;
 
 	props = cfg->system_properties;
 	props[SYS_PROP_MAINFW_ACT].getter = host_get_mainfw_act;
