@@ -216,6 +216,8 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		memmove(b.data, a.data, a.size);
 		free(cfg->image.rw_version_b);
 		cfg->image.rw_version_b = strdup(cfg->image.rw_version_a);
+		/* chromium:917581 Some x16 come with weird RO. */
+		cfg->check_platform = 0;
 	} else if (is_x8) {
 		memmove(a.data, b.data, b.size);
 		free(cfg->image.rw_version_a);
