@@ -498,7 +498,10 @@ HOSTLIB_SRCS = \
 	cgpt/cgpt_common.c \
 	cgpt/cgpt_create.c \
 	cgpt/cgpt_edit.c \
+	cgpt/cgpt_find.c \
+	cgpt/cgpt_nor.c \
 	cgpt/cgpt_prioritize.c \
+	cgpt/cgpt_show.c \
 	firmware/2lib/2common.c \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2hmac.c \
