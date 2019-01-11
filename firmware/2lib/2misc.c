@@ -251,7 +251,7 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 	 * Check if we've been asked by the caller to disable dev mode.  Note
 	 * that hardware switch and GBB flag will take precedence over this.
 	 */
-	if (ctx->flags & VB2_DISABLE_DEVELOPER_MODE)
+	if (ctx->flags & VB2_CONTEXT_DISABLE_DEVELOPER_MODE)
 		flags &= ~VB2_SECDATA_FLAG_DEV_MODE;
 
 	/* Check virtual dev switch */

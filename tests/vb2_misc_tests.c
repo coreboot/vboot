@@ -392,7 +392,7 @@ static void dev_switch_tests(void)
 	vb2_secdata_set(&cc, VB2_SECDATA_FLAGS,
 			(VB2_SECDATA_FLAG_DEV_MODE |
 			 VB2_SECDATA_FLAG_LAST_BOOT_DEVELOPER));
-	cc.flags |= VB2_DISABLE_DEVELOPER_MODE;
+	cc.flags |= VB2_CONTEXT_DISABLE_DEVELOPER_MODE;
 	TEST_SUCC(vb2_check_dev_switch(&cc), "disable dev on ctx request");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd not in dev");
 

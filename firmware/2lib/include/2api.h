@@ -111,6 +111,8 @@ enum vb2_context_flags {
 	VB2_CONTEXT_FORCE_WIPEOUT_MODE = (1 << 8),
 
 	/* Erase TPM developer mode state if it is enabled. */
+	VB2_CONTEXT_DISABLE_DEVELOPER_MODE = (1 << 9),
+	/* Deprecated name; remove */
 	VB2_DISABLE_DEVELOPER_MODE = (1 << 9),
 
 	/*
