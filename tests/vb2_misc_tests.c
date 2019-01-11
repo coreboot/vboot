@@ -88,11 +88,47 @@ static void init_context_tests(void)
 	TEST_SUCC(vb2_init_context(&c), "Init context good");
 	TEST_EQ(c.workbuf_used, vb2_wb_round_up(sizeof(struct vb2_shared_data)),
 		"Init vbsd");
+	TEST_EQ(sd->magic, VB2_SHARED_DATA_MAGIC, "Bad magic");
+	TEST_EQ(sd->struct_version_major, VB2_SHARED_DATA_VERSION_MAJOR,
+		"No major version");
+	TEST_EQ(sd->struct_version_minor, VB2_SHARED_DATA_VERSION_MINOR,
+		"No minor version");
 
 	/* Don't re-init if used is non-zero */
 	c.workbuf_used = 200;
 	TEST_SUCC(vb2_init_context(&c), "Re-init context good");
 	TEST_EQ(c.workbuf_used, 200, "Didn't re-init");
+
+	/* Error if re-init with incorrect magic */
+	sd->magic = 0xdeadbeef;
+	TEST_EQ(vb2_init_context(&c),
+		VB2_ERROR_SHARED_DATA_MAGIC, "Missed bad magic");
+	sd->magic = VB2_SHARED_DATA_MAGIC;
+
+	/* Success if re-init with higher minor version */
+	sd->struct_version_minor++;
+	TEST_SUCC(vb2_init_context(&c), "Didn't allow higher minor version");
+	sd->struct_version_minor = VB2_SHARED_DATA_VERSION_MINOR;
+
+	/* Error if re-init with lower minor version */
+	if (VB2_SHARED_DATA_VERSION_MINOR > 0) {
+		sd->struct_version_minor--;
+		TEST_EQ(vb2_init_context(&c), VB2_ERROR_SHARED_DATA_VERSION,
+			"Allowed lower minor version");
+		sd->struct_version_minor = VB2_SHARED_DATA_VERSION_MINOR;
+	}
+
+	/* Error if re-init with higher major version */
+	sd->struct_version_major++;
+	TEST_EQ(vb2_init_context(&c),
+		VB2_ERROR_SHARED_DATA_VERSION, "Allowed higher major version");
+	sd->struct_version_major = VB2_SHARED_DATA_VERSION_MAJOR;
+
+	/* Error if re-init with lower major version */
+	sd->struct_version_major--;
+	TEST_EQ(vb2_init_context(&c),
+		VB2_ERROR_SHARED_DATA_VERSION, "Allowed lower major version");
+	sd->struct_version_major = VB2_SHARED_DATA_VERSION_MAJOR;
 
 	/* Handle workbuf errors */
 	c.workbuf_used = 0;

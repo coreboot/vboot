@@ -497,6 +497,12 @@ enum vb2_return_code {
 	/* Expected and image hashes are different size in ec_sync_phase1() */
 	VB2_ERROR_EC_HASH_SIZE,
 
+	/* Incompatible version for vb2_shared_data structure being loaded */
+	VB2_ERROR_SHARED_DATA_VERSION,
+
+	/* Bad magic number in vb2_shared_data structure */
+	VB2_ERROR_SHARED_DATA_MAGIC,
+
 	/**********************************************************************
 	 * API-level errors
 	 */

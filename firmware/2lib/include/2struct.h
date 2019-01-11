@@ -69,11 +69,25 @@ enum vb2_shared_data_status {
 	VB2_SD_STATUS_SECDATAK_INIT = (1 << 4),
 };
 
+/* "V2SD" = vb2_shared_data.magic */
+#define VB2_SHARED_DATA_MAGIC 0x44533256
+
+/* Current version of vb2_shared_data struct */
+#define VB2_SHARED_DATA_VERSION_MAJOR 1
+#define VB2_SHARED_DATA_VERSION_MINOR 0
+
 /*
  * Data shared between vboot API calls.  Stored at the start of the work
  * buffer.
  */
 struct vb2_shared_data {
+	/* Magic number for struct (VB2_SHARED_DATA_MAGIC) */
+	uint32_t magic;
+
+	/* Version of this structure */
+	uint16_t struct_version_major;
+	uint16_t struct_version_minor;
+
 	/* Flags; see enum vb2_shared_data_flags */
 	uint32_t flags;
 
