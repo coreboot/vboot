@@ -31,7 +31,8 @@ enum vb2_shared_data_flags {
 	VB2_SD_FLAG_MANUAL_RECOVERY = (1 << 0),
 
 	/* Developer mode is enabled */
-	/* TODO: should have been VB2_SD_FLAG_DEV_MODE_ENABLED */
+	VB2_SD_FLAG_DEV_MODE_ENABLED = (1 << 1),
+	/* Deprecated name; remove */
 	VB2_SD_DEV_MODE_ENABLED = (1 << 1),
 
 	/*

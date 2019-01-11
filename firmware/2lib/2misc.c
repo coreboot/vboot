@@ -269,7 +269,7 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 	/* Handle whichever mode we end up in */
 	if (is_dev) {
 		/* Developer mode */
-		sd->flags |= VB2_SD_DEV_MODE_ENABLED;
+		sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 		flags |= VB2_SECDATA_FLAG_LAST_BOOT_DEVELOPER;
