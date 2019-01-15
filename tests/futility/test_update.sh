@@ -91,6 +91,17 @@ cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.large"
 truncate -s $((8388608 * 2)) "${FROM_IMAGE}.large"
 
+# Create GBB v1.2 images (for checking digest)
+GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE}")"
+[ "${GBB_OUTPUT}" = "digest: <none>" ]
+TO_IMAGE_GBB12="${TO_IMAGE}.gbb12"
+HWID_DIGEST="adf64d2a434b610506153da42440b0b498d7369c0e98b629ede65eb59f4784fa"
+cp -f "${TO_IMAGE}" "${TO_IMAGE_GBB12}"
+patch_file "${TO_IMAGE_GBB12}" GBB 6 "\x02"
+"${FUTILITY}" gbb -s --hwid="${TO_HWID}" "${TO_IMAGE_GBB12}"
+GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE_GBB12}")"
+[ "${GBB_OUTPUT}" = "digest: ${HWID_DIGEST}   valid" ]
+
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
@@ -112,6 +123,9 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 	RW_SECTION_B:${TMP}.to/RW_SECTION_B
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
 	RW_LEGACY:${TMP}.to/RW_LEGACY
+cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb12"
+patch_file "${TMP}.expected.full.gbb12" GBB 6 "\x02"
+"${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full.gbb12"
 cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0"
 "${FUTILITY}" gbb -s --flags=0 "${TMP}.expected.full.gbb0"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
@@ -186,6 +200,10 @@ test_update "Full update (--host_only)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
 	--host_only --ec_image non-exist.bin --pd_image non_exist.bin
+
+test_update "Full update (GBB1.2 hwid digest)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full.gbb12" \
+	-i "${TO_IMAGE_GBB12}" --wp=0 --sys_props 0,0x10001,1
 
 # Test RW-only update.
 test_update "RW update" \
