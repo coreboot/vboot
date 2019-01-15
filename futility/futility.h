@@ -108,6 +108,9 @@ int futil_looks_like_gbb(GoogleBinaryBlockHeader *gbb, uint32_t len);
 int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
 			   uint32_t *maxlen);
 
+/* Updates HWID in GBB properly (and update digest if available). */
+int vb2_change_hwid(struct vb2_gbb_header *gbb, const char *hwid);
+
 /* For GBB v1.2 and later, update the hwid_digest */
 void update_hwid_digest(GoogleBinaryBlockHeader *gbb);
 
