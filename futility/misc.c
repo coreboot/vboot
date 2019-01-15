@@ -166,6 +166,7 @@ int print_hwid_digest(GoogleBinaryBlockHeader *gbb,
 	return is_valid;
 }
 
+/* Deprecated. Use vb2_change_hwid in future. */
 /* For GBB v1.2 and later, update the hwid_digest field. */
 void update_hwid_digest(GoogleBinaryBlockHeader *gbb)
 {
@@ -179,6 +180,25 @@ void update_hwid_digest(GoogleBinaryBlockHeader *gbb)
 	vb2_digest_buffer(buf + gbb->hwid_offset, strlen(hwid_str),
 			  VB2_HASH_SHA256,
 			  gbb->hwid_digest, sizeof(gbb->hwid_digest));
+}
+
+int vb2_change_hwid(struct vb2_gbb_header *gbb, const char *hwid)
+{
+	uint8_t *to = (uint8_t *)gbb + gbb->hwid_offset;
+	int len = strlen(hwid);
+	if (len >= gbb->hwid_size)
+		return -1;
+
+	/* Zero whole area so we won't have garbage after NUL. */
+	memset(to, 0, gbb->hwid_size);
+	memcpy(to, hwid, len);
+
+	/* HWID digest must be updated since v1.2. */
+	if (gbb->major_version == 1 && gbb->minor_version < 2)
+		return 0;
+
+	return vb2_digest_buffer(to, len, VB2_HASH_SHA256, gbb->hwid_digest,
+				 sizeof(gbb->hwid_digest));
 }
 
 /*
