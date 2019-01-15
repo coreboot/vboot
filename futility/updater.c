@@ -972,8 +972,6 @@ static int preserve_gbb(const struct firmware_image *image_from,
 			struct firmware_image *image_to,
 			int preserve_flags)
 {
-	int len;
-	uint8_t *hwid_to, *hwid_from;
 	const struct vb2_gbb_header *gbb_from;
 	struct vb2_gbb_header *gbb_to;
 
@@ -988,18 +986,9 @@ static int preserve_gbb(const struct firmware_image *image_from,
 	if (preserve_flags)
 		gbb_to->flags = gbb_from->flags;
 
-	hwid_to = (uint8_t *)gbb_to + gbb_to->hwid_offset;
-	hwid_from = (uint8_t *)gbb_from + gbb_from->hwid_offset;
-
 	/* Preserve HWID. */
-	len = strlen((const char *)hwid_from);
-	if (len >= gbb_to->hwid_size)
-		return -1;
-
-	/* Zero whole area so we won't have garbage after NUL. */
-	memset(hwid_to, 0, gbb_to->hwid_size);
-	memcpy(hwid_to, hwid_from, len);
-	return 0;
+	return futil_set_gbb_hwid(
+			gbb_to, (const char *)gbb_from + gbb_from->hwid_offset);
 }
 
 /*
