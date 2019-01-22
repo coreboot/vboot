@@ -5,6 +5,8 @@
  *
  * Accessing updater resources from an archive.
  */
+#include "host_common.h"
+#undef __USE_FILE_OFFSET64
 
 #include <assert.h>
 #include <ctype.h>
