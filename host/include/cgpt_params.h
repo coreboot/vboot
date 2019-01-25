@@ -55,6 +55,7 @@ typedef struct CgptAddParams {
 
 typedef struct CgptEditParams {
 	char *drive_name;
+	uint64_t drive_size;
 	Guid unique_guid;
 	int set_unique;
 } CgptEditParams;
