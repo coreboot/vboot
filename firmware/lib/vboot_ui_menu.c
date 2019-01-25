@@ -76,6 +76,17 @@ static void vb2_flash_screen(struct vb2_context *ctx)
 	vb2_draw_current_screen(ctx);
 }
 
+static void vb2_log_menu_change(void)
+{
+	if (menus[current_menu].size)
+		VB2_DEBUG("================ %s Menu ================ [ %s ]\n",
+			  menus[current_menu].name,
+			  menus[current_menu].items[current_menu_idx].text);
+	else
+		VB2_DEBUG("=============== %s Screen ===============\n",
+			  menus[current_menu].name);
+}
+
 /**
  * Switch to a new menu (but don't draw it yet).
  *
@@ -110,6 +121,8 @@ static void vb2_change_menu(VB_MENU new_current_menu,
 		new_current_menu_idx++;
 	if (new_current_menu_idx < menus[current_menu].size)
 		current_menu_idx = new_current_menu_idx;
+
+	vb2_log_menu_change();
 }
 
 /************************
@@ -425,6 +438,8 @@ static void vb2_update_selection(uint32_t key) {
 		VB2_DEBUG("ERROR: %s called with key 0x%x!\n", __func__, key);
 		break;
 	}
+
+	vb2_log_menu_change();
 }
 
 static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
@@ -488,6 +503,7 @@ static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
 /* Master table of all menus. Menus with size == 0 count as menuless screens. */
 static struct vb2_menu menus[VB_MENU_COUNT] = {
 	[VB_MENU_DEV_WARNING] = {
+		.name = "Developer Warning",
 		.size = VB_WARN_COUNT,
 		.screen = VB_SCREEN_DEVELOPER_WARNING_MENU,
 		.items = (struct vb2_menu_item[]){
@@ -514,6 +530,7 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 		},
 	},
 	[VB_MENU_DEV] = {
+		.name = "Developer Boot Options",
 		.size = VB_DEV_COUNT,
 		.screen = VB_SCREEN_DEVELOPER_MENU,
 		.items = (struct vb2_menu_item[]){
@@ -548,6 +565,7 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 		},
 	},
 	[VB_MENU_TO_NORM] = {
+		.name = "TO_NORM Confirmation",
 		.size = VB_TO_NORM_COUNT,
 		.screen = VB_SCREEN_DEVELOPER_TO_NORM_MENU,
 		.items = (struct vb2_menu_item[]){
@@ -570,6 +588,7 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 		},
 	},
 	[VB_MENU_TO_DEV] = {
+		.name = "TO_DEV Confirmation",
 		.size = VB_TO_DEV_COUNT,
 		.screen = VB_SCREEN_RECOVERY_TO_DEV_MENU,
 		.items = (struct vb2_menu_item[]){
@@ -592,10 +611,12 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 		},
 	},
 	[VB_MENU_LANGUAGES] = {
+		.name = "Language Selection",
 		.screen = VB_SCREEN_LANGUAGES_MENU,
 		/* Rest is filled out dynamically by vb2_init_menus() */
 	},
 	[VB_MENU_OPTIONS] = {
+		.name = "Options",
 		.size = VB_OPTIONS_COUNT,
 		.screen = VB_SCREEN_OPTIONS_MENU,
 		.items = (struct vb2_menu_item[]){
@@ -618,26 +639,31 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 		},
 	},
 	[VB_MENU_RECOVERY_INSERT] = {
+		.name = "Recovery INSERT",
 		.size = 0,
 		.screen = VB_SCREEN_RECOVERY_INSERT,
 		.items = NULL,
 	},
 	[VB_MENU_RECOVERY_NO_GOOD] = {
+		.name = "Recovery NO_GOOD",
 		.size = 0,
 		.screen = VB_SCREEN_RECOVERY_NO_GOOD,
 		.items = NULL,
 	},
 	[VB_MENU_RECOVERY_BROKEN] = {
+		.name = "Non-manual Recovery (BROKEN)",
 		.size = 0,
 		.screen = VB_SCREEN_OS_BROKEN,
 		.items = NULL,
 	},
 	[VB_MENU_TO_NORM_CONFIRMED] = {
+		.name = "TO_NORM Interstitial",
 		.size = 0,
 		.screen = VB_SCREEN_TO_NORM_CONFIRMED,
 		.items = NULL,
 	},
 	[VB_MENU_ALT_FW] = {
+		.name = "Alternative Firmware Selection",
 		.screen = VB_SCREEN_ALT_FW_MENU,
 		.size = VB_ALTFW_COUNT + 1,
 		.items = (struct vb2_menu_item[]) {{

@@ -413,6 +413,7 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	 * - Information on current disks */
 
 	buf[DEBUG_INFO_SIZE - 1] = '\0';
+	VB2_DEBUG("[TAB] Debug Info:\n%s", buf);
 	return VbExDisplayDebugInfo(buf);
 }
 

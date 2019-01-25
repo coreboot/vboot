@@ -17,6 +17,7 @@ struct vb2_menu_item {
 };
 
 struct vb2_menu {
+	const char *name;
 	uint16_t size;
 	uint16_t screen;
 	struct vb2_menu_item *items;
