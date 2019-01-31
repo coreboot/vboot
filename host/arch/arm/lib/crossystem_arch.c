@@ -34,7 +34,8 @@
 #define FDT_COMPATIBLE_PATH "/proc/device-tree/compatible"
 /* Path to the chromeos_arm platform device (deprecated) */
 #define PLATFORM_DEV_PATH "/sys/devices/platform/chromeos_arm"
-/* This should match the Linux GPIO name (i.e., 'gpio-line-names'). */
+/* These should match the Linux GPIO name (i.e., 'gpio-line-names'). */
+#define GPIO_NAME_RECOVERY_SW_L "RECOVERY_SW_L"
 #define GPIO_NAME_WP_L "AP_FLASH_WP_L"
 /* Device for NVCTX write */
 #define NVCTX_PATH "/dev/mmcblk%d"
@@ -547,6 +548,11 @@ int VbGetArchPropertyInt(const char* name)
 		return VbGetVarGpio("developer-switch");
 	} else if (!strcasecmp(name, "recoverysw_cur")) {
 		int value;
+		/* Try GPIO chardev API first. */
+		value = gpiod_read(GPIO_NAME_RECOVERY_SW_L, true);
+		if (value != -1)
+			return value;
+		/* Try the deprecated chromeos_arm platform device next. */
 		value = VbGetPlatformGpioStatus("recovery");
 		if (value != -1)
 			return value;
