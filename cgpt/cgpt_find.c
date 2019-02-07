@@ -69,7 +69,7 @@ static int match_content(CgptFindParams *params, struct drive *drive,
 }
 
 // This needs to handle /dev/mmcblk0 -> /dev/mmcblk0p3, /dev/sda -> /dev/sda3
-static void showmatch(CgptFindParams *params, char *filename,
+static void showmatch(CgptFindParams *params, const char *filename,
                       int partnum, GptEntry *entry) {
   char * format = "%s%d\n";
 
@@ -97,7 +97,7 @@ static void showmatch(CgptFindParams *params, char *filename,
 
 // This handles the MTD devices. ChromeOS uses /dev/mtdX for kernel partitions,
 // /dev/ubiblockX_0 for root partitions, and /dev/ubiX for stateful partition.
-static void chromeos_mtd_show(CgptFindParams *params, char *filename,
+static void chromeos_mtd_show(CgptFindParams *params, const char *filename,
                               int partnum, GptEntry *entry) {
   if (GuidEqual(&guid_chromeos_kernel, &entry->type)) {
     printf("/dev/mtd%d\n", partnum);
@@ -113,7 +113,7 @@ static void chromeos_mtd_show(CgptFindParams *params, char *filename,
 // filename and partition number that matched is left in a global, since we
 // could have multiple hits.
 static int gpt_search(CgptFindParams *params, struct drive *drive,
-                      char *filename) {
+                      const char *filename) {
   int i;
   GptEntry *entry;
   int retval = 0;
@@ -155,7 +155,7 @@ static int gpt_search(CgptFindParams *params, struct drive *drive,
   return retval;
 }
 
-static int do_search(CgptFindParams *params, char *fileName) {
+static int do_search(CgptFindParams *params, const char *fileName) {
   int retval;
   struct drive drive;
 

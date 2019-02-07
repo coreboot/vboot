@@ -20,21 +20,21 @@ enum {
 };
 
 typedef struct CgptCreateParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	int zap;
 	uint64_t padding;
 } CgptCreateParams;
 
 typedef struct CgptAddParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	uint32_t partition;
 	uint64_t begin;
 	uint64_t size;
 	Guid type_guid;
 	Guid unique_guid;
-	char *label;
+	const char *label;
 	int successful;
 	int tries;
 	int priority;
@@ -54,14 +54,14 @@ typedef struct CgptAddParams {
 } CgptAddParams;
 
 typedef struct CgptEditParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	Guid unique_guid;
 	int set_unique;
 } CgptEditParams;
 
 typedef struct CgptShowParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	int numeric;
 	int verbose;
@@ -73,21 +73,21 @@ typedef struct CgptShowParams {
 } CgptShowParams;
 
 typedef struct CgptRepairParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	int verbose;
 } CgptRepairParams;
 
 typedef struct CgptBootParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	uint32_t partition;
-	char *bootfile;
+	const char *bootfile;
 	int create_pmbr;
 } CgptBootParams;
 
 typedef struct CgptPrioritizeParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	uint32_t set_partition;
 	int set_friends;
@@ -96,10 +96,11 @@ typedef struct CgptPrioritizeParams {
 } CgptPrioritizeParams;
 
 struct CgptFindParams;
-typedef void (*CgptFindShowFn)(struct CgptFindParams *params, char *filename,
-			       int partnum, GptEntry *entry);
+typedef void (*CgptFindShowFn)(struct CgptFindParams *params,
+			       const char *filename, int partnum,
+			       GptEntry *entry);
 typedef struct CgptFindParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	int verbose;
 	int set_unique;
@@ -113,7 +114,7 @@ typedef struct CgptFindParams {
 	uint8_t *comparebuf;
 	Guid unique_guid;
 	Guid type_guid;
-	char *label;
+	const char *label;
 	int hits;
 	int match_partnum;           /* 1-based; 0 means no match */
 	/* when working with MTD, we actually work on a temp file, but we still
@@ -129,7 +130,7 @@ enum {
 };
 
 typedef struct CgptLegacyParams {
-	char *drive_name;
+	const char *drive_name;
 	uint64_t drive_size;
 	int mode;
 } CgptLegacyParams;
