@@ -71,7 +71,7 @@ static VbError_t vb2_draw_current_screen(struct vb2_context *ctx) {
 /* Flash the screen to black to catch user awareness, then redraw menu. */
 static void vb2_flash_screen(struct vb2_context *ctx)
 {
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0);
+	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	VbExSleepMs(50);
 	vb2_draw_current_screen(ctx);
 }
@@ -808,7 +808,7 @@ VbError_t VbBootDeveloperMenu(struct vb2_context *ctx)
 	if (VBERROR_SUCCESS != retval)
 		return retval;
 	retval = vb2_developer_menu(ctx);
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0);
+	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }
 
@@ -913,6 +913,6 @@ VbError_t VbBootRecoveryMenu(struct vb2_context *ctx)
 		retval = recovery_ui(ctx);
 	else
 		retval = broken_ui(ctx);
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0);
+	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }

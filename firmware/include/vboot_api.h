@@ -138,6 +138,8 @@ enum VbErrorPredefined_t {
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error reading or writing Alt OS flags to TPM */
 	VBERROR_TPM_ALT_OS                    = 0x10031,
+	/* Error writing VPD */
+	VBERROR_VPD_WRITE                     = 0x10032,
 
 	/* VbExEcGetExpectedRWHash() may return the following codes */
 	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
@@ -274,7 +276,7 @@ typedef struct VbSelectAndLoadKernelParams {
 	void *kernel_buffer;
 	/* Size of kernel buffer in bytes */
 	uint32_t kernel_buffer_size;
-	/* input flags.  Currently used for detachables */
+	/* input flags. */
 	uint32_t inflags;
 
 	/*
@@ -305,6 +307,11 @@ typedef struct VbSelectAndLoadKernelParams {
  * instead of traditional FW screens with ctrl+D, ctrl+U, etc.
  */
 #define VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI (1 << 0)
+
+/* Flag to indicate that the vendor data is not set and the vendor data
+ * UI should be enabled.
+ */
+#define VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE (1 << 1)
 
 /**
  * Select and loads the kernel.
@@ -671,7 +678,30 @@ enum VbScreenType_t {
 	VB_SCREEN_ALT_FW_PICK = 0x212,
 	/* Alt firmware menu screen (for detachable UI ) */
 	VB_SCREEN_ALT_FW_MENU = 0x213,
+	/* Set vendor data menu screen */
+	VB_SCREEN_SET_VENDOR_DATA = 0x214,
+	/* Confirm vendor data menu screen */
+	VB_SCREEN_CONFIRM_VENDOR_DATA = 0x215,
 };
+
+/**
+ * Extra data needed when displaying vendor data screens
+ */
+typedef struct VbVendorData
+{
+	/* Current state of the the vendor data input */
+	const char *input_text;
+} VbVendorData;
+
+/**
+ * Extra data that may be used when displaying a screen
+ */
+typedef struct VbScreenData
+{
+	union {
+		VbVendorData vendor_data;
+	};
+} VbScreenData;
 
 /**
  * Display a predefined screen; see VB_SCREEN_* for valid screens.
@@ -681,7 +711,8 @@ enum VbScreenType_t {
  * to be simple ASCII text such as "NO GOOD" or "INSERT"; these screens should
  * only be seen during development.
  */
-VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale);
+VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
+			    const VbScreenData *data);
 
 /**
  * Display a predefined menu screen; see VB_SCREEN_* for valid screens.
@@ -714,6 +745,17 @@ VbError_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
  */
 VbError_t VbExDisplayDebugInfo(const char *info_str);
 
+/**
+ * Write vendor data to read-only VPD
+ *
+ * @param vendor_data_value   The value of vendor data to write to VPD. The
+ *                            string length will be exactly VENDOR_DATA_LENGTH
+ *                            characters and null-terminated.
+ *
+ * @return VBERROR_SUCCESS or error code on error.
+ */
+VbError_t VbExSetVendorData(const char *vendor_data_value);
+
 /*****************************************************************************/
 /* Keyboard and switches */
 
@@ -724,6 +766,7 @@ VbError_t VbExDisplayDebugInfo(const char *info_str);
 enum VbKeyCode_t {
 	VB_KEY_ENTER = '\r',
 	VB_KEY_ESC = 0x1b,
+	VB_KEY_BACKSPACE = 0x8,
 	VB_KEY_UP = 0x100,
 	VB_KEY_DOWN = 0x101,
 	VB_KEY_LEFT = 0x102,

@@ -35,7 +35,8 @@ VbError_t VbExGetAltFwIdxMask(void) {
 	return 0;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force)
+VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+			  const VbScreenData *data)
 {
 	uint32_t locale;
 	VbError_t rv;
@@ -47,7 +48,7 @@ VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force)
 	/* Read the locale last saved */
 	locale = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 
-	rv = VbExDisplayScreen(screen, locale);
+	rv = VbExDisplayScreen(screen, locale, data);
 
 	if (rv == VBERROR_SUCCESS)
 		/* Keep track of the currently displayed screen */
@@ -464,12 +465,13 @@ VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key)
 #endif
 
 		/* Force redraw of current screen */
-		return VbDisplayScreen(ctx, disp_current_screen, 1);
+		return VbDisplayScreen(ctx, disp_current_screen, 1, NULL);
 	}
 
 	if (0 == memcmp(MagicBuffer, MAGIC_WORD, MAGIC_WORD_LEN)) {
 		if (VBEASTEREGG)
-			(void)VbDisplayScreen(ctx, disp_current_screen, 1);
+			(void)VbDisplayScreen(ctx, disp_current_screen, 1,
+					      NULL);
 	}
 
 	return VBERROR_SUCCESS;

@@ -432,6 +432,9 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 			retval = VbBootRecovery(&ctx);
 		VbExEcEnteringMode(0, VB_EC_RECOVERY);
 	} else if (ctx.flags & VB2_CONTEXT_DEVELOPER_MODE) {
+		if (kparams->inflags & VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE)
+			ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+
 		/* Developer boot.  This has UI. */
 		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
 			retval = VbBootDeveloperMenu(&ctx);

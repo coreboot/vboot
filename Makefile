@@ -163,6 +163,7 @@ else
 # FIRMWARE_ARCH not defined; assuming local compile.
 CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT -Wall ${WERROR} ${DEBUG_FLAGS}
+CHROMEOS_ENVIRONMENT = 1
 endif
 
 ifneq (${DEBUG},)
@@ -409,6 +410,14 @@ else
 VBINIT_SRCS += \
 	firmware/lib/mocked_rollback_index.c \
 	firmware/lib/tpm_lite/mocked_tlcl.c
+endif
+
+ifneq (${VENDOR_DATA_LENGTH},)
+CFLAGS += -DVENDOR_DATA_LENGTH=${VENDOR_DATA_LENGTH}
+else ifeq (${CHROMEOS_ENVIRONMENT},1)
+CFLAGS += -DVENDOR_DATA_LENGTH=4
+else
+CFLAGS += -DVENDOR_DATA_LENGTH=0
 endif
 
 ifeq (${FIRMWARE_ARCH},)

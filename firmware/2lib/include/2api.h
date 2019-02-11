@@ -177,6 +177,9 @@ enum vb2_context_flags {
 	 * data provided by the caller could be uninitialized.)
 	 */
 	VB2_CONTEXT_NVDATA_V2 = (1 << 18),
+
+	/* Allow vendor data to be set via the vendor data ui. */
+	VB2_CONTEXT_VENDOR_DATA_SETTABLE = (1 << 19),
 };
 
 /*

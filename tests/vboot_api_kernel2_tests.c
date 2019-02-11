@@ -41,7 +41,7 @@ static int altfw_num;
 static int trust_ec;
 static int virtdev_set;
 static uint32_t virtdev_retval;
-static uint32_t mock_keypress[8];
+static uint32_t mock_keypress[16];
 static uint32_t mock_keyflags[8];
 static uint32_t mock_keypress_count;
 static uint32_t mock_switches[8];
@@ -51,6 +51,9 @@ static uint32_t screens_displayed[8];
 static uint32_t screens_count = 0;
 static uint32_t mock_num_disks[8];
 static uint32_t mock_num_disks_count;
+
+static char set_vendor_data[32];
+static int set_vendor_data_called;
 
 extern enum VbEcBootMode_t VbGetMode(void);
 extern struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
@@ -83,6 +86,7 @@ static void ResetMocks(void)
 	trust_ec = 0;
 	virtdev_set = 0;
 	virtdev_retval = 0;
+	set_vendor_data_called = 0;
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
@@ -193,7 +197,8 @@ uint32_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	return vbtlk_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force)
+VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+			  const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
@@ -205,6 +210,14 @@ uint32_t SetVirtualDevMode(int val)
 {
 	virtdev_set = val;
 	return virtdev_retval;
+}
+
+VbError_t VbExSetVendorData(const char *vendor_data_value)
+{
+	set_vendor_data_called = 1;
+	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data));
+
+	return VBERROR_SUCCESS;
 }
 
 /* Tests */
@@ -589,6 +602,174 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloper(&ctx), 0, "Ctrl+U force USB");
+
+	/* Ctrl+S set vendor data and reboot */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[6] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S set vendor data and reboot");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
+
+	/* Ctrl+S extra keys ignored */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = '5';
+	mock_keypress[6] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[7] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S extra keys ignored");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
+
+	/* Ctrl+S converts case */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = 'a';
+	mock_keypress[2] = 'B';
+	mock_keypress[3] = 'Y';
+	mock_keypress[4] = 'z';
+	mock_keypress[5] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[6] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S converts case");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "ABYZ", "  Vendor data correct");
+
+	/* Ctrl+S backspace works */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = 'A';
+	mock_keypress[2] = 'B';
+	mock_keypress[3] = 'C';
+	mock_keypress[4] = VB_KEY_BACKSPACE;
+	mock_keypress[5] = VB_KEY_BACKSPACE;
+	mock_keypress[6] = '3';
+	mock_keypress[7] = '2';
+	mock_keypress[8] = '1';
+	mock_keypress[9] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[10] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S backspace works");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "A321", "  Vendor data correct");
+
+	/* Ctrl+S invalid chars don't print */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '-';
+	mock_keypress[3] = '^';
+	mock_keypress[4] = '&';
+	mock_keypress[5] = '$';
+	mock_keypress[6] = '.';
+	mock_keypress[7] = '3';
+	mock_keypress[8] = '2';
+	mock_keypress[9] = '1';
+	mock_keypress[10] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[11] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S invalid chars don't print");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
+
+	/* Ctrl+S invalid chars don't print with backspace */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '-';
+	mock_keypress[3] = VB_KEY_BACKSPACE; // Should delete 4
+	mock_keypress[4] = '3';
+	mock_keypress[5] = '2';
+	mock_keypress[6] = '1';
+	mock_keypress[7] = '0';
+	mock_keypress[8] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[9] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S invalid chars don't print with backspace");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "3210", "  Vendor data correct");
+
+	/* Ctrl+S backspace only doesn't underrun */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = 'A';
+	mock_keypress[2] = VB_KEY_BACKSPACE;
+	mock_keypress[3] = VB_KEY_BACKSPACE;
+	mock_keypress[4] = '4';
+	mock_keypress[5] = '3';
+	mock_keypress[6] = '2';
+	mock_keypress[7] = '1';
+	mock_keypress[8] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[9] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S backspace only doesn't underrun");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
+
+	/* Ctrl+S too short */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '1';
+	mock_keypress[2] = '2';
+	mock_keypress[3] = '3';
+	mock_keypress[4] = VB_KEY_ENTER; // Set vendor data (Nothing happens)
+	mock_keypress[5] = VB_KEY_ENTER; // Confirm vendor data (Nothing happens)
+	mock_keypress[6] = VB_KEY_ESC;
+	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Ctrl+S too short");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
+
+	/* Ctrl+S esc from set screen */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = VB_KEY_ESC;
+	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Ctrl+S esc from set screen");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
+
+	/* Ctrl+S esc from set screen with tag */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = VB_KEY_ESC;
+	TEST_EQ(VbBootDeveloper(&ctx), 1002,
+		"Ctrl+S esc from set screen with tag");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
+
+	/* Ctrl+S esc from confirm screen */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[6] = VB_KEY_ESC;
+	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Ctrl+S esc from set screen");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
 	/* If no USB, eventually times out and tries fixed disk */
 	ResetMocks();

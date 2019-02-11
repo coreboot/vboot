@@ -15,6 +15,7 @@
 #ifndef VBOOT_REFERENCE_SYSINCLUDES_H_
 #define VBOOT_REFERENCE_SYSINCLUDES_H_
 
+#include <ctype.h>
 #include <inttypes.h>  /* For PRIu64 */
 #include <stddef.h>
 #include <stdint.h>

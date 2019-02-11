@@ -205,7 +205,8 @@ VbError_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	return vbtlk_last_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force)
+VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+			  const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;

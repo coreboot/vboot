@@ -26,7 +26,8 @@ VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale)
+VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
+			    const VbScreenData *data)
 {
 	return VBERROR_SUCCESS;
 }
@@ -170,6 +171,11 @@ int VbExLegacy(int altfw_num)
 }
 
 uint8_t VbExOverrideGptEntryPriority(const GptEntry *e)
+{
+	return 0;
+}
+
+VbError_t VbExSetVendorData(const char *vendor_data_value)
 {
 	return 0;
 }

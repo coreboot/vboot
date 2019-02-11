@@ -235,7 +235,8 @@ VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
 	return beep_return;
 }
 
-VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale)
+VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
+			    const VbScreenData *data)
 {
 	switch(screen_type) {
 		case VB_SCREEN_BLANK:
