@@ -215,7 +215,7 @@ test_update "RW update (incompatible platform)" \
 	-i "${LINK_BIOS}" --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (incompatible rootkey)" \
-	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW not signed by same RO root key" \
+	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
 	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
@@ -243,7 +243,7 @@ test_update "RW update (incompatible platform)" \
 	-i "${LINK_BIOS}" -t --wp=1 --sys_props 0x10001,1
 
 test_update "RW update (incompatible rootkey)" \
-	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW not signed by same RO root key" \
+	"${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0x10001,1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
@@ -277,11 +277,11 @@ test_update "Factory mode update (WP=0)" \
 	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 test_update "Factory mode update (WP=1)" \
-	"${FROM_IMAGE}" "!needs WP disabled" \
+	"${FROM_IMAGE}" "!remove write protection for factory mode" \
 	-i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1 --mode=factory
 
 test_update "Factory mode update (WP=1)" \
-	"${FROM_IMAGE}" "!needs WP disabled" \
+	"${FROM_IMAGE}" "!remove write protection for factory mode" \
 	--factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
 
 test_update "Factory mode update (GBB=0 -> 39)" \
