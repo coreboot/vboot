@@ -687,6 +687,8 @@ enum VbScreenType_t {
 	VB_SCREEN_SET_VENDOR_DATA = 0x214,
 	/* Confirm vendor data menu screen */
 	VB_SCREEN_CONFIRM_VENDOR_DATA = 0x215,
+	/* Confirm reboot for running diagnostics rom */
+	VB_SCREEN_CONFIRM_DIAG = 0x216,
 };
 
 /**
@@ -1017,6 +1019,7 @@ enum {
 };
 
 enum VbAltFwIndex_t {
+	VB_ALTFW_DIAGNOSTIC = -1,
 	VB_ALTFW_DEFAULT = 0,
 	VB_ALTFW_FIRST = 1,
 	VB_ALTFW_SECOND,
@@ -1037,7 +1040,8 @@ enum VbAltFwIndex_t {
  *     >0 (i.e., positive #) run a payload by # based in altfw/list file
  *     <0 (i.e., negative #) run a specific payload by name without using
  *        the altfw/list file.  Typically payloads in this category will be
- *        verified before they are run. Currently no #s are defined.
+ *        verified before they are run. Currently these #s are defined:
+ *          -1 diagnostic payload
  */
 int VbExLegacy(enum VbAltFwIndex_t altfw_num);
 

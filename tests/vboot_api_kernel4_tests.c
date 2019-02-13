@@ -40,6 +40,10 @@ static struct RollbackSpaceFwmp rfr_fwmp;
 static int rkr_retval, rkw_retval, rkl_retval, rfr_retval;
 static VbError_t vbboot_retval;
 
+static uint32_t mock_switches[8];
+static uint32_t mock_switches_count;
+static int mock_switches_are_stuck;
+
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
@@ -75,6 +79,10 @@ static void ResetMocks(void)
 	rkr_version = new_version = 0x10002;
 	rkr_retval = rkw_retval = rkl_retval = VBERROR_SUCCESS;
 	vbboot_retval = VBERROR_SUCCESS;
+
+	memset(mock_switches, 0, sizeof(mock_switches));
+	mock_switches_count = 0;
+	mock_switches_are_stuck = 0;
 }
 
 /* Mock functions */
@@ -144,11 +152,34 @@ VbError_t VbBootRecovery(struct vb2_context *ctx)
 	return vbboot_retval;
 }
 
+VbError_t VbBootDiagnostic(struct vb2_context *ctx)
+{
+	if (vbboot_retval == -4)
+		return VBERROR_SIMULATED;
+
+	return vbboot_retval;
+}
+
 static void test_slk(VbError_t retval, int recovery_reason, const char *desc)
 {
 	TEST_EQ(VbSelectAndLoadKernel(&cparams, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
+}
+
+uint32_t VbExGetSwitches(uint32_t request_mask)
+{
+	if (mock_switches_are_stuck)
+		return mock_switches[0] & request_mask;
+	if (mock_switches_count < ARRAY_SIZE(mock_switches))
+		return mock_switches[mock_switches_count++] & request_mask;
+	else
+		return 0;
+}
+
+int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
+{
+	return VB2_SUCCESS;
 }
 
 /* Tests */
@@ -225,6 +256,33 @@ static void VbSlkTest(void)
 	ResetMocks();
 	vbboot_retval = -1;
 	test_slk(VBERROR_SIMULATED, 0, "Normal boot bad");
+
+	/* Check that NV_DIAG_REQUEST triggers diagnostic UI */
+	if (DIAGNOSTIC_UI) {
+		ResetMocks();
+		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+		vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 1);
+		vb2_nv_set(&ctx, VB2_NV_OPROM_NEEDED, 1);
+		vbboot_retval = -4;
+		test_slk(VBERROR_SIMULATED, 0, "Normal boot with diag");
+		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+			"  diag not requested");
+		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 1,
+			"  oprom still needed");
+
+		ResetMocks();
+		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+		vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 1);
+		vb2_nv_set(&ctx, VB2_NV_OPROM_NEEDED, 1);
+		shared->flags |= VBSD_OPROM_MATTERS;
+		vbboot_retval = -4;
+		test_slk(VBERROR_SIMULATED, 0,
+			 "Normal boot with diag and oprom");
+		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+			"  diag not requested");
+		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 0,
+			"  oprom not needed");
+	}
 
 	/* Boot dev */
 	ResetMocks();

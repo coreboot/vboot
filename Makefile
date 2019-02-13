@@ -191,6 +191,18 @@ ifneq (${TPM2_MODE},)
 CFLAGS += -DTPM2_MODE
 endif
 
+# enable all features during local compile (permits testing)
+ifeq (${CHROMEOS_ENVIRONMENT},1)
+DIAGNOSTIC_UI := 1
+endif
+
+# pass DIAGNOSTIC_UI= (or =0) to make to disable feature
+ifneq ($(filter-out 0,${DIAGNOSTIC_UI}),)
+CFLAGS += -DDIAGNOSTIC_UI=1
+else
+CFLAGS += -DDIAGNOSTIC_UI=0
+endif
+
 # NOTE: We don't use these files but they are useful for other packages to
 # query about required compiling/linking flags.
 PC_IN_FILES = vboot_host.pc.in

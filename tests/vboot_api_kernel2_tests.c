@@ -34,10 +34,12 @@ static struct vb2_shared_data *sd;
 
 static int shutdown_request_calls_left;
 static int shutdown_request_power_held;
+static int shutdown_via_lid_close;
 static int audio_looping_calls_left;
 static uint32_t vbtlk_retval;
 static int vbexlegacy_called;
 static enum VbAltFwIndex_t altfw_num;
+static uint64_t current_ticks;
 static int trust_ec;
 static int virtdev_set;
 static uint32_t virtdev_retval;
@@ -51,6 +53,8 @@ static uint32_t screens_displayed[8];
 static uint32_t screens_count = 0;
 static uint32_t mock_num_disks[8];
 static uint32_t mock_num_disks_count;
+static int tpm_set_mode_called;
+static enum vb2_tpm_mode tpm_mode;
 
 static char set_vendor_data[32];
 static int set_vendor_data_called;
@@ -79,10 +83,12 @@ static void ResetMocks(void)
 
 	shutdown_request_calls_left = -1;
 	shutdown_request_power_held = -1;
+	shutdown_via_lid_close = 0;
 	audio_looping_calls_left = 30;
 	vbtlk_retval = 1000;
 	vbexlegacy_called = 0;
 	altfw_num = -100;
+	current_ticks = 0;
 	trust_ec = 0;
 	virtdev_set = 0;
 	virtdev_retval = 0;
@@ -101,6 +107,9 @@ static void ResetMocks(void)
 
 	memset(mock_num_disks, 0, sizeof(mock_num_disks));
 	mock_num_disks_count = 0;
+
+	tpm_set_mode_called = 0;
+	tpm_mode = VB2_TPM_MODE_ENABLED_TENTATIVE;
 }
 
 /* Mock functions */
@@ -108,7 +117,9 @@ static void ResetMocks(void)
 uint32_t VbExIsShutdownRequested(void)
 {
 	if (shutdown_request_calls_left == 0)
-		return 1;
+		return shutdown_via_lid_close ?
+			VB_SHUTDOWN_REQUEST_LID_CLOSED :
+			VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 	else if (shutdown_request_calls_left > 0)
 		shutdown_request_calls_left--;
 
@@ -154,7 +165,18 @@ int VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 	vbexlegacy_called++;
 	altfw_num = _altfw_num;
 
-	return 0;
+	/* VbExLegacy() can only return failure, or not return at all. */
+	return VBERROR_UNKNOWN;
+}
+
+void VbExSleepMs(uint32_t msec)
+{
+	current_ticks += (uint64_t)msec * VB_USEC_PER_MSEC;
+}
+
+uint64_t VbExGetTimer(void)
+{
+	return current_ticks;
 }
 
 VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
@@ -218,6 +240,23 @@ VbError_t VbExSetVendorData(const char *vendor_data_value)
 	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data));
 
 	return VBERROR_SUCCESS;
+}
+
+int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
+{
+	tpm_set_mode_called = 1;
+	/*
+	 * This mock will pretend that any call will fail if the tpm is
+	 * already disabled (e.g., as if the code always tries to contact the
+	 * tpm to issue a command).  The real version may eventually be changed
+	 * to return success if the incoming request is also to disable, but
+	 * the point here is to have a way to simulate failure.
+	 */
+	if (tpm_mode == VB2_TPM_MODE_DISABLED) {
+		return VB2_ERROR_UNKNOWN;
+	}
+	tpm_mode = mode_val;
+	return VB2_SUCCESS;
 }
 
 /* Tests */
@@ -1051,6 +1090,145 @@ static void VbBootRecTest(void)
 		VBERROR_TPM_SET_BOOT_MODE_STATE,
 		"Ctrl+D todev failure");
 
+	/* Test Diagnostic Mode via Ctrl-C when no oprom needed */
+	ResetMocks();
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	trust_ec = 1;
+	shutdown_request_calls_left = 100;
+	mock_keypress[0] = 0x03;
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		"todiag is zero");
+	if (DIAGNOSTIC_UI)
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_REBOOT_REQUIRED,
+			"Ctrl+C todiag - enabled");
+	else
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_SHUTDOWN_REQUESTED,
+			"Ctrl+C todiag - disabled");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), DIAGNOSTIC_UI,
+		"todiag is updated for Ctrl-C");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 0,
+		"todiag doesn't update for unneeded opom");
+
+	/* Test Diagnostic Mode via F12 - oprom needed */
+	ResetMocks();
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON | VBSD_OPROM_MATTERS;
+	trust_ec = 1;
+	shutdown_request_calls_left = 100;
+	mock_keypress[0] = 0x114;
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		"todiag is zero");
+	if (DIAGNOSTIC_UI)
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_REBOOT_REQUIRED,
+			"F12 todiag - enabled");
+	else
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_SHUTDOWN_REQUESTED,
+			"F12 todiag - disabled");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), DIAGNOSTIC_UI,
+		"todiag is updated for F12");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), DIAGNOSTIC_UI,
+		"todiag updates opom, if need");
+
+	printf("...done.\n");
+}
+
+static void VbBootDiagTest(void)
+{
+	printf("Testing VbBootDiagnostic()...\n");
+
+	/* No key pressed - timeout. */
+	ResetMocks();
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_REBOOT_REQUIRED, "Timeout");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 0, "  no tpm call");
+	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+	TEST_EQ(current_ticks, 30 * VB_USEC_PER_SEC,
+		"  waited for 30 seconds");
+
+	/* Esc key pressed. */
+	ResetMocks();
+	mock_keypress[0] = VB_KEY_ESC;
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_REBOOT_REQUIRED, "Esc key");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 0, "  no tpm call");
+	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+	TEST_EQ(current_ticks, 0, "  didn't wait at all");
+
+	/* Shutdown requested via lid close */
+	ResetMocks();
+	shutdown_via_lid_close = 1;
+	shutdown_request_calls_left = 10;
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_SHUTDOWN_REQUESTED, "Shutdown");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 0, "  no tpm call");
+	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+	TEST_TRUE(current_ticks < VB_USEC_PER_SEC, "  didn't wait long");
+
+	/* Power button pressed but not released. */
+	ResetMocks();
+	mock_switches_are_stuck = 1;
+	mock_switches[0] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_REBOOT_REQUIRED, "Power held");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 0, "  no tpm call");
+	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+
+	/* Power button is pressed and released. */
+	ResetMocks();
+	mock_switches[0] = 0;
+	mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+	mock_switches[2] = 0;
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_REBOOT_REQUIRED, "Confirm");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 1, "  tpm call");
+	TEST_EQ(tpm_mode, VB2_TPM_MODE_DISABLED, "  tpm disabled");
+	TEST_EQ(vbexlegacy_called, 1, "  legacy");
+	TEST_EQ(altfw_num, VB_ALTFW_DIAGNOSTIC, "  check altfw_num");
+	/*
+	 * Ideally we'd that no recovery request was recorded, but
+	 * VbExLegacy() can only fail or crash the tests.
+	 */
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_ALTFW_HASH_FAILED,
+		"  recovery request");
+
+        /* Power button confirm, but now with a tpm failure. */
+	ResetMocks();
+	tpm_mode = VB2_TPM_MODE_DISABLED;
+	mock_switches[0] = 0;
+	mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+	mock_switches[2] = 0;
+	TEST_EQ(VbBootDiagnostic(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Confirm but tpm fail");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_CONFIRM_DIAG,
+		"  confirm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_BLANK,
+		"  blank screen");
+	TEST_EQ(tpm_set_mode_called, 1, "  tpm call");
+	TEST_EQ(tpm_mode, VB2_TPM_MODE_DISABLED, "  tpm disabled");
+	TEST_EQ(vbexlegacy_called, 0, "  legacy not called");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_TPM_DISABLE_FAILED,
+		"  recovery request");
+
 	printf("...done.\n");
 }
 
@@ -1061,6 +1239,8 @@ int main(void)
 	VbBootTest();
 	VbBootDevTest();
 	VbBootRecTest();
+	if (DIAGNOSTIC_UI)
+		VbBootDiagTest();
 
 	return gTestSuccess ? 0 : 255;
 }

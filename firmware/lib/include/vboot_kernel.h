@@ -60,6 +60,11 @@ VbError_t VbBootNormal(struct vb2_context *ctx);
 VbError_t VbBootDeveloper(struct vb2_context *ctx);
 
 /**
+ * Handle a diagnostic-mode boot.
+ */
+VbError_t VbBootDiagnostic(struct vb2_context *ctx);
+
+/**
  * Handle a recovery-mode boot.
  */
 VbError_t VbBootRecovery(struct vb2_context *ctx);

@@ -17,6 +17,7 @@
 #include "gbb_header.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
+#include "tlcl.h"
 #include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
@@ -44,7 +45,10 @@ static void VbAllowUsbBoot(struct vb2_context *ctx)
  * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
  * determine if a shutdown is required.
  *
- * Returns true if a shutdown is required and false if no shutdown is required.
+ * Returns zero or more of the following flags (if any are set then typically
+ * shutdown is required):
+ * VB_SHUTDOWN_REQUEST_LID_CLOSED
+ * VB_SHUTDOWN_REQUEST_POWER_BUTTON
  */
 static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 {
@@ -70,7 +74,7 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	if (sd->gbb_flags & GBB_FLAG_DISABLE_LID_SHUTDOWN)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
-	return !!shutdown_request;
+	return shutdown_request;
 }
 
 uint32_t VbTryUsb(struct vb2_context *ctx)
@@ -366,6 +370,124 @@ VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
+/*
+ * User interface for confirming launch of diagnostics rom
+ *
+ * This asks the user to confirm the launch of the diagnostics rom. The user
+ * can press the power button to confirm or press escape. There is a 30-second
+ * timeout which acts the same as escape.
+ */
+VbError_t vb2_diagnostics_ui(struct vb2_context *ctx)
+{
+	int active = 1;
+	int power_button_was_pressed = 0;
+	VbError_t result = VBERROR_REBOOT_REQUIRED;
+	int action_confirmed = 0;
+	uint64_t start_time_us;
+
+	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_DIAG, 0, NULL);
+
+	start_time_us = VbExGetTimer();
+
+	/* We'll loop until the user decides what to do */
+	do {
+		uint32_t key = VbExKeyboardRead();
+		/*
+		 * VbExIsShutdownRequested() is almost an adequate substitute
+		 * for adding a new flag to VbExGetSwitches().  The main
+		 * issue is that the former doesn't consult the power button
+		 * on detachables, and this function wants to see for itself
+		 * that the power button isn't currently pressed.
+		 */
+		uint32_t power_pressed =
+			VbExGetSwitches(VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED);
+		/*
+		 * TODO(delco): Remove this workaround.  On Wilco a button
+		 * press is only reported a single time regardless of the
+		 * duration of the press. Until it's changed to report the
+		 * live/current status of the button we can't ignore when
+		 * VbWantShutdown() reports a button press (well, we can
+		 * ignore it but the user might have to press the power button
+		 * more than once for this code to react).
+		 */
+		int shutdown = VbWantShutdown(ctx, 0);
+		if (shutdown & VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
+			power_pressed = 1;
+		}
+
+		if (power_pressed) {
+			power_button_was_pressed = 1;
+		} else if (power_button_was_pressed) {
+			VB2_DEBUG("vb2_diagnostics_ui() - power released\n");
+			action_confirmed = 1;
+			active = 0;
+			break;
+		}
+
+		/* Check the lid and ignore the power button. */
+		if (shutdown & VB_SHUTDOWN_REQUEST_LID_CLOSED) {
+			VB2_DEBUG("vb2_diagnostics_ui() - shutdown request\n");
+			result = VBERROR_SHUTDOWN_REQUESTED;
+			active = 0;
+			break;
+		}
+
+		switch (key) {
+		case 0:
+			/* nothing pressed */
+			break;
+		case VB_KEY_ESC:
+			/* Escape pressed - reboot */
+			VB2_DEBUG("vb2_diagnostics_ui() - user pressed Esc\n");
+			active = 0;
+			break;
+		default:
+			VB2_DEBUG("vb2_diagnostics_ui() - pressed key %d\n",
+				  key);
+			VbCheckDisplayKey(ctx, key);
+			break;
+		}
+		if (VbExGetTimer() - start_time_us >= 30 * VB_USEC_PER_SEC) {
+			VB2_DEBUG("vb2_diagnostics_ui() - timeout\n");
+			break;
+		}
+		if (active) {
+			VbExSleepMs(DEV_KEY_DELAY);
+		}
+	} while (active);
+
+	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
+
+	if (action_confirmed) {
+		VB2_DEBUG("Diagnostic requested, running\n");
+
+		/*
+		 * The following helps avoid use of the TPM after
+		 * it's disabled (e.g., when vb2_run_altfw() calls
+		 * RollbackKernelLock() ).
+		 */
+
+		if (RollbackKernelLock(0)) {
+			VB2_DEBUG("Failed to lock TPM PP\n");
+			vb2_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
+		} else if (vb2ex_tpm_set_mode(VB2_TPM_MODE_DISABLED) !=
+			   VB2_SUCCESS) {
+			VB2_DEBUG("Failed to disable TPM\n");
+			vb2_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
+		} else {
+			vb2_run_altfw(ctx, VB_ALTFW_DIAGNOSTIC);
+			VB2_DEBUG("Diagnostic failed to run\n");
+			/*
+			 * Assuming failure was due to bad hash, though
+			 * the rom could just be missing or invalid.
+			 */
+			vb2_fail(ctx, VB2_RECOVERY_ALTFW_HASH_FAILED, 0);
+		}
+	}
+
+	return result;
+}
+
 static const char dev_disable_msg[] =
 	"Developer mode is disabled on this device by system policy.\n"
 	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
@@ -650,6 +772,14 @@ VbError_t VbBootDeveloper(struct vb2_context *ctx)
 	return retval;
 }
 
+VbError_t VbBootDiagnostic(struct vb2_context *ctx)
+{
+	vb2_init_ui();
+	VbError_t retval = vb2_diagnostics_ui(ctx);
+	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
+	return retval;
+}
+
 /* Delay in recovery mode */
 #define REC_DISK_DELAY       1000     /* Check disks every 1s */
 #define REC_KEY_DELAY        20       /* Check keys every 20ms */
@@ -786,6 +916,14 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 					i = 4;
 					break;
 				}
+			} else if (DIAGNOSTIC_UI &&
+				   (key == VB_KEY_CTRL('C') ||
+				    key == 0x114)) {       /* F12 */
+				VB2_DEBUG("Diagnostic requested, rebooting\n");
+                                if (shared->flags & VBSD_OPROM_MATTERS)
+					vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
+				vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
+				return VBERROR_REBOOT_REQUIRED;
 			} else {
 				VbCheckDisplayKey(ctx, key);
 			}
