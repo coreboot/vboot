@@ -38,7 +38,7 @@ void vb2_error_notify(const char *print_msg,
  *
  * @altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
  */
-void vb2_run_altfw(int altfw_num);
+void vb2_run_altfw(enum VbAltFwIndex_t altfw_num);
 
 /** Display an error and beep to indicate that altfw is not available */
 void vb2_error_no_altfw(void);
@@ -55,6 +55,6 @@ void vb2_error_no_altfw(void);
  * @allowed	1 if allowed, 0 if not allowed
  * @altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
  */
-void vb2_try_alt_fw(int allowed, int altfw_num);
+void vb2_try_alt_fw(int allowed, enum VbAltFwIndex_t altfw_num);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_UI_COMMON_H_ */

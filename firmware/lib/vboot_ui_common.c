@@ -43,7 +43,7 @@ void vb2_error_notify(const char *print_msg,
 	vb2_error_beep(beep);
 }
 
-void vb2_run_altfw(int altfw_num)
+void vb2_run_altfw(enum VbAltFwIndex_t altfw_num)
 {
 	if (RollbackKernelLock(0)) {
 		vb2_error_notify("Error locking kernel versions on legacy "
@@ -64,7 +64,7 @@ void vb2_error_no_altfw(void)
 	vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 }
 
-void vb2_try_alt_fw(int allowed, int altfw_num)
+void vb2_try_alt_fw(int allowed, enum VbAltFwIndex_t altfw_num)
 {
 	if (allowed)
 		vb2_run_altfw(altfw_num);	/* will not return if found */

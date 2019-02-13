@@ -162,7 +162,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 		return VBERROR_KEEP_LOOPING;
 	}
 
-	vb2_run_altfw(0);
+	vb2_run_altfw(VB_ALTFW_DEFAULT);
 	vb2_flash_screen(ctx);
 	return VBERROR_KEEP_LOOPING;
 }

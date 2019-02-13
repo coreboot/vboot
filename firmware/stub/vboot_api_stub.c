@@ -165,7 +165,7 @@ enum VbEcBootMode_t VbGetMode(void)
 	return vboot_mode;
 }
 
-int VbExLegacy(int altfw_num)
+int VbExLegacy(enum VbAltFwIndex_t altfw_num)
 {
 	return 1;
 }

@@ -37,7 +37,7 @@ static int shutdown_request_power_held;
 static int audio_looping_calls_left;
 static uint32_t vbtlk_retval;
 static int vbexlegacy_called;
-static int altfw_num;
+static enum VbAltFwIndex_t altfw_num;
 static int trust_ec;
 static int virtdev_set;
 static uint32_t virtdev_retval;
@@ -82,7 +82,7 @@ static void ResetMocks(void)
 	audio_looping_calls_left = 30;
 	vbtlk_retval = 1000;
 	vbexlegacy_called = 0;
-	altfw_num = -1;
+	altfw_num = -100;
 	trust_ec = 0;
 	virtdev_set = 0;
 	virtdev_retval = 0;
@@ -149,7 +149,7 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 		return 0;
 }
 
-int VbExLegacy(int _altfw_num)
+int VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 {
 	vbexlegacy_called++;
 	altfw_num = _altfw_num;
