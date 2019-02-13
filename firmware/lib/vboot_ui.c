@@ -144,7 +144,8 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			/* If the recovery button is physical, and is pressed,
 			 * this is also a YES, but must wait for release.
 			 */
-			btn = VbExGetSwitches(VB_INIT_FLAG_REC_BUTTON_PRESSED);
+			btn = VbExGetSwitches(
+				VB_SWITCH_FLAG_REC_BUTTON_PRESSED);
 			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL)) {
 				if (btn) {
 					VB2_DEBUG("Rec button pressed\n");
@@ -740,7 +741,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 				if (!(shared->flags &
 				      VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
 				    VbExGetSwitches(
-				    VB_INIT_FLAG_REC_BUTTON_PRESSED)) {
+				    VB_SWITCH_FLAG_REC_BUTTON_PRESSED)) {
 					/*
 					 * Is the recovery button stuck?  In
 					 * any case we don't like this.  Beep
@@ -768,7 +769,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 					VB2_DEBUG("Reboot so it will take "
 						  "effect\n");
 					if (VbExGetSwitches
-					    (VB_INIT_FLAG_ALLOW_USB_BOOT))
+					    (VB_SWITCH_FLAG_ALLOW_USB_BOOT))
 						VbAllowUsbBoot(ctx);
 					return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 				case -1:

@@ -268,7 +268,7 @@ static void VbUserConfirmsTest(void)
 		0, "Untrusted keyboard");
 
 	ResetMocks();
-	mock_switches[0] = VB_INIT_FLAG_REC_BUTTON_PRESSED;
+	mock_switches[0] = VB_SWITCH_FLAG_REC_BUTTON_PRESSED;
 	TEST_EQ(VbUserConfirms(&ctx,
 			       VB_CONFIRM_SPACE_MEANS_NO |
 			       VB_CONFIRM_MUST_TRUST_KEYBOARD),
@@ -279,7 +279,7 @@ static void VbUserConfirmsTest(void)
 	mock_keypress[1] = 'y';
 	mock_keypress[2] = 'z';
 	mock_keypress[3] = ' ';
-	mock_switches[0] = VB_INIT_FLAG_REC_BUTTON_PRESSED;
+	mock_switches[0] = VB_SWITCH_FLAG_REC_BUTTON_PRESSED;
 	mock_switches_are_stuck = 1;
 	TEST_EQ(VbUserConfirms(&ctx,
 			       VB_CONFIRM_SPACE_MEANS_NO |
@@ -998,7 +998,7 @@ static void VbBootRecTest(void)
 	trust_ec = 1;
 	shutdown_request_calls_left = 100;
 	mock_keypress[0] = VB_KEY_CTRL('D');
-	mock_switches[0] = VB_INIT_FLAG_REC_BUTTON_PRESSED;
+	mock_switches[0] = VB_SWITCH_FLAG_REC_BUTTON_PRESSED;
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Ctrl+D ignored if phys rec button is still pressed");

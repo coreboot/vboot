@@ -366,7 +366,7 @@ static VbError_t to_dev_action(struct vb2_context *ctx)
 		return VBERROR_TPM_SET_BOOT_MODE_STATE;
 
 	/* This was meant for headless devices, shouldn't really matter here. */
-	if (VbExGetSwitches(VB_INIT_FLAG_ALLOW_USB_BOOT))
+	if (VbExGetSwitches(VB_SWITCH_FLAG_ALLOW_USB_BOOT))
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 
 	VB2_DEBUG("Reboot so it will take effect\n");
