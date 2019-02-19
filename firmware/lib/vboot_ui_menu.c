@@ -463,7 +463,7 @@ static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
 		vb2_draw_current_screen(ctx);
 		break;
 	case VB_BUTTON_POWER_SHORT_PRESS:
-	case '\r':
+	case VB_KEY_ENTER:
 		/* Menuless screens shut down on power button press. */
 		if (!menus[current_menu].size)
 			return VBERROR_SHUTDOWN_REQUESTED;
@@ -753,16 +753,16 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 
 		switch (key) {
 		case VB_BUTTON_VOL_DOWN_LONG_PRESS:
-		case 'D' & 0x1f:
+		case VB_KEY_CTRL('D'):
 			/* Ctrl+D = boot from internal disk */
 			ret = boot_disk_action(ctx);
 			break;
-		case 'L' & 0x1f:
+		case VB_KEY_CTRL('L'):
 			/* Ctrl+L = boot alternative bootloader */
 			ret = enter_altfw_menu(ctx);
 			break;
 		case VB_BUTTON_VOL_UP_LONG_PRESS:
-		case 'U' & 0x1f:
+		case VB_KEY_CTRL('U'):
 			/* Ctrl+U = boot from USB or SD card */
 			ret = boot_usb_action(ctx);
 			break;

@@ -113,7 +113,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 		if (VbWantShutdown(ctx, key))
 			return -1;
 		switch (key) {
-		case '\r':
+		case VB_KEY_ENTER:
 			/* If we require a trusted keyboard for confirmation,
 			 * but the keyboard may be faked (for instance, a USB
 			 * device), beep and keep waiting.
@@ -317,7 +317,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		case 0:
 			/* nothing pressed */
 			break;
-		case '\r':
+		case VB_KEY_ENTER:
 			/* Only disable virtual dev switch if allowed by GBB */
 			if (!(sd->gbb_flags &
 			      VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM))
@@ -375,14 +375,14 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 				return VBERROR_LOAD_KERNEL_RECOVERY;
 			}
 			break;
-		case 0x04:
+		case VB_KEY_CTRL('D'):
 			/* Ctrl+D = dismiss warning; advance to timeout */
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+D; skip delay\n");
 			ctrl_d_pressed = 1;
 			goto fallout;
 			break;
-		case 0x0c:
+		case VB_KEY_CTRL('L'):
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+L; Try alt firmware\n");
 			if (allow_legacy) {
@@ -400,7 +400,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			 * The Ctrl-Enter is special for Lumpy test purpose;
 			 * fall through to Ctrl+U handler.
 			 */
-		case 0x15:
+		case VB_KEY_CTRL('U'):
 			/* Ctrl+U = try USB boot, or beep if failure */
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+U; try USB\n");
@@ -557,7 +557,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 			 *   - not already in dev mode
 			 *   - user forced recovery mode
 			 */
-			if (key == 0x04 &&
+			if (key == VB_KEY_CTRL('D') &&
 			    shared->flags & VBSD_HONOR_VIRT_DEV_SWITCH &&
 			    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
 			    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {

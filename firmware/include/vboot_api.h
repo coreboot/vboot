@@ -717,8 +717,12 @@ VbError_t VbExDisplayDebugInfo(const char *info_str);
 /*****************************************************************************/
 /* Keyboard and switches */
 
+/* Key code for CTRL + letter */
+#define VB_KEY_CTRL(letter) (letter & 0x1f)
+
 /* Key codes for required non-printable-ASCII characters. */
 enum VbKeyCode_t {
+	VB_KEY_ENTER = '\r',
 	VB_KEY_ESC = 0x1b,
 	VB_KEY_UP = 0x100,
 	VB_KEY_DOWN = 0x101,
