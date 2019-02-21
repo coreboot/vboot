@@ -1355,7 +1355,9 @@ uint32_t TlclReadDelegationFamilyTable(TPM_FAMILY_TABLE_ENTRY *table,
 		return TPM_E_INVALID_RESPONSE;
 	}
 
-	uint32_t table_entries = table_bytes / sizeof(TPM_FAMILY_TABLE_ENTRY);
+	const uint32_t table_entry_size =
+		sizeof(uint16_t) + sizeof(uint8_t) + 3 * sizeof(uint32_t);
+	uint32_t table_entries = table_bytes / table_entry_size;
 	int i;
 	for (i = 0; i < table_entries; ++i) {
 		if (i >= *table_size || !table) {

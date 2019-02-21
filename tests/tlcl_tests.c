@@ -1168,6 +1168,7 @@ int main(void)
 	IFXFieldUpgradeInfoTest();
 	ReadPubekTest();
 	TakeOwnershipTest();
+	ReadDelegationFamilyTableTest();
 
 	return gTestSuccess ? 0 : 255;
 }
