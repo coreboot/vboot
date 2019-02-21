@@ -12,6 +12,21 @@
  * without churning other projects' source code.
  */
 
+/*
+ * Switches that can be used in conjunction with this header file:
+ *
+ * #define NEED_VB2_SHA_LIBRARY
+ *   SHA library APIs may be called by external firmware as well as vboot.
+ *   This is permissible because the SHA library routines below don't interact
+ *   with the rest of vboot.
+ *
+ * #define NEED_VB20_INTERNALS
+ *   Allows the caller to peek into vboot2 data structures, by including a
+ *   specific set of extra header files listed in vb2_api.h.  Including this
+ *   switch means the caller is broken and should be fixed.  The existence of
+ *   this switch is a bug, and it should be removed when it is no longer used.
+ */
+
 #ifndef VBOOT_VB2_API_H_
 #define VBOOT_VB2_API_H_
 
