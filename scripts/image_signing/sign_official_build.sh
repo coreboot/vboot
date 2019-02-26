@@ -478,11 +478,11 @@ sign_update_payload() {
     [8192]=10
   )
 
-  key_size=$(openssl rsa -text -noout -in "${key_file}" | \
-    sed -n -r '1{s/Private-Key: \(([0-9]*) bit\)/\1/p}')
+  output=$(futility show "${key_file}")
+  key_size=$(echo "${output}" | sed -n '/Key length/s/[^0-9]*//p')
   algo=${algos[${key_size}]}
   if [[ -z ${algo} ]]; then
-    die "Unknown algorithm specified by key_size=${key_size}"
+    die "Unknown algorithm: futility output=${output}"
   fi
 
   pad_digest_utility ${algo} "${image}" | \
