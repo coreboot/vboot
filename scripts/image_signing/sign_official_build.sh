@@ -468,7 +468,7 @@ sign_update_payload() {
   local image=$1
   local key_dir=$2
   local output=$3
-  local key_size key_file="${key_dir}/update_key.pem"
+  local key_output key_size key_file="${key_dir}/update_key.pem"
   # Maps key size to verified boot's algorithm id (for pad_digest_utility).
   # Hashing algorithm is always SHA-256.
   local algo algos=(
@@ -478,11 +478,11 @@ sign_update_payload() {
     [8192]=10
   )
 
-  output=$(futility show "${key_file}")
-  key_size=$(echo "${output}" | sed -n '/Key length/s/[^0-9]*//p')
+  key_output=$(futility show "${key_file}")
+  key_size=$(echo "${key_output}" | sed -n '/Key length/s/[^0-9]*//p')
   algo=${algos[${key_size}]}
   if [[ -z ${algo} ]]; then
-    die "Unknown algorithm: futility output=${output}"
+    die "Unknown algorithm: futility output=${key_output}"
   fi
 
   pad_digest_utility ${algo} "${image}" | \
