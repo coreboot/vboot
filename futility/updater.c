@@ -1036,6 +1036,12 @@ static int preserve_images(struct updater_config *cfg)
 		 * is finished.
 		 */
 		"RO_FSG",
+		 /*
+		  * TODO(hungte): crbug.com/936768: Remove SI_GBE, SI_PDR after
+		  * both migrated to the new FMAP based preserve method.
+		  */
+		"SI_GBE",
+		"SI_PDR"
 	};
 
 	errcnt += preserve_gbb(from, to, !cfg->factory_update);
