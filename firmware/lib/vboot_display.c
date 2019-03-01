@@ -39,29 +39,24 @@ VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
 			  const VbScreenData *data)
 {
 	uint32_t locale;
-	VbError_t rv;
 
 	/* If requested screen is the same as the current one, we're done. */
 	if (disp_current_screen == screen && !force)
 		return VBERROR_SUCCESS;
 
+	/* Keep track of the currently displayed screen */
+	disp_current_screen = screen;
+
 	/* Read the locale last saved */
 	locale = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 
-	rv = VbExDisplayScreen(screen, locale, data);
-
-	if (rv == VBERROR_SUCCESS)
-		/* Keep track of the currently displayed screen */
-		disp_current_screen = screen;
-
-	return rv;
+	return VbExDisplayScreen(screen, locale, data);
 }
 
 VbError_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
 			uint32_t selected_index, uint32_t disabled_idx_mask)
 {
 	uint32_t locale;
-	VbError_t rv;
 	uint32_t redraw_base_screen = 0;
 
 	/*
@@ -80,23 +75,19 @@ VbError_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
 	if (disp_current_screen != screen)
 		redraw_base_screen = 1;
 
+	/*
+	 * Keep track of the currently displayed screen and
+	 * selected_index
+	 */
+	disp_current_screen = screen;
+	disp_current_index = selected_index;
+	disp_disabled_idx_mask = disabled_idx_mask;
+
 	/* Read the locale last saved */
 	locale = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 
-	rv = VbExDisplayMenu(screen, locale, selected_index,
-			     disabled_idx_mask, redraw_base_screen);
-
-	if (rv == VBERROR_SUCCESS) {
-		/*
-		 * Keep track of the currently displayed screen and
-		 * selected_index
-		 */
-		disp_current_screen = screen;
-		disp_current_index = selected_index;
-		disp_disabled_idx_mask = disabled_idx_mask;
-	}
-
-	return rv;
+	return VbExDisplayMenu(screen, locale, selected_index,
+			       disabled_idx_mask, redraw_base_screen);
 }
 
 static void Uint8ToString(char *buf, uint8_t val)
