@@ -39,7 +39,7 @@ VbError_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDisplayDebugInfo(const char *info_str)
+VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	return VBERROR_SUCCESS;
 }

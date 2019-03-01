@@ -422,7 +422,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		VB2_DEBUG("dev_disable_boot is set\n");
 		VbDisplayScreen(ctx,
 				VB_SCREEN_DEVELOPER_TO_NORM, 0, NULL);
-		VbExDisplayDebugInfo(dev_disable_msg);
+		VbExDisplayDebugInfo(dev_disable_msg, 0);
 
 		/* Ignore space in VbUserConfirms()... */
 		switch (VbUserConfirms(ctx, 0)) {

@@ -345,7 +345,7 @@ static VbError_t altfw_action(struct vb2_context *ctx)
 	vb2_run_altfw(current_menu_idx + 1);
 	vb2_flash_screen(ctx);
 	VB2_DEBUG(no_legacy);
-	VbExDisplayDebugInfo(no_legacy);
+	VbExDisplayDebugInfo(no_legacy, 0);
 
 	return VBERROR_KEEP_LOOPING;
 }
@@ -775,7 +775,7 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 
 		/* Make sure user knows dev mode disabled */
 		if (disable_dev_boot)
-			VbExDisplayDebugInfo(dev_disable_msg);
+			VbExDisplayDebugInfo(dev_disable_msg, 0);
 
 		switch (key) {
 		case VB_BUTTON_VOL_DOWN_LONG_PRESS:

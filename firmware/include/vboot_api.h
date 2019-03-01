@@ -735,15 +735,15 @@ VbError_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
  * platform-dependent font.  Should be able to handle newlines '\n' in the
  * string.  Firmware must support displaying at least 20 lines of text, where
  * each line may be at least 80 characters long.  If the firmware has its own
- * debug state, it may display it to the screen below this information.
+ * debug state, it may display it to the screen below this information if the
+ * full_info parameter is set.
  *
- * NOTE: This is what we currently display when TAB is pressed.  Some
- * information (HWID, recovery reason) is ours; some (CMOS breadcrumbs) is
- * platform-specific.  If we decide to soft-render the HWID string
- * (chrome-os-partner:3693), we'll need to maintain our own fonts, so we'll
- * likely display it via VbExDisplayImage() above.
+ * @param info_str	The debug string to display
+ * @param full_info	1 if firmware should append its own info, 0 if not
+ *
+ * @return VBERROR_SUCCESS or error code on error.
  */
-VbError_t VbExDisplayDebugInfo(const char *info_str);
+VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info);
 
 /**
  * Write vendor data to read-only VPD

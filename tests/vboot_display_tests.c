@@ -94,7 +94,7 @@ uint32_t VbExGetAltFwIdxMask() {
 	return mock_altfw_mask;
 }
 
-VbError_t VbExDisplayDebugInfo(const char *info_str)
+VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	strncpy(debug_info, info_str, sizeof(debug_info));
 	debug_info[sizeof(debug_info) - 1] = '\0';

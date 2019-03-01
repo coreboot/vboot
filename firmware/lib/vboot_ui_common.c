@@ -35,7 +35,7 @@ void vb2_error_notify(const char *print_msg,
 		      enum vb2_beep_type beep)
 {
 	if (print_msg)
-		VbExDisplayDebugInfo(print_msg);
+		VbExDisplayDebugInfo(print_msg, 0);
 	if (!log_msg)
 		log_msg = print_msg;
 	if (log_msg)
@@ -60,7 +60,7 @@ void vb2_error_no_altfw(void)
 	VB2_DEBUG("Legacy boot is disabled\n");
 	VbExDisplayDebugInfo("WARNING: Booting legacy BIOS has not been "
 			     "enabled. Refer to the developer-mode "
-			     "documentation for details.\n");
+			     "documentation for details.\n", 0);
 	vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 }
 
