@@ -1572,8 +1572,17 @@ static enum updater_error_codes update_whole_firmware(
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 	if (!cfg->force_update) {
+		/* Check if the image_to itself is broken */
 		enum rootkey_compat_result r = check_compatible_root_key(
-				&cfg->image_current, image_to);
+				image_to, image_to);
+		if (r != ROOTKEY_COMPAT_OK) {
+			ERROR("Target image does not look valid. "
+			      "Add --force if you really want to use it.");
+			return UPDATE_ERR_ROOT_KEY;
+		}
+
+		/* Check if the system is going to re-key. */
+		r = check_compatible_root_key(&cfg->image_current, image_to);
 		/* We only allow re-key to non-dev keys. */
 		switch (r) {
 		case ROOTKEY_COMPAT_OK:
