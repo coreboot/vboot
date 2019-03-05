@@ -14,12 +14,14 @@
 __attribute__((weak))
 void vb2ex_printf(const char *func, const char *fmt, ...)
 {
+#ifdef VBOOT_DEBUG
 	va_list ap;
 	va_start(ap, fmt);
 	if (func)
 		fprintf(stderr, "%s: ", func);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
+#endif
 }
 
 __attribute__((weak))

@@ -61,10 +61,10 @@ static int parse_size_opts(uint32_t len,
 	if (sign_option.rw_offset != 0xffffffff)
 		rw_offset = sign_option.rw_offset;
 
-	Debug("ro_size     0x%08x\n", ro_size);
-	Debug("ro_offset   0x%08x\n", ro_offset);
-	Debug("rw_size     0x%08x\n", rw_size);
-	Debug("rw_offset   0x%08x\n", rw_offset);
+	VB2_DEBUG("ro_size     0x%08x\n", ro_size);
+	VB2_DEBUG("ro_offset   0x%08x\n", ro_offset);
+	VB2_DEBUG("rw_size     0x%08x\n", rw_size);
+	VB2_DEBUG("rw_offset   0x%08x\n", rw_offset);
 
 	/* Now let's do some sanity checks. */
 	if (ro_size > len || ro_offset > len - ro_size ||
@@ -98,8 +98,7 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t rw_offset;
 	uint32_t r;
 
-	Debug("%s(): name %s\n", __func__, name);
-	Debug("%s(): len  0x%08x (%d)\n", __func__, len, len);
+	VB2_DEBUG("%s(): name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* Get image locations */
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))
@@ -131,10 +130,10 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	rw_size -= sig_size;
 	sig_offset = rw_offset + rw_size;
 
-	Debug("rw_size   => 0x%08x\n", rw_size);
-	Debug("rw_offset => 0x%08x\n", rw_offset);
-	Debug("sig_size     0x%08x\n", sig_size);
-	Debug("sig_offset   0x%08x\n", sig_offset);
+	VB2_DEBUG("rw_size   => 0x%08x\n", rw_size);
+	VB2_DEBUG("rw_offset => 0x%08x\n", rw_offset);
+	VB2_DEBUG("sig_size     0x%08x\n", sig_size);
+	VB2_DEBUG("sig_offset   0x%08x\n", sig_offset);
 
 	/* Sign the blob */
 	r = vb21_sign_data(&sig_ptr, buf + rw_offset, rw_size, key_ptr, "Bah");
@@ -171,7 +170,7 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 		fprintf(stderr, "Couldn't extract the public key\n");
 		goto done;
 	}
-	Debug("keyb_size is 0x%x (%d):\n", keyb_size, keyb_size);
+	VB2_DEBUG("keyb_size is 0x%x (%d):\n", keyb_size, keyb_size);
 
 	/*
 	 * Of course the packed public key format is different. Why would you
@@ -217,11 +216,11 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t dst_ofs_rr = dst_ofs_n + nbytes;
 	uint32_t dst_ofs_n0inv = dst_ofs_rr + nbytes;
 
-	Debug("len 0x%08x ro_size 0x%08x ro_offset 0x%08x\n",
-	       len, ro_size, ro_offset);
-	Debug("pub_size 0x%08x pub_offset 0x%08x nbytes 0x%08x\n",
-	       pub_size, pub_offset, nbytes);
-	Debug("pub_pad 0x%08x\n", pub_pad);
+	VB2_DEBUG("len 0x%08x ro_size 0x%08x ro_offset 0x%08x\n",
+		  len, ro_size, ro_offset);
+	VB2_DEBUG("pub_size 0x%08x pub_offset 0x%08x nbytes 0x%08x\n",
+		  pub_size, pub_offset, nbytes);
+	VB2_DEBUG("pub_pad 0x%08x\n", pub_pad);
 
 	/* Copy n[nwords] */
 	memcpy(buf + dst_ofs_n,
@@ -435,8 +434,7 @@ int ft_show_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t ro_size, rw_size, ro_offset, rw_offset;
 	int s, h;
 
-	Debug("%s(): name %s\n", __func__, name);
-	Debug("%s(): len  0x%08x (%d)\n", __func__, len, len);
+	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* Get image locations */
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))

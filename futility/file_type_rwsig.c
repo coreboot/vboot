@@ -75,11 +75,10 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	FmapHeader *fmap;
 	int i;
 
-	Debug("%s(): name %s\n", __func__, name);
-	Debug("%s(): len  0x%08x (%d)\n", __func__, len, len);
+	VB2_DEBUG("name %s len 0x%08x (%d)\n", name, len, len);
 
 	/* Am I just looking at a signature file? */
-	Debug("Looking for signature at 0x0\n");
+	VB2_DEBUG("Looking for signature at 0x0\n");
 	sig = (const struct vb21_signature *)buf;
 	if (VB2_SUCCESS == vb21_verify_signature(sig, len)) {
 		show_sig(name, sig);
@@ -94,7 +93,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		/* This looks like a full image. */
 		FmapAreaHeader *fmaparea;
 
-		Debug("Found an FMAP!\n");
+		VB2_DEBUG("Found an FMAP!\n");
 
 		/* If no public key is provided, use the one packed in RO
 		 * image, and print that. */
@@ -110,14 +109,14 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		sig = (const struct vb21_signature *)
 			fmap_find_by_name(buf, len, fmap, "SIG_RW", &fmaparea);
 		if (!sig) {
-			Debug("No SIG_RW in FMAP.\n");
+			VB2_DEBUG("No SIG_RW in FMAP.\n");
 			return 1;
 		}
 
 		sig_size = fmaparea->area_size;
 
-		Debug("Looking for signature at 0x%x (0x%x)\n",
-			(uint8_t*)sig - buf, sig_size);
+		VB2_DEBUG("Looking for signature at 0x%x (0x%x)\n",
+			  (uint8_t*)sig - buf, sig_size);
 
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
 			return 1;
@@ -132,7 +131,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		total_data_size = fmaparea->area_size-sig_size;
 
 		if (!data) {
-			Debug("No EC_RW in FMAP.\n");
+			VB2_DEBUG("No EC_RW in FMAP.\n");
 			return 1;
 		}
 	} else {
@@ -141,10 +140,10 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		if (show_option.sig_size)
 			sig_size = show_option.sig_size;
 
-		Debug("Looking for signature at 0x%x\n", len - sig_size);
+		VB2_DEBUG("Looking for signature at 0x%x\n", len - sig_size);
 
 		if (len < sig_size) {
-			Debug("File is too small\n");
+			VB2_DEBUG("File is too small\n");
 			return 1;
 		}
 
@@ -168,12 +167,12 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	if (vb21_unpack_key(&key,
 			    (const uint8_t *)pkey,
 			    pkey->c.total_size)) {
-		Debug("Can't unpack pubkey\n");
+		VB2_DEBUG("Can't unpack pubkey\n");
 		return 1;
 	}
 
 	if (data_size > total_data_size) {
-		Debug("Invalid signature data_size: bigger than total area size.\n");
+		VB2_DEBUG("Invalid signature data_size: bigger than total area size.\n");
 		return 1;
 	}
 
@@ -219,8 +218,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	FmapAreaHeader *fmaparea;
 	struct vb21_signature *old_sig = 0;
 
-	Debug("%s(): name %s\n", __func__, name);
-	Debug("%s(): len  0x%08x (%d)\n", __func__, len, len);
+	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* If we don't have a distinct OUTFILE, look for an existing sig */
 	if (sign_option.inout_file_count < 2) {
@@ -228,25 +226,25 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 		if (fmap) {
 			/* This looks like a full image. */
-			Debug("Found an FMAP!\n");
+			VB2_DEBUG("Found an FMAP!\n");
 
 			old_sig = (struct vb21_signature *)
 				fmap_find_by_name(buf, len, fmap, "SIG_RW",
 						  &fmaparea);
 			if (!old_sig) {
-				Debug("No SIG_RW in FMAP.\n");
+				VB2_DEBUG("No SIG_RW in FMAP.\n");
 				goto done;
 			}
 
 			sig_size = fmaparea->area_size;
 
-			Debug("Looking for signature at 0x%x (0x%x)\n",
-				(uint8_t*)old_sig - buf, sig_size);
+			VB2_DEBUG("Looking for signature at 0x%x (0x%x)\n",
+				  (uint8_t*)old_sig - buf, sig_size);
 
 			data = fmap_find_by_name(buf, len, fmap, "EC_RW",
 						 &fmaparea);
 			if (!data) {
-				Debug("No EC_RW in FMAP.\n");
+				VB2_DEBUG("No EC_RW in FMAP.\n");
 				goto done;
 			}
 		} else {
@@ -255,8 +253,8 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			if (sign_option.sig_size)
 				sig_size = sign_option.sig_size;
 
-			Debug("Looking for old signature at 0x%x\n",
-				len - sig_size);
+			VB2_DEBUG("Looking for old signature at 0x%x\n",
+				  len - sig_size);
 
 			if (len < sig_size) {
 				fprintf(stderr, "File is too small\n");
@@ -276,8 +274,8 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		/* Use the same extent again */
 		data_size = old_sig->data_size;
 
-		Debug("Found sig: data_size is 0x%x (%d)\n", data_size,
-		      data_size);
+		VB2_DEBUG("Found sig: data_size is 0x%x (%d)\n", data_size,
+			  data_size);
 	}
 
 	/* Unless overridden */
@@ -294,7 +292,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			goto done;
 		}
 	} else {
-		Debug("Private key not provided. Copying previous signature\n");
+		VB2_DEBUG("Private key not provided. Copying previous signature\n");
 		if (!old_sig) {
 			/* This isn't necessary because no prikey mode runs only
 			 * for fmap input or RW input */
@@ -314,12 +312,12 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 				tmp_sig->c.total_size, sig_size);
 			goto done;
 		}
-		Debug("Replacing old signature with new one\n");
+		VB2_DEBUG("Replacing old signature with new one\n");
 		memset(old_sig, 0xff, sig_size);
 		memcpy(old_sig, tmp_sig, tmp_sig->c.total_size);
 		if (fmap) {
-			Debug("Writing %s (size=%d)\n",
-			      EC_RW_FILENAME, fmaparea->area_size);
+			VB2_DEBUG("Writing %s (size=%d)\n",
+				  EC_RW_FILENAME, fmaparea->area_size);
 			if (vb2_write_file(EC_RW_FILENAME,
 					   data, fmaparea->area_size))
 				goto done;
@@ -383,7 +381,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		new_pubkey = fmap_find_by_name(buf, len, fmap, "KEY_RO",
 					&fmaparea);
 		if (!new_pubkey) {
-			Debug("No KEY_RO in FMAP.\n");
+			VB2_DEBUG("No KEY_RO in FMAP.\n");
 			goto done;
 		}
 		/* Overwrite the old signature */

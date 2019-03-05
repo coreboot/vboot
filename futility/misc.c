@@ -34,14 +34,14 @@
 enum vboot_version vboot_version = VBOOT_VERSION_ALL;
 
 int debugging_enabled;
-void Debug(const char *format, ...)
+void vb2ex_printf(const char *func, const char *format, ...)
 {
 	if (!debugging_enabled)
 		return;
 
 	va_list ap;
 	va_start(ap, format);
-	fprintf(stdout, "DEBUG: ");
+	fprintf(stdout, "DEBUG:%s() ", func);
 	vfprintf(stdout, format, ap);
 	va_end(ap);
 }
@@ -215,7 +215,7 @@ void futil_copy_file_or_die(const char *infile, const char *outfile)
 	pid_t pid;
 	int status;
 
-	Debug("%s(%s, %s)\n", __func__, infile, outfile);
+	VB2_DEBUG("%s -> %s\n", infile, outfile);
 
 	pid = fork();
 

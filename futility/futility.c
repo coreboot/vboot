@@ -220,9 +220,9 @@ static void list_commands(void)
 static int run_command(const struct futil_cmd_t *cmd, int argc, char *argv[])
 {
 	int i;
-	Debug("%s(\"%s\") ...\n", __func__, cmd->name);
+	VB2_DEBUG("\"%s\" ...\n", cmd->name);
 	for (i = 0; i < argc; i++)
-		Debug("  argv[%d] = \"%s\"\n", i, argv[i]);
+		VB2_DEBUG("  argv[%d] = \"%s\"\n", i, argv[i]);
 
 	return cmd->handler(argc, argv);
 }
@@ -347,7 +347,7 @@ int main(int argc, char *argv[], char *envp[])
 		case 0:				/* handled option */
 			break;
 		default:
-			Debug("i=%d\n", i);
+			VB2_DEBUG("i=%d\n", i);
 			DIE;
 		}
 	}

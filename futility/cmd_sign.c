@@ -124,7 +124,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 		fprintf(stderr, "Unable to create kernel blob\n");
 		return 1;
 	}
-	Debug("kblob_size = 0x%x\n", kblob_size);
+	VB2_DEBUG("kblob_size = 0x%x\n", kblob_size);
 
 	vblock_data = SignKernelBlob(kblob_data, kblob_size,
 				     sign_option.padding,
@@ -138,7 +138,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 		free(kblob_data);
 		return 1;
 	}
-	Debug("vblock_size = 0x%x\n", vblock_size);
+	VB2_DEBUG("vblock_size = 0x%x\n", vblock_size);
 
 	/* We should be creating a completely new output file.
 	 * If not, something's wrong. */
@@ -225,7 +225,7 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 		fprintf(stderr, "Unable to sign kernel blob\n");
 		return 1;
 	}
-	Debug("vblock_size = 0x%" PRIx64 "\n", vblock_size);
+	VB2_DEBUG("vblock_size = 0x%" PRIx64 "\n", vblock_size);
 
 	if (sign_option.create_new_outfile) {
 		/* Write out what we've been asked for */
@@ -739,7 +739,7 @@ static int do_sign(int argc, char *argv[])
 					strerror(errno));
 				errorcnt++;
 			}
-			Debug("bootloader file size=0x%" PRIx64 "\n",
+			VB2_DEBUG("bootloader file size=0x%" PRIx64 "\n",
 			      sign_option.bootloader_size);
 			break;
 		case OPT_CONFIG:
@@ -862,7 +862,7 @@ static int do_sign(int argc, char *argv[])
 		case 0:				/* handled option */
 			break;
 		default:
-			Debug("i=%d\n", i);
+			VB2_DEBUG("i=%d\n", i);
 			DIE;
 		}
 	}
@@ -911,7 +911,7 @@ static int do_sign(int argc, char *argv[])
 			sign_option.type = FILE_TYPE_RAW_FIRMWARE;
 	}
 
-	Debug("type=%s\n", futil_file_type_name(sign_option.type));
+	VB2_DEBUG("type=%s\n", futil_file_type_name(sign_option.type));
 
 	/* Check the arguments for the type of thing we want to sign */
 	switch (sign_option.type) {
@@ -985,10 +985,11 @@ static int do_sign(int argc, char *argv[])
 		break;
 	}
 
-	Debug("infile=%s\n", infile);
-	Debug("sign_option.inout_file_count=%d\n", sign_option.inout_file_count);
-	Debug("sign_option.create_new_outfile=%d\n",
-	      sign_option.create_new_outfile);
+	VB2_DEBUG("infile=%s\n", infile);
+	VB2_DEBUG("sign_option.inout_file_count=%d\n",
+		  sign_option.inout_file_count);
+	VB2_DEBUG("sign_option.create_new_outfile=%d\n",
+		  sign_option.create_new_outfile);
 
 	/* Make sure we have an output file if one is needed */
 	if (!sign_option.outfile) {
@@ -1001,7 +1002,7 @@ static int do_sign(int argc, char *argv[])
 		}
 	}
 
-	Debug("sign_option.outfile=%s\n", sign_option.outfile);
+	VB2_DEBUG("sign_option.outfile=%s\n", sign_option.outfile);
 
 	if (argc - optind > 0) {
 		errorcnt++;
@@ -1014,7 +1015,7 @@ static int do_sign(int argc, char *argv[])
 	if (sign_option.create_new_outfile) {
 		/* The input is read-only, the output is write-only. */
 		mapping = MAP_RO;
-		Debug("open RO %s\n", infile);
+		VB2_DEBUG("open RO %s\n", infile);
 		ifd = open(infile, O_RDONLY);
 		if (ifd < 0) {
 			errorcnt++;
@@ -1027,7 +1028,7 @@ static int do_sign(int argc, char *argv[])
 		mapping = MAP_RW;
 		if (sign_option.inout_file_count > 1)
 			futil_copy_file_or_die(infile, sign_option.outfile);
-		Debug("open RW %s\n", sign_option.outfile);
+		VB2_DEBUG("open RW %s\n", sign_option.outfile);
 		infile = sign_option.outfile;
 		ifd = open(sign_option.outfile, O_RDWR);
 		if (ifd < 0) {

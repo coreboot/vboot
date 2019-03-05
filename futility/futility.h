@@ -96,7 +96,6 @@ extern const struct futil_cmd_t *const futil_cmds[];
 
 /* Debug output (off by default) */
 extern int debugging_enabled;
-void Debug(const char *format, ...);
 
 /* Returns true if this looks enough like a GBB header to proceed. */
 int futil_looks_like_gbb(GoogleBinaryBlockHeader *gbb, uint32_t len);

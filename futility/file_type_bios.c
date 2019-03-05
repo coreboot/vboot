@@ -42,9 +42,8 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 {
 	uint32_t sum = ah->area_offset + ah->area_size;
 	if (sum < ah->area_size || sum > len) {
-		Debug("%s(%s) 0x%x + 0x%x > 0x%x\n",
-		      __func__, ah->area_name,
-		      ah->area_offset, ah->area_size, len);
+		VB2_DEBUG("%s 0x%x + 0x%x > 0x%x\n",
+			  ah->area_name, ah->area_offset, ah->area_size, len);
 		ah->area_offset = 0;
 		ah->area_size = 0;
 	}
@@ -222,10 +221,9 @@ int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 			state.area[c].buf = buf + ah->area_offset;
 			state.area[c].len = ah->area_size;
 
-			Debug("%s() showing FMAP area %d (%s),"
-			      " offset=0x%08x len=0x%08x\n",
-			      __func__, c, ah_name,
-			      ah->area_offset, ah->area_size);
+			VB2_DEBUG("showing FMAP area %d (%s),"
+				  " offset=0x%08x len=0x%08x\n",
+				  c, ah_name, ah->area_offset, ah->area_size);
 
 			/* Go look at it. */
 			if (fmap_show_fn[c])
@@ -483,10 +481,9 @@ int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 			state.area[c].buf = buf + ah->area_offset;
 			state.area[c].len = ah->area_size;
 
-			Debug("%s() examining FMAP area %d (%s),"
-			      " offset=0x%08x len=0x%08x\n",
-			      __func__, c, ah_name,
-			      ah->area_offset, ah->area_size);
+			VB2_DEBUG("%s() examining FMAP area %d (%s),"
+				  " offset=0x%08x len=0x%08x\n",
+				  c, ah_name, ah->area_offset, ah->area_size);
 
 			/* Go look at it, but abort on error */
 			if (fmap_sign_fn[c])

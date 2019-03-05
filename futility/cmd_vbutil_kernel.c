@@ -195,11 +195,11 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 	} else {
 		file_size = statbuf.st_size;
 	}
-	Debug("%s size is 0x%x\n", filename, file_size);
+	VB2_DEBUG("%s size is 0x%x\n", filename, file_size);
 	if (file_size < opt_pad)
 		Fatal("%s is too small to be a valid kernel blob\n", filename);
 
-	Debug("Reading %s\n", filename);
+	VB2_DEBUG("Reading %s\n", filename);
 	fp = fopen(filename, "rb");
 	if (!fp)
 		Fatal("Unable to open file %s: %s\n", filename,
@@ -415,7 +415,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!config_file)
 			Fatal("Missing required config file.\n");
 
-		Debug("Reading %s\n", config_file);
+		VB2_DEBUG("Reading %s\n", config_file);
 		t_config_data =
 			ReadConfigFile(config_file, &t_config_size);
 		if (!t_config_data)
@@ -424,23 +424,23 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!bootloader_file)
 			Fatal("Missing required bootloader file.\n");
 
-		Debug("Reading %s\n", bootloader_file);
+		VB2_DEBUG("Reading %s\n", bootloader_file);
 
 		if (VB2_SUCCESS != vb2_read_file(bootloader_file,
 						 &t_bootloader_data,
 						 &t_bootloader_size))
 			Fatal("Error reading bootloader file.\n");
-		Debug(" bootloader file size=0x%x\n", t_bootloader_size);
+		VB2_DEBUG(" bootloader file size=0x%x\n", t_bootloader_size);
 
 		if (!vmlinuz_file)
 			Fatal("Missing required vmlinuz file.\n");
 
-		Debug("Reading %s\n", vmlinuz_file);
+		VB2_DEBUG("Reading %s\n", vmlinuz_file);
 		if (VB2_SUCCESS !=
 		    vb2_read_file(vmlinuz_file, &vmlinuz_buf, &vmlinuz_size))
 			Fatal("Error reading vmlinuz file.\n");
 
-		Debug(" vmlinuz file size=0x%x\n", vmlinuz_size);
+		VB2_DEBUG(" vmlinuz file size=0x%x\n", vmlinuz_size);
 		if (!vmlinuz_size)
 			Fatal("Empty vmlinuz file\n");
 
@@ -453,7 +453,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!kblob_data)
 			Fatal("Unable to create kernel blob\n");
 
-		Debug("kblob_size = 0x%x\n", kblob_size);
+		VB2_DEBUG("kblob_size = 0x%x\n", kblob_size);
 
 		vblock_data = SignKernelBlob(kblob_data, kblob_size, opt_pad,
 					     version, kernel_body_load_address,
@@ -462,7 +462,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!vblock_data)
 			Fatal("Unable to sign kernel blob\n");
 
-		Debug("vblock_size = 0x%x\n", vblock_size);
+		VB2_DEBUG("vblock_size = 0x%x\n", vblock_size);
 
 		if (opt_vblockonly)
 			rv = WriteSomeParts(filename,
@@ -513,7 +513,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 
 		/* Update the config if asked */
 		if (config_file) {
-			Debug("Reading %s\n", config_file);
+			VB2_DEBUG("Reading %s\n", config_file);
 			t_config_data =
 				ReadConfigFile(config_file, &t_config_size);
 			if (!t_config_data)

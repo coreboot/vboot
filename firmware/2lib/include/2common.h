@@ -30,13 +30,8 @@ struct vb2_public_key;
 #endif
 
 /* Platform-dependent debug output macros. */
-#if defined(VBOOT_DEBUG)
-#  define VB2_DEBUG(format, args...) vb2ex_printf(__func__, format, ## args)
-#  define VB2_DEBUG_RAW(format, args...) vb2ex_printf(NULL, format, ## args)
-#else
-#  define VB2_DEBUG(format, args...)
-#  define VB2_DEBUG_RAW(format, args...)
-#endif
+#define VB2_DEBUG(format, args...) vb2ex_printf(__func__, format, ## args)
+#define VB2_DEBUG_RAW(format, args...) vb2ex_printf(NULL, format, ## args)
 
 /*
  * Define test_mockable and for mocking functions when compiled for Chrome OS
