@@ -821,6 +821,47 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 }
 
 /*
+ * Determines the signature ID to use for white label.
+ * Returns the signature ID for looking up rootkey and vblock files.
+ * Caller must free the returned string.
+ */
+static char *resolve_signature_id(struct model_config *model, const char *image)
+{
+	int is_unibuild = model->signature_id ? 1 : 0;
+	char *wl_tag = vpd_get_value(image, VPD_WHITELABEL_TAG);
+	char *sig_id = NULL;
+
+	/* Unified build: $model.$wl_tag, or $model (b/126800200). */
+	if (is_unibuild) {
+		if (!wl_tag) {
+			WARN("No VPD '%s' set for white label - use model name "
+			     "'%s' as default.", VPD_WHITELABEL_TAG,
+			     model->name);
+			return strdup(model->name);
+		}
+
+		ASPRINTF(&sig_id, "%s-%s", model->name, wl_tag);
+		free(wl_tag);
+		return sig_id;
+	}
+
+	/* Non-Unibuild: Upper($wl_tag), or Upper(${cid%%-*}). */
+	if (!wl_tag) {
+		char *cid = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
+		if (cid) {
+			/* customization_id in format LOEM[-VARIANT]. */
+			char *dash = strchr(cid, '-');
+			if (dash)
+				*dash = '\0';
+			wl_tag = cid;
+		}
+	}
+	if (wl_tag)
+		str_convert(wl_tag, toupper);
+	return wl_tag;
+}
+
+/*
  * Applies white label information to an existing model configuration.
  * Collects signature ID information from either parameter signature_id or
  * image file (via VPD) and updates model.patches for key files.
@@ -836,39 +877,19 @@ int model_apply_white_label(
 	int r = 0;
 
 	if (!signature_id) {
-		int remove_dash = 0, prefix_model = model->signature_id ? 1 : 0;
-		char *wl_tag = vpd_get_value(image, VPD_WHITELABEL_TAG);
-
-		if (!wl_tag) {
-			if (model->signature_id)
-				return -1;
-			wl_tag = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
-			/* customization_id in format LOEM[-VARIANT]. */
-			remove_dash = 1;
-
-		}
-		if (!wl_tag)
-			return 1;
-
-		if (remove_dash) {
-			char *dash = strchr(wl_tag, '-');
-			if (dash)
-				*dash = '\0';
-		}
-		if (!prefix_model)
-			str_convert(wl_tag, toupper);
-
-		sig_id = wl_tag;
-		if (prefix_model)
-			ASPRINTF(&sig_id, "%s-%s", model->name, wl_tag);
-		else
-			wl_tag = NULL;
-		free(wl_tag);
+		sig_id = resolve_signature_id(model, image);
 		signature_id = sig_id;
 	}
 
-	DEBUG("Find white label patches by signature ID: '%s'.", signature_id);
-	find_patches_for_model(model, archive, signature_id);
+	if (signature_id) {
+		DEBUG("Find white label patches by signature ID: '%s'.",
+		      signature_id);
+		find_patches_for_model(model, archive, signature_id);
+	} else {
+		signature_id = "";
+		WARN("No VPD '%s' set for white label - use default keys.",
+		     VPD_WHITELABEL_TAG);
+	}
 	if (!model->patches.rootkey) {
 		ERROR("No keys found for signature_id: '%s'", signature_id);
 		r = 1;
