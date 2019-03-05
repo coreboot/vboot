@@ -414,6 +414,19 @@ WL_TAG="wl" PATH="${A}/bin:${PATH}" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
 
+# WL-Unibuild without default keys
+test_update "Full update (--a, model=WL, no VPD, no default keys)" \
+	"${FROM_IMAGE}.al" "!Need VPD set for white" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+
+# WL-Unibuild with default keys as model name
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.whitetip"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.whitetip"
+test_update "Full update (-a, model=WL, no VPD, default keys)" \
+	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+
 # Test special programmer
 if type flashrom >/dev/null 2>&1; then
 	echo "TEST: Full update (dummy programmer)"
