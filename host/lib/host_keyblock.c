@@ -144,7 +144,7 @@ struct vb2_keyblock *vb2_create_keyblock_external(
 
 struct vb2_keyblock *vb2_read_keyblock(const char *filename)
 {
-	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE];
+	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
 	struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 

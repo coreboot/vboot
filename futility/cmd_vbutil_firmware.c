@@ -188,7 +188,7 @@ vblock_cleanup:
 static int do_verify(const char *infile, const char *signpubkey,
 		     const char *fv_file, const char *kernelkey_file)
 {
-	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE];
+	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
 	struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 

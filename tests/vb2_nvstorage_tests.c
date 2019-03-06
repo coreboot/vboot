@@ -86,7 +86,7 @@ static void nv_storage_test(uint32_t ctxflags)
 {
 	struct nv_field *vnf;
 	uint8_t goodcrc;
-	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE]
+	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 		__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 	struct vb2_context c = {
 		.flags = ctxflags,
