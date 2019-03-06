@@ -206,7 +206,7 @@ VbError_t vb2_altfw_ui(struct vb2_context *ctx)
 			 * This will not return if successful. Drop out to
 			 * developer mode on failure.
 			 */
-			vb2_run_altfw(key - '0');
+			vb2_run_altfw(ctx, key - '0');
 			active = 0;
 			break;
 		default:
@@ -612,7 +612,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
-			vb2_try_alt_fw(allow_legacy, key - '0');
+			vb2_try_alt_fw(ctx, allow_legacy, key - '0');
 			break;
 		default:
 			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
@@ -628,7 +628,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 	/* If defaulting to legacy boot, try that unless Ctrl+D was pressed */
 	if (use_legacy && !ctrl_d_pressed) {
 		VB2_DEBUG("VbBootDeveloper() - defaulting to legacy\n");
-		vb2_try_alt_fw(allow_legacy, 0);
+		vb2_try_alt_fw(ctx, allow_legacy, 0);
 	}
 
 	if ((use_usb && !ctrl_d_pressed) && allow_usb) {

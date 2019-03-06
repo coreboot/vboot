@@ -12,6 +12,7 @@
 
 #include "rollback_index.h"
 #include "vboot_api.h"
+#include "vboot_kernel.h"
 #include "vboot_ui_common.h"
 
 /* One or two beeps to notify that attempted action was disallowed. */
@@ -43,12 +44,13 @@ void vb2_error_notify(const char *print_msg,
 	vb2_error_beep(beep);
 }
 
-void vb2_run_altfw(enum VbAltFwIndex_t altfw_num)
+void vb2_run_altfw(struct vb2_context *ctx, enum VbAltFwIndex_t altfw_num)
 {
 	if (RollbackKernelLock(0)) {
 		vb2_error_notify("Error locking kernel versions on legacy "
 				 "boot.\n", NULL, VB_BEEP_FAILED);
 	} else {
+		vb2_nv_commit(ctx);
 		VbExLegacy(altfw_num);	/* will not return if found */
 		vb2_error_notify("Legacy boot failed. Missing BIOS?\n", NULL,
 				 VB_BEEP_FAILED);
@@ -64,10 +66,11 @@ void vb2_error_no_altfw(void)
 	vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 }
 
-void vb2_try_alt_fw(int allowed, enum VbAltFwIndex_t altfw_num)
+void vb2_try_alt_fw(struct vb2_context *ctx, int allowed,
+		    enum VbAltFwIndex_t altfw_num)
 {
 	if (allowed)
-		vb2_run_altfw(altfw_num);	/* will not return if found */
+		vb2_run_altfw(ctx, altfw_num);	/* will not return if found */
 	else
 		vb2_error_no_altfw();
 }
