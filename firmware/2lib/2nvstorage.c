@@ -141,6 +141,9 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 	case VB2_NV_RECOVERY_REQUEST:
 		return p[VB2_NV_OFFS_RECOVERY];
 
+	case VB2_NV_DIAG_REQUEST:
+		return GETBIT(VB2_NV_OFFS_BOOT2, VB2_NV_BOOT2_REQ_DIAG);
+
 	case VB2_NV_RECOVERY_SUBCODE:
 		return p[VB2_NV_OFFS_RECOVERY_SUBCODE];
 
@@ -319,6 +322,10 @@ void vb2_nv_set(struct vb2_context *ctx,
 		if (value > 0xff)
 			value = VB2_RECOVERY_LEGACY;
 		p[VB2_NV_OFFS_RECOVERY] = (uint8_t)value;
+		break;
+
+	case VB2_NV_DIAG_REQUEST:
+		SETBIT(VB2_NV_OFFS_BOOT2, VB2_NV_BOOT2_REQ_DIAG);
 		break;
 
 	case VB2_NV_RECOVERY_SUBCODE:

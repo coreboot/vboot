@@ -51,6 +51,7 @@ const Param sys_param_list[] = {
   {"dev_enable_udc", CAN_WRITE, "Enable USB Device Controller"},
   {"devsw_boot", 0, "Developer switch position at boot"},
   {"devsw_cur",  0, "Developer switch current position"},
+  {"diagnostic_request", CAN_WRITE, "Request diagnostic rom run on next boot"},
   {"disable_alt_os_request", CAN_WRITE,
    "Disable Alt OS mode on next boot (writable)"},
   {"disable_dev_request", CAN_WRITE, "Disable virtual dev-mode on next boot"},

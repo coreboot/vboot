@@ -470,6 +470,8 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_KERNEL_SETTINGS_RESET);
 	} else if (!strcasecmp(name,"recovery_request")) {
 		value = vb2_get_nv_storage(VB2_NV_RECOVERY_REQUEST);
+	} else if (!strcasecmp(name,"diagnostic_request")) {
+		value = vb2_get_nv_storage(VB2_NV_DIAG_REQUEST);
 	} else if (!strcasecmp(name,"dbg_reset")) {
 		value = vb2_get_nv_storage(VB2_NV_DEBUG_RESET_MODE);
 	} else if (!strcasecmp(name,"disable_dev_request")) {
@@ -658,6 +660,8 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_KERNEL_SETTINGS_RESET, 0);
 	} else if (!strcasecmp(name,"recovery_request")) {
 		return vb2_set_nv_storage(VB2_NV_RECOVERY_REQUEST, value);
+	} else if (!strcasecmp(name,"diagnostic_request")) {
+		return vb2_set_nv_storage(VB2_NV_DIAG_REQUEST, value);
 	} else if (!strcasecmp(name,"recovery_subcode")) {
 		return vb2_set_nv_storage(VB2_NV_RECOVERY_SUBCODE, value);
 	} else if (!strcasecmp(name,"dbg_reset")) {

@@ -48,6 +48,7 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_DEV_BOOT_SIGNED_ONLY, 0, 1, 0, "dev boot custom"},
 	{VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, 0, 1, 0, "dev boot fb full cap"},
 	{VB2_NV_DEV_DEFAULT_BOOT, 0, 1, 2, "dev default boot"},
+	{VB2_NV_DIAG_REQUEST, 0, 1, 0, "diagnostic rom request"},
 	{VB2_NV_DISABLE_DEV_REQUEST, 0, 1, 0, "disable dev request"},
 	{VB2_NV_CLEAR_TPM_OWNER_REQUEST, 0, 1, 0, "clear tpm owner request"},
 	{VB2_NV_CLEAR_TPM_OWNER_DONE, 0, 1, 0, "clear tpm owner done"},

@@ -79,13 +79,14 @@ enum vb2_nv_offset {
 #define VB2_NV_BOOT_DISABLE_DEV                0x40
 #define VB2_NV_BOOT_DEBUG_RESET                0x80
 
-/* Fields in VB2_NV_OFFS_BOOT2 (unused = 0x80) */
+/* Fields in VB2_NV_OFFS_BOOT2 (unused = 0x00) */
 #define VB2_NV_BOOT2_RESULT_MASK               0x03
 #define VB2_NV_BOOT2_TRIED                     0x04
 #define VB2_NV_BOOT2_TRY_NEXT                  0x08
 #define VB2_NV_BOOT2_PREV_RESULT_MASK          0x30
 #define VB2_NV_BOOT2_PREV_RESULT_SHIFT 4  /* Number of bits to shift result */
 #define VB2_NV_BOOT2_PREV_TRIED                0x40
+#define VB2_NV_BOOT2_REQ_DIAG                  0x80
 
 /* Fields in VB2_NV_OFFS_DEV (unused = 0x80) */
 #define VB2_NV_DEV_FLAG_USB                    0x01

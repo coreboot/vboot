@@ -125,6 +125,8 @@ enum vb2_nv_param {
 	 * testing Alt OS booting.
 	 */
 	VB2_NV_POST_EC_SYNC_DELAY,
+	/* Request booting of diagnostic rom.  0=no, 1=yes. */
+	VB2_NV_DIAG_REQUEST,
 };
 
 /* Set default boot in developer mode */
