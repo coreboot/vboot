@@ -376,6 +376,10 @@ void VbExDebug(const char *format, ...)
 /*****************************************************************************/
 /* Timer and delay (first two from utility.h) */
 
+#define VB_USEC_PER_MSEC	1000ULL
+#define VB_MSEC_PER_SEC		VB_USEC_PER_MSEC
+#define VB_USEC_PER_SEC		(VB_USEC_PER_MSEC * VB_MSEC_PER_SEC)
+
 /**
  * Read a microsecond timer.
  *

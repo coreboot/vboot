@@ -56,7 +56,7 @@ uint64_t VbExGetTimer(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	return (uint64_t)tv.tv_sec * 1000000 + (uint64_t)tv.tv_usec;
+	return (uint64_t)tv.tv_sec * VB_USEC_PER_SEC + (uint64_t)tv.tv_usec;
 }
 
 VbError_t test_mockable VbExNvStorageRead(uint8_t *buf)

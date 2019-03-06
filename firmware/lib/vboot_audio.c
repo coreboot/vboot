@@ -15,9 +15,6 @@
 #include "vboot_audio.h"
 #include "vboot_common.h"
 
-/* 1000 microsecond ticks per msec */
-#define TICKS_PER_MSEC 1000
-
 int audio_open_count = 0;	/* Times audio has been opened */
 static int audio_use_short;	/* Use short delay? */
 static uint64_t open_time;	/* Time of last open */
@@ -55,15 +52,15 @@ int vb2_audio_looping(void)
 
 	/* If we're using short delay, wait 2 seconds and don't beep */
 	if (audio_use_short)
-		return (now < 2000 * TICKS_PER_MSEC);
+		return (now < 2 * VB_USEC_PER_SEC);
 
 	/* Otherwise, beep at 20 and 20.5 seconds */
-	if ((beep_count == 0 && now > 20000 * TICKS_PER_MSEC) ||
-	    (beep_count == 1 && now > 20500 * TICKS_PER_MSEC)) {
+	if ((beep_count == 0 && now > 20000 * VB_MSEC_PER_SEC) ||
+	    (beep_count == 1 && now > 20500 * VB_MSEC_PER_SEC)) {
 		VbExBeep(250, 400);
 		beep_count++;
 	}
 
 	/* Stop after 30 seconds */
-	return (now < 30000 * TICKS_PER_MSEC);
+	return (now < 30 * VB_USEC_PER_SEC);
 }

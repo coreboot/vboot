@@ -29,7 +29,6 @@
 /* Expected results */
 
 #define MAX_NOTE_EVENTS 10
-#define TICKS_PER_MSEC 1000ULL
 #define TIME_FUZZ 500
 #define KBD_READ_TIME 60
 
@@ -206,8 +205,8 @@ uint32_t VbExKeyboardRead(void)
 
 void VbExSleepMs(uint32_t msec)
 {
-	current_ticks += (uint64_t)msec * TICKS_PER_MSEC;
-	current_time = current_ticks / TICKS_PER_MSEC;
+	current_ticks += (uint64_t)msec * VB_USEC_PER_MSEC;
+	current_time = current_ticks / VB_USEC_PER_MSEC;
 	VB2_DEBUG("VbExSleepMs(%d) -> %d\n", msec, current_time);
 }
 
