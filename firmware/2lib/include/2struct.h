@@ -32,8 +32,6 @@ enum vb2_shared_data_flags {
 
 	/* Developer mode is enabled */
 	VB2_SD_FLAG_DEV_MODE_ENABLED = (1 << 1),
-	/* Deprecated name; remove */
-	VB2_SD_DEV_MODE_ENABLED = (1 << 1),
 
 	/*
 	 * TODO: might be nice to add flags for why dev mode is enabled - via
