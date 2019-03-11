@@ -33,6 +33,7 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 # Test data files
 LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
 PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
+RO_VPD_BLOB="${SCRIPTDIR}/data/ro_vpd.bin"
 
 # Work in scratch directory
 cd "$OUTDIR"
@@ -45,6 +46,8 @@ TO_HWID="X86 LINK TEST 6638"
 FROM_HWID="X86 PEPPY TEST 4211"
 cp -f ${LINK_BIOS} ${TO_IMAGE}
 cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
+"${FUTILITY}" load_fmap "${FROM_IMAGE}" \
+	RO_VPD:"${RO_VPD_BLOB}" RW_VPD:"${RO_VPD_BLOB}"
 
 patch_file() {
 	local file="$1"
@@ -136,6 +139,16 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
 patch_file "${TMP}.expected.me_unlocked" SI_DESC 128 \
 	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
 
+# A special set of images that only RO_VPD is preserved (RW_VPD is wiped) using
+# FMAP_AREA_PRESERVE (\010=0x08).
+TO_IMAGE_WIPE_RW_VPD="${TO_IMAGE}.wipe_rw_vpd"
+cp -f "${TO_IMAGE}" "${TO_IMAGE_WIPE_RW_VPD}"
+patch_file ${TO_IMAGE_WIPE_RW_VPD} FMAP 0x3fc "$(printf '\010')"
+cp -f "${TMP}.expected.full" "${TMP}.expected.full.empty_rw_vpd"
+"${FUTILITY}" load_fmap "${TMP}.expected.full.empty_rw_vpd" \
+	RW_VPD:"${TMP}.to/RW_VPD"
+patch_file "${TMP}.expected.full.empty_rw_vpd" FMAP 0x3fc "$(printf '\010')"
+
 test_update() {
 	local test_name="$1"
 	local emu_src="$2"
@@ -204,6 +217,11 @@ test_update "Full update (--host_only)" \
 test_update "Full update (GBB1.2 hwid digest)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full.gbb12" \
 	-i "${TO_IMAGE_GBB12}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (Preserve VPD using FMAP_AREA_PRESERVE)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full.empty_rw_vpd" \
+	-i "${TO_IMAGE_WIPE_RW_VPD}" --wp=0 --sys_props 0,0x10001,1
+
 
 # Test RW-only update.
 test_update "RW update" \
