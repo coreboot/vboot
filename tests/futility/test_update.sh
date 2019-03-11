@@ -255,8 +255,8 @@ test_update "RW update (TPM Anti-rollback: kernel key)" \
 	-i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x10005,1
 
 test_update "RW update -> fallback to RO+RW Full update (TPM Anti-rollback)" \
-	"${TO_IMAGE}" "!Firmware version rollback detected (4->2)" \
-	-i "${FROM_IMAGE}" -t --wp=0 --sys_props 1,0x10004,1
+	"${FROM_IMAGE}" "!Firmware version rollback detected (6->4)" \
+	-i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10006,1
 
 # Test Try-RW update (vboot1).
 test_update "RW update (vboot1, A->B)" \

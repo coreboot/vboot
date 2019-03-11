@@ -1615,8 +1615,6 @@ static enum updater_error_codes update_whole_firmware(
 		DEBUG("Failed to preserve some sections - ignore.");
 
 	INFO("Checking compatibility...");
-	if (check_compatible_tpm_keys(cfg, image_to))
-		return UPDATE_ERR_TPM_ROLLBACK;
 	if (!cfg->force_update) {
 		/* Check if the image_to itself is broken */
 		enum rootkey_compat_result r = check_compatible_root_key(
@@ -1644,6 +1642,8 @@ static enum updater_error_codes update_whole_firmware(
 			return UPDATE_ERR_ROOT_KEY;
 		}
 	}
+	if (check_compatible_tpm_keys(cfg, image_to))
+		return UPDATE_ERR_TPM_ROLLBACK;
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
