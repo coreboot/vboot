@@ -799,11 +799,15 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 	const struct model_config *model = NULL;
 	int i;
 
-	/* Match if the manifest has only one package without signature. */
-	if (manifest->num == 1 && !manifest->models[0].signature_id)
-		model = &manifest->models[0];
+	/*
+	 * For manifest with single model defined, we should just return because
+	 * there are other mechanisms like platform name check to double confirm
+	 * if the firmware is valid.
+	 */
+	if (manifest->num == 1)
+		return &manifest->models[0];
 
-	if (!model && !model_name) {
+	if (!model_name) {
 		sys_model_name = host_shell("mosys platform model");
 		DEBUG("System model name: '%s'", sys_model_name);
 		model_name = sys_model_name;
