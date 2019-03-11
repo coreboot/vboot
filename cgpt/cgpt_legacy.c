@@ -23,7 +23,7 @@ int CgptLegacy(CgptLegacyParams *params) {
   if (GPT_SUCCESS != (gpt_retval = GptSanityCheck(&drive.gpt))) {
     Error("GptSanityCheck() returned %d: %s\n",
           gpt_retval, GptError(gpt_retval));
-    return CGPT_FAILED;
+    goto bad;
   }
 
   h1 = (GptHeader *)drive.gpt.primary_header;
@@ -40,7 +40,7 @@ int CgptLegacy(CgptLegacyParams *params) {
         !(drive.gpt.valid_entries & MASK_SECONDARY) ||
         drive.gpt.ignored & MASK_SECONDARY) {
       Error("Refusing to mark primary GPT ignored unless secondary is valid.");
-      return CGPT_FAILED;
+      goto bad;
     }
     memset(h1, 0, sizeof(*h1));
     memcpy(h1->signature, GPT_HEADER_SIGNATURE_IGNORED,
@@ -58,4 +58,8 @@ int CgptLegacy(CgptLegacyParams *params) {
 
   // Write it all out
   return DriveClose(&drive, 1);
+
+bad:
+  (void) DriveClose(&drive, 0);
+  return CGPT_FAILED;
 }

@@ -286,18 +286,6 @@ static int GptSave(struct drive *drive) {
     }
   }
 
-  if (drive->gpt.primary_header)
-    free(drive->gpt.primary_header);
-  drive->gpt.primary_header = 0;
-  if (drive->gpt.primary_entries)
-    free(drive->gpt.primary_entries);
-  drive->gpt.primary_entries = 0;
-  if (drive->gpt.secondary_header)
-    free(drive->gpt.secondary_header);
-  drive->gpt.secondary_header = 0;
-  if (drive->gpt.secondary_entries)
-    free(drive->gpt.secondary_entries);
-  drive->gpt.secondary_entries = 0;
   return errors ? -1 : 0;
 }
 
@@ -387,6 +375,15 @@ int DriveClose(struct drive *drive, int update_as_needed) {
         errors++;
     }
   }
+
+  free(drive->gpt.primary_header);
+  drive->gpt.primary_header = NULL;
+  free(drive->gpt.primary_entries);
+  drive->gpt.primary_entries = NULL;
+  free(drive->gpt.secondary_header);
+  drive->gpt.secondary_header = NULL;
+  free(drive->gpt.secondary_entries);
+  drive->gpt.secondary_entries = NULL;
 
   // Sync early! Only sync file descriptor here, and leave the whole system sync
   // outside cgpt because whole system sync would trigger tons of disk accesses
