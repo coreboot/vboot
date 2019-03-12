@@ -1,4 +1,4 @@
-BIOS:                    /mnt/host/source/src/platform/vboot_reference/tests/futility/data/bios_zgb_mp.bin
+BIOS:                    tests/futility/data/bios_zgb_mp.bin
 GBB header:              GBB
   Version:               1.0
   Flags:                 0x00000000

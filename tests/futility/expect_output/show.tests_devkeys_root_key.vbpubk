@@ -1,4 +1,4 @@
-Public Key file:       /mnt/host/source/src/platform/vboot_reference/tests/devkeys/root_key.vbpubk
+Public Key file:       tests/devkeys/root_key.vbpubk
   Vboot API:           1.0
   Algorithm:           11 RSA8192 SHA512
   Key Version:         1

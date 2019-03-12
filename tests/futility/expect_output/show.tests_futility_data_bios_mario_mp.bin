@@ -1,4 +1,4 @@
-BIOS:                    /mnt/host/source/src/platform/vboot_reference/tests/futility/data/bios_mario_mp.bin
+BIOS:                    tests/futility/data/bios_mario_mp.bin
 GBB header:              GBB Area
   Version:               1.0
   Flags:                 0x00000000

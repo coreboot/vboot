@@ -1,4 +1,4 @@
-Key block:               /mnt/host/source/src/platform/vboot_reference/tests/devkeys/kernel.keyblock
+Key block:               tests/devkeys/kernel.keyblock
   Signature:             ignored
   Size:                  0x4b8
   Flags:                 7  !DEV DEV !REC

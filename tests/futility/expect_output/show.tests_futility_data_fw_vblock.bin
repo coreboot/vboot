@@ -1,4 +1,4 @@
-Key block:               /mnt/host/source/src/platform/vboot_reference/tests/futility/data/fw_vblock.bin
+Key block:               tests/futility/data/fw_vblock.bin
   Signature:             ignored
   Size:                  0x8b8
   Flags:                 7  !DEV DEV !REC

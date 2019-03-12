@@ -1,4 +1,4 @@
-Key block file:       /mnt/host/source/src/platform/vboot_reference/tests/devkeys/kernel.keyblock
+Key block file:       tests/devkeys/kernel.keyblock
 Signature             valid
 Flags:                7  !DEV DEV !REC
 Data key algorithm:   4 RSA2048 SHA256

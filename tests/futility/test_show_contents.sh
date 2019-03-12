@@ -3,11 +3,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-me=${0##*/}
+me="${0##*/}"
 TMP="$me.tmp"
 
 # Work in scratch directory
-cd "$OUTDIR"
+cd "${OUTDIR}"
 
 # Test 'futility show' against expected output
 SHOW_FILES="
@@ -29,12 +29,12 @@ for file in $SHOW_FILES; do
     outfile="show.${file//\//_}"
     gotfile="${OUTDIR}/${outfile}"
     wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
-    ${FUTILITY} show "${SRCDIR}/${file}" | tee "${gotfile}"
+    ( cd "${SRCDIR}" && ${FUTILITY} show "${file}" ) | tee "${gotfile}"
 
     # Uncomment this to update the expected output
-    #cp ${gotfile} ${wantfile}
+    #cp "${gotfile}" "${wantfile}"
 
-    diff ${wantfile} ${gotfile}
+    diff "${wantfile}" "${gotfile}"
 done
 
 
@@ -48,12 +48,13 @@ for file in $VBUTIL_KEY_FILES; do
     outfile="vbutil_key.${file//\//_}"
     gotfile="${OUTDIR}/${outfile}"
     wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
-    ${FUTILITY} vbutil_key --unpack "${SRCDIR}/${file}" | tee "${gotfile}"
+    ( cd "${SRCDIR}" && ${FUTILITY} vbutil_key --unpack "${file}" ) \
+        | tee "${gotfile}"
 
     # Uncomment this to update the expected output
-    #cp ${gotfile} ${wantfile}
+    #cp "${gotfile}" "${wantfile}"
 
-    diff ${wantfile} ${gotfile}
+    diff "${wantfile}" "${gotfile}"
 done
 
 
@@ -62,18 +63,18 @@ file="tests/devkeys/kernel.keyblock"
 outfile="vbutil_keyblock.${file//\//_}"
 gotfile="${OUTDIR}/${outfile}"
 wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
-${FUTILITY} vbutil_keyblock --unpack "${SRCDIR}/${file}" \
-    --signpubkey "${SRCDIR}/tests/devkeys/kernel_subkey.vbpubk" \
+( cd "${SRCDIR}" && ${FUTILITY} vbutil_keyblock --unpack "${file}" \
+    --signpubkey "tests/devkeys/kernel_subkey.vbpubk" ) \
     | tee "${gotfile}"
 
 # Uncomment this to update the expected output
-#cp ${gotfile} ${wantfile}
+#cp "${gotfile}" "${wantfile}"
 
-diff ${wantfile} ${gotfile}
+diff "${wantfile}" "${gotfile}"
 
 
 # Test 'futility vbutil_firmware' against expected output
-KEYDIR=${SRCDIR}/tests/devkeys
+KEYDIR="${SRCDIR}/tests/devkeys"
 outfile="vbutil_firmware.verify"
 gotfile="${OUTDIR}/${outfile}"
 wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
@@ -81,26 +82,26 @@ wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
 # Create a firmware blob and vblock.  Version and flags are just
 # arbitrary non-zero numbers so we can verify they're printed
 # properly.
-dd bs=1024 count=16 if=/dev/urandom of=${TMP}.fw_main
-${FUTILITY} vbutil_firmware --vblock ${TMP}.vblock.old \
-  --keyblock ${KEYDIR}/firmware.keyblock \
-  --signprivate ${KEYDIR}/firmware_data_key.vbprivk \
+dd bs=1024 count=16 if=/dev/urandom of="${TMP}.fw_main"
+${FUTILITY} vbutil_firmware --vblock "${TMP}.vblock.old" \
+  --keyblock "${KEYDIR}/firmware.keyblock" \
+  --signprivate "${KEYDIR}/firmware_data_key.vbprivk" \
   --version 12 \
-  --fv ${TMP}.fw_main \
-  --kernelkey ${KEYDIR}/kernel_subkey.vbpubk \
+  --fv "${TMP}.fw_main" \
+  --kernelkey "${KEYDIR}/kernel_subkey.vbpubk" \
   --flags 42
 
 # Verify
-${FUTILITY} vbutil_firmware --verify ${TMP}.vblock.old \
-  --signpubkey ${KEYDIR}/root_key.vbpubk \
-  --fv ${TMP}.fw_main | tee "${gotfile}"
+${FUTILITY} vbutil_firmware --verify "${TMP}.vblock.old" \
+  --signpubkey "${KEYDIR}/root_key.vbpubk" \
+  --fv "${TMP}.fw_main" | tee "${gotfile}"
 
 # Uncomment this to update the expected output
-#cp ${gotfile} ${wantfile}
+#cp "${gotfile}" "${wantfile}"
 
-diff ${wantfile} ${gotfile}
+diff "${wantfile}" "${gotfile}"
 
 
 # cleanup
-rm -rf ${TMP}*
+rm -rf "${TMP}*"
 exit 0

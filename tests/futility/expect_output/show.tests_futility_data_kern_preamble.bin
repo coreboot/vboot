@@ -1,4 +1,4 @@
-Kernel partition:        /mnt/host/source/src/platform/vboot_reference/tests/futility/data/kern_preamble.bin
+Kernel partition:        tests/futility/data/kern_preamble.bin
 Key block:
   Signature:             ignored
   Size:                  0x5b8
