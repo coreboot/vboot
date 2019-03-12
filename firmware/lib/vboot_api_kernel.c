@@ -26,7 +26,6 @@
 /* Global variables */
 static struct RollbackSpaceFwmp fwmp;
 static LoadKernelParams lkp;
-static struct vb2_context ctx;
 static uint8_t *unaligned_workbuf;
 
 #ifdef CHROMEOS_ENVIRONMENT
@@ -221,7 +220,8 @@ VbError_t VbBootNormal(struct vb2_context *ctx)
 	return rv;
 }
 
-static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
+static VbError_t vb2_kernel_setup(struct vb2_context *ctx,
+				  VbCommonParams *cparams,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	VbSharedDataHeader *shared =
@@ -230,19 +230,11 @@ static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
 	/* Start timer */
 	shared->timer_vb_select_and_load_kernel_enter = VbExGetTimer();
 
-	/*
-	 * Set up vboot context.
-	 *
-	 * TODO: Propagate this up to higher API levels, and use more of the
-	 * context fields (e.g. secdatak) and flags.
-	 */
-	memset(&ctx, 0, sizeof(ctx));
-
 	/* Translate vboot1 flags back to vboot2 */
 	if (shared->recovery_reason)
-		ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON)
-		ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 	/*
 	 * The following flags are set by depthcharge.
@@ -252,43 +244,43 @@ static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
 	 * features that won't be used in an image could be compiled out.
 	 */
 	if (shared->flags & VBSD_EC_SOFTWARE_SYNC)
-		ctx.flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+		ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	if (shared->flags & VBSD_EC_SLOW_UPDATE)
-		ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+		ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	if (shared->flags & VBSD_EC_EFS)
-		ctx.flags |= VB2_CONTEXT_EC_EFS;
+		ctx->flags |= VB2_CONTEXT_EC_EFS;
 	if (shared->flags & VBSD_NVDATA_V2)
-		ctx.flags |= VB2_CONTEXT_NVDATA_V2;
+		ctx->flags |= VB2_CONTEXT_NVDATA_V2;
 
-	VbExNvStorageRead(ctx.nvdata);
-	vb2_nv_init(&ctx);
+	VbExNvStorageRead(ctx->nvdata);
+	vb2_nv_init(ctx);
 
-	ctx.workbuf_size = VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE +
-			VB2_WORKBUF_ALIGN;
+	ctx->workbuf_size = VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE +
+			    VB2_WORKBUF_ALIGN;
 
-	unaligned_workbuf = ctx.workbuf = malloc(ctx.workbuf_size);
+	unaligned_workbuf = ctx->workbuf = malloc(ctx->workbuf_size);
 	if (!unaligned_workbuf) {
 		VB2_DEBUG("Can't allocate work buffer\n");
-		VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_SHARED_DATA);
+		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
 		return VBERROR_INIT_SHARED_DATA;
 	}
 
-	if (VB2_SUCCESS != vb2_align(&ctx.workbuf, &ctx.workbuf_size,
+	if (VB2_SUCCESS != vb2_align(&ctx->workbuf, &ctx->workbuf_size,
 				     VB2_WORKBUF_ALIGN,
 				     VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE)) {
 		VB2_DEBUG("Can't align work buffer\n");
-		VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_SHARED_DATA);
+		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
 		return VBERROR_INIT_SHARED_DATA;
 	}
 
-	if (VB2_SUCCESS != vb2_init_context(&ctx)) {
+	if (VB2_SUCCESS != vb2_init_context(ctx)) {
 		VB2_DEBUG("Can't init vb2_context\n");
 		free(unaligned_workbuf);
-		VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_SHARED_DATA);
+		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
 		return VBERROR_INIT_SHARED_DATA;
 	}
 
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	sd->recovery_reason = shared->recovery_reason;
 
 	/*
@@ -330,8 +322,8 @@ static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
 	/* Read kernel version from the TPM.  Ignore errors in recovery mode. */
 	if (RollbackKernelRead(&shared->kernel_version_tpm)) {
 		VB2_DEBUG("Unable to get kernel versions from TPM\n");
-		if (!(ctx.flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
+		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+			VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
 			return VBERROR_TPM_READ_KERNEL;
 		}
 	}
@@ -343,8 +335,8 @@ static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
 		memset(&fwmp, 0, sizeof(fwmp));
 	} else if (RollbackFwmpRead(&fwmp)) {
 		VB2_DEBUG("Unable to get FWMP from TPM\n");
-		if (!(ctx.flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
+		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+			VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
 			return VBERROR_TPM_READ_FWMP;
 		}
 	}
@@ -352,9 +344,10 @@ static VbError_t vb2_kernel_setup(VbCommonParams *cparams,
 	return VBERROR_SUCCESS;
 }
 
-static VbError_t vb2_kernel_phase4(VbSelectAndLoadKernelParams *kparams)
+static VbError_t vb2_kernel_phase4(struct vb2_context *ctx,
+				   VbSelectAndLoadKernelParams *kparams)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	/* Save disk parameters */
 	kparams->disk_handle = lkp.disk_handle;
@@ -368,10 +361,10 @@ static VbError_t vb2_kernel_phase4(VbSelectAndLoadKernelParams *kparams)
 	       sizeof(kparams->partition_guid));
 
 	/* Lock the kernel versions if not in recovery mode */
-	if (!(ctx.flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 	    RollbackKernelLock(sd->recovery_reason)) {
 		VB2_DEBUG("Error locking kernel versions.\n");
-		VbSetRecoveryRequest(&ctx, VB2_RECOVERY_RW_TPM_L_ERROR);
+		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_L_ERROR);
 		return VBERROR_TPM_LOCK_KERNEL;
 	}
 
@@ -406,10 +399,12 @@ static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
 	cparams->shared_data_size = shared->data_used;
 }
 
-VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
-				VbSelectAndLoadKernelParams *kparams)
+VbError_t VbSelectAndLoadKernel(
+	struct vb2_context *ctx,
+	VbCommonParams *cparams,
+	VbSelectAndLoadKernelParams *kparams)
 {
-	VbError_t retval = vb2_kernel_setup(cparams, kparams);
+	VbError_t retval = vb2_kernel_setup(ctx, cparams, kparams);
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
@@ -417,25 +412,25 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 	 * Do EC software sync unless we're in recovery mode. This has UI but
 	 * it's just a single non-interactive WAIT screen.
 	 */
-	if (!(ctx.flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		retval = ec_sync_all(&ctx);
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+		retval = ec_sync_all(ctx);
 		if (retval)
 			goto VbSelectAndLoadKernel_exit;
 	}
 
 	/* Select boot path */
-	if (ctx.flags & VB2_CONTEXT_RECOVERY_MODE) {
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 		/* Recovery boot.  This has UI. */
 		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
-			retval = VbBootRecoveryMenu(&ctx);
+			retval = VbBootRecoveryMenu(ctx);
 		else
-			retval = VbBootRecovery(&ctx);
+			retval = VbBootRecovery(ctx);
 		VbExEcEnteringMode(0, VB_EC_RECOVERY);
-	} else if (DIAGNOSTIC_UI && vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST)) {
-		struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
+		struct vb2_shared_data *sd = vb2_get_sd(ctx);
 		if (sd->vbsd->flags & VBSD_OPROM_MATTERS)
-			vb2_nv_set(&ctx, VB2_NV_OPROM_NEEDED, 0);
-		vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 0);
+			vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 0);
+		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
 
 		/*
 		 * Diagnostic boot. This has a UI but only power button
@@ -443,7 +438,7 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		 * This mode is also 1-shot so it's placed before developer
 		 * mode.
 		 */
-		retval = VbBootDiagnostic(&ctx);
+		retval = VbBootDiagnostic(ctx);
 		/*
 		 * The diagnostic menu should either boot a rom, or
 		 * return either of reboot or shutdown.  The following
@@ -452,38 +447,38 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		if (!retval) {
 			retval = VBERROR_REBOOT_REQUIRED;
 		}
-	} else if (ctx.flags & VB2_CONTEXT_DEVELOPER_MODE) {
+	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		if (kparams->inflags & VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE)
-			ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+			ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
 
 		/* Developer boot.  This has UI. */
 		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
-			retval = VbBootDeveloperMenu(&ctx);
+			retval = VbBootDeveloperMenu(ctx);
 		else
-			retval = VbBootDeveloper(&ctx);
+			retval = VbBootDeveloper(ctx);
 		VbExEcEnteringMode(0, VB_EC_DEVELOPER);
 	} else {
 		/* Normal boot */
-		retval = VbBootNormal(&ctx);
+		retval = VbBootNormal(ctx);
 		VbExEcEnteringMode(0, VB_EC_NORMAL);
 	}
 
  VbSelectAndLoadKernel_exit:
 
 	if (VBERROR_SUCCESS == retval)
-		retval = vb2_kernel_phase4(kparams);
+		retval = vb2_kernel_phase4(ctx, kparams);
 
-	vb2_kernel_cleanup(&ctx, cparams);
+	vb2_kernel_cleanup(ctx, cparams);
 
 	/* Pass through return value from boot path */
 	VB2_DEBUG("Returning %d\n", (int)retval);
 	return retval;
 }
 
-VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
-				  VbSelectAndLoadKernelParams *kparams,
-				  void *boot_image,
-				  size_t image_size)
+VbError_t VbVerifyMemoryBootImage(
+	struct vb2_context *ctx, VbCommonParams *cparams,
+	VbSelectAndLoadKernelParams *kparams, void *boot_image,
+	size_t image_size)
 {
 	VbPublicKey* kernel_subkey = NULL;
 	uint8_t *kbuf;
@@ -495,11 +490,11 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
 
-	VbError_t retval = vb2_kernel_setup(cparams, kparams);
+	VbError_t retval = vb2_kernel_setup(ctx, cparams, kparams);
 	if (retval)
 		goto fail;
 
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbSharedDataHeader *shared = sd->vbsd;
 
 	if ((boot_image == NULL) || (image_size == 0)) {
@@ -519,7 +514,7 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 	 */
 	dev_switch = shared->flags & VBSD_BOOT_DEV_SWITCH_ON;
 	allow_fastboot_full_cap =
-			vb2_nv_get(&ctx, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
+			vb2_nv_get(ctx, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
 
 	if (0 == allow_fastboot_full_cap) {
 		allow_fastboot_full_cap = !!(sd->gbb_flags &
@@ -531,7 +526,7 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 		hash_only = 1;
 	} else {
 		/* Get recovery key. */
-		retval = VbGbbReadRecoveryKey(&ctx, &kernel_subkey);
+		retval = VbGbbReadRecoveryKey(ctx, &kernel_subkey);
 		if (VBERROR_SUCCESS != retval) {
 			VB2_DEBUG("Gbb Read Recovery key failed.\n");
 			goto fail;
@@ -542,7 +537,7 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 	retval = VBERROR_INVALID_KERNEL_FOUND;
 
 	/* Allocate work buffer */
-	vb2_workbuf_from_ctx(&ctx, &wb);
+	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Verify the key block. */
 	key_block = (VbKeyBlockHeader *)kbuf;
@@ -631,7 +626,7 @@ VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
 	retval = VBERROR_SUCCESS;
 
  fail:
-	vb2_kernel_cleanup(&ctx, cparams);
+	vb2_kernel_cleanup(ctx, cparams);
 	if (NULL != kernel_subkey)
 		free(kernel_subkey);
 	return retval;

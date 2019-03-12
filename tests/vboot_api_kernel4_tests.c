@@ -162,7 +162,7 @@ VbError_t VbBootDiagnostic(struct vb2_context *ctx)
 
 static void test_slk(VbError_t retval, int recovery_reason, const char *desc)
 {
-	TEST_EQ(VbSelectAndLoadKernel(&cparams, &kparams), retval, desc);
+	TEST_EQ(VbSelectAndLoadKernel(&ctx, &cparams, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }

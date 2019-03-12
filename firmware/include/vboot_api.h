@@ -30,6 +30,8 @@
 extern "C" {
 #endif  /* __cplusplus */
 
+struct vb2_context;
+
 /*****************************************************************************/
 /* Error codes */
 
@@ -319,7 +321,8 @@ typedef struct VbSelectAndLoadKernelParams {
  *
  * Returns VBERROR_SUCCESS if success, non-zero if error; on error, caller
  * should reboot. */
-VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
+VbError_t VbSelectAndLoadKernel(struct vb2_context *ctx,
+				VbCommonParams *cparams,
 				VbSelectAndLoadKernelParams *kparams);
 
 /**
@@ -331,6 +334,7 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
  * override to allow full fastboot functionality, it checks image integrity, but
  * does not check the image signature.
  *
+ * @param ctx		Vboot context
  * @param cparams	Common parameters, e.g. use member caller_context
  *			to point to useful context data
  * @param kparams	kernel params
@@ -338,7 +342,8 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
  * @param image_size	Size of the image in memory
  * @return VBERROR_... error, VBERROR_SUCCESS on success.
  */
-VbError_t VbVerifyMemoryBootImage(VbCommonParams *cparams,
+VbError_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
+				  VbCommonParams *cparams,
 				  VbSelectAndLoadKernelParams *kparams,
 				  void *boot_image,
 				  size_t image_size);

@@ -54,7 +54,7 @@ int main(void)
 #endif
 
 	/* vboot_api.h - entry points INTO vboot_reference */
-	VbSelectAndLoadKernel(0, 0);
+	VbSelectAndLoadKernel(0, 0, 0);
 
 	/* vboot_common.h */
 	OffsetOf(0, 0);
