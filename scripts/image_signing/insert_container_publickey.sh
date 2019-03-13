@@ -29,14 +29,16 @@ main() {
 
   local image="$1"
   local pub_key="$2"
+  local loopdev
   local rootfs
   local key_location="/usr/share/misc/"
 
   if [[ -d "${image}" ]]; then
     rootfs="${image}"
   else
+    loopdev=$(loopback_partscan "${image}")
     rootfs=$(make_temp_dir)
-    mount_image_partition "${image}" 3 "${rootfs}"
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
   fi
 
   # Imageloader likes DER as a runtime format as it's easier to read.

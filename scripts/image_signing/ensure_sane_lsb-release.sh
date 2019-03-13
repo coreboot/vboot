@@ -115,14 +115,15 @@ main() {
   info "Loading config from ${configfile}"
   . "$configfile" || return 1
 
-  local rootfs
+  local loopdev rootfs
   if [[ -d "${image}" ]]; then
     # We're given a mounted rootfs.
     rootfs="${image}"
   else
     # Mount the disk image.
+    loopdev=$(loopback_partscan "${image}")
     rootfs=$(make_temp_dir)
-    mount_image_partition_ro "$image" 3 "$rootfs"
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   fi
   local lsb="$rootfs/$LSB_FILE"
 

@@ -22,8 +22,9 @@ main() {
 
     local image="$1"
 
+    local loopdev=$(loopback_partscan "${image}")
     local rootfs=$(make_temp_dir)
-    mount_image_partition_ro "$image" 3 "$rootfs"
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
 
     # This mirrors the check performed in the platform_ToolchainOptions
     # autotest.

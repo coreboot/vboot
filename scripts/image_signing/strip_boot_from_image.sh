@@ -41,7 +41,8 @@ strip_boot() {
     tag_as_needs_to_be_resigned "${rootfs_dir}"
   else
     # Mount image so we can modify it.
-    mount_image_partition ${image} 3 ${rootfs_dir}
+    local loopdev=$(loopback_partscan "${image}")
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
   fi
 
   sudo rm -rf "${rootfs_dir}/boot" &&

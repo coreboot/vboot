@@ -46,13 +46,14 @@ EOF
 
   local image=$1
   shift
+  local loopdev=$(loopback_partscan "${image}")
   local rootfs=$(make_temp_dir)
 
   # If there are no key/value pairs to process, we don't need write access.
   if [[ $# -eq 0 ]]; then
-    mount_image_partition_ro "${image}" 3 "${rootfs}"
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   else
-    mount_image_partition "${image}" 3 "${rootfs}"
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
     touch "${image}"  # Updates the image modification time.
   fi
 

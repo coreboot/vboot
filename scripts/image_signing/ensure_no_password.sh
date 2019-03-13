@@ -18,12 +18,13 @@ main() {
 
   local image="$1"
 
-  local rootfs
+  local loopdev rootfs
   if [[ -d "${image}" ]]; then
     rootfs="${image}"
   else
     rootfs=$(make_temp_dir)
-    mount_image_partition_ro "${image}" 3 "${rootfs}"
+    loopdev=$(loopback_partscan "${image}")
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   fi
 
   if ! no_chronos_password "${rootfs}"; then

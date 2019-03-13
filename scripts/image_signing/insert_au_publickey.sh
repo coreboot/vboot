@@ -21,9 +21,10 @@ Installs the update verification public key <au_public_key.pem> to <image.bin>.
 EOF
     exit 1
   fi
+  local loopdev=$(loopback_partscan "${image}")
   local rootfs=$(make_temp_dir)
   local key_location="/usr/share/update_engine/"
-  mount_image_partition "$image" 3 "$rootfs"
+  mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
   sudo mkdir -p "$rootfs/$key_location"
   sudo cp "$pub_key" "$rootfs/$key_location/update-payload-key.pub.pem"
   sudo chown root:root "$rootfs/$key_location/update-payload-key.pub.pem"

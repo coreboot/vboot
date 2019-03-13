@@ -194,26 +194,26 @@ if [[ -z "${IMAGE}" || ! -f "${IMAGE}" ]]; then
 fi
 
 # First round, mount as read-only and check if we need any modifications.
+loopdev=$(loopback_partscan "${IMAGE}")
 rootfs=$(make_temp_dir)
-mount_image_partition_ro "${IMAGE}" 3 "${rootfs}"
+mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
 
 # we don't have tags in stateful partition yet...
 # stateful_dir=$(make_temp_dir)
-# mount_image_partition ${IMAGE} 1 ${stateful_dir}
+# mount_loop_image_partition "${loopdev}" 1 "${stateful_dir}"
 
 process_all_tags "${rootfs}" ${FLAGS_FALSE}
 process_all_lsb_mods "${rootfs}" ${FLAGS_FALSE}
 
 if [ ${g_modified} = ${FLAGS_TRUE} ]; then
-  # remount as RW (we can't use mount -o rw,remount because of loop device)
-  sudo umount "${rootfs}"
-  mount_image_partition "${IMAGE}" 3 "${rootfs}"
+  # Remount as RW.
+  sudo mount -o rw,remount "${rootfs}"
 
   # second round, apply the modification to image.
   process_all_tags "${rootfs}" ${FLAGS_TRUE}
   process_all_lsb_mods "${rootfs}" ${FLAGS_TRUE}
 
-  # this is supposed to be automatically done in mount_image_partition,
+  # This is supposed to be automatically done in mount_loop_image_partition,
   # but it's no harm to explicitly make it again here.
   tag_as_needs_to_be_resigned "${rootfs}"
   echo "IMAGE IS MODIFIED. PLEASE REMEMBER TO RESIGN YOUR IMAGE."

@@ -23,9 +23,10 @@ main() {
   fi
 
   local image=$1
+  local loopdev=$(loopback_partscan "${image}")
   local rootfs=$(make_temp_dir)
   local key_location="/usr/share/update_engine/update-payload-key.pub.pem"
-  mount_image_partition_ro "$image" 3 "$rootfs"
+  mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   if [ ! -e "$rootfs/$key_location" ]; then
     die "Update payload verification key not found at $key_location"
   fi

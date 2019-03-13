@@ -34,17 +34,19 @@ main() {
     exit 1
   fi
 
+  local loopdev=$(loopback_partscan "${image}")
   local rootfs=$(make_temp_dir)
   if [ $# -eq 2 ]; then
-    mount_image_partition_ro "$image" 3 "$rootfs"
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
     if ! no_chronos_password "$rootfs"; then
       echo "Password is already set [use --force if you'd like to update it]"
       exit 1
     fi
     # Prepare for remounting read/write.
-    sudo umount $rootfs
+    sudo mount -o remount,rw "${rootfs}"
+  else
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
   fi
-  mount_image_partition "$image" 3 "$rootfs"
   change_chronos_password "$rootfs" "$chronos_password"
   touch "$image"  # Updates the image modification time.
   echo "Password Set."

@@ -13,6 +13,7 @@
 set -e
 image=$1
 
+loopdev=$(loopback_partscan "${image}")
 rootfs=$(make_temp_dir)
-mount_image_partition ${image} 3 ${rootfs}
+mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
 sed -i 's/test//' "${rootfs}/etc/lsb-release"
