@@ -42,11 +42,12 @@ main() {
       echo "Password is already set [use --force if you'd like to update it]"
       exit 1
     fi
-    # Prepare for remounting read/write.
-    sudo mount -o remount,rw "${rootfs}"
-  else
-    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+    # Prepare for remounting read/write.  We can't use `mount -o rw,remount`
+    # because of the bits in the ext4 header we've set to block that.  See
+    # enable_rw_mount for details.
+    sudo umount "${rootfs}"
   fi
+  mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
   change_chronos_password "$rootfs" "$chronos_password"
   touch "$image"  # Updates the image modification time.
   echo "Password Set."

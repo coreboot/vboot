@@ -206,8 +206,10 @@ process_all_tags "${rootfs}" ${FLAGS_FALSE}
 process_all_lsb_mods "${rootfs}" ${FLAGS_FALSE}
 
 if [ ${g_modified} = ${FLAGS_TRUE} ]; then
-  # Remount as RW.
-  sudo mount -o rw,remount "${rootfs}"
+  # Remount as RW.  We can't use `mount -o rw,remount` because of the bits in
+  # the ext4 header we've set to block that.  See enable_rw_mount for details.
+  sudo umount "${rootfs}"
+  mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
 
   # second round, apply the modification to image.
   process_all_tags "${rootfs}" ${FLAGS_TRUE}
