@@ -227,6 +227,11 @@ VbError_t vb2_altfw_ui(struct vb2_context *ctx)
 	return 0;
 }
 
+static inline int is_vowel(uint32_t key) {
+	return key == 'A' || key == 'E' || key == 'I' ||
+	       key == 'O' || key == 'U';
+}
+
 /*
  * Prompt the user to enter the vendor data
  */
@@ -262,13 +267,14 @@ VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx, char *data_value)
 			key = toupper(key);
 		case '0'...'9':
 		case 'A'...'Z':
-			if (len < VENDOR_DATA_LENGTH) {
+			if ((len > 0 && is_vowel(key)) ||
+			     len >= VENDOR_DATA_LENGTH) {
+				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
+			} else {
 				data_value[len++] = key;
 				data_value[len] = '\0';
 				VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA,
 						1, &data);
-			} else {
-				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 			}
 
 			VB2_DEBUG("Vendor Data UI - vendor_data: %s\n",

@@ -763,6 +763,26 @@ static void VbBootDevTest(void)
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
 
+	/* Ctrl+S vowels not allowed after first char */
+	ResetMocks();
+	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[1] = 'A';
+	mock_keypress[2] = 'A';
+	mock_keypress[3] = 'B';
+	mock_keypress[4] = 'E';
+	mock_keypress[5] = 'i';
+	mock_keypress[6] = 'C';
+	mock_keypress[7] = 'O';
+	mock_keypress[8] = 'u';
+	mock_keypress[9] = 'D';
+	mock_keypress[10] = VB_KEY_ENTER; // Set vendor data
+	mock_keypress[11] = VB_KEY_ENTER; // Confirm vendor data
+	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
+		"Ctrl+S vowels not allowed after first char");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "ABCD", "  Vendor data correct");
+
 	/* Ctrl+S too short */
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
