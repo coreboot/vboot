@@ -258,10 +258,6 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 	if (flags & VB2_SECDATA_FLAG_DEV_MODE)
 		is_dev = 1;
 
-	/* Handle forcing dev mode via physical switch */
-	if (ctx->flags & VB2_CONTEXT_FORCE_DEVELOPER_MODE)
-		is_dev = 1;
-
 	/* Check if GBB is forcing dev mode */
 	if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
 		is_dev = 1;

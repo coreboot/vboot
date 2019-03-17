@@ -377,16 +377,6 @@ static void dev_switch_tests(void)
 		"  doesn't set dev on in secdata but does set last boot dev");
 	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
 
-	/* Force enabled by ctx flag */
-	reset_common_data();
-	cc.flags |= VB2_CONTEXT_FORCE_DEVELOPER_MODE;
-	TEST_SUCC(vb2_check_dev_switch(&cc), "dev on via ctx flag");
-	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
-	vb2_secdata_get(&cc, VB2_SECDATA_FLAGS, &v);
-	TEST_EQ(v, VB2_SECDATA_FLAG_LAST_BOOT_DEVELOPER,
-		"  doesn't set dev on in secdata but does set last boot dev");
-	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
-
 	/* Request disable by ctx flag */
 	reset_common_data();
 	vb2_secdata_set(&cc, VB2_SECDATA_FLAGS,
@@ -449,16 +439,6 @@ static void dev_switch_tests(void)
 	sd->status &= ~VB2_SD_STATUS_SECDATA_INIT;
 	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	TEST_SUCC(vb2_check_dev_switch(&cc), "secdata fail recovery gbb");
-	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx in dev");
-	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
-
-	/* Can still override with context flag */
-	reset_common_data();
-	cc.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	cc.flags |= VB2_CONTEXT_FORCE_DEVELOPER_MODE;
-	sd->status &= ~VB2_SD_STATUS_SECDATA_INIT;
-	TEST_SUCC(vb2_check_dev_switch(&cc), "secdata fail recovery ctx");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
 	TEST_NEQ(cc.flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx in dev");
 	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");

@@ -78,6 +78,8 @@ enum vb2_context_flags {
 	/*
 	 * Force developer mode enabled.  Caller may set this flag when
 	 * initializing the context.
+	 *
+	 * Deprecated as part of chromium:942901.
 	 */
 	VB2_CONTEXT_FORCE_DEVELOPER_MODE = (1 << 5),
 
