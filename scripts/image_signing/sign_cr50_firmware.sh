@@ -109,8 +109,8 @@ sign_rw() {
   local rma_key_dir="$4"
   local elfs=( "$5" "$6" )
   local result_file="$7"
-
   local temp_dir="$(make_temp_dir)"
+  local rma_key_base
 
   if [[ ! -f "${result_file}" ]]; then
     die "${result_file} not found."
@@ -118,19 +118,19 @@ sign_rw() {
 
   # If signing a chip factory image (version 0.0.22) do not try figuring out the
   # RMA keys.
-  local cr50_verson="$(jq '.epoch * 10000 + .major * 100 + .minor' \
-     "${manifest_file}")
+  local cr50_version="$(jq '.epoch * 10000 + .major * 100 + .minor' \
+     "${manifest_file}")"
 
-  if [[ "${cr50_verson}" != "22" ]]; then
+  if [[ "${cr50_version}" != "22" ]]; then
     rma_key_base="$(determine_rma_key_base "${rma_key_dir}" "${elfs[@]}")"
   else
-    echo "Ignoring RMA keys for factory branch ${cr50_verson}"
+    echo "Ignoring RMA keys for factory branch ${cr50_version}"
   fi
 
   local signer_command_params=(--b -x "${fuses_file}" --key "${key_file}")
 
   # Swap test public RMA server key with the prod version.
-  if [[ "${ignore_rma_keys}" != "yes" ]]; then
+  if [[ -n "${rma_key_base}" ]]; then
     signer_command_params+=(
       --swap "${rma_key_base}.test","${rma_key_base}.prod"
     )
@@ -159,7 +159,7 @@ sign_rw() {
         "-i ${elf} -o ${signed_file} failed"
     fi
 
-    if [[ "${ignore_rma_keys}" != "yes" ]]; then
+    if [[ -n "${rma_key_base}" ]]; then
       if find_blob_in_blob  "${signed_file}" "${rma_key_base}.test"; then
         die "test RMA key in the signed image!"
       fi
@@ -221,7 +221,7 @@ sign_cr50_firmware() {
   fi
 
   local key_file="$1"
-  local manifest_file="$2"
+  local manifest_source="$2"
   local fuses_file="$3"
   local rma_key_dir="$4"
   local ro_a_hex="$5"
@@ -229,12 +229,19 @@ sign_cr50_firmware() {
   local rw_a="$7"
   local rw_b="$8"
   local output_file="$9"
-
   local temp_dir="$(make_temp_dir)"
+  local manifest_file
 
   # The H1 chip where Cr50 firmware runs has 512K of flash, the generated
   # image must match the flash size.
   IMAGE_SIZE="$(( 512 * 1024 ))"
+
+  # Sanitize manifest released by the builder.
+  manifest_file="${temp_dir}/$(basename "${manifest_source}")"
+  if ! cr50-codesigner --convert-json --input "${manifest_source}" \
+       --output "${manifest_file}"; then
+    die "failed to convert ${manifest_source} into valid json"
+  fi
 
   dd if=/dev/zero bs="${IMAGE_SIZE}" count=1 status=none |
     tr '\000' '\377' > "${output_file}"
