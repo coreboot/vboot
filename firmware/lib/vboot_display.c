@@ -412,7 +412,8 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 #define MAGIC_WORD "xyzzy"
 static uint8_t MagicBuffer[MAGIC_WORD_LEN];
 
-VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key)
+VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
+			    const VbScreenData *data)
 {
 	int i;
 
@@ -457,7 +458,7 @@ VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key)
 #endif
 
 		/* Force redraw of current screen */
-		return VbDisplayScreen(ctx, disp_current_screen, 1, NULL);
+		return VbDisplayScreen(ctx, disp_current_screen, 1, data);
 	}
 
 	if (0 == memcmp(MagicBuffer, MAGIC_WORD, MAGIC_WORD_LEN)) {

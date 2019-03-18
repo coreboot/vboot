@@ -159,7 +159,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 					return 1;
 				}
 			}
-			VbCheckDisplayKey(ctx, key);
+			VbCheckDisplayKey(ctx, key, NULL);
 		}
 		VbExSleepMs(CONFIRM_KEY_DELAY);
 	}
@@ -215,7 +215,7 @@ VbError_t vb2_altfw_ui(struct vb2_context *ctx)
 			break;
 		default:
 			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
-			VbCheckDisplayKey(ctx, key);
+			VbCheckDisplayKey(ctx, key, NULL);
 			break;
 		}
 		VbExSleepMs(DEV_KEY_DELAY);
@@ -296,6 +296,7 @@ VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx, char *data_value)
 			break;
 		default:
 			VB2_DEBUG("Vendor Data UI - pressed key %d\n", key);
+			VbCheckDisplayKey(ctx, key, &data);
 			break;
 		}
 		VbExSleepMs(DEV_KEY_DELAY);
@@ -362,6 +363,7 @@ VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
 			}
 		default:
 			VB2_DEBUG("Vendor Data UI - pressed key %d\n", key);
+			VbCheckDisplayKey(ctx, key, &data);
 			break;
 		}
 		VbExSleepMs(DEV_KEY_DELAY);
@@ -444,7 +446,7 @@ VbError_t vb2_diagnostics_ui(struct vb2_context *ctx)
 		default:
 			VB2_DEBUG("vb2_diagnostics_ui() - pressed key %d\n",
 				  key);
-			VbCheckDisplayKey(ctx, key);
+			VbCheckDisplayKey(ctx, key, NULL);
 			break;
 		}
 		if (VbExGetTimer() - start_time_us >= 30 * VB_USEC_PER_SEC) {
@@ -738,7 +740,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		default:
 			VB2_DEBUG("VbBootDeveloper() - pressed key %d\n", key);
-			VbCheckDisplayKey(ctx, key);
+			VbCheckDisplayKey(ctx, key, NULL);
 			break;
 		}
 
@@ -822,7 +824,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 		VB2_DEBUG("VbBootRecovery() waiting for manual recovery\n");
 		while (1) {
 			key = VbExKeyboardRead();
-			VbCheckDisplayKey(ctx, key);
+			VbCheckDisplayKey(ctx, key, NULL);
 			if (VbWantShutdown(ctx, key))
 				return VBERROR_SHUTDOWN_REQUESTED;
 			VbExSleepMs(REC_KEY_DELAY);
@@ -925,7 +927,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 				vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 				return VBERROR_REBOOT_REQUIRED;
 			} else {
-				VbCheckDisplayKey(ctx, key);
+				VbCheckDisplayKey(ctx, key, NULL);
 			}
 			if (VbWantShutdown(ctx, key))
 				return VBERROR_SHUTDOWN_REQUESTED;

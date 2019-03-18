@@ -146,28 +146,28 @@ static void DebugInfoTest(void)
 static void DisplayKeyTest(void)
 {
 	ResetMocks();
-	VbCheckDisplayKey(&ctx, 'q');
+	VbCheckDisplayKey(&ctx, 'q', NULL);
 	TEST_EQ(*debug_info, '\0', "DisplayKey q = does nothing");
 
 	ResetMocks();
-	VbCheckDisplayKey(&ctx, '\t');
+	VbCheckDisplayKey(&ctx, '\t', NULL);
 	TEST_NEQ(*debug_info, '\0', "DisplayKey tab = display");
 
 	/* Toggle localization */
 	ResetMocks();
 	vb2_nv_set(&ctx, VB2_NV_LOCALIZATION_INDEX, 0);
-	VbCheckDisplayKey(&ctx, VB_KEY_DOWN);
+	VbCheckDisplayKey(&ctx, VB_KEY_DOWN, NULL);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX), 2,
 		"DisplayKey up");
-	VbCheckDisplayKey(&ctx, VB_KEY_LEFT);
+	VbCheckDisplayKey(&ctx, VB_KEY_LEFT, NULL);
 	vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX), 1,
 		"DisplayKey left");
-	VbCheckDisplayKey(&ctx, VB_KEY_RIGHT);
+	VbCheckDisplayKey(&ctx, VB_KEY_RIGHT, NULL);
 	vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX), 2,
 		"DisplayKey right");
-	VbCheckDisplayKey(&ctx, VB_KEY_UP);
+	VbCheckDisplayKey(&ctx, VB_KEY_UP, NULL);
 	vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX), 0,
 		"DisplayKey up");
@@ -176,7 +176,7 @@ static void DisplayKeyTest(void)
 	ResetMocks();
 	vb2_nv_set(&ctx, VB2_NV_LOCALIZATION_INDEX, 1);
 	mock_localization_count = 0xffffffff;
-	VbCheckDisplayKey(&ctx, VB_KEY_UP);
+	VbCheckDisplayKey(&ctx, VB_KEY_UP, NULL);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_LOCALIZATION_INDEX), 0,
 		"DisplayKey invalid");
 }
