@@ -77,11 +77,12 @@ enum vb2_context_flags {
 
 	/*
 	 * Force developer mode enabled.  Caller may set this flag when
-	 * initializing the context.
+	 * initializing the context.  Previously used for forcing developer
+	 * mode with physical dev switch.
 	 *
 	 * Deprecated as part of chromium:942901.
 	 */
-	VB2_CONTEXT_FORCE_DEVELOPER_MODE = (1 << 5),
+	VB2_CONTEXT_DEPRECATED_FORCE_DEVELOPER_MODE = (1 << 5),
 
 	/* Using firmware slot B.  If this flag is clear, using slot A. */
 	VB2_CONTEXT_FW_SLOT_B = (1 << 6),
