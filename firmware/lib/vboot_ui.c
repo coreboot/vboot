@@ -601,8 +601,7 @@ VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("shared->flags=0x%x\n", shared->flags);
-			if (shared->flags & VBSD_HONOR_VIRT_DEV_SWITCH &&
-			    shared->flags & VBSD_BOOT_DEV_SWITCH_ON) {
+			if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON) {
 				/* Stop the countdown while we go ask... */
 				if (sd->gbb_flags &
 				    GBB_FLAG_FORCE_DEV_SWITCH_ON) {
@@ -875,7 +874,6 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 			 *   - user forced recovery mode
 			 */
 			if (key == VB_KEY_CTRL('D') &&
-			    shared->flags & VBSD_HONOR_VIRT_DEV_SWITCH &&
 			    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
 			    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {
 				if (!(shared->flags &

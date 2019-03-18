@@ -440,7 +440,7 @@ static void VbBootDevTest(void)
 
 	/* Space asks to disable virtual dev switch */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = VB_KEY_ENTER;
 	TEST_EQ(VbBootDeveloper(&ctx), VBERROR_REBOOT_REQUIRED,
@@ -456,7 +456,7 @@ static void VbBootDevTest(void)
 
 	/* Space-space doesn't disable it */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = ' ';
 	mock_keypress[2] = VB_KEY_ESC;
@@ -470,14 +470,14 @@ static void VbBootDevTest(void)
 
 	/* Enter doesn't by default */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = VB_KEY_ENTER;
 	mock_keypress[1] = VB_KEY_ENTER;
 	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Enter ignored");
 
 	/* Enter does if GBB flag set */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	sd->gbb_flags |= VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM;
 	mock_keypress[0] = VB_KEY_ENTER;
 	mock_keypress[1] = VB_KEY_ENTER;
@@ -486,7 +486,7 @@ static void VbBootDevTest(void)
 
 	/* Tonorm ignored if GBB forces dev switch on */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = VB_KEY_ENTER;
@@ -495,7 +495,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested at tonorm screen */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	shutdown_request_calls_left = 2;
 	TEST_EQ(VbBootDeveloper(&ctx),
@@ -508,7 +508,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested by keyboard at tonorm screen */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloper(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
@@ -858,7 +858,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested when dev disabled */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_DISABLE_BOOT;
 	shutdown_request_calls_left = 1;
 	TEST_EQ(VbBootDeveloper(&ctx),
@@ -869,7 +869,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested by keyboard when dev disabled */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_DISABLE_BOOT;
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloper(&ctx),
@@ -1001,7 +1001,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D ignored for many reasons... */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_REC_SWITCH_ON;
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
 	shutdown_request_calls_left = 100;
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	trust_ec = 0;
@@ -1013,8 +1013,7 @@ static void VbBootRecTest(void)
 		 "  todev screen");
 
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_REC_SWITCH_ON |
-		VBSD_BOOT_DEV_SWITCH_ON;
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON | VBSD_BOOT_DEV_SWITCH_ON;
 	trust_ec = 1;
 	shutdown_request_calls_left = 100;
 	mock_keypress[0] = VB_KEY_CTRL('D');
@@ -1026,25 +1025,12 @@ static void VbBootRecTest(void)
 		 "  todev screen");
 
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH;
 	trust_ec = 1;
 	shutdown_request_calls_left = 100;
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Ctrl+D ignored if recovery not manually triggered");
-	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
-	TEST_NEQ(screens_displayed[1], VB_SCREEN_RECOVERY_TO_DEV,
-		 "  todev screen");
-
-	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
-	trust_ec = 1;
-	shutdown_request_calls_left = 100;
-	mock_keypress[0] = VB_KEY_CTRL('D');
-	TEST_EQ(VbBootRecovery(&ctx),
-		VBERROR_SHUTDOWN_REQUESTED,
-		"Ctrl+D ignored if no virtual dev switch");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
 	TEST_NEQ(screens_displayed[1], VB_SCREEN_RECOVERY_TO_DEV,
 		 "  todev screen");
@@ -1066,7 +1052,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D then space means don't enable */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_REC_SWITCH_ON;
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
 	shutdown_request_calls_left = 100;
 	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	trust_ec = 1;
@@ -1085,7 +1071,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D then enter means enable */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_REC_SWITCH_ON;
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
 	shutdown_request_calls_left = 100;
 	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	trust_ec = 1;
@@ -1098,7 +1084,7 @@ static void VbBootRecTest(void)
 
 	/* Handle TPM error in enabling dev mode */
 	ResetMocks();
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH | VBSD_BOOT_REC_SWITCH_ON;
+	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
 	shutdown_request_calls_left = 100;
 	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	trust_ec = 1;

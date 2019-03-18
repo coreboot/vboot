@@ -356,8 +356,7 @@ static VbError_t to_dev_action(struct vb2_context *ctx)
 	uint32_t vbsd_flags = vb2_get_sd(ctx)->vbsd->flags;
 
 	/* Sanity check, should never happen. */
-	if (!(vbsd_flags & VBSD_HONOR_VIRT_DEV_SWITCH) ||
-	    (vbsd_flags & VBSD_BOOT_DEV_SWITCH_ON) ||
+	if ((vbsd_flags & VBSD_BOOT_DEV_SWITCH_ON) ||
 	    !vb2_allow_recovery(ctx))
 		return VBERROR_KEEP_LOOPING;
 

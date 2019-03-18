@@ -69,8 +69,7 @@ static void ResetMocks(void)
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
-	shared->flags = VBSD_HONOR_VIRT_DEV_SWITCH |
-			VBSD_BOOT_FIRMWARE_VBOOT2;
+	shared->flags = VBSD_BOOT_FIRMWARE_VBOOT2;
 
 	memset(&lkp, 0, sizeof(lkp));
 
