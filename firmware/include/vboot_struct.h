@@ -229,7 +229,7 @@ typedef struct VbKernelPreambleHeader {
 #define VBSD_BOOT_RO_NORMAL_SUPPORT      0x00000200
 /* VbInit() was told that the system has a virtual dev-switch;
  * Deprecated as part of chromium:942901. */
-#define VBSD_HONOR_VIRT_DEV_SWITCH       0x00000400
+#define VBSD_DEPRECATED_HONOR_VIRT_DEV_SWITCH 0x00000400
 /* VbInit() was told the system supports EC software sync */
 #define VBSD_EC_SOFTWARE_SYNC            0x00000800
 /* VbInit() was told that the EC firmware is slow to update */
