@@ -551,29 +551,6 @@ HOSTLIB_SRCS = \
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${HOSTLIB_OBJS}
 
-# Sigh. For historical reasons, the autoupdate installer must sometimes be a
-# 32-bit executable, even when everything else is 64-bit. But it only needs a
-# few functions, so let's just build those.
-TINYHOSTLIB = ${BUILD}/libtinyvboot_host.a
-
-TINYHOSTLIB_SRCS = \
-	cgpt/cgpt_add.c \
-	cgpt/cgpt_boot.c \
-	cgpt/cgpt_common.c \
-	cgpt/cgpt_create.c \
-	cgpt/cgpt_prioritize.c \
-	firmware/2lib/2crc8.c \
-	firmware/lib/cgptlib/cgptlib_internal.c \
-	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/gpt_misc.c \
-	firmware/lib/utility_string.c \
-	firmware/stub/vboot_api_stub.c \
-	firmware/stub/vboot_api_stub_disk.c \
-	futility/dump_kernel_config_lib.c \
-	host/lib/extract_vmlinuz.c
-
-TINYHOSTLIB_OBJS = ${TINYHOSTLIB_SRCS:%.c=${BUILD}/%.o}
-
 # ----------------------------------------------------------------------------
 # Now for the userspace binaries
 
@@ -1042,18 +1019,6 @@ hostlib: ${HOSTLIB} \
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${HOSTLIB}: ${HOSTLIB_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-
-# Ugh. This is a very cut-down version of HOSTLIB just for the installer.
-.PHONY: tinyhostlib
-tinyhostlib: ${TINYHOSTLIB}
-	${Q}cp -f ${TINYHOSTLIB} ${HOSTLIB}
-
-${TINYHOSTLIB}: ${TINYHOSTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
