@@ -670,7 +670,8 @@ int UTF8ToUTF16(const uint8_t *utf8, uint16_t *utf16, unsigned int maxoutput)
 const Guid guid_chromeos_firmware = GPT_ENT_TYPE_CHROMEOS_FIRMWARE;
 const Guid guid_chromeos_kernel =   GPT_ENT_TYPE_CHROMEOS_KERNEL;
 const Guid guid_chromeos_rootfs =   GPT_ENT_TYPE_CHROMEOS_ROOTFS;
-const Guid guid_linux_data =        GPT_ENT_TYPE_LINUX_DATA;
+const Guid guid_basic_data =        GPT_ENT_TYPE_BASIC_DATA;
+const Guid guid_linux_data =        GPT_ENT_TYPE_LINUX_FS;
 const Guid guid_chromeos_reserved = GPT_ENT_TYPE_CHROMEOS_RESERVED;
 const Guid guid_efi =               GPT_ENT_TYPE_EFI;
 const Guid guid_unused =            GPT_ENT_TYPE_UNUSED;
@@ -684,6 +685,7 @@ const static struct {
   {&guid_chromeos_kernel, "kernel", "ChromeOS kernel"},
   {&guid_chromeos_rootfs, "rootfs", "ChromeOS rootfs"},
   {&guid_linux_data, "data", "Linux data"},
+  {&guid_basic_data, "basicdata", "Basic data"},
   {&guid_chromeos_reserved, "reserved", "ChromeOS reserved"},
   {&guid_efi, "efi", "EFI System Partition"},
   {&guid_unused, "unused", "Unused (nonexistent) partition"},

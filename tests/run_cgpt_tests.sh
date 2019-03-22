@@ -41,7 +41,7 @@ dd if=/dev/zero of=${DEV} conv=notrunc bs=512 count=${NUM_SECTORS} 2>/dev/null
 DATA_START=100
 DATA_SIZE=20
 DATA_LABEL="data stuff"
-DATA_GUID='ebd0a0a2-b9e5-4433-87c0-68b6b72699c7'
+DATA_GUID='0fc63daf-8483-4772-8e79-3d69d8477de4'
 DATA_NUM=1
 
 KERN_START=200
