@@ -43,7 +43,14 @@ verify_cr50_manifest() {
   local bid_flags
 
   major="$(jq '.major' "${manifest_json}")"
+  if [[ ${major} == null ]]; then
+    die "Major version number not found in ${manifest_json}"
+  fi
+
   bid_flags="$(jq '.board_id_flags' "${manifest_json}")"
+  if [[ ${bid_flags} == null ]]; then
+    die "bid_flags not found in ${manifest_json}"
+  fi
 
   if (( major & 1 )); then
     if (( bid_flags & MP_BID_FLAG )); then
