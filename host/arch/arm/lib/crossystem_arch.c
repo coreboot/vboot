@@ -188,68 +188,6 @@ static int VbGetPlatformGpioStatus(const char* name)
 	return (int)value;
 }
 
-static int VbGetGpioStatus(unsigned gpio_number)
-{
-	char gpio_name[FNAME_SIZE];
-	unsigned value;
-
-	snprintf(gpio_name, sizeof(gpio_name), "%s/gpio%d/value",
-		 GPIO_BASE_PATH, gpio_number);
-	if (ReadFileInt(gpio_name, &value) < 0) {
-		/* Try exporting the GPIO */
-		FILE* f = fopen(GPIO_EXPORT_PATH, "wt");
-		if (!f)
-			return -1;
-		fprintf(f, "%d", gpio_number);
-		fclose(f);
-
-		/* Try re-reading the GPIO value */
-		if (ReadFileInt(gpio_name, &value) < 0)
-			return -1;
-	}
-
-	return (int)value;
-}
-
-static int VbGetVarGpio(const char* name)
-{
-	int gpio_num;
-	void *pp = NULL;
-	int *prop;
-	size_t proplen = 0;
-	int ret = 0;
-
-	/* TODO: This should at some point in the future use the phandle
-	 * to find the gpio chip and thus the base number. Assume 0 now,
-	 * which isn't 100% future-proof (i.e. if one of the switches gets
-	 * moved to an offchip gpio controller.
-	 */
-
-	ret = ReadFdtBlock(name, &pp, &proplen);
-	if (ret || !pp || proplen != 12) {
-		ret = 2;
-		goto out;
-	}
-	prop = pp;
-	gpio_num = ntohl(prop[1]);
-
-	/*
-	 * TODO(chrome-os-partner:11296): Use gpio_num == 0 to denote non-exist
-	 * GPIO for now, at the risk that one day we might actually want to
-	 * read from a GPIO port 0.  We should figure out how to represent
-	 * "non-exist" properly.
-	 */
-	if (gpio_num)
-		ret = VbGetGpioStatus(gpio_num);
-	else
-		ret = -1;
-out:
-	if (pp)
-		free(pp);
-
-	return ret;
-}
-
 #ifndef HAVE_MACOS
 static int gpioline_read_value(int chip_fd, int idx, bool active_low)
 {
@@ -549,11 +487,7 @@ int VbGetArchPropertyInt(const char* name)
 		if (value != -1)
 			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
-		value = VbGetPlatformGpioStatus("recovery");
-		if (value != -1)
-			return value;
-
-		return VbGetVarGpio("recovery-switch");
+		return VbGetPlatformGpioStatus("recovery");
 	} else if (!strcasecmp(name, "wpsw_cur")) {
 		int value;
 		/* Try GPIO chardev API first. */
@@ -561,10 +495,7 @@ int VbGetArchPropertyInt(const char* name)
 		if (value != -1)
 			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
-		value = VbGetPlatformGpioStatus("write-protect");
-		if (value != -1)
-			return value;
-		return VbGetVarGpio("write-protect-switch");
+		return VbGetPlatformGpioStatus("write-protect");
 	} else if (!strcasecmp(name, "recoverysw_ec_boot")) {
 		/* TODO: read correct value using ectool */
 		return 0;
