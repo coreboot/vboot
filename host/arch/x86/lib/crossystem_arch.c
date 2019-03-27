@@ -64,7 +64,7 @@
 #define CMOSRF_TRY_B           0x20
 /* GPIO signal types */
 #define GPIO_SIGNAL_TYPE_RECOVERY 1
-#define GPIO_SIGNAL_TYPE_DEV 2
+#define GPIO_SIGNAL_TYPE_DEPRECATED_DEV 2  /* Deprecated; see chromium:942901 */
 #define GPIO_SIGNAL_TYPE_WP 3
 #define GPIO_SIGNAL_TYPE_PHASE_ENFORCEMENT 4
 
