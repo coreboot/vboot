@@ -313,6 +313,8 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	if (op != FLASHROM_WP_STATUS) {
 		r = system(command);
 		free(command);
+		if (r)
+			ERROR("Error code: %d", r);
 		return r;
 	}
 
