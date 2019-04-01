@@ -27,9 +27,8 @@
 #include "vboot_struct.h"
 
 /* Mock data */
-static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
-static struct vb2_shared_data *sd;
+static struct vb2_context ctx_nvram_backend;
 static VbCommonParams cparams;
 static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -68,14 +67,18 @@ static void ResetMocks(void)
 	gbb->rootkey_offset = sizeof(*gbb);
 	gbb->rootkey_size = sizeof(VbPublicKey);
 
+	/* ctx.workbuf will be allocated and initialized by
+	 * VbVerifyMemoryBootImage. */
 	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_init_context(&ctx);
-	vb2_nv_init(&ctx);
 
-	sd = vb2_get_sd(&ctx);
-	sd->vbsd = shared;
+	/*
+	 * ctx_nvram_backend is only used as an NVRAM backend (see
+	 * VbExNvStorageRead and VbExNvStorageWrite), and with
+	 * vb2_set_nvdata and nv2_get_nvdata to manually read and tweak
+	 * contents.  No other initialization is needed.
+	 */
+	memset(&ctx_nvram_backend, 0, sizeof(ctx_nvram_backend));
+	vb2_nv_init(&ctx_nvram_backend);
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
@@ -174,7 +177,8 @@ int vb2_verify_data(const uint8_t *data,
 
 VbError_t VbExNvStorageRead(uint8_t *buf)
 {
-	memcpy(buf, ctx.nvdata, vb2_nv_get_size(&ctx));
+	memcpy(buf, ctx_nvram_backend.nvdata,
+	       vb2_nv_get_size(&ctx_nvram_backend));
 	return VBERROR_SUCCESS;
 }
 
@@ -238,7 +242,7 @@ static void VerifyMemoryBootImageTest(void)
 	ResetMocks();
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	key_block_verify_fail = 1;
-	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, 1);
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, 1);
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, &cparams, &kparams, kernel_buffer,
 					kernel_buffer_size),
 		VBERROR_INVALID_KERNEL_FOUND, "Key verify failed");

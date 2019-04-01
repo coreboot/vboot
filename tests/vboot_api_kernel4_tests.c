@@ -25,9 +25,8 @@
 #include "vboot_struct.h"
 
 /* Mock data */
-static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
-static struct vb2_shared_data *sd;
+static struct vb2_context ctx_nvram_backend;
 static VbCommonParams cparams;
 static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -60,15 +59,20 @@ static void ResetMocks(void)
 	gbb.minor_version = GBB_MINOR_VER;
 	gbb.flags = 0;
 
+	/* ctx.workbuf will be allocated and initialized by
+	 * VbSelectAndLoadKernel. */
 	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_init_context(&ctx);
-	vb2_nv_init(&ctx);
-	vb2_nv_set(&ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0xffffffff);
 
-	sd = vb2_get_sd(&ctx);
-	sd->vbsd = shared;
+	/*
+	 * ctx_nvram_backend is only used as an NVRAM backend (see
+	 * VbExNvStorageRead and VbExNvStorageWrite), and with
+	 * vb2_set_nvdata and nv2_get_nvdata to manually read and tweak
+	 * contents.  No other initialization is needed.
+	 */
+	memset(&ctx_nvram_backend, 0, sizeof(ctx_nvram_backend));
+	vb2_nv_init(&ctx_nvram_backend);
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD,
+		   0xffffffff);
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
@@ -89,13 +93,15 @@ static void ResetMocks(void)
 
 VbError_t VbExNvStorageRead(uint8_t *buf)
 {
-	memcpy(buf, ctx.nvdata, vb2_nv_get_size(&ctx));
+	memcpy(buf, ctx_nvram_backend.nvdata,
+	       vb2_nv_get_size(&ctx_nvram_backend));
 	return VBERROR_SUCCESS;
 }
 
 VbError_t VbExNvStorageWrite(const uint8_t *buf)
 {
-	memcpy(ctx.nvdata, buf, vb2_nv_get_size(&ctx));
+	memcpy(ctx_nvram_backend.nvdata, buf,
+	       vb2_nv_get_size(&ctx_nvram_backend));
 	return VBERROR_SUCCESS;
 }
 
@@ -163,7 +169,7 @@ VbError_t VbBootDiagnostic(struct vb2_context *ctx)
 static void test_slk(VbError_t retval, int recovery_reason, const char *desc)
 {
 	TEST_EQ(VbSelectAndLoadKernel(&ctx, &cparams, &kparams), retval, desc);
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }
 
@@ -222,20 +228,20 @@ static void VbSlkTest(void)
 	TEST_EQ(rkr_version, 0x10002, "  version");
 
 	ResetMocks();
-	vb2_nv_set(&ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
 	new_version = 0x40006;
 	test_slk(0, 0, "Limit max roll forward");
 	TEST_EQ(rkr_version, 0x30005, "  version");
 
 	ResetMocks();
-	vb2_nv_set(&ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
 	new_version = 0x40006;
 	test_slk(0, 0, "Max roll forward can't rollback");
 	TEST_EQ(rkr_version, 0x10002, "  version");
 
 	ResetMocks();
 	vbboot_retval = VBERROR_INVALID_KERNEL_FOUND;
-	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, 123);
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST, 123);
 	shared->flags |= VBSD_FWB_TRIED;
 	shared->firmware_index = 1;
 	test_slk(VBERROR_INVALID_KERNEL_FOUND,
@@ -261,26 +267,26 @@ static void VbSlkTest(void)
 	if (DIAGNOSTIC_UI) {
 		ResetMocks();
 		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
-		vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 1);
-		vb2_nv_set(&ctx, VB2_NV_OPROM_NEEDED, 1);
+		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
+		vb2_nv_set(&ctx_nvram_backend, VB2_NV_OPROM_NEEDED, 1);
 		vbboot_retval = -4;
 		test_slk(VBERROR_SIMULATED, 0, "Normal boot with diag");
-		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST), 0,
 			"  diag not requested");
-		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 1,
+		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_OPROM_NEEDED), 1,
 			"  oprom still needed");
 
 		ResetMocks();
 		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
-		vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 1);
-		vb2_nv_set(&ctx, VB2_NV_OPROM_NEEDED, 1);
+		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
+		vb2_nv_set(&ctx_nvram_backend, VB2_NV_OPROM_NEEDED, 1);
 		shared->flags |= VBSD_OPROM_MATTERS;
 		vbboot_retval = -4;
 		test_slk(VBERROR_SIMULATED, 0,
 			 "Normal boot with diag and oprom");
-		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST), 0,
 			"  diag not requested");
-		TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 0,
+		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_OPROM_NEEDED), 0,
 			"  oprom not needed");
 	}
 
