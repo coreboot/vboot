@@ -31,7 +31,7 @@ static const char dev_disable_msg[] =
 	"\n";
 
 static VB_MENU current_menu, prev_menu;
-static int current_menu_idx, disabled_idx_mask, usb_nogood;
+static int current_menu_idx, disabled_idx_mask, usb_nogood, force_redraw;
 static uint32_t default_boot;
 static uint32_t disable_dev_boot;
 static uint32_t altfw_allowed;
@@ -64,8 +64,10 @@ static int VbWantShutdownMenu(struct vb2_context *ctx)
 
 /* (Re-)Draw the menu identified by current_menu[_idx] to the screen. */
 static VbError_t vb2_draw_current_screen(struct vb2_context *ctx) {
-	return VbDisplayMenu(ctx, menus[current_menu].screen, 0,
-			     current_menu_idx, disabled_idx_mask);
+	VbError_t ret = VbDisplayMenu(ctx, menus[current_menu].screen,
+			force_redraw, current_menu_idx, disabled_idx_mask);
+	force_redraw = 0;
+	return ret;
 }
 
 /* Flash the screen to black to catch user awareness, then redraw menu. */
@@ -301,6 +303,7 @@ static VbError_t enter_altfw_menu(struct vb2_context *ctx)
 
 static VbError_t debug_info_action(struct vb2_context *ctx)
 {
+	force_redraw = 1;
 	VbDisplayDebugInfo(ctx);
 	return VBERROR_KEEP_LOOPING;
 }
@@ -451,6 +454,10 @@ static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
 	case '\t':
 		/* Tab = display debug info */
 		return debug_info_action(ctx);
+	case VB_KEY_ESC:
+		/* Esc = redraw screen (to clear old debug info) */
+		vb2_draw_current_screen(ctx);
+		break;
 	case VB_KEY_UP:
 	case VB_KEY_DOWN:
 	case VB_BUTTON_VOL_UP_SHORT_PRESS:

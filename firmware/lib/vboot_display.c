@@ -72,7 +72,7 @@ VbError_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
 	 * If current screen is not the same, make sure we redraw the base
 	 * screen as well to avoid having artifacts from the menu.
 	 */
-	if (disp_current_screen != screen)
+	if (disp_current_screen != screen || force)
 		redraw_base_screen = 1;
 
 	/*
@@ -415,6 +415,8 @@ static uint8_t MagicBuffer[MAGIC_WORD_LEN];
 VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 			    const VbScreenData *data)
 {
+	uint32_t loc = 0;
+	uint32_t count = 0;
 	int i;
 
 	/* Update key buffer */
@@ -423,15 +425,18 @@ VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 	/* Save as lower-case ASCII */
 	MagicBuffer[MAGIC_WORD_LEN - 1] = (key | 0x20) & 0xFF;
 
-	if ('\t' == key) {
+	switch (key) {
+	case '\t':
 		/* Tab = display debug info */
 		return VbDisplayDebugInfo(ctx);
-	} else if (VB_KEY_LEFT == key || VB_KEY_RIGHT == key ||
-		   VB_KEY_DOWN == key || VB_KEY_UP == key) {
+	case VB_KEY_ESC:
+		/* Force redraw current screen (to clear Tab debug output) */
+		return VbDisplayScreen(ctx, disp_current_screen, 1, data);
+	case VB_KEY_LEFT:
+	case VB_KEY_RIGHT:
+	case VB_KEY_UP:
+	case VB_KEY_DOWN:
 		/* Arrow keys = change localization */
-		uint32_t loc = 0;
-		uint32_t count = 0;
-
 		loc = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 		if (VBERROR_SUCCESS != VbExGetLocalizationCount(&count))
 			loc = 0;  /* No localization count (bad GBB?) */
