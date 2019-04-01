@@ -284,15 +284,6 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	VbError_t ret;
 	uint32_t i;
 
-	/* Redisplay current screen to overwrite any previous debug output.
-	 * Need to use VbDisplayMenu instead of VbDisplayScreen
-	 * in order to ensure that the selected menu item is
-	 * highlighted.  On a non-detachable screen, this will be a
-	 * no-op.
-	 */
-	VbDisplayMenu(ctx, disp_current_screen, 1,
-		      disp_current_index, disp_disabled_idx_mask);
-
 	/* Add hardware ID */
 	VbGbbReadHWID(ctx, hwid, sizeof(hwid));
 	used += StrnAppend(buf + used, "HWID: ", DEBUG_INFO_SIZE - used);
