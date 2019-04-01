@@ -399,22 +399,11 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	return VbExDisplayDebugInfo(buf, 1);
 }
 
-#define MAGIC_WORD_LEN 5
-#define MAGIC_WORD "xyzzy"
-static uint8_t MagicBuffer[MAGIC_WORD_LEN];
-
 VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 			    const VbScreenData *data)
 {
 	uint32_t loc = 0;
 	uint32_t count = 0;
-	int i;
-
-	/* Update key buffer */
-	for(i = 1; i < MAGIC_WORD_LEN; i++)
-		MagicBuffer[i - 1] = MagicBuffer[i];
-	/* Save as lower-case ASCII */
-	MagicBuffer[MAGIC_WORD_LEN - 1] = (key | 0x20) & 0xFF;
 
 	switch (key) {
 	case '\t':
@@ -455,12 +444,6 @@ VbError_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 
 		/* Force redraw of current screen */
 		return VbDisplayScreen(ctx, disp_current_screen, 1, data);
-	}
-
-	if (0 == memcmp(MagicBuffer, MAGIC_WORD, MAGIC_WORD_LEN)) {
-		if (VBEASTEREGG)
-			(void)VbDisplayScreen(ctx, disp_current_screen, 1,
-					      NULL);
 	}
 
 	return VBERROR_SUCCESS;

@@ -22,13 +22,6 @@
 #define VbAssert(expr)
 #endif
 
-/* Optional, up to the BIOS */
-#ifdef VBOOT_EASTER_EGG
-#define VBEASTEREGG VbExEasterEgg()
-#else
-#define VBEASTEREGG 0
-#endif
-
 /*
  * Combine [msw] and [lsw] uint16s to a uint32_t with its [msw] and [lsw]
  * forming the most and least signficant 16-bit words.
