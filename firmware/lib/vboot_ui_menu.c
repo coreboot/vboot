@@ -772,6 +772,7 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
 			vb2_try_alt_fw(altfw_allowed, key - '0');
+			ret = VBERROR_KEEP_LOOPING;
 			break;
 		default:
 			ret = vb2_handle_menu_input(ctx, key, 0);
