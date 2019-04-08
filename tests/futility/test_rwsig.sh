@@ -19,8 +19,11 @@ EC_RW="EC_RW.bin"
 set -o pipefail
 
 infile=${DATADIR}/hammer_dev.bin
+outfile=${TMP}.hammer_dev.bin
+cp ${infile} ${outfile}
 # Signing without private key should extract EC_RW.bin
-${FUTILITY} sign --type rwsig --version 2 ${infile}
+${FUTILITY} sign --type rwsig --version 2 ${outfile}
+cmp ${infile} ${outfile}
 cmp ${EC_RW} ${DATADIR}/${EC_RW}
 
 for s in $SIGS; do
@@ -45,7 +48,7 @@ for s in $SIGS; do
 
         cp ${infile} ${outfile}
 
-	# Sign ec.bin with a new private key
+        # Sign ec.bin with a new private key
         ${FUTILITY} sign --type rwsig --prikey ${outkeys}.vbprik2 \
                 --version 2 ${outfile}
         # Check EC_RW.bin is produced
