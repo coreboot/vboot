@@ -26,7 +26,6 @@
 /* Global variables */
 static struct RollbackSpaceFwmp fwmp;
 static LoadKernelParams lkp;
-static uint8_t *unaligned_workbuf;
 
 #ifdef CHROMEOS_ENVIRONMENT
 /* Global variable accessors for unit tests */
@@ -224,6 +223,12 @@ static VbError_t vb2_kernel_setup(struct vb2_context *ctx,
 				  VbCommonParams *cparams,
 				  VbSelectAndLoadKernelParams *kparams)
 {
+	if (VB2_SUCCESS != vb2_init_context(ctx)) {
+		VB2_DEBUG("Can't init vb2_context\n");
+		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
+		return VBERROR_INIT_SHARED_DATA;
+	}
+
 	VbSharedDataHeader *shared =
 		(VbSharedDataHeader *)cparams->shared_data_blob;
 
@@ -254,31 +259,6 @@ static VbError_t vb2_kernel_setup(struct vb2_context *ctx,
 
 	VbExNvStorageRead(ctx->nvdata);
 	vb2_nv_init(ctx);
-
-	ctx->workbuf_size = VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE +
-			    VB2_WORKBUF_ALIGN;
-
-	unaligned_workbuf = ctx->workbuf = malloc(ctx->workbuf_size);
-	if (!unaligned_workbuf) {
-		VB2_DEBUG("Can't allocate work buffer\n");
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
-		return VBERROR_INIT_SHARED_DATA;
-	}
-
-	if (VB2_SUCCESS != vb2_align(&ctx->workbuf, &ctx->workbuf_size,
-				     VB2_WORKBUF_ALIGN,
-				     VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE)) {
-		VB2_DEBUG("Can't align work buffer\n");
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
-		return VBERROR_INIT_SHARED_DATA;
-	}
-
-	if (VB2_SUCCESS != vb2_init_context(ctx)) {
-		VB2_DEBUG("Can't init vb2_context\n");
-		free(unaligned_workbuf);
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
-		return VBERROR_INIT_SHARED_DATA;
-	}
 
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	sd->recovery_reason = shared->recovery_reason;
@@ -380,15 +360,6 @@ static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
 	 */
 	VbSharedDataHeader *shared =
 		(VbSharedDataHeader *)cparams->shared_data_blob;
-
-	/*
-	 * Clean up vboot context.
-	 *
-	 * TODO: This should propagate up to higher levels
-	 */
-
-	/* Free buffers */
-	free(unaligned_workbuf);
 
 	vb2_nv_commit(ctx);
 

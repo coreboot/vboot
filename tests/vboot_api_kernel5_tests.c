@@ -27,6 +27,7 @@
 #include "vboot_struct.h"
 
 /* Mock data */
+static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
 static struct vb2_context ctx_nvram_backend;
 static VbCommonParams cparams;
@@ -67,9 +68,11 @@ static void ResetMocks(void)
 	gbb->rootkey_offset = sizeof(*gbb);
 	gbb->rootkey_size = sizeof(VbPublicKey);
 
-	/* ctx.workbuf will be allocated and initialized by
-	 * VbVerifyMemoryBootImage. */
+	/* ctx.workbuf will be initialized by VbVerifyMemoryBootImage. */
 	memset(&ctx, 0, sizeof(ctx));
+	ctx.workbuf = workbuf;
+	ctx.workbuf_size = sizeof(workbuf);
+	vb2_init_context(&ctx);
 
 	/*
 	 * ctx_nvram_backend is only used as an NVRAM backend (see
