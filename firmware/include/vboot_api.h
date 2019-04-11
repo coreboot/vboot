@@ -774,6 +774,9 @@ VbError_t VbExSetVendorData(const char *vendor_data_value);
 /* Key code for CTRL + letter */
 #define VB_KEY_CTRL(letter) (letter & 0x1f)
 
+/* Key code for fn keys */
+#define VB_KEY_F(num) (num + 0x108)
+
 /* Key codes for required non-printable-ASCII characters. */
 enum VbKeyCode_t {
 	VB_KEY_ENTER = '\r',

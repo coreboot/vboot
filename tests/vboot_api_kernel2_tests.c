@@ -1100,8 +1100,9 @@ static void VbBootRecTest(void)
 	ResetMocks();
 	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
 	trust_ec = 1;
+	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	shutdown_request_calls_left = 100;
-	mock_keypress[0] = 0x03;
+	mock_keypress[0] = VB_KEY_CTRL('C');
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
 		"todiag is zero");
 	if (DIAGNOSTIC_UI)
@@ -1112,17 +1113,21 @@ static void VbBootRecTest(void)
 		TEST_EQ(VbBootRecovery(&ctx),
 			VBERROR_SHUTDOWN_REQUESTED,
 			"Ctrl+C todiag - disabled");
+
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), DIAGNOSTIC_UI,
-		"todiag is updated for Ctrl-C");
+		"  todiag is updated for Ctrl-C");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 0,
-		"todiag doesn't update for unneeded opom");
+		"  todiag doesn't update for unneeded opom");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_RECOVERY_INSERT,
+		"  insert screen");
 
 	/* Test Diagnostic Mode via F12 - oprom needed */
 	ResetMocks();
 	shared->flags = VBSD_BOOT_REC_SWITCH_ON | VBSD_OPROM_MATTERS;
 	trust_ec = 1;
+	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	shutdown_request_calls_left = 100;
-	mock_keypress[0] = 0x114;
+	mock_keypress[0] = VB_KEY_F(12);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
 		"todiag is zero");
 	if (DIAGNOSTIC_UI)
@@ -1134,9 +1139,33 @@ static void VbBootRecTest(void)
 			VBERROR_SHUTDOWN_REQUESTED,
 			"F12 todiag - disabled");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), DIAGNOSTIC_UI,
-		"todiag is updated for F12");
+		"  todiag is updated for F12");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), DIAGNOSTIC_UI,
-		"todiag updates opom, if need");
+		"  todiag updates opom, if need");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_RECOVERY_INSERT,
+		"  insert screen");
+
+	/* Test Diagnostic Mode via Ctrl-C OS broken */
+	ResetMocks();
+	shared->flags = 0;
+	shutdown_request_calls_left = 100;
+	mock_keypress[0] = VB_KEY_CTRL('C');
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		"todiag is zero");
+	if (DIAGNOSTIC_UI)
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_REBOOT_REQUIRED,
+			"Ctrl+C todiag os broken - enabled");
+	else
+		TEST_EQ(VbBootRecovery(&ctx),
+			VBERROR_SHUTDOWN_REQUESTED,
+			"Ctrl+C todiag os broken - disabled");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), DIAGNOSTIC_UI,
+		"  todiag is updated for Ctrl-C");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_OPROM_NEEDED), 0,
+		"  todiag doesn't update for unneeded opom");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_OS_BROKEN,
+		"  os broken screen");
 
 	printf("...done.\n");
 }

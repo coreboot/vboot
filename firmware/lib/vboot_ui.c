@@ -378,6 +378,20 @@ VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
+static VbError_t vb2_check_diagnostic_key(struct vb2_context *ctx,
+					  uint32_t key) {
+	if (DIAGNOSTIC_UI && (key == VB_KEY_CTRL('C') || key == VB_KEY_F(12))) {
+		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
+		if (vb2_get_sd(ctx)->vbsd->flags & VBSD_OPROM_MATTERS)
+			vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
+		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
+
+		return VBERROR_REBOOT_REQUIRED;
+	}
+
+	return VBERROR_SUCCESS;
+}
+
 /*
  * User interface for confirming launch of diagnostics rom
  *
@@ -832,6 +846,10 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 			VbCheckDisplayKey(ctx, key, NULL);
 			if (VbWantShutdown(ctx, key))
 				return VBERROR_SHUTDOWN_REQUESTED;
+			else if ((retval =
+				  vb2_check_diagnostic_key(ctx, key)) !=
+				  VBERROR_SUCCESS)
+				return retval;
 			VbExSleepMs(REC_KEY_DELAY);
 		}
 	}
@@ -922,14 +940,10 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 					i = 4;
 					break;
 				}
-			} else if (DIAGNOSTIC_UI &&
-				   (key == VB_KEY_CTRL('C') ||
-				    key == 0x114)) {       /* F12 */
-				VB2_DEBUG("Diagnostic requested, rebooting\n");
-                                if (shared->flags & VBSD_OPROM_MATTERS)
-					vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
-				vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-				return VBERROR_REBOOT_REQUIRED;
+			} else if ((retval =
+				    vb2_check_diagnostic_key(ctx, key)) !=
+				    VBERROR_SUCCESS) {
+				return retval;
 			} else {
 				VbCheckDisplayKey(ctx, key, NULL);
 			}
