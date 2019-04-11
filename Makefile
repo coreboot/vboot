@@ -632,8 +632,8 @@ UTIL_NAMES += \
 	utility/signature_digest_utility \
 	utility/verify_data
 
-LZMA_LIBS := $(shell ${PKG_CONFIG} --libs liblzma)
-YAML_LIBS := $(shell ${PKG_CONFIG} --libs yaml-0.1)
+LZMA_LIBS = $(shell ${PKG_CONFIG} --libs liblzma)
+YAML_LIBS = $(shell ${PKG_CONFIG} --libs yaml-0.1)
 endif
 
 UTIL_BINS_STATIC := $(addsuffix _s,$(addprefix ${BUILD}/,${UTIL_NAMES_STATIC}))
