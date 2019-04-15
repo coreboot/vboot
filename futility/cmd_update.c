@@ -16,6 +16,7 @@
 
 enum {
 	OPT_DUMMY = 0x100,
+	OPT_CCD,
 	OPT_FAST,
 };
 
@@ -42,6 +43,7 @@ static struct option const long_opts[] = {
 	{"wp", 1, NULL, 'W'},
 	{"host_only", 0, NULL, 'H'},
 	{"emulate", 1, NULL, 'E'},
+	{"ccd", 0, NULL, OPT_CCD},
 	{"output_dir", 1, NULL, 'U'},
 	{"sys_props", 1, NULL, 'S'},
 	{"debug", 0, NULL, 'd'},
@@ -86,6 +88,7 @@ static void print_help(int argc, char *argv[])
 		"    --host_only     \tUpdate only AP (host) firmware\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"    --model=MODEL   \tOverride system model for images\n"
+		"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"
 		"    --signature_id=S\tOverride signature ID for key files\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
 		"-d, --debug         \tPrint debugging messages\n"
@@ -177,6 +180,12 @@ static int do_update(int argc, char *argv[])
 			args.verbosity++;
 			break;
 
+		case OPT_CCD:
+			args.fast_update = 1;
+			args.force_update = 1;
+			args.write_protection = 0;
+			args.programmer = "raiden_debug_spi";
+			break;
 		case OPT_FAST:
 			args.fast_update = 1;
 			break;
