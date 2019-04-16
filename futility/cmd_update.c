@@ -16,48 +16,71 @@
 
 enum {
 	OPT_DUMMY = 0x100,
+
 	OPT_CCD,
+	OPT_EMULATE,
+	OPT_FACTORY,
 	OPT_FAST,
+	OPT_FORCE,
+	OPT_HOST_ONLY,
+	OPT_MANIFEST,
+	OPT_MODEL,
+	OPT_OUTPUT_DIR,
+	OPT_PD_IMAGE,
+	OPT_QUIRKS,
+	OPT_QUIRKS_LIST,
+	OPT_REPACK,
+	OPT_SIGNATURE,
+	OPT_SYS_PROPS,
+	OPT_UNPACK,
+	OPT_WRITE_PROTECTION,
 };
 
 /* Command line options */
 static struct option const long_opts[] = {
 	/* name  has_arg *flag val */
-	{"image", 1, NULL, 'i'},
-	{"ec_image", 1, NULL, 'e'},
-	{"pd_image", 1, NULL, 'P'},
-	{"try", 0, NULL, 't'},
-	{"archive", 1, NULL, 'a'},
-	{"quirks", 1, NULL, 'f'},
-	{"list-quirks", 0, NULL, 'L'},
-	{"mode", 1, NULL, 'm'},
-	{"model", 1, NULL, 'M'},
-	{"signature_id", 1, NULL, 'G'},
-	{"manifest", 0, NULL, 'A'},
-	{"repack", 1, NULL, 'k'},
-	{"unpack", 1, NULL, 'u'},
-	{"factory", 0, NULL, 'Y'},
-	{"fast", 0, NULL, OPT_FAST},
-	{"force", 0, NULL, 'F'},
-	{"programmer", 1, NULL, 'p'},
-	{"wp", 1, NULL, 'W'},
-	{"host_only", 0, NULL, 'H'},
-	{"emulate", 1, NULL, 'E'},
-	{"ccd", 0, NULL, OPT_CCD},
-	{"output_dir", 1, NULL, 'U'},
-	{"sys_props", 1, NULL, 'S'},
+	{"help", 0, NULL, 'h'},
 	{"debug", 0, NULL, 'd'},
 	{"verbose", 0, NULL, 'v'},
-	{"help", 0, NULL, 'h'},
+
+	{"image", 1, NULL, 'i'},
+	{"ec_image", 1, NULL, 'e'},
+	{"try", 0, NULL, 't'},
+	{"archive", 1, NULL, 'a'},
+	{"programmer", 1, NULL, 'p'},
+	{"mode", 1, NULL, 'm'},
+
+	{"ccd", 0, NULL, OPT_CCD},
+	{"emulate", 1, NULL, OPT_EMULATE},
+	{"factory", 0, NULL, OPT_FACTORY},
+	{"fast", 0, NULL, OPT_FAST},
+	{"force", 0, NULL, OPT_FORCE},
+	{"host_only", 0, NULL, OPT_HOST_ONLY},
+	{"list-quirks", 0, NULL, OPT_QUIRKS_LIST},
+	{"manifest", 0, NULL, OPT_MANIFEST},
+	{"model", 1, NULL, OPT_MODEL},
+	{"output_dir", 1, NULL, OPT_OUTPUT_DIR},
+	{"pd_image", 1, NULL, OPT_PD_IMAGE},
+	{"quirks", 1, NULL, OPT_QUIRKS},
+	{"repack", 1, NULL, OPT_REPACK},
+	{"signature_id", 1, NULL, OPT_SIGNATURE},
+	{"sys_props", 1, NULL, OPT_SYS_PROPS},
+	{"unpack", 1, NULL, OPT_UNPACK},
+	{"wp", 1, NULL, OPT_WRITE_PROTECTION},
+
 	/* TODO(hungte) Remove following deprecated options. */
-	{"noupdate_ec", 0, NULL, 'H'},  /* --host_only */
-	{"noupdate_pd", 0, NULL, 'H'},  /* --host_only */
-	{"nocheck_keys", 0, NULL, 'F'},  /* --force */
+	{"noupdate_ec", 0, NULL, OPT_HOST_ONLY},
+	{"noupdate_pd", 0, NULL, OPT_HOST_ONLY},
+	{"nocheck_keys", 0, NULL, OPT_FORCE},
 	{"update_main", 0, NULL, OPT_DUMMY},
+	{"update_ec", 0, NULL, OPT_DUMMY},
+	{"update_pd", 0, NULL, OPT_DUMMY},
+	{"check_keys", 0, NULL, OPT_DUMMY},
+
 	{NULL, 0, NULL, 0},
 };
 
-static const char * const short_opts = "hi:e:ta:m:p:dv";
+static const char * const short_opts = "hdvi:e:ta:m:p:";
 
 static void print_help(int argc, char *argv[])
 {
@@ -109,14 +132,21 @@ static int do_update(int argc, char *argv[])
 	opterr = 0;
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
 		switch (i) {
+		case 'h':
+			print_help(argc, argv);
+			return !!errorcnt;
+		case 'd':
+			debugging_enabled = 1;
+			args.verbosity++;
+			break;
+		case 'v':
+			args.verbosity++;
+			break;
 		case 'i':
 			args.image = optarg;
 			break;
 		case 'e':
 			args.ec_image = optarg;
-			break;
-		case 'P':
-			args.pd_image = optarg;
 			break;
 		case 't':
 			args.try_update = 1;
@@ -124,77 +154,71 @@ static int do_update(int argc, char *argv[])
 		case 'a':
 			args.archive = optarg;
 			break;
-		case 'k':
-			args.repack = optarg;
-			break;
-		case 'u':
-			args.unpack = optarg;
-			break;
-		case 'f':
-			args.quirks = optarg;
-			break;
-		case 'L':
-			updater_list_config_quirks(cfg);
-			return 0;
 		case 'm':
 			args.mode = optarg;
-			break;
-		case 'U':
-			args.output_dir = optarg;
-			break;
-		case 'M':
-			args.model = optarg;
-			break;
-		case 'G':
-			args.signature_id = optarg;
-			break;
-		case 'A':
-			args.do_manifest = 1;
-			break;
-		case 'Y':
-			args.is_factory = 1;
-			break;
-		case 'W':
-			args.write_protection = optarg;
-			break;
-		case 'H':
-			args.host_only = 1;
-			break;
-		case 'E':
-			args.emulation = optarg;
 			break;
 		case 'p':
 			args.programmer = optarg;
 			break;
-		case 'F':
-			args.force_update = 1;
+
+		case OPT_PD_IMAGE:
+			args.pd_image = optarg;
 			break;
-		case 'S':
+		case OPT_REPACK:
+			args.repack = optarg;
+			break;
+		case OPT_UNPACK:
+			args.unpack = optarg;
+			break;
+		case OPT_QUIRKS:
+			args.quirks = optarg;
+			break;
+		case OPT_QUIRKS_LIST:
+			updater_list_config_quirks(cfg);
+			return 0;
+		case OPT_OUTPUT_DIR:
+			args.output_dir = optarg;
+			break;
+		case OPT_MODEL:
+			args.model = optarg;
+			break;
+		case OPT_SIGNATURE:
+			args.signature_id = optarg;
+			break;
+		case OPT_WRITE_PROTECTION:
+			args.write_protection = optarg;
+			break;
+		case OPT_EMULATE:
+			args.emulation = optarg;
+			break;
+		case OPT_SYS_PROPS:
 			args.sys_props = optarg;
 			break;
-		case 'v':
-			args.verbosity++;
+		case OPT_MANIFEST:
+			args.do_manifest = 1;
 			break;
-		case 'd':
-			debugging_enabled = 1;
-			args.verbosity++;
+		case OPT_FACTORY:
+			args.is_factory = 1;
 			break;
-
+		case OPT_HOST_ONLY:
+			args.host_only = 1;
+			break;
+		case OPT_FORCE:
+			args.force_update = 1;
+			break;
+		case OPT_FAST:
+			args.fast_update = 1;
+			break;
 		case OPT_CCD:
 			args.fast_update = 1;
 			args.force_update = 1;
 			args.write_protection = 0;
 			args.programmer = "raiden_debug_spi";
 			break;
-		case OPT_FAST:
-			args.fast_update = 1;
-			break;
 
 		case OPT_DUMMY:
 			break;
-		case 'h':
-			print_help(argc, argv);
-			return !!errorcnt;
+
 		case '?':
 			errorcnt++;
 			if (optopt)
