@@ -22,6 +22,19 @@ static void AllocAndClear(uint8_t **buf, uint64_t size) {
 }
 
 static int GptCreate(struct drive *drive, CgptCreateParams *params) {
+  // Do not replace any existing IGNOREME GPT headers.
+  if (!memcmp(((GptHeader*)drive->gpt.primary_header)->signature,
+              GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE)) {
+    drive->gpt.ignored |= MASK_PRIMARY;
+    Warning("Primary GPT was marked ignored, will not overwrite.\n");
+  }
+
+  if (!memcmp(((GptHeader*)drive->gpt.secondary_header)->signature,
+              GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE)) {
+    drive->gpt.ignored |= MASK_SECONDARY;
+    Warning("Secondary GPT was marked ignored, will not overwrite.\n");
+  }
+
   // Allocate and/or erase the data.
   // We cannot assume the GPT headers or entry arrays have been allocated
   // by GptLoad() because those fields might have failed validation checks.
