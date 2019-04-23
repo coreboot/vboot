@@ -93,4 +93,9 @@ uint32_t vb2_get_fwmp_flags(void);
  */
 void vb2_nv_commit(struct vb2_context *ctx);
 
+/**
+ * Reinitialize global state. This should only need to be called by init tests.
+ */
+void vb2_init_ui(void);
+
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */
