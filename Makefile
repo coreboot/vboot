@@ -239,6 +239,7 @@ HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
 ifneq (${HAVE_LIBZIP},)
   CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
+  LIBZIP_STATIC_LIBS := $(shell ${PKG_CONFIG} --static --libs libzip)
 endif
 
 # Determine QEMU architecture needed, if any
@@ -1142,7 +1143,7 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 .PHONY: futil
 futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
 
-${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS}
+${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS} ${LIBZIP_STATIC_LIBS}
 ${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
@@ -1190,7 +1191,7 @@ ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 ${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB}
-${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS}
+${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
 ${TEST2X_BINS}: LIBS += ${FWLIB2X}
