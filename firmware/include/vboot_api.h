@@ -204,8 +204,6 @@ typedef struct VbCommonParams {
 } VbCommonParams;
 
 /* Flags for VbExGetSwitches() */
-/* Recovery button was pressed at boot time. */
-#define VB_SWITCH_FLAG_REC_BUTTON_PRESSED	0x00000002
 /* Report if user is currently present (typically via power button) */
 #define VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED	0x00000004
 /* Allow USB boot on transition to dev */
