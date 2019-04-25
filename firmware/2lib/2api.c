@@ -223,12 +223,3 @@ int vb2api_get_pcr_digest(struct vb2_context *ctx,
 
 	return VB2_SUCCESS;
 }
-
-int vb2api_digest_buffer(const uint8_t *buf,
-			 uint32_t size,
-			 enum vb2_hash_algorithm hash_alg,
-			 uint8_t *digest,
-			 uint32_t digest_size)
-{
-	return vb2_digest_buffer(buf, size, hash_alg, digest, digest_size);
-}
