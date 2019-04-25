@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  *
  * These APIs may be called by external firmware as well as vboot.  External
- * firmware must NOT include this header file directly; instead, define
- * NEED_VB2_SHA_LIBRARY and include vb2api.h.  This is permissible because the
+ * firmware must NOT include this header file directly; instead, import
+ * the external-facing vb2_sha.h.  This is permissible because the
  * SHA library routines below don't interact with the rest of vboot.
  */
 
