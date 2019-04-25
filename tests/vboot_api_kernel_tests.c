@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 #include "2sysincludes.h"
-#include "2api.h"
+#include "2common.h"
 #include "2nvstorage.h"
 #include "gbb_header.h"
 #include "load_kernel_fw.h"

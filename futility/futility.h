@@ -7,6 +7,7 @@
 #define VBOOT_REFERENCE_FUTILITY_H_
 #include <stdint.h>
 
+#include "2common.h"
 #include "vboot_common.h"
 #include "gbb_header.h"
 #include "host_key.h"
