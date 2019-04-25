@@ -16,7 +16,6 @@
 #include <unistd.h>
 
 #include "futility.h"
-#include "gbb_header.h"
 
 static void print_help(int argc, char *argv[])
 {
@@ -99,18 +98,19 @@ static void opt_has_arg(const char *name, int val)
 static int errorcnt;
 
 #define GBB_SEARCH_STRIDE 4
-static GoogleBinaryBlockHeader *FindGbbHeader(uint8_t *ptr, size_t size)
+static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 {
 	size_t i;
-	GoogleBinaryBlockHeader *tmp, *gbb_header = NULL;
+	struct vb2_gbb_header *tmp, *gbb_header = NULL;
 	int count = 0;
 
 	for (i = 0; i <= size - GBB_SEARCH_STRIDE; i += GBB_SEARCH_STRIDE) {
-		if (0 != memcmp(ptr + i, GBB_SIGNATURE, GBB_SIGNATURE_SIZE))
+		if (0 != memcmp(ptr + i, VB2_GBB_SIGNATURE,
+				VB2_GBB_SIGNATURE_SIZE))
 			continue;
 
 		/* Found something. See if it's any good. */
-		tmp = (GoogleBinaryBlockHeader *) (ptr + i);
+		tmp = (struct vb2_gbb_header *) (ptr + i);
 		if (futil_valid_gbb_header(tmp, size - i, NULL))
 			if (!count++)
 				gbb_header = tmp;
@@ -132,12 +132,12 @@ static GoogleBinaryBlockHeader *FindGbbHeader(uint8_t *ptr, size_t size)
 static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 {
 	char *str, *sizes, *param, *e = NULL;
-	size_t size = GBB_HEADER_SIZE;
+	size_t size = EXPECTED_VB2_GBB_HEADER_SIZE;
 	int i = 0;
 	/* Danger Will Robinson! four entries ==> four paramater blocks */
 	uint32_t val[] = { 0, 0, 0, 0 };
 	uint8_t *buf;
-	GoogleBinaryBlockHeader *gbb;
+	struct vb2_gbb_header *gbb;
 
 	sizes = strdup(desc);
 	if (!sizes) {
@@ -173,14 +173,14 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 		*sizeptr = size;
 	}
 
-	gbb = (GoogleBinaryBlockHeader *) buf;
-	memcpy(gbb->signature, GBB_SIGNATURE, GBB_SIGNATURE_SIZE);
-	gbb->major_version = GBB_MAJOR_VER;
-	gbb->minor_version = GBB_MINOR_VER;
-	gbb->header_size = GBB_HEADER_SIZE;
+	gbb = (struct vb2_gbb_header *) buf;
+	memcpy(gbb->signature, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE);
+	gbb->major_version = VB2_GBB_MAJOR_VER;
+	gbb->minor_version = VB2_GBB_MINOR_VER;
+	gbb->header_size = EXPECTED_VB2_GBB_HEADER_SIZE;
 	gbb->flags = 0;
 
-	i = GBB_HEADER_SIZE;
+	i = EXPECTED_VB2_GBB_HEADER_SIZE;
 	gbb->hwid_offset = i;
 	gbb->hwid_size = val[0];
 	i += val[0];
@@ -371,7 +371,7 @@ static int do_gbb(int argc, char *argv[])
 	uint8_t *inbuf = NULL;
 	off_t filesize;
 	uint8_t *outbuf = NULL;
-	GoogleBinaryBlockHeader *gbb;
+	struct vb2_gbb_header *gbb;
 	uint8_t *gbb_base;
 	int i;
 

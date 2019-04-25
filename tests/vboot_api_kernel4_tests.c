@@ -14,7 +14,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "ec_sync.h"
-#include "gbb_header.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
@@ -33,7 +32,7 @@ static VbCommonParams cparams;
 static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-static GoogleBinaryBlockHeader gbb;
+static struct vb2_gbb_header gbb;
 
 static uint32_t rkr_version;
 static uint32_t new_version;
@@ -57,8 +56,8 @@ static void ResetMocks(void)
 	memset(&kparams, 0, sizeof(kparams));
 
 	memset(&gbb, 0, sizeof(gbb));
-	gbb.major_version = GBB_MAJOR_VER;
-	gbb.minor_version = GBB_MINOR_VER;
+	gbb.major_version = VB2_GBB_MAJOR_VER;
+	gbb.minor_version = VB2_GBB_MINOR_VER;
 	gbb.flags = 0;
 
 	/* ctx.workbuf will be initialized by VbSelectAndLoadKernel. */
@@ -212,7 +211,7 @@ static void VbSlkTest(void)
 	/* Same if shared->flags asks for sync, but it's overridden by GBB */
 	ResetMocks();
 	shared->flags |= VBSD_EC_SOFTWARE_SYNC;
-	gbb.flags |= GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	test_slk(0, 0, "EC sync disabled by GBB");
 
 	/* Rollback kernel version */

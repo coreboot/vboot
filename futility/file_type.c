@@ -16,7 +16,6 @@
 
 #include "file_type.h"
 #include "futility.h"
-#include "gbb_header.h"
 
 /* Description and functions to handle each file type */
 struct futil_file_type_s {

@@ -16,7 +16,7 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
-#include "gbb_header.h"
+#include "2struct.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "test_common.h"
@@ -35,7 +35,7 @@ static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static uint8_t gbb_buf[4096];
-static GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader *)gbb_buf;
+static struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)gbb_buf;
 
 static uint8_t kernel_buffer[80000];
 static int key_block_verify_fail;  /* 0=ok, 1=sig, 2=hash */
@@ -62,8 +62,8 @@ static void ResetMocks(void)
 	memset(&kparams, 0, sizeof(kparams));
 
 	memset(gbb_buf, 0, sizeof(gbb_buf));
-	gbb->major_version = GBB_MAJOR_VER;
-	gbb->minor_version = GBB_MINOR_VER;
+	gbb->major_version = VB2_GBB_MAJOR_VER;
+	gbb->minor_version = VB2_GBB_MINOR_VER;
 	gbb->flags = 0;
 	gbb->rootkey_offset = sizeof(*gbb);
 	gbb->rootkey_size = sizeof(VbPublicKey);
@@ -234,7 +234,7 @@ static void VerifyMemoryBootImageTest(void)
 	/* Key Block Hash Failure */
 	ResetMocks();
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	gbb->flags = GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
+	gbb->flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
 	key_block_verify_fail = 1;
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, &cparams, &kparams, kernel_buffer,
 					kernel_buffer_size),
@@ -267,7 +267,7 @@ static void VerifyMemoryBootImageTest(void)
 	kbh.key_block_flags = KEY_BLOCK_FLAG_DEVELOPER_0 |
 		KEY_BLOCK_FLAG_RECOVERY_1;
 	copy_kbh();
-	gbb->flags = GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
+	gbb->flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, &cparams, &kparams, kernel_buffer,
 					kernel_buffer_size),
@@ -280,7 +280,7 @@ static void VerifyMemoryBootImageTest(void)
 		KEY_BLOCK_FLAG_RECOVERY_0;
 	copy_kbh();
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	gbb->flags = GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
+	gbb->flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, &cparams, &kparams, kernel_buffer,
 					kernel_buffer_size),
 		VBERROR_SUCCESS,

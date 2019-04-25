@@ -8,7 +8,6 @@
 
 #include <string>
 #include <vector>
-#include "gbb_header.h"
 
 namespace vboot_reference {
 
@@ -36,7 +35,7 @@ class GoogleBinaryBlockUtil {
   bool save_to_file(const char *filename);
 
   // create a new GBB blob by providing a list of reserved data size for each
-  // properties, following the order described in GoogleBinaryBlockHeader.
+  // properties, following the order described in vb2_gbb_header.
   // return true on success.
   bool create_new(const std::vector<uint32_t> &create_param);
 
@@ -81,7 +80,7 @@ class GoogleBinaryBlockUtil {
   // load and check header structure from image by given offset.
   // return true if a valid GBB header is loaded into *phdr.
   bool load_gbb_header(const std::string &image, long offset,
-                       GoogleBinaryBlockHeader *phdr) const;
+                       struct vb2_gbb_header *phdr) const;
 
   // find the size, offset, and name information for given property.
   // return true if the offset and size are assign to *poffset and *psize;
@@ -90,7 +89,7 @@ class GoogleBinaryBlockUtil {
   bool find_property(PROPINDEX i, uint32_t *poffset, uint32_t *psize,
                      const char **pname) const;
 
-  GoogleBinaryBlockHeader header_;      // copy of GBB header from image
+  struct vb2_gbb_header header_;        // copy of GBB header from image
   std::string file_content_;            // complete image file content
   long header_offset_;                  // offset to GBB header in file_content_
   bool is_valid_gbb;                    // if we are holding a valid GBB

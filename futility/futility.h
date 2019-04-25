@@ -9,7 +9,6 @@
 
 #include "2common.h"
 #include "vboot_common.h"
-#include "gbb_header.h"
 #include "host_key.h"
 
 /* This program */
@@ -105,24 +104,24 @@ extern const struct futil_cmd_t *const futil_cmds[];
 extern int debugging_enabled;
 
 /* Returns true if this looks enough like a GBB header to proceed. */
-int futil_looks_like_gbb(GoogleBinaryBlockHeader *gbb, uint32_t len);
+int futil_looks_like_gbb(struct vb2_gbb_header *gbb, uint32_t len);
 
 /*
  * Returns true if the gbb header is valid (and optionally updates *maxlen).
  * This doesn't verify the contents, though.
  */
-int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
+int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 			   uint32_t *maxlen);
 
 /* Sets the HWID string field inside a GBB header. */
 int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid);
 
 /* For GBB v1.2 and later, update the hwid_digest */
-void update_hwid_digest(GoogleBinaryBlockHeader *gbb);
+void update_hwid_digest(struct vb2_gbb_header *gbb);
 
 /* For GBB v1.2 and later, print the stored digest of the HWID (and whether
  * it's correct). Return true if it is correct. */
-int print_hwid_digest(GoogleBinaryBlockHeader *gbb,
+int print_hwid_digest(struct vb2_gbb_header *gbb,
 		      const char *banner, const char *footer);
 
 /* Copies a file or dies with an error message */
@@ -130,11 +129,11 @@ void futil_copy_file_or_die(const char *infile, const char *outfile);
 
 /* Update ryu root key header in the image */
 int fill_ryu_root_header(uint8_t *ptr, size_t size,
-			 const GoogleBinaryBlockHeader *gbb);
+			 const struct vb2_gbb_header *gbb);
 
 /* Verify ryu root key header */
 int verify_ryu_root_header(uint8_t *ptr, size_t size,
-			   const GoogleBinaryBlockHeader *gbb);
+			   const struct vb2_gbb_header *gbb);
 
 /* Possible file operation errors */
 enum futil_file_err {

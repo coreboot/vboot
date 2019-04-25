@@ -14,7 +14,6 @@
 #include "2rsa.h"
 #include "ec_sync.h"
 #include "gbb_access.h"
-#include "gbb_header.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
 #include "tlcl.h"
@@ -79,7 +78,7 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 
 	/* If desired, ignore shutdown request due to lid closure. */
-	if (sd->gbb_flags & GBB_FLAG_DISABLE_LID_SHUTDOWN)
+	if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
 	return shutdown_request;
@@ -619,7 +618,7 @@ static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON) {
 				/* Stop the countdown while we go ask... */
 				if (sd->gbb_flags &
-				    GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+				    VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 					/*
 					 * TONORM won't work (only for
 					 * non-shipping devices).

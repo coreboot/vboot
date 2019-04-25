@@ -377,7 +377,8 @@ main() {
   debug_msg "Decide new GBB flags from: $old_gbb_flags"
   [ -z "$old_gbb_flags" ] &&
     die "Cannot find GBB flags. (message: $(cat "${EXEC_LOG}"))"
-  # 0x30: GBB_FLAG_FORCE_DEV_BOOT_USB | GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK
+  # 0x30: VB2_GBB_FLAG_FORCE_DEV_BOOT_USB |
+  #       VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK
   local new_gbb_flags="$((old_gbb_flags | 0x30))"
 
   debug_msg "Replace GBB parts (futility gbb allows changing on-the-fly)"

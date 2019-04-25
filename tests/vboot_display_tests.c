@@ -14,8 +14,8 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2struct.h"
 #include "gbb_access.h"
-#include "gbb_header.h"
 #include "host_common.h"
 #include "test_common.h"
 #include "vboot_common.h"
@@ -25,8 +25,8 @@
 /* Mock data */
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-static char gbb_data[4096 + sizeof(GoogleBinaryBlockHeader)];
-static GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader *)gbb_data;
+static char gbb_data[4096 + sizeof(struct vb2_gbb_header)];
+static struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)gbb_data;
 static char debug_info[4096];
 static struct vb2_context ctx;
 struct vb2_shared_data *sd;
@@ -40,10 +40,10 @@ static void ResetMocks(void)
 	int gbb_used;
 
 	memset(gbb_data, 0, sizeof(gbb_data));
-	gbb->major_version = GBB_MAJOR_VER;
-	gbb->minor_version = GBB_MINOR_VER;
+	gbb->major_version = VB2_GBB_MAJOR_VER;
+	gbb->minor_version = VB2_GBB_MINOR_VER;
 	gbb->flags = 0;
-	gbb_used = sizeof(GoogleBinaryBlockHeader);
+	gbb_used = sizeof(struct vb2_gbb_header);
 
 	gbb->hwid_offset = gbb_used;
 	strcpy(gbb_data + gbb->hwid_offset, "Test HWID");

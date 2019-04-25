@@ -17,7 +17,6 @@
 #include "2sysincludes.h"
 #include "2api.h"
 #include "2misc.h"
-#include "gbb_header.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
@@ -86,7 +85,7 @@ int main(int argc, char* argv[]) {
   uint64_t key_size;
   uint8_t* key_blob = NULL;
   VbSharedDataHeader* shared;
-  GoogleBinaryBlockHeader* gbb;
+  struct vb2_gbb_header* gbb;
   VbError_t rv;
   int c, argsleft;
   int errorcnt = 0;
@@ -160,13 +159,13 @@ int main(int argc, char* argv[]) {
   }
 
   /* Initialize the GBB */
-  uint32_t gbb_size = sizeof(GoogleBinaryBlockHeader) + key_size;
-  gbb = (GoogleBinaryBlockHeader*)malloc(gbb_size);
+  uint32_t gbb_size = sizeof(struct vb2_gbb_header) + key_size;
+  gbb = (struct vb2_gbb_header*)malloc(gbb_size);
   memset(gbb, 0, gbb_size);
-  memcpy(gbb->signature, GBB_SIGNATURE, GBB_SIGNATURE_SIZE);
-  gbb->major_version = GBB_MAJOR_VER;
-  gbb->minor_version = GBB_MINOR_VER;
-  gbb->header_size = sizeof(GoogleBinaryBlockHeader);
+  memcpy(gbb->signature, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE);
+  gbb->major_version = VB2_GBB_MAJOR_VER;
+  gbb->minor_version = VB2_GBB_MINOR_VER;
+  gbb->header_size = sizeof(struct vb2_gbb_header);
   /* Fill in the given key, if any, for both root and recovery */
   if (key_blob) {
     gbb->rootkey_offset = gbb->header_size;

@@ -955,12 +955,7 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 
 	find_firmware_section(&section, image, FMAP_RO_GBB);
 	gbb_header = (struct vb2_gbb_header *)section.data;
-	/*
-	 * futil_valid_gbb_header needs v1 header (GoogleBinaryBlockHeader)
-	 * but that should be compatible with vb2_gbb_header
-	 */
-	if (!futil_valid_gbb_header((GoogleBinaryBlockHeader *)gbb_header,
-				    section.size, NULL)) {
+	if (!futil_valid_gbb_header(gbb_header, section.size, NULL)) {
 		ERROR("Cannot find GBB in image: %s.\n", image->file_name);
 		return NULL;
 	}
