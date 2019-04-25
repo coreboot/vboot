@@ -14,7 +14,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "ec_sync.h"
-#include "gbb_header.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"

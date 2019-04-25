@@ -14,7 +14,6 @@
 #include "file_type_bios.h"
 #include "futility.h"
 #include "futility_options.h"
-#include "gbb_header.h"
 #include "host_common.h"
 #include "vb1_helper.h"
 #include "vb2_common.h"
@@ -52,7 +51,7 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 
 int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 {
-	GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader *)buf;
+	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)buf;
 	struct bios_state_s *state = (struct bios_state_s *)data;
 	int retval = 0;
 	uint32_t maxlen = 0;

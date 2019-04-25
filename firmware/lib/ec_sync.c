@@ -12,7 +12,6 @@
 
 #include "sysincludes.h"
 #include "ec_sync.h"
-#include "gbb_header.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_kernel.h"

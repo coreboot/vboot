@@ -19,7 +19,6 @@
 #include "2common.h"
 #include "2sha.h"
 #include "futility.h"
-#include "gbb_header.h"
 
 #define SEARCH_STRIDE 4
 
@@ -97,7 +96,7 @@ static struct vb2_ryu_root_key_hash *find_ryu_root_header(uint8_t *ptr,
 }
 
 static void calculate_root_key_hash(uint8_t *digest, size_t digest_size,
-				    const GoogleBinaryBlockHeader *gbb)
+				    const struct vb2_gbb_header *gbb)
 {
 	const uint8_t *gbb_base = (const uint8_t *)gbb;
 
@@ -109,7 +108,7 @@ static void calculate_root_key_hash(uint8_t *digest, size_t digest_size,
 }
 
 int fill_ryu_root_header(uint8_t *ptr, size_t size,
-			 const GoogleBinaryBlockHeader *gbb)
+			 const struct vb2_gbb_header *gbb)
 {
 	struct vb2_ryu_root_key_hash *hash;
 
@@ -131,7 +130,7 @@ int fill_ryu_root_header(uint8_t *ptr, size_t size,
 }
 
 int verify_ryu_root_header(uint8_t *ptr, size_t size,
-			   const GoogleBinaryBlockHeader *gbb)
+			   const struct vb2_gbb_header *gbb)
 {
 	uint8_t digest[VB2_SHA256_DIGEST_SIZE] = {0};
 

@@ -4,14 +4,14 @@
  * found in the LICENSE file.
  */
 #include <stdio.h>
-#include "gbb_header.h"
+#include "2struct.h"
 #include "test_common.h"
 
 int main(int argc, char *argv[])
 {
-	TEST_EQ(sizeof(GoogleBinaryBlockHeader),
-		GBB_HEADER_SIZE,
-		"sizeof(GoogleBinaryBlockHeader)");
+	TEST_EQ(sizeof(struct vb2_gbb_header),
+		EXPECTED_VB2_GBB_HEADER_SIZE,
+		"sizeof(struct vb2_gbb_header)");
 
 	TEST_EQ(0, 0, "Not Really A");
 

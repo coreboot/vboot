@@ -14,7 +14,6 @@
 #include "2rsa.h"
 #include "ec_sync.h"
 #include "gbb_access.h"
-#include "gbb_header.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
 #include "utility.h"

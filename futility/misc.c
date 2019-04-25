@@ -28,7 +28,6 @@
 #include "cgptlib_internal.h"
 #include "file_type.h"
 #include "futility.h"
-#include "gbb_header.h"
 
 /* Default is to support everything we can */
 enum vboot_version vboot_version = VBOOT_VERSION_ALL;
@@ -63,28 +62,28 @@ static inline uint32_t max(uint32_t a, uint32_t b)
 
 enum futil_file_type ft_recognize_gbb(uint8_t *buf, uint32_t len)
 {
-	GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader *)buf;
+	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)buf;
 
-	if (memcmp(gbb->signature, GBB_SIGNATURE, GBB_SIGNATURE_SIZE))
+	if (memcmp(gbb->signature, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE))
 		return FILE_TYPE_UNKNOWN;
-	if (gbb->major_version > GBB_MAJOR_VER)
+	if (gbb->major_version > VB2_GBB_MAJOR_VER)
 		return FILE_TYPE_UNKNOWN;
-	if (sizeof(GoogleBinaryBlockHeader) > len)
+	if (sizeof(struct vb2_gbb_header) > len)
 		return FILE_TYPE_UNKNOWN;
 
 	/* close enough */
 	return FILE_TYPE_GBB;
 }
 
-int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
+int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 			   uint32_t *maxlen_ptr)
 {
-	if (len < sizeof(GoogleBinaryBlockHeader))
+	if (len < sizeof(struct vb2_gbb_header))
 		return 0;
 
-	if (memcmp(gbb->signature, GBB_SIGNATURE, GBB_SIGNATURE_SIZE))
+	if (memcmp(gbb->signature, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE))
 		return 0;
-	if (gbb->major_version != GBB_MAJOR_VER)
+	if (gbb->major_version != VB2_GBB_MAJOR_VER)
 		return 0;
 
 	/* Check limits first, to help identify problems */
@@ -101,9 +100,10 @@ int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
 		*maxlen_ptr = maxlen;
 	}
 
-	if (gbb->header_size != GBB_HEADER_SIZE || gbb->header_size > len)
+	if (gbb->header_size != EXPECTED_VB2_GBB_HEADER_SIZE ||
+	    gbb->header_size > len)
 		return 0;
-	if (gbb->hwid_offset < GBB_HEADER_SIZE)
+	if (gbb->hwid_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
 	if (gbb->hwid_offset + gbb->hwid_size > len)
 		return 0;
@@ -113,16 +113,16 @@ int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
 		if (!is_null_terminated(s, gbb->hwid_size))
 			return 0;
 	}
-	if (gbb->rootkey_offset < GBB_HEADER_SIZE)
+	if (gbb->rootkey_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
 	if (gbb->rootkey_offset + gbb->rootkey_size > len)
 		return 0;
 
-	if (gbb->bmpfv_offset < GBB_HEADER_SIZE)
+	if (gbb->bmpfv_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
 	if (gbb->bmpfv_offset + gbb->bmpfv_size > len)
 		return 0;
-	if (gbb->recovery_key_offset < GBB_HEADER_SIZE)
+	if (gbb->recovery_key_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
 	if (gbb->recovery_key_offset + gbb->recovery_key_size > len)
 		return 0;
@@ -133,7 +133,7 @@ int futil_valid_gbb_header(GoogleBinaryBlockHeader *gbb, uint32_t len,
 
 /* For GBB v1.2 and later, print the stored digest of the HWID (and whether
  * it's correct). Return true if it is correct. */
-int print_hwid_digest(GoogleBinaryBlockHeader *gbb,
+int print_hwid_digest(struct vb2_gbb_header *gbb,
 		      const char *banner, const char *footer)
 {
 	printf("%s", banner);
@@ -169,7 +169,7 @@ int print_hwid_digest(GoogleBinaryBlockHeader *gbb,
 
 /* Deprecated. Use futil_set_gbb_hwid in future. */
 /* For GBB v1.2 and later, update the hwid_digest field. */
-void update_hwid_digest(GoogleBinaryBlockHeader *gbb)
+void update_hwid_digest(struct vb2_gbb_header *gbb)
 {
 	/* There isn't one for v1.1 and earlier */
 	if (gbb->minor_version < 2)

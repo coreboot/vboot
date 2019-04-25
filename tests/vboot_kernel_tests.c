@@ -19,7 +19,6 @@
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
 #include "crc32.h"
-#include "gbb_header.h"
 #include "gpt.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
@@ -60,8 +59,8 @@ static int verify_data_fail;
 static int unpack_key_fail;
 static int gpt_flag_external;
 
-static uint8_t gbb_data[sizeof(GoogleBinaryBlockHeader) + 2048];
-static GoogleBinaryBlockHeader *gbb = (GoogleBinaryBlockHeader*)gbb_data;
+static uint8_t gbb_data[sizeof(struct vb2_gbb_header) + 2048];
+static struct vb2_gbb_header *gbb = (struct vb2_gbb_header*)gbb_data;
 static VbExDiskHandle_t handle;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
@@ -139,8 +138,8 @@ static void ResetMocks(void)
 	gpt_flag_external = 0;
 
 	memset(gbb, 0, sizeof(*gbb));
-	gbb->major_version = GBB_MAJOR_VER;
-	gbb->minor_version = GBB_MINOR_VER;
+	gbb->major_version = VB2_GBB_MAJOR_VER;
+	gbb->minor_version = VB2_GBB_MINOR_VER;
 	gbb->flags = 0;
 
 	memset(&shared_data, 0, sizeof(shared_data));
