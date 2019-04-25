@@ -27,7 +27,7 @@ void vb2ex_printf(const char *func, const char *fmt, ...)
 __attribute__((weak))
 int vb2ex_tpm_clear_owner(struct vb2_context *ctx)
 {
-	fprintf(stderr, "%s: function not implemented", __func__);
+	fprintf(stderr, "%s: function not implemented\n", __func__);
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 
@@ -38,7 +38,7 @@ int vb2ex_read_resource(struct vb2_context *ctx,
 			void *buf,
 			uint32_t size)
 {
-	fprintf(stderr, "%s: function not implemented", __func__);
+	fprintf(stderr, "%s: function not implemented\n", __func__);
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 
@@ -66,6 +66,6 @@ int vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 __attribute__((weak))
 int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
-	fprintf(stderr, "%s: function not implemented", __func__);
+	fprintf(stderr, "%s: function not implemented\n", __func__);
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
