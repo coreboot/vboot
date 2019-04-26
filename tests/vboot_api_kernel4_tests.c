@@ -28,7 +28,6 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
 static struct vb2_context ctx_nvram_backend;
 static struct vb2_shared_data *sd;
-static VbCommonParams cparams;
 static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
@@ -47,10 +46,6 @@ static int mock_switches_are_stuck;
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	memset(&cparams, 0, sizeof(cparams));
-	cparams.shared_data_size = sizeof(shared_data);
-	cparams.shared_data_blob = shared_data;
-
 	memset(&kparams, 0, sizeof(kparams));
 
 	memset(&gbb, 0, sizeof(gbb));
@@ -171,7 +166,7 @@ VbError_t VbBootDiagnostic(struct vb2_context *c)
 
 static void test_slk(VbError_t retval, int recovery_reason, const char *desc)
 {
-	TEST_EQ(VbSelectAndLoadKernel(&ctx, &cparams, &kparams), retval, desc);
+	TEST_EQ(VbSelectAndLoadKernel(&ctx, shared, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }

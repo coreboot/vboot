@@ -220,7 +220,7 @@ VbError_t VbBootNormal(struct vb2_context *ctx)
 }
 
 static VbError_t vb2_kernel_setup(struct vb2_context *ctx,
-				  VbCommonParams *cparams,
+				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	if (VB2_SUCCESS != vb2_init_context(ctx)) {
@@ -228,9 +228,6 @@ static VbError_t vb2_kernel_setup(struct vb2_context *ctx,
 		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
 		return VBERROR_INIT_SHARED_DATA;
 	}
-
-	VbSharedDataHeader *shared =
-		(VbSharedDataHeader *)cparams->shared_data_blob;
 
 	/* Start timer */
 	shared->timer_vb_select_and_load_kernel_enter = VbExGetTimer();
@@ -347,31 +344,24 @@ static VbError_t vb2_kernel_phase4(struct vb2_context *ctx,
 	return VBERROR_SUCCESS;
 }
 
-static void vb2_kernel_cleanup(struct vb2_context *ctx, VbCommonParams *cparams)
+static void vb2_kernel_cleanup(struct vb2_context *ctx)
 {
-	/*
-	 * This must directly access cparams for now because we could have had
-	 * an error setting up the vboot2 context.  In that case
-	 * vb2_shared_data is not available.
-	 */
-	VbSharedDataHeader *shared =
-		(VbSharedDataHeader *)cparams->shared_data_blob;
-
 	vb2_nv_commit(ctx);
 
-	/* Stop timer */
-	shared->timer_vb_select_and_load_kernel_exit = VbExGetTimer();
-
-	/* Store how much shared data we used, if any */
-	cparams->shared_data_size = shared->data_used;
+	/* vb2_shared_data may not have been initialized, and we may not have a
+	   proper vbsd value. */
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	if (sd->vbsd)
+		/* Stop timer */
+		sd->vbsd->timer_vb_select_and_load_kernel_exit = VbExGetTimer();
 }
 
 VbError_t VbSelectAndLoadKernel(
 	struct vb2_context *ctx,
-	VbCommonParams *cparams,
+	VbSharedDataHeader *shared,
 	VbSelectAndLoadKernelParams *kparams)
 {
-	VbError_t retval = vb2_kernel_setup(ctx, cparams, kparams);
+	VbError_t retval = vb2_kernel_setup(ctx, shared, kparams);
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
@@ -442,7 +432,7 @@ VbError_t VbSelectAndLoadKernel(
 	if (VBERROR_SUCCESS == retval)
 		retval = vb2_kernel_phase4(ctx, kparams);
 
-	vb2_kernel_cleanup(ctx, cparams);
+	vb2_kernel_cleanup(ctx);
 
 	/* Pass through return value from boot path */
 	VB2_DEBUG("Returning %d\n", (int)retval);
@@ -450,7 +440,7 @@ VbError_t VbSelectAndLoadKernel(
 }
 
 VbError_t VbVerifyMemoryBootImage(
-	struct vb2_context *ctx, VbCommonParams *cparams,
+	struct vb2_context *ctx, VbSharedDataHeader *shared,
 	VbSelectAndLoadKernelParams *kparams, void *boot_image,
 	size_t image_size)
 {
@@ -464,13 +454,11 @@ VbError_t VbVerifyMemoryBootImage(
 	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
 
-	VbError_t retval = vb2_kernel_setup(ctx, cparams, kparams);
+	VbError_t retval = vb2_kernel_setup(ctx, shared, kparams);
 	if (retval)
 		goto fail;
 
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 
 	if ((boot_image == NULL) || (image_size == 0)) {
 		retval = VBERROR_INVALID_PARAMETER;
@@ -601,7 +589,7 @@ VbError_t VbVerifyMemoryBootImage(
 	retval = VBERROR_SUCCESS;
 
  fail:
-	vb2_kernel_cleanup(ctx, cparams);
+	vb2_kernel_cleanup(ctx);
 	if (NULL != kernel_subkey)
 		free(kernel_subkey);
 	return retval;

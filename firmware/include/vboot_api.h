@@ -31,6 +31,7 @@ extern "C" {
 #endif  /* __cplusplus */
 
 struct vb2_context;
+typedef struct VbSharedDataHeader VbSharedDataHeader;
 
 /*****************************************************************************/
 /* Error codes */
@@ -321,7 +322,7 @@ typedef struct VbSelectAndLoadKernelParams {
  * Returns VBERROR_SUCCESS if success, non-zero if error; on error, caller
  * should reboot. */
 VbError_t VbSelectAndLoadKernel(struct vb2_context *ctx,
-				VbCommonParams *cparams,
+				VbSharedDataHeader *shared,
 				VbSelectAndLoadKernelParams *kparams);
 
 /**
@@ -334,15 +335,14 @@ VbError_t VbSelectAndLoadKernel(struct vb2_context *ctx,
  * does not check the image signature.
  *
  * @param ctx		Vboot context
- * @param cparams	Common parameters, e.g. use member caller_context
- *			to point to useful context data
+ * @param shared 	Vboot1 VBSD struct
  * @param kparams	kernel params
  * @param boot_image	Image in memory that needs to be verified
  * @param image_size	Size of the image in memory
  * @return VBERROR_... error, VBERROR_SUCCESS on success.
  */
 VbError_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
-				  VbCommonParams *cparams,
+				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams,
 				  void *boot_image,
 				  size_t image_size);
