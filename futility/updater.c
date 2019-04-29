@@ -13,6 +13,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "updater_compat.h"
+
 #include "2rsa.h"
 #include "crossystem.h"
 #include "futility.h"
@@ -1108,6 +1110,7 @@ static const struct vb2_keyblock *get_keyblock(
 	return (const struct vb2_keyblock *)section.data;
 }
 
+#if 0
 /*
  * Duplicates a key block and returns the duplicated block.
  * The caller must free the returned key block after being used.
@@ -1121,13 +1124,16 @@ static struct vb2_keyblock *dupe_keyblock(const struct vb2_keyblock *block)
 	memcpy(new_block, block, block->keyblock_size);
 	return new_block;
 }
+#endif
 
 /*
  * Verifies if keyblock is signed with given key.
  * Returns 0 on success, otherwise failure.
  */
 static int verify_keyblock(const struct vb2_keyblock *block,
-			   const struct vb2_packed_key *sign_key) {
+			   const struct vb2_packed_key *sign_key)
+{
+#if 0
 	int r;
 	uint8_t workbuf[VB2_WORKBUF_RECOMMENDED_SIZE];
 	struct vb2_workbuf wb;
@@ -1139,7 +1145,7 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 		return -1;
 	}
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
-	if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
+	if (VB2_SUCCESS != vb2_unpack_key2(&key, sign_key)) {
 		ERROR("Invalid signing key,");
 		return -1;
 	}
@@ -1156,9 +1162,11 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 		ERROR("Failed verifying key block.");
 		return -1;
 	}
+#endif
 	return 0;
 }
 
+#if 0
 /*
  * Gets the data key and firmware version from a section on firmware image.
  * The section should contain a vb2_keyblock and a vb2_fw_preamble immediately
@@ -1184,6 +1192,7 @@ static int get_key_versions(const struct firmware_image *image,
 	      image->file_name, *data_key_version, *firmware_version);
 	return 0;
 }
+#endif
 
 /*
  * Checks if the root key in ro_image can verify vblocks in rw_image.
@@ -1298,6 +1307,7 @@ static int legacy_needs_update(struct updater_config *cfg)
 static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 					const struct firmware_image *rw_image)
 {
+#if 0
 	unsigned int data_key_version = 0, firmware_version = 0,
 		     tpm_data_key_version = 0, tpm_firmware_version = 0;
 	int tpm_fwver = 0;
@@ -1329,6 +1339,7 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 		      tpm_firmware_version, firmware_version);
 		return -1;
 	}
+#endif
 	return 0;
 }
 

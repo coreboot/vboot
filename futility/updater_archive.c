@@ -19,6 +19,11 @@
 #include <zip.h>
 #endif
 
+#include "updater_compat.h"
+
+#undef __USE_FILE_OFFSET64
+#include <fts.h>
+
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"
