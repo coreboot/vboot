@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <fts.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>

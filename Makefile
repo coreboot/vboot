@@ -1141,7 +1141,7 @@ ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 ${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB} ${UTILLIB21}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB} ${UTILLIB21}
-${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS}
+${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
 ${TEST2X_BINS}: LIBS += ${FWLIB2X}
@@ -1218,8 +1218,8 @@ ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/host/linktest/main: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common3_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS}
+${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
+${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
 
 ${TEST21_BINS}: LDLIBS += ${CRYPTO_LIBS}
