@@ -8,7 +8,6 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <fts.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +17,11 @@
 #ifdef HAVE_LIBZIP
 #include <zip.h>
 #endif
+
+#include "updater_compat.h"
+
+#undef __USE_FILE_OFFSET64
+#include <fts.h>
 
 #include "host_misc.h"
 #include "updater.h"

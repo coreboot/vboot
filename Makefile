@@ -222,6 +222,7 @@ HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
 ifneq (${HAVE_LIBZIP},)
   CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
+  LIBZIP_STATIC_LIBS := $(shell ${PKG_CONFIG} --static --libs libzip)
 endif
 
 # Determine QEMU architecture needed, if any
@@ -1090,8 +1091,9 @@ signing_install: ${SIGNING_SCRIPTS} ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
 # new Firmware Utility
 
 .PHONY: futil
-futil: ${FUTIL_STATIC_BIN} ${FUTIL_BIN}
+futil: ${FUTIL_BIN} # ${FUTIL_STATIC_BIN}
 
+${FUTIL_STATIC_BIN}: LDLIBS += ${CRYPTO_STATIC_LIBS} ${LIBZIP_STATIC_LIBS}
 ${FUTIL_STATIC_BIN}: ${FUTIL_STATIC_OBJS} ${UTILLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} -static $^ ${LDLIBS}
@@ -1102,10 +1104,10 @@ ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB}
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: futil_install
-futil_install: ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+futil_install: ${FUTIL_BIN} #${FUTIL_STATIC_BIN}
 	@${PRINTF} "    INSTALL       futility\n"
 	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} ${FUTIL_STATIC_BIN}
+	${Q}${INSTALL} -t ${UB_DIR} ${FUTIL_BIN} #${FUTIL_STATIC_BIN}
 	${Q}for prog in ${FUTIL_SYMLINKS}; do \
 		ln -sf futility "${UB_DIR}/$$prog"; done
 
@@ -1139,7 +1141,7 @@ ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 ${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB} ${UTILLIB21}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB} ${UTILLIB21}
-${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS}
+${TEST_FUTIL_BINS}: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
 ${TEST2X_BINS}: LIBS += ${FWLIB2X}
@@ -1207,6 +1209,7 @@ ${UTIL_DEFAULTS}:
 
 # Some utilities need external crypto functions
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
+CRYPTO_STATIC_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto --static)
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
@@ -1215,8 +1218,8 @@ ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/host/linktest/main: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vboot_common3_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS}
+${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
+${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
 
 ${TEST21_BINS}: LDLIBS += ${CRYPTO_LIBS}

@@ -659,3 +659,5 @@ static int do_gbb_utility(int argc, char *argv[])
 
 DECLARE_FUTIL_COMMAND(gbb_utility, do_gbb_utility, VBOOT_VERSION_ALL,
 		      "Manipulate the Google Binary Block (GBB)");
+DECLARE_FUTIL_COMMAND(gbb, do_gbb_utility, VBOOT_VERSION_ALL,
+		      "Manipulate the Google Binary Block (GBB)");
