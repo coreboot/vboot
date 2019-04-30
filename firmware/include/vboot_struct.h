@@ -254,9 +254,9 @@ typedef struct VbKernelPreambleHeader {
 /* NvStorage uses 64-byte record, not 16-byte */
 #define VBSD_NVDATA_V2                   0x00100000
 /* Confirm enabling Alt OS for this boot */
-#define VBSD_ALT_OS_CONFIRM_ENABLE       0x00200000
+#define VBSD_DEPRECATED_ALT_OS_CONFIRM_ENABLE       0x00200000
 /* Show Alt OS picker screen for this boot */
-#define VBSD_ALT_OS_SHOW_PICKER          0x00400000
+#define VBSD_DEPRECATED_ALT_OS_SHOW_PICKER          0x00400000
 
 /*
  * Supported flags by header version.  It's ok to add new flags while keeping

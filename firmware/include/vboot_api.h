@@ -139,7 +139,7 @@ enum VbErrorPredefined_t {
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error reading or writing Alt OS flags to TPM */
-	VBERROR_TPM_ALT_OS                    = 0x10031,
+	VBERROR_DEPRECATED_TPM_ALT_OS         = 0x10031,
 	/* Error writing VPD */
 	VBERROR_VPD_WRITE                     = 0x10032,
 
@@ -682,8 +682,7 @@ enum VbScreenType_t {
 	VB_SCREEN_LANGUAGES_MENU = 0x20f,
 	/* Detachable Menu - Options */
 	VB_SCREEN_OPTIONS_MENU = 0x210,
-	/* Alt OS picker screen */
-	VB_SCREEN_ALT_OS = 0x211,
+	/* REMOVED: Alt OS picker screen (0x211) */
 	/* Alt firmware picker screen (for keyboard UI) */
 	VB_SCREEN_ALT_FW_PICK = 0x212,
 	/* Alt firmware menu screen (for detachable UI ) */
