@@ -83,7 +83,7 @@ uint32_t VbTryUsb(struct vb2_context *ctx)
 	if (VBERROR_SUCCESS == retval) {
 		VB2_DEBUG("VbBootDeveloper() - booting USB\n");
 	} else {
-		vb2_error_notify("Could not boot from USB",
+		vb2_error_notify("Could not boot from USB\n",
 				 "VbBootDeveloper() - no kernel found on USB\n",
 				 VB_BEEP_FAILED);
 		/*
