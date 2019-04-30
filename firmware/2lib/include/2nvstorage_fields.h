@@ -107,8 +107,8 @@ enum vb2_nv_offset {
 #define VB2_NV_MISC_BOOT_ON_AC_DETECT          0x02
 #define VB2_NV_MISC_TRY_RO_SYNC		       0x04
 #define VB2_NV_MISC_BATTERY_CUTOFF             0x08
-#define VB2_NV_MISC_ENABLE_ALT_OS              0x10
-#define VB2_NV_MISC_DISABLE_ALT_OS             0x20
+#define VB2_NV_MISC_DEPRECATED_ENABLE_ALT_OS   0x10
+#define VB2_NV_MISC_DEPRECATED_DISABLE_ALT_OS  0x20
 #define VB2_NV_MISC_POST_EC_SYNC_DELAY         0x40
 
 #endif  /* VBOOT_REFERENCE_VBOOT_2NVSTORAGE_FIELDS_H_ */

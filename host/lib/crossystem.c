@@ -570,17 +570,8 @@ int VbGetSystemPropertyInt(const char *name)
 		} else {
 			value = 0;
 		}
-	} else if (!strcasecmp(name, "enable_alt_os_request")) {
-		value = vb2_get_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST);
-	} else if (!strcasecmp(name, "disable_alt_os_request")) {
-		value = vb2_get_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST);
 	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
 		value = vb2_get_nv_storage(VB2_NV_POST_EC_SYNC_DELAY);
-	} else if (!strcasecmp(name, "alt_os_enabled")) {
-		/* TODO(b/117195332): Change this to read from a field
-		 * dedicated to storing Alt OS state. */
-		value = !!(GetVdatInt(VDAT_INT_FLAGS)
-			   & VBSD_ALT_OS_SHOW_PICKER);
 	}
 
 	return value;
@@ -739,10 +730,6 @@ int VbSetSystemPropertyInt(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_BATTERY_CUTOFF_REQUEST, value);
 	} else if (!strcasecmp(name,"kernel_max_rollforward")) {
 		return vb2_set_nv_storage(VB2_NV_KERNEL_MAX_ROLLFORWARD, value);
-	} else if (!strcasecmp(name, "enable_alt_os_request")) {
-		return vb2_set_nv_storage(VB2_NV_ENABLE_ALT_OS_REQUEST, value);
-	} else if (!strcasecmp(name, "disable_alt_os_request")) {
-		return vb2_set_nv_storage(VB2_NV_DISABLE_ALT_OS_REQUEST, value);
 	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
 		return vb2_set_nv_storage(VB2_NV_POST_EC_SYNC_DELAY, value);
 	}

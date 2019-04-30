@@ -115,10 +115,10 @@ enum vb2_nv_param {
 	 * VB2_MAX_ROLLFORWARD_MAX_V1_DEFAULT for V1.
 	 */
 	VB2_NV_FW_MAX_ROLLFORWARD,
-	/* Enable AltOS Mode on next boot. */
-	VB2_NV_ENABLE_ALT_OS_REQUEST,
-	/* Disable AltOS Mode on next boot. */
-	VB2_NV_DISABLE_ALT_OS_REQUEST,
+	/* Deprecated: Enable AltOS Mode on next boot. */
+	VB2_NV_DEPRECATED_ENABLE_ALT_OS_REQUEST,
+	/* Deprecated: Disable AltOS Mode on next boot. */
+	VB2_NV_DEPRECATED_DISABLE_ALT_OS_REQUEST,
 	/*
 	 * Add a short delay after EC software sync for any interaction
 	 * with EC-RW (persistent).  Currently used on eve for programmatically
