@@ -195,7 +195,7 @@ VbError_t VbExTpmClose(void)
 
 VbError_t VbExTpmOpen(void)
 {
-	char* device_path;
+	const char *device_path;
 	struct timespec delay;
 	int retries, saved_errno;
 

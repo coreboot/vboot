@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "rollback_index.h"
 #include "test_common.h"
 #include "vboot_api.h"
 

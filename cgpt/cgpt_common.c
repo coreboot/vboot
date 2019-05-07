@@ -327,7 +327,7 @@ int DriveOpen(const char *drive_path, struct drive *drive, int mode,
   // Clear struct for proper error handling.
   memset(drive, 0, sizeof(struct drive));
 
-  drive->fd = open(drive_path, mode | 
+  drive->fd = open(drive_path, mode |
 #ifndef HAVE_MACOS
 		               O_LARGEFILE |
 #endif
@@ -677,8 +677,8 @@ const Guid guid_unused =            GPT_ENT_TYPE_UNUSED;
 
 const static struct {
   const Guid *type;
-  char *name;
-  char *description;
+  const char *name;
+  const char *description;
 } supported_types[] = {
   {&guid_chromeos_firmware, "firmware", "ChromeOS firmware"},
   {&guid_chromeos_kernel, "kernel", "ChromeOS kernel"},
@@ -981,7 +981,7 @@ uint8_t RepairEntries(GptData *gpt, const uint32_t valid_entries) {
 
 /* The above five fields are shared between primary and secondary headers.
  * We can recover one header from another through copying those fields. */
-void CopySynonymousParts(GptHeader* target, const GptHeader* source) {
+static void CopySynonymousParts(GptHeader* target, const GptHeader* source) {
   target->first_usable_lba = source->first_usable_lba;
   target->last_usable_lba = source->last_usable_lba;
   target->number_of_entries = source->number_of_entries;
@@ -1087,7 +1087,6 @@ void PMBRToStr(struct pmbr *pmbr, char *str, unsigned int buflen) {
 }
 
 /* Optional */
-int __GenerateGuid(Guid *newguid) { return CGPT_FAILED; };
 #ifndef HAVE_MACOS
-int GenerateGuid(Guid *newguid) __attribute__((weak, alias("__GenerateGuid")));
+__attribute__((weak)) int GenerateGuid(Guid *newguid) { return CGPT_FAILED; };
 #endif

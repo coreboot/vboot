@@ -21,7 +21,7 @@
  * @param size		Size of string buffer in characters
  * @return 1 if string has a null terminator, 0 if not
  */
-int string_has_null(const char *s, size_t size)
+static int string_has_null(const char *s, size_t size)
 {
 	for (; size; size--) {
 		if (*s++ == 0)
@@ -327,9 +327,9 @@ const struct bdb_sig *bdb_get_data_sig(const void *buf)
 
 /*****************************************************************************/
 
-int bdb_verify_sig(const struct bdb_key *key,
-		   const struct bdb_sig *sig,
-		   const uint8_t *digest)
+static int bdb_verify_sig(const struct bdb_key *key,
+			  const struct bdb_sig *sig,
+			  const uint8_t *digest)
 {
 	/* Key and signature algorithms must match */
 	if (key->sig_alg != sig->sig_alg)

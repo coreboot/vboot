@@ -1645,7 +1645,7 @@ static int ErrorTextTest(void)
 	return TEST_OK;
 }
 
-static int CheckHeaderOffDevice()
+static int CheckHeaderOffDevice(void)
 {
 	GptData* gpt = GetEmptyGptData();
 	BuildTestGptData(gpt);
@@ -1711,7 +1711,7 @@ int main(int argc, char *argv[])
 	int i;
 	int error_count = 0;
 	struct {
-		char *name;
+		const char *name;
 		test_func fp;
 		int retval;
 	} test_cases[] = {

@@ -16,17 +16,7 @@
 #include "test_common.h"
 #include "utility.h"
 #include "vboot_api.h"
-
-/*
- * Internal functions from 2rsa.c that have error conditions we can't trigger
- * from the public APIs.  These include checks for bad algorithms where the
- * next call level up already checks for bad algorithms, etc.
- *
- * These functions aren't in 2rsa.h because they're not part of the public
- * APIs.
- */
-int vb2_mont_ge(const struct vb2_public_key *key, uint32_t *a);
-int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key);
+#include "vboot_test.h"
 
 /**
  * Test RSA utility funcs

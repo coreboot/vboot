@@ -125,7 +125,7 @@ static void unmarshal_TPM2B_MAX_NV_BUFFER(void **buffer,
 }
 
 static void unmarshal_authorization_section(void **buffer, int *size,
-					    char *cmd_name)
+					    const char *cmd_name)
 {
 	/*
 	 * Let's ignore the authorisation section. It should be 5 bytes total,

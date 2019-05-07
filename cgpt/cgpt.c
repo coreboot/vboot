@@ -40,7 +40,7 @@ struct {
   {"legacy", cmd_legacy, "Switch between GPT and Legacy GPT"},
 };
 
-void Usage(void) {
+static void Usage(void) {
   int i;
 
   printf("\nUsage: %s COMMAND [OPTIONS] DRIVE\n\n"

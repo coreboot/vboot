@@ -11,11 +11,6 @@
 
 #include "crossystem.h"
 
-/*
- * Call arch specific init, if provided, otherwise use the 'weak' stub.
- */
-int __VbArchInit(void) { return 0; }
-int VbArchInit(void) __attribute__((weak, alias("__VbArchInit")));
 /* Flags for Param */
 #define IS_STRING      0x01  /* String (not present = integer) */
 #define CAN_WRITE      0x02  /* Writable (not present = read-only */
@@ -118,7 +113,7 @@ static const int kNameWidth = 23;
 
 
 /* Print help */
-void PrintHelp(const char *progname) {
+static void PrintHelp(const char *progname) {
   const Param *p;
 
   printf("\nUsage:\n"
@@ -146,7 +141,7 @@ void PrintHelp(const char *progname) {
 /* Find the parameter in the list.
  *
  * Returns the parameter, or NULL if no match. */
-const Param* FindParam(const char* name) {
+static const Param* FindParam(const char* name) {
   const Param* p;
   if (!name)
     return NULL;
@@ -161,7 +156,7 @@ const Param* FindParam(const char* name) {
 /* Set the specified parameter.
  *
  * Returns 0 if success, non-zero if error. */
-int SetParam(const Param* p, const char* value) {
+static int SetParam(const Param* p, const char* value) {
   if (!(p->flags & CAN_WRITE))
     return 1;  /* Parameter is read-only */
 
@@ -180,7 +175,7 @@ int SetParam(const Param* p, const char* value) {
 /* Compares the parameter with the expected value.
  *
  * Returns 0 if success (match), non-zero if error (mismatch). */
-int CheckParam(const Param* p, char* expect) {
+static int CheckParam(const Param* p, const char* expect) {
   if (p->flags & IS_STRING) {
     char buf[VB_MAX_STRING_PROPERTY];
     const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
@@ -202,7 +197,7 @@ int CheckParam(const Param* p, char* expect) {
 /* Print the specified parameter.
  *
  * Returns 0 if success, non-zero if error. */
-int PrintParam(const Param* p) {
+static int PrintParam(const Param* p) {
   if (p->flags & IS_STRING) {
     char buf[VB_MAX_STRING_PROPERTY];
     const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
@@ -223,7 +218,7 @@ int PrintParam(const Param* p) {
  * parameters that specify the NO_PRINT_ALL flag.
  *
  * Returns 0 if success, non-zero if error. */
-int PrintAllParams(int force_all) {
+static int PrintAllParams(int force_all) {
   const Param* p;
   int retval = 0;
   char buf[VB_MAX_STRING_PROPERTY];
@@ -263,11 +258,6 @@ int main(int argc, char* argv[]) {
   else
     progname = argv[0];
 
-  if (VbArchInit()) {
-    fprintf(stderr, "Failed to initialize\n");
-    return -1;
-  }
-
   /* If no args specified, print all params */
   if (argc == 1)
     return PrintAllParams(0);
@@ -287,7 +277,7 @@ int main(int argc, char* argv[]) {
     char* has_set = strchr(argv[i], '=');
     char* has_expect = strchr(argv[i], '?');
     char* name = strtok(argv[i], "=?");
-    char* value = strtok(NULL, "=?");
+    const char* value = strtok(NULL, "=?");
     const Param* p;
 
     /* Make sure args are well-formed. '' or '=foo' or '?foo' not allowed. */

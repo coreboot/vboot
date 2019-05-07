@@ -23,6 +23,7 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
+#include "vboot_test.h"
 
 /* Mock data */
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -58,9 +59,6 @@ static enum vb2_tpm_mode tpm_mode;
 
 static char set_vendor_data[32];
 static int set_vendor_data_called;
-
-extern enum VbEcBootMode_t VbGetMode(void);
-extern struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
 
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
@@ -214,12 +212,12 @@ int vb2_audio_looping(void)
 	return 1;
 }
 
-uint32_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
+uint32_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
 	return vbtlk_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+VbError_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 			  const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))

@@ -509,8 +509,8 @@ static void test_verify_kernel_preamble(
 	free(body_sig);
 }
 
-int test_permutation(int signing_key_algorithm, int data_key_algorithm,
-		     const char *keys_dir)
+static int test_permutation(int signing_key_algorithm, int data_key_algorithm,
+			    const char *keys_dir)
 {
 	char filename[1024];
 	int retval = 1;

@@ -71,7 +71,7 @@ static int match_content(CgptFindParams *params, struct drive *drive,
 // This needs to handle /dev/mmcblk0 -> /dev/mmcblk0p3, /dev/sda -> /dev/sda3
 static void showmatch(CgptFindParams *params, const char *filename,
                       int partnum, GptEntry *entry) {
-  char * format = "%s%d\n";
+  const char * format = "%s%d\n";
 
   /*
    * Follow convention from disk_name() in kernel block/partition-generic.c

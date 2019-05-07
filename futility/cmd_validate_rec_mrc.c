@@ -49,7 +49,7 @@ struct mrc_metadata {
 #define REGF_METADATA_BLOCK_SIZE	REGF_BLOCK_GRANULARITY
 #define REGF_UNALLOCATED_BLOCK		0xffff
 
-unsigned long compute_ip_checksum(const void *addr, unsigned long length)
+static unsigned long compute_ip_checksum(const void *addr, unsigned long length)
 {
 	const uint8_t *ptr;
 	volatile union {

@@ -11,7 +11,7 @@
 
 #define MAX_VECTOR_LEN 256
 
-int TestCrc32TestVectors() {
+int TestCrc32TestVectors(void) {
 	struct {
 		uint8_t vector[MAX_VECTOR_LEN];
 		int len;

@@ -57,7 +57,12 @@ int futil_file_type_sign(enum futil_file_type type,
 			 const char *filename,
 			 uint8_t *buf, uint32_t len);
 
-/* Declare the file_type functions. */
+/*
+ * Declare the file_type functions. Certain functions are reused for more than
+ * one file type, leading to redundant declarations here.
+ */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wredundant-decls"
 #define R_(FOO) \
 	enum futil_file_type FOO(uint8_t *buf, uint32_t len);
 #define S_(FOO) \
@@ -69,5 +74,6 @@ int futil_file_type_sign(enum futil_file_type type,
 #undef NONE
 #undef S_
 #undef R_
+#pragma GCC diagnostic pop
 
 #endif	/* VBOOT_REFERENCE_FUTILITY_FILE_TYPE_H_ */

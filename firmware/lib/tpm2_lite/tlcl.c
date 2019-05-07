@@ -38,7 +38,8 @@ static uint32_t tpm_get_response(TPM_CC command,
 {
 	/* Command/response buffer. */
 	static uint8_t cr_buffer[TPM_BUFFER_SIZE];
-	uint32_t out_size, in_size, res;
+	int out_size, res;
+	uint32_t in_size;
 
 	out_size = tpm_marshal_command(command, command_body,
 				       cr_buffer, sizeof(cr_buffer));
@@ -601,7 +602,7 @@ uint32_t TlclGetRandom(uint8_t *data, uint32_t length, uint32_t *size)
 // Converts TPM_PT_VENDOR_STRING_x |value| to an array of bytes in |buf|.
 // Returns the number of bytes in the array.
 // |buf| should be at least 4 bytes long.
-size_t tlcl_vendor_string_parse(uint32_t value, uint8_t* buf)
+static size_t tlcl_vendor_string_parse(uint32_t value, uint8_t* buf)
 {
 	size_t len = 0;
 	int shift = 24;

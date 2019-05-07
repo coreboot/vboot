@@ -20,8 +20,7 @@
 #include "utility.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
-
-struct LoadKernelParams *VbApiKernelGetParams(void);
+#include "vboot_test.h"
 
 #define MAX_TEST_DISKS 10
 #define DEFAULT_COUNT -1
@@ -34,7 +33,7 @@ typedef struct {
 } disk_desc_t;
 
 typedef struct {
-	char *name;
+	const char *name;
 
 	/* inputs for test case */
 	uint32_t want_flags;
@@ -249,7 +248,7 @@ static void ResetMocks(int i)
 	t = test + i;
 }
 
-int is_nonzero(const void *vptr, size_t count)
+static int is_nonzero(const void *vptr, size_t count)
 {
 	const char *p = (const char *)vptr;
 	while (count--)
@@ -319,7 +318,7 @@ VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
+VbError_t LoadKernel(struct vb2_context *c, LoadKernelParams *params)
 {
 	got_find_disk = (const char *)params->disk_handle;
 	VB2_DEBUG("%s(%d): got_find_disk = %s\n", __FUNCTION__,
@@ -331,7 +330,7 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	return t->loadkernel_return_val[load_kernel_calls++];
 }
 
-void vb2_nv_set(struct vb2_context *ctx,
+void vb2_nv_set(struct vb2_context *c,
 		enum vb2_nv_param param,
 		uint32_t value)
 {

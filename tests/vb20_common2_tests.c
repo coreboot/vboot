@@ -139,7 +139,7 @@ static void test_verify_data(const struct vb2_packed_key *key1,
 }
 
 
-int test_algorithm(int key_algorithm, const char *keys_dir)
+static int test_algorithm(int key_algorithm, const char *keys_dir)
 {
 	char filename[1024];
 	struct vb2_private_key *private_key = NULL;

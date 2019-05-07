@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "vb2_struct.h"
+#include "vboot_host.h"
 #include "vboot_struct.h"
 
 

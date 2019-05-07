@@ -237,7 +237,7 @@ static void test_verify_data(const struct vb2_public_key *pubk_orig,
 	free(buf2);
 }
 
-int test_algorithm(int key_algorithm, const char *keys_dir)
+static int test_algorithm(int key_algorithm, const char *keys_dir)
 {
 	char filename[1024];
 

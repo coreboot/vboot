@@ -14,6 +14,7 @@
 #include <sys/time.h>
 
 #include "vboot_api.h"
+#include "vboot_test.h"
 
 static enum VbEcBootMode_t vboot_mode;
 
@@ -78,12 +79,6 @@ VbError_t VbExEcRunningRW(int devidx, int *in_rw)
 VbError_t VbExEcJumpToRW(int devidx)
 {
 	return VBERROR_SUCCESS;
-}
-
-VbError_t VbExEcRebootToRO(int devidx)
-{
-	/* Nothing to reboot, so all we can do is return failure. */
-	return VBERROR_UNKNOWN;
 }
 
 VbError_t VbExEcDisableJump(int devidx)

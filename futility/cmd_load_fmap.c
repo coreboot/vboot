@@ -52,7 +52,7 @@ static const struct option long_opts[] = {
 	{"help",        0, NULL, OPT_HELP},
 	{NULL,          0, NULL, 0},
 };
-static char *short_opts = ":o:";
+static const char *short_opts = ":o:";
 
 
 static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)

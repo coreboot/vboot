@@ -27,7 +27,7 @@ struct nv_field {
 	uint32_t default_value;   /* Expected default value */
 	uint32_t test_value;      /* Value to test writing */
 	uint32_t test_value2;     /* Second value to test writing */
-	char *desc;               /* Field description */
+	const char *desc;         /* Field description */
 };
 
 /* Array of fields to test, terminated with a field with desc==NULL. */

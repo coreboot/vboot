@@ -83,7 +83,7 @@ static struct option long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static char *short_opts = ":gsc:o:k:b:r:";
+static const char *short_opts = ":gsc:o:k:b:r:";
 
 /* Change the has_arg field of a long_opts entry */
 static void opt_has_arg(const char *name, int val)

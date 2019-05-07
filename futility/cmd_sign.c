@@ -630,7 +630,7 @@ static const struct option long_opts[] = {
 	{"help",         0, NULL, OPT_HELP},
 	{NULL,           0, NULL, 0},
 };
-static char *short_opts = ":s:b:k:S:B:v:f:d:l:";
+static const char *short_opts = ":s:b:k:S:B:v:f:d:l:";
 
 /* Return zero on success */
 static int parse_number_opt(const char *arg, const char *name, uint32_t *dest)

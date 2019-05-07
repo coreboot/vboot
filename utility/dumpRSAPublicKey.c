@@ -21,7 +21,7 @@
  * routines.
  */
 
-int check(RSA* key) {
+static int check(RSA* key) {
   const BIGNUM *n, *e;
   int public_exponent, modulus;
 
@@ -45,7 +45,7 @@ int check(RSA* key) {
 
 /* Pre-processes and outputs RSA public key to standard out.
  */
-void output(RSA* key) {
+static void output(RSA* key) {
   int i, nwords;
   const BIGNUM *key_n;
   BIGNUM *N = NULL;

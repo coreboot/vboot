@@ -22,6 +22,7 @@
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_kernel.h"
+#include "vboot_test.h"
 
 /* Global variables */
 static struct RollbackSpaceFwmp fwmp;

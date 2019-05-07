@@ -18,8 +18,8 @@
 #include "vboot_api.h"
 #include "vboot_struct.h"
 
-VbError_t VbGbbReadData(struct vb2_context *ctx,
-			uint32_t offset, uint32_t size, void *buf)
+static VbError_t VbGbbReadData(struct vb2_context *ctx,
+			       uint32_t offset, uint32_t size, void *buf)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 

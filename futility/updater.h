@@ -55,7 +55,7 @@ struct firmware_section {
 };
 
 struct system_property {
-	int (*getter)();
+	int (*getter)(void);
 	int value;
 	int initialized;
 };
@@ -114,7 +114,8 @@ struct updater_config {
 struct updater_config_arguments {
 	char *image, *ec_image, *pd_image;
 	char *archive, *quirks, *mode;
-	char *programmer, *model, *signature_id;
+	const char *programmer;
+	char *model, *signature_id;
 	char *emulation, *sys_props, *write_protection;
 	char *output_dir;
 	char *repack, *unpack;
@@ -175,7 +176,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg);
  * Allocates and initializes a updater_config object with default values.
  * Returns the newly allocated object, or NULL on error.
  */
-struct updater_config *updater_new_config();
+struct updater_config *updater_new_config(void);
 
 /*
  * Releases all resources in an updater configuration object.

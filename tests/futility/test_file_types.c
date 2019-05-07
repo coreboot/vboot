@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 {
 	char filename[PATH_MAX];
 	char status[80];
-	char *srcdir;
+	const char *srcdir;
 	enum futil_file_type type;
 	int i;
 

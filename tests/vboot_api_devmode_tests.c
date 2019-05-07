@@ -39,7 +39,7 @@ typedef struct {
 } note_event_t;
 
 typedef struct {
-	char *name;
+	const char *name;
 	uint32_t gbb_flags;
 	VbError_t beep_return;
 	uint32_t keypress_key;

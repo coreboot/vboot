@@ -119,7 +119,7 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb2ex_read_resource(struct vb2_context *ctx,
+int vb2ex_read_resource(struct vb2_context *c,
 			enum vb2_resource_index index,
 			uint32_t offset,
 			void *buf,

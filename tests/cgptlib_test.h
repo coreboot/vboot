@@ -14,7 +14,7 @@ enum {
 };
 
 #define TEST_CASE(func) #func, func
-typedef int (*test_func)();
+typedef int (*test_func)(void);
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
