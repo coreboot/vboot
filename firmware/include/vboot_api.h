@@ -213,7 +213,7 @@ typedef struct VbCommonParams {
 
 
 /*
- * Output flags for VbInitParams.out_flags.  Used to indicate potential boot
+ * Output flags for vboot_handoff.out_flags.  Used to indicate potential boot
  * paths and configuration to the calling firmware early in the boot process,
  * so that it can properly configure itself for the capabilities subsequently
  * required by VbSelectFirmware() and VbSelectAndLoadKernel().
@@ -230,25 +230,9 @@ typedef struct VbCommonParams {
  * is not present, VbExDisplay*() functions will not be called this boot.
  */
 #define VB_INIT_OUT_ENABLE_DISPLAY       0x00000004
-/*
- * Load USB storage drivers; VbExDisk*() functions may be called with the
- * VB_DISK_FLAG_REMOVABLE flag.  If this flag is not present, VbExDisk*()
- * functions will only be called for fixed disks.
- */
-#define VB_INIT_OUT_ENABLE_USB_STORAGE   0x00000008
 /* Enable developer path. */
 #define VB_INIT_OUT_ENABLE_DEVELOPER     0x00000080
-/* Mask of deprecated flags */
-#define VB_INIT_OUT_DEPRECATED           0x00000070
 
-/* Data only used by VbInit() */
-typedef struct VbInitParams {
-	uint32_t deprecated; /* Was init flags */
-
-	/* Outputs from VbInit(); valid only if it returns success. */
-	/* Output flags for firmware; see VB_INIT_OUT_*) */
-	uint32_t out_flags;
-} VbInitParams;
 
 /*
  * Firmware types for VbHashFirmwareBody() and
