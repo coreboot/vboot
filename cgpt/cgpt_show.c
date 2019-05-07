@@ -49,7 +49,8 @@ static void RawDump(const uint8_t *memory, const int size,
 #define PARTITION_FMT  "%12"PRId64"%12"PRId64"%8d  %s\n"
 #define PARTITION_MORE "%12s%12s%8s  %s%s\n", "", "", ""
 
-void PrintSignature(const char *indent, const char *sig, size_t n, int raw) {
+static void PrintSignature(const char *indent, const char *sig, size_t n,
+                           int raw) {
   size_t i;
   printf("%sSig: ", indent);
   if (!raw) {
@@ -162,7 +163,7 @@ void EntryDetails(GptEntry *entry, uint32_t index, int raw) {
     printf(PARTITION_MORE, "Attr: ", contents);
 }
 
-void EntriesDetails(struct drive *drive, const int secondary, int raw) {
+static void EntriesDetails(struct drive *drive, const int secondary, int raw) {
   uint32_t i;
 
   for (i = 0; i < GetNumberOfEntries(drive); ++i) {

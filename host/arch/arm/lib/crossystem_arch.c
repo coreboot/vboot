@@ -578,7 +578,7 @@ const char* VbGetArchPropertyString(const char* name, char* dest,
 {
 	char *str = NULL;
 	char *rv = NULL;
-	char *prop = NULL;
+	const char *prop = NULL;
 
 	if (!strcasecmp(name,"arch"))
 		return StrCopy(dest, "arm", size);
@@ -616,9 +616,4 @@ int VbSetArchPropertyString(const char* name, const char* value)
 {
 	/* All is handled in arch independent fashion */
 	return -1;
-}
-
-int VbArchInit(void)
-{
-	return 0;
 }

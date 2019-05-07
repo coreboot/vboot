@@ -77,7 +77,7 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return shutdown_request;
 }
 
-uint32_t VbTryUsb(struct vb2_context *ctx)
+static uint32_t VbTryUsb(struct vb2_context *ctx)
 {
 	uint32_t retval = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
 	if (VBERROR_SUCCESS == retval) {
@@ -177,7 +177,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
  * This shows the user a list of bootloaders and allows selection of one of
  * them. We loop forever until something is chosen or Escape is pressed.
  */
-VbError_t vb2_altfw_ui(struct vb2_context *ctx)
+static VbError_t vb2_altfw_ui(struct vb2_context *ctx)
 {
 	int active = 1;
 
@@ -235,7 +235,8 @@ static inline int is_vowel(uint32_t key) {
 /*
  * Prompt the user to enter the vendor data
  */
-VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx, char *data_value)
+static VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
+					  char *data_value)
 {
 	int len = 0;
 	VbScreenData data = {
@@ -314,7 +315,7 @@ VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx, char *data_value)
 /*
  * User interface for setting the vendor data in VPD
  */
-VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
+static VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
 {
 	char data_value[VENDOR_DATA_LENGTH + 1];
 	VbScreenData data = {
@@ -399,7 +400,7 @@ static VbError_t vb2_check_diagnostic_key(struct vb2_context *ctx,
  * can press the power button to confirm or press escape. There is a 30-second
  * timeout which acts the same as escape.
  */
-VbError_t vb2_diagnostics_ui(struct vb2_context *ctx)
+static VbError_t vb2_diagnostics_ui(struct vb2_context *ctx)
 {
 	int active = 1;
 	int power_button_was_pressed = 0;
@@ -515,7 +516,7 @@ static const char dev_disable_msg[] =
 	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
 	"\n";
 
-VbError_t vb2_developer_ui(struct vb2_context *ctx)
+static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbSharedDataHeader *shared = sd->vbsd;

@@ -350,7 +350,7 @@ int vb2_private_key_hash(const struct vb2_private_key **key_ptr,
 			static const struct vb2_private_key key = {
 				.hash_alg = VB2_HASH_SHA1,
 				.sig_alg = VB2_SIG_NONE,
-				.desc = "Unsigned SHA1",
+				.desc = (char *)"Unsigned SHA1",
 				.id = VB2_ID_NONE_SHA1,
 			};
 			*key_ptr = &key;
@@ -363,7 +363,7 @@ int vb2_private_key_hash(const struct vb2_private_key **key_ptr,
 			static const struct vb2_private_key key = {
 				.hash_alg = VB2_HASH_SHA256,
 				.sig_alg = VB2_SIG_NONE,
-				.desc = "Unsigned SHA-256",
+				.desc = (char *)"Unsigned SHA-256",
 				.id = VB2_ID_NONE_SHA256,
 			};
 			*key_ptr = &key;
@@ -376,7 +376,7 @@ int vb2_private_key_hash(const struct vb2_private_key **key_ptr,
 			static const struct vb2_private_key key = {
 				.hash_alg = VB2_HASH_SHA512,
 				.sig_alg = VB2_SIG_NONE,
-				.desc = "Unsigned SHA-512",
+				.desc = (char *)"Unsigned SHA-512",
 				.id = VB2_ID_NONE_SHA512,
 			};
 			*key_ptr = &key;

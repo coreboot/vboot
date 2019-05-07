@@ -187,8 +187,8 @@ static void sort_nodes(int num, struct node_s *ary[])
 	}
 }
 
-static void line(int indent, char *name,
-		 uint32_t start, uint32_t end, uint32_t size, char *append)
+static void line(int indent, const char *name, uint32_t start, uint32_t end,
+		 uint32_t size, const char *append)
 {
 	int i;
 	for (i = 0; i < indent; i++)

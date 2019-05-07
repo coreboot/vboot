@@ -24,6 +24,7 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
+#include "vboot_test.h"
 #include "vboot_ui_menu_private.h"
 
 /* Mock data */
@@ -58,9 +59,6 @@ static uint32_t beeps_played[64];
 static uint32_t beeps_count = 0;
 static uint32_t mock_altfw_mask;
 static int vbexaltfwmask_called;
-
-extern enum VbEcBootMode_t VbGetMode(void);
-extern struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
 
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
@@ -196,7 +194,7 @@ int vb2_audio_looping(void)
 	return 1;
 }
 
-VbError_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
+VbError_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
 	if (vbtlk_retval_count < ARRAY_SIZE(vbtlk_retval) &&
 	    vbtlk_retval[vbtlk_retval_count] != 0)
@@ -204,7 +202,7 @@ VbError_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	return vbtlk_last_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+VbError_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 			  const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
@@ -214,7 +212,7 @@ VbError_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
+VbError_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
 			uint32_t selected_index, uint32_t disabled_idx_mask)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
@@ -229,7 +227,7 @@ VbError_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
+VbError_t VbDisplayDebugInfo(struct vb2_context *c)
 {
 	debug_info_displayed = 1;
 	return VBERROR_SUCCESS;

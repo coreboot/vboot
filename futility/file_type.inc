@@ -68,7 +68,7 @@ FILE_TYPE(RAW_KERNEL,       "vmlinuz",       "raw linux kernel",
 	  NONE,
 	  S_(ft_sign_raw_kernel))
 FILE_TYPE(CHROMIUMOS_DISK,  "disk_img",      "chromiumos disk image",
-	  NONE,
+	  R_(ft_recognize_gpt),
 	  NONE,
 	  NONE)
 FILE_TYPE(RWSIG,            "rwsig",         "RW device image",

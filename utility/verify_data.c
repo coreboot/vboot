@@ -29,34 +29,6 @@
 #define COL_RED "\e[0;31m"
 #define COL_STOP "\e[m"
 
-uint8_t* read_signature(char* input_file, int len)
-{
-	int i, sigfd;
-	uint8_t* signature = NULL;
-	if ((sigfd = open(input_file, O_RDONLY)) == -1) {
-		fprintf(stderr, "Couldn't open signature file\n");
-		return NULL;
-	}
-
-	/* Read the signature into a buffer*/
-	signature = (uint8_t*) malloc(len);
-	if (!signature) {
-		close(sigfd);
-		return NULL;
-	}
-
-	if( (i = read(sigfd, signature, len)) != len ) {
-		fprintf(stderr, "Expected signature length %d, Received %d\n",
-			len, i);
-		close(sigfd);
-		free(signature);
-		return NULL;
-	}
-
-	close(sigfd);
-	return signature;
-}
-
 int main(int argc, char* argv[])
 {
 	uint8_t workbuf[VB2_VERIFY_DIGEST_WORKBUF_BYTES]

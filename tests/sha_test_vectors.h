@@ -8,10 +8,10 @@
 #ifndef VBOOT_REFERENCE_SHA_TEST_VECTORS_H_
 #define VBOOT_REFERENCE_SHA_TEST_VECTORS_H_
 
-char* oneblock_msg = "abc";
-char* multiblock_msg1 = "abcdbcdecdefdefgefghfghighijhijkijkl"
+const char* oneblock_msg = "abc";
+const char* multiblock_msg1 = "abcdbcdecdefdefgefghfghighijhijkijkl"
 		"jklmklmnlmnomnopnopq";
-char* multiblock_msg2= "abcdefghbcdefghicdefghijdefghijkefghi"
+const char* multiblock_msg2= "abcdefghbcdefghicdefghijdefghijkefghi"
 		"jklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnop"
 		"qrsmnopqrstnopqrstu";
 char* long_msg;

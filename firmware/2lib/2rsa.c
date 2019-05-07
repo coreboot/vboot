@@ -13,6 +13,7 @@
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "vboot_test.h"
 
 /**
  * a[] -= mod
@@ -312,6 +313,13 @@ static const uint8_t sha512_tail[] = {
 	0x05,0x00,0x04,0x40
 };
 
+/**
+ * Check pkcs 1.5 padding bytes
+ *
+ * @param sig		Signature to verify
+ * @param key		Key to take signature and hash algorithms from
+ * @return VB2_SUCCESS, or non-zero if error.
+ */
 int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key)
 {
 	/* Determine padding to use depending on the signature type */

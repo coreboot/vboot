@@ -185,7 +185,7 @@ char *host_shell(const char *command)
 
 
 /* An helper function to return "mainfw_act" system property.  */
-static int host_get_mainfw_act()
+static int host_get_mainfw_act(void)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
 
@@ -201,13 +201,13 @@ static int host_get_mainfw_act()
 }
 
 /* A helper function to return the "tpm_fwver" system property. */
-static int host_get_tpm_fwver()
+static int host_get_tpm_fwver(void)
 {
 	return VbGetSystemPropertyInt("tpm_fwver");
 }
 
 /* A helper function to return the "hardware write protection" status. */
-static int host_get_wp_hw()
+static int host_get_wp_hw(void)
 {
 	/* wpsw refers to write protection 'switch', not 'software'. */
 	int v = VbGetSystemPropertyInt("wpsw_cur");
@@ -220,13 +220,13 @@ static int host_get_wp_hw()
 }
 
 /* A helper function to return "fw_vboot2" system property. */
-static int host_get_fw_vboot2()
+static int host_get_fw_vboot2(void)
 {
 	return VbGetSystemPropertyInt("fw_vboot2");
 }
 
 /* A help function to get $(mosys platform version). */
-static int host_get_platform_version()
+static int host_get_platform_version(void)
 {
 	char *result = host_shell("mosys platform version");
 	int rev = -1;
@@ -341,7 +341,7 @@ static int host_get_wp(const char *programmer)
 }
 
 /* Helper function to return host software write protection status. */
-static int host_get_wp_sw()
+static int host_get_wp_sw(void)
 {
 	return host_get_wp(PROG_HOST);
 }

@@ -14,7 +14,7 @@
 #include "host.h"
 #include "test_common.h"
 
-void check_header_tests(void)
+static void check_header_tests(void)
 {
 	struct bdb_header sgood = {
 		.struct_magic = BDB_HEADER_MAGIC,
@@ -58,7 +58,7 @@ void check_header_tests(void)
 	TEST_EQ_S(bdb_check_header(&s, ssize), BDB_ERROR_BDB_SIZE);
 }
 
-void check_key_tests(void)
+static void check_key_tests(void)
 {
 	struct bdb_key sgood = {
 		.struct_magic = BDB_KEY_MAGIC,
@@ -119,7 +119,7 @@ void check_key_tests(void)
 	TEST_EQ_S(bdb_check_key(&s, ssize), BDB_ERROR_SIG_ALG);
 }
 
-void check_sig_tests(void)
+static void check_sig_tests(void)
 {
 	struct bdb_sig sgood = {
 		.struct_magic = BDB_SIG_MAGIC,
@@ -179,7 +179,7 @@ void check_sig_tests(void)
 	TEST_EQ_S(bdb_check_sig(&s, ssize), BDB_ERROR_SIG_ALG);
 }
 
-void check_data_tests(void)
+static void check_data_tests(void)
 {
 	struct bdb_data sgood = {
 		.struct_magic = BDB_DATA_MAGIC,
@@ -248,7 +248,7 @@ void check_data_tests(void)
 /**
  * Test bdb_verify() and bdb_create()
  */
-void check_bdb_verify(const char *key_dir)
+static void check_bdb_verify(const char *key_dir)
 {
 	uint8_t oem_area_0[32] = "Some OEM area.";
 	uint8_t oem_area_1[64] = "Some other OEM area.";
@@ -279,9 +279,9 @@ void check_bdb_verify(const char *key_dir)
 		.oem_area_0_size = sizeof(oem_area_0),
 		.oem_area_1 = oem_area_1,
 		.oem_area_1_size = sizeof(oem_area_1),
-		.header_sig_description = "The header sig",
-		.data_sig_description = "The data sig",
-		.data_description = "Test BDB data",
+		.header_sig_description = (char *)"The header sig",
+		.data_sig_description = (char *)"The data sig",
+		.data_description = (char *)"Test BDB data",
 		.data_version = 3,
 		.hash = hash,
 		.num_hashes = 2,

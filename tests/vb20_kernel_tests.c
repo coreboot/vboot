@@ -178,7 +178,7 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
 int vb2_verify_keyblock(struct vb2_keyblock *block,
 			uint32_t size,
 			const struct vb2_public_key *key,
-			const struct vb2_workbuf *wb)
+			const struct vb2_workbuf *w)
 {
 	return mock_verify_keyblock_retval;
 }
@@ -186,7 +186,7 @@ int vb2_verify_keyblock(struct vb2_keyblock *block,
 int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 			       uint32_t size,
 			       const struct vb2_public_key *key,
-			       const struct vb2_workbuf *wb)
+			       const struct vb2_workbuf *w)
 {
 	return mock_verify_preamble_retval;
 }

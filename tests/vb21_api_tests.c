@@ -124,12 +124,12 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb21_load_fw_keyblock(struct vb2_context *ctx)
+int vb21_load_fw_keyblock(struct vb2_context *c)
 {
 	return retval_vb21_load_fw_keyblock;
 }
 
-int vb21_load_fw_preamble(struct vb2_context *ctx)
+int vb21_load_fw_preamble(struct vb2_context *c)
 {
 	return retval_vb21_load_fw_preamble;
 }

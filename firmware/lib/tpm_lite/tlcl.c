@@ -252,10 +252,10 @@ static uint32_t StartOSAPSession(
 /* Fills in the authentication block at the end of the command. The command body
  * should already be initialized in |command_buffer|, and the included command
  * size should account for the auth block that gets filled in. */
-uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
-			     uint8_t* command_buffer,
-			     uint32_t command_buffer_size,
-			     uint8_t continue_auth_session)
+static uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
+				    uint8_t* command_buffer,
+				    uint32_t command_buffer_size,
+				    uint8_t continue_auth_session)
 {
 	if (!auth_session->valid) {
 		return TPM_E_AUTHFAIL;
@@ -316,10 +316,10 @@ uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
 	return TPM_SUCCESS;
 }
 
-uint32_t CheckResponseAuthBlock(struct auth_session* auth_session,
-				TPM_COMMAND_CODE ordinal,
-				uint8_t* response_buffer,
-				uint32_t response_buffer_size)
+static uint32_t CheckResponseAuthBlock(struct auth_session* auth_session,
+				       TPM_COMMAND_CODE ordinal,
+				       uint8_t* response_buffer,
+				       uint32_t response_buffer_size)
 {
 	if (!auth_session->valid) {
 		return TPM_E_AUTHFAIL;

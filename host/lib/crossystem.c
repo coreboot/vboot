@@ -187,14 +187,14 @@ static VbBuildOption VbScanBuildOption(void)
 
 /* Determine whether the running OS image was built for debugging.
  * Returns 1 if yes, 0 if no or indeterminate. */
-int VbGetDebugBuild(void)
+static int VbGetDebugBuild(void)
 {
 	return VB_BUILD_OPTION_DEBUG == VbScanBuildOption();
 }
 
 /* Determine whether OS-level debugging should be allowed.
  * Returns 1 if yes, 0 if no or indeterminate. */
-int VbGetCrosDebug(void)
+static int VbGetCrosDebug(void)
 {
 	/* If the currently running system specifies its debug status, use
 	 * that in preference to other indicators. */
@@ -213,8 +213,8 @@ int VbGetCrosDebug(void)
 	return 0;
 }
 
-char *GetVdatLoadFirmwareDebug(char *dest, int size,
-			       const VbSharedDataHeader *sh)
+static char *GetVdatLoadFirmwareDebug(char *dest, int size,
+				      const VbSharedDataHeader *sh)
 {
 	snprintf(dest, size,
 		 "Check A result=%d\n"
@@ -232,8 +232,8 @@ char *GetVdatLoadFirmwareDebug(char *dest, int size,
 
 #define TRUNCATED "\n(truncated)\n"
 
-char *GetVdatLoadKernelDebug(char *dest, int size,
-			     const VbSharedDataHeader *sh)
+static char *GetVdatLoadKernelDebug(char *dest, int size,
+				    const VbSharedDataHeader *sh)
 {
 	int used = 0;
 	int first_call_tracked = 0;
@@ -325,7 +325,7 @@ LoadKernelDebugExit:
 	return dest;
 }
 
-char *GetVdatString(char *dest, int size, VdatStringField field)
+static char *GetVdatString(char *dest, int size, VdatStringField field)
 {
 	VbSharedDataHeader *sh = VbSharedDataRead();
 	char *value = dest;
@@ -380,7 +380,7 @@ char *GetVdatString(char *dest, int size, VdatStringField field)
 	return value;
 }
 
-int GetVdatInt(VdatIntField field)
+static int GetVdatInt(VdatIntField field)
 {
 	VbSharedDataHeader* sh = VbSharedDataRead();
 	int value = -1;
@@ -806,7 +806,7 @@ static int InAndroid(void)
 	return retval;
 }
 
-static int ExecuteMosys(char * const argv[], char *buf, size_t bufsize)
+static int ExecuteMosys(const char * const argv[], char *buf, size_t bufsize)
 {
 	int status, mosys_to_crossystem[2];
 	pid_t pid;
@@ -833,8 +833,9 @@ static int ExecuteMosys(char * const argv[], char *buf, size_t bufsize)
 				exit(1);
 			}
 		}
-		/* Execute mosys */
-		execv(InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH, argv);
+		/* Execute mosys (needs cast because POSIX is stupid) */
+		execv(InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
+		      (char * const *)argv);
 		/* We shouldn't be here; exit now! */
 		fprintf(stderr, "execv() of mosys failed\n");
 		close(mosys_to_crossystem[1]);
@@ -878,7 +879,7 @@ int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 	 * the header byte to determine the records size, or if it calls back
 	 * to crossystem to read the VBSD flag.
 	 */
-	char * const argv[] = {
+	const char * const argv[] = {
 		InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
 		"nvram", "vboot", "read", NULL
 	};
@@ -905,7 +906,7 @@ int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 int vb2_write_nv_storage_mosys(struct vb2_context *ctx)
 {
 	char hexstring[VB2_NVDATA_SIZE_V2 * 2 + 1];
-	char * const argv[] = {
+	const char * const argv[] = {
 		InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
 		"nvram", "vboot", "write", hexstring, NULL
 	};

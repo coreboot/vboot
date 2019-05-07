@@ -21,6 +21,7 @@
 
 #include "file_type.h"
 #include "futility.h"
+#include "futility_options.h"
 
 int vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *alg)
 {

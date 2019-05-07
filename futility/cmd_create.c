@@ -80,7 +80,7 @@ static void print_help(int argc, char *argv[])
 
 }
 
-static int vb1_make_keypair()
+static int vb1_make_keypair(void)
 {
 	struct vb2_private_key *privkey = NULL;
 	struct vb2_packed_key *pubkey = NULL;
@@ -161,7 +161,7 @@ done:
 	return ret;
 }
 
-static int vb2_make_keypair()
+static int vb2_make_keypair(void)
 {
 	struct vb2_private_key *privkey = 0;
 	struct vb2_public_key *pubkey = 0;

@@ -31,7 +31,7 @@
 static int log_fd = -1;
 
 /* Write the string and a newline. Silently give up on errors */
-static void log_str(char *prefix, char *str)
+static void log_str(const char *prefix, const char *str)
 {
 	int len, done, n;
 
@@ -238,7 +238,7 @@ static int do_help(int argc, char *argv[])
 		if (cmd) {
 			/* Let the command provide its own help */
 			argv[0] = argv[1];
-			argv[1] = "--help";
+			argv[1] = (char *)"--help";
 			return run_command(cmd, argc, argv);
 		}
 	}
@@ -358,11 +358,11 @@ int main(int argc, char *argv[], char *envp[])
 	 * by rearranging argv[].
 	 */
 	if (helpind) {
-		int i;
+		int j;
 		optind--;
-		for (i = helpind; i < optind; i++)
-			argv[i] = argv[i + 1];
-		argv[i] = "help";
+		for (j = helpind; j < optind; j++)
+			argv[j] = argv[j + 1];
+		argv[j] = (char *)"help";
 	}
 
 	/* We require a command name. */

@@ -436,7 +436,7 @@ static const struct option long_opts[] = {
 	{"help",        0, NULL, OPT_HELP},
 	{NULL, 0, NULL, 0},
 };
-static char *short_opts = ":f:k:t";
+static const char *short_opts = ":f:k:t";
 
 
 static int show_type(char *filename)

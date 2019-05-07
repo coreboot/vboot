@@ -5,6 +5,6 @@
 #ifndef VBOOT_REFERENCE_CRC32_TEST_H_
 #define VBOOT_REFERENCE_CRC32_TEST_H_
 
-int TestCrc32TestVectors();
+int TestCrc32TestVectors(void);
 
 #endif  /* VBOOT_REFERENCE_CRC32_TEST_H_ */

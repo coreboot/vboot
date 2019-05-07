@@ -51,15 +51,6 @@ uint32_t vb2_rsa_sig_size(enum vb2_signature_algorithm sig_alg);
  */
 uint32_t vb2_packed_key_size(enum vb2_signature_algorithm sig_alg);
 
-/**
- * Check pkcs 1.5 padding bytes
- *
- * @param sig		Signature to verify
- * @param key		Key to take signature and hash algorithms from
- * @return VB2_SUCCESS, or non-zero if error.
- */
-int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key);
-
 /* Size of work buffer sufficient for vb2_rsa_verify_digest() worst case */
 #define VB2_VERIFY_RSA_DIGEST_WORKBUF_BYTES (3 * 1024)
 

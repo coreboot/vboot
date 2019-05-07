@@ -65,10 +65,10 @@ char** args;
 /* Converts a string in the form 0x[0-9a-f]+ to a 32-bit value.  Returns 0 for
  * success, non-zero for failure.
  */
-int HexStringToUint32(const char* string, uint32_t* value) {
+static int HexStringToUint32(const char* string, uint32_t* value) {
   char tail[1];
   /* strtoul is not as good because it overflows silently */
-  char* format = strncmp(string, "0x", 2) ? "%8x%s" : "0x%8x%s";
+  const char* format = strncmp(string, "0x", 2) ? "%8x%s" : "0x%8x%s";
   int n = sscanf(string, format, value, tail);
   return n != 1;
 }
@@ -76,7 +76,7 @@ int HexStringToUint32(const char* string, uint32_t* value) {
 /* Converts a string in the form [0-9a-f]+ to an 8-bit value.  Returns 0 for
  * success, non-zero for failure.
  */
-int HexStringToUint8(const char* string, uint8_t* value) {
+static int HexStringToUint8(const char* string, uint8_t* value) {
   char* end;
   uint32_t large_value = strtoul(string, &end, 16);
   if (*end != '\0' || large_value > 0xff) {
@@ -86,7 +86,7 @@ int HexStringToUint8(const char* string, uint8_t* value) {
   return 0;
 }
 
-int HexStringToArray(const char* string, uint8_t* value, int num_bytes) {
+static int HexStringToArray(const char* string, uint8_t* value, int num_bytes) {
   int len = strlen(string);
   if (!strncmp(string, "0x", 2)) {
     string += 2;
@@ -108,7 +108,7 @@ int HexStringToArray(const char* string, uint8_t* value, int num_bytes) {
  * found.  Then returns min(result, OTHER_ERROR) since some error codes, such
  * as TPM_E_RETRY, do not fit in a byte.
  */
-uint8_t ErrorCheck(uint32_t result, const char* cmd) {
+static uint8_t ErrorCheck(uint32_t result, const char* cmd) {
   uint8_t exit_code = result > OTHER_ERROR ? OTHER_ERROR : result;
   if (result == 0) {
     return 0;

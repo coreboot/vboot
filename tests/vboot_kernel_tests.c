@@ -25,6 +25,7 @@
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
 #include "test_common.h"
+#include "vb2_common.h"
 #include "vb2_struct.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
@@ -189,7 +190,7 @@ static void ResetMocks(void)
 
 /* Mocks */
 
-VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
+VbError_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 		       uint64_t lba_count, void *buffer)
 {
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
@@ -203,7 +204,7 @@ VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
+VbError_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
 			uint64_t lba_count, const void *buffer)
 {
 	LOGCALL("VbExDiskWrite(h, %d, %d)\n", (int)lba_start, (int)lba_count);
@@ -567,7 +568,7 @@ static void ReadWriteGptTest(void)
 
 }
 
-static void TestLoadKernel(int expect_retval, char *test_name)
+static void TestLoadKernel(int expect_retval, const char *test_name)
 {
 	TEST_EQ(LoadKernel(&ctx, &lkp), expect_retval, test_name);
 }

@@ -15,7 +15,7 @@
 #include "sha_test_vectors.h"
 #include "test_common.h"
 
-void sha1_tests(void)
+static void sha1_tests(void)
 {
 	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
 	uint8_t *test_inputs[3];
@@ -45,7 +45,7 @@ void sha1_tests(void)
 		"vb2_hash_block_size(VB2_HASH_SHA1)");
 }
 
-void sha256_tests(void)
+static void sha256_tests(void)
 {
 	uint8_t digest[VB2_SHA256_DIGEST_SIZE];
 	uint8_t *test_inputs[3];
@@ -101,7 +101,7 @@ void sha256_tests(void)
 	TEST_SUCC(memcmp(digest, expected_extend, sizeof(digest)), NULL);
 }
 
-void sha512_tests(void)
+static void sha512_tests(void)
 {
 	uint8_t digest[VB2_SHA512_DIGEST_SIZE];
 	uint8_t *test_inputs[3];
@@ -131,7 +131,7 @@ void sha512_tests(void)
 		"vb2_hash_block_size(VB2_HASH_SHA512)");
 }
 
-void misc_tests(void)
+static void misc_tests(void)
 {
 	uint8_t digest[VB2_SHA512_DIGEST_SIZE];
 	struct vb2_digest_context dc;
