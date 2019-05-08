@@ -92,7 +92,13 @@ extern const struct futil_cmd_t *const futil_cmds[];
 #endif
 
 /* Print error messages (similar to VbExError but won't exit). */
-#define Error(format, ...) fprintf(stderr, "ERROR: " format, ##__VA_ARGS__ )
+#define ERROR(format, ...) fprintf(stderr, "ERROR: %s: " format, __func__, \
+				   ##__VA_ARGS__ )
+#define WARN(format, ...) fprintf(stderr, "WARNING: %s: " format, __func__, \
+				  ##__VA_ARGS__ )
+#define INFO(format, ...) fprintf(stderr, "INFO: %s: " format, __func__, \
+				  ##__VA_ARGS__ )
+#define STATUS(format, ...) fprintf(stderr, ">> " format, ##__VA_ARGS__ )
 
 /* Debug output (off by default) */
 extern int debugging_enabled;

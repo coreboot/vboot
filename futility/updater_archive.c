@@ -157,7 +157,7 @@ static int archive_fallback_has_entry(void *handle, const char *fname)
 	char *temp_path = NULL;
 	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
 
-	DEBUG("Checking %s", path);
+	VB2_DEBUG("Checking %s\n", path);
 	r = access(path, R_OK);
 	free(temp_path);
 	return r == 0;
@@ -171,7 +171,7 @@ static int archive_fallback_read_file(void *handle, const char *fname,
 	char *temp_path = NULL;
 	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
 
-	DEBUG("Reading %s", path);
+	VB2_DEBUG("Reading %s\n", path);
 	*data = NULL;
 	*size = 0;
 	r = vb2_read_file(path, data, size) != VB2_SUCCESS;
@@ -187,7 +187,7 @@ static int archive_fallback_write_file(void *handle, const char *fname,
 	char *temp_path = NULL;
 	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
 
-	DEBUG("Writing %s", path);
+	VB2_DEBUG("Writing %s\n", path);
 	if (strchr(path, '/')) {
 		char *dirname = strdup(path);
 		*strrchr(dirname, '/') = '\0';
@@ -266,12 +266,12 @@ static int archive_zip_read_file(void *handle, const char *fname,
 	*size = 0;
 	zip_stat_init(&stat);
 	if (zip_stat(zip, fname, 0, &stat)) {
-		ERROR("Fail to stat entry in ZIP: %s", fname);
+		ERROR("Fail to stat entry in ZIP: %s\n", fname);
 		return 1;
 	}
 	fp = zip_fopen(zip, fname, 0);
 	if (!fp) {
-		ERROR("Failed to open entry in ZIP: %s", fname);
+		ERROR("Failed to open entry in ZIP: %s\n", fname);
 		return 1;
 	}
 	*data = (uint8_t *)malloc(stat.size);
@@ -279,7 +279,7 @@ static int archive_zip_read_file(void *handle, const char *fname,
 		if (zip_fread(fp, *data, stat.size) == stat.size) {
 			*size = stat.size;
 		} else {
-			ERROR("Failed to read entry in zip: %s", fname);
+			ERROR("Failed to read entry in zip: %s\n", fname);
 			free(*data);
 			*data = NULL;
 		}
@@ -295,17 +295,17 @@ static int archive_zip_write_file(void *handle, const char *fname,
 	struct zip *zip = (struct zip *)handle;
 	struct zip_source *src;
 
-	DEBUG("Writing %s", fname);
+	VB2_DEBUG("Writing %s\n", fname);
 	assert(zip);
 	src = zip_source_buffer(zip, data, size, 0);
 	if (!src) {
-		ERROR("Internal error: cannot allocate buffer: %s", fname);
+		ERROR("Internal error: cannot allocate buffer: %s\n", fname);
 		return 1;
 	}
 
 	if (zip_file_add(zip, fname, src, ZIP_FL_OVERWRITE) < 0) {
 		zip_source_free(src);
-		ERROR("Internal error: failed to add: %s", fname);
+		ERROR("Internal error: failed to add: %s\n", fname);
 		return 1;
 	}
 	/* zip_source_free is not needed if zip_file_add success. */
@@ -328,18 +328,19 @@ struct archive *archive_open(const char *path)
 	struct archive *ar;
 
 	if (stat(path, &path_stat) != 0) {
-		ERROR("Cannot identify type of path: %s", path);
+		ERROR("Cannot identify type of path: %s\n", path);
 		return NULL;
 	}
 
 	ar = (struct archive *)malloc(sizeof(*ar));
 	if (!ar) {
-		ERROR("Internal error: allocation failure.");
+		ERROR("Internal error: allocation failure.\n");
 		return NULL;
 	}
 
 	if (S_ISDIR(path_stat.st_mode)) {
-		DEBUG("Found directory, use fallback (fs) driver: %s", path);
+		VB2_DEBUG("Found directory, use fallback (fs) driver: %s\n",
+			  path);
 		/* Regular file system. */
 		ar->open = archive_fallback_open;
 		ar->close = archive_fallback_close;
@@ -349,7 +350,7 @@ struct archive *archive_open(const char *path)
 		ar->write_file = archive_fallback_write_file;
 	} else {
 #ifdef HAVE_LIBZIP
-		DEBUG("Found file, use ZIP driver: %s", path);
+		VB2_DEBUG("Found file, use ZIP driver: %s\n", path);
 		ar->open = archive_zip_open;
 		ar->close = archive_zip_close;
 		ar->walk = archive_zip_walk;
@@ -357,14 +358,14 @@ struct archive *archive_open(const char *path)
 		ar->read_file = archive_zip_read_file;
 		ar->write_file = archive_zip_write_file;
 #else
-		ERROR("Found file, but no drivers were enabled: %s", path);
+		ERROR("Found file, but no drivers were enabled: %s\n", path);
 		free(ar);
 		return NULL;
 #endif
 	}
 	ar->handle = ar->open(path);
 	if (!ar->handle) {
-		ERROR("Failed to open archive: %s", path);
+		ERROR("Failed to open archive: %s\n", path);
 		free(ar);
 		return NULL;
 	}
@@ -452,13 +453,13 @@ static int archive_copy_callback(const char *path, void *_arg)
 	uint8_t *data;
 	int r;
 
-	INFO("Copying: %s", path);
+	INFO("Copying: %s\n", path);
 	if (archive_read_file(arg->from, path, &data, &size)) {
-		ERROR("Failed reading: %s", path);
+		ERROR("Failed reading: %s\n", path);
 		return 1;
 	}
 	r = archive_write_file(arg->to, path, data, size);
-	DEBUG("result=%d", r);
+	VB2_DEBUG("result=%d\n", r);
 	free(data);
 	return r;
 }
@@ -538,7 +539,7 @@ static int model_config_parse_setvars_file(
 	int valid = 0;
 
 	if (archive_read_file(archive, fpath, &data, &len) != 0) {
-		ERROR("Failed reading: %s", fpath);
+		ERROR("Failed reading: %s\n", fpath);
 		return -1;
 	}
 
@@ -595,11 +596,11 @@ static int change_gbb_rootkey(struct firmware_image *image,
 	const struct vb2_gbb_header *gbb = find_gbb(image);
 	uint8_t *gbb_rootkey;
 	if (!gbb) {
-		ERROR("Cannot find GBB in image %s.", image->file_name);
+		ERROR("Cannot find GBB in image %s.\n", image->file_name);
 		return -1;
 	}
 	if (gbb->rootkey_size < rootkey_len) {
-		ERROR("New root key (%u bytes) larger than GBB (%u bytes).",
+		ERROR("New root key (%u bytes) larger than GBB (%u bytes).\n",
 		      rootkey_len, gbb->rootkey_size);
 		return -1;
 	}
@@ -622,12 +623,12 @@ static int change_vblock(struct firmware_image *image, const char *section_name,
 
 	find_firmware_section(&section, image, section_name);
 	if (!section.data) {
-		ERROR("Need section %s in image %s.", section_name,
+		ERROR("Need section %s in image %s.\n", section_name,
 		      image->file_name);
 		return -1;
 	}
 	if (section.size < vblock_len) {
-		ERROR("Section %s too small (%zu bytes) for vblock (%u bytes).",
+		ERROR("Section %s too small (%zu bytes) for vblock (%u bytes).\n",
 		      section_name, section.size, vblock_len);
 		return -1;
 	}
@@ -651,12 +652,12 @@ static int apply_key_file(
 
 	r = archive_read_file(archive, path, &data, &len);
 	if (r == 0) {
-		DEBUG("Loaded file: %s", path);
+		VB2_DEBUG("Loaded file: %s\n", path);
 		r = apply(image, section_name, data, len);
 		if (r)
-			ERROR("Failed applying %s to %s", path, section_name);
+			ERROR("Failed applying %s to %s\n", path, section_name);
 	} else {
-		ERROR("Failed reading: %s", path);
+		ERROR("Failed reading: %s\n", path);
 	}
 	free(data);
 	return r;
@@ -732,7 +733,7 @@ static struct model_config *manifest_add_model(
 	manifest->models = (struct model_config *)realloc(
 			manifest->models, manifest->num * sizeof(*model));
 	if (!manifest->models) {
-		ERROR("Internal error: failed to allocate buffer.");
+		ERROR("Internal error: failed to allocate buffer.\n");
 		return NULL;
 	}
 	model = &manifest->models[manifest->num - 1];
@@ -762,20 +763,20 @@ static int manifest_scan_entries(const char *name, void *arg)
 	if (slash)
 		*slash = '\0';
 
-	DEBUG("Found model <%s> setvars: %s", model.name, name);
+	VB2_DEBUG("Found model <%s> setvars: %s\n", model.name, name);
 	if (model_config_parse_setvars_file(&model, archive, name)) {
-		ERROR("Invalid setvars file: %s", name);
+		ERROR("Invalid setvars file: %s\n", name);
 		return 0;
 	}
 
 	/* In legacy setvars.sh, the ec_image and pd_image may not exist. */
 	if (model.ec_image && !archive_has_entry(archive, model.ec_image)) {
-		DEBUG("Ignore non-exist EC image: %s", model.ec_image);
+		VB2_DEBUG("Ignore non-exist EC image: %s\n", model.ec_image);
 		free(model.ec_image);
 		model.ec_image = NULL;
 	}
 	if (model.pd_image && !archive_has_entry(archive, model.pd_image)) {
-		DEBUG("Ignore non-exist PD image: %s", model.pd_image);
+		VB2_DEBUG("Ignore non-exist PD image: %s\n", model.pd_image);
 		free(model.pd_image);
 		model.pd_image = NULL;
 	}
@@ -809,7 +810,7 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 
 	if (!model_name) {
 		sys_model_name = host_shell("mosys platform model");
-		DEBUG("System model name: '%s'", sys_model_name);
+		VB2_DEBUG("System model name: '%s'\n", sys_model_name);
 		model_name = sys_model_name;
 	}
 
@@ -819,9 +820,9 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 	}
 	if (!model) {
 		if (!*model_name)
-			ERROR("Cannot get model name.");
+			ERROR("Cannot get model name.\n");
 		else
-			ERROR("Unsupported model: '%s'.", model_name);
+			ERROR("Unsupported model: '%s'.\n", model_name);
 
 		fprintf(stderr,
 			"You are probably running an image for wrong board, or "
@@ -857,7 +858,7 @@ static char *resolve_signature_id(struct model_config *model, const char *image)
 	if (is_unibuild) {
 		if (!wl_tag) {
 			WARN("No VPD '%s' set for white label - use model name "
-			     "'%s' as default.", VPD_WHITELABEL_TAG,
+			     "'%s' as default.\n", VPD_WHITELABEL_TAG,
 			     model->name);
 			return strdup(model->name);
 		}
@@ -904,19 +905,19 @@ int model_apply_white_label(
 	}
 
 	if (signature_id) {
-		DEBUG("Find white label patches by signature ID: '%s'.",
+		VB2_DEBUG("Find white label patches by signature ID: '%s'.\n",
 		      signature_id);
 		find_patches_for_model(model, archive, signature_id);
 	} else {
 		signature_id = "";
-		WARN("No VPD '%s' set for white label - use default keys.",
+		WARN("No VPD '%s' set for white label - use default keys.\n",
 		     VPD_WHITELABEL_TAG);
 	}
 	if (!model->patches.rootkey) {
-		ERROR("No keys found for signature_id: '%s'", signature_id);
+		ERROR("No keys found for signature_id: '%s'\n", signature_id);
 		r = 1;
 	} else {
-		INFO("Applied for white label: %s", signature_id);
+		INFO("Applied for white label: %s\n", signature_id);
 	}
 	free(sig_id);
 	return r;
@@ -973,15 +974,15 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 		manifest_add_model(&manifest, &model);
 		manifest.default_model = manifest.num - 1;
 	}
-	DEBUG("%d model(s) loaded.", manifest.num);
+	VB2_DEBUG("%d model(s) loaded.\n", manifest.num);
 	if (!manifest.num) {
-		ERROR("No valid configurations found from archive.");
+		ERROR("No valid configurations found from archive.\n");
 		return NULL;
 	}
 
 	new_manifest = (struct manifest *)malloc(sizeof(manifest));
 	if (!new_manifest) {
-		ERROR("Internal error: memory allocation error.");
+		ERROR("Internal error: memory allocation error.\n");
 		return NULL;
 	}
 	memcpy(new_manifest, &manifest, sizeof(manifest));
@@ -1039,7 +1040,7 @@ static void print_json_image(
 	       indent, "", name, image.ro_version, image.rw_version_a);
 	indent += 2;
 	if (is_host && patch_image_by_model(&image, m, archive) != 0) {
-		ERROR("Failed to patch images by model: %s", m->name);
+		ERROR("Failed to patch images by model: %s\n", m->name);
 	} else if (gbb) {
 		printf("\n%*s\"keys\": { \"root\": \"%s\", ",
 		       indent, "",

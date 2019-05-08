@@ -88,7 +88,7 @@ const char *updater_create_temp_file(struct updater_config *cfg)
 
 	fd = mkstemp(new_path);
 	if (fd < 0) {
-		ERROR("Failed to create new temp file in %s", new_path);
+		ERROR("Failed to create new temp file in %s\n", new_path);
 		return NULL;
 	}
 	close(fd);
@@ -98,10 +98,10 @@ const char *updater_create_temp_file(struct updater_config *cfg)
 	if (!new_temp || !new_temp->filepath) {
 		remove(new_path);
 		free(new_temp);
-		ERROR("Failed to allocate buffer for new temp file.");
+		ERROR("Failed to allocate buffer for new temp file.\n");
 		return NULL;
 	}
-	DEBUG("Created new temporary file: %s.", new_path);
+	VB2_DEBUG("Created new temporary file: %s.\n", new_path);
 	new_temp->next = cfg->tempfiles;
 	cfg->tempfiles = new_temp;
 	return new_temp->filepath;
@@ -116,7 +116,7 @@ static void updater_remove_all_temp_files(struct updater_config *cfg)
 	struct tempfile *tempfiles = cfg->tempfiles;
 	while (tempfiles != NULL) {
 		struct tempfile *target = tempfiles;
-		DEBUG("Remove temporary file: %s.", target->filepath);
+		VB2_DEBUG("Remove temporary file: %s.\n", target->filepath);
 		remove(target->filepath);
 		free(target->filepath);
 		tempfiles = target->next;
@@ -161,10 +161,10 @@ char *host_shell(const char *command)
 	int result;
 	FILE *fp = popen(command, "r");
 
-	DEBUG("%s", command);
+	VB2_DEBUG("%s\n", command);
 	buf[0] = '\0';
 	if (!fp) {
-		DEBUG("Execution error for %s.", command);
+		VB2_DEBUG("Execution error for %s.\n", command);
 		return strdup(buf);
 	}
 
@@ -172,8 +172,8 @@ char *host_shell(const char *command)
 		strip(buf, NULL);
 	result = pclose(fp);
 	if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-		DEBUG("Execution failure with exit code %d: %s",
-		      WEXITSTATUS(result), command);
+		VB2_DEBUG("Execution failure with exit code %d: %s\n",
+			  WEXITSTATUS(result), command);
 		/*
 		 * Discard all output if command failed, for example command
 		 * syntax failure may lead to garbage in stdout.
@@ -234,7 +234,7 @@ static int host_get_platform_version()
 	/* Result should be 'revN' */
 	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
 		rev = strtol(result + strlen(STR_REV), NULL, 0);
-	DEBUG("Raw data = [%s], parsed version is %d", result, rev);
+	VB2_DEBUG("Raw data = [%s], parsed version is %d\n", result, rev);
 
 	free(result);
 	return rev;
@@ -308,20 +308,20 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 		 postfix);
 
 	if (verbose)
-		INFO("Executing: %s", command);
+		INFO("Executing: %s\n", command);
 
 	if (op != FLASHROM_WP_STATUS) {
 		r = system(command);
 		free(command);
 		if (r)
-			ERROR("Error code: %d", r);
+			ERROR("Error code: %d\n", r);
 		return r;
 	}
 
 	result = host_shell(command);
 	strip(result, NULL);
 	free(command);
-	DEBUG("wp-status: %s", result);
+	VB2_DEBUG("wp-status: %s\n", result);
 
 	if (strstr(result, FLASHROM_OUTPUT_WP_ENABLED))
 		r = WP_ENABLED;
@@ -374,7 +374,7 @@ static void print_system_properties(struct updater_config *cfg)
 	 * There may be error messages when fetching properties from active
 	 * system, so we want to peek at them first and then print out.
 	 */
-	DEBUG("Scanning system properties...");
+	VB2_DEBUG("Scanning system properties...\n");
 	for (i = 0; i < SYS_PROP_MAX; i++) {
 		get_system_property((enum system_property_type)i, cfg);
 	}
@@ -424,7 +424,7 @@ static void override_properties_from_list(const char *override_list,
 	int i = 0, wait_comma = 0;
 	long int v;
 
-	DEBUG("Input is <%s>", override_list);
+	VB2_DEBUG("Input is <%s>\n", override_list);
 	for (c = *s; c; c = *++s) {
 		if (c == ',') {
 			if (!wait_comma)
@@ -434,13 +434,13 @@ static void override_properties_from_list(const char *override_list,
 		if (!isascii(c) || !(isdigit(c) || c == '-'))
 			continue;
 		if (i >= SYS_PROP_MAX) {
-			ERROR("Too many fields (max is %d): %s.",
+			ERROR("Too many fields (max is %d): %s.\n",
 			      SYS_PROP_MAX, override_list);
 			return;
 		}
 		v = strtol(s, &e, 0);
 		s = e - 1;
-		DEBUG("property[%d].value = %ld", i, v);
+		VB2_DEBUG("property[%d].value = %ld\n", i, v);
 		override_system_property((enum system_property_type)i, cfg, v);
 		wait_comma = 1;
 		i++;
@@ -481,10 +481,10 @@ static int try_apply_quirk(enum quirk_types quirk, struct updater_config *cfg)
 		return 0;
 
 	if (!entry->apply) {
-		ERROR("<%s> not implemented.", entry->name);
+		ERROR("<%s> not implemented.\n", entry->name);
 		return -1;
 	}
-	DEBUG("Applying quirk <%s>.", entry->name);
+	VB2_DEBUG("Applying quirk <%s>.\n", entry->name);
 	return entry->apply(cfg);
 }
 
@@ -514,16 +514,16 @@ static int setup_config_quirks(const char *quirks, struct updater_config *cfg)
 			value = strtol(equ + 1, NULL, 0);
 		}
 
-		DEBUG("Looking for quirk <%s=%d>.", name, value);
+		VB2_DEBUG("Looking for quirk <%s=%d>.\n", name, value);
 		for (i = 0; i < QUIRK_MAX; i++, entry++) {
 			if (strcmp(name, entry->name))
 				continue;
 			entry->value = value;
-			DEBUG("Set quirk %s to %d.", entry->name, value);
+			VB2_DEBUG("Set quirk %s to %d.\n", entry->name, value);
 			break;
 		}
 		if (i >= QUIRK_MAX) {
-			ERROR("Unknown quirk: %s", name);
+			ERROR("Unknown quirk: %s\n", name);
 			r++;
 		}
 	}
@@ -618,30 +618,31 @@ static int load_firmware_version(struct firmware_image *image,
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive)
 {
-	DEBUG("Load image file from %s...", file_name);
+	VB2_DEBUG("Load image file from %s...\n", file_name);
 
 	if (!archive_has_entry(archive, file_name)) {
-		ERROR("Does not exist: %s", file_name);
+		ERROR("Does not exist: %s\n", file_name);
 		return -1;
 	}
 	if (archive_read_file(archive, file_name, &image->data, &image->size) !=
 	    VB2_SUCCESS) {
-		ERROR("Failed to load %s", file_name);
+		ERROR("Failed to load %s\n", file_name);
 		return -1;
 	}
 
-	DEBUG("Image size: %d", image->size);
+	VB2_DEBUG("Image size: %d\n", image->size);
 	assert(image->data);
 	image->file_name = strdup(file_name);
 
 	image->fmap_header = fmap_find(image->data, image->size);
 	if (!image->fmap_header) {
-		ERROR("Invalid image file (missing FMAP): %s", file_name);
+		ERROR("Invalid image file (missing FMAP): %s\n", file_name);
 		return -1;
 	}
 
 	if (!firmware_section_exists(image, FMAP_RO_FRID)) {
-		ERROR("Does not look like VBoot firmware image: %s", file_name);
+		ERROR("Does not look like VBoot firmware image: %s\n",
+		      file_name);
 		return -1;
 	}
 
@@ -655,7 +656,7 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 		load_firmware_version(image, FMAP_RW_FWID, a);
 		load_firmware_version(image, FMAP_RW_FWID, b);
 	} else {
-		ERROR("Unsupported VBoot firmware (no RW ID): %s", file_name);
+		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", file_name);
 	}
 	return 0;
 }
@@ -747,22 +748,22 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	else if (strcmp(target, FMAP_RW_SECTION_B) == 0)
 		slot = FWACT_B;
 	else {
-		ERROR("Unknown target: %s", target);
+		ERROR("Unknown target: %s\n", target);
 		return -1;
 	}
 
 	if (cfg->emulation) {
-		INFO("(emulation) Setting try_next to %s, try_count to %d.",
+		INFO("(emulation) Setting try_next to %s, try_count to %d.\n",
 		     slot, tries);
 		return 0;
 	}
 
 	if (is_vboot2 && VbSetSystemPropertyString("fw_try_next", slot)) {
-		ERROR("Failed to set fw_try_next to %s.", slot);
+		ERROR("Failed to set fw_try_next to %s.\n", slot);
 		return -1;
 	}
 	if (VbSetSystemPropertyInt("fw_try_count", tries)) {
-		ERROR("Failed to set fw_try_count to %d.", tries);
+		ERROR("Failed to set fw_try_count to %d.\n", tries);
 		return -1;
 	}
 	return 0;
@@ -784,25 +785,25 @@ static int emulate_write_firmware(const char *filename,
 	from.size = image->size;
 
 	if (load_firmware_image(&to_image, filename, NULL)) {
-		ERROR("Cannot load image from %s.", filename);
+		ERROR("Cannot load image from %s.\n", filename);
 		return -1;
 	}
 
 	if (section_name) {
 		find_firmware_section(&from, image, section_name);
 		if (!from.data) {
-			ERROR("No section %s in source image %s.",
+			ERROR("No section %s in source image %s.\n",
 			      section_name, image->file_name);
 			errorcnt++;
 		}
 		find_firmware_section(&to, &to_image, section_name);
 		if (!to.data) {
-			ERROR("No section %s in destination image %s.",
+			ERROR("No section %s in destination image %s.\n",
 			      section_name, filename);
 			errorcnt++;
 		}
 	} else if (image->size != to_image.size) {
-		ERROR("Image size is different (%s:%d != %s:%d)",
+		ERROR("Image size is different (%s:%d != %s:%d)\n",
 		      image->file_name, image->size, to_image.file_name,
 		      to_image.size);
 		errorcnt++;
@@ -815,13 +816,13 @@ static int emulate_write_firmware(const char *filename,
 		size_t to_write = Min(to.size, from.size);
 
 		assert(from.data && to.data);
-		DEBUG("Writing %zu bytes", to_write);
+		VB2_DEBUG("Writing %zu bytes\n", to_write);
 		memcpy(to.data, from.data, to_write);
 	}
 
 	if (!errorcnt && vb2_write_file(
 			filename, to_image.data, to_image.size)) {
-		ERROR("Failed writing to file: %s", filename);
+		ERROR("Failed writing to file: %s\n", filename);
 		errorcnt++;
 	}
 
@@ -848,7 +849,7 @@ static int write_firmware(struct updater_config *cfg,
 		return -1;
 
 	if (cfg->emulation) {
-		INFO("%s: (emulation) Writing %s from %s to %s (emu=%s).",
+		INFO("%s: (emulation) Writing %s from %s to %s (emu=%s).\n",
 		     __FUNCTION__,
 		     section_name ? section_name : "whole image",
 		     image->file_name, programmer, cfg->emulation);
@@ -858,7 +859,7 @@ static int write_firmware(struct updater_config *cfg,
 
 	}
 	if (vb2_write_file(tmp_file, image->data, image->size) != VB2_SUCCESS) {
-		ERROR("Cannot write temporary file for output: %s", tmp_file);
+		ERROR("Cannot write temporary file for output: %s\n", tmp_file);
 		return -1;
 	}
 	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
@@ -866,7 +867,7 @@ static int write_firmware(struct updater_config *cfg,
 		tmp_diff_file = updater_create_temp_file(cfg);
 		if (vb2_write_file(tmp_diff_file, cfg->image_current.data,
 				   cfg->image_current.size) != VB2_SUCCESS) {
-			ERROR("Cannot write temporary file for diff image");
+			ERROR("Cannot write temporary file for diff image\n");
 			return -1;
 		}
 		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff_file);
@@ -889,12 +890,12 @@ static int write_optional_firmware(struct updater_config *cfg,
 				   int check_programmer_wp)
 {
 	if (!image->data) {
-		DEBUG("No data in <%s> image.", image->programmer);
+		VB2_DEBUG("No data in <%s> image.\n", image->programmer);
 		return 0;
 	}
 	if (section_name && !firmware_section_exists(image, section_name)) {
-		DEBUG("Image %s<%s> does not have section %s.",
-		      image->file_name, image->programmer, section_name);
+		VB2_DEBUG("Image %s<%s> does not have section %s.\n",
+			  image->file_name, image->programmer, section_name);
 		return 0;
 	}
 
@@ -905,7 +906,7 @@ static int write_optional_firmware(struct updater_config *cfg,
 	if (check_programmer_wp &&
 	    get_system_property(SYS_PROP_WP_HW, cfg) == WP_ENABLED &&
 	    host_get_wp(image->programmer) == WP_ENABLED) {
-		ERROR("Target %s has write protection enabled, skip updating.",
+		ERROR("Target %s is write protected, skip updating.\n",
 		      image->programmer);
 		return 0;
 	}
@@ -930,12 +931,12 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 	find_firmware_section(&from, image_from, section_name);
 	find_firmware_section(&to, image_to, section_name);
 	if (!from.data || !to.data) {
-		DEBUG("Cannot find section %.*s: from=%p, to=%p", FMAP_NAMELEN,
-		      section_name, from.data, to.data);
+		VB2_DEBUG("Cannot find section %.*s: from=%p, to=%p\n",
+			  FMAP_NAMELEN, section_name, from.data, to.data);
 		return -1;
 	}
 	if (from.size > to.size) {
-		WARN("%s: Section %.*s is truncated after updated.",
+		WARN("%s: Section %.*s is truncated after updated.\n",
 		     __FUNCTION__, FMAP_NAMELEN, section_name);
 	}
 	/* Use memmove in case if we need to deal with sections that overlap. */
@@ -960,7 +961,7 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 	 */
 	if (!futil_valid_gbb_header((GoogleBinaryBlockHeader *)gbb_header,
 				    section.size, NULL)) {
-		ERROR("Cannot find GBB in image: %s.", image->file_name);
+		ERROR("Cannot find GBB in image: %s.\n", image->file_name);
 		return NULL;
 	}
 	return gbb_header;
@@ -1006,11 +1007,12 @@ static int preserve_management_engine(struct updater_config *cfg,
 
 	find_firmware_section(&section, image_from, FMAP_SI_ME);
 	if (!section.data) {
-		DEBUG("Skipped because no section %s.", FMAP_SI_ME);
+		VB2_DEBUG("Skipped because no section %s.\n", FMAP_SI_ME);
 		return 0;
 	}
 	if (section_is_filled_with(&section, 0xFF)) {
-		DEBUG("ME is probably locked - preserving %s.", FMAP_SI_DESC);
+		VB2_DEBUG("ME is probably locked - preserving %s.\n",
+			  FMAP_SI_DESC);
 		return preserve_firmware_section(
 				image_from, image_to, FMAP_SI_DESC);
 	}
@@ -1034,11 +1036,12 @@ static int preserve_fmap_sections(struct firmware_image *from,
 			continue;
 		/* Warning: area_name 'may' not end with NUL. */
 		if (!firmware_section_exists(from, ah->area_name)) {
-			DEBUG("FMAP area does not exist in source: %.*s",
-			      FMAP_NAMELEN, ah->area_name);
+			VB2_DEBUG("FMAP area does not exist in source: %.*s\n",
+				  FMAP_NAMELEN, ah->area_name);
 			continue;
 		}
-		DEBUG("Preserve FMAP area: %.*s", FMAP_NAMELEN, ah->area_name);
+		VB2_DEBUG("Preserve FMAP area: %.*s\n", FMAP_NAMELEN,
+			  ah->area_name);
 		errcnt += preserve_firmware_section(from, to, ah->area_name);
 		(*count)++;
 	}
@@ -1078,7 +1081,7 @@ static int preserve_known_sections(struct firmware_image *from,
 	for (i = 0; i < ARRAY_SIZE(names); i++) {
 		if (!firmware_section_exists(from, names[i]))
 			continue;
-		DEBUG("Preserve firmware section: %s", names[i]);
+		VB2_DEBUG("Preserve firmware section: %s\n", names[i]);
 		errcnt += preserve_firmware_section(from, to, names[i]);
 	}
 	return errcnt;
@@ -1174,11 +1177,11 @@ static int check_compatible_platform(struct updater_config *cfg)
 	           *to_dot = strchr(image_to->ro_version, '.');
 
 	if (!from_dot || !to_dot) {
-		DEBUG("Missing dot (from=%p, to=%p)", from_dot, to_dot);
+		VB2_DEBUG("Missing dot (from=%p, to=%p)\n", from_dot, to_dot);
 		return -1;
 	}
 	len = from_dot - image_from->ro_version + 1;
-	DEBUG("Platform: %*.*s", len, len, image_from->ro_version);
+	VB2_DEBUG("Platform: %*.*s\n", len, len, image_from->ro_version);
 	return strncmp(image_from->ro_version, image_to->ro_version, len);
 }
 
@@ -1192,7 +1195,7 @@ static const struct vb2_packed_key *get_rootkey(
 
 	key = (struct vb2_packed_key *)((uint8_t *)gbb + gbb->rootkey_offset);
 	if (!packed_key_looks_ok(key, gbb->rootkey_size)) {
-		ERROR("Invalid root key.");
+		ERROR("Invalid root key.\n");
 		return NULL;
 	}
 	return key;
@@ -1211,7 +1214,7 @@ static const struct vb2_keyblock *get_keyblock(
 	/* A keyblock must be followed by a vb2_fw_preamble. */
 	if (section.size < sizeof(struct vb2_keyblock) +
 	    sizeof(struct vb2_fw_preamble)) {
-		ERROR("Invalid section: %s", section_name);
+		ERROR("Invalid section: %s\n", section_name);
 		return NULL;
 	}
 	return (const struct vb2_keyblock *)section.data;
@@ -1244,12 +1247,12 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 	struct vb2_keyblock *new_block;
 
 	if (block->keyblock_signature.sig_size == 0) {
-		ERROR("Keyblock is not signed.");
+		ERROR("Keyblock is not signed.\n");
 		return -1;
 	}
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 	if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
-		ERROR("Invalid signing key,");
+		ERROR("Invalid signing key.\n");
 		return -1;
 	}
 
@@ -1262,7 +1265,7 @@ static int verify_keyblock(const struct vb2_keyblock *block,
 	free(new_block);
 
 	if (r != VB2_SUCCESS) {
-		ERROR("Failed verifying key block.");
+		ERROR("Failed verifying key block.\n");
 		return -1;
 	}
 	return 0;
@@ -1289,8 +1292,8 @@ static int get_key_versions(const struct firmware_image *image,
 	pre = (struct vb2_fw_preamble *)((uint8_t*)keyblock +
 					 keyblock->keyblock_size);
 	*firmware_version = pre->firmware_version;
-	DEBUG("%s: data key version = %d, firmware version = %d",
-	      image->file_name, *data_key_version, *firmware_version);
+	VB2_DEBUG("%s: data key version = %d, firmware version = %d\n",
+		  image->file_name, *data_key_version, *firmware_version);
 	return 0;
 }
 
@@ -1339,14 +1342,14 @@ static enum rootkey_compat_result check_compatible_root_key(
 				   ROOTKEY_HASH_DEV) == 0)
 				to_dev = 1;
 		}
-		INFO("Current (RO) firmware image has root key: %s",
+		INFO("Current (RO) firmware image has root key: %s\n",
 		     packed_key_sha1_string(rootkey));
 		if (is_same_key) {
-			ERROR("Rootkey is same as target (RW) image. "
+			ERROR("Rootkey is same as target (RW) image. \n"
 			      "Maybe RW corrupted?");
 			return ROOTKEY_COMPAT_ERROR;
 		}
-		WARN("Target (RW) image is signed by root key: %s%s",
+		WARN("Target (RW) image is signed by root key: %s%s\n",
 		     rootkey_rw ? packed_key_sha1_string(rootkey_rw) :
 		     "<invalid>", to_dev ? " (DEV/unsigned)" : "");
 		return to_dev ? ROOTKEY_COMPAT_REKEY_TO_DEV :
@@ -1384,10 +1387,10 @@ static int legacy_needs_update(struct updater_config *cfg)
 	const char *section = FMAP_RW_LEGACY;
 	const char *tmp_path = updater_create_temp_file(cfg);
 
-	DEBUG("Checking %s contents...", FMAP_RW_LEGACY);
+	VB2_DEBUG("Checking %s contents...\n", FMAP_RW_LEGACY);
 	if (!tmp_path ||
 	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
-		ERROR("Failed to create temporary file for image contents.");
+		ERROR("Failed to create temporary file for image contents.\n");
 		return 0;
 	}
 
@@ -1395,9 +1398,9 @@ static int legacy_needs_update(struct updater_config *cfg)
 	has_from = cbfs_file_exists(tmp_path, section, tag);
 
 	if (!has_from || !has_to) {
-		DEBUG("Current legacy firmware has%s updater tag (%s) "
-		      "and target firmware has%s updater tag, won't update.",
-		      has_from ? "" : " no", tag, has_to ? "" : " no");
+		VB2_DEBUG("Current legacy firmware has%s updater tag (%s) and "
+			  "target firmware has%s updater tag, won't update.\n",
+			  has_from ? "" : " no", tag, has_to ? "" : " no");
 		return 0;
 	}
 
@@ -1425,22 +1428,22 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 	/* The stored tpm_fwver can be 0 (b/116298359#comment3). */
 	tpm_fwver = get_system_property(SYS_PROP_TPM_FWVER, cfg);
 	if (tpm_fwver < 0) {
-		ERROR("Invalid tpm_fwver: %d.", tpm_fwver);
+		ERROR("Invalid tpm_fwver: %d.\n", tpm_fwver);
 		return -1;
 	}
 
 	tpm_data_key_version = tpm_fwver >> 16;
 	tpm_firmware_version = tpm_fwver & 0xffff;
-	DEBUG("TPM: data_key_version = %d, firmware_version = %d",
-	      tpm_data_key_version, tpm_firmware_version);
+	VB2_DEBUG("TPM: data_key_version = %d, firmware_version = %d\n",
+		  tpm_data_key_version, tpm_firmware_version);
 
 	if (tpm_data_key_version > data_key_version) {
-		ERROR("Data key version rollback detected (%d->%d).",
+		ERROR("Data key version rollback detected (%d->%d).\n",
 		      tpm_data_key_version, data_key_version);
 		return -1;
 	}
 	if (tpm_firmware_version > firmware_version) {
-		ERROR("Firmware version rollback detected (%d->%d).",
+		ERROR("Firmware version rollback detected (%d->%d).\n",
 		      tpm_firmware_version, firmware_version);
 		return -1;
 	}
@@ -1459,10 +1462,10 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 	if (!r)
 		return r;
 	if (!cfg->force_update) {
-		ERROR("Add --force if you want to waive TPM checks.");
+		ERROR("Add --force if you want to waive TPM checks.\n");
 		return r;
 	}
-	WARN("TPM KEYS CHECK IS WAIVED BY --force. YOU ARE ON YOUR OWN.");
+	WARN("TPM KEYS CHECK IS WAIVED BY --force. YOU ARE ON YOUR OWN.\n");
 	return 0;
 }
 
@@ -1503,22 +1506,22 @@ static enum updater_error_codes update_try_rw_firmware(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
 
-	INFO("Checking compatibility...");
+	INFO("Checking compatibility...\n");
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 
-	DEBUG("Firmware %s vboot2.", is_vboot2 ?  "is" : "is NOT");
+	VB2_DEBUG("Firmware %s vboot2.\n", is_vboot2 ?  "is" : "is NOT");
 	target = decide_rw_target(cfg, TARGET_SELF, is_vboot2);
 	if (target == NULL) {
-		ERROR("TRY-RW update needs system to boot in RW firmware.");
+		ERROR("TRY-RW update needs system to boot in RW firmware.\n");
 		return UPDATE_ERR_TARGET;
 	}
 
-	INFO("Checking %s contents...", target);
+	INFO("Checking %s contents...\n", target);
 	if (!firmware_section_exists(image_to, target)) {
-		ERROR("Cannot find section '%s' on firmware image: %s",
+		ERROR("Cannot find section '%s' on firmware image: %s\n",
 		      target, image_to->file_name);
 		return UPDATE_ERR_INVALID_IMAGE;
 	}
@@ -1527,7 +1530,8 @@ static enum updater_error_codes update_try_rw_firmware(
 
 	if (has_update) {
 		target = decide_rw_target(cfg, TARGET_UPDATE, is_vboot2);
-		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.", target);
+		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.\n",
+		       target);
 
 		if (write_firmware(cfg, image_to, target))
 			return UPDATE_ERR_WRITE_FIRMWARE;
@@ -1542,12 +1546,12 @@ static enum updater_error_codes update_try_rw_firmware(
 	/* Do not fail on updating legacy. */
 	if (legacy_needs_update(cfg)) {
 		has_update = 1;
-		STATUS("LEGACY UPDATE: Updating %s.", FMAP_RW_LEGACY);
+		STATUS("LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
 		write_firmware(cfg, image_to, FMAP_RW_LEGACY);
 	}
 
 	if (!has_update)
-		STATUS("NO UPDATE: No need to update.");
+		STATUS("NO UPDATE: No need to update.\n");
 
 	return UPDATE_ERR_DONE;
 }
@@ -1562,11 +1566,11 @@ static enum updater_error_codes update_rw_firmware(
 		struct firmware_image *image_from,
 		struct firmware_image *image_to)
 {
-	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).",
+	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
 	       FMAP_RW_LEGACY);
 
-	INFO("Checking compatibility...");
+	INFO("Checking compatibility...\n");
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
@@ -1593,7 +1597,7 @@ static enum updater_error_codes update_legacy_firmware(
 		struct updater_config *cfg,
 		struct firmware_image *image_to)
 {
-	STATUS("LEGACY UPDATE: Updating firmware %s.", FMAP_RW_LEGACY);
+	STATUS("LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
 
 	if (write_firmware(cfg, image_to, FMAP_RW_LEGACY))
 		return UPDATE_ERR_WRITE_FIRMWARE;
@@ -1611,18 +1615,18 @@ static enum updater_error_codes update_whole_firmware(
 		struct updater_config *cfg,
 		struct firmware_image *image_to)
 {
-	STATUS("FULL UPDATE: Updating whole firmware image(s), RO+RW.");
+	STATUS("FULL UPDATE: Updating whole firmware image(s), RO+RW.\n");
 
 	if (preserve_images(cfg))
-		DEBUG("Failed to preserve some sections - ignore.");
+		VB2_DEBUG("Failed to preserve some sections - ignore.\n");
 
-	INFO("Checking compatibility...");
+	INFO("Checking compatibility...\n");
 	if (!cfg->force_update) {
 		/* Check if the image_to itself is broken */
 		enum rootkey_compat_result r = check_compatible_root_key(
 				image_to, image_to);
 		if (r != ROOTKEY_COMPAT_OK) {
-			ERROR("Target image does not look valid. "
+			ERROR("Target image does not look valid. \n"
 			      "Add --force if you really want to use it.");
 			return UPDATE_ERR_ROOT_KEY;
 		}
@@ -1634,10 +1638,10 @@ static enum updater_error_codes update_whole_firmware(
 		case ROOTKEY_COMPAT_OK:
 			break;
 		case ROOTKEY_COMPAT_REKEY:
-			INFO("Will change firmware signing key.");
+			INFO("Will change firmware signing key.\n");
 			break;
 		case ROOTKEY_COMPAT_REKEY_TO_DEV:
-			ERROR("Re-key to DEV is not allowed. "
+			ERROR("Re-key to DEV is not allowed. \n"
 			      "Add --force if you really want to do that.");
 			return UPDATE_ERR_ROOT_KEY;
 		default:
@@ -1673,7 +1677,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (try_apply_quirk(QUIRK_DAISY_SNOW_DUAL_MODEL, cfg))
 		return UPDATE_ERR_PLATFORM;
 
-	STATUS("Target image: %s (RO:%s, RW/A:%s, RW/B:%s).",
+	STATUS("Target image: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
 	     image_to->file_name, image_to->ro_version,
 	     image_to->rw_version_a, image_to->rw_version_b);
 
@@ -1685,11 +1689,11 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		 * TODO(hungte) Read only RO_SECTION, VBLOCK_A, VBLOCK_B,
 		 * RO_VPD, RW_VPD, RW_NVRAM, RW_LEGACY.
 		 */
-		INFO("Loading current system firmware...");
+		INFO("Loading current system firmware...\n");
 		if (load_system_firmware(cfg, image_from) != 0)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
-	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).",
+	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
@@ -1697,7 +1701,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		return UPDATE_ERR_PLATFORM;
 
 	wp_enabled = is_write_protection_enabled(cfg);
-	STATUS("Write protection: %d (%s; HW=%d, SW=%d).", wp_enabled,
+	STATUS("Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
 	       wp_enabled ? "enabled" : "disabled",
 	       get_system_property(SYS_PROP_WP_HW, cfg),
 	       get_system_property(SYS_PROP_WP_SW, cfg));
@@ -1718,7 +1722,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		r = update_try_rw_firmware(cfg, image_from, image_to,
 					   wp_enabled);
 		if (r == UPDATE_ERR_NEED_RO_UPDATE)
-			WARN("%s", updater_error_messages[r]);
+			WARN("%s\n", updater_error_messages[r]);
 		else
 			done = 1;
 	}
@@ -1730,7 +1734,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	/* Providing more hints for what to do on failure. */
 	if (r == UPDATE_ERR_ROOT_KEY && wp_enabled)
-		ERROR("To change keys in RO area, you must first remove "
+		ERROR("To change keys in RO area, you must first remove \n"
 		      "write protection ( " REMOVE_WP_URL " ).");
 
 	return r;
@@ -1825,7 +1829,7 @@ static int updater_load_images(struct updater_config *cfg,
 
 	if (!cfg->image.data && image) {
 		if (image && strcmp(image, "-") == 0) {
-			INFO("Reading image from stdin...");
+			INFO("Reading image from stdin...\n");
 			image = updater_create_temp_file(cfg);
 			if (image)
 				errorcnt += !!save_from_stdin(image);
@@ -1860,7 +1864,7 @@ static int updater_output_image(const struct firmware_image *image,
 	ASPRINTF(&fpath, "%s/%s", root, fname);
 	r = vb2_write_file(fpath, image->data, image->size);
 	if (r)
-		ERROR("Failed writing firmware image to: %s", fpath);
+		ERROR("Failed writing firmware image to: %s\n", fpath);
 	else
 		printf("Firmware image saved in: %s\n", fpath);
 
@@ -1886,16 +1890,16 @@ static int updater_apply_white_label(struct updater_config *cfg,
 				return 1;
 			if (vb2_write_file(tmp_image, cfg->image_current.data,
 					    cfg->image_current.size)) {
-				ERROR("Failed writing temporary image file.");
+				ERROR("Failed writing temporary image file.\n");
 				return 1;
 			}
 		} else {
-			INFO("Loading system firmware for white label...");
+			INFO("Loading system firmware for white label...\n");
 			load_system_firmware(cfg, &cfg->image_current);
 			tmp_image = cfg->image_current.file_name;
 		}
 		if (!tmp_image) {
-			ERROR("Failed to get system current firmware");
+			ERROR("Failed to get system current firmware\n");
 			return 1;
 		}
 	}
@@ -1938,7 +1942,7 @@ static int updater_setup_archive(
 		 * Developers running unsigned updaters (usually local build)
 		 * won't be able match any white label tags.
 		 */
-		WARN("No keysets found - this is probably a local build of "
+		WARN("No keysets found - this is probably a local build of \n"
 		     "unsigned firmware updater. Skip applying white label.");
 	} else if (model->is_white_label) {
 		/*
@@ -1952,9 +1956,9 @@ static int updater_setup_archive(
 			if (is_factory ||
 			    is_write_protection_enabled(cfg) ||
 			    get_config_quirk(QUIRK_ALLOW_EMPTY_WLTAG, cfg)) {
-				WARN("No VPD for white label.");
+				WARN("No VPD for white label.\n");
 			} else {
-				ERROR("Need VPD set for white label.");
+				ERROR("Need VPD set for white label.\n");
 				return ++errorcnt;
 			}
 		}
@@ -1986,11 +1990,11 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Check incompatible options and return early. */
 	if (arg->do_manifest) {
 		if (!!arg->archive == !!arg->image) {
-			ERROR("--manifest needs either -a or -i");
+			ERROR("--manifest needs either -a or -i\n");
 			return ++errorcnt;
 		}
 		if (arg->archive && (arg->ec_image || arg->pd_image)) {
-			ERROR("--manifest for archive (-a) does not accept "
+			ERROR("--manifest for archive (-a) does not accept \n"
 			      "additional images (--ec_image, --pd_image).");
 			return ++errorcnt;
 		}
@@ -1998,7 +2002,7 @@ int updater_setup_config(struct updater_config *cfg,
 	}
 	if (arg->repack || arg->unpack) {
 		if (!arg->archive) {
-			ERROR("--{re,un}pack needs --archive.");
+			ERROR("--{re,un}pack needs --archive.\n");
 			return ++errorcnt;
 		}
 		*do_update = 0;
@@ -2021,7 +2025,7 @@ int updater_setup_config(struct updater_config *cfg,
 			do_output = 1;
 		} else {
 			errorcnt++;
-			ERROR("Invalid mode: %s", arg->mode);
+			ERROR("Invalid mode: %s\n", arg->mode);
 		}
 	}
 	if (cfg->factory_update) {
@@ -2035,7 +2039,8 @@ int updater_setup_config(struct updater_config *cfg,
 		check_single_image = 1;
 		cfg->image.programmer = arg->programmer;
 		cfg->image_current.programmer = arg->programmer;
-		DEBUG("AP (host) programmer changed to %s.", arg->programmer);
+		VB2_DEBUG("AP (host) programmer changed to %s.\n",
+			  arg->programmer);
 	}
 	if (arg->sys_props)
 		override_properties_from_list(arg->sys_props, cfg);
@@ -2051,7 +2056,7 @@ int updater_setup_config(struct updater_config *cfg,
 		/* Process emulation file first. */
 		check_single_image = 1;
 		cfg->emulation = arg->emulation;
-		DEBUG("Using file %s for emulation.", arg->emulation);
+		VB2_DEBUG("Using file %s for emulation.\n", arg->emulation);
 		errorcnt += !!load_firmware_image(
 				&cfg->image_current, arg->emulation, NULL);
 	}
@@ -2064,7 +2069,7 @@ int updater_setup_config(struct updater_config *cfg,
 		archive_path = ".";
 	cfg->archive = archive_open(archive_path);
 	if (!cfg->archive) {
-		ERROR("Failed to open archive: %s", archive_path);
+		ERROR("Failed to open archive: %s\n", archive_path);
 		return ++errorcnt;
 	}
 
@@ -2082,7 +2087,7 @@ int updater_setup_config(struct updater_config *cfg,
 			from = cfg->archive;
 		}
 		if (!work) {
-			ERROR("Failed to open: %s", work_name);
+			ERROR("Failed to open: %s\n", work_name);
 			return ++errorcnt;
 		}
 		errorcnt += !!archive_copy(from, to);
@@ -2099,7 +2104,7 @@ int updater_setup_config(struct updater_config *cfg,
 					cfg, arg, m, cfg->factory_update);
 			delete_manifest(m);
 		} else {
-			ERROR("Failure in archive: %s", arg->archive);
+			ERROR("Failure in archive: %s\n", arg->archive);
 			++errorcnt;
 		}
 	} else if (arg->do_manifest) {
@@ -2129,11 +2134,11 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Additional checks. */
 	if (check_single_image && (cfg->ec_image.data || cfg->pd_image.data)) {
 		errorcnt++;
-		ERROR("EC/PD images are not supported in current mode.");
+		ERROR("EC/PD images are not supported in current mode.\n");
 	}
 	if (check_wp_disabled && is_write_protection_enabled(cfg)) {
 		errorcnt++;
-		ERROR("Please remove write protection for factory mode "
+		ERROR("Please remove write protection for factory mode \n"
 		      "( " REMOVE_WP_URL " ).");
 	}
 	if (!errorcnt && do_output) {
