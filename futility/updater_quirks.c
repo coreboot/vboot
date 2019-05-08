@@ -92,12 +92,13 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	if (!tmp_path)
 		return -1;
 
-	DEBUG("Resize image from %u to %u.", image_to->size, image_from->size);
+	VB2_DEBUG("Resize image from %u to %u.\n",
+		  image_to->size, image_from->size);
 	to_write = image_from->size - image_to->size;
 	write_image(tmp_path, image_to);
 	fp = fopen(tmp_path, "ab");
 	if (!fp) {
-		ERROR("Cannot open temporary file %s.", tmp_path);
+		ERROR("Cannot open temporary file %s.\n", tmp_path);
 		return -1;
 	}
 	while (to_write-- > 0)
@@ -127,14 +128,14 @@ static int quirk_unlock_me_for_update(struct updater_config *cfg)
 		return 0;
 	if (memcmp(section.data + flash_master_offset, flash_master,
 		   ARRAY_SIZE(flash_master)) == 0) {
-		DEBUG("Target ME not locked.");
+		VB2_DEBUG("Target ME not locked.\n");
 		return 0;
 	}
 	/*
 	 * b/35568719: We should only update with unlocked ME and let
 	 * board-postinst lock it.
 	 */
-	INFO("%s: Changed Flash Master Values to unlocked.", __FUNCTION__);
+	INFO("%s: Changed Flash Master Values to unlocked.\n", __FUNCTION__);
 	memcpy(section.data + flash_master_offset, flash_master,
 	       ARRAY_SIZE(flash_master));
 	return 0;
@@ -149,13 +150,13 @@ static int quirk_min_platform_version(struct updater_config *cfg)
 	int min_version = get_config_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg);
 	int platform_version = get_system_property(SYS_PROP_PLATFORM_VER, cfg);
 
-	DEBUG("Minimum required version=%d, current platform version=%d",
-	      min_version, platform_version);
+	VB2_DEBUG("Minimum required version=%d, current platform version=%d\n",
+		  min_version, platform_version);
 
 	if (platform_version >= min_version)
 		return 0;
 	ERROR("Need platform version >= %d (current is %d). "
-	      "This firmware will only run on newer systems.",
+	      "This firmware will only run on newer systems.\n",
 	      min_version, platform_version);
 	return -1;
 }
@@ -192,7 +193,7 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		if (strcmp(x16_versions[i], platform_version) == 0)
 			is_x16 = 1;
 	}
-	INFO("%s: Platform version: %s (original value: %s)", __FUNCTION__,
+	INFO("%s: Platform version: %s (original value: %s)\n", __FUNCTION__,
 	     is_x8 ? "x8" : is_x16 ? "x16": "unknown", platform_version);
 	free(platform_version);
 
@@ -200,15 +201,15 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 	find_firmware_section(&b, &cfg->image, FMAP_RW_SECTION_B);
 
 	if (cfg->ec_image.data) {
-		ERROR("EC RO update is not supported with this quirk.");
+		ERROR("EC RO update is not supported with this quirk.\n");
 		return -1;
 	}
 	if (!a.data || !b.data || a.size != b.size) {
-		ERROR("Invalid firmware image: %s", cfg->image.file_name);
+		ERROR("Invalid firmware image: %s\n", cfg->image.file_name);
 		return -1;
 	}
 	if (memcmp(a.data, b.data, a.size) == 0) {
-		ERROR("Input image must have both x8 and x16 firmware.");
+		ERROR("Input image must have both x8 and x16 firmware.\n");
 		return -1;
 	}
 
@@ -225,7 +226,7 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		/* Need to use RO from current system. */
 		if (!cfg->image_current.data &&
 		    load_system_firmware(cfg, &cfg->image_current) != 0) {
-			ERROR("Cannot get system RO contents");
+			ERROR("Cannot get system RO contents\n");
 			return -1;
 		}
 		preserve_firmware_section(&cfg->image_current, &cfg->image,
@@ -233,7 +234,7 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		free(cfg->image.ro_version);
 		cfg->image.ro_version = strdup(cfg->image_current.ro_version);
 	} else {
-		ERROR("Unknown platform, cannot update.");
+		ERROR("Unknown platform, cannot update.\n");
 		return -1;
 	}
 	return 0;
@@ -287,8 +288,8 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	old_store = extract_cbfs_file(cfg, temp_image, FMAP_RW_LEGACY,
 				      smm_store_name);
 	if (!old_store) {
-		DEBUG("cbfstool failure or SMM store not available. "
-		      "Don't preserve.");
+		VB2_DEBUG("cbfstool failure or SMM store not available. "
+			  "Don't preserve.\n");
 		return 0;
 	}
 
@@ -362,7 +363,7 @@ const char * const updater_get_default_quirks(struct updater_config *cfg)
 	int i;
 
 	if (!pattern) {
-		DEBUG("Cannot identify system for default quirks.");
+		VB2_DEBUG("Cannot identify system for default quirks.\n");
 		return NULL;
 	}
 
@@ -370,7 +371,7 @@ const char * const updater_get_default_quirks(struct updater_config *cfg)
 		const struct quirks_record *r = &quirks_records[i];
 		if (strncmp(r->match, pattern, strlen(r->match)) != 0)
 		    continue;
-		DEBUG("Found system default quirks: %s", r->quirks);
+		VB2_DEBUG("Found system default quirks: %s\n", r->quirks);
 		return r->quirks;
 	}
 	return NULL;

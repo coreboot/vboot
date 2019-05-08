@@ -222,21 +222,21 @@ static int do_update(int argc, char *argv[])
 		case '?':
 			errorcnt++;
 			if (optopt)
-				Error("Unrecognized option: -%c\n", optopt);
+				ERROR("Unrecognized option: -%c\n", optopt);
 			else if (argv[optind - 1])
-				Error("Unrecognized option (possibly '%s')\n",
+				ERROR("Unrecognized option (possibly '%s')\n",
 				      argv[optind - 1]);
 			else
-				Error("Unrecognized option.\n");
+				ERROR("Unrecognized option.\n");
 			break;
 		default:
 			errorcnt++;
-			Error("Failed parsing options.\n");
+			ERROR("Failed parsing options.\n");
 		}
 	}
 	if (optind < argc) {
 		errorcnt++;
-		Error("Unexpected arguments.\n");
+		ERROR("Unexpected arguments.\n");
 	}
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &do_update);
@@ -246,7 +246,7 @@ static int do_update(int argc, char *argv[])
 		r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
 			r = Min(r, UPDATE_ERR_UNKNOWN);
-			Error("%s\n", updater_error_messages[r]);
+			ERROR("%s\n", updater_error_messages[r]);
 			errorcnt++;
 		}
 		/* Use stdout for the final result. */

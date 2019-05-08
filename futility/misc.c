@@ -41,8 +41,8 @@ void vb2ex_printf(const char *func, const char *format, ...)
 
 	va_list ap;
 	va_start(ap, format);
-	fprintf(stdout, "DEBUG:%s() ", func);
-	vfprintf(stdout, format, ap);
+	fprintf(stderr, "DEBUG: %s: ", func);
+	vfprintf(stderr, format, ap);
 	va_end(ap);
 }
 

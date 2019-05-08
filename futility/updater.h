@@ -11,18 +11,10 @@
 #include <stdio.h>
 
 #include "fmap.h"
+#include "futility.h"
 
-extern int debugging_enabled;
-#define DEBUG(format, ...) do { if (debugging_enabled) fprintf(stderr, \
-	"DEBUG: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__); } while (0)
-#define ERROR(format, ...) fprintf(stderr, \
-	"ERROR: %s: " format "\n", __FUNCTION__, ##__VA_ARGS__)
-#define WARN(format, ...) fprintf(stderr, \
-	"WARNING: " format "\n", ##__VA_ARGS__)
-#define INFO(format, ...) fprintf(stderr, "INFO: " format "\n", ##__VA_ARGS__)
-#define STATUS(format, ...) fprintf(stderr, ">> " format "\n", ##__VA_ARGS__)
 #define ASPRINTF(strp, ...) do { if (asprintf(strp, __VA_ARGS__) >= 0) break; \
-	ERROR("Failed to allocate memory, abort."); exit(1); } while (0)
+	ERROR("Failed to allocate memory, abort.\n"); exit(1); } while (0)
 
 /* FMAP section names. */
 static const char * const FMAP_RO_FRID = "RO_FRID",
