@@ -619,12 +619,9 @@ ifeq (${TPM2_MODE},)
 UTIL_NAMES += utility/tpm_init_temp_fix
 endif
 
-# TODO: Do we still need eficompress and efidecompress for anything?
 ifeq (${MINIMAL},)
 UTIL_NAMES += \
 	utility/bdb_extend \
-	utility/eficompress \
-	utility/efidecompress \
 	utility/load_kernel_test \
 	utility/pad_digest_utility \
 	utility/signature_digest_utility \
