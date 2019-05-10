@@ -17,24 +17,22 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 
-static VbError_t ec_sync_unload_oprom(struct vb2_context *ctx,
-				      VbSharedDataHeader *shared,
-				      int need_wait_screen)
+static VbError_t ec_sync_disable_display(struct vb2_context *ctx,
+					 int need_wait_screen)
 {
 	/*
-	 * Reboot to unload VGA Option ROM if:
-	 * - we displayed the wait screen
-	 * - the system has slow EC update flag set
-	 * - the VGA Option ROM was needed and loaded
-	 * - the system is NOT in developer mode (that'll also need the ROM)
+	 * Reboot to disable display initialization
+	 * - we displayed the EC wait screen (otherwise we may be interfering
+	 *   with some other vboot feature requesting display initialization)
+	 * - vboot requested display to be initialized on this boot
+	 * - the system is NOT in developer mode (which will also need display)
 	 */
 	if (need_wait_screen &&
-	    (shared->flags & VBSD_OPROM_MATTERS) &&
-	    (shared->flags & VBSD_OPROM_LOADED) &&
-	    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON)) {
-		VB2_DEBUG("Reboot to unload VGA Option ROM\n");
-		vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 0);
-		return VBERROR_VGA_OPROM_MISMATCH;
+	    vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) &&
+	    !(vb2_get_sd(ctx)->vbsd->flags & VBSD_BOOT_DEV_SWITCH_ON)) {
+		VB2_DEBUG("Reboot to undo display initialization\n");
+		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
+		return VBERROR_REBOOT_REQUIRED;
 	}
 	return VBERROR_SUCCESS;
 }
@@ -42,7 +40,6 @@ static VbError_t ec_sync_unload_oprom(struct vb2_context *ctx,
 VbError_t ec_sync_all(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 	VbAuxFwUpdateSeverity_t fw_update;
 	VbError_t rv;
 
@@ -56,25 +53,24 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 		(fw_update == VB_AUX_FW_SLOW_UPDATE);
 
 	/*
-	 * Check if we need to reboot to load the VGA Option ROM before we can
+	 * Check if we need to reboot to initialize the display before we can
 	 * display the WAIT screen.
 	 *
 	 * Do this before we check if ec_sync_phase1() requires a reboot for
 	 * some other reason, since there's no reason to reboot twice.
 	 */
-	int reboot_for_oprom = (need_wait_screen &&
-				shared->flags & VBSD_OPROM_MATTERS &&
-				!(shared->flags & VBSD_OPROM_LOADED));
-	if (reboot_for_oprom) {
-		VB2_DEBUG("Reboot to load VGA Option ROM\n");
-		vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
+	int reboot_for_display = (need_wait_screen &&
+				  !(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE));
+	if (reboot_for_display) {
+		VB2_DEBUG("Reboot to initialize display\n");
+		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 	}
 
-	/* Reboot if phase 1 needed it, or if we need to load VGA Option ROM */
+	/* Reboot if phase 1 needed it, or if we need to initialize display */
 	if (phase1_rv)
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-	if (reboot_for_oprom)
-		return VBERROR_VGA_OPROM_MISMATCH;
+	if (reboot_for_display)
+		return VBERROR_REBOOT_REQUIRED;
 
 	/* Display the wait screen if we need it */
 	if (need_wait_screen) {
@@ -90,16 +86,16 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 	/*
 	 * Do Aux FW software sync and protect devices tunneled through the EC.
 	 * Aux FW update may request RO reboot to force EC cold reset so also
-	 * unload the option ROM if needed to prevent a second reboot.
+	 * disable display request if needed to prevent a second reboot.
 	 */
 	rv = ec_sync_update_aux_fw(ctx);
 	if (rv) {
-		ec_sync_unload_oprom(ctx, shared, need_wait_screen);
+		ec_sync_disable_display(ctx, need_wait_screen);
 		return rv;
 	}
 
-	/* Reboot to unload VGA Option ROM if needed */
-	rv = ec_sync_unload_oprom(ctx, shared, need_wait_screen);
+	/* Reboot to disable display initialization if needed */
+	rv = ec_sync_disable_display(ctx, need_wait_screen);
 	if (rv)
 		return rv;
 

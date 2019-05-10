@@ -393,8 +393,8 @@ static VbError_t vb2_check_diagnostic_key(struct vb2_context *ctx,
 					  uint32_t key) {
 	if (DIAGNOSTIC_UI && (key == VB_KEY_CTRL('C') || key == VB_KEY_F(12))) {
 		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
-		if (vb2_get_sd(ctx)->vbsd->flags & VBSD_OPROM_MATTERS)
-			vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 1);
+		if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE))
+			vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 
 		return VBERROR_REBOOT_REQUIRED;

@@ -257,7 +257,7 @@ static VbError_t sync_one_ec(struct vb2_context *ctx, int devidx)
 			VB2_DEBUG("Rebooting to jump to new EC-RW\n");
 			/* Since we're rebooting, ec_sync_all won't be given a
 			 * chance to clear the flag. Need to clear it here. */
-			vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 0);
+			vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
 			return VBERROR_EC_REBOOT_TO_SWITCH_RW;
 		}
 	}
