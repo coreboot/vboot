@@ -514,8 +514,8 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
 	} else if (!strcasecmp(name,"dev_enable_udc")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_ENABLE_UDC);
-	} else if (!strcasecmp(name,"oprom_needed")) {
-		value = vb2_get_nv_storage(VB2_NV_OPROM_NEEDED);
+	} else if (!strcasecmp(name,"display_request")) {
+		value = vb2_get_nv_storage(VB2_NV_DISPLAY_REQUEST);
 	} else if (!strcasecmp(name,"recovery_subcode")) {
 		value = vb2_get_nv_storage(VB2_NV_RECOVERY_SUBCODE);
 	} else if (!strcasecmp(name,"wipeout_request")) {
@@ -662,8 +662,8 @@ int VbSetSystemPropertyInt(const char *name, int value)
 	} else if (!strcasecmp(name,"fwb_tries") ||
 		   !strcasecmp(name,"fw_try_count")) {
 		return vb2_set_nv_storage(VB2_NV_TRY_COUNT, value);
-	} else if (!strcasecmp(name,"oprom_needed")) {
-		return vb2_set_nv_storage(VB2_NV_OPROM_NEEDED, value);
+	} else if (!strcasecmp(name,"display_request")) {
+		return vb2_set_nv_storage(VB2_NV_DISPLAY_REQUEST, value);
 	} else if (!strcasecmp(name,"wipeout_request")) {
 		/* Can only clear this flag, set only by firmware. */
 		return vb2_set_nv_storage(VB2_NV_REQ_WIPEOUT, 0);

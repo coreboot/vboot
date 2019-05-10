@@ -78,7 +78,7 @@ const Param sys_param_list[] = {
   {"mainfw_act", IS_STRING, "Active main firmware"},
   {"mainfw_type", IS_STRING, "Active main firmware type"},
   {"nvram_cleared", CAN_WRITE, "Have NV settings been lost?  Write 0 to clear"},
-  {"oprom_needed", CAN_WRITE, "Should we load the VGA Option ROM at boot?"},
+  {"display_request", CAN_WRITE, "Should we initialize the display at boot?"},
   {"phase_enforcement", 0,
     "Board should have full security settings applied"},
   {"recovery_reason", 0, "Recovery mode reason for current boot"},

@@ -106,7 +106,7 @@ int vb2api_fw_phase1(struct vb2_context *ctx)
 	 * above by vb2_check_dev_switch.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_DISPLAY_INIT) &&
-	    (vb2_nv_get(ctx, VB2_NV_OPROM_NEEDED) ||
+	    (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) ||
 	     sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
 	     sd->recovery_reason))
 		ctx->flags |= VB2_CONTEXT_DISPLAY_INIT;

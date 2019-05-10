@@ -67,15 +67,12 @@ enum vb2_nv_param {
 	 * virtual.
 	 */
 	VB2_NV_DISABLE_DEV_REQUEST,
-	/*
-	 * Set and cleared by vboot to request that the video Option ROM be
-	 * loaded at boot time, so that BIOS screens can be displayed. 0=no,
-	 * 1=yes.
-	 */
-	VB2_NV_OPROM_NEEDED,
-	/* TODO(chromium:948529): VB2_NV_OPROM_NEEDED is being renamed to
-	   VB2_NV_DISPLAY_REQUEST. */
-	VB2_NV_DISPLAY_REQUEST = VB2_NV_OPROM_NEEDED,
+	/* Set and cleared by vboot to request that display be initialized
+	   at boot time, so that BIOS screens can be displayed. 0=no, 1=yes. */
+	VB2_NV_DISPLAY_REQUEST,
+	/* TODO(chromium:948529): Remove VB2_NV_OPROM_NEEDED when unused.
+	   Renamed to VB2_NV_DISPLAY_REQUEST (above). */
+	VB2_NV_OPROM_NEEDED = VB2_NV_DISPLAY_REQUEST,
 	/* Request that the firmware clear the TPM owner on the next boot. */
 	VB2_NV_CLEAR_TPM_OWNER_REQUEST,
 	/* Flag that TPM owner was cleared on request. */

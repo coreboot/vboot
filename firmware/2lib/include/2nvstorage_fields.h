@@ -75,7 +75,7 @@ enum vb2_nv_offset {
 /* Fields in VB2_NV_OFFS_BOOT */
 #define VB2_NV_BOOT_TRY_COUNT_MASK             0x0f
 #define VB2_NV_BOOT_BACKUP_NVRAM               0x10
-#define VB2_NV_BOOT_OPROM_NEEDED               0x20
+#define VB2_NV_BOOT_DISPLAY_REQUEST            0x20
 #define VB2_NV_BOOT_DISABLE_DEV                0x40
 #define VB2_NV_BOOT_DEBUG_RESET                0x80
 
