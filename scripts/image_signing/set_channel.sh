@@ -40,6 +40,7 @@ main() {
     sudo="sudo"
   fi
   ${sudo} sed -i "s/\b${from}\b/${to}/" "${lsb}" &&
+    restore_lsb_selinux "${lsb}" &&
     echo "Channel change successful."
   cat "${lsb}"
 }
