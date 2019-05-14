@@ -73,6 +73,9 @@ enum vb2_nv_param {
 	 * 1=yes.
 	 */
 	VB2_NV_OPROM_NEEDED,
+	/* TODO(chromium:948529): VB2_NV_OPROM_NEEDED is being renamed to
+	   VB2_NV_DISPLAY_REQUEST. */
+	VB2_NV_DISPLAY_REQUEST = VB2_NV_OPROM_NEEDED,
 	/* Request that the firmware clear the TPM owner on the next boot. */
 	VB2_NV_CLEAR_TPM_OWNER_REQUEST,
 	/* Flag that TPM owner was cleared on request. */
