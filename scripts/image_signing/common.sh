@@ -145,6 +145,12 @@ get_boardvar_from_lsb_release() {
   get_board_from_lsb_release "$@" | sed 's:[-]:_:g'
 }
 
+# Usage: restore_lsb_selinux lsb-file
+# restore lsb-release security.selinux attribute
+restore_lsb_selinux() {
+  sudo setfattr -n security.selinux -v "u:object_r:cros_conf_file:s0" "$1"
+}
+
 # This will override the trap set in common_minmal.sh
 trap "cleanup" INT TERM EXIT
 
