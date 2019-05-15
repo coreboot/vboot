@@ -555,8 +555,8 @@ resign_firmware_payload() {
         # This is what updater4.sh currently uses to make the decision.
         if [[ -e "${KEY_DIR}/loem.ini" ]]; then
           # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
-          local match="$(grep -E "[0-9]+ = ${key_id}$" "${KEY_DIR}/loem.ini")"
-          local key_index="$(echo "${match}" | cut -d ' ' -f 1)"
+          local match="$(grep -E "[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"
+          local key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
           info "Detected key index from loem.ini as ${key_index} for ${key_id}"
           if [[ -z "${key_index}" ]]; then
             die "Failed to find key_id ${key_id} in loem.ini file for " \
