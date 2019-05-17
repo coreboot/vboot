@@ -73,12 +73,12 @@ static struct nv_field nv2fields[] = {
 	{0, 0, 0, 0, NULL}
 };
 
-static void test_changed(struct vb2_context *ctx, int changed, const char *why)
+static void test_changed(struct vb2_context *c, int changed, const char *why)
 {
 	if (changed)
-		TEST_NEQ(ctx->flags & VB2_CONTEXT_NVDATA_CHANGED, 0, why);
+		TEST_NEQ(c->flags & VB2_CONTEXT_NVDATA_CHANGED, 0, why);
 	else
-		TEST_EQ(ctx->flags & VB2_CONTEXT_NVDATA_CHANGED, 0, why);
+		TEST_EQ(c->flags & VB2_CONTEXT_NVDATA_CHANGED, 0, why);
 };
 
 static void nv_storage_test(uint32_t ctxflags)

@@ -21,7 +21,7 @@
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 static struct vb2_workbuf wb;
-static struct vb2_context cc;
+static struct vb2_context ctx;
 static struct vb2_shared_data *sd;
 
 /* Mocked function data */
@@ -80,18 +80,18 @@ static void reset_common_data(enum reset_type t)
 
 	memset(workbuf, 0xaa, sizeof(workbuf));
 
-	memset(&cc, 0, sizeof(cc));
-	cc.workbuf = workbuf;
-	cc.workbuf_size = sizeof(workbuf);
-	vb2_workbuf_from_ctx(&cc, &wb);
+	memset(&ctx, 0, sizeof(ctx));
+	ctx.workbuf = workbuf;
+	ctx.workbuf_size = sizeof(workbuf);
+	vb2_workbuf_from_ctx(&ctx, &wb);
 
-	vb2_init_context(&cc);
-	sd = vb2_get_sd(&cc);
+	vb2_init_context(&ctx);
+	sd = vb2_get_sd(&ctx);
 
-	vb2_nv_init(&cc);
+	vb2_nv_init(&ctx);
 
-	vb2_secdatak_create(&cc);
-	vb2_secdatak_init(&cc);
+	vb2_secdatak_create(&ctx);
+	vb2_secdatak_init(&ctx);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -100,7 +100,7 @@ static void reset_common_data(enum reset_type t)
 
 	/* Set up mock data for verifying keyblock */
 	sd->kernel_version_secdatak = 0x20002;
-	vb2_secdatak_set(&cc, VB2_SECDATAK_VERSIONS, 0x20002);
+	vb2_secdatak_set(&ctx, VB2_SECDATAK_VERSIONS, 0x20002);
 
 	mock_gbb.recovery_key.algorithm = 11;
 	mock_gbb.recovery_key.key_offset =
@@ -130,12 +130,12 @@ static void reset_common_data(enum reset_type t)
 
 	/* If verifying preamble, verify keyblock first to set up data key */
 	if (t == FOR_PREAMBLE)
-		vb2_load_kernel_keyblock(&cc);
+		vb2_load_kernel_keyblock(&ctx);
 };
 
 /* Mocked functions */
 
-int vb2ex_read_resource(struct vb2_context *ctx,
+int vb2ex_read_resource(struct vb2_context *c,
 			enum vb2_resource_index index,
 			uint32_t offset,
 			void *buf,
@@ -246,30 +246,30 @@ static void load_kernel_keyblock_tests(void)
 
 	/* Test successful call */
 	reset_common_data(FOR_KEYBLOCK);
-	wb_used_before = cc.workbuf_used;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc), "Kernel keyblock good");
+	wb_used_before = ctx.workbuf_used;
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx), "Kernel keyblock good");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  Kernel signed");
 	TEST_EQ(sd->kernel_version, 0x20000, "keyblock version");
 	TEST_EQ(sd->vblock_preamble_offset, sizeof(mock_vblock.k),
 		"preamble offset");
 	TEST_EQ(sd->workbuf_data_key_offset, wb_used_before,
 		"keyblock data key offset");
-	TEST_EQ(cc.workbuf_used,
+	TEST_EQ(ctx.workbuf_used,
 		vb2_wb_round_up(sd->workbuf_data_key_offset +
 				sd->workbuf_data_key_size),
 		"workbuf used");
 
 	/* Make sure data key was properly saved */
-	k = (struct vb2_packed_key *)(cc.workbuf + sd->workbuf_data_key_offset);
+	k = (struct vb2_packed_key *)(ctx.workbuf + sd->workbuf_data_key_offset);
 	TEST_EQ(k->algorithm, 7, "data key algorithm");
 	TEST_EQ(k->key_version, 2, "data key version");
 	TEST_EQ(k->key_size, sizeof(mock_vblock.k.data_key_data),
 		"data key size");
-	TEST_EQ(memcmp(cc.workbuf + sd->workbuf_data_key_offset +
+	TEST_EQ(memcmp(ctx.workbuf + sd->workbuf_data_key_offset +
 		       k->key_offset, mock_vblock.k.data_key_data,
 		       sizeof(mock_vblock.k.data_key_data)),
 		0, "data key data");
-	TEST_EQ(cc.workbuf_used,
+	TEST_EQ(ctx.workbuf_used,
 		vb2_wb_round_up(sd->workbuf_data_key_offset +
 				sd->workbuf_data_key_size),
 		"workbuf used after");
@@ -277,112 +277,112 @@ static void load_kernel_keyblock_tests(void)
 	/* Test failures */
 	reset_common_data(FOR_KEYBLOCK);
 	mock_unpack_key_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_MOCK, "Kernel keyblock unpack key");
 
 	reset_common_data(FOR_KEYBLOCK);
-	cc.workbuf_used = cc.workbuf_size + VB2_WORKBUF_ALIGN -
+	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
 			vb2_wb_round_up(sizeof(*kb));
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF_HEADER,
 		"Kernel keyblock workbuf header");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_read_res_fail_on_call = 1;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_MOCK, "Kernel keyblock read header");
 
 	reset_common_data(FOR_KEYBLOCK);
-	cc.workbuf_used = cc.workbuf_size + VB2_WORKBUF_ALIGN -
+	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
 			vb2_wb_round_up(kb->keyblock_size);
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF,
 		"Kernel keyblock workbuf");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_read_res_fail_on_call = 2;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_MOCK, "Kernel keyblock read");
 
 	/* Normally, require signed keyblock */
 	reset_common_data(FOR_KEYBLOCK);
 	mock_verify_keyblock_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_MOCK, "Verify keyblock");
 
 	/* Not in dev mode */
 	reset_common_data(FOR_KEYBLOCK);
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	mock_verify_keyblock_retval = VB2_ERROR_MOCK;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc), "Kernel keyblock hash good");
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx), "Kernel keyblock hash good");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  Kernel signed");
 
 	/* But we do in dev+rec mode */
 	reset_common_data(FOR_KEYBLOCK);
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE | VB2_CONTEXT_RECOVERY_MODE;
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE | VB2_CONTEXT_RECOVERY_MODE;
 	mock_verify_keyblock_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_MOCK, "Kernel keyblock dev+rec");
 
 	/* Test keyblock flags matching mode */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG,
 		"Kernel keyblock dev only");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG,
 		"Kernel keyblock rec only");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_1;
-	cc.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG,
 		"Kernel keyblock not rec");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
-	cc.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG,
 		"Kernel keyblock rec but not dev+rec");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
 	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE | VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc),
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE | VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx),
 		  "Kernel keyblock flags dev+rec");
 
 	/* System in dev mode ignores flags */
 	reset_common_data(FOR_KEYBLOCK);
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	kb->keyblock_flags = 0;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc), "Kernel keyblock dev flags");
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx), "Kernel keyblock dev flags");
 
 	/* Test rollback */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->data_key.key_version = 0x10000;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_VERSION_RANGE,
 		"Kernel keyblock version range");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->data_key.key_version = 1;
-	TEST_EQ(vb2_load_kernel_keyblock(&cc),
+	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK,
 		"Kernel keyblock rollback");
 
 	/* Rollback ok in developer mode */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->data_key.key_version = 1;
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc),
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx),
 		  "Kernel keyblock rollback dev");
 
 	/*
@@ -391,8 +391,8 @@ static void load_kernel_keyblock_tests(void)
 	 */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->data_key.key_version = 1;
-	cc.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2_load_kernel_keyblock(&cc),
+	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_kernel_keyblock(&ctx),
 		  "Kernel keyblock rollback rec");
 }
 
@@ -404,13 +404,13 @@ static void load_kernel_preamble_tests(void)
 
 	/* Test successful call */
 	reset_common_data(FOR_PREAMBLE);
-	wb_used_before = cc.workbuf_used;
-	TEST_SUCC(vb2_load_kernel_preamble(&cc), "preamble good");
+	wb_used_before = ctx.workbuf_used;
+	TEST_SUCC(vb2_load_kernel_preamble(&ctx), "preamble good");
 	TEST_EQ(sd->kernel_version, 0x20002, "combined version");
 	TEST_EQ(sd->workbuf_preamble_offset, wb_used_before,
 		"preamble offset");
 	TEST_EQ(sd->workbuf_preamble_size, pre->preamble_size, "preamble size");
-	TEST_EQ(cc.workbuf_used,
+	TEST_EQ(ctx.workbuf_used,
 		vb2_wb_round_up(sd->workbuf_preamble_offset +
 				sd->workbuf_preamble_size),
 		"workbuf used");
@@ -418,57 +418,57 @@ static void load_kernel_preamble_tests(void)
 	/* Expected failures */
 	reset_common_data(FOR_PREAMBLE);
 	sd->workbuf_data_key_size = 0;
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE2_DATA_KEY,
 		"preamble no data key");
 
 	reset_common_data(FOR_PREAMBLE);
 	mock_unpack_key_retval = VB2_ERROR_UNPACK_KEY_HASH_ALGORITHM;
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_UNPACK_KEY_HASH_ALGORITHM,
 		"preamble unpack data key");
 
 	reset_common_data(FOR_PREAMBLE);
-	cc.workbuf_used = cc.workbuf_size + VB2_WORKBUF_ALIGN -
+	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
 			vb2_wb_round_up(sizeof(struct vb2_kernel_preamble));
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF_HEADER,
 		"preamble not enough workbuf for header");
 
 	reset_common_data(FOR_PREAMBLE);
 	sd->vblock_preamble_offset = sizeof(mock_vblock);
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"preamble read header");
 
 	reset_common_data(FOR_PREAMBLE);
-	cc.workbuf_used = cc.workbuf_size + VB2_WORKBUF_ALIGN -
+	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
 			vb2_wb_round_up(sizeof(mock_vblock.p));
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF,
 		"preamble not enough workbuf");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->preamble_size = sizeof(mock_vblock);
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"preamble read full");
 
 	reset_common_data(FOR_PREAMBLE);
 	mock_verify_preamble_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_MOCK,
 		"preamble verify");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->kernel_version = 0x10000;
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE,
 		"preamble version range");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->kernel_version = 1;
-	TEST_EQ(vb2_load_kernel_preamble(&cc),
+	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK,
 		"preamble version rollback");
 }

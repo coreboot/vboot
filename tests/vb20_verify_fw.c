@@ -20,7 +20,7 @@ const char *body_fname;
  * Local implementation which reads resources from individual files.  Could be
  * more elegant and read from bios.bin, if we understood the fmap.
  */
-int vb2ex_read_resource(struct vb2_context *ctx,
+int vb2ex_read_resource(struct vb2_context *c,
 			enum vb2_resource_index index,
 			uint32_t offset,
 			void *buf,
@@ -60,7 +60,7 @@ int vb2ex_read_resource(struct vb2_context *ctx,
 	return got_size == size ? VB2_SUCCESS : VB2_ERROR_UNKNOWN;
 }
 
-int vb2ex_tpm_clear_owner(struct vb2_context *ctx)
+int vb2ex_tpm_clear_owner(struct vb2_context *c)
 {
 	// TODO: implement
 	return VB2_SUCCESS;
@@ -69,24 +69,24 @@ int vb2ex_tpm_clear_owner(struct vb2_context *ctx)
 /**
  * Save non-volatile and/or secure data if needed.
  */
-static void save_if_needed(struct vb2_context *ctx)
+static void save_if_needed(struct vb2_context *c)
 {
 
-	if (ctx->flags & VB2_CONTEXT_NVDATA_CHANGED) {
+	if (c->flags & VB2_CONTEXT_NVDATA_CHANGED) {
 		// TODO: implement
-		ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
+		c->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	}
 
-	if (ctx->flags & VB2_CONTEXT_SECDATA_CHANGED) {
+	if (c->flags & VB2_CONTEXT_SECDATA_CHANGED) {
 		// TODO: implement
-		ctx->flags &= ~VB2_CONTEXT_SECDATA_CHANGED;
+		c->flags &= ~VB2_CONTEXT_SECDATA_CHANGED;
 	}
 }
 
 /**
  * Verify firmware body
  */
-static int hash_body(struct vb2_context *ctx)
+static int hash_body(struct vb2_context *c)
 {
 	uint32_t expect_size;
 	uint8_t block[8192];
@@ -100,7 +100,7 @@ static int hash_body(struct vb2_context *ctx)
 		return VB2_ERROR_TEST_INPUT_FILE;
 
 	/* Start the body hash */
-	rv = vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &expect_size);
+	rv = vb2api_init_hash(c, VB2_HASH_TAG_FW_BODY, &expect_size);
 	if (rv) {
 		fclose(f);
 		return rv;
@@ -120,7 +120,7 @@ static int hash_body(struct vb2_context *ctx)
 			break;
 
 		/* Hash it */
-		rv = vb2api_extend_hash(ctx, block, size);
+		rv = vb2api_extend_hash(c, block, size);
 		if (rv) {
 			fclose(f);
 			return rv;
@@ -132,7 +132,7 @@ static int hash_body(struct vb2_context *ctx)
 	fclose(f);
 
 	/* Check the result */
-	rv = vb2api_check_hash(ctx);
+	rv = vb2api_check_hash(c);
 	if (rv)
 		return rv;
 

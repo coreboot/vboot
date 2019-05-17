@@ -19,7 +19,7 @@
 /* Common context for tests */
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-static struct vb2_context cc;
+static struct vb2_context ctx;
 static struct vb2_shared_data *sd;
 
 const char mock_body[320] = "Mock body";
@@ -49,17 +49,17 @@ static void reset_common_data(enum reset_type t)
 {
 	memset(workbuf, 0xaa, sizeof(workbuf));
 
-	memset(&cc, 0, sizeof(cc));
-	cc.workbuf = workbuf;
-	cc.workbuf_size = sizeof(workbuf);
+	memset(&ctx, 0, sizeof(ctx));
+	ctx.workbuf = workbuf;
+	ctx.workbuf_size = sizeof(workbuf);
 
-	vb2_init_context(&cc);
-	sd = vb2_get_sd(&cc);
+	vb2_init_context(&ctx);
+	sd = vb2_get_sd(&ctx);
 
-	vb2_nv_init(&cc);
+	vb2_nv_init(&ctx);
 
-	vb2_secdata_create(&cc);
-	vb2_secdata_init(&cc);
+	vb2_secdata_create(&ctx);
+	vb2_secdata_init(&ctx);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_parse_gbb = VB2_SUCCESS;
@@ -73,24 +73,24 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb2_fw_parse_gbb(struct vb2_context *ctx)
+int vb2_fw_parse_gbb(struct vb2_context *c)
 {
 	return retval_vb2_fw_parse_gbb;
 }
 
-int vb2_check_dev_switch(struct vb2_context *ctx)
+int vb2_check_dev_switch(struct vb2_context *c)
 {
 	if (force_dev_mode)
 		sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	return retval_vb2_check_dev_switch;
 }
 
-int vb2_check_tpm_clear(struct vb2_context *ctx)
+int vb2_check_tpm_clear(struct vb2_context *c)
 {
 	return retval_vb2_check_tpm_clear;
 }
 
-int vb2_select_fw_slot(struct vb2_context *ctx)
+int vb2_select_fw_slot(struct vb2_context *c)
 {
 	return retval_vb2_select_fw_slot;
 }
@@ -102,173 +102,173 @@ static void misc_tests(void)
 	/* Test secdata passthru functions */
 	reset_common_data(FOR_MISC);
 	/* Corrupt secdata so initial check will fail */
-	cc.secdata[0] ^= 0x42;
-	TEST_EQ(vb2api_secdata_check(&cc), VB2_ERROR_SECDATA_CRC,
+	ctx.secdata[0] ^= 0x42;
+	TEST_EQ(vb2api_secdata_check(&ctx), VB2_ERROR_SECDATA_CRC,
 		"secdata check");
-	TEST_SUCC(vb2api_secdata_create(&cc), "secdata create");
-	TEST_SUCC(vb2api_secdata_check(&cc), "secdata check 2");
+	TEST_SUCC(vb2api_secdata_create(&ctx), "secdata create");
+	TEST_SUCC(vb2api_secdata_check(&ctx), "secdata check 2");
 
 	/* Test fail passthru */
 	reset_common_data(FOR_MISC);
-	vb2api_fail(&cc, 12, 34);
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	vb2api_fail(&ctx, 12, 34);
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		12, "vb2api_fail request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_SUBCODE),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_SUBCODE),
 		34, "vb2api_fail subcode");
 }
 
 static void phase1_tests(void)
 {
 	reset_common_data(FOR_MISC);
-	TEST_SUCC(vb2api_fw_phase1(&cc), "phase1 good");
+	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 good");
 	TEST_EQ(sd->recovery_reason, 0, "  not recovery");
-	TEST_EQ(cc.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
-	TEST_EQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
-	TEST_EQ(cc.flags & VB2_CONTEXT_DISPLAY_INIT,
+	TEST_EQ(ctx.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_DISPLAY_INIT,
 		0, "  display init context flag");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
 	retval_vb2_fw_parse_gbb = VB2_ERROR_GBB_MAGIC;
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 gbb");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_GBB_HEADER,
 		"  recovery reason");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
 
 	/* Dev switch error in normal mode reboots to recovery */
 	reset_common_data(FOR_MISC);
 	retval_vb2_check_dev_switch = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_MOCK, "phase1 dev switch");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_MOCK, "phase1 dev switch");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_DEV_SWITCH, "  recovery request");
 
 	/* Dev switch error already in recovery mode just proceeds */
 	reset_common_data(FOR_MISC);
-	vb2_nv_set(&cc, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
+	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
 	retval_vb2_check_dev_switch = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 dev switch error in recovery");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
 		"  recovery reason");
 	/* Check that DISPLAY_AVAILABLE gets set on recovery mode. */
-	TEST_NEQ(cc.flags & VB2_CONTEXT_DISPLAY_INIT,
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_DISPLAY_INIT,
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
-	cc.secdata[0] ^= 0x42;
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	ctx.secdata[0] ^= 0x42;
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 secdata");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_SECDATA_INIT,
 		"  recovery reason");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
 
 	/* Test secdata-requested reboot */
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
+	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
 		"phase1 secdata reboot normal");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
 
 	reset_common_data(FOR_MISC);
-	vb2_nv_set(&cc, VB2_NV_TPM_REQUESTED_REBOOT, 1);
-	TEST_SUCC(vb2api_fw_phase1(&cc), "phase1 secdata reboot back normal");
+	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
+	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 secdata reboot back normal");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		0, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	memset(cc.secdata, 0, sizeof(cc.secdata));
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
+	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+	memset(ctx.secdata, 0, sizeof(ctx.secdata));
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
 		"phase1 secdata reboot normal, secdata blank");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	vb2_nv_set(&cc, VB2_NV_TPM_REQUESTED_REBOOT, 1);
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 secdata reboot normal again");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_TPM_REBOOT,
 		"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	vb2_nv_set(&cc, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
+	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
 		"phase1 secdata reboot recovery");
 	/* Recovery reason isn't set this boot because we're rebooting first */
 	TEST_EQ(sd->recovery_reason, 0, "  recovery reason not set THIS boot");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_UNSPECIFIED, "  recovery request not cleared");
 
 	reset_common_data(FOR_MISC);
-	vb2_nv_set(&cc, VB2_NV_TPM_REQUESTED_REBOOT, 1);
-	vb2_nv_set(&cc, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
+	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 secdata reboot back recovery");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
 		"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		0, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST), 0,
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0,
 		"  recovery request cleared");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	vb2_nv_set(&cc, VB2_NV_TPM_REQUESTED_REBOOT, 1);
-	vb2_nv_set(&cc, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
-	TEST_EQ(vb2api_fw_phase1(&cc), VB2_ERROR_API_PHASE1_RECOVERY,
+	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
+	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
+	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
+	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 secdata reboot recovery again");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
 		"  recovery reason");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_TPM_REQUESTED_REBOOT),
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST), 0,
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0,
 		"  recovery request cleared");
 
 	/* Cases for checking DISPLAY_INIT and DISPLAY_AVAILABLE. */
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_DISPLAY_INIT;
-	TEST_SUCC(vb2api_fw_phase1(&cc), "phase1 with DISPLAY_INIT");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_DISPLAY_INIT,
+	ctx.flags |= VB2_CONTEXT_DISPLAY_INIT;
+	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 with DISPLAY_INIT");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_DISPLAY_INIT,
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
-	vb2_nv_set(&cc, VB2_NV_DISPLAY_REQUEST, 1);
-	TEST_SUCC(vb2api_fw_phase1(&cc), "phase1 with DISPLAY_REQUEST");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_DISPLAY_INIT,
+	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 with DISPLAY_REQUEST");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_DISPLAY_INIT,
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
 	force_dev_mode = 1;
-	TEST_SUCC(vb2api_fw_phase1(&cc), "phase1 in dev mode");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_DISPLAY_INIT,
+	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 in dev mode");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_DISPLAY_INIT,
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
@@ -277,40 +277,40 @@ static void phase1_tests(void)
 static void phase2_tests(void)
 {
 	reset_common_data(FOR_MISC);
-	TEST_SUCC(vb2api_fw_phase2(&cc), "phase2 good");
-	TEST_EQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
-	TEST_EQ(cc.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
+	TEST_SUCC(vb2api_fw_phase2(&ctx), "phase2 good");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	TEST_SUCC(vb2api_fw_phase2(&cc), "phase2 dev");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	TEST_SUCC(vb2api_fw_phase2(&ctx), "phase2 dev");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
 
 	reset_common_data(FOR_MISC);
 	retval_vb2_check_tpm_clear = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_fw_phase2(&cc), VB2_ERROR_MOCK, "phase2 tpm clear");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2api_fw_phase2(&ctx), VB2_ERROR_MOCK, "phase2 tpm clear");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_TPM_CLEAR_OWNER, "  recovery reason");
 
 	reset_common_data(FOR_MISC);
 	retval_vb2_select_fw_slot = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_fw_phase2(&cc), VB2_ERROR_MOCK, "phase2 slot");
-	TEST_EQ(vb2_nv_get(&cc, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2api_fw_phase2(&ctx), VB2_ERROR_MOCK, "phase2 slot");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_FW_SLOT, "  recovery reason");
 
 	/* S3 resume exits before clearing RAM */
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_S3_RESUME;
-	cc.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	TEST_SUCC(vb2api_fw_phase2(&cc), "phase2 s3 dev");
-	TEST_EQ(cc.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
-	TEST_EQ(cc.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
+	ctx.flags |= VB2_CONTEXT_S3_RESUME;
+	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	TEST_SUCC(vb2api_fw_phase2(&ctx), "phase2 s3 dev");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
 
 	reset_common_data(FOR_MISC);
-	cc.flags |= VB2_CONTEXT_S3_RESUME;
-	vb2_nv_set(&cc, VB2_NV_FW_TRIED, 1);
-	TEST_SUCC(vb2api_fw_phase2(&cc), "phase2 s3");
-	TEST_NEQ(cc.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
+	ctx.flags |= VB2_CONTEXT_S3_RESUME;
+	vb2_nv_set(&ctx, VB2_NV_FW_TRIED, 1);
+	TEST_SUCC(vb2api_fw_phase2(&ctx), "phase2 s3");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_FW_SLOT_B, 0, "  slot b flag");
 }
 
 static void get_pcr_digest_tests(void)
@@ -325,7 +325,7 @@ static void get_pcr_digest_tests(void)
 	digest_size = sizeof(digest);
 	memset(digest, 0, sizeof(digest));
 	TEST_SUCC(vb2api_get_pcr_digest(
-			&cc, BOOT_MODE_PCR, digest, &digest_size),
+			&ctx, BOOT_MODE_PCR, digest, &digest_size),
 		  "BOOT_MODE_PCR");
 	TEST_EQ(digest_size, VB2_SHA1_DIGEST_SIZE, "BOOT_MODE_PCR digest size");
 	TEST_TRUE(memcmp(digest, digest_org, digest_size),
@@ -334,7 +334,7 @@ static void get_pcr_digest_tests(void)
 	digest_size = sizeof(digest);
 	memset(digest, 0, sizeof(digest));
 	TEST_SUCC(vb2api_get_pcr_digest(
-			&cc, HWID_DIGEST_PCR, digest, &digest_size),
+			&ctx, HWID_DIGEST_PCR, digest, &digest_size),
 		  "HWID_DIGEST_PCR");
 	TEST_EQ(digest_size, VB2_GBB_HWID_DIGEST_SIZE,
 		"HWID_DIGEST_PCR digest size");
@@ -342,12 +342,12 @@ static void get_pcr_digest_tests(void)
 		   "HWID_DIGEST_PCR digest");
 
 	digest_size = 1;
-	TEST_EQ(vb2api_get_pcr_digest(&cc, BOOT_MODE_PCR, digest, &digest_size),
+	TEST_EQ(vb2api_get_pcr_digest(&ctx, BOOT_MODE_PCR, digest, &digest_size),
 		VB2_ERROR_API_PCR_DIGEST_BUF,
 		"BOOT_MODE_PCR buffer too small");
 
 	TEST_EQ(vb2api_get_pcr_digest(
-			&cc, HWID_DIGEST_PCR + 1, digest, &digest_size),
+			&ctx, HWID_DIGEST_PCR + 1, digest, &digest_size),
 		VB2_ERROR_API_PCR_DIGEST,
 		"invalid enum vb2_pcr_digest");
 }

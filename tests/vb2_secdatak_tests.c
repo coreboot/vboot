@@ -21,14 +21,14 @@
 #include "2misc.h"
 #include "2secdata.h"
 
-static void test_changed(struct vb2_context *ctx, int changed, const char *why)
+static void test_changed(struct vb2_context *c, int changed, const char *why)
 {
 	if (changed)
-		TEST_NEQ(ctx->flags & VB2_CONTEXT_SECDATAK_CHANGED, 0, why);
+		TEST_NEQ(c->flags & VB2_CONTEXT_SECDATAK_CHANGED, 0, why);
 	else
-		TEST_EQ(ctx->flags & VB2_CONTEXT_SECDATAK_CHANGED, 0, why);
+		TEST_EQ(c->flags & VB2_CONTEXT_SECDATAK_CHANGED, 0, why);
 
-	ctx->flags &= ~VB2_CONTEXT_SECDATAK_CHANGED;
+	c->flags &= ~VB2_CONTEXT_SECDATAK_CHANGED;
 };
 
 static void secdatak_test(void)
