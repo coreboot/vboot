@@ -45,11 +45,11 @@ static const char no_legacy[] = "Legacy boot failed. Missing BIOS?\n";
  */
 static int VbWantShutdownMenu(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t shutdown_request = VbExIsShutdownRequested();
 
 	/* If desired, ignore shutdown request due to lid closure. */
-	if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
 	/*
@@ -181,7 +181,7 @@ static VbError_t boot_usb_action(struct vb2_context *ctx)
 	}
 
 	if (!vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB) &&
-	    !(vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) &&
+	    !(vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) &&
 	    !(vb2_get_fwmp_flags() & FWMP_DEV_ENABLE_USB)) {
 		vb2_flash_screen(ctx);
 		vb2_error_notify("WARNING: Booting from external media "
@@ -377,7 +377,7 @@ static VbError_t to_dev_action(struct vb2_context *ctx)
 /* Action that disables developer mode, shows TO_NORM_CONFIRMED and reboots. */
 static VbError_t to_norm_action(struct vb2_context *ctx)
 {
-	if (vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+	if (vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		vb2_flash_screen(ctx);
 		vb2_error_notify("WARNING: TONORM prohibited by "
 				 "GBB FORCE_DEV_SWITCH_ON.\n", NULL,
@@ -741,18 +741,18 @@ static VbError_t vb2_init_menus(struct vb2_context *ctx)
  */
 static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	VbError_t ret;
 
 	/* Check if the default is to boot using disk, usb, or legacy */
 	default_boot = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
-	if (sd->gbb_flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
+	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
 		default_boot = VB2_DEV_DEFAULT_BOOT_LEGACY;
 
 	/* Check if developer mode is disabled by FWMP */
 	disable_dev_boot = 0;
 	if (vb2_get_fwmp_flags() & FWMP_DEV_DISABLE_BOOT) {
-		if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+		if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 			VB2_DEBUG("FWMP_DEV_DISABLE_BOOT rejected by"
 				  "FORCE_DEV_SWITCH_ON\n");
 		} else {
@@ -762,7 +762,7 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 		}
 	}
 	altfw_allowed = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY) ||
-	    (vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY) ||
+	    (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY) ||
 	    (vb2_get_fwmp_flags() & FWMP_DEV_ENABLE_LEGACY);
 
 	/* Show appropriate initial menu */

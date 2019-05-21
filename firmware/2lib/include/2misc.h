@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_VBOOT_2MISC_H_
 
 #include "2api.h"
+#include "2struct.h"
 
 struct vb2_gbb_header;
 struct vb2_workbuf;
@@ -19,9 +20,18 @@ struct vb2_workbuf;
  * @param ctx		Vboot context
  * @return The shared data pointer.
  */
-static __inline struct vb2_shared_data *vb2_get_sd(struct vb2_context *ctx) {
+static __inline struct vb2_shared_data *vb2_get_sd(struct vb2_context *ctx)
+{
 	return (struct vb2_shared_data *)ctx->workbuf;
 }
+
+/**
+ * Get the GBB header pointer from a vboot context's shared data
+ *
+ * @param ctx		Vboot context
+ * @return The GBB header pointer.
+ */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx);
 
 /**
  * Validate gbb signature (the magic number)

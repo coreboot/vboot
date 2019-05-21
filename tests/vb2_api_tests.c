@@ -7,13 +7,13 @@
 
 #include <stdio.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "2secdata.h"
+#include "2sysincludes.h"
 #include "test_common.h"
 
 /* Common context for tests */
@@ -21,6 +21,7 @@ static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 static struct vb2_context ctx;
 static struct vb2_shared_data *sd;
+static struct vb2_gbb_header gbb;
 
 const char mock_body[320] = "Mock body";
 const int mock_body_size = sizeof(mock_body);
@@ -67,11 +68,15 @@ static void reset_common_data(enum reset_type t)
 	retval_vb2_check_tpm_clear = VB2_SUCCESS;
 	retval_vb2_select_fw_slot = VB2_SUCCESS;
 
-	memcpy(sd->gbb_hwid_digest, mock_hwid_digest,
-	       sizeof(sd->gbb_hwid_digest));
+	memcpy(&gbb.hwid_digest, mock_hwid_digest,
+	       sizeof(gbb.hwid_digest));
 };
 
 /* Mocked functions */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
 
 int vb2_fw_parse_gbb(struct vb2_context *c)
 {

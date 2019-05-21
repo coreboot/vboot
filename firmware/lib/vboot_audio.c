@@ -25,7 +25,7 @@ static int beep_count;		/* Number of beeps so far */
  */
 void vb2_audio_start(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	open_time = VbExGetTimer(); /* "zero" starts now */
 	beep_count = 0;
@@ -34,7 +34,7 @@ void vb2_audio_start(struct vb2_context *ctx)
 	 * Use a short developer screen delay on the first audio if indicated
 	 * by GBB flags.
 	 */
-	if ((sd->gbb_flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY) &&
+	if ((gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY) &&
 	    (audio_open_count++ == 0)) {
 		VB2_DEBUG("vb2_audio_start() - using short dev screen delay\n");
 		audio_use_short = 1;

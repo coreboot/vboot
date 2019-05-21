@@ -20,22 +20,14 @@
 static VbError_t VbGbbReadData(struct vb2_context *ctx,
 			       uint32_t offset, uint32_t size, void *buf)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-
-	/* This is the old API, for backwards compatibility */
-	if (!sd->gbb)
+	if (vb2ex_read_resource(ctx, VB2_RES_GBB, offset, buf, size))
 		return VBERROR_INVALID_GBB;
-
-	if (offset + size > sd->gbb_size)
-		return VBERROR_INVALID_GBB;
-
-	memcpy(buf, ((uint8_t *)sd->gbb) + offset, size);
 	return VBERROR_SUCCESS;
 }
 
 VbError_t VbGbbReadHWID(struct vb2_context *ctx, char *hwid, uint32_t max_size)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	if (!max_size)
 		return VBERROR_INVALID_PARAMETER;
@@ -44,18 +36,18 @@ VbError_t VbGbbReadHWID(struct vb2_context *ctx, char *hwid, uint32_t max_size)
 	if (!ctx)
 		return VBERROR_INVALID_GBB;
 
-	if (0 == sd->gbb->hwid_size) {
+	if (0 == gbb->hwid_size) {
 		VB2_DEBUG("VbHWID(): invalid hwid size\n");
 		return VBERROR_SUCCESS; /* oddly enough! */
 	}
 
-	if (sd->gbb->hwid_size > max_size) {
+	if (gbb->hwid_size > max_size) {
 		VB2_DEBUG("VbDisplayDebugInfo(): invalid hwid offset/size\n");
 		return VBERROR_INVALID_PARAMETER;
 	}
 
-	return VbGbbReadData(ctx, sd->gbb->hwid_offset,
-			     sd->gbb->hwid_size, hwid);
+	return VbGbbReadData(ctx, gbb->hwid_offset,
+			     gbb->hwid_size, hwid);
 }
 
 static VbError_t VbGbbReadKey(struct vb2_context *ctx, uint32_t offset,
@@ -86,14 +78,14 @@ static VbError_t VbGbbReadKey(struct vb2_context *ctx, uint32_t offset,
 
 VbError_t VbGbbReadRootKey(struct vb2_context *ctx, VbPublicKey **keyp)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	return VbGbbReadKey(ctx, sd->gbb->rootkey_offset, keyp);
+	return VbGbbReadKey(ctx, gbb->rootkey_offset, keyp);
 }
 
 VbError_t VbGbbReadRecoveryKey(struct vb2_context *ctx, VbPublicKey **keyp)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	return VbGbbReadKey(ctx, sd->gbb->recovery_key_offset, keyp);
+	return VbGbbReadKey(ctx, gbb->recovery_key_offset, keyp);
 }

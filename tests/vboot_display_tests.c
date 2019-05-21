@@ -69,8 +69,6 @@ static void ResetMocks(void)
 
 	sd = vb2_get_sd(&ctx);
 	sd->vbsd = shared;
-	sd->gbb = (struct vb2_gbb_header *)gbb_data;
-	sd->gbb_size = sizeof(gbb_data);
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
@@ -79,6 +77,35 @@ static void ResetMocks(void)
 }
 
 /* Mocks */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return gbb;
+}
+
+int vb2ex_read_resource(struct vb2_context *c,
+			enum vb2_resource_index index,
+			uint32_t offset,
+			void *buf,
+			uint32_t size)
+{
+	uint8_t *rptr;
+	uint32_t rsize;
+
+	switch(index) {
+	case VB2_RES_GBB:
+		rptr = (uint8_t *)&gbb_data;
+		rsize = sizeof(gbb_data);
+		break;
+	default:
+		return VB2_ERROR_EX_READ_RESOURCE_INDEX;
+	}
+
+	if (offset > rsize || offset + size > rsize)
+		return VB2_ERROR_EX_READ_RESOURCE_SIZE;
+
+	memcpy(buf, rptr + offset, size);
+	return VB2_SUCCESS;
+}
 
 VbError_t VbExGetLocalizationCount(uint32_t *count) {
 
@@ -116,22 +143,17 @@ static void DebugInfoTest(void)
 	TEST_EQ(strcmp(hwid, "Test HWID"), 0, "HWID");
 
 	ResetMocks();
-	sd->gbb_size = 0;
-	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
-	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID bad gbb");
-
-	ResetMocks();
-	sd->gbb->hwid_size = 0;
+	gbb->hwid_size = 0;
 	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
 	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID missing");
 
 	ResetMocks();
-	sd->gbb->hwid_offset = sd->gbb_size + 1;
+	gbb->hwid_offset = sizeof(gbb_data) + 1;
 	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
 	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID past end");
 
 	ResetMocks();
-	sd->gbb->hwid_size = sd->gbb_size;
+	gbb->hwid_size = sizeof(gbb_data);
 	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
 	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID overflow");
 

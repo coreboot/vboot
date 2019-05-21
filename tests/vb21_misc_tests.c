@@ -23,6 +23,7 @@ static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 static struct vb2_context ctx;
 static struct vb2_shared_data *sd;
+static struct vb2_gbb_header gbb;
 
 /* Mocked function data */
 
@@ -70,6 +71,8 @@ static void reset_common_data(enum reset_type t)
 	ctx.workbuf = workbuf;
 	ctx.workbuf_size = sizeof(workbuf);
 
+	memset(&gbb, 0, sizeof(gbb));
+
 	vb2_init_context(&ctx);
 	sd = vb2_get_sd(&ctx);
 
@@ -87,8 +90,8 @@ static void reset_common_data(enum reset_type t)
 	sd->fw_version_secdata = 0x20002;
 	vb2_secdata_set(&ctx, VB2_SECDATA_VERSIONS, sd->fw_version_secdata);
 
-	sd->gbb_rootkey_offset = vb2_offset_of(&mock_gbb, &mock_gbb.rootkey);
-	sd->gbb_rootkey_size = sizeof(mock_gbb.rootkey_data);
+	gbb.rootkey_offset = vb2_offset_of(&mock_gbb, &mock_gbb.rootkey);
+	gbb.rootkey_size = sizeof(mock_gbb.rootkey_data);
 	sd->last_fw_result = VB2_FW_RESULT_SUCCESS;
 
 	mock_gbb.rootkey.sig_alg = VB2_SIG_RSA8192;
@@ -118,6 +121,10 @@ static void reset_common_data(enum reset_type t)
 };
 
 /* Mocked functions */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
 
 int vb2ex_read_resource(struct vb2_context *c,
 			enum vb2_resource_index index,
@@ -216,13 +223,13 @@ static void load_keyblock_tests(void)
 	/* Test failures */
 	reset_common_data(FOR_KEYBLOCK);
 	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sd->gbb_rootkey_size);
+			vb2_wb_round_up(gbb.rootkey_size);
 	TEST_EQ(vb21_load_fw_keyblock(&ctx),
 		VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY,
 		"keyblock not enough workbuf for root key");
 
 	reset_common_data(FOR_KEYBLOCK);
-	sd->gbb_rootkey_size = sizeof(mock_gbb);
+	gbb.rootkey_size = sizeof(mock_gbb);
 	TEST_EQ(vb21_load_fw_keyblock(&ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"keyblock read root key");
@@ -235,7 +242,7 @@ static void load_keyblock_tests(void)
 
 	reset_common_data(FOR_KEYBLOCK);
 	ctx.workbuf_used = ctx.workbuf_size -
-			vb2_wb_round_up(sd->gbb_rootkey_size);
+			vb2_wb_round_up(gbb.rootkey_size);
 	TEST_EQ(vb21_load_fw_keyblock(&ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
 		"keyblock not enough workbuf for header");
@@ -248,7 +255,7 @@ static void load_keyblock_tests(void)
 
 	reset_common_data(FOR_KEYBLOCK);
 	ctx.workbuf_used = ctx.workbuf_size -
-			vb2_wb_round_up(sd->gbb_rootkey_size) -
+			vb2_wb_round_up(gbb.rootkey_size) -
 			vb2_wb_round_up(sizeof(struct vb21_keyblock));
 	TEST_EQ(vb21_load_fw_keyblock(&ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
@@ -280,7 +287,7 @@ static void load_keyblock_tests(void)
 
 	reset_common_data(FOR_KEYBLOCK);
 	dk->key_version = 1;
-	sd->gbb_flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
 	TEST_SUCC(vb21_load_fw_keyblock(&ctx), "keyblock rollback + GBB flag");
 }
 
@@ -364,7 +371,7 @@ static void load_preamble_tests(void)
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 1;
-	sd->gbb_flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx), "version rollback with GBB flag");
 
 	reset_common_data(FOR_PREAMBLE);

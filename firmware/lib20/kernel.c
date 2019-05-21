@@ -438,6 +438,7 @@ int vb2_load_kernel_preamble(struct vb2_context *ctx)
 	 *
 	 * Work buffer now contains:
 	 *   - vb2_shared_data
+	 *   - vb2_gbb_header
 	 *   - kernel key
 	 *   - packed kernel data key
 	 *   - kernel preamble

@@ -9,8 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "2common.h"
 #include "2sysincludes.h"
-#include "2api.h"
 
 const char *gbb_fname;
 const char *vblock_fname;

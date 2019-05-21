@@ -14,7 +14,8 @@
 #include "2sha.h"
 #include "2rsa.h"
 
-int vb2_validate_gbb_signature(uint8_t *sig) {
+int vb2_validate_gbb_signature(uint8_t *sig)
+{
 	const static uint8_t sig_xor[VB2_GBB_SIGNATURE_SIZE] =
 			VB2_GBB_XOR_SIGNATURE;
 	int i;
@@ -23,6 +24,13 @@ int vb2_validate_gbb_signature(uint8_t *sig) {
 			return VB2_ERROR_GBB_MAGIC;
 	}
 	return VB2_SUCCESS;
+}
+
+test_mockable
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx)
+{
+	return (struct vb2_gbb_header *)
+	       ((void *)vb2_get_sd(ctx) + vb2_get_sd(ctx)->gbb_offset);
 }
 
 void vb2_workbuf_from_ctx(struct vb2_context *ctx, struct vb2_workbuf *wb)
@@ -218,11 +226,9 @@ int vb2_fw_parse_gbb(struct vb2_context *ctx)
 	if (rv)
 		return rv;
 
-	/* Extract the only things we care about at firmware time */
-	sd->gbb_flags = gbb->flags;
-	sd->gbb_rootkey_offset = gbb->rootkey_offset;
-	sd->gbb_rootkey_size = gbb->rootkey_size;
-	memcpy(sd->gbb_hwid_digest, gbb->hwid_digest, VB2_GBB_HWID_DIGEST_SIZE);
+	/* Keep on the work buffer permanently */
+	sd->gbb_offset = vb2_offset_of(sd, gbb);
+	ctx->workbuf_used = vb2_offset_of(ctx->workbuf, wb.buf);
 
 	return VB2_SUCCESS;
 }
@@ -230,6 +236,7 @@ int vb2_fw_parse_gbb(struct vb2_context *ctx)
 int vb2_check_dev_switch(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t flags = 0;
 	uint32_t old_flags;
 	int is_dev = 0;
@@ -275,7 +282,7 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 		is_dev = 1;
 
 	/* Check if GBB is forcing dev mode */
-	if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
+	if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
 		is_dev = 1;
 
 	/* Handle whichever mode we end up in */

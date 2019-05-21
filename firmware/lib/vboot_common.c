@@ -214,8 +214,9 @@ int VbSharedDataSetKernelKey(VbSharedDataHeader *header, const VbPublicKey *src)
 
 int vb2_allow_recovery(struct vb2_context *ctx)
 {
-	/* GBB_FLAG_FORCE_MANUAL_RECOVERY forces this to always return true. */
-	if (vb2_get_sd(ctx)->gbb_flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
+	/* VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY forces this to always return
+	   true. */
+	if (vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
 		return 1;
 
 	/*

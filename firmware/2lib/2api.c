@@ -205,7 +205,7 @@ int vb2api_get_pcr_digest(struct vb2_context *ctx,
 		digest_size = VB2_SHA1_DIGEST_SIZE;
 		break;
 	case HWID_DIGEST_PCR:
-		digest = vb2_get_sd(ctx)->gbb_hwid_digest;
+		digest = vb2_get_gbb(ctx)->hwid_digest;
 		digest_size = VB2_GBB_HWID_DIGEST_SIZE;
 		break;
 	default:

@@ -55,7 +55,7 @@ static void VbAllowUsbBoot(struct vb2_context *ctx)
  */
 static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t shutdown_request = VbExIsShutdownRequested();
 
 	/*
@@ -78,7 +78,7 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 
 	/* If desired, ignore shutdown request due to lid closure. */
-	if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
 	return shutdown_request;
@@ -518,6 +518,7 @@ static const char dev_disable_msg[] =
 static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	VbSharedDataHeader *shared = sd->vbsd;
 
 	uint32_t disable_dev_boot = 0;
@@ -540,11 +541,11 @@ static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 		use_legacy = 1;
 
 	/* Handle GBB flag override */
-	if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB)
+	if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB)
 		allow_usb = 1;
-	if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY)
+	if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY)
 		allow_legacy = 1;
-	if (sd->gbb_flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY) {
+	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY) {
 		use_legacy = 1;
 		use_usb = 0;
 	}
@@ -556,7 +557,7 @@ static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 	if (fwmp_flags & FWMP_DEV_ENABLE_LEGACY)
 		allow_legacy = 1;
 	if (fwmp_flags & FWMP_DEV_DISABLE_BOOT) {
-		if (sd->gbb_flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+		if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 			VB2_DEBUG("FWMP_DEV_DISABLE_BOOT rejected by "
 				  "FORCE_DEV_SWITCH_ON\n");
 		} else {
@@ -609,15 +610,14 @@ static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		case VB_KEY_ENTER:
 			/* Only disable virtual dev switch if allowed by GBB */
-			if (!(sd->gbb_flags &
-			      VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM))
+			if (!(gbb->flags & VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM))
 				break;
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("shared->flags=0x%x\n", shared->flags);
 			if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON) {
 				/* Stop the countdown while we go ask... */
-				if (sd->gbb_flags &
+				if (gbb->flags &
 				    VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 					/*
 					 * TONORM won't work (only for

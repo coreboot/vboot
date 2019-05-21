@@ -59,8 +59,7 @@ static int verify_data_fail;
 static int unpack_key_fail;
 static int gpt_flag_external;
 
-static uint8_t gbb_data[sizeof(struct vb2_gbb_header) + 2048];
-static struct vb2_gbb_header *gbb = (struct vb2_gbb_header*)gbb_data;
+static struct vb2_gbb_header gbb;
 static VbExDiskHandle_t handle;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
@@ -137,10 +136,10 @@ static void ResetMocks(void)
 
 	gpt_flag_external = 0;
 
-	memset(gbb, 0, sizeof(*gbb));
-	gbb->major_version = VB2_GBB_MAJOR_VER;
-	gbb->minor_version = VB2_GBB_MINOR_VER;
-	gbb->flags = 0;
+	memset(&gbb, 0, sizeof(gbb));
+	gbb.major_version = VB2_GBB_MAJOR_VER;
+	gbb.minor_version = VB2_GBB_MINOR_VER;
+	gbb.flags = 0;
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
@@ -181,13 +180,25 @@ static void ResetMocks(void)
 
 	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
 	sd->vbsd = shared;
-	sd->gbb = (struct vb2_gbb_header *)gbb_data;
-	sd->gbb_size = sizeof(gbb_data);
 
 	// TODO: more workbuf fields - flags, secdata, secdatak
 }
 
 /* Mocks */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
+
+int vb2ex_read_resource(struct vb2_context *c,
+			enum vb2_resource_index index,
+			uint32_t offset,
+			void *buf,
+			uint32_t size)
+{
+	memset(buf, 0, size);
+	return VB2_SUCCESS;
+}
 
 VbError_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 		       uint64_t lba_count, void *buffer)

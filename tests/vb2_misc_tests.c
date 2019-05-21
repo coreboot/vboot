@@ -19,6 +19,7 @@ static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 static struct vb2_context ctx;
 static struct vb2_shared_data *sd;
+static struct vb2_gbb_header gbb;
 
 /* Mocked function data */
 enum vb2_resource_index mock_resource_index;
@@ -38,6 +39,8 @@ static void reset_common_data(void)
 
 	vb2_init_context(&ctx);
 	sd = vb2_get_sd(&ctx);
+
+	memset(&gbb, 0, sizeof(gbb));
 
 	vb2_nv_init(&ctx);
 
@@ -74,6 +77,10 @@ int vb2ex_tpm_clear_owner(struct vb2_context *c)
 }
 
 /* Tests */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
 
 static void init_context_tests(void)
 {
@@ -160,7 +167,7 @@ static void misc_tests(void)
 
 static void gbb_tests(void)
 {
-	struct vb2_gbb_header gbb = {
+	struct vb2_gbb_header gbbsrc = {
 		.signature = {'$', 'G', 'B', 'B'},
 		.major_version = VB2_GBB_MAJOR_VER,
 		.minor_version = VB2_GBB_MINOR_VER,
@@ -180,49 +187,56 @@ static void gbb_tests(void)
 
 	/* Good contents */
 	mock_resource_index = VB2_RES_GBB;
-	mock_resource_ptr = &gbb;
-	mock_resource_size = sizeof(gbb);
+	mock_resource_ptr = &gbbsrc;
+	mock_resource_size = sizeof(gbbsrc);
 	TEST_SUCC(vb2_read_gbb_header(&ctx, &gbbdest), "read gbb header good");
-	TEST_SUCC(memcmp(&gbb, &gbbdest, sizeof(gbb)), "read gbb contents");
+	TEST_SUCC(memcmp(&gbbsrc, &gbbdest, sizeof(gbbsrc)),
+		  "read gbb contents");
 
 	mock_resource_index = VB2_RES_GBB + 1;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_EX_READ_RESOURCE_INDEX, "read gbb header missing");
 	mock_resource_index = VB2_RES_GBB;
 
-	gbb.signature[0]++;
+	gbbsrc.signature[0]++;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_MAGIC, "read gbb header bad magic");
-	gbb.signature[0]--;
+	gbbsrc.signature[0]--;
 
-	gbb.major_version = VB2_GBB_MAJOR_VER + 1;
+	gbbsrc.major_version = VB2_GBB_MAJOR_VER + 1;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_VERSION, "read gbb header major version");
-	gbb.major_version = VB2_GBB_MAJOR_VER;
+	gbbsrc.major_version = VB2_GBB_MAJOR_VER;
 
-	gbb.minor_version = VB2_GBB_MINOR_VER + 1;
+	gbbsrc.minor_version = VB2_GBB_MINOR_VER + 1;
 	TEST_SUCC(vb2_read_gbb_header(&ctx, &gbbdest),
 		  "read gbb header minor++");
-	gbb.minor_version = 1;
+	gbbsrc.minor_version = 1;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_TOO_OLD, "read gbb header 1.1 fails");
-	gbb.minor_version = 0;
+	gbbsrc.minor_version = 0;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_TOO_OLD, "read gbb header 1.0 fails");
-	gbb.minor_version = VB2_GBB_MINOR_VER;
+	gbbsrc.minor_version = VB2_GBB_MINOR_VER;
 
-	gbb.header_size--;
+	gbbsrc.header_size--;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_HEADER_SIZE, "read gbb header size");
 	TEST_EQ(vb2_fw_parse_gbb(&ctx),
 		VB2_ERROR_GBB_HEADER_SIZE, "parse gbb failure");
-	gbb.header_size++;
+	gbbsrc.header_size++;
 
 	/* Parse GBB */
+	int used_before = ctx.workbuf_used;
 	TEST_SUCC(vb2_fw_parse_gbb(&ctx), "parse gbb");
-	TEST_EQ(sd->gbb_flags, gbb.flags, "gbb flags");
-	TEST_EQ(sd->gbb_rootkey_offset, gbb.rootkey_offset, "rootkey offset");
-	TEST_EQ(sd->gbb_rootkey_size, gbb.rootkey_size, "rootkey size");
+	/* Manually calculate the location of GBB since we have mocked out the
+	   original definition of vb2_get_gbb. */
+	struct vb2_gbb_header *current_gbb =
+		(struct vb2_gbb_header *)((void *)sd + sd->gbb_offset);
+	TEST_SUCC(memcmp(&gbbsrc, current_gbb, sizeof(gbbsrc)),
+		  "copy gbb contents");
+	TEST_EQ(used_before, ctx.workbuf_used - sizeof(gbbsrc),
+		"unexpected workbuf size");
 
 	/* Workbuf failure */
 	reset_common_data();
@@ -407,7 +421,7 @@ static void dev_switch_tests(void)
 
 	/* Force enabled by GBB */
 	reset_common_data();
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
+	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	TEST_SUCC(vb2_check_dev_switch(&ctx), "dev on via gbb");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
 	vb2_secdata_get(&ctx, VB2_SECDATA_FLAGS, &v);
@@ -475,7 +489,7 @@ static void dev_switch_tests(void)
 	reset_common_data();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	sd->status &= ~VB2_SD_STATUS_SECDATA_INIT;
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
+	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	TEST_SUCC(vb2_check_dev_switch(&ctx), "secdata fail recovery gbb");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
 	TEST_NEQ(ctx.flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx in dev");

@@ -341,15 +341,16 @@ static VbError_t sync_one_ec(struct vb2_context *ctx, int devidx)
 VbError_t ec_sync_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
 	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
 		return VBERROR_SUCCESS;
-	if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
 		return VBERROR_SUCCESS;
 
 #ifdef PD_SYNC
-	const int do_pd_sync = !(sd->gbb_flags &
+	const int do_pd_sync = !(gbb->flags &
 				 VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC);
 #else
 	const int do_pd_sync = 0;
@@ -412,11 +413,12 @@ int ec_will_update_slowly(struct vb2_context *ctx)
 static int ec_sync_allowed(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
 	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
 		return 0;
-	if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
 		return 0;
 	if (sd->recovery_reason)
 		return 0;
@@ -426,11 +428,11 @@ static int ec_sync_allowed(struct vb2_context *ctx)
 VbError_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 			       VbAuxFwUpdateSeverity_t *severity)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* If we're not updating the EC, skip aux fw syncs as well */
 	if (!ec_sync_allowed(ctx) ||
-	    (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
+	    (gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
 		*severity = VB_AUX_FW_NO_UPDATE;
 		return VBERROR_SUCCESS;
 	}
@@ -463,8 +465,8 @@ VbError_t ec_sync_phase2(struct vb2_context *ctx)
 
 #ifdef PD_SYNC
 	/* Handle updates and jumps for PD */
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	if (!(sd->gbb_flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	if (!(gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
 		retval = sync_one_ec(ctx, 1);
 		if (retval != VBERROR_SUCCESS)
 			return retval;

@@ -68,6 +68,7 @@ static void vb2_report_dev_firmware(struct vb2_public_key *root)
 int vb2_load_fw_keyblock(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	struct vb2_workbuf wb;
 
 	uint8_t *key_data;
@@ -83,12 +84,12 @@ int vb2_load_fw_keyblock(struct vb2_context *ctx)
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Read the root key */
-	key_size = sd->gbb_rootkey_size;
+	key_size = gbb->rootkey_size;
 	key_data = vb2_workbuf_alloc(&wb, key_size);
 	if (!key_data)
 		return VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_GBB, sd->gbb_rootkey_offset,
+	rv = vb2ex_read_resource(ctx, VB2_RES_GBB, gbb->rootkey_offset,
 				 key_data, key_size);
 	if (rv)
 		return rv;
@@ -137,7 +138,7 @@ int vb2_load_fw_keyblock(struct vb2_context *ctx)
 	if (kb->data_key.key_version > VB2_MAX_KEY_VERSION)
 		rv = VB2_ERROR_FW_KEYBLOCK_VERSION_RANGE;
 	if (!rv && kb->data_key.key_version < (sd->fw_version_secdata >> 16)) {
-		if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK)
+		if (gbb->flags & VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK)
 			VB2_DEBUG("Ignoring FW key rollback due to GBB flag\n");
 		else
 			rv = VB2_ERROR_FW_KEYBLOCK_VERSION_ROLLBACK;
@@ -194,6 +195,7 @@ int vb2_load_fw_keyblock(struct vb2_context *ctx)
 int vb2_load_fw_preamble(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	struct vb2_workbuf wb;
 
 	uint8_t *key_data = ctx->workbuf + sd->workbuf_data_key_offset;
@@ -258,7 +260,7 @@ int vb2_load_fw_preamble(struct vb2_context *ctx)
 	/* Combine with the key version from vb2_load_fw_keyblock() */
 	sd->fw_version |= pre->firmware_version;
 	if (!rv && sd->fw_version < sd->fw_version_secdata) {
-		if (sd->gbb_flags & VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK)
+		if (gbb->flags & VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK)
 			VB2_DEBUG("Ignoring FW rollback due to GBB flag\n");
 		else
 			rv = VB2_ERROR_FW_PREAMBLE_VERSION_ROLLBACK;
@@ -298,6 +300,7 @@ int vb2_load_fw_preamble(struct vb2_context *ctx)
 	 *
 	 * Work buffer now contains:
 	 *   - vb2_shared_data
+	 *   - vb2_gbb_header
 	 *   - packed firmware data key
 	 *   - firmware preamble
 	 *
