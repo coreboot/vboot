@@ -242,7 +242,7 @@ static int do_update(int argc, char *argv[])
 		errorcnt += updater_setup_config(cfg, &args, &do_update);
 	if (!errorcnt && do_update) {
 		int r;
-		STATUS("Starting firmware updater.");
+		STATUS("Starting firmware updater.\n");
 		r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
 			r = Min(r, UPDATE_ERR_UNKNOWN);

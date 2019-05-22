@@ -849,8 +849,7 @@ static int write_firmware(struct updater_config *cfg,
 		return -1;
 
 	if (cfg->emulation) {
-		INFO("%s: (emulation) Writing %s from %s to %s (emu=%s).\n",
-		     __FUNCTION__,
+		INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
 		     section_name ? section_name : "whole image",
 		     image->file_name, programmer, cfg->emulation);
 
@@ -936,8 +935,8 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 		return -1;
 	}
 	if (from.size > to.size) {
-		WARN("%s: Section %.*s is truncated after updated.\n",
-		     __FUNCTION__, FMAP_NAMELEN, section_name);
+		WARN("Section %.*s is truncated after updated.\n",
+		     FMAP_NAMELEN, section_name);
 	}
 	/* Use memmove in case if we need to deal with sections that overlap. */
 	memmove(to.data, from.data, Min(from.size, to.size));
