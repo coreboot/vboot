@@ -887,7 +887,8 @@ static int write_firmware(struct updater_config *cfg,
 static int write_optional_firmware(struct updater_config *cfg,
 				   const struct firmware_image *image,
 				   const char *section_name,
-				   int check_programmer_wp)
+				   int check_programmer_wp,
+				   int is_host)
 {
 	if (!image->data) {
 		VB2_DEBUG("No data in <%s> image.\n", image->programmer);
@@ -896,6 +897,14 @@ static int write_optional_firmware(struct updater_config *cfg,
 	if (section_name && !firmware_section_exists(image, section_name)) {
 		VB2_DEBUG("Image %s<%s> does not have section %s.\n",
 			  image->file_name, image->programmer, section_name);
+		return 0;
+	}
+	/* Currently only host emulation is supported. */
+	if (cfg->emulation && !is_host) {
+		INFO("(emulation) Update %s from %s to %s (%d bytes), "
+		     "skipped for non-host targets in emulation.\n",
+		     section_name ? section_name : "whole image",
+		     image->file_name, image->programmer, image->size);
 		return 0;
 	}
 
@@ -1577,7 +1586,7 @@ static enum updater_error_codes update_rw_firmware(
 	if (write_firmware(cfg, image_to, FMAP_RW_SECTION_A) ||
 	    write_firmware(cfg, image_to, FMAP_RW_SECTION_B) ||
 	    write_firmware(cfg, image_to, FMAP_RW_SHARED) ||
-	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY, 0))
+	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY, 0, 1))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1648,8 +1657,8 @@ static enum updater_error_codes update_whole_firmware(
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
-	    write_optional_firmware(cfg, &cfg->ec_image, NULL, 1) ||
-	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1))
+	    write_optional_firmware(cfg, &cfg->ec_image, NULL, 1, 0) ||
+	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1, 0))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1833,7 +1842,7 @@ static int updater_load_images(struct updater_config *cfg,
 		if (!errorcnt)
 			errorcnt += updater_setup_quirks(cfg, arg);
 	}
-	if (cfg->emulation || arg->host_only)
+	if (arg->host_only)
 		return errorcnt;
 
 	if (!cfg->ec_image.data && ec_image)
@@ -2049,7 +2058,6 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Set up archive and load images. */
 	if (arg->emulation) {
 		/* Process emulation file first. */
-		check_single_image = 1;
 		cfg->emulation = arg->emulation;
 		VB2_DEBUG("Using file %s for emulation.\n", arg->emulation);
 		errorcnt += !!load_firmware_image(
