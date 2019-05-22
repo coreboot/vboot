@@ -469,12 +469,12 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
 		   "Fast auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");
 	TEST_EQ(ec_aux_fw_update_req, 1, "  aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+	TEST_EQ(ec_aux_fw_protected, 0, "  aux fw protected");
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
@@ -484,14 +484,15 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
 		   "Slow auxiliary FW update needed");
 	TEST_EQ(ec_aux_fw_update_req, 1, "  aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+	TEST_EQ(ec_aux_fw_protected, 0, "  aux fw protected");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT,
 		"  wait screen forced");
 
 	ResetMocks();
+	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
 	ec_aux_fw_retval = VBERROR_UNKNOWN;
 	test_ssync(VBERROR_UNKNOWN, VB2_RECOVERY_AUX_FW_UPDATE,
 		   "Error updating AUX firmware");

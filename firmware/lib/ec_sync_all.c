@@ -78,14 +78,18 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 		display_wait_screen(ctx, "AUX FW");
 	}
 
-	/*
-	 * Do Aux FW software sync and protect devices tunneled through the EC.
-	 * Aux FW update may request RO reboot to force EC cold reset so also
-	 * disable display request if needed to prevent a second reboot.
-	 */
-	rv = ec_sync_update_aux_fw(ctx);
-	if (rv)
-		return rv;
+	if (fw_update > VB_AUX_FW_NO_UPDATE) {
+		/* Do Aux FW software sync */
+		rv = ec_sync_update_aux_fw(ctx);
+		if (rv)
+			return rv;
+		/*
+		 * AUX FW Update is applied successfully. Request EC reboot to
+		 * RO, so that the chips that had FW update gets reset to a
+		 * clean state.
+		 */
+		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+	}
 
 	/* Phase 3; Completes sync and handles battery cutoff */
 	rv = ec_sync_phase3(ctx);
