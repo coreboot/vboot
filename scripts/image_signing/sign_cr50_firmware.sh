@@ -224,26 +224,16 @@ sign_rw() {
 # A very crude RO verification function. The key signature found at a fixed
 # offset into the RO blob must match the RO type. Prod keys have bit D2 set to
 # one, dev keys have this bit set to zero.
-#
-# The check is bypassed if the key file directory name includes string 'test'.
 verify_ro() {
-  if [[ $# -ne 2 ]]; then
-    die "Usage: verify_ro <ro_bin> <key_file>"
+  if [[ $# -ne 1 ]]; then
+    die "Usage: verify_ro <ro_bin>"
   fi
 
   local ro_bin="$1"
-  local key_file="$2"
   local key_byte
-  local key_path
 
   if [[ ! -f "${ro_bin}" ]]; then
     die "${ro_bin} not a file!"
-  fi
-
-  key_path="$(dirname "${key_file}")"
-  if [[ ${key_path##*/} == *"test"* ]]; then
-    info "Test run, ignoring key type verification"
-    return 0
   fi
 
   # Key signature's lowest byte is byte #5 in the line at offset 0001a0.
@@ -309,7 +299,7 @@ sign_cr50_firmware() {
     if ! objcopy -I ihex "${f}" -O binary "${temp_dir}/${count}.bin"; then
       die "Failed to convert ${f} from hex to bin"
     fi
-    verify_ro "${temp_dir}/${count}.bin" "${key_file}"
+    verify_ro "${temp_dir}/${count}.bin"
     : $(( count++ ))
   done
 
