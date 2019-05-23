@@ -243,11 +243,9 @@ typedef struct VbKernelPreambleHeader {
 #define VBSD_BOOT_REC_SWITCH_VIRTUAL     0x00004000
 /* Firmware used vboot2 for firmware selection */
 #define VBSD_BOOT_FIRMWARE_VBOOT2        0x00008000
-/* Firmware needs VGA Option ROM to display screens
-   Deprecated; see chromium:948529 */
+/* Firmware needs VGA Option ROM to display screens */
 #define VBSD_OPROM_MATTERS               0x00010000
-/* Firmware has loaded the VGA Option ROM
-   Deprecated; see chromium:948529 */
+/* Firmware has loaded the VGA Option ROM */
 #define VBSD_OPROM_LOADED                0x00020000
 /* Don't try for boot failures */
 #define VBSD_NOFAIL_BOOT                 0x00040000

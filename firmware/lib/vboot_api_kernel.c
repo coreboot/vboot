@@ -399,32 +399,25 @@ VbError_t VbSelectAndLoadKernel(
 			retval = VbBootRecovery(ctx);
 		VbExEcEnteringMode(0, VB_EC_RECOVERY);
 	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
-		/* If display is unavailable and was not requested, request it
-		   and reboot.  This is not a normal state. */
-		if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE) &&
-		    !vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST)) {
-			VB2_DEBUG("ERROR: Diagnostic mode needs a display "
-				  "request; rebooting\n");
-			vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-			retval = VBERROR_REBOOT_REQUIRED;
-		} else {
-			vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
-			vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
+		struct vb2_shared_data *sd = vb2_get_sd(ctx);
+		if (sd->vbsd->flags & VBSD_OPROM_MATTERS)
+			vb2_nv_set(ctx, VB2_NV_OPROM_NEEDED, 0);
+		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
 
-			/*
-			 * Diagnostic boot. This has a UI but only power button
-			 * is used for input so no detachable-specific UI is
-			 * needed.  This mode is also 1-shot so it's placed
-			 * before developer mode.
-			 */
-			retval = VbBootDiagnostic(ctx);
-			/*
-			 * The diagnostic menu should either boot a rom, or
-			 * return either of reboot or shutdown.  The following
-			 * check is a safety precaution.
-			 */
-			if (!retval)
-				retval = VBERROR_REBOOT_REQUIRED;
+		/*
+		 * Diagnostic boot. This has a UI but only power button
+		 * is used for input so no detachable-specific UI is needed.
+		 * This mode is also 1-shot so it's placed before developer
+		 * mode.
+		 */
+		retval = VbBootDiagnostic(ctx);
+		/*
+		 * The diagnostic menu should either boot a rom, or
+		 * return either of reboot or shutdown.  The following
+		 * check is a safety precaution.
+		 */
+		if (!retval) {
+			retval = VBERROR_REBOOT_REQUIRED;
 		}
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		if (kparams->inflags & VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE)
