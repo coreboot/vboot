@@ -27,16 +27,13 @@
 #include "vboot_kernel.h"
 #include "vboot_ui_common.h"
 
-/* Global variables */
-enum {
-	POWER_BUTTON_HELD_SINCE_BOOT = 0,
-	POWER_BUTTON_RELEASED,
-	POWER_BUTTON_PRESSED, /* must have been previously released */
-} power_button_state;
-
 void vb2_init_ui(void)
 {
-	power_button_state = POWER_BUTTON_HELD_SINCE_BOOT;
+	/*
+	 * Read and ignore the current power button state in
+	 * case it was held down at boot.
+	 */
+	VbExIsShutdownRequested();
 }
 
 static void VbAllowUsbBoot(struct vb2_context *ctx)
@@ -58,22 +55,6 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint32_t shutdown_request = VbExIsShutdownRequested();
-
-	/*
-	 * Ignore power button push until after we have seen it released.
-	 * This avoids shutting down immediately if the power button is still
-	 * being held on startup. After we've recognized a valid power button
-	 * push then don't report the event until after the button is released.
-	 */
-	if (shutdown_request & VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
-		shutdown_request &= ~VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		if (power_button_state == POWER_BUTTON_RELEASED)
-			power_button_state = POWER_BUTTON_PRESSED;
-	} else {
-		if (power_button_state == POWER_BUTTON_PRESSED)
-			shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		power_button_state = POWER_BUTTON_RELEASED;
-	}
 
 	if (key == VB_BUTTON_POWER_SHORT_PRESS)
 		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
@@ -114,8 +95,6 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 	VbSharedDataHeader *shared = sd->vbsd;
 	uint32_t key;
 	uint32_t key_flags;
-	uint32_t btn;
-	int phys_presence_button_was_pressed = 0;
 	int shutdown_requested = 0;
 
 	VB2_DEBUG("Entering(%x)\n", confirm_flags);
@@ -123,7 +102,14 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 	/* Await further instructions */
 	do {
 		key = VbExKeyboardReadWithFlags(&key_flags);
-		shutdown_requested = VbWantShutdown(ctx, key);
+
+		/* Do not use untrusted keyboard input */
+		if (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD &&
+		    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD))
+			shutdown_requested = VbWantShutdown(ctx, 0);
+		else
+			shutdown_requested = VbWantShutdown(ctx, key);
+
 		switch (key) {
 		case VB_KEY_ENTER:
 			/* If we require a trusted keyboard for confirmation,
@@ -154,21 +140,17 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			break;
 		default:
 			/* If the physical presence button is physical, and is
-			 * pressed, this is also a YES, but must wait for
-			 * release.
+			 * pressed, this is also a YES.
+			 *
+			 * HACK for sarien: do not wait for release
+			 * https://issuetracker.google.com/129471321
 			 */
-			btn = VbExGetSwitches(
-				VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED);
-			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL)) {
-				if (btn) {
-					VB2_DEBUG("Presence button pressed, "
-						  "awaiting release\n");
-					phys_presence_button_was_pressed = 1;
-				} else if (phys_presence_button_was_pressed) {
-					VB2_DEBUG("Presence button released "
-						  "(1)\n");
-					return 1;
-				}
+			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
+			    (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD) &&
+			    (shutdown_requested &
+					VB_SHUTDOWN_REQUEST_POWER_BUTTON)) {
+				VB2_DEBUG("Presence button pressed (1)\n");
+				return 1;
 			}
 			VbCheckDisplayKey(ctx, key, NULL);
 		}
@@ -969,6 +951,7 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 
 VbError_t VbBootRecovery(struct vb2_context *ctx)
 {
+	vb2_init_ui();
 	VbError_t retval = recovery_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;

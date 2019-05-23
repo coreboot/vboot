@@ -131,7 +131,9 @@ uint32_t VbExIsShutdownRequested(void)
 	uint32_t result = 0;
 	if (mock_gpio_count >= ARRAY_SIZE(mock_gpio))
 		return 0;
-	if (mock_gpio[mock_gpio_count].gpio_flags & GPIO_SHUTDOWN)
+	/* Tread power button as presence */
+	if (mock_gpio[mock_gpio_count].gpio_flags &
+	    (GPIO_SHUTDOWN | GPIO_PRESENCE))
 		result |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 	if (mock_gpio[mock_gpio_count].gpio_flags & GPIO_LID_CLOSED)
 		result |= VB_SHUTDOWN_REQUEST_LID_CLOSED;
@@ -376,41 +378,25 @@ static void VbUserConfirmsTest(void)
 	 *   B means both shutdown and presence gpio
 	 *
 	 *  1: ______ppp______ -> confirm
-	 *  2: ______sss______ -> shutdown
 	 *  3: ___pppsss______ -> confirm
-	 *  4: ___sssppp______ -> shutdown
 	 *  5: ___pppBBB______ -> confirm
-	 *  6: ___pppBBBppp___ -> shutdown
 	 *  7: ___pppBBBsss___ -> confirm
 	 *  8: ___sssBBB______ -> confirm
-	 *  9: ___sssBBBppp___ -> shutdown
 	 * 10: ___sssBBBsss___ -> confirm
 	 * 11: ______BBB______ -> confirm
 	 * 12: ______BBBsss___ -> confirm
-	 * 13: ______BBBppp___ -> shutdown
 	 */
 
 	/* 1: presence means confirm */
 	VbUserConfirmsTestGpio(GPIO_PRESENCE, 0, 0, 1, "presence");
 
-	/* 2: shutdown means shutdown */
-	VbUserConfirmsTestGpio(GPIO_SHUTDOWN, 0, 0, 0, "shutdown");
-
 	/* 3: presence then shutdown means confirm */
 	VbUserConfirmsTestGpio(GPIO_PRESENCE, GPIO_SHUTDOWN, 0, 1,
 			       "presence then shutdown");
 
-	/* 4: shutdown then presence means shutdown */
-	VbUserConfirmsTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
-			       "shutdown then presence");
-
 	/* 5: presence then shutdown+presence then none mean confirm */
 	VbUserConfirmsTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
 			       0, 1, "presence, both, none");
-
-	/* 6: presence then shutdown+presence then presence means shutdown */
-	VbUserConfirmsTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			       GPIO_PRESENCE, 0, "presence, both, presence");
 
 	/* 7: presence then shutdown+presence then shutdown means confirm */
 	VbUserConfirmsTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
@@ -419,10 +405,6 @@ static void VbUserConfirmsTest(void)
 	/* 8: shutdown then shutdown+presence then none means confirm */
 	VbUserConfirmsTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
 			       0, 1, "shutdown, both, none");
-
-	/* 9: shutdown then shutdown+presence then presence means shutdown */
-	VbUserConfirmsTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			       GPIO_PRESENCE, 0, "shutdown, both, presence");
 
 	/* 10: shutdown then shutdown+presence then shutdown means confirm */
 	VbUserConfirmsTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
@@ -436,10 +418,6 @@ static void VbUserConfirmsTest(void)
 	VbUserConfirmsTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN,
 			       GPIO_SHUTDOWN, 0, 1, "both, shutdown");
 
-	/* 13: shutdown+presence then presence means shutdown */
-	VbUserConfirmsTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN,
-			       GPIO_PRESENCE, 0, 0, "both, presence");
-
 	ResetMocks();
 	mock_keypress[0] = VB_KEY_ENTER;
 	mock_keypress[1] = 'y';
@@ -450,7 +428,7 @@ static void VbUserConfirmsTest(void)
 	TEST_EQ(VbUserConfirms(&ctx,
 			       VB_CONFIRM_SPACE_MEANS_NO |
 			       VB_CONFIRM_MUST_TRUST_KEYBOARD),
-		0, "Recovery button stuck");
+		-1, "Recovery button stuck (shutdown)");
 	printf("...done.\n");
 }
 
@@ -1068,14 +1046,14 @@ static void VbBootRecTest(void)
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested by keyboard");
 
-	/* Ignore power button held on boot */
+	/* Ignore first read of power button held on boot */
 	ResetMocks();
 	mock_gpio[0].gpio_flags = GPIO_SHUTDOWN;
-	mock_gpio[0].count = 10;
+	mock_gpio[0].count = 0;
 	mock_gpio[1].gpio_flags = 0;
-	mock_gpio[1].count = 10;
+	mock_gpio[1].count = 0;
 	mock_gpio[2].gpio_flags = GPIO_SHUTDOWN;
-	mock_gpio[2].count = 10;
+	mock_gpio[2].count = 0;
 	mock_gpio[3].gpio_flags = 0;
 	mock_gpio[3].count = 100;
 	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
@@ -1083,11 +1061,11 @@ static void VbBootRecTest(void)
 	vbtlk_retval = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
-		"Ignore power button held on boot");
+		"Ignore first power button press on boot");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_RECOVERY_INSERT,
 		"  insert screen");
-	/* Shutdown should happen while we're sending the 2nd block of events */
-	TEST_EQ(mock_gpio_count, 3, "  ignore held button");
+	/* The second power button read (in first block) will shutdown */
+	TEST_EQ(mock_gpio_count, 3, "  ignore first power button press");
 
 	/* Broken screen */
 	ResetMocks();
@@ -1259,44 +1237,26 @@ static void VbBootRecTest(void)
 	 *   B means both shutdown and presence gpio
 	 *
 	 *  1: ______ppp______ -> confirm
-	 *  2: ______sss______ -> shutdown
 	 *  3: ___pppsss______ -> confirm
-	 *  4: ___sssppp______ -> shutdown
 	 *  5: ___pppBBB______ -> confirm
-	 *  6: ___pppBBBppp___ -> shutdown
 	 *  7: ___pppBBBsss___ -> confirm
 	 *  8: ___sssBBB______ -> confirm
-	 *  9: ___sssBBBppp___ -> shutdown
 	 * 10: ___sssBBBsss___ -> confirm
 	 * 11: ______BBB______ -> confirm
 	 * 12: ______BBBsss___ -> confirm
-	 * 13: ______BBBppp___ -> shutdown
 	 */
 
 	/* 1: Ctrl+D then presence means enable */
 	VbBootRecTestGpio(GPIO_PRESENCE, 0, 0, 1,
 			  "Ctrl+D todev confirm via presence");
 
-	/* 2: Ctrl+D then shutdown means shutdown */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, 0, 0, 0,
-			  "Ctrl+D todev then shutdown");
-
 	/* 3: Ctrl+D then presence then shutdown means confirm */
 	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_SHUTDOWN, 0, 1,
 			  "Ctrl+D todev confirm via presence then shutdown");
 
-	/* 4: Ctrl+D then 2+ instance shutdown then presence means shutdown */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
-			  "Ctrl+D todev then 2+ shutdown then presence");
-
 	/* 5: Ctrl+D then presence then shutdown+presence then none */
 	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
 			  "Ctrl+D todev confirm via presence, both, none");
-
-	/* 6: Ctrl+D then presence then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_PRESENCE, 0,
-			  "Ctrl+D todev confirm via presence, both, presence");
 
 	/* 7: Ctrl+D then presence then shutdown+presence then shutdown */
 	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
@@ -1306,11 +1266,6 @@ static void VbBootRecTest(void)
 	/* 8: Ctrl+D then shutdown then shutdown+presence then none */
 	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
 			  "Ctrl+D todev then 2+ shutdown, both, none");
-
-	/* 9: Ctrl+D then shutdown then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_PRESENCE, 0,
-			  "Ctrl+D todev then 2+ shutdown, both, presence");
 
 	/* 10: Ctrl+D then shutdown then shutdown+presence then shutdown */
 	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
@@ -1324,10 +1279,6 @@ static void VbBootRecTest(void)
 	/* 12: Ctrl+D then shutdown+presence then shutdown */
 	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_SHUTDOWN, 0, 1,
 			  "Ctrl+D todev confirm via both then shutdown");
-
-	/* 13: Ctrl+D then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
-			  "Ctrl+D todev confirm via both then presence");
 
 	/* Handle TPM error in enabling dev mode */
 	ResetMocks();
