@@ -17,4 +17,3 @@ loopdev=$(loopback_partscan "${image}")
 rootfs=$(make_temp_dir)
 mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
 sed -i 's/test//' "${rootfs}/etc/lsb-release"
-restore_lsb_selinux "${rootfs}/etc/lsb-release"
