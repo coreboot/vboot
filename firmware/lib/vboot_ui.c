@@ -132,10 +132,10 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			 */
 			if (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD &&
 			    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
-				vb2_error_notify("Please use internal keyboard "
+				vb2_error_notify("Please use power button "
 					"to confirm\n",
 					"VbUserConfirms() - "
-					"Trusted keyboard is requierd\n",
+					"Trusted keyboard is required\n",
 					VB_BEEP_NOT_ALLOWED);
 				break;
 			}
