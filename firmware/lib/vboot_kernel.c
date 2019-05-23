@@ -16,7 +16,6 @@
 #include "2sha.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
-#include "gbb_access.h"
 #include "gpt_misc.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
@@ -309,6 +308,7 @@ enum vb2_load_partition_flags {
  * @param params	Load-kernel parameters
  * @param min_version	Minimum kernel version from TPM
  * @param shpart	Destination for verification results
+ * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static int vb2_load_partition(struct vb2_context *ctx,
@@ -317,10 +317,10 @@ static int vb2_load_partition(struct vb2_context *ctx,
 			      uint32_t flags,
 			      LoadKernelParams *params,
 			      uint32_t min_version,
-			      VbSharedDataKernelPart *shpart)
+			      VbSharedDataKernelPart *shpart,
+			      struct vb2_workbuf *wb)
 {
-	struct vb2_workbuf wblocal;
-	vb2_workbuf_from_ctx(ctx, &wblocal);
+	struct vb2_workbuf wblocal = *wb;
 
 	/* Allocate kernel header buffer in workbuf */
 	uint8_t *kbuf = vb2_workbuf_alloc(&wblocal, KBUF_SIZE);
@@ -429,6 +429,7 @@ static int vb2_load_partition(struct vb2_context *ctx,
 VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_workbuf wb;
 	VbSharedDataHeader *shared = sd->vbsd;
 	VbSharedDataKernelCall *shcall = NULL;
 	struct vb2_packed_key *recovery_key = NULL;
@@ -437,6 +438,8 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 
 	VbError_t retval = VBERROR_UNKNOWN;
 	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
+
+	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Clear output params in case we fail */
 	params->partition_number = 0;
@@ -461,8 +464,8 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	struct vb2_packed_key *kernel_subkey;
 	if (kBootRecovery == shcall->boot_mode) {
 		/* Use the recovery key to verify the kernel */
-		retval = VbGbbReadRecoveryKey(ctx,
-					      (VbPublicKey **)&recovery_key);
+		retval = vb2_gbb_read_recovery_key(ctx, &recovery_key,
+						   NULL, &wb);
 		if (VBERROR_SUCCESS != retval)
 			goto load_kernel_exit;
 		kernel_subkey = recovery_key;
@@ -547,7 +550,8 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 					    lpflags,
 					    params,
 					    shared->kernel_version_tpm,
-					    shpart);
+					    shpart,
+					    &wb);
 		VbExStreamClose(stream);
 
 		if (rv != VB2_SUCCESS) {
@@ -655,8 +659,6 @@ load_kernel_exit:
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
 		   VBERROR_SUCCESS != retval ?
 		   recovery : VB2_RECOVERY_NOT_REQUESTED);
-
-	free(recovery_key);
 
 	shcall->return_code = (uint8_t)retval;
 	return retval;

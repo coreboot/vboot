@@ -336,7 +336,6 @@ BDBLIB = ${BUILD}/bdb.a
 # Firmware library sources needed by VbInit() call
 VBINIT_SRCS = \
 	firmware/lib/vboot_common_init.c \
-	firmware/lib/region-init.c
 
 # Additional firmware library sources needed by VbSelectFirmware() call
 VBSF_SRCS = \
@@ -364,6 +363,7 @@ FWLIB2X_SRCS = \
 	firmware/2lib/2api.c \
 	firmware/2lib/2common.c \
 	firmware/2lib/2crc8.c \
+	firmware/2lib/2gbb.c \
 	firmware/2lib/2misc.c \
 	firmware/2lib/2nvstorage.c \
 	firmware/2lib/2packed_key.c \
@@ -758,6 +758,7 @@ TEST_NAMES += ${TEST_FUTIL_NAMES}
 TEST2X_NAMES = \
 	tests/vb2_api_tests \
 	tests/vb2_common_tests \
+	tests/vb2_gbb_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
 	tests/vb2_rsa_utility_tests \
@@ -1388,12 +1389,14 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel6_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_detach_menu_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel_tests
 
 .PHONY: run2tests
 run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_rsa_utility_tests

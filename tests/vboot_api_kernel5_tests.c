@@ -34,6 +34,7 @@ static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static struct vb2_gbb_header gbb;
+static struct vb2_packed_key mock_key;
 
 static uint8_t kernel_buffer[80000];
 static int key_block_verify_fail;  /* 0=ok, 1=sig, 2=hash */
@@ -58,7 +59,9 @@ static void ResetMocks(void)
 	gbb.minor_version = VB2_GBB_MINOR_VER;
 	gbb.flags = 0;
 	gbb.rootkey_offset = sizeof(gbb);
-	gbb.rootkey_size = sizeof(VbPublicKey);
+	gbb.rootkey_size = sizeof(struct vb2_packed_key);
+
+	memset(&mock_key, 0, sizeof(mock_key));
 
 	/* ctx.workbuf will be initialized by VbVerifyMemoryBootImage. */
 	memset(&ctx, 0, sizeof(ctx));
@@ -118,6 +121,24 @@ int vb2ex_read_resource(struct vb2_context *c,
 			uint32_t size)
 {
 	memset(buf, 0, size);
+	return VB2_SUCCESS;
+}
+
+int vb2_gbb_read_root_key(struct vb2_context *c,
+			  struct vb2_packed_key **keyp,
+			  uint32_t *size,
+			  struct vb2_workbuf *wb)
+{
+	*keyp = &mock_key;
+	return VB2_SUCCESS;
+}
+
+int vb2_gbb_read_recovery_key(struct vb2_context *c,
+			      struct vb2_packed_key **keyp,
+			      uint32_t *size,
+			      struct vb2_workbuf *wb)
+{
+	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 

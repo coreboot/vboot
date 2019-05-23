@@ -12,7 +12,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2sha.h"
-#include "gbb_access.h"
 #include "utility.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
@@ -274,19 +273,27 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	struct vb2_workbuf wb;
 	VbSharedDataHeader *shared = sd->vbsd;
 	char buf[DEBUG_INFO_SIZE] = "";
 	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
-	char hwid[256];
 	uint32_t used = 0;
-	VbPublicKey *key;
-	VbError_t ret;
+	int ret;
 	uint32_t i;
 
+	vb2_workbuf_from_ctx(ctx, &wb);
+
 	/* Add hardware ID */
-	VbGbbReadHWID(ctx, hwid, sizeof(hwid));
-	used += StrnAppend(buf + used, "HWID: ", DEBUG_INFO_SIZE - used);
-	used += StrnAppend(buf + used, hwid, DEBUG_INFO_SIZE - used);
+	{
+		char hwid[VB2_GBB_HWID_MAX_SIZE];
+		uint32_t size = sizeof(hwid);
+		ret = vb2api_gbb_read_hwid(ctx, hwid, &size);
+		if (ret)
+			strcpy(hwid, "{INVALID}");
+		used += StrnAppend(buf + used, "HWID: ",
+				   DEBUG_INFO_SIZE - used);
+		used += StrnAppend(buf + used, hwid, DEBUG_INFO_SIZE - used);
+	}
 
 	/* Add recovery reason and subcode */
 	i = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
@@ -359,24 +366,30 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 			       gbb->flags, 16, 8);
 
 	/* Add sha1sum for Root & Recovery keys */
-	ret = VbGbbReadRootKey(ctx, &key);
-	if (!ret) {
-		FillInSha1Sum(sha1sum, key);
-		free(key);
-		used += StrnAppend(buf + used, "\ngbb.rootkey: ",
-				   DEBUG_INFO_SIZE - used);
-		used += StrnAppend(buf + used, sha1sum,
-				   DEBUG_INFO_SIZE - used);
+	{
+		struct vb2_packed_key *key;
+		struct vb2_workbuf wblocal = wb;
+		ret = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
+		if (!ret) {
+			FillInSha1Sum(sha1sum, (VbPublicKey *)key);
+			used += StrnAppend(buf + used, "\ngbb.rootkey: ",
+					   DEBUG_INFO_SIZE - used);
+			used += StrnAppend(buf + used, sha1sum,
+					   DEBUG_INFO_SIZE - used);
+		}
 	}
 
-	ret = VbGbbReadRecoveryKey(ctx, &key);
-	if (!ret) {
-		FillInSha1Sum(sha1sum, key);
-		free(key);
-		used += StrnAppend(buf + used, "\ngbb.recovery_key: ",
-				   DEBUG_INFO_SIZE - used);
-		used += StrnAppend(buf + used, sha1sum,
-				   DEBUG_INFO_SIZE - used);
+	{
+		struct vb2_packed_key *key;
+		struct vb2_workbuf wblocal = wb;
+		ret = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
+		if (!ret) {
+			FillInSha1Sum(sha1sum, (VbPublicKey *)key);
+			used += StrnAppend(buf + used, "\ngbb.recovery_key: ",
+					   DEBUG_INFO_SIZE - used);
+			used += StrnAppend(buf + used, sha1sum,
+					   DEBUG_INFO_SIZE - used);
+		}
 	}
 
 	/* If we're in dev-mode, show the kernel subkey that we expect, too. */

@@ -643,6 +643,23 @@ int vb2api_verify_kernel_data(struct vb2_context *ctx,
  */
 int vb2api_kernel_phase3(struct vb2_context *ctx);
 
+/**
+ * Read the hardware ID from the GBB, and store it onto the given buffer.
+ *
+ * @param ctx		Vboot context.
+ * @param hwid		Buffer to store HWID, which will be null-terminated.
+ * @param size		Maximum size of HWID including null terminator.  HWID
+ * 			length may not exceed 256 (VB2_GBB_HWID_MAX_SIZE), so
+ * 			this value is suggested.  If size is too small, then
+ * 			VB2_ERROR_INVALID_PARAMETER is returned.  Actual size
+ * 			of the output HWID string is returned in this pointer,
+ * 			also including null terminator.
+ * @return VB2_SUCCESS, or error code on error.
+ */
+int vb2api_gbb_read_hwid(struct vb2_context *ctx,
+			 char *hwid,
+			 uint32_t *size);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 

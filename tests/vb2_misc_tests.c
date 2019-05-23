@@ -52,6 +52,10 @@ static void reset_common_data(void)
 };
 
 /* Mocked functions */
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
 
 int vb2ex_read_resource(struct vb2_context *c,
 			enum vb2_resource_index index,
@@ -77,11 +81,6 @@ int vb2ex_tpm_clear_owner(struct vb2_context *c)
 }
 
 /* Tests */
-struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
-{
-	return &gbb;
-}
-
 static void init_context_tests(void)
 {
 	/* Use our own context struct so we can re-init it */

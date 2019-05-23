@@ -361,7 +361,7 @@ enum vb2_return_code {
 	/* Work buffer unaligned in vb2_init_context() */
 	VB2_ERROR_INITCTX_WORKBUF_ALIGN,
 
-	/* Work buffer too small in vb2_fw_parse_gbb() */
+	/* Work buffer too small in GBB-related function */
 	VB2_ERROR_GBB_WORKBUF,
 
 	/* Bad magic number in vb2_read_gbb_header() */
@@ -502,6 +502,12 @@ enum vb2_return_code {
 
 	/* Bad magic number in vb2_shared_data structure */
 	VB2_ERROR_SHARED_DATA_MAGIC,
+
+	/* Some part of GBB data is invalid */
+	VB2_ERROR_GBB_INVALID,
+
+	/* Invalid parameter */
+	VB2_ERROR_INVALID_PARAMETER,
 
 	/**********************************************************************
 	 * API-level errors

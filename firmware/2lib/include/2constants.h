@@ -64,4 +64,7 @@
  * macro for us we'll be safe and use that. */
 #define VB2_WORKBUF_ALIGN __BIGGEST_ALIGNMENT__
 
+/* Maximum length of a HWID in bytes, counting terminating null. */
+#define VB2_GBB_HWID_MAX_SIZE  256
+
 #endif  /* VBOOT_REFERENCE_2CONSTANTS_H_ */

@@ -13,7 +13,10 @@
 #include "2return_codes.h"
 #include "2sha.h"
 #include "2struct.h"
+#include "2sysincludes.h"
 #include "vb2_struct.h"
+
+struct vb2_public_key;
 
 /*
  * Helper functions to get data pointed to by a public key or signature.

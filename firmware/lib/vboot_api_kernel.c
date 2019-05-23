@@ -13,7 +13,6 @@
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "ec_sync.h"
-#include "gbb_access.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
 #include "utility.h"
@@ -463,7 +462,7 @@ VbError_t VbVerifyMemoryBootImage(
 	VbSelectAndLoadKernelParams *kparams, void *boot_image,
 	size_t image_size)
 {
-	VbPublicKey* kernel_subkey = NULL;
+	struct vb2_packed_key *kernel_subkey = NULL;
 	uint8_t *kbuf;
 	VbKeyBlockHeader *key_block;
 	VbKernelPreambleHeader *preamble;
@@ -472,6 +471,9 @@ VbError_t VbVerifyMemoryBootImage(
 	int dev_switch;
 	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
+
+	/* Allocate work buffer */
+	vb2_workbuf_from_ctx(ctx, &wb);
 
 	VbError_t retval = vb2_kernel_setup(ctx, shared, kparams);
 	if (retval)
@@ -508,7 +510,8 @@ VbError_t VbVerifyMemoryBootImage(
 		hash_only = 1;
 	} else {
 		/* Get recovery key. */
-		retval = VbGbbReadRecoveryKey(ctx, &kernel_subkey);
+		retval = vb2_gbb_read_recovery_key(ctx, &kernel_subkey,
+						   NULL, &wb);
 		if (VBERROR_SUCCESS != retval) {
 			VB2_DEBUG("Gbb Read Recovery key failed.\n");
 			goto fail;
@@ -517,9 +520,6 @@ VbError_t VbVerifyMemoryBootImage(
 
 	/* If we fail at any step, retval returned would be invalid kernel. */
 	retval = VBERROR_INVALID_KERNEL_FOUND;
-
-	/* Allocate work buffer */
-	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Verify the key block. */
 	key_block = (VbKeyBlockHeader *)kbuf;
@@ -531,8 +531,7 @@ VbError_t VbVerifyMemoryBootImage(
 		/* Unpack kernel subkey */
 		struct vb2_public_key kernel_subkey2;
 		if (VB2_SUCCESS !=
-		    vb2_unpack_key(&kernel_subkey2,
-				   (struct vb2_packed_key *)kernel_subkey)) {
+		    vb2_unpack_key(&kernel_subkey2, kernel_subkey)) {
 			VB2_DEBUG("Unable to unpack kernel subkey\n");
 			goto fail;
 		}
@@ -609,8 +608,6 @@ VbError_t VbVerifyMemoryBootImage(
 
  fail:
 	vb2_kernel_cleanup(ctx);
-	if (NULL != kernel_subkey)
-		free(kernel_subkey);
 	return retval;
 }
 

@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_VBOOT_2COMMON_H_
 
 #include "2api.h"
+#include "2gbb.h"
 #include "2return_codes.h"
 #include "2sha.h"
 #include "2struct.h"

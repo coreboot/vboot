@@ -75,6 +75,7 @@ static GptHeader *mock_gpt_secondary =
 static uint8_t mock_digest[VB2_SHA256_DIGEST_SIZE] = {12, 34, 56, 78};
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
+static struct vb2_packed_key mock_key;
 
 /**
  * Prepare a valid GPT header that will pass CheckHeader() tests
@@ -178,6 +179,8 @@ static void ResetMocks(void)
 	ctx.workbuf_size = sizeof(workbuf);
 	vb2_nv_init(&ctx);
 
+	memset(&mock_key, 0, sizeof(mock_key));
+
 	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
 	sd->vbsd = shared;
 
@@ -197,6 +200,24 @@ int vb2ex_read_resource(struct vb2_context *c,
 			uint32_t size)
 {
 	memset(buf, 0, size);
+	return VB2_SUCCESS;
+}
+
+int vb2_gbb_read_root_key(struct vb2_context *c,
+			  struct vb2_packed_key **keyp,
+			  uint32_t *size,
+			  struct vb2_workbuf *wb)
+{
+	*keyp = &mock_key;
+	return VB2_SUCCESS;
+}
+
+int vb2_gbb_read_recovery_key(struct vb2_context *c,
+			      struct vb2_packed_key **keyp,
+			      uint32_t *size,
+			      struct vb2_workbuf *wb)
+{
+	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 

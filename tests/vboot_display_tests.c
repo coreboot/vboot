@@ -15,7 +15,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2struct.h"
-#include "gbb_access.h"
 #include "host_common.h"
 #include "test_common.h"
 #include "vboot_common.h"
@@ -25,11 +24,9 @@
 /* Mock data */
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-static char gbb_data[4096 + sizeof(struct vb2_gbb_header)];
-static struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)gbb_data;
 static char debug_info[4096];
 static struct vb2_context ctx;
-struct vb2_shared_data *sd;
+static struct vb2_shared_data *sd;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static uint32_t mock_localization_count;
 static uint32_t mock_altfw_mask;
@@ -37,29 +34,8 @@ static uint32_t mock_altfw_mask;
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	int gbb_used;
-
-	memset(gbb_data, 0, sizeof(gbb_data));
-	gbb->major_version = VB2_GBB_MAJOR_VER;
-	gbb->minor_version = VB2_GBB_MINOR_VER;
-	gbb->flags = 0;
-	gbb_used = sizeof(struct vb2_gbb_header);
-
-	gbb->hwid_offset = gbb_used;
-	strcpy(gbb_data + gbb->hwid_offset, "Test HWID");
-	gbb->hwid_size = strlen(gbb_data + gbb->hwid_offset) + 1;
-	gbb_used = (gbb_used + gbb->hwid_size + 7) & ~7;
-
 	mock_localization_count = 3;
 	mock_altfw_mask = 3 << 1;	/* This mask selects 1 and 2 */
-
-	gbb->header_size = sizeof(*gbb);
-	gbb->rootkey_offset = gbb_used;
-	gbb->rootkey_size = 64;
-	gbb_used += 64;
-	gbb->recovery_key_offset = gbb_used;
-	gbb->recovery_key_size = 64;
-	gbb_used += 64;
 
 	memset(&ctx, 0, sizeof(ctx));
 	ctx.workbuf = workbuf;
@@ -77,36 +53,6 @@ static void ResetMocks(void)
 }
 
 /* Mocks */
-struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
-{
-	return gbb;
-}
-
-int vb2ex_read_resource(struct vb2_context *c,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size)
-{
-	uint8_t *rptr;
-	uint32_t rsize;
-
-	switch(index) {
-	case VB2_RES_GBB:
-		rptr = (uint8_t *)&gbb_data;
-		rsize = sizeof(gbb_data);
-		break;
-	default:
-		return VB2_ERROR_EX_READ_RESOURCE_INDEX;
-	}
-
-	if (offset > rsize || offset + size > rsize)
-		return VB2_ERROR_EX_READ_RESOURCE_SIZE;
-
-	memcpy(buf, rptr + offset, size);
-	return VB2_SUCCESS;
-}
-
 VbError_t VbExGetLocalizationCount(uint32_t *count) {
 
 	if (mock_localization_count == 0xffffffff)
@@ -130,37 +76,17 @@ VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 /* Test displaying debug info */
 static void DebugInfoTest(void)
 {
-	char hwid[256];
 	int i;
 
 	/* Recovery string should be non-null for any code */
 	for (i = 0; i < 0x100; i++)
 		TEST_PTR_NEQ(RecoveryReasonString(i), NULL, "Non-null reason");
 
-	/* HWID should come from the gbb */
-	ResetMocks();
-	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
-	TEST_EQ(strcmp(hwid, "Test HWID"), 0, "HWID");
-
-	ResetMocks();
-	gbb->hwid_size = 0;
-	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
-	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID missing");
-
-	ResetMocks();
-	gbb->hwid_offset = sizeof(gbb_data) + 1;
-	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
-	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID past end");
-
-	ResetMocks();
-	gbb->hwid_size = sizeof(gbb_data);
-	VbGbbReadHWID(&ctx, hwid, sizeof(hwid));
-	TEST_EQ(strcmp(hwid, "{INVALID}"), 0, "HWID overflow");
-
 	/* Display debug info */
 	ResetMocks();
-	VbDisplayDebugInfo(&ctx);
-	TEST_NEQ(*debug_info, '\0', "Some debug info was displayed");
+	TEST_SUCC(VbDisplayDebugInfo(&ctx),
+		  "Display debug info");
+	TEST_NEQ(*debug_info, '\0', "  Some debug info was displayed");
 }
 
 /* Test display key checking */
