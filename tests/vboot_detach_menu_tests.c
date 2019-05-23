@@ -13,6 +13,7 @@
 #include "2api.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "gbb_header.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"
@@ -279,8 +280,8 @@ static void VbBootDevTest(void)
 
 	/* Proceed to legacy after timeout if GBB flag set */
 	ResetMocksForDeveloper();
-	sd->gbb_flags |= VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY |
-			 VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
+	sd->gbb_flags |= GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY |
+		     GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
 		"default legacy GBB");
 	TEST_EQ(vbexlegacy_called, 1, "  try legacy");
@@ -465,7 +466,7 @@ static void VbBootDevTest(void)
 
 	/* ENTER functionality is unaffected by GBB flag in detachable UI. */
 	ResetMocksForDeveloper();
-	sd->gbb_flags |= VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM;
+	sd->gbb_flags |= GBB_FLAG_ENTER_TRIGGERS_TONORM;
 	mock_keypress[0] = VB_KEY_ENTER;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"dev warning menu: ENTER unaffected by GBB");
@@ -520,7 +521,7 @@ static void VbBootDevTest(void)
 	/* Tonorm ignored if GBB forces dev switch on */
 	ResetMocksForDeveloper();
 	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
+	sd->gbb_flags |= GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
@@ -581,7 +582,7 @@ static void VbBootDevTest(void)
 	/* Ctrl+D doesn't boot legacy even if GBB flag is set */
 	ResetMocksForDeveloper();
 	mock_keypress[0] = VB_KEY_CTRL('D');
-	sd->gbb_flags |= VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY;
+	sd->gbb_flags |= GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed, "Ctrl+D");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 
@@ -621,7 +622,7 @@ static void VbBootDevTest(void)
 
 	/* Ctrl+L boots legacy if enabled by GBB flag */
 	ResetMocksForDeveloper();
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
+	sd->gbb_flags |= GBB_FLAG_FORCE_DEV_BOOT_LEGACY;
 	mock_keypress[0] = VB_KEY_CTRL('L');
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), vbtlk_retval_fixed,
@@ -736,7 +737,7 @@ static void VbBootDevTest(void)
 
 	/* Ctrl+U enabled via GBB */
 	ResetMocksForDeveloper();
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_DEV_BOOT_USB;
+	sd->gbb_flags |= GBB_FLAG_FORCE_DEV_BOOT_USB;
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS, "Ctrl+U force USB");
@@ -1360,7 +1361,7 @@ static void VbBootRecTest(void)
 	/* go to INSERT if forced by GBB flag */
 	ResetMocks();
 	vbtlk_retval[0] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	sd->gbb_flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
+	sd->gbb_flags |= GBB_FLAG_FORCE_MANUAL_RECOVERY;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested in INSERT forced by GBB flag");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");

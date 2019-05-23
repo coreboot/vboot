@@ -22,6 +22,7 @@
 #include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"
+#include "gbb_header.h"
 #include "host_common.h"
 #include "host_key2.h"
 #include "kernel_blob.h"

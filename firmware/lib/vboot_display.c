@@ -13,6 +13,7 @@
 #include "2nvstorage.h"
 #include "2sha.h"
 #include "gbb_access.h"
+#include "gbb_header.h"
 #include "utility.h"
 #include "vboot_api.h"
 #include "vboot_common.h"

@@ -12,6 +12,7 @@
 
 #include "sysincludes.h"
 #include "gbb_access.h"
+#include "gbb_header.h"
 #include "load_kernel_fw.h"
 #include "utility.h"
 #include "vboot_api.h"
