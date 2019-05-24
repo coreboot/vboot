@@ -304,7 +304,8 @@ static uint32_t HandlerPCRExtend(void) {
     exit(OTHER_ERROR);
   }
   if (HexStringToArray(args[3], value, TPM_PCR_DIGEST)) {
-    fprintf(stderr, "<extend_hash> must be a 20-byte hex string\n");
+    fprintf(stderr, "<extend_hash> must be a %d-byte hex string\n",
+	    TPM_PCR_DIGEST);
     exit(OTHER_ERROR);
   }
   return TlclExtend(index, value, value);
