@@ -65,6 +65,9 @@ EOF
     set_lsb_release_keyval "${rootfs}" "${key}" "${value}"
   done
 
+  # Make sure security.selinux xattr
+  restore_lsb_selinux "$rootfs/etc/lsb-release"
+
   # Dump the final state.
   cat "${rootfs}/etc/lsb-release"
 }
