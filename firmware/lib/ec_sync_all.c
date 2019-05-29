@@ -17,30 +17,9 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 
-static VbError_t ec_sync_disable_display(struct vb2_context *ctx,
-					 int need_wait_screen)
+static int check_reboot_for_display(struct vb2_context *ctx)
 {
-	/*
-	 * Reboot to disable display initialization
-	 * - we displayed the EC wait screen (otherwise we may be interfering
-	 *   with some other vboot feature requesting display initialization)
-	 * - vboot requested display to be initialized on this boot
-	 * - the system is NOT in developer mode (which will also need display)
-	 */
-	if (need_wait_screen &&
-	    vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) &&
-	    !(vb2_get_sd(ctx)->vbsd->flags & VBSD_BOOT_DEV_SWITCH_ON)) {
-		VB2_DEBUG("Reboot to undo display initialization\n");
-		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
-		return VBERROR_REBOOT_REQUIRED;
-	}
-	return VBERROR_SUCCESS;
-}
-
-static int check_reboot_for_display(struct vb2_context *ctx,
-					struct vb2_shared_data *sd)
-{
-	if (!(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
+	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
 		VB2_DEBUG("Reboot to initialize display\n");
 		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 		return 1;
@@ -56,7 +35,6 @@ static void display_wait_screen(struct vb2_context *ctx, const char *fw_name)
 
 VbError_t ec_sync_all(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbAuxFwUpdateSeverity_t fw_update = VB_AUX_FW_NO_UPDATE;
 	VbError_t rv;
 
@@ -69,14 +47,14 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 		ec_sync_check_aux_fw(ctx, &fw_update);
 		/* It does -- speculatively check if we need display as well */
 		if (need_wait_screen || fw_update == VB_AUX_FW_SLOW_UPDATE)
-			check_reboot_for_display(ctx, sd);
+			check_reboot_for_display(ctx);
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 	}
 
 	/* Is EC already in RO and needs slow update? */
 	if (need_wait_screen) {
 		/* Might still need display in that case */
-		if (check_reboot_for_display(ctx, sd))
+		if (check_reboot_for_display(ctx))
 			return VBERROR_REBOOT_REQUIRED;
 		/* Display is available, so pop up the wait screen */
 		display_wait_screen(ctx, "EC FW");
@@ -94,9 +72,8 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 
 	/* If AUX FW update is slow display the wait screen */
 	if (fw_update == VB_AUX_FW_SLOW_UPDATE) {
-		need_wait_screen = 1;
 		/* Display should be available, but better check again */
-		if (check_reboot_for_display(ctx, sd))
+		if (check_reboot_for_display(ctx))
 			return VBERROR_REBOOT_REQUIRED;
 		display_wait_screen(ctx, "AUX FW");
 	}
@@ -107,13 +84,6 @@ VbError_t ec_sync_all(struct vb2_context *ctx)
 	 * disable display request if needed to prevent a second reboot.
 	 */
 	rv = ec_sync_update_aux_fw(ctx);
-	if (rv) {
-		ec_sync_disable_display(ctx, need_wait_screen);
-		return rv;
-	}
-
-	/* Reboot to disable display initialization if needed */
-	rv = ec_sync_disable_display(ctx, need_wait_screen);
 	if (rv)
 		return rv;
 

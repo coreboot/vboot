@@ -376,11 +376,11 @@ static void VbSoftwareSyncTest(void)
 	mock_ec_rw_hash[0]++;
 	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
-	test_ssync(VBERROR_REBOOT_REQUIRED, 0,
+	test_ssync(VBERROR_SUCCESS, 0,
 		   "Slow update with display request");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 0,
-		"  DISPLAY_REQUEST disabled");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 1,
+		"  DISPLAY_REQUEST left untouched");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
@@ -390,7 +390,7 @@ static void VbSoftwareSyncTest(void)
 		   "Slow update without display request (no reboot needed)");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 0,
-		"  DISPLAY_REQUEST still disabled");
+		"  DISPLAY_REQUEST left untouched");
 
 	/* RW cases, no update */
 	ResetMocks();
