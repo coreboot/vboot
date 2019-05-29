@@ -103,12 +103,14 @@ int vb2api_fw_phase1(struct vb2_context *ctx)
 	 * Check for possible reasons to ask the firmware to make display
 	 * available.  sd->recovery_reason may have been set above by
 	 * vb2_check_recovery.  VB2_SD_FLAG_DEV_MODE_ENABLED may have been set
-	 * above by vb2_check_dev_switch.
+	 * above by vb2_check_dev_switch.  VB2_NV_DIAG_REQUEST may have been
+	 * set during the last boot in recovery mode.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_DISPLAY_INIT) &&
 	    (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) ||
 	     sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
-	     sd->recovery_reason))
+	     sd->recovery_reason ||
+	     vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)))
 		ctx->flags |= VB2_CONTEXT_DISPLAY_INIT;
 	/* Mark display as available for downstream vboot and vboot callers. */
 	if (ctx->flags & VB2_CONTEXT_DISPLAY_INIT)
