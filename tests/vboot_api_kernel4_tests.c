@@ -266,27 +266,11 @@ static void VbSlkTest(void)
 		ResetMocks();
 		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
 		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
-		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DISPLAY_REQUEST, 1);
 		vbboot_retval = -4;
 		test_slk(VBERROR_SIMULATED, 0,
-			 "Normal boot with diag - display available");
+			 "Normal boot with diag");
 		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST),
 			0, "  diag not requested");
-		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DISPLAY_REQUEST),
-			0, "  DISPLAY_REQUEST disabled");
-
-		ResetMocks();
-		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
-		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
-		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DISPLAY_REQUEST, 0);
-		sd->flags &= ~VB2_SD_FLAG_DISPLAY_AVAILABLE;
-		vbboot_retval = -4;
-		test_slk(VBERROR_REBOOT_REQUIRED, 0,
-			 "Normal boot with diag - display unavailable");
-		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST),
-			1, "  diag requested");
-		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DISPLAY_REQUEST),
-			1, "  DISPLAY_REQUEST needed");
 	}
 
 	/* Boot dev */
