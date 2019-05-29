@@ -255,13 +255,9 @@ uint32_t SetVirtualDevMode(int val)
 
 /* Tests */
 
-static void VbBootTest(void)
-{
-	ResetMocks();
-	VbExEcEnteringMode(0, VB_EC_NORMAL);
-	TEST_EQ(VbBootNormal(&ctx), vbtlk_retval_fixed, "VbBootNormal()");
-	TEST_EQ(VbGetMode(), VB_EC_NORMAL, "vboot_mode normal");
-}
+/*
+ * VbBootNormal tests: Please see VbBootTest in vboot_api_kernel2_tests.c
+ */
 
 static void VbBootDevTest(void)
 {
@@ -2337,7 +2333,6 @@ static void VbNavigationTest(void)
 
 int main(void)
 {
-	VbBootTest();
 	VbBootDevTest();
 	VbBootRecTest();
 	VbTestLanguageMenu();

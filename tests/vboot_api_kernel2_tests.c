@@ -466,6 +466,20 @@ static void VbBootTest(void)
 	VbExEcEnteringMode(0, VB_EC_NORMAL);
 	TEST_EQ(VbBootNormal(&ctx), 1002, "VbBootNormal()");
 	TEST_EQ(VbGetMode(), VB_EC_NORMAL, "vboot_mode normal");
+
+	ResetMocks();
+	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	TEST_EQ(VbBootNormal(&ctx), VBERROR_REBOOT_REQUIRED,
+		"VbBootNormal() reboot to reset NVRAM display request");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 0,
+		"  display request reset");
+
+	ResetMocks();
+	vb2_nv_set(&ctx, VB2_NV_DIAG_REQUEST, 1);
+	TEST_EQ(VbBootNormal(&ctx), VBERROR_REBOOT_REQUIRED,
+		"VbBootNormal() reboot to reset NVRAM diag request");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DIAG_REQUEST), 0,
+		"  diag request reset");
 }
 
 static void VbBootDevTest(void)
