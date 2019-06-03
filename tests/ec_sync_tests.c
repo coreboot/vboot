@@ -222,6 +222,11 @@ VbError_t VbExUpdateAuxFw()
 	if (ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE &&
 	    ec_aux_fw_update_severity != VB_AUX_FW_NO_UPDATE)
 		ec_aux_fw_update_req = 1;
+	return ec_aux_fw_retval;
+}
+
+VbError_t VbExEcVbootDone(int in_recovery)
+{
 	ec_aux_fw_protected = ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE;
 	return ec_aux_fw_retval;
 }
