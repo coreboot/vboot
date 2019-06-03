@@ -668,6 +668,12 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 		g_param_size                       +
 		g_bootloader_size                  +
 		g_vmlinuz_header_size;
+
+	/*
+	 * Round the whole blob up so it's a multiple of sectors, even on 4k
+	 * devices.
+	 */
+	g_kernel_blob_size = roundup(g_kernel_blob_size, CROS_ALIGN);
 	VB2_DEBUG("g_kernel_blob_size  0x%" PRIx64 "\n", g_kernel_blob_size);
 
 	/* Allocate space for the blob. */
