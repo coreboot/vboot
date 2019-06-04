@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "2common.h"
+#include "2struct.h"
 #include "vb2_struct.h"
 #include "vboot_host.h"
 #include "vboot_struct.h"

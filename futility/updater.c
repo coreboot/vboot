@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "2rsa.h"
+#include "2common.h"
 #include "crossystem.h"
 #include "fmap.h"
 #include "futility.h"

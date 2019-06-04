@@ -19,38 +19,7 @@
  * Helper functions to get data pointed to by a public key or signature.
  */
 
-const uint8_t *vb2_packed_key_data(const struct vb2_packed_key *key);
 uint8_t *vb2_signature_data(struct vb2_signature *sig);
-
-/**
- * Verify the data pointed to by a subfield is inside the parent data.
- *
- * The subfield has a header pointed to by member, and a separate data
- * field at an offset relative to the header.  That is:
- *
- *   struct parent {
- *     (possibly other parent fields)
- *     struct member {
- *        (member header fields)
- *     };
- *     (possibly other parent fields)
- *   };
- *   (possibly some other parent data)
- *   (member data)
- *   (possibly some other parent data)
- *
- * @param parent		Parent data
- * @param parent_size		Parent size in bytes
- * @param member		Subfield header
- * @param member_size		Size of subfield header in bytes
- * @param member_data_offset	Offset of member data from start of member
- * @param member_data_size	Size of member data in bytes
- * @return VB2_SUCCESS, or non-zero if error.
- */
-int vb2_verify_member_inside(const void *parent, size_t parent_size,
-			     const void *member, size_t member_size,
-			     ptrdiff_t member_data_offset,
-			     size_t member_data_size);
 
 /**
  * Verify a signature is fully contained in its parent data
@@ -63,19 +32,6 @@ int vb2_verify_member_inside(const void *parent, size_t parent_size,
 int vb2_verify_signature_inside(const void *parent,
 				uint32_t parent_size,
 				const struct vb2_signature *sig);
-
-
-/**
- * Verify a packed key is fully contained in its parent data
- *
- * @param parent	Parent data
- * @param parent_size	Parent size in bytes
- * @param key		Packed key pointer
- * @return VB2_SUCCESS, or non-zero if error.
- */
-int vb2_verify_packed_key_inside(const void *parent,
-				 uint32_t parent_size,
-				 const struct vb2_packed_key *key);
 
 /**
  * Unpack a vboot1-format key buffer for use in verification

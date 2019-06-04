@@ -26,29 +26,6 @@
 #define VB2_MAX_KEY_VERSION 0xffff
 #define VB2_MAX_PREAMBLE_VERSION 0xffff
 
-/* Packed public key data */
-struct vb2_packed_key {
-	/* Offset of key data from start of this struct */
-	uint32_t key_offset;
-	uint32_t reserved0;
-
-	/* Size of key data in bytes (NOT strength of key in bits) */
-	uint32_t key_size;
-	uint32_t reserved1;
-
-	/* Signature algorithm used by the key (enum vb2_crypto_algorithm) */
-	uint32_t algorithm;
-	uint32_t reserved2;
-
-	/* Key version */
-	uint32_t key_version;
-	uint32_t reserved3;
-
-	/* TODO: when redoing this struct, add a text description of the key */
-} __attribute__((packed));
-
-#define EXPECTED_VB2_PACKED_KEY_SIZE 32
-
 
 /* Signature data (a secure hash, possibly signed) */
 struct vb2_signature {

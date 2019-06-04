@@ -16,45 +16,6 @@ uint8_t *vb2_signature_data(struct vb2_signature *sig)
 	return (uint8_t *)sig + sig->sig_offset;
 }
 
-int vb2_verify_member_inside(const void *parent, size_t parent_size,
-			     const void *member, size_t member_size,
-			     ptrdiff_t member_data_offset,
-			     size_t member_data_size)
-{
-	const uintptr_t parent_end = (uintptr_t)parent + parent_size;
-	const ptrdiff_t member_offs = vb2_offset_of(parent, member);
-	const ptrdiff_t member_end_offs = member_offs + member_size;
-	const ptrdiff_t data_offs = member_offs + member_data_offset;
-	const ptrdiff_t data_end_offs = data_offs + member_data_size;
-
-	/* Make sure parent doesn't wrap */
-	if (parent_end < (uintptr_t)parent)
-		return VB2_ERROR_INSIDE_PARENT_WRAPS;
-
-	/*
-	 * Make sure the member is fully contained in the parent and doesn't
-	 * wrap.  Use >, not >=, since member_size = 0 is possible.
-	 */
-	if (member_end_offs < member_offs)
-		return VB2_ERROR_INSIDE_MEMBER_WRAPS;
-	if (member_offs < 0 || member_offs > parent_size ||
-	    member_end_offs > parent_size)
-		return VB2_ERROR_INSIDE_MEMBER_OUTSIDE;
-
-	/* Make sure the member data is after the member */
-	if (member_data_size > 0 && data_offs < member_end_offs)
-		return VB2_ERROR_INSIDE_DATA_OVERLAP;
-
-	/* Make sure parent fully contains member data, if any */
-	if (data_end_offs < data_offs)
-		return VB2_ERROR_INSIDE_DATA_WRAPS;
-	if (data_offs < 0 || data_offs > parent_size ||
-	    data_end_offs > parent_size)
-		return VB2_ERROR_INSIDE_DATA_OUTSIDE;
-
-	return VB2_SUCCESS;
-}
-
 int vb2_verify_signature_inside(const void *parent,
 				uint32_t parent_size,
 				const struct vb2_signature *sig)

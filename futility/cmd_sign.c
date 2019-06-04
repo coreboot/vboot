@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "2common.h"
 #include "file_type.h"
 #include "file_type_bios.h"
 #include "fmap.h"

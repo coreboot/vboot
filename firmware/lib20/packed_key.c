@@ -5,23 +5,10 @@
  * Key unpacking functions
  */
 
+#include "2common.h"
 #include "2sysincludes.h"
 #include "2rsa.h"
 #include "vb2_common.h"
-
-const uint8_t *vb2_packed_key_data(const struct vb2_packed_key *key)
-{
-	return (const uint8_t *)key + key->key_offset;
-}
-
-int vb2_verify_packed_key_inside(const void *parent,
-				 uint32_t parent_size,
-				 const struct vb2_packed_key *key)
-{
-	return vb2_verify_member_inside(parent, parent_size,
-					key, sizeof(*key),
-					key->key_offset, key->key_size);
-}
 
 test_mockable
 int vb2_unpack_key_buffer(struct vb2_public_key *key,

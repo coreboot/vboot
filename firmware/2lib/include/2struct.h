@@ -2,8 +2,15 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Data structure definitions for verified boot, for on-disk / in-eeprom
- * data.
+ * Vboot data structures.
+ *
+ * Note: Many of the structs have pairs of 32-bit fields and reserved fields.
+ * This is to be backwards-compatible with older verified boot data which used
+ * 64-bit fields (when we thought that hey, UEFI is 64-bit so all our fields
+ * should be too).
+ *
+ * Offsets should be padded to 32-bit boundaries, since some architectures
+ * have trouble with accessing unaligned integers.
  */
 
 #ifndef VBOOT_REFERENCE_VBOOT_2STRUCT_H_
@@ -300,5 +307,28 @@ struct vb2_ryu_root_key_hash {
 };
 
 #define EXPECTED_VB2_RYU_ROOT_KEY_HASH_SIZE 48
+
+/* Packed public key data */
+struct vb2_packed_key {
+	/* Offset of key data from start of this struct */
+	uint32_t key_offset;
+	uint32_t reserved0;
+
+	/* Size of key data in bytes (NOT strength of key in bits) */
+	uint32_t key_size;
+	uint32_t reserved1;
+
+	/* Signature algorithm used by the key (enum vb2_crypto_algorithm) */
+	uint32_t algorithm;
+	uint32_t reserved2;
+
+	/* Key version */
+	uint32_t key_version;
+	uint32_t reserved3;
+
+	/* TODO: when redoing this struct, add a text description of the key */
+} __attribute__((packed));
+
+#define EXPECTED_VB2_PACKED_KEY_SIZE 32
 
 #endif  /* VBOOT_REFERENCE_VBOOT_2STRUCT_H_ */
