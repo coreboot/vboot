@@ -6,31 +6,30 @@
 
 . "$(dirname "$0")/common.sh"
 . "$(dirname "$0")/lib/sign_android_lib.sh"
+load_shflags || exit 1
 
-set -e
+DEFINE_boolean use_apksigner "${FLAGS_FALSE}" \
+  "Use apksigner instead of signapk for APK signing"
 
-# Print usage string
-usage() {
-  cat <<EOF
+FLAGS_HELP="
 Usage: $PROG /path/to/cros_root_fs/dir /path/to/keys/dir
 
 Re-sign framework apks in an Android system image.  The image itself does not
 need to be signed since it is shipped with Chrome OS image, which is already
 signed.
 
-Android has many "framework apks" that are signed with 4 different framework
+Android has many ``framework apks'' that are signed with 4 different framework
 keys, depends on the purpose of the apk.  During development, apks are signed
 with the debug one.  This script is to re-sign those apks with corresponding
 release key.  It also handles some of the consequences of the key changes, such
 as sepolicy update.
+"
 
-EOF
-  if [[ $# -gt 0 ]]; then
-    error "$*"
-    exit 1
-  fi
-  exit 0
-}
+# Parse command line.
+FLAGS "$@" || exit 1
+eval set -- "${FLAGS_ARGV}"
+
+set -e
 
 # Re-sign framework apks with the corresponding release keys.  Only apk with
 # known key fingerprint are re-signed.  We should not re-sign non-framework
@@ -89,11 +88,33 @@ build flavor '${flavor_prop}'."
     # Explicitly remove existing signature.
     zip -q "${temp_apk}" -d "META-INF/*"
 
-    # Signapk now creates signature of APK Signature Scheme v2. No further APK
-    # changes should happen afterward.  Also note that signapk now takes care of
-    # zipalign.
-    signapk "${key_dir}/$keyname.x509.pem" "${key_dir}/$keyname.pk8" \
-        "${temp_apk}" "${signed_apk}" > /dev/null
+    if [ "${FLAGS_use_apksigner}" = "$FLAGS_FALSE" ]; then
+      # Signapk now creates signature of APK Signature Scheme v2. No further APK
+      # changes should happen afterward.  Also note that signapk now takes care
+      # of zipalign.
+      signapk "${key_dir}/$keyname.x509.pem" "${key_dir}/$keyname.pk8" \
+          "${temp_apk}" "${signed_apk}" > /dev/null
+    else
+      # Key rotation: old key can sign a new key and generate a lineage file.
+      # Provided the lineage file, Android P can honor the new key. Lineage file
+      # can be generated similar to the following command:
+      #
+      # apksigner rotate --out media.lineage --old-signer --key old-media.pk8
+      # --cert old-media.x509.pem --new-signer --key new-media.pk8 --cert
+      # new-media.x509.pem
+      #
+      # TODO(b/132818552): disable v1 signing once a check is removed.
+
+      local extra_flags
+      local lineage_file="${key_dir}/$keyname.lineage}"
+      if [ -f ${lineage_file} ]; then
+        extra_flags="--lineage ${lineage_file}"
+      fi
+      apksigner sign --v1-signing-enabled true --v2-signing-enabled false \
+        --key "${key_dir}/$keyname.pk8" --cert "${key_dir}/$keyname.x509.pem" \
+        --in "${temp_apk}" --out "${signed_apk}" \
+        ${extra_flags}
+    fi
 
     # Copy the content instead of mv to avoid owner/mode changes.
     sudo cp "${signed_apk}" "${apk}" && rm -f "${signed_apk}"
@@ -206,14 +227,16 @@ main() {
   local mksquashfs=$(which mksquashfs)
 
   if [[ $# -ne 2 ]]; then
-    usage "command takes exactly 2 args"
+    flags_help
+    die "command takes exactly 2 args"
   fi
 
   if [[ ! -f "${system_img}" ]]; then
     die "System image does not exist: ${system_img}"
   fi
 
-  if ! type -P zipalign &>/dev/null || ! type -P signapk &>/dev/null; then
+  if ! type -P zipalign &>/dev/null || ! type -P signapk &>/dev/null \
+    || ! type -P apksigner &>/dev/null; then
     # TODO(victorhsieh): Make this an error.  This is not treating as error
     # just to make an unrelated test pass by skipping this signing.
     warn "Skip signing Android apks (some of executables are not found)."

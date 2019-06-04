@@ -9,12 +9,14 @@
 
 usage() {
   cat <<EOF
-Usage: ${PROG} DIR
+Usage: ${PROG} [FLAGS] DIR
 
 Generate Android's 4 framework key pairs at DIR.  For detail, please refer to
 "Certificates and private keys" and "Manually generating keys" in
 https://source.android.com/devices/tech/ota/sign_builds.html.
 
+FLAGS:
+  --rotate-from  Directory containing a set of old key pairs to rotate from
 EOF
 
   if [[ $# -ne 0 ]]; then
@@ -51,11 +53,16 @@ main() {
   set -e
 
   local dir
+  local old_dir
 
   while [[ $# -gt 0 ]]; do
     case $1 in
     -h|--help)
       usage
+      ;;
+    --rotate-from)
+      old_dir="$2"
+      shift
       ;;
     -*)
       usage "Unknown option: $1"
@@ -71,10 +78,16 @@ main() {
   fi
   dir=$1
 
-  make_pair "${dir}" platform
-  make_pair "${dir}" shared
-  make_pair "${dir}" media
-  make_pair "${dir}" releasekey
+  for name in platform shared media releasekey; do
+    make_pair "${dir}" "${name}"
+
+    if [ -d "${old_dir}" ]; then
+      apksigner rotate --out "${dir}/${name}.lineage" \
+        --old-signer --key "${old_dir}/${name}.pk8" \
+            --cert "${old_dir}/${name}.x509.pem" \
+        --new-signer --key "${dir}/${name}.pk8" --cert "${dir}/${name}.x509.pem"
+    fi
+  done
 }
 
 main "$@"
