@@ -115,16 +115,18 @@ int main(int argc, char *argv[])
 	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
-	/* Copy kernel subkey to VBSD */
-	struct vb2_packed_key *dst = (struct vb2_packed_key *)
-		(shared_data + vb2_wb_round_up(sizeof(VbSharedDataHeader)));
-	shared->kernel_subkey.key_offset =
-		(uintptr_t)dst - (uintptr_t)&shared->kernel_subkey;
-	shared->kernel_subkey.key_size = kernkey->key_size;
-	shared->kernel_subkey.algorithm = kernkey->algorithm;
-	shared->kernel_subkey.key_version = kernkey->key_version;
-	memcpy(vb2_packed_key_data_mutable(dst), vb2_packed_key_data(kernkey),
-	       kernkey->key_size);
+	/* Copy kernel subkey to workbuf */
+	{
+		struct vb2_workbuf wb;
+		struct vb2_packed_key *dst;
+		uint32_t kernkey_size = kernkey->key_offset + kernkey->key_size;
+		vb2_workbuf_from_ctx(ctx, &wb);
+		dst = vb2_workbuf_alloc(&wb, kernkey_size);
+		memcpy(dst, kernkey, kernkey_size);
+		vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
+		sd->kernel_key_offset = vb2_offset_of(sd, dst);
+		sd->kernel_key_size = kernkey_size;
+	}
 
 	/*
 	 * LoadKernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and only in

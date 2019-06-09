@@ -38,6 +38,7 @@ static vb2_error_t commit_data_retval;
 static int commit_data_called;
 static vb2_error_t secdata_kernel_init_retval;
 static vb2_error_t secdata_fwmp_init_retval;
+static vb2_error_t kernel_phase1_retval;
 
 static uint32_t mock_switches[8];
 static uint32_t mock_switches_count;
@@ -58,6 +59,7 @@ static void ResetMocks(void)
 	sd = vb2_get_sd(ctx);
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 	ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
+	sd->preamble_size = 1;
 
 	vb2_nv_init(ctx);
 	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0xffffffff);
@@ -70,6 +72,7 @@ static void ResetMocks(void)
 	vbboot_retval = VB2_SUCCESS;
 	secdata_kernel_init_retval = VB2_SUCCESS;
 	secdata_fwmp_init_retval = VB2_SUCCESS;
+	kernel_phase1_retval = VB2_SUCCESS;
 
 	memset(mock_switches, 0, sizeof(mock_switches));
 	mock_switches_count = 0;
@@ -77,6 +80,14 @@ static void ResetMocks(void)
 }
 
 /* Mock functions */
+
+vb2_error_t vb2api_kernel_phase1(struct vb2_context *c)
+{
+	sd->kernel_version_secdata = kernel_version;
+	shared->kernel_version_tpm_start = kernel_version;
+	shared->kernel_version_tpm = kernel_version;
+	return kernel_phase1_retval;
+}
 
 vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 {
@@ -87,12 +98,6 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 vb2_error_t vb2_secdata_kernel_init(struct vb2_context *c)
 {
 	return secdata_kernel_init_retval;
-}
-
-uint32_t vb2_secdata_kernel_get(struct vb2_context *c,
-				enum vb2_secdata_kernel_param param)
-{
-	return kernel_version;
 }
 
 vb2_error_t vb2_secdata_fwmp_init(struct vb2_context *c)
@@ -239,16 +244,10 @@ static void VbSlkTest(void)
 			  "  didn't commit nvdata");
 	}
 
-	/* Boot normal - secdata init failures */
+	/* Boot normal - phase1 failure */
 	ResetMocks();
-	secdata_kernel_init_retval = VB2_ERROR_UNKNOWN;
-	test_slk(secdata_kernel_init_retval, VB2_RECOVERY_SECDATA_KERNEL_INIT,
-		 "Normal secdata_kernel init error triggers recovery");
-
-	ResetMocks();
-	secdata_fwmp_init_retval = VB2_ERROR_UNKNOWN;
-	test_slk(secdata_fwmp_init_retval, VB2_RECOVERY_SECDATA_FWMP_INIT,
-		 "Normal secdata_fwmp init error triggers recovery");
+	kernel_phase1_retval = VB2_ERROR_MOCK;
+	test_slk(VB2_ERROR_MOCK, 0, "Normal phase1 failure");
 
 	/* Boot normal - commit data failures */
 	ResetMocks();
@@ -277,6 +276,12 @@ static void VbSlkTest(void)
 	test_slk(0, 0, "Dev doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");
 
+	/* Boot dev - phase1 failure */
+	ResetMocks();
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	kernel_phase1_retval = VB2_ERROR_MOCK;
+	test_slk(VB2_ERROR_MOCK, 0, "Dev phase1 failure");
+
 	/* Boot recovery */
 	ResetMocks();
 	sd->recovery_reason = 123;
@@ -288,6 +293,12 @@ static void VbSlkTest(void)
 	new_version = 0x20003;
 	test_slk(0, 0, "Recovery doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");
+
+	/* Boot recovery - phase1 failure */
+	ResetMocks();
+	sd->recovery_reason = 123;
+	kernel_phase1_retval = VB2_ERROR_MOCK;
+	test_slk(VB2_ERROR_MOCK, 0, "Recovery phase1 failure");
 
 	/* Boot recovery - commit data failures */
 	ResetMocks();

@@ -466,19 +466,10 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	shcall->sector_count = params->streaming_lba_count;
 	shared->lk_call_count++;
 
-	/* Choose key to verify kernel */
-	struct vb2_packed_key *kernel_subkey;
-	if (kBootRecovery == shcall->boot_mode) {
-		/* Use the recovery key to verify the kernel */
-		rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
-		if (VB2_SUCCESS != rv) {
-			VB2_DEBUG("GBB read recovery key failed.\n");
-			goto load_kernel_exit;
-		}
-	} else {
-		/* Use the kernel subkey passed from firmware verification */
-		kernel_subkey = (struct vb2_packed_key *)&shared->kernel_subkey;
-	}
+	/* Locate key to verify kernel.  This will either be a recovery key, or
+	   a kernel subkey passed from firmware verification. */
+	struct vb2_packed_key *kernel_subkey =
+		vb2_member_of(sd, sd->kernel_key_offset);
 
 	/* Read GPT data */
 	GptData gpt;
@@ -658,7 +649,6 @@ gpt_done:
 		rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 	}
 
-load_kernel_exit:
 	shcall->return_code = (uint8_t)rv;
 	return rv;
 }

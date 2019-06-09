@@ -684,8 +684,9 @@ enum vb2_return_code {
 	/* Buffer size for the digest is too small for vb2api_get_pcr_digest */
 	VB2_ERROR_API_PCR_DIGEST_BUF,
 
-	/* Work buffer too small for recovery key in vb2api_kernel_phase1() */
-	VB2_ERROR_API_KPHASE1_WORKBUF_REC_KEY,
+	/* Work buffer too small for recovery key in vb2api_kernel_phase1();
+	 * Deprecated: use vb2_gbb_read_recovery_key return values */
+	VB2_ERROR_DEPRECATED_API_KPHASE1_WORKBUF_REC_KEY,
 
 	/* Firmware preamble not present for vb2api_kernel_phase1() */
 	VB2_ERROR_API_KPHASE1_PREAMBLE,

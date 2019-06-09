@@ -227,7 +227,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 				    VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
 	/* Set selected boot mode in context object.
 	   TODO: Confirm that this can be removed with persistent context. */
@@ -251,8 +250,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	if (sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY)
 		shared->flags |= VBSD_BOOT_REC_SWITCH_ON;
 
-	vb2_nv_init(ctx);
-
 	/*
 	 * Save a pointer to the old vboot1 shared data, since we haven't
 	 * finished porting the library to use the new vb2 context and shared
@@ -274,29 +271,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	kparams->bootloader_size = 0;
 	kparams->flags = 0;
 	memset(kparams->partition_guid, 0, sizeof(kparams->partition_guid));
-
-	/*
-	 * Init secdata_kernel and secdata_fwmp spaces.  No need to init
-	 * secdata_firmware, since it was already read during firmware
-	 * verification.  Ignore errors in recovery mode.
-	 */
-	rv = vb2_secdata_kernel_init(ctx);
-	if (rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: init secdata_kernel returned %#x\n", rv);
-		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
-		return rv;
-	}
-	rv = vb2_secdata_fwmp_init(ctx);
-	if (rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: init secdata_fwmp returned %#x\n", rv);
-		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_FWMP_INIT, rv);
-		return rv;
-	}
-
-	/* Read kernel version from the TPM. */
-	shared->kernel_version_tpm =
-		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
-	shared->kernel_version_tpm_start = shared->kernel_version_tpm;
 
 	return VB2_SUCCESS;
 }
@@ -367,7 +341,15 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	vb2_error_t rv, call_rv;
 
+	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
+	   to vb2_nv_get and vb2_nv_set. */
+	vb2_nv_init(ctx);
+
 	rv = vb2_kernel_setup(ctx, shared, kparams);
+	if (rv)
+		goto VbSelectAndLoadKernel_exit;
+
+	rv = vb2api_kernel_phase1(ctx);
 	if (rv)
 		goto VbSelectAndLoadKernel_exit;
 
