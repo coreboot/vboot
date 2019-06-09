@@ -440,12 +440,11 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	struct vb2_workbuf wb;
 	VbSharedDataHeader *shared = sd->vbsd;
 	VbSharedDataKernelCall *shcall = NULL;
-	struct vb2_packed_key *recovery_key = NULL;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
-
 	VbError_t retval = VBERROR_UNKNOWN;
 	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
+	int rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -472,11 +471,12 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	struct vb2_packed_key *kernel_subkey;
 	if (kBootRecovery == shcall->boot_mode) {
 		/* Use the recovery key to verify the kernel */
-		retval = vb2_gbb_read_recovery_key(ctx, &recovery_key,
-						   NULL, &wb);
-		if (VBERROR_SUCCESS != retval)
+		rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
+		if (VB2_SUCCESS != rv) {
+			VB2_DEBUG("GBB read recovery key failed.\n");
+			retval = VBERROR_INVALID_GBB;
 			goto load_kernel_exit;
-		kernel_subkey = recovery_key;
+		}
 	} else {
 		/* Use the kernel subkey passed from firmware verification */
 		kernel_subkey = (struct vb2_packed_key *)&shared->kernel_subkey;
@@ -552,14 +552,14 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			lpflags |= VB2_LOAD_PARTITION_VBLOCK_ONLY;
 		}
 
-		int rv = vb2_load_partition(ctx,
-					    stream,
-					    kernel_subkey,
-					    lpflags,
-					    params,
-					    shared->kernel_version_tpm,
-					    shpart,
-					    &wb);
+		rv = vb2_load_partition(ctx,
+					stream,
+					kernel_subkey,
+					lpflags,
+					params,
+					shared->kernel_version_tpm,
+					shpart,
+					&wb);
 		VbExStreamClose(stream);
 
 		if (rv != VB2_SUCCESS) {

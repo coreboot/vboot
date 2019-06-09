@@ -471,11 +471,13 @@ VbError_t VbVerifyMemoryBootImage(
 	int dev_switch;
 	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
+	VbError_t retval;
+	int rv;
 
 	/* Allocate work buffer */
 	vb2_workbuf_from_ctx(ctx, &wb);
 
-	VbError_t retval = vb2_kernel_setup(ctx, shared, kparams);
+	retval = vb2_kernel_setup(ctx, shared, kparams);
 	if (retval)
 		goto fail;
 
@@ -510,10 +512,10 @@ VbError_t VbVerifyMemoryBootImage(
 		hash_only = 1;
 	} else {
 		/* Get recovery key. */
-		retval = vb2_gbb_read_recovery_key(ctx, &kernel_subkey,
-						   NULL, &wb);
-		if (VBERROR_SUCCESS != retval) {
-			VB2_DEBUG("Gbb Read Recovery key failed.\n");
+		rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
+		if (VB2_SUCCESS != rv) {
+			VB2_DEBUG("GBB read recovery key failed.\n");
+			retval = VBERROR_INVALID_GBB;
 			goto fail;
 		}
 	}
@@ -524,7 +526,7 @@ VbError_t VbVerifyMemoryBootImage(
 	/* Verify the key block. */
 	key_block = (VbKeyBlockHeader *)kbuf;
 	struct vb2_keyblock *keyblock2 = (struct vb2_keyblock *)kbuf;
-	int rv;
+	rv = VB2_SUCCESS;
 	if (hash_only) {
 		rv = vb2_verify_keyblock_hash(keyblock2, image_size, &wb);
 	} else {
