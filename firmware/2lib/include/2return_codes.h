@@ -90,10 +90,10 @@ enum vb2_return_code {
 	 */
 	VB2_ERROR_SECDATA = VB2_ERROR_BASE + 0x040000,
 
-	/* Bad CRC in vb2_secdata_check_crc() */
+	/* Bad CRC in vb2api_secdata_check() */
 	VB2_ERROR_SECDATA_CRC,
 
-	/* Secdata is all zeroes (uninitialized) in vb2_secdata_check_crc() */
+	/* Secdata is all zeroes (uninitialized) in vb2api_secdata_check() */
 	VB2_ERROR_SECDATA_ZERO,
 
 	/* Invalid param in vb2_secdata_get() */
@@ -111,7 +111,7 @@ enum vb2_return_code {
 	/* Called vb2_secdata_set() with uninitialized secdata */
 	VB2_ERROR_SECDATA_SET_UNINITIALIZED,
 
-	/* Bad CRC in vb2_secdatak_check_crc() */
+	/* Bad CRC in vb2api_secdatak_check() */
 	VB2_ERROR_SECDATAK_CRC,
 
 	/* Bad struct version in vb2_secdatak_init() */

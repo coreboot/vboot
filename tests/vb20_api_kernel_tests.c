@@ -64,7 +64,7 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2_secdatak_create(&ctx);
+	vb2api_secdatak_create(&ctx);
 	vb2_secdatak_init(&ctx);
 	vb2_secdatak_set(&ctx, VB2_SECDATAK_VERSIONS, 0x20002);
 

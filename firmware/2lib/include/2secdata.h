@@ -92,31 +92,6 @@ enum vb2_secdatak_param {
 /* Firmware version space functions */
 
 /**
- * Check the CRC of the secure storage context.
- *
- * Use this if reading from secure storage may be flaky, and you want to retry
- * reading it several times.
- *
- * This may be called before vb2_context_init().
- *
- * @param ctx		Context pointer
- * @return VB2_SUCCESS, or non-zero error code if error.
- */
-int vb2_secdata_check_crc(const struct vb2_context *ctx);
-
-/**
- * Create fresh data in the secure storage context.
- *
- * Use this only when initializing the secure storage context on a new machine
- * the first time it boots.  Do NOT simply use this if vb2_secdata_check_crc()
- * (or any other API in this library) fails; that could allow the secure data
- * to be rolled back to an insecure state.
- *
- * This may be called before vb2_context_init().
- */
-int vb2_secdata_create(struct vb2_context *ctx);
-
-/**
  * Initialize the secure storage context and verify its CRC.
  *
  * This must be called before vb2_secdata_get() or vb2_secdata_set().
@@ -156,31 +131,6 @@ int vb2_secdata_set(struct vb2_context *ctx,
  * These are separate functions so that they don't bloat the size of the early
  * boot code which uses the firmware version space functions.
  */
-
-/**
- * Check the CRC of the kernel version secure storage context.
- *
- * Use this if reading from secure storage may be flaky, and you want to retry
- * reading it several times.
- *
- * This may be called before vb2_context_init().
- *
- * @param ctx		Context pointer
- * @return VB2_SUCCESS, or non-zero error code if error.
- */
-int vb2_secdatak_check_crc(const struct vb2_context *ctx);
-
-/**
- * Create fresh data in the secure storage context.
- *
- * Use this only when initializing the secure storage context on a new machine
- * the first time it boots.  Do NOT simply use this if vb2_secdatak_check_crc()
- * (or any other API in this library) fails; that could allow the secure data
- * to be rolled back to an insecure state.
- *
- * This may be called before vb2_context_init().
- */
-int vb2_secdatak_create(struct vb2_context *ctx);
 
 /**
  * Initialize the secure storage context and verify its CRC.

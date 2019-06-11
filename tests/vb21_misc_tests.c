@@ -78,7 +78,7 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2_secdata_create(&ctx);
+	vb2api_secdata_create(&ctx);
 	vb2_secdata_init(&ctx);
 
 	mock_read_res_fail_on_call = 0;

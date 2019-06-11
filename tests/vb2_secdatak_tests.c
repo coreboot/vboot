@@ -44,20 +44,20 @@ static void secdatak_test(void)
 
 	/* Blank data is invalid */
 	memset(c.secdatak, 0xa6, sizeof(c.secdatak));
-	TEST_EQ(vb2_secdatak_check_crc(&c),
+	TEST_EQ(vb2api_secdatak_check(&c),
 		VB2_ERROR_SECDATAK_CRC, "Check blank CRC");
 	TEST_EQ(vb2_secdatak_init(&c),
 		 VB2_ERROR_SECDATAK_CRC, "Init blank CRC");
 
 	/* Create good data */
-	TEST_SUCC(vb2_secdatak_create(&c), "Create");
-	TEST_SUCC(vb2_secdatak_check_crc(&c), "Check created CRC");
+	TEST_SUCC(vb2api_secdatak_create(&c), "Create");
+	TEST_SUCC(vb2api_secdatak_check(&c), "Check created CRC");
 	TEST_SUCC(vb2_secdatak_init(&c), "Init created CRC");
 	test_changed(&c, 1, "Create changes data");
 
 	/* Now corrupt it */
 	c.secdatak[2]++;
-	TEST_EQ(vb2_secdatak_check_crc(&c),
+	TEST_EQ(vb2api_secdatak_check(&c),
 		VB2_ERROR_SECDATAK_CRC, "Check invalid CRC");
 	TEST_EQ(vb2_secdatak_init(&c),
 		 VB2_ERROR_SECDATAK_CRC, "Init invalid CRC");
@@ -66,7 +66,7 @@ static void secdatak_test(void)
 	{
 		struct vb2_secdatak *sec = (struct vb2_secdatak *)c.secdatak;
 
-		vb2_secdatak_create(&c);
+		vb2api_secdatak_create(&c);
 		sec->uid++;
 		sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdatak, crc8));
 
@@ -75,7 +75,7 @@ static void secdatak_test(void)
 	}
 
 	/* Read/write versions */
-	vb2_secdatak_create(&c);
+	vb2api_secdatak_create(&c);
 	c.flags = 0;
 	TEST_SUCC(vb2_secdatak_get(&c, VB2_SECDATAK_VERSIONS, &v),
 		  "Get versions");

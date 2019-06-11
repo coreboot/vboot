@@ -43,7 +43,7 @@ static void secdata_test(void)
 
 	/* Blank data is invalid */
 	memset(c.secdata, 0xa6, sizeof(c.secdata));
-	TEST_EQ(vb2_secdata_check_crc(&c),
+	TEST_EQ(vb2api_secdata_check(&c),
 		VB2_ERROR_SECDATA_CRC, "Check blank CRC");
 	TEST_EQ(vb2_secdata_init(&c),
 		 VB2_ERROR_SECDATA_CRC, "Init blank CRC");
@@ -53,19 +53,19 @@ static void secdata_test(void)
 	TEST_EQ(vb2_secdata_init(&c), VB2_ERROR_SECDATA_ZERO, "Zeroed buffer");
 
 	/* Create good data */
-	TEST_SUCC(vb2_secdata_create(&c), "Create");
-	TEST_SUCC(vb2_secdata_check_crc(&c), "Check created CRC");
+	TEST_SUCC(vb2api_secdata_create(&c), "Create");
+	TEST_SUCC(vb2api_secdata_check(&c), "Check created CRC");
 	TEST_SUCC(vb2_secdata_init(&c), "Init created CRC");
 	test_changed(&c, 1, "Create changes data");
 
 	/* Now corrupt it */
 	c.secdata[2]++;
-	TEST_EQ(vb2_secdata_check_crc(&c),
+	TEST_EQ(vb2api_secdata_check(&c),
 		VB2_ERROR_SECDATA_CRC, "Check invalid CRC");
 	TEST_EQ(vb2_secdata_init(&c),
 		 VB2_ERROR_SECDATA_CRC, "Init invalid CRC");
 
-	vb2_secdata_create(&c);
+	vb2api_secdata_create(&c);
 	c.flags = 0;
 
 	/* Read/write flags */

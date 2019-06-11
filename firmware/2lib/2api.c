@@ -16,16 +16,6 @@
 #include "2rsa.h"
 #include "2tpm_bootmode.h"
 
-int vb2api_secdata_check(const struct vb2_context *ctx)
-{
-	return vb2_secdata_check_crc(ctx);
-}
-
-int vb2api_secdata_create(struct vb2_context *ctx)
-{
-	return vb2_secdata_create(ctx);
-}
-
 void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 {
 	/* Initialize the vboot context if it hasn't been yet */

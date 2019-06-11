@@ -66,7 +66,7 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2_secdata_create(&ctx);
+	vb2api_secdata_create(&ctx);
 	vb2_secdata_init(&ctx);
 
 	retval_vb2_load_fw_keyblock = VB2_SUCCESS;

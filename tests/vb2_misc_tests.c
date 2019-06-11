@@ -44,7 +44,7 @@ static void reset_common_data(void)
 
 	vb2_nv_init(&ctx);
 
-	vb2_secdata_create(&ctx);
+	vb2api_secdata_create(&ctx);
 	vb2_secdata_init(&ctx);
 
 	mock_tpm_clear_called = 0;

@@ -393,12 +393,13 @@ enum vb2_pcr_digest {
  */
 
 /**
- * Sanity-check the contents of the secure storage context.
+ * Check the CRC of the secure storage context.
  *
  * Use this if reading from secure storage may be flaky, and you want to retry
  * reading it several times.
  *
- * This may be called before vb2api_phase1().
+ * This may be called before vb2api_phase1() (externally), and before
+ * vb2_context_init() (internally).
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
@@ -413,7 +414,8 @@ int vb2api_secdata_check(const struct vb2_context *ctx);
  * (or any other API in this library) fails; that could allow the secure data
  * to be rolled back to an insecure state.
  *
- * This may be called before vb2api_phase1().
+ * This may be called before vb2api_phase1() (externally), and before
+ * vb2_context_init() (internally).
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
@@ -421,12 +423,13 @@ int vb2api_secdata_check(const struct vb2_context *ctx);
 int vb2api_secdata_create(struct vb2_context *ctx);
 
 /**
- * Sanity-check the contents of the kernel version secure storage context.
+ * Check the CRC of the kernel version secure storage context.
  *
  * Use this if reading from secure storage may be flaky, and you want to retry
  * reading it several times.
  *
- * This may be called before vb2api_phase1().
+ * This may be called before vb2api_phase1() (externally), and before
+ * vb2_context_init() (internally).
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
@@ -441,7 +444,8 @@ int vb2api_secdatak_check(const struct vb2_context *ctx);
  * (or any other API in this library) fails; that could allow the secure data
  * to be rolled back to an insecure state.
  *
- * This may be called before vb2api_phase1().
+ * This may be called before vb2api_phase1() (externally), and before
+ * vb2_context_init() (internally).
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.

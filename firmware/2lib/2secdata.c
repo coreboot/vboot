@@ -11,7 +11,7 @@
 #include "2misc.h"
 #include "2secdata.h"
 
-int vb2_secdata_check_crc(const struct vb2_context *ctx)
+int vb2api_secdata_check(const struct vb2_context *ctx)
 {
 	const struct vb2_secdata *sec =
 		(const struct vb2_secdata *)ctx->secdata;
@@ -27,7 +27,7 @@ int vb2_secdata_check_crc(const struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_secdata_create(struct vb2_context *ctx)
+int vb2api_secdata_create(struct vb2_context *ctx)
 {
 	struct vb2_secdata *sec = (struct vb2_secdata *)ctx->secdata;
 
@@ -48,7 +48,7 @@ int vb2_secdata_init(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int rv;
 
-	rv = vb2_secdata_check_crc(ctx);
+	rv = vb2api_secdata_check(ctx);
 	if (rv)
 		return rv;
 

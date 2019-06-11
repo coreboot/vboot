@@ -81,7 +81,7 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2_secdata_create(&ctx);
+	vb2api_secdata_create(&ctx);
 	vb2_secdata_init(&ctx);
 
 	memset(&hwcrypto_emulation_dc, 0, sizeof(hwcrypto_emulation_dc));
