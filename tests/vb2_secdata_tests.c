@@ -41,6 +41,10 @@ static void secdata_test(void)
 	};
 	uint32_t v = 1;
 
+	/* Check size constant  */
+	TEST_EQ(VB2_SECDATA_SIZE, sizeof(struct vb2_secdata),
+		"Struct size constant");
+
 	/* Blank data is invalid */
 	memset(c.secdata, 0xa6, sizeof(c.secdata));
 	TEST_EQ(vb2api_secdata_check(&c),
