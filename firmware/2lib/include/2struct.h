@@ -15,9 +15,9 @@
 
 #ifndef VBOOT_REFERENCE_VBOOT_2STRUCT_H_
 #define VBOOT_REFERENCE_VBOOT_2STRUCT_H_
-#include <stdint.h>
+#include "2constants.h"
 #include "2crypto.h"
-#include "2gbb_flags.h"
+#include "2sysincludes.h"
 
 /*
  * Key block flags.
@@ -250,7 +250,7 @@ struct vb2_gbb_header {
 	uint32_t header_size;     /* Size of GBB header in bytes */
 
 	/* Flags (see enum vb2_gbb_flag in 2gbb_flags.h) */
-	uint32_t flags;
+	vb2_gbb_flags_t flags;
 
 	/* Offsets (from start of header) and sizes (in bytes) of components */
 	uint32_t hwid_offset;		/* HWID */
@@ -265,12 +265,15 @@ struct vb2_gbb_header {
 	/* Added in version 1.2 */
 	uint8_t  hwid_digest[VB2_GBB_HWID_DIGEST_SIZE];	/* SHA-256 of HWID */
 
-	/* Pad to match EXPECETED_VB2_GBB_HEADER_SIZE.  Initialize to 0. */
+	/* Pad to match EXPECTED_VB2_GBB_HEADER_SIZE.  Initialize to 0. */
 	uint8_t  pad[48];
 } __attribute__((packed));
 
-/* The GBB is used outside of vboot_reference, so this size is important. */
 #define EXPECTED_VB2_GBB_HEADER_SIZE 128
+
+/* VB2_GBB_FLAGS_OFFSET exposed in 2constants.h */
+_Static_assert(VB2_GBB_FLAGS_OFFSET == offsetof(struct vb2_gbb_header, flags),
+	       "VB2_GBB_FLAGS_OFFSET set incorrectly");
 
 /*
  * Root key hash for Ryu devices only.  Contains the hash of the root key.
