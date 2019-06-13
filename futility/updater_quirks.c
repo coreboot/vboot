@@ -37,6 +37,11 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Eve.",
 	  .quirks = "unlock_me_for_update,eve_smm_store" },
 
+	{ .match = "Google_Sarien.",
+	  .quirks = "unlock_wilco_me_for_update" },
+	{ .match = "Google_Arcada.",
+	  .quirks = "unlock_wilco_me_for_update" },
+
 	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
 
@@ -135,6 +140,36 @@ static int quirk_unlock_me_for_update(struct updater_config *cfg)
 	 * board-postinst lock it.
 	 */
 	INFO("%s: Changed Flash Master Values to unlocked.", __FUNCTION__);
+	memcpy(section.data + flash_master_offset, flash_master,
+	       ARRAY_SIZE(flash_master));
+	return 0;
+}
+
+/*
+ * Quirk to unlock a firmware image with SI_ME (management engine) when updating
+ * so the system has a chance to make sure SI_ME won't be corrupted on next boot
+ * before locking the Flash Master values in SI_DESC.
+ * Returns 0 on success, otherwise failure.
+ */
+static int quirk_unlock_wilco_me_for_update(struct updater_config *cfg)
+{
+	struct firmware_section section;
+	struct firmware_image *image_to = &cfg->image;
+	const int flash_master_offset = 128;
+	const uint8_t flash_master[] = {
+		0xff, 0xff, 0xff, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0xff, 0xff
+	};
+
+	find_firmware_section(&section, image_to, FMAP_SI_DESC);
+	if (section.size < flash_master_offset + ARRAY_SIZE(flash_master))
+		return 0;
+	if (memcmp(section.data + flash_master_offset, flash_master,
+		   ARRAY_SIZE(flash_master)) == 0) {
+		VB2_DEBUG("Target ME not locked.\n");
+		return 0;
+	}
+	INFO("Changed Flash Master Values to unlocked.\n");
 	memcpy(section.data + flash_master_offset, flash_master,
 	       ARRAY_SIZE(flash_master));
 	return 0;
@@ -327,6 +362,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "Minimum compatible platform version "
 			"(also known as Board ID version).";
 	quirks->apply = quirk_min_platform_version;
+
+	quirks = &cfg->quirks[QUIRK_UNLOCK_WILCO_ME_FOR_UPDATE];
+	quirks->name = "unlock_wilco_me_for_update";
+	quirks->help = "Unlock ME for safe lockdown.";
+	quirks->apply = quirk_unlock_wilco_me_for_update;
 
 	quirks = &cfg->quirks[QUIRK_UNLOCK_ME_FOR_UPDATE];
 	quirks->name = "unlock_me_for_update";
