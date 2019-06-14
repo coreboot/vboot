@@ -373,7 +373,6 @@ FWLIB2X_SRCS = \
 	firmware/2lib/2hmac.c
 
 FWLIB20_SRCS = \
-	firmware/lib20/api.c \
 	firmware/lib20/api_kernel.c \
 	firmware/lib20/common.c \
 	firmware/lib20/kernel.c \
@@ -722,7 +721,6 @@ TEST2X_NAMES = \
 	tests/hmac_test
 
 TEST20_NAMES = \
-	tests/vb20_api_tests \
 	tests/vb20_api_kernel_tests \
 	tests/vb20_common_tests \
 	tests/vb20_common2_tests \
@@ -1278,7 +1276,6 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_fwmp_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_common2_tests ${TEST_KEYS}
