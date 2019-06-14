@@ -664,6 +664,17 @@ int vb2api_gbb_read_hwid(struct vb2_context *ctx,
 			 char *hwid,
 			 uint32_t *size);
 
+/**
+ * Retrieve current GBB flags.
+ *
+ * See enum vb2_gbb_flag in 2gbb_flags.h for a list of all GBB flags.
+ *
+ * @param ctx		Vboot context.
+ *
+ * @return vb2_gbb_flags_t representing current GBB flags.
+ */
+vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 

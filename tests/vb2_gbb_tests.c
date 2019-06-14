@@ -88,6 +88,14 @@ int vb2ex_read_resource(struct vb2_context *c,
 }
 
 /* Tests */
+static void flag_tests(void)
+{
+	reset_common_data();
+	gbb->flags = 0xdeadbeef;
+	TEST_EQ(vb2api_gbb_get_flags(&ctx), gbb->flags,
+		"retrieve GBB flags");
+}
+
 static void key_tests(void)
 {
 	/* Assume that root key and recovery key are dealt with using the same
@@ -343,6 +351,7 @@ static void hwid_tests(void)
 
 int main(int argc, char* argv[])
 {
+	flag_tests();
 	key_tests();
 	hwid_tests();
 

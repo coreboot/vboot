@@ -122,3 +122,9 @@ int vb2api_gbb_read_hwid(struct vb2_context *ctx,
 
 	return VB2_SUCCESS;
 }
+
+vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	return gbb->flags;
+}
