@@ -6,7 +6,7 @@
 #ifndef VBOOT_REFERENCE_CGPTLIB_H_
 #define VBOOT_REFERENCE_CGPTLIB_H_
 
-#include "sysincludes.h"
+#include "2sysincludes.h"
 #include "gpt_misc.h"
 
 /**

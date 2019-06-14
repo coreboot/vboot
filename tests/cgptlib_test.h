@@ -6,7 +6,7 @@
 #define VBOOT_REFERENCE_CGPTLIB_TEST_H_
 
 #include <stdio.h>
-#include "sysincludes.h"
+#include "2sysincludes.h"
 
 enum {
 	TEST_FAIL = -1,

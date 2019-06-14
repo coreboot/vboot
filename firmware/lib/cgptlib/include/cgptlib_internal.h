@@ -6,7 +6,7 @@
 #ifndef VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_
 #define VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_
 
-#include "sysincludes.h"
+#include "2sysincludes.h"
 #include "cgptlib.h"
 #include "gpt.h"
 

@@ -6,9 +6,7 @@
  * (Firmware portion)
  */
 
-#include "sysincludes.h"
 #include "2sysincludes.h"
-
 #include "2common.h"
 #include "2misc.h"
 #include "2rsa.h"

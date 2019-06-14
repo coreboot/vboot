@@ -12,7 +12,7 @@
 #define VBOOT_REFERENCE_UTILITY_H_
 
 #include "2common.h"
-#include "sysincludes.h"
+#include "2sysincludes.h"
 #include "vboot_api.h"
 
 #ifdef VBOOT_DEBUG

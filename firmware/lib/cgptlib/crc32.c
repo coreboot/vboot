@@ -39,7 +39,7 @@
 /*      polynomial $edb88320                                              */
 /*                                                                        */
 /*  --------------------------------------------------------------------  */
-#include "sysincludes.h"
+#include "2sysincludes.h"
 
 #include "crc32.h"
 

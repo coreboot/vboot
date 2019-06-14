@@ -6,11 +6,8 @@
  * stored in the TPM NVRAM.
  */
 
-#include "sysincludes.h"
 #include "utility.h"
-
 #include "rollback_index.h"
-
 #include "tss_constants.h"
 
 

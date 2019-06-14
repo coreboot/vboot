@@ -4,15 +4,16 @@
  */
 
 /*
- * System includes for vboot reference library.  With few exceptions, this is
- * the ONLY place in firmware/ where system headers may be included via
- * #include <...>, so that there's only one place that needs to be fixed up for
- * platforms which don't have all the system includes.
+ * System includes for vboot reference library.  This is the ONLY
+ * place in firmware/ where system headers may be included via
+ * #include <...>, so that there's only one place that needs to be
+ * fixed up for platforms which don't have all the system includes.
  */
 
 #ifndef VBOOT_REFERENCE_2_SYSINCLUDES_H_
 #define VBOOT_REFERENCE_2_SYSINCLUDES_H_
 
+#include <ctype.h>
 #include <inttypes.h>  /* For PRIu64 */
 #include <stddef.h>
 #include <stdint.h>

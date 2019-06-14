@@ -5,8 +5,6 @@
  * High-level firmware wrapper API - user interface for RW firmware
  */
 
-#include "sysincludes.h"
-
 #include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"

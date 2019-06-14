@@ -5,8 +5,6 @@
  * High-level firmware wrapper API - entry points for kernel selection
  */
 
-#include "sysincludes.h"
-
 #include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"

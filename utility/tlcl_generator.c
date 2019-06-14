@@ -12,11 +12,9 @@
  */
 
 #include <assert.h>
-#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "sysincludes.h"
+#include "2sysincludes.h"
 #include "tlcl_internal.h"
 #include "tpmextras.h"
 #include "tss_constants.h"
