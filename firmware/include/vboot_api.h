@@ -167,44 +167,6 @@ enum VbErrorPredefined_t {
 #define VB_SHARED_DATA_MIN_SIZE 3072
 #define VB_SHARED_DATA_REC_SIZE 16384
 
-/*
- * Data passed by firmware to VbInit(), VbSelectFirmware() and
- * VbSelectAndLoadKernel().
- *
- * Note that in UEFI, these are called by different phases in different
- * processor modes (VbInit() and VbSelectFirmware() = 32-bit PEI,
- * VbSelectAndLoadKernel() = 64-bit BDS), so the data may be at a different
- * location between calls.
- */
-typedef struct VbCommonParams {
-	/* Pointer to GBB data */
-	void *gbb_data;
-	/* Size of GBB data in bytes */
-	uint32_t gbb_size;
-
-	/*
-	 * Shared data blob for data shared between verified boot entry points.
-	 * This should be at least VB_SHARED_DATA_MIN_SIZE bytes long, and
-	 * ideally is VB_SHARED_DATA_REC_SIZE bytes long.
-	 */
-	/* Pointer to shared data blob buffer */
-	void *shared_data_blob;
-	/*
-	 * On input, set to size of shared data blob buffer, in bytes.  On
-	 * output, this will contain the actual data size placed into the
-	 * buffer.
-	 */
-	uint32_t shared_data_size;
-
-	/*
-	 * Internal context/data for verified boot, to maintain state during
-	 * calls to other API functions such as VbExHashFirmwareBody().
-	 * Allocated and freed inside the entry point; firmware should not look
-	 * at this.
-	 */
-	void *vboot_context;
-} VbCommonParams;
-
 /* Flags for VbExGetSwitches() */
 /* Report if user is currently present (typically via power button) */
 #define VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED	0x00000004

@@ -11,7 +11,6 @@
 #include "vboot_api.h"
 
 struct vb2_context;
-struct VbCommonParams;
 
 /**
  * EC sync, phase 1
