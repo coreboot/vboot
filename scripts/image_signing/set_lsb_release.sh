@@ -19,6 +19,7 @@ set_lsb_release_keyval() {
     | sudo tee -a "$temp_lsb_release" > /dev/null
   sudo sort -o "$rootfs/etc/lsb-release" "$temp_lsb_release"
   sudo rm -f "$temp_lsb_release"
+  restore_lsb_selinux "$rootfs/etc/lsb-release"
 }
 
 main() {
@@ -65,11 +66,11 @@ EOF
     set_lsb_release_keyval "${rootfs}" "${key}" "${value}"
   done
 
-  # Make sure security.selinux xattr
-  restore_lsb_selinux "$rootfs/etc/lsb-release"
-
   # Dump the final state.
   cat "${rootfs}/etc/lsb-release"
+
+  # Dump security context for lsb-release file
+  getfattr -n security.selinux "${rootfs}/etc/lsb-release"
 }
 
 main "$@"
