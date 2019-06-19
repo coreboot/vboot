@@ -62,7 +62,7 @@ main() {
       ;;
     --rotate-from)
       old_dir="$2"
-      shift
+      shift 2
       ;;
     -*)
       usage "Unknown option: $1"
