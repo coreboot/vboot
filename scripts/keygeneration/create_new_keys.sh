@@ -17,11 +17,11 @@ Options:
   --devkeyblock          Also generate developer firmware keyblock and data key
   --android              Also generate android keys
   --uefi                 Also generate UEFI keys
-  --4k                   Use 4k keys instead of 8k (enables options below)
-  --4k-root              Use 4k key size for the root key
-  --4k-recovery          Use 4k key size for the recovery key
-  --4k-recovery-kernel   Use 4k key size for the recovery kernel data
-  --4k-installer-kernel  Use 4k key size for the installer kernel data
+  --8k                   Use 8k keys instead of 4k (enables options below)
+  --8k-root              Use 8k key size for the root key
+  --8k-recovery          Use 8k key size for the recovery key
+  --8k-recovery-kernel   Use 8k key size for the recovery kernel data
+  --8k-installer-kernel  Use 8k key size for the installer kernel data
   --key-name <name>      Name of the keyset (for key.versions)
   --output <dir>         Where to write the keys (default is cwd)
 EOF
@@ -62,6 +62,25 @@ main() {
     --uefi)
       echo "Will also generate UEFI keys."
       uefi_keys="true"
+      ;;
+
+    --8k)
+      root_key_algoid=${RSA8192_SHA512_ALGOID}
+      recovery_key_algoid=${RSA8192_SHA512_ALGOID}
+      recovery_kernel_algoid=${RSA8192_SHA512_ALGOID}
+      installer_kernel_algoid=${RSA8192_SHA512_ALGOID}
+      ;;
+    --8k-root)
+      root_key_algoid=${RSA8192_SHA512_ALGOID}
+      ;;
+    --8k-recovery)
+      recovery_key_algoid=${RSA8192_SHA512_ALGOID}
+      ;;
+    --8k-recovery-kernel)
+      recovery_kernel_algoid=${RSA8192_SHA512_ALGOID}
+      ;;
+    --8k-installer-kernel)
+      installer_kernel_algoid=${RSA8192_SHA512_ALGOID}
       ;;
 
     --4k)
