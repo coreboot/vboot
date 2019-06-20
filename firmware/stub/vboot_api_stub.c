@@ -173,3 +173,8 @@ uint8_t VbExOverrideGptEntryPriority(const GptEntry *e)
 {
 	return 0;
 }
+
+VbError_t VbExEcVbootDone(void)
+{
+	return VBERROR_SUCCESS;
+}
