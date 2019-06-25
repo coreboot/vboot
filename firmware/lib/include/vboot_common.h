@@ -57,11 +57,6 @@ const uint8_t *GetSignatureDataC(const VbSignature *sig);
  * parent data.  Returns 0 if inside, 1 if error.
  */
 
-int VerifyMemberInside(const void *parent, uint64_t parent_size,
-		       const void *member, uint64_t member_size,
-		       uint64_t member_data_offset,
-		       uint64_t member_data_size);
-
 int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
 			  const VbPublicKey *key);
 

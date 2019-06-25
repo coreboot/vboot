@@ -52,52 +52,23 @@ const uint8_t *GetSignatureDataC(const VbSignature *sig)
 
 /*
  * Helper functions to verify the data pointed to by a subfield is inside
- * the parent data.  Returns 0 if inside, 1 if error.
+ * the parent data.
  */
-
-int VerifyMemberInside(const void *parent, uint64_t parent_size,
-		       const void *member, uint64_t member_size,
-		       uint64_t member_data_offset,
-		       uint64_t member_data_size)
-{
-	uint64_t end = vb2_offset_of(parent, member);
-
-	if (end > parent_size)
-		return 1;
-
-	if (UINT64_MAX - end < member_size)
-		return 1;  /* Detect wraparound in integer math */
-	if (end + member_size > parent_size)
-		return 1;
-
-	if (UINT64_MAX - end < member_data_offset)
-		return 1;
-	end += member_data_offset;
-	if (end > parent_size)
-		return 1;
-
-	if (UINT64_MAX - end < member_data_size)
-		return 1;
-	if (end + member_data_size > parent_size)
-		return 1;
-
-	return 0;
-}
 
 int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
 			  const VbPublicKey *key)
 {
-	return VerifyMemberInside(parent, parent_size,
-				  key, sizeof(VbPublicKey),
-				  key->key_offset, key->key_size);
+	return vb2_verify_member_inside(parent, parent_size,
+					key, sizeof(VbPublicKey),
+					key->key_offset, key->key_size);
 }
 
 int VerifySignatureInside(const void *parent, uint64_t parent_size,
 			  const VbSignature *sig)
 {
-	return VerifyMemberInside(parent, parent_size,
-				  sig, sizeof(VbSignature),
-				  sig->sig_offset, sig->sig_size);
+	return vb2_verify_member_inside(parent, parent_size,
+					sig, sizeof(VbSignature),
+					sig->sig_offset, sig->sig_size);
 }
 
 void PublicKeyInit(VbPublicKey *key, uint8_t *key_data, uint64_t key_size)

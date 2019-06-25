@@ -62,7 +62,6 @@ int main(void)
 	GetPublicKeyDataC(0);
 	GetSignatureData(0);
 	GetSignatureDataC(0);
-	VerifyMemberInside(0, 0, 0, 0, 0, 0);
 	VerifyPublicKeyInside(0, 0, 0);
 	VerifySignatureInside(0, 0, 0);
 	PublicKeyInit(0, 0, 0);

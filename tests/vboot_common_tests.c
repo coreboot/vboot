@@ -60,48 +60,19 @@ static void VerifyHelperFunctions(void)
 	}
 
 	{
-		uint8_t *p = (uint8_t *)VerifyHelperFunctions;
-		TEST_EQ(VerifyMemberInside(p, 20, p, 6, 11, 3), 0,
-			"MemberInside ok 1");
-		TEST_EQ(VerifyMemberInside(p, 20, p+4, 4, 8, 4), 0,
-			"MemberInside ok 2");
-		TEST_EQ(VerifyMemberInside(p, 20, p-4, 4, 8, 4), 1,
-			"MemberInside member before parent");
-		TEST_EQ(VerifyMemberInside(p, 20, p+20, 4, 8, 4), 1,
-			"MemberInside member after parent");
-		TEST_EQ(VerifyMemberInside(p, 20, p, 21, 0, 0), 1,
-			"MemberInside member too big");
-		TEST_EQ(VerifyMemberInside(p, 20, p, 4, 21, 0), 1,
-			"MemberInside data after parent");
-		TEST_EQ(VerifyMemberInside(p, 20, p, 4, (uint64_t)-1, 0), 1,
-			"MemberInside data before parent");
-		TEST_EQ(VerifyMemberInside(p, 20, p, 4, 4, 17), 1,
-			"MemberInside data too big");
-		TEST_EQ(VerifyMemberInside(p, (uint64_t)-1,
-					   p+(uint64_t)-10, 12, 5, 0), 1,
-			"MemberInside wraparound 1");
-		TEST_EQ(VerifyMemberInside(p, (uint64_t)-1,
-					   p+(uint64_t)-10, 5, 12, 0), 1,
-			"MemberInside wraparound 2");
-		TEST_EQ(VerifyMemberInside(p, (uint64_t)-1,
-					   p+(uint64_t)-10, 5, 0, 12), 1,
-			"MemberInside wraparound 3");
-	}
-
-	{
 		VbPublicKey k = {sizeof(k), 128, 0, 0};
 		TEST_EQ(VerifyPublicKeyInside(&k, sizeof(k)+128, &k), 0,
 			"PublicKeyInside ok 1");
 		TEST_EQ(VerifyPublicKeyInside(&k - 1, 2*sizeof(k)+128, &k), 0,
 			"PublicKeyInside ok 2");
-		TEST_EQ(VerifyPublicKeyInside(&k, 128, &k), 1,
-			"PublicKeyInside key too big");
+		TEST_NEQ(VerifyPublicKeyInside(&k, 128, &k), 0,
+			 "PublicKeyInside key too big");
 	}
 
 	{
 		VbPublicKey k = {100, 4, 0, 0};
-		TEST_EQ(VerifyPublicKeyInside(&k, 99, &k), 1,
-			"PublicKeyInside offset too big");
+		TEST_NEQ(VerifyPublicKeyInside(&k, 99, &k), 0,
+			 "PublicKeyInside offset too big");
 	}
 
 	{
@@ -110,14 +81,14 @@ static void VerifyHelperFunctions(void)
 			"SignatureInside ok 1");
 		TEST_EQ(VerifySignatureInside(&s - 1, 2*sizeof(s)+128, &s), 0,
 			"SignatureInside ok 2");
-		TEST_EQ(VerifySignatureInside(&s, 128, &s), 1,
-			"SignatureInside sig too big");
+		TEST_NEQ(VerifySignatureInside(&s, 128, &s), 0,
+			 "SignatureInside sig too big");
 	}
 
 	{
 		VbSignature s = {100, 4, 0};
-		TEST_EQ(VerifySignatureInside(&s, 99, &s), 1,
-			"SignatureInside offset too big");
+		TEST_NEQ(VerifySignatureInside(&s, 99, &s), 0,
+			 "SignatureInside offset too big");
 	}
 }
 
