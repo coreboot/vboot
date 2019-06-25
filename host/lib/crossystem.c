@@ -18,6 +18,7 @@
 
 #include "2sysincludes.h"
 #include "2api.h"
+#include "2common.h"
 #include "2nvstorage.h"
 
 #include "host_common.h"
@@ -26,7 +27,6 @@
 #include "crossystem_arch.h"
 #include "crossystem_vbnv.h"
 #include "utility.h"
-#include "vboot_common.h"
 #include "vboot_struct.h"
 
 /* Filename for kernel command line */

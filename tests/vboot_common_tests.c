@@ -40,18 +40,6 @@ static void StructPackingTest(void)
 		"sizeof(VbSharedDataHeader) V2");
 }
 
-/* Test array size macro */
-static void ArraySizeTest(void)
-{
-	uint8_t arr1[12];
-	uint32_t arr2[7];
-	uint64_t arr3[9];
-
-	TEST_EQ(ARRAY_SIZE(arr1), 12, "ARRAYSIZE(uint8_t)");
-	TEST_EQ(ARRAY_SIZE(arr2), 7, "ARRAYSIZE(uint32_t)");
-	TEST_EQ(ARRAY_SIZE(arr3), 9, "ARRAYSIZE(uint64_t)");
-}
-
 /* Helper functions not dependent on specific key sizes */
 static void VerifyHelperFunctions(void)
 {
@@ -222,7 +210,6 @@ static void VbSharedDataTest(void)
 int main(int argc, char* argv[])
 {
 	StructPackingTest();
-	ArraySizeTest();
 	VerifyHelperFunctions();
 	PublicKeyTest();
 	VbSharedDataTest();

@@ -11,10 +11,6 @@
 #include "2api.h"
 #include "vboot_struct.h"
 
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(array) (sizeof(array)/sizeof(array[0]))
-#endif
-
 /* Test an important condition at compile time, not run time */
 #ifndef BUILD_ASSERT
 #define _BA1_(cond, line) \
