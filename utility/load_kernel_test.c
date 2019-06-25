@@ -184,7 +184,8 @@ int main(int argc, char* argv[]) {
   }
   /* Copy in the key blob, if any */
   if (key_blob) {
-    if (0 != VbSharedDataSetKernelKey(shared, (VbPublicKey*)key_blob)) {
+    if (0 != VbSharedDataSetKernelKey(shared,
+                                      (struct vb2_packed_key *)key_blob)) {
       fprintf(stderr, "Unable to set key in shared data\n");
       return 1;
     }

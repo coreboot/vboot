@@ -10,23 +10,17 @@
 #define VBOOT_REFERENCE_VBOOT_STRUCT_H_
 #include <stdint.h>
 
+/*
+ * Needed for vb2_packed_key.  Use relative path to place nicely with
+ * depthcharge and coreboot.
+ * TODO(kitching): This include should disappear once everything in
+ * this file has either been deprecated or has found a better home.
+ */
+#include "../2lib/include/2struct.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
-
-/* Public key data */
-typedef struct VbPublicKey {
-	/* Offset of key data from start of this struct */
-	uint64_t key_offset;
-	/* Size of key data in bytes (NOT strength of key in bits) */
-	uint64_t key_size;
-	/* Signature algorithm used by the key */
-	uint64_t algorithm;
-	/* Key version */
-	uint64_t key_version;
-} __attribute__((packed)) VbPublicKey;
-
-#define EXPECTED_VBPUBLICKEY_SIZE 32
 
 /* Signature data (a secure hash, possibly signed) */
 typedef struct VbSignature {
@@ -88,7 +82,7 @@ typedef struct VbKeyBlockHeader {
 	/* Flags for key (KEY_BLOCK_FLAG_*) */
 	uint64_t key_block_flags;
 	/* Key to verify the chunk of data */
-	VbPublicKey data_key;
+	struct vb2_packed_key data_key;
 } __attribute__((packed)) VbKeyBlockHeader;
 
 #define EXPECTED_VBKEYBLOCKHEADER_SIZE 112
@@ -409,7 +403,7 @@ typedef struct VbSharedDataHeader {
 	/* Reserved for padding */
 	uint32_t reserved0;
 	/* Kernel subkey, from firmware */
-	VbPublicKey kernel_subkey;
+	struct vb2_packed_key kernel_subkey;
 	/* Offset of kernel subkey data from start of this struct */
 	uint64_t kernel_subkey_data_offset;
 	/* Size of kernel subkey data */

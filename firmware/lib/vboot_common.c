@@ -30,12 +30,12 @@ const char *kVbootErrors[VBOOT_ERROR_MAX] = {
 
 /* Helper functions to get data pointed to by a public key or signature. */
 
-uint8_t *GetPublicKeyData(VbPublicKey *key)
+uint8_t *GetPublicKeyData(struct vb2_packed_key *key)
 {
 	return (uint8_t *)key + key->key_offset;
 }
 
-const uint8_t *GetPublicKeyDataC(const VbPublicKey *key)
+const uint8_t *GetPublicKeyDataC(const struct vb2_packed_key *key)
 {
 	return (const uint8_t *)key + key->key_offset;
 }
@@ -56,10 +56,10 @@ const uint8_t *GetSignatureDataC(const VbSignature *sig)
  */
 
 int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
-			  const VbPublicKey *key)
+			  const struct vb2_packed_key *key)
 {
 	return vb2_verify_member_inside(parent, parent_size,
-					key, sizeof(VbPublicKey),
+					key, sizeof(struct vb2_packed_key),
 					key->key_offset, key->key_size);
 }
 
@@ -71,7 +71,8 @@ int VerifySignatureInside(const void *parent, uint64_t parent_size,
 					sig->sig_offset, sig->sig_size);
 }
 
-void PublicKeyInit(VbPublicKey *key, uint8_t *key_data, uint64_t key_size)
+void PublicKeyInit(struct vb2_packed_key *key,
+		   uint8_t *key_data, uint64_t key_size)
 {
 	key->key_offset = vb2_offset_of(key, key_data);
 	key->key_size = key_size;
@@ -79,7 +80,7 @@ void PublicKeyInit(VbPublicKey *key, uint8_t *key_data, uint64_t key_size)
 	key->key_version = 0;
 }
 
-int PublicKeyCopy(VbPublicKey *dest, const VbPublicKey *src)
+int PublicKeyCopy(struct vb2_packed_key *dest, const struct vb2_packed_key *src)
 {
 	if (dest->key_size < src->key_size)
 		return 1;
@@ -146,9 +147,10 @@ uint64_t VbSharedDataReserve(VbSharedDataHeader *header, uint64_t size)
 	return offs;
 }
 
-int VbSharedDataSetKernelKey(VbSharedDataHeader *header, const VbPublicKey *src)
+int VbSharedDataSetKernelKey(VbSharedDataHeader *header,
+			     const struct vb2_packed_key *src)
 {
-	VbPublicKey *kdest;
+	struct vb2_packed_key *kdest;
 
 	if (!header)
 		return VBOOT_SHARED_DATA_INVALID;

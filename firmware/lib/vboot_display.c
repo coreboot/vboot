@@ -94,7 +94,7 @@ static void Uint8ToString(char *buf, uint8_t val)
 	*buf = trans[val & 0xF];
 }
 
-static void FillInSha1Sum(char *outbuf, VbPublicKey *key)
+static void FillInSha1Sum(char *outbuf, struct vb2_packed_key *key)
 {
 	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
 	uint64_t buflen = key->key_size;
@@ -371,7 +371,7 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		struct vb2_workbuf wblocal = wb;
 		ret = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
 		if (!ret) {
-			FillInSha1Sum(sha1sum, (VbPublicKey *)key);
+			FillInSha1Sum(sha1sum, key);
 			used += StrnAppend(buf + used, "\ngbb.rootkey: ",
 					   DEBUG_INFO_SIZE - used);
 			used += StrnAppend(buf + used, sha1sum,
@@ -384,7 +384,7 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		struct vb2_workbuf wblocal = wb;
 		ret = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
 		if (!ret) {
-			FillInSha1Sum(sha1sum, (VbPublicKey *)key);
+			FillInSha1Sum(sha1sum, key);
 			used += StrnAppend(buf + used, "\ngbb.recovery_key: ",
 					   DEBUG_INFO_SIZE - used);
 			used += StrnAppend(buf + used, sha1sum,

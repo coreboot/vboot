@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_VBOOT_COMMON_H_
 
 #include "2api.h"
+#include "2struct.h"
 #include "vboot_struct.h"
 
 /* Test an important condition at compile time, not run time */
@@ -47,8 +48,8 @@ extern const char *kVbootErrors[VBOOT_ERROR_MAX];
  * Helper functions to get data pointed to by a public key or signature.
  */
 
-uint8_t *GetPublicKeyData(VbPublicKey *key);
-const uint8_t *GetPublicKeyDataC(const VbPublicKey *key);
+uint8_t *GetPublicKeyData(struct vb2_packed_key *key);
+const uint8_t *GetPublicKeyDataC(const struct vb2_packed_key *key);
 uint8_t *GetSignatureData(VbSignature *sig);
 const uint8_t *GetSignatureDataC(const VbSignature *sig);
 
@@ -58,7 +59,7 @@ const uint8_t *GetSignatureDataC(const VbSignature *sig);
  */
 
 int VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
-			  const VbPublicKey *key);
+			  const struct vb2_packed_key *key);
 
 int VerifySignatureInside(const void *parent, uint64_t parent_size,
 			  const VbSignature *sig);
@@ -66,14 +67,16 @@ int VerifySignatureInside(const void *parent, uint64_t parent_size,
 /**
  * Initialize a public key to refer to [key_data].
  */
-void PublicKeyInit(VbPublicKey *key, uint8_t *key_data, uint64_t key_size);
+void PublicKeyInit(struct vb2_packed_key *key,
+		   uint8_t *key_data, uint64_t key_size);
 
 /**
  * Copy a public key from [src] to [dest].
  *
  * Returns 0 if success, non-zero if error.
  */
-int PublicKeyCopy(VbPublicKey *dest, const VbPublicKey *src);
+int PublicKeyCopy(struct vb2_packed_key *dest,
+		  const struct vb2_packed_key *src);
 
 /**
  * Retrieve the 16-bit vmlinuz header address and size from the kernel preamble
@@ -122,7 +125,7 @@ uint64_t VbSharedDataReserve(VbSharedDataHeader *header, uint64_t size);
  * Returns 0 if success, non-zero if error.
  */
 int VbSharedDataSetKernelKey(VbSharedDataHeader *header,
-			     const VbPublicKey *src);
+			     const struct vb2_packed_key *src);
 
 /**
  * Check whether recovery is allowed or not.

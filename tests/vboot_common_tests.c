@@ -21,8 +21,6 @@
  */
 static void StructPackingTest(void)
 {
-	TEST_EQ(EXPECTED_VBPUBLICKEY_SIZE, sizeof(VbPublicKey),
-		"sizeof(VbPublicKey)");
 	TEST_EQ(EXPECTED_VBSIGNATURE_SIZE, sizeof(VbSignature),
 		"sizeof(VbSignature)");
 	TEST_EQ(EXPECTED_VBKEYBLOCKHEADER_SIZE, sizeof(VbKeyBlockHeader),
@@ -44,38 +42,6 @@ static void StructPackingTest(void)
 static void VerifyHelperFunctions(void)
 {
 	{
-		VbPublicKey k = {sizeof(k), 2, 3, 4};
-		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyData(&k)), sizeof(k),
-			"GetPublicKeyData() adjacent");
-		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyDataC(&k)), sizeof(k),
-			"GetPublicKeyDataC() adjacent");
-	}
-
-	{
-		VbPublicKey k = {123, 2, 3, 4};
-		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyData(&k)), 123,
-			"GetPublicKeyData() spaced");
-		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyDataC(&k)), 123,
-			"GetPublicKeyDataC() spaced");
-	}
-
-	{
-		VbPublicKey k = {sizeof(k), 128, 0, 0};
-		TEST_EQ(VerifyPublicKeyInside(&k, sizeof(k)+128, &k), 0,
-			"PublicKeyInside ok 1");
-		TEST_EQ(VerifyPublicKeyInside(&k - 1, 2*sizeof(k)+128, &k), 0,
-			"PublicKeyInside ok 2");
-		TEST_NEQ(VerifyPublicKeyInside(&k, 128, &k), 0,
-			 "PublicKeyInside key too big");
-	}
-
-	{
-		VbPublicKey k = {100, 4, 0, 0};
-		TEST_NEQ(VerifyPublicKeyInside(&k, 99, &k), 0,
-			 "PublicKeyInside offset too big");
-	}
-
-	{
 		VbSignature s = {sizeof(s), 128, 2000};
 		TEST_EQ(VerifySignatureInside(&s, sizeof(s)+128, &s), 0,
 			"SignatureInside ok 1");
@@ -95,8 +61,8 @@ static void VerifyHelperFunctions(void)
 /* Public key utility functions */
 static void PublicKeyTest(void)
 {
-	VbPublicKey k[3];
-	VbPublicKey j[5];
+	struct vb2_packed_key k[3];
+	struct vb2_packed_key j[5];
 
 	/* Fill some bits of the public key data */
 	memset(j, 0, sizeof(j));
@@ -104,9 +70,11 @@ static void PublicKeyTest(void)
 	k[1].key_size = 12345;
 	k[2].key_version = 67;
 
-	PublicKeyInit(k, (uint8_t*)(k + 1), 2 * sizeof(VbPublicKey));
-	TEST_EQ(k->key_offset, sizeof(VbPublicKey), "PublicKeyInit key_offset");
-	TEST_EQ(k->key_size, 2 * sizeof(VbPublicKey), "PublicKeyInit key_size");
+	PublicKeyInit(k, (uint8_t*)(k + 1), 2 * sizeof(struct vb2_packed_key));
+	TEST_EQ(k->key_offset, sizeof(struct vb2_packed_key),
+		"PublicKeyInit key_offset");
+	TEST_EQ(k->key_size, 2 * sizeof(struct vb2_packed_key),
+		"PublicKeyInit key_size");
 	TEST_EQ(k->algorithm, VB2_ALG_COUNT, "PublicKeyInit algorithm");
 	TEST_EQ(k->key_version, 0, "PublicKeyInit key_version");
 
@@ -115,17 +83,20 @@ static void PublicKeyTest(void)
 	k->key_version = 21;
 
 	/* Copying to a smaller destination should fail */
-	PublicKeyInit(j, (uint8_t*)(j + 1), 2 * sizeof(VbPublicKey) - 1);
+	PublicKeyInit(j, (uint8_t*)(j + 1),
+		      2 * sizeof(struct vb2_packed_key) - 1);
 	TEST_NEQ(0, PublicKeyCopy(j, k), "PublicKeyCopy too small");
 
 	/* Copying to same or larger size should succeed */
-	PublicKeyInit(j, (uint8_t*)(j + 2), 2 * sizeof(VbPublicKey) + 1);
+	PublicKeyInit(j, (uint8_t*)(j + 2),
+		      2 * sizeof(struct vb2_packed_key) + 1);
 	TEST_EQ(0, PublicKeyCopy(j, k), "PublicKeyCopy same");
 	/* Offset in destination shouldn't have been modified */
-	TEST_EQ(j->key_offset, 2 * sizeof(VbPublicKey),
+	TEST_EQ(j->key_offset, 2 * sizeof(struct vb2_packed_key),
 		"PublicKeyCopy key_offset");
 	/* Size should have been reduced to match the source */
-	TEST_EQ(k->key_size, 2 * sizeof(VbPublicKey), "PublicKeyCopy key_size");
+	TEST_EQ(k->key_size, 2 * sizeof(struct vb2_packed_key),
+		"PublicKeyCopy key_size");
 	/* Other fields should have been copied */
 	TEST_EQ(k->algorithm, j->algorithm, "PublicKeyCopy algorithm");
 	TEST_EQ(k->key_version, j->key_version, "PublicKeyCopy key_version");

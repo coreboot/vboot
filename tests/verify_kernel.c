@@ -62,7 +62,7 @@ static void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-	VbPublicKey *kernkey;
+	struct vb2_packed_key *kernkey;
 	uint64_t disk_bytes = 0;
 	int rv;
 
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Read public key */
-	kernkey = (VbPublicKey *)vb2_read_packed_key(argv[2]);
+	kernkey = vb2_read_packed_key(argv[2]);
 	if (!kernkey) {
 		fprintf(stderr, "Can't read key file %s\n", argv[2]);
 		return 1;

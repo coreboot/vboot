@@ -80,18 +80,12 @@ static void test_array_size(void)
  */
 static void test_struct_packing(void)
 {
-	/* Test vboot2 versions of vboot1 structs */
 	TEST_EQ(EXPECTED_VB2_PACKED_KEY_SIZE,
 		sizeof(struct vb2_packed_key),
 		"sizeof(vb2_packed_key)");
 	TEST_EQ(EXPECTED_VB2_GBB_HEADER_SIZE,
 		sizeof(struct vb2_gbb_header),
 		"sizeof(vb2_gbb_header)");
-
-	/* And make sure they're the same as their vboot1 equivalents */
-	TEST_EQ(EXPECTED_VB2_PACKED_KEY_SIZE,
-		EXPECTED_VBPUBLICKEY_SIZE,
-		"vboot1->2 packed key sizes same");
 }
 
 /**
