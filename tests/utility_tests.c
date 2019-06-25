@@ -21,14 +21,6 @@ static void MacrosTest(void)
 	uint64_t u = (0xABCD00000000ULL);
 	uint64_t v = (0xABCD000000ULL);
 
-	TEST_EQ(CombineUint16Pair(1, 2), 0x00010002, "CombineUint16Pair");
-	TEST_EQ(CombineUint16Pair(0xFFFE, 0xFFFF), 0xFFFEFFFF,
-		"CombineUint16Pair 2");
-	TEST_EQ(CombineUint16Pair(-4, -16), 0xFFFCFFF0,
-		"CombineUint16Pair big negative");
-	TEST_EQ(CombineUint16Pair(0x10003, 0x10004), 0x00030004,
-		"CombineUint16Pair overflow");
-
 	TEST_EQ(Min(1, 2), 1, "Min 1");
 	TEST_EQ(Min(4, 3), 3, "Min 2");
 	TEST_EQ(Min(5, 5), 5, "Min 5");
