@@ -47,11 +47,6 @@ enum {
 };
 extern const char *kVbootErrors[VBOOT_ERROR_MAX];
 
-/**
- * Return offset of ptr from base.
- */
-uint64_t OffsetOf(const void *base, const void *ptr);
-
 /*
  * Helper functions to get data pointed to by a public key or signature.
  */

@@ -152,6 +152,8 @@ static void test_helper_functions(void)
 		TEST_EQ((int)vb2_offset_of(p, p), 0, "vb2_offset_of() equal");
 		TEST_EQ((int)vb2_offset_of(p, p+10), 10,
 			"vb2_offset_of() positive");
+		TEST_EQ((int)vb2_offset_of(p, p+0x12345678), 0x12345678,
+			"vb2_offset_of() large");
 	}
 
 	{

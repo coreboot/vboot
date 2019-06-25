@@ -28,11 +28,6 @@ const char *kVbootErrors[VBOOT_ERROR_MAX] = {
 	"Shared data invalid."
 };
 
-uint64_t OffsetOf(const void *base, const void *ptr)
-{
-	return (uint64_t)(size_t)ptr - (uint64_t)(size_t)base;
-}
-
 /* Helper functions to get data pointed to by a public key or signature. */
 
 uint8_t *GetPublicKeyData(VbPublicKey *key)
@@ -65,7 +60,7 @@ int VerifyMemberInside(const void *parent, uint64_t parent_size,
 		       uint64_t member_data_offset,
 		       uint64_t member_data_size)
 {
-	uint64_t end = OffsetOf(parent, member);
+	uint64_t end = vb2_offset_of(parent, member);
 
 	if (end > parent_size)
 		return 1;
@@ -107,7 +102,7 @@ int VerifySignatureInside(const void *parent, uint64_t parent_size,
 
 void PublicKeyInit(VbPublicKey *key, uint8_t *key_data, uint64_t key_size)
 {
-	key->key_offset = OffsetOf(key, key_data);
+	key->key_offset = vb2_offset_of(key, key_data);
 	key->key_size = key_size;
 	key->algorithm = VB2_ALG_COUNT; /* Key not present yet */
 	key->key_version = 0;

@@ -58,7 +58,6 @@ int main(void)
 	VbVerifyMemoryBootImage(0, 0, 0, 0, 0);
 
 	/* vboot_common.h */
-	OffsetOf(0, 0);
 	GetPublicKeyData(0);
 	GetPublicKeyDataC(0);
 	GetSignatureData(0);

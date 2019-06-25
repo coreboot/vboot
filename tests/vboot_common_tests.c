@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "2common.h"
 #include "host_common.h"
 #include "test_common.h"
 #include "utility.h"
@@ -55,26 +56,18 @@ static void ArraySizeTest(void)
 static void VerifyHelperFunctions(void)
 {
 	{
-		uint8_t *p = (uint8_t *)VerifyHelperFunctions;
-		TEST_EQ((int)OffsetOf(p, p), 0, "OffsetOf() equal");
-		TEST_EQ((int)OffsetOf(p, p+10), 10, "OffsetOf() positive");
-		TEST_EQ((int)OffsetOf(p, p+0x12345678), 0x12345678,
-			"OffsetOf() large");
-	}
-
-	{
 		VbPublicKey k = {sizeof(k), 2, 3, 4};
-		TEST_EQ((int)OffsetOf(&k, GetPublicKeyData(&k)), sizeof(k),
+		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyData(&k)), sizeof(k),
 			"GetPublicKeyData() adjacent");
-		TEST_EQ((int)OffsetOf(&k, GetPublicKeyDataC(&k)), sizeof(k),
+		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyDataC(&k)), sizeof(k),
 			"GetPublicKeyDataC() adjacent");
 	}
 
 	{
 		VbPublicKey k = {123, 2, 3, 4};
-		TEST_EQ((int)OffsetOf(&k, GetPublicKeyData(&k)), 123,
+		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyData(&k)), 123,
 			"GetPublicKeyData() spaced");
-		TEST_EQ((int)OffsetOf(&k, GetPublicKeyDataC(&k)), 123,
+		TEST_EQ((int)vb2_offset_of(&k, GetPublicKeyDataC(&k)), 123,
 			"GetPublicKeyDataC() spaced");
 	}
 
