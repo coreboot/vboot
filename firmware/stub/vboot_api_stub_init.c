@@ -43,15 +43,6 @@ void VbExError(const char *format, ...)
 	exit(1);
 }
 
-void VbExDebug(const char *format, ...)
-{
-	va_list ap;
-	va_start(ap, format);
-	fprintf(stderr, "DEBUG: ");
-	vfprintf(stderr, fixfmt(format), ap);
-	va_end(ap);
-}
-
 uint64_t VbExGetTimer(void)
 {
 	struct timeval tv;

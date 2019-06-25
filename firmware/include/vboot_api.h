@@ -317,12 +317,6 @@ VbError_t VbUnlockDevice(void);
  */
 void VbExError(const char *format, ...);
 
-/**
- * Output a debug message.  Supports printf()-style formatting.
- */
-void VbExDebug(const char *format, ...)
-	__attribute__ ((format (__printf__, 1, 2)));
-
 /*****************************************************************************/
 /* Timer and delay (first two from utility.h) */
 
