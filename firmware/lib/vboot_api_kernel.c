@@ -394,6 +394,8 @@ VbError_t VbSelectAndLoadKernel(
 	if (retval)
 		goto VbSelectAndLoadKernel_exit;
 
+	VB2_DEBUG("GBB flags are %#x\n", vb2_get_gbb(ctx)->flags);
+
 	/*
 	 * Do EC software sync unless we're in recovery mode. This has UI but
 	 * it's just a single non-interactive WAIT screen.
