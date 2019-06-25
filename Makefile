@@ -179,11 +179,6 @@ ifneq (${PD_SYNC},)
 CFLAGS += -DPD_SYNC
 endif
 
-ifneq (${USE_MTD},)
-CFLAGS += -DUSE_MTD
-LDLIBS += -lmtdutils
-endif
-
 ifneq (${TPM2_MODE},)
 CFLAGS += -DTPM2_MODE
 endif
