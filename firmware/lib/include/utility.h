@@ -22,9 +22,6 @@
 #define VbAssert(expr)
 #endif
 
-/* Return the minimum of (a) or (b). */
-#define Min(a, b) (((a) < (b)) ? (a) : (b))
-
 /*
  * Buffer size required to hold the longest possible output of Uint64ToString()
  * - that is, Uint64ToString(~0, 2).

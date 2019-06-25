@@ -10,6 +10,56 @@
 #include "test_common.h"
 #include "vboot_struct.h"  /* For old struct sizes */
 
+/* Mock data */
+static int counter_calls_left = 0;
+
+/* Mock functions */
+static int counter(void)
+{
+	counter_calls_left--;
+	return 0;
+}
+
+/*
+ * Test arithmetic-related macros and operators.
+ */
+static void test_arithmetic(void)
+{
+	int64_t a = -10, b = -20;
+	uint64_t u = (0xabcd00000000ULL);
+	uint64_t v = (0xabcd000000ULL);
+
+	TEST_EQ(VB2_MIN(1, 2), 1, "MIN 1");
+	TEST_EQ(VB2_MIN(4, 3), 3, "MIN 3");
+	TEST_EQ(VB2_MIN(5, 5), 5, "MIN 5");
+	TEST_EQ(VB2_MIN(a, b), b, "MIN uint64 1");
+	TEST_EQ(VB2_MIN(b, a), b, "MIN uint64 2");
+	TEST_EQ(VB2_MIN(b, b), b, "MIN uint64 same");
+
+	counter_calls_left = 2;
+	VB2_MIN(counter(), counter());
+	TEST_EQ(counter_calls_left, 0, "MIN double-evaluation");
+
+	TEST_EQ(VB2_MAX(1, 2), 2, "MAX 2");
+	TEST_EQ(VB2_MAX(4, 3), 4, "MAX 4");
+	TEST_EQ(VB2_MAX(5, 5), 5, "MAX 5");
+	TEST_EQ(VB2_MAX(a, b), a, "MAX uint64 1");
+	TEST_EQ(VB2_MAX(b, a), a, "MAX uint64 2");
+	TEST_EQ(VB2_MAX(b, b), b, "MAX uint64 same");
+
+	counter_calls_left = 2;
+	VB2_MAX(counter(), counter());
+	TEST_EQ(counter_calls_left, 0, "MAX double-evaluation");
+
+	TEST_EQ(u >> 8, v, "uint64_t >> 8");
+	TEST_EQ(u >> 0, u, "uint64_t >> 0");
+	TEST_EQ(u >> 36, (uint64_t)0xabc, "uint64_t >> 36");
+
+	TEST_EQ(v * (uint32_t)0, 0, "uint64_t * uint32_t 0");
+	TEST_EQ(v * (uint32_t)1, v, "uint64_t * uint32_t 1");
+	TEST_EQ(v * (uint32_t)256, u, "uint64_t * uint32_t 256");
+}
+
 /*
  * Test array size macro.
  */
@@ -232,6 +282,7 @@ static void test_helper_functions(void)
 
 int main(int argc, char* argv[])
 {
+	test_arithmetic();
 	test_array_size();
 	test_struct_packing();
 	test_memcmp();

@@ -39,8 +39,7 @@ static int vb2_gbb_read_key(struct vb2_context *ctx,
 
 	/* Deal with a zero-size key (used in testing). */
 	*size = (*keyp)->key_offset + (*keyp)->key_size;
-	if (*size < sizeof(**keyp))
-		*size = sizeof(**keyp);
+	*size = VB2_MAX(*size, sizeof(**keyp));
 
 	/* Now that we know the real size of the key, retrieve the key
 	   data, and write it on the workbuf, directly after vb2_packed_key. */
@@ -98,10 +97,8 @@ int vb2api_gbb_read_hwid(struct vb2_context *ctx,
 		return VB2_ERROR_GBB_INVALID;
 	}
 
-	if (*size > VB2_GBB_HWID_MAX_SIZE)
-		*size = VB2_GBB_HWID_MAX_SIZE;
-	if (*size > gbb->hwid_size)
-		*size = gbb->hwid_size;
+	*size = VB2_MIN(*size, VB2_GBB_HWID_MAX_SIZE);
+	*size = VB2_MIN(*size, gbb->hwid_size);
 
 	ret = vb2ex_read_resource(ctx, VB2_RES_GBB, gbb->hwid_offset,
 				  hwid, *size);

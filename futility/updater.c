@@ -814,7 +814,7 @@ static int emulate_write_firmware(const char *filename,
 	}
 
 	if (!errorcnt) {
-		size_t to_write = Min(to.size, from.size);
+		size_t to_write = VB2_MIN(to.size, from.size);
 
 		assert(from.data && to.data);
 		VB2_DEBUG("Writing %zu bytes\n", to_write);
@@ -949,7 +949,7 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 		     FMAP_NAMELEN, section_name);
 	}
 	/* Use memmove in case if we need to deal with sections that overlap. */
-	memmove(to.data, from.data, Min(from.size, to.size));
+	memmove(to.data, from.data, VB2_MIN(from.size, to.size));
 	return 0;
 }
 

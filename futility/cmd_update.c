@@ -245,7 +245,7 @@ static int do_update(int argc, char *argv[])
 		STATUS("Starting firmware updater.\n");
 		r = update_firmware(cfg);
 		if (r != UPDATE_ERR_DONE) {
-			r = Min(r, UPDATE_ERR_UNKNOWN);
+			r = VB2_MIN(r, UPDATE_ERR_UNKNOWN);
 			ERROR("%s\n", updater_error_messages[r]);
 			errorcnt++;
 		}

@@ -723,7 +723,6 @@ TEST_NAMES = \
 	tests/rollback_index3_tests \
 	tests/sha_benchmark \
 	tests/utility_string_tests \
-	tests/utility_tests \
 	tests/vboot_api_devmode_tests \
 	tests/vboot_api_kernel_tests \
 	tests/vboot_api_kernel2_tests \
@@ -1375,7 +1374,6 @@ ifeq (${TPM2_MODE},)
 endif
 	${RUNTEST} ${BUILD_RUN}/tests/rollback_index3_tests
 	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
-	${RUNTEST} ${BUILD_RUN}/tests/utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
