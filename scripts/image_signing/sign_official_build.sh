@@ -31,7 +31,6 @@ where <type> is one of:
              base (sign a base image, similar to an SSD image)
              recovery (sign a USB recovery image)
              factory (sign a factory install image)
-             install (old alias to "factory")
              update_payload (sign a delta update hash)
              kernel (sign a kernel image)
              recovery_kernel (sign a recovery_kernel image)
@@ -1088,7 +1087,7 @@ elif [[ "${TYPE}" == "recovery" ]]; then
     "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" \
     "${KEY_DIR}/kernel_data_key.vbprivk"
-elif [[ "${TYPE}" == "factory" ]] || [[ "${TYPE}" == "install" ]]; then
+elif [[ "${TYPE}" == "factory" ]]; then
   sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
     "${KEY_DIR}/installer_kernel.keyblock" \
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
