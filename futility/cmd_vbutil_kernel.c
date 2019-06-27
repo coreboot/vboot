@@ -602,8 +602,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 
 		f = fopen(vmlinuz_out_file, "wb");
 		if (!f) {
-			VbExError("Can't open output file %s\n",
-				  vmlinuz_out_file);
+			Fatal("Can't open output file %s\n", vmlinuz_out_file);
 			return 1;
 		}
 
@@ -620,9 +619,9 @@ static int do_vbutil_kernel(int argc, char *argv[])
 						     kblob_size,
 						     vmlinuz_header_address,
 						     vmlinuz_header_size)) {
-				VbExError("Vmlinuz header not signed!\n");
 				fclose(f);
 				unlink(vmlinuz_out_file);
+				Fatal("Vmlinuz header not signed!\n");
 				return 1;
 			}
 			// calculate the vmlinuz_header offset from
@@ -644,10 +643,9 @@ static int do_vbutil_kernel(int argc, char *argv[])
 					 1,
 					 f));
 		if (errcount) {
-			VbExError("Can't write output file %s\n",
-				  vmlinuz_out_file);
 			fclose(f);
 			unlink(vmlinuz_out_file);
+			Fatal("Can't write output file %s\n", vmlinuz_out_file);
 			return 1;
 		}
 
