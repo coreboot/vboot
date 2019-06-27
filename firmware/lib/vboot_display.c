@@ -300,15 +300,15 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	used += StrnAppend(buf + used,
 			"\nrecovery_reason: 0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       shared->recovery_reason, 16, 2);
+			       sd->recovery_reason, 16, 2);
 	used += StrnAppend(buf + used, " / 0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 16, 2);
 	used += StrnAppend(buf + used, "  ", DEBUG_INFO_SIZE - used);
 	used += StrnAppend(buf + used,
-			RecoveryReasonString(shared->recovery_reason),
+			RecoveryReasonString(sd->recovery_reason),
 			DEBUG_INFO_SIZE - used);
 
-	/* Add VbSharedData flags */
+	/* Add VbSharedDataHeader flags */
 	used += StrnAppend(buf + used, "\nVbSD.flags: 0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
 			       shared->flags, 16, 8);
@@ -354,10 +354,10 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	used += StrnAppend(buf + used,
 			   "\nTPM: fwver=0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       shared->fw_version_tpm, 16, 8);
+			       sd->fw_version_secdata, 16, 8);
 	used += StrnAppend(buf + used, " kernver=0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       shared->kernel_version_tpm, 16, 8);
+			       sd->kernel_version_secdatak, 16, 8);
 
 	/* Add GBB flags */
 	used += StrnAppend(buf + used,
@@ -393,7 +393,7 @@ VbError_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	}
 
 	/* If we're in dev-mode, show the kernel subkey that we expect, too. */
-	if (0 == shared->recovery_reason) {
+	if (0 == sd->recovery_reason) {
 		FillInSha1Sum(sha1sum, &shared->kernel_subkey);
 		used += StrnAppend(buf + used,
 				"\nkernel_subkey: ", DEBUG_INFO_SIZE - used);
