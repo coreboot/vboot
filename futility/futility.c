@@ -347,8 +347,7 @@ int main(int argc, char *argv[], char *envp[])
 		case 0:				/* handled option */
 			break;
 		default:
-			VB2_DEBUG("i=%d\n", i);
-			DIE;
+			FATAL("Unrecognized getopt output: %d\n", i);
 		}
 	}
 	vboot_version = vb_ver;

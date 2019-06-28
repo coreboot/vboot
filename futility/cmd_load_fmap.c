@@ -125,7 +125,7 @@ static int do_load_fmap(int argc, char *argv[])
 			errorcnt++;
 			break;
 		default:
-			DIE;
+			FATAL("Unrecognized getopt output: %d\n", i);
 		}
 	}
 

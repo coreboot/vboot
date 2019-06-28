@@ -284,7 +284,7 @@ static int fmap_sign_fw_preamble(const char *name, uint8_t *buf, uint32_t len,
 		fw_body_area = &state->area[BIOS_FMAP_FW_MAIN_B];
 		break;
 	default:
-		DIE;
+		FATAL("Can only handle VBLOCK_A or VBLOCK_B\n");
 	}
 
 	if (fw_size > fw_body_area->len) {

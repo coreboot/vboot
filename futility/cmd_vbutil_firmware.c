@@ -97,34 +97,34 @@ static int do_vblock(const char *outfile, const char *keyblock_file,
 	int retval = 1;
 
 	if (!outfile) {
-		VbExError("Must specify output filename\n");
+		FATAL("Must specify output filename\n");
 		goto vblock_cleanup;
 	}
 	if (!keyblock_file || !signprivate || !kernelkey_file) {
-		VbExError("Must specify all keys\n");
+		FATAL("Must specify all keys\n");
 		goto vblock_cleanup;
 	}
 	if (!fv_file) {
-		VbExError("Must specify firmware volume\n");
+		FATAL("Must specify firmware volume\n");
 		goto vblock_cleanup;
 	}
 
 	/* Read the key block and keys */
 	keyblock = vb2_read_keyblock(keyblock_file);
 	if (!keyblock) {
-		VbExError("Error reading key block.\n");
+		FATAL("Error reading key block.\n");
 		goto vblock_cleanup;
 	}
 
 	signing_key = vb2_read_private_key(signprivate);
 	if (!signing_key) {
-		VbExError("Error reading signing key.\n");
+		FATAL("Error reading signing key.\n");
 		goto vblock_cleanup;
 	}
 
 	kernel_subkey = vb2_read_packed_key(kernelkey_file);
 	if (!kernel_subkey) {
-		VbExError("Error reading kernel subkey.\n");
+		FATAL("Error reading kernel subkey.\n");
 		goto vblock_cleanup;
 	}
 
@@ -133,12 +133,12 @@ static int do_vblock(const char *outfile, const char *keyblock_file,
 	if (VB2_SUCCESS != vb2_read_file(fv_file, &fv_data, &fv_size))
 		goto vblock_cleanup;
 	if (!fv_size) {
-		VbExError("Empty firmware volume file\n");
+		FATAL("Empty firmware volume file\n");
 		goto vblock_cleanup;
 	}
 	body_sig = vb2_calculate_signature(fv_data, fv_size, signing_key);
 	if (!body_sig) {
-		VbExError("Error calculating body signature\n");
+		FATAL("Error calculating body signature\n");
 		goto vblock_cleanup;
 	}
 
@@ -146,21 +146,21 @@ static int do_vblock(const char *outfile, const char *keyblock_file,
 	preamble = vb2_create_fw_preamble(version, kernel_subkey, body_sig,
 					  signing_key, preamble_flags);
 	if (!preamble) {
-		VbExError("Error creating preamble.\n");
+		FATAL("Error creating preamble.\n");
 		goto vblock_cleanup;
 	}
 
 	/* Write the output file */
 	FILE *f = fopen(outfile, "wb");
 	if (!f) {
-		VbExError("Can't open output file %s\n", outfile);
+		FATAL("Can't open output file %s\n", outfile);
 		goto vblock_cleanup;
 	}
 	int i = ((1 != fwrite(keyblock, keyblock->keyblock_size, 1, f)) ||
 		 (1 != fwrite(preamble, preamble->preamble_size, 1, f)));
 	fclose(f);
 	if (i) {
-		VbExError("Can't write output file %s\n", outfile);
+		FATAL("Can't write output file %s\n", outfile);
 		unlink(outfile);
 		goto vblock_cleanup;
 	}
@@ -200,7 +200,7 @@ static int do_verify(const char *infile, const char *signpubkey,
 	int retval = 1;
 
 	if (!infile || !signpubkey || !fv_file) {
-		VbExError("Must specify filename, signpubkey, and fv\n");
+		FATAL("Must specify filename, signpubkey, and fv\n");
 		goto verify_cleanup;
 	}
 
@@ -219,14 +219,14 @@ static int do_verify(const char *infile, const char *signpubkey,
 	/* Read blob */
 	uint32_t blob_size;
 	if (VB2_SUCCESS != vb2_read_file(infile, &blob, &blob_size)) {
-		VbExError("Error reading input file\n");
+		FATAL("Error reading input file\n");
 		goto verify_cleanup;
 	}
 
 	/* Read firmware volume */
 	uint32_t fv_size;
 	if (VB2_SUCCESS != vb2_read_file(fv_file, &fv_data, &fv_size)) {
-		VbExError("Error reading firmware volume\n");
+		FATAL("Error reading firmware volume\n");
 		goto verify_cleanup;
 	}
 
@@ -234,7 +234,7 @@ static int do_verify(const char *infile, const char *signpubkey,
 	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)blob;
 	if (VB2_SUCCESS !=
 	    vb2_verify_keyblock(keyblock, blob_size, &sign_key, &wb)) {
-		VbExError("Error verifying key block.\n");
+		FATAL("Error verifying key block.\n");
 		goto verify_cleanup;
 	}
 
@@ -263,7 +263,7 @@ static int do_verify(const char *infile, const char *signpubkey,
 	struct vb2_fw_preamble *pre2 = (struct vb2_fw_preamble *)(blob + now);
 	if (VB2_SUCCESS !=
 	    vb2_verify_fw_preamble(pre2, blob_size - now, &data_key, &wb)) {
-		VbExError("Error2 verifying preamble.\n");
+		FATAL("Error2 verifying preamble.\n");
 		goto verify_cleanup;
 	}
 	now += pre2->preamble_size;
@@ -298,14 +298,14 @@ static int do_verify(const char *infile, const char *signpubkey,
 				   &data_key, &wb)) {
 		printf("Body verification succeeded.\n");
 	} else {
-		VbExError("Error verifying firmware body.\n");
+		FATAL("Error verifying firmware body.\n");
 		goto verify_cleanup;
 	}
 
 	if (kernelkey_file &&
 	    VB2_SUCCESS != vb2_write_packed_key(kernelkey_file,
 						kernel_subkey)) {
-		VbExError("Unable to write kernel subkey\n");
+		FATAL("Unable to write kernel subkey\n");
 		goto verify_cleanup;
 	}
 

@@ -214,7 +214,7 @@ int ft_show_pem(const char *name, uint8_t *buf, uint32_t len, void *data)
 	/* We're called only after ft_recognize_pem, so this should work. */
 	rsa_key = rsa_from_buffer(buf, len);
 	if (!rsa_key)
-		DIE;
+		FATAL("No RSA key found in buffer\n");
 
 	/* Use to presence of the private exponent to decide if it's public */
 	RSA_get0_key(rsa_key, &rsa_key_n, NULL, &rsa_key_d);

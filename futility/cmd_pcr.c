@@ -141,7 +141,7 @@ static int do_pcr(int argc, char *argv[])
 			errorcnt++;
 			break;
 		default:
-			DIE;
+			FATAL("Unrecognized getopt output: %d\n", i);
 		}
 	}
 

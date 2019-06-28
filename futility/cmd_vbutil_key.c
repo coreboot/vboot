@@ -103,7 +103,7 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 		return 0;
 	}
 
-	VbExError("Unable to parse either .keyb or .pem from %s\n", infile);
+	FATAL("Unable to parse either .keyb or .pem from %s\n", infile);
 	return 1;
 }
 
@@ -154,8 +154,7 @@ static int do_unpack(const char *infile, const char *outfile)
 		return 0;
 	}
 
-	VbExError("Unable to parse either .vbpubk or vbprivk from %s\n",
-		  infile);
+	FATAL("Unable to parse either .vbpubk or vbprivk from %s\n", infile);
 	return 1;
 }
 
@@ -175,7 +174,7 @@ static int do_vbutil_key(int argc, char *argv[])
 		switch (i) {
 		case '?':
 			/* Unhandled option */
-			VbExError("Unknown option\n");
+			FATAL("Unknown option\n");
 			parse_error = 1;
 			break;
 		case OPT_HELP:
@@ -189,7 +188,7 @@ static int do_vbutil_key(int argc, char *argv[])
 		case OPT_KEY_VERSION:
 			version = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				VbExError("Invalid --version\n");
+				FATAL("Invalid --version\n");
 				parse_error = 1;
 			}
 			break;
@@ -197,7 +196,7 @@ static int do_vbutil_key(int argc, char *argv[])
 		case OPT_ALGORITHM:
 			algorithm = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				VbExError("Invalid --algorithm\n");
+				FATAL("Invalid --algorithm\n");
 				parse_error = 1;
 			}
 			break;

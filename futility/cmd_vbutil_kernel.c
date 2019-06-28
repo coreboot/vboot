@@ -30,16 +30,6 @@
 #include "vb2_common.h"
 #include "vb2_struct.h"
 
-static void Fatal(const char *format, ...)
-{
-	va_list ap;
-	va_start(ap, format);
-	fprintf(stderr, "ERROR: ");
-	vfprintf(stderr, format, ap);
-	va_end(ap);
-	exit(1);
-}
-
 /* Global opts */
 static int opt_verbose;
 static int opt_vblockonly;
@@ -182,7 +172,7 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 	uint32_t file_size = 0;
 
 	if (0 != stat(filename, &statbuf))
-		Fatal("Unable to stat %s: %s\n", filename, strerror(errno));
+		FATAL("Unable to stat %s: %s\n", filename, strerror(errno));
 
 	if (S_ISBLK(statbuf.st_mode)) {
 #ifndef HAVE_MACOS
@@ -197,17 +187,17 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 	}
 	VB2_DEBUG("%s size is 0x%x\n", filename, file_size);
 	if (file_size < opt_pad)
-		Fatal("%s is too small to be a valid kernel blob\n", filename);
+		FATAL("%s is too small to be a valid kernel blob\n", filename);
 
 	VB2_DEBUG("Reading %s\n", filename);
 	fp = fopen(filename, "rb");
 	if (!fp)
-		Fatal("Unable to open file %s: %s\n", filename,
+		FATAL("Unable to open file %s: %s\n", filename,
 		      strerror(errno));
 
 	buf = malloc(file_size);
 	if (1 != fread(buf, file_size, 1, fp))
-		Fatal("Unable to read entirety of %s: %s\n", filename,
+		FATAL("Unable to read entirety of %s: %s\n", filename,
 		      error_fread(fp));
 
 	if (size_ptr)
@@ -399,50 +389,50 @@ static int do_vbutil_kernel(int argc, char *argv[])
 	case OPT_MODE_PACK:
 
 		if (!keyblock_file)
-			Fatal("Missing required keyblock file.\n");
+			FATAL("Missing required keyblock file.\n");
 
 		t_keyblock = (struct vb2_keyblock *)ReadFile(keyblock_file, 0);
 		if (!t_keyblock)
-			Fatal("Error reading key block.\n");
+			FATAL("Error reading key block.\n");
 
 		if (!signprivkey_file)
-			Fatal("Missing required signprivate file.\n");
+			FATAL("Missing required signprivate file.\n");
 
 		signpriv_key = vb2_read_private_key(signprivkey_file);
 		if (!signpriv_key)
-			Fatal("Error reading signing key.\n");
+			FATAL("Error reading signing key.\n");
 
 		if (!config_file)
-			Fatal("Missing required config file.\n");
+			FATAL("Missing required config file.\n");
 
 		VB2_DEBUG("Reading %s\n", config_file);
 		t_config_data =
 			ReadConfigFile(config_file, &t_config_size);
 		if (!t_config_data)
-			Fatal("Error reading config file.\n");
+			FATAL("Error reading config file.\n");
 
 		if (!bootloader_file)
-			Fatal("Missing required bootloader file.\n");
+			FATAL("Missing required bootloader file.\n");
 
 		VB2_DEBUG("Reading %s\n", bootloader_file);
 
 		if (VB2_SUCCESS != vb2_read_file(bootloader_file,
 						 &t_bootloader_data,
 						 &t_bootloader_size))
-			Fatal("Error reading bootloader file.\n");
+			FATAL("Error reading bootloader file.\n");
 		VB2_DEBUG(" bootloader file size=0x%x\n", t_bootloader_size);
 
 		if (!vmlinuz_file)
-			Fatal("Missing required vmlinuz file.\n");
+			FATAL("Missing required vmlinuz file.\n");
 
 		VB2_DEBUG("Reading %s\n", vmlinuz_file);
 		if (VB2_SUCCESS !=
 		    vb2_read_file(vmlinuz_file, &vmlinuz_buf, &vmlinuz_size))
-			Fatal("Error reading vmlinuz file.\n");
+			FATAL("Error reading vmlinuz file.\n");
 
 		VB2_DEBUG(" vmlinuz file size=0x%x\n", vmlinuz_size);
 		if (!vmlinuz_size)
-			Fatal("Empty vmlinuz file\n");
+			FATAL("Empty vmlinuz file\n");
 
 		kblob_data = CreateKernelBlob(
 			vmlinuz_buf, vmlinuz_size,
@@ -451,7 +441,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			t_bootloader_data, t_bootloader_size,
 			&kblob_size);
 		if (!kblob_data)
-			Fatal("Unable to create kernel blob\n");
+			FATAL("Unable to create kernel blob\n");
 
 		VB2_DEBUG("kblob_size = 0x%x\n", kblob_size);
 
@@ -460,7 +450,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 					     t_keyblock, signpriv_key, flags,
 					     &vblock_size);
 		if (!vblock_data)
-			Fatal("Unable to sign kernel blob\n");
+			FATAL("Unable to sign kernel blob\n");
 
 		VB2_DEBUG("vblock_size = 0x%x\n", vblock_size);
 
@@ -485,14 +475,14 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		/* Required */
 
 		if (!signprivkey_file)
-			Fatal("Missing required signprivate file.\n");
+			FATAL("Missing required signprivate file.\n");
 
 		signpriv_key = vb2_read_private_key(signprivkey_file);
 		if (!signpriv_key)
-			Fatal("Error reading signing key.\n");
+			FATAL("Error reading signing key.\n");
 
 		if (!oldfile)
-			Fatal("Missing previously packed blob.\n");
+			FATAL("Missing previously packed blob.\n");
 
 		/* Load the kernel partition */
 		kpart_data = ReadOldKPartFromFileOrDie(oldfile, &kpart_size);
@@ -500,14 +490,14 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		/* Make sure we have a kernel partition */
 		if (FILE_TYPE_KERN_PREAMBLE !=
 		    futil_file_type_buf(kpart_data, kpart_size))
-			Fatal("%s is not a kernel blob\n", oldfile);
+			FATAL("%s is not a kernel blob\n", oldfile);
 
 		kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
 						     opt_pad, &keyblock,
 						     &preamble, &kblob_size);
 
 		if (!kblob_data)
-			Fatal("Unable to unpack kernel partition\n");
+			FATAL("Unable to unpack kernel partition\n");
 
 		kernel_body_load_address = preamble->body_load_address;
 
@@ -517,11 +507,11 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			t_config_data =
 				ReadConfigFile(config_file, &t_config_size);
 			if (!t_config_data)
-				Fatal("Error reading config file.\n");
+				FATAL("Error reading config file.\n");
 			if (0 != UpdateKernelBlobConfig(
 				    kblob_data, kblob_size,
 				    t_config_data, t_config_size))
-				Fatal("Unable to update config\n");
+				FATAL("Unable to update config\n");
 		}
 
 		if (!version_str)
@@ -534,7 +524,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			t_keyblock = (struct vb2_keyblock *)
 				ReadFile(keyblock_file, 0);
 			if (!t_keyblock)
-				Fatal("Error reading key block.\n");
+				FATAL("Error reading key block.\n");
 		}
 
 		/* Reuse previous body size */
@@ -543,7 +533,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 					     t_keyblock ? t_keyblock : keyblock,
 					     signpriv_key, flags, &vblock_size);
 		if (!vblock_data)
-			Fatal("Unable to sign kernel blob\n");
+			FATAL("Unable to sign kernel blob\n");
 
 		if (opt_vblockonly)
 			rv = WriteSomeParts(filename,
@@ -562,7 +552,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (signpubkey_file) {
 			signpub_key = vb2_read_packed_key(signpubkey_file);
 			if (!signpub_key)
-				Fatal("Error reading public key.\n");
+				FATAL("Error reading public key.\n");
 		}
 
 		/* Do it */
@@ -574,7 +564,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 						     opt_pad, 0, 0,
 						     &kblob_size);
 		if (!kblob_data)
-			Fatal("Unable to unpack kernel partition\n");
+			FATAL("Unable to unpack kernel partition\n");
 
 		rv = VerifyKernelBlob(kblob_data, kblob_size,
 				      signpub_key, keyblock_file, min_version);
@@ -598,11 +588,11 @@ static int do_vbutil_kernel(int argc, char *argv[])
 						     &preamble, &kblob_size);
 
 		if (!kblob_data)
-			Fatal("Unable to unpack kernel partition\n");
+			FATAL("Unable to unpack kernel partition\n");
 
 		f = fopen(vmlinuz_out_file, "wb");
 		if (!f) {
-			Fatal("Can't open output file %s\n", vmlinuz_out_file);
+			FATAL("Can't open output file %s\n", vmlinuz_out_file);
 			return 1;
 		}
 
@@ -621,7 +611,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 						     vmlinuz_header_size)) {
 				fclose(f);
 				unlink(vmlinuz_out_file);
-				Fatal("Vmlinuz header not signed!\n");
+				FATAL("Vmlinuz header not signed!\n");
 				return 1;
 			}
 			// calculate the vmlinuz_header offset from
@@ -645,7 +635,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (errcount) {
 			fclose(f);
 			unlink(vmlinuz_out_file);
-			Fatal("Can't write output file %s\n", vmlinuz_out_file);
+			FATAL("Can't write output file %s\n", vmlinuz_out_file);
 			return 1;
 		}
 

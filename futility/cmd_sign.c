@@ -143,7 +143,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 	/* We should be creating a completely new output file.
 	 * If not, something's wrong. */
 	if (!sign_option.create_new_outfile)
-		DIE;
+		FATAL("create_new_outfile should be selected\n");
 
 	if (sign_option.vblockonly)
 		rv = WriteSomeParts(sign_option.outfile,
@@ -862,8 +862,7 @@ static int do_sign(int argc, char *argv[])
 		case 0:				/* handled option */
 			break;
 		default:
-			VB2_DEBUG("i=%d\n", i);
-			DIE;
+			FATAL("Unrecognized getopt output: %d\n", i);
 		}
 	}
 

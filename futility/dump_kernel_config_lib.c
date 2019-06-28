@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "futility.h"
 #include "host_common.h"
 #include "kernel_blob.h"
 #include "vb2_struct.h"
@@ -67,24 +68,24 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 
 	/* Skip the key block */
 	if (read_fn(ctx, &keyblock, sizeof(keyblock)) != sizeof(keyblock)) {
-		VbExError("not enough data to fill keyblock header\n");
+		FATAL("not enough data to fill keyblock header\n");
 		return NULL;
 	}
 	ssize_t to_skip = keyblock.keyblock_size - sizeof(keyblock);
 	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
-		VbExError("keyblock_size advances past the end of the blob\n");
+		FATAL("keyblock_size advances past the end of the blob\n");
 		return NULL;
 	}
 	now += keyblock.keyblock_size;
 
 	/* Open up the preamble */
 	if (read_fn(ctx, &preamble, sizeof(preamble)) != sizeof(preamble)) {
-		VbExError("not enough data to fill preamble\n");
+		FATAL("not enough data to fill preamble\n");
 		return NULL;
 	}
 	to_skip = preamble.preamble_size - sizeof(preamble);
 	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
-		VbExError("preamble_size advances past the end of the blob\n");
+		FATAL("preamble_size advances past the end of the blob\n");
 		return NULL;
 	}
 	now += preamble.preamble_size;
@@ -102,17 +103,16 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 	     CROS_CONFIG_SIZE) + now;
 	to_skip = offset - now;
 	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
-		VbExError("params are outside of the memory blob: %x\n",
-			  offset);
+		FATAL("params are outside of the memory blob: %x\n", offset);
 		return NULL;
 	}
 	char *ret = malloc(CROS_CONFIG_SIZE);
 	if (!ret) {
-		VbExError("No memory\n");
+		FATAL("No memory\n");
 		return NULL;
 	}
 	if (read_fn(ctx, ret, CROS_CONFIG_SIZE) != CROS_CONFIG_SIZE) {
-		VbExError("Cannot read kernel config\n");
+		FATAL("Cannot read kernel config\n");
 		free(ret);
 		ret = NULL;
 	}
@@ -125,7 +125,7 @@ char *FindKernelConfig(const char *infile, uint64_t kernel_body_load_address)
 
 	int fd = open(infile, O_RDONLY | O_CLOEXEC | O_LARGEFILE);
 	if (fd < 0) {
-		VbExError("Cannot open %s\n", infile);
+		FATAL("Cannot open %s\n", infile);
 		return NULL;
 	}
 

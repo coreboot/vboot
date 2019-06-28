@@ -355,7 +355,7 @@ static int do_create(int argc, char *argv[])
 		case 0:				/* handled option */
 			break;
 		default:
-			DIE;
+			FATAL("Unrecognized getopt output: %d\n", i);
 		}
 	}
 

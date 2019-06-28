@@ -82,16 +82,14 @@ extern const struct futil_cmd_t *const futil_cmds[];
 #define BUILD_ASSERT(cond) _BA0_(cond, __LINE__)
 #endif
 
-/* Fatal internal stupidness */
-#ifndef DIE
-#define DIE do {							\
-		fprintf(stderr, MYNAME ": internal error at %s:%d\n",	\
-			__FILE__, __LINE__);				\
-		exit(1);						\
+/* Fatal error (print error message and exit). */
+#define FATAL(format, ...) do { \
+		fprintf(stderr, "FATAL: %s: " format, __func__, \
+			##__VA_ARGS__ ); \
+		exit(1); \
 	} while (0)
-#endif
 
-/* Print error messages (similar to VbExError but won't exit). */
+/* Print error messages (won't exit). */
 #define ERROR(format, ...) fprintf(stderr, "ERROR: %s: " format, __func__, \
 				   ##__VA_ARGS__ )
 #define WARN(format, ...) fprintf(stderr, "WARNING: %s: " format, __func__, \
