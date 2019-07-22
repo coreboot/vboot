@@ -1,10 +1,6 @@
 
 Here's what's what in the firmware/ directory.
 
-bdb/
-
-  Code for managing Boot Descriptor Blocks (BDB).
-
 include/
 lib/
 

@@ -325,9 +325,6 @@ FWLIB20 = ${BUILD}/vboot_fw20.a
 # Vboot 2.1 (not yet ready - see firmware/README)
 FWLIB21 = ${BUILD}/vboot_fw21.a
 
-# Static library containing firmware APIs for common boot flow
-BDBLIB = ${BUILD}/bdb.a
-
 # Firmware library sources needed by VbInit() call
 VBINIT_SRCS = \
 	firmware/lib/vboot_common_init.c \
@@ -386,16 +383,6 @@ FWLIB21_SRCS = \
 	firmware/lib21/misc.c \
 	firmware/lib21/packed_key.c
 
-BDBLIB_SRCS = \
-	firmware/bdb/bdb.c \
-	firmware/bdb/ecdsa.c \
-	firmware/bdb/misc.c \
-	firmware/bdb/rsa.c \
-	firmware/bdb/secrets.c \
-	firmware/bdb/sha.c \
-	firmware/bdb/stub.c \
-	firmware/bdb/nvm.c
-
 # TPM lightweight command library
 ifeq (${TPM2_MODE},)
 TLCL_SRCS = \
@@ -453,15 +440,10 @@ FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 FWLIB2X_OBJS = ${FWLIB2X_SRCS:%.c=${BUILD}/%.o}
 FWLIB20_OBJS = ${FWLIB20_SRCS:%.c=${BUILD}/%.o}
 FWLIB21_OBJS = ${FWLIB21_SRCS:%.c=${BUILD}/%.o}
-BDBLIB_OBJS = ${BDBLIB_SRCS:%.c=${BUILD}/%.o}
-ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS} \
-	$(BDBLIB_OBJS}
+ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS}
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
-
-# Static library containing both host and firmware APIs
-UTILBDB = ${BUILD}/libvboot_utilbdb.a
 
 UTILLIB_SRCS = \
 	cgpt/cgpt_create.c \
@@ -494,13 +476,6 @@ UTILLIB_SRCS = \
 
 UTILLIB_OBJS = ${UTILLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${UTILLIB_OBJS}
-
-# Source files containing host side APIs for common boot flow
-UTILBDB_SRCS += \
-	firmware/bdb/host.c
-
-UTILBDB_OBJS = ${UTILBDB_SRCS:%.c=${BUILD}/%.o}
-ALL_OBJS += ${UTILBDB_OBJS}
 
 # Externally exported library for some target userspace apps to link with
 # (cryptohome, updater, etc.)
@@ -614,7 +589,6 @@ endif
 
 ifeq (${MINIMAL},)
 UTIL_NAMES += \
-	utility/bdb_extend \
 	utility/load_kernel_test \
 	utility/pad_digest_utility \
 	utility/signature_digest_utility \
@@ -663,8 +637,6 @@ FUTIL_SYMLINKS = \
 
 FUTIL_SRCS = \
 	futility/futility.c \
-	futility/bdb_helper.c \
-	futility/cmd_bdb.c \
 	futility/cmd_create.c \
 	futility/cmd_dump_fmap.c \
 	futility/cmd_dump_kernel_config.c \
@@ -698,8 +670,7 @@ FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c
 
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
-${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include \
-			   -Ifirmware/bdb
+${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include
 
 ALL_OBJS += ${FUTIL_OBJS}
 
@@ -784,12 +755,7 @@ TEST21_NAMES = \
 	tests/vb21_host_misc_tests \
 	tests/vb21_host_sig_tests
 
-TESTBDB_NAMES = \
-	tests/bdb_test \
-	tests/bdb_nvm_test \
-	tests/bdb_sprw_test
-
-TEST_NAMES += ${TEST2X_NAMES} ${TEST20_NAMES} ${TEST21_NAMES} ${TESTBDB_NAMES}
+TEST_NAMES += ${TEST2X_NAMES} ${TEST20_NAMES} ${TEST21_NAMES}
 
 # And a few more...
 ifeq (${TPM2_MODE},)
@@ -820,7 +786,6 @@ TEST_FUTIL_BINS = $(addprefix ${BUILD}/,${TEST_FUTIL_NAMES})
 TEST2X_BINS = $(addprefix ${BUILD}/,${TEST2X_NAMES})
 TEST20_BINS = $(addprefix ${BUILD}/,${TEST20_NAMES})
 TEST21_BINS = $(addprefix ${BUILD}/,${TEST21_NAMES})
-TESTBDB_BINS = $(addprefix ${BUILD}/,${TESTBDB_NAMES})
 
 # Directory containing test keys
 TEST_KEYS = ${SRC_RUN}/tests/testkeys
@@ -893,7 +858,6 @@ ${FWLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB2X_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB20_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB21_OBJS}: CFLAGS += -DUNROLL_LOOPS
-${BDBLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
 
 # Workaround for coreboot on x86, which will power off asynchronously
 # without giving us a chance to react. This is not an example of the Right
@@ -914,7 +878,6 @@ ${FWLIB_OBJS}: CFLAGS += -DDISABLE_ROLLBACK_TPM
 endif
 
 ${FWLIB21_OBJS}: INCLUDES += -Ifirmware/lib21/include
-${BDBLIB_OBJS}: INCLUDES += -Ifirmware/bdb
 
 # Linktest ensures firmware lib doesn't rely on outside libraries
 ${BUILD}/firmware/linktest/main: ${FWLIB}
@@ -960,15 +923,6 @@ ${FWLIB21}: ${FWLIB2X_OBJS} ${FWLIB21_OBJS}
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
 	${Q}ar qc $@ $^
 
-.PHONY: bdblib
-bdblib: ${BDBLIB}
-
-${BDBLIB}: ${FWLIB2X_OBJS} ${BDBLIB_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
 # ----------------------------------------------------------------------------
 # Host library(s)
 
@@ -984,12 +938,6 @@ utillib: ${UTILLIB} \
 # TODO: better way to make .a than duplicating this recipe each time?
 ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} \
 		${FWLIB21_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-${UTILBDB}: ${UTILBDB_OBJS} ${BDBLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
@@ -1113,7 +1061,7 @@ futil: ${FUTIL_BIN}
 FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
-${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20} ${UTILBDB}
+${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
@@ -1152,9 +1100,9 @@ ${TEST_BINS}: INCLUDES += -Itests
 ${TEST_BINS}: LIBS = ${TESTLIB} ${UTILLIB}
 
 # Futility tests need almost everything that futility needs.
-${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
+${TEST_FUTIL_BINS}: ${FUTIL_OBJS} ${UTILLIB}
 ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
-${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB} ${UTILBDB}
+${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB}
 ${TEST_FUTIL_BINS}: LDLIBS += ${FUTIL_LIBS}
 
 ${TEST2X_BINS}: ${FWLIB2X}
@@ -1163,10 +1111,6 @@ ${TEST2X_BINS}: LIBS += ${FWLIB2X}
 ${TEST20_BINS}: ${FWLIB20}
 ${TEST20_BINS}: LIBS += ${FWLIB20}
 ${TEST20_BINS}: LDLIBS += ${CRYPTO_LIBS}
-
-${TESTBDB_BINS}: ${FWLIB2X} ${UTILBDB}
-${TESTBDB_BINS}: INCLUDES += -Ifirmware/bdb
-${TESTBDB_BINS}: LIBS += ${UTILBDB} ${FWLIB2X}
 
 ${TESTLIB}: ${TESTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
@@ -1234,18 +1178,10 @@ ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/verify_data: LDLIBS += ${CRYPTO_LIBS}
 
-${BUILD}/utility/bdb_extend: ${FWLIB2X} ${UTILBDB}
-${BUILD}/utility/bdb_extend.o: INCLUDES += -Ifirmware/bdb
-${BUILD}/utility/bdb_extend: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/utility/bdb_extend: LIBS += ${UTILBDB} ${FWLIB2X}
-
 ${BUILD}/host/linktest/main: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/bdb_test: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/bdb_nvm_test: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/bdb_sprw_test: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/hmac_test: LDLIBS += ${CRYPTO_LIBS}
 
 ${TEST21_BINS}: LDLIBS += ${CRYPTO_LIBS}
@@ -1302,7 +1238,7 @@ ${FUTIL_CMD_LIST}: ${FUTIL_SRCS}
 
 # Frequently-run tests
 .PHONY: test_targets
-test_targets:: runcgpttests runmisctests run2tests runbdbtests
+test_targets:: runcgpttests runmisctests run2tests
 
 ifeq (${MINIMAL},)
 # Bitmap utility isn't compiled for minimal variant
@@ -1413,11 +1349,6 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_misc_tests ${BUILD}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_sig_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/hmac_test
-
-.PHONY: runbdbtests
-runbdbtests: test_setup
-	${RUNTEST} ${BUILD_RUN}/tests/bdb_test ${TEST_KEYS}
-	${RUNTEST} ${BUILD_RUN}/tests/bdb_sprw_test ${TEST_KEYS}
 
 .PHONY: runfutiltests
 runfutiltests: test_setup
