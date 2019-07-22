@@ -11,13 +11,15 @@
 #ifndef VBOOT_REFERENCE_UTILITY_H_
 #define VBOOT_REFERENCE_UTILITY_H_
 
+#include "2common.h"
 #include "sysincludes.h"
 #include "vboot_api.h"
 
 #ifdef VBOOT_DEBUG
 #define VbAssert(expr) do { if (!(expr)) { \
-	VbExError("assert fail: %s at %s:%d\n", \
-		  #expr, __FILE__, __LINE__); }} while(0)
+	VB2_DEBUG("assert fail: %s at %s:%d\n", \
+		  #expr, __FILE__, __LINE__); \
+	exit(1); }} while(0)
 #else
 #define VbAssert(expr)
 #endif

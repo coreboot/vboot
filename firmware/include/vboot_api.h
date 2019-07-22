@@ -309,15 +309,6 @@ VbError_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 VbError_t VbUnlockDevice(void);
 
 /*****************************************************************************/
-/* Debug output (from utility.h) */
-
-/**
- * Output an error message and quit.  Does not return.  Supports
- * printf()-style formatting.
- */
-void VbExError(const char *format, ...);
-
-/*****************************************************************************/
 /* Timer and delay (first two from utility.h) */
 
 #define VB_USEC_PER_MSEC	1000ULL

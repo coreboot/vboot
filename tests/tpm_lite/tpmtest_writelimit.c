@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "2common.h"
 #include "host_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
@@ -39,8 +40,9 @@ int main(int argc, char** argv) {
 				VbAssert(i >= TPM_MAX_NV_WRITES_NOOWNER);
 				break;
 			default:
-				VbExError("unexpected error code %d (0x%x)\n",
+				VB2_DEBUG("unexpected error code %d (0x%x)\n",
 					  result, result);
+				exit(1);
 			}
 		}
 	}

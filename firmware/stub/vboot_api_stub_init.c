@@ -15,34 +15,6 @@
 
 #include "vboot_api.h"
 
-/* U-Boot's printf uses '%L' for uint64_t. gcc uses '%l'. */
-#define MAX_FMT 255
-static char fmtbuf[MAX_FMT+1];
-
-static const char *fixfmt(const char *format)
-{
-	int i;
-	for(i=0; i<sizeof(fmtbuf)-1 && format[i]; i++) {
-		fmtbuf[i] = format[i];
-		if(format[i] == '%' && format[i+1] == 'L') {
-			fmtbuf[i+1] = 'l';
-			i++;
-		}
-	}
-	fmtbuf[i] = '\0';
-	return fmtbuf;
-}
-
-void VbExError(const char *format, ...)
-{
-	va_list ap;
-	va_start(ap, format);
-	fprintf(stderr, "ERROR: ");
-	vfprintf(stderr, fixfmt(format), ap);
-	va_end(ap);
-	exit(1);
-}
-
 uint64_t VbExGetTimer(void)
 {
 	struct timeval tv;

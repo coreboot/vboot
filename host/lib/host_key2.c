@@ -44,14 +44,14 @@ struct vb2_private_key *vb2_read_private_key(const char *filename)
 	uint8_t *buf = NULL;
 	uint32_t bufsize = 0;
 	if (VB2_SUCCESS != vb2_read_file(filename, &buf, &bufsize)) {
-		VbExError("unable to read from file %s\n", filename);
+		VB2_DEBUG("unable to read from file %s\n", filename);
 		return NULL;
 	}
 
 	struct vb2_private_key *key =
 		(struct vb2_private_key *)calloc(sizeof(*key), 1);
 	if (!key) {
-		VbExError("Unable to allocate private key\n");
+		VB2_DEBUG("Unable to allocate private key\n");
 		free(buf);
 		return NULL;
 	}
@@ -65,7 +65,7 @@ struct vb2_private_key *vb2_read_private_key(const char *filename)
 		d2i_RSAPrivateKey(0, &start, bufsize - sizeof(alg));
 
 	if (!key->rsa_private_key) {
-		VbExError("Unable to parse RSA private key\n");
+		VB2_DEBUG("Unable to parse RSA private key\n");
 		free(buf);
 		free(key);
 		return NULL;

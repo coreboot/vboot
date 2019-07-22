@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 
+#include "2common.h"
 #include "host_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
@@ -27,7 +28,8 @@ int main(int argc, char** argv) {
 	TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
 	printf("disable is %d, deactivated is %d\n", disable, deactivated);
 	if (disable == 1 || deactivated == 1) {
-		VbExError("failed to enable or activate");
+		VB2_DEBUG("failed to enable or activate");
+		return 1;
 	}
 	printf("TEST SUCCEEDED\n");
 	return 0;
