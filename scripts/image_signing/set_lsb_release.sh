@@ -70,7 +70,7 @@ EOF
   cat "${rootfs}/etc/lsb-release"
 
   # Dump security context for lsb-release file
-  getfattr -n security.selinux "${rootfs}/etc/lsb-release"
+  getfattr --absolute-names -n security.selinux "${rootfs}/etc/lsb-release"
 }
 
 main "$@"
