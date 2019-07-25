@@ -248,26 +248,26 @@ static void load_kernel_keyblock_tests(void)
 	TEST_EQ(sd->kernel_version, 0x20000, "keyblock version");
 	TEST_EQ(sd->vblock_preamble_offset, sizeof(mock_vblock.k),
 		"preamble offset");
-	TEST_EQ(sd->workbuf_data_key_offset, wb_used_before,
+	TEST_EQ(sd->data_key_offset, wb_used_before,
 		"keyblock data key offset");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_data_key_offset +
-				sd->workbuf_data_key_size),
+		vb2_wb_round_up(sd->data_key_offset +
+				sd->data_key_size),
 		"workbuf used");
 
 	/* Make sure data key was properly saved */
-	k = (struct vb2_packed_key *)(ctx.workbuf + sd->workbuf_data_key_offset);
+	k = vb2_member_of(sd, sd->data_key_offset);
 	TEST_EQ(k->algorithm, 7, "data key algorithm");
 	TEST_EQ(k->key_version, 2, "data key version");
 	TEST_EQ(k->key_size, sizeof(mock_vblock.k.data_key_data),
 		"data key size");
-	TEST_EQ(memcmp(ctx.workbuf + sd->workbuf_data_key_offset +
-		       k->key_offset, mock_vblock.k.data_key_data,
+	TEST_EQ(memcmp(vb2_member_of(k, k->key_offset),
+		       mock_vblock.k.data_key_data,
 		       sizeof(mock_vblock.k.data_key_data)),
 		0, "data key data");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_data_key_offset +
-				sd->workbuf_data_key_size),
+		vb2_wb_round_up(sd->data_key_offset +
+				sd->data_key_size),
 		"workbuf used after");
 
 	/* Test failures */
@@ -403,17 +403,17 @@ static void load_kernel_preamble_tests(void)
 	wb_used_before = ctx.workbuf_used;
 	TEST_SUCC(vb2_load_kernel_preamble(&ctx), "preamble good");
 	TEST_EQ(sd->kernel_version, 0x20002, "combined version");
-	TEST_EQ(sd->workbuf_preamble_offset, wb_used_before,
+	TEST_EQ(sd->preamble_offset, wb_used_before,
 		"preamble offset");
-	TEST_EQ(sd->workbuf_preamble_size, pre->preamble_size, "preamble size");
+	TEST_EQ(sd->preamble_size, pre->preamble_size, "preamble size");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_preamble_offset +
-				sd->workbuf_preamble_size),
+		vb2_wb_round_up(sd->preamble_offset +
+				sd->preamble_size),
 		"workbuf used");
 
 	/* Expected failures */
 	reset_common_data(FOR_PREAMBLE);
-	sd->workbuf_data_key_size = 0;
+	sd->data_key_size = 0;
 	TEST_EQ(vb2_load_kernel_preamble(&ctx),
 		VB2_ERROR_KERNEL_PREAMBLE2_DATA_KEY,
 		"preamble no data key");

@@ -165,10 +165,10 @@ vb2_error_t vb2api_extend_hash(struct vb2_context *ctx,
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_digest_context *dc = (struct vb2_digest_context *)
-		(ctx->workbuf + sd->workbuf_hash_offset);
+		vb2_member_of(sd, sd->hash_offset);
 
 	/* Must have initialized hash digest work area */
-	if (!sd->workbuf_hash_size)
+	if (!sd->hash_size)
 		return VB2_ERROR_API_EXTEND_HASH_WORKBUF;
 
 	/* Don't extend past the data we expect to hash */

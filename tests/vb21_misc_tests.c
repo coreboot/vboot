@@ -193,27 +193,26 @@ static void load_keyblock_tests(void)
 	TEST_EQ(sd->fw_version, 0x20000, "keyblock version");
 	TEST_EQ(sd->vblock_preamble_offset, sizeof(mock_vblock.k),
 		"preamble offset");
-	TEST_EQ(sd->workbuf_data_key_offset, wb_used_before,
+	TEST_EQ(sd->data_key_offset, wb_used_before,
 		"keyblock data key offset");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_data_key_offset +
-				sd->workbuf_data_key_size),
+		vb2_wb_round_up(sd->data_key_offset +
+				sd->data_key_size),
 		"workbuf used");
 
 	/* Make sure data key was properly saved */
-	k = (struct vb21_packed_key *)(ctx.workbuf +
-				       sd->workbuf_data_key_offset);
+	k = vb2_member_of(sd, sd->data_key_offset);
 	TEST_EQ(k->sig_alg, VB2_SIG_RSA4096, "data key algorithm");
 	TEST_EQ(k->key_version, 2, "data key version");
 	TEST_EQ(k->key_size, sizeof(mock_vblock.k.data_key_data),
 		"data key size");
-	TEST_EQ(memcmp(ctx.workbuf + sd->workbuf_data_key_offset +
-		       k->key_offset, mock_vblock.k.data_key_data,
+	TEST_EQ(memcmp(vb2_member_of(k, k->key_offset),
+		       mock_vblock.k.data_key_data,
 		       sizeof(mock_vblock.k.data_key_data)),
 		0, "data key data");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_data_key_offset +
-				sd->workbuf_data_key_size),
+		vb2_wb_round_up(sd->data_key_offset +
+				sd->data_key_size),
 		"workbuf used after");
 
 	/* Test failures */
@@ -295,22 +294,22 @@ static void load_preamble_tests(void)
 
 	/* Test successful call */
 	reset_common_data(FOR_PREAMBLE);
-	data_key_offset_before = sd->workbuf_data_key_offset;
+	data_key_offset_before = sd->data_key_offset;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx), "preamble good");
 	TEST_EQ(sd->fw_version, 0x20002, "combined version");
-	TEST_EQ(sd->workbuf_preamble_offset, data_key_offset_before,
+	TEST_EQ(sd->preamble_offset, data_key_offset_before,
 		"preamble offset");
-	TEST_EQ(sd->workbuf_preamble_size, pre->c.total_size, "preamble size");
+	TEST_EQ(sd->preamble_size, pre->c.total_size, "preamble size");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_preamble_offset +
-				sd->workbuf_preamble_size),
+		vb2_wb_round_up(sd->preamble_offset +
+				sd->preamble_size),
 		"workbuf used");
-	TEST_EQ(sd->workbuf_data_key_offset, 0, "data key offset gone");
-	TEST_EQ(sd->workbuf_data_key_size, 0, "data key size gone");
+	TEST_EQ(sd->data_key_offset, 0, "data key offset gone");
+	TEST_EQ(sd->data_key_size, 0, "data key size gone");
 
 	/* Expected failures */
 	reset_common_data(FOR_PREAMBLE);
-	sd->workbuf_data_key_size = 0;
+	sd->data_key_size = 0;
 	TEST_EQ(vb21_load_fw_preamble(&ctx),
 		VB2_ERROR_FW_PREAMBLE2_DATA_KEY,
 		"preamble no data key");

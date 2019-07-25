@@ -74,12 +74,11 @@ static void reset_common_data(enum reset_type t)
 	retval_vb2_digest_finalize = VB2_SUCCESS;
 	retval_vb2_verify_digest = VB2_SUCCESS;
 
-	sd->workbuf_preamble_offset = ctx.workbuf_used;
-	sd->workbuf_preamble_size = sizeof(*pre);
-	vb2_set_workbuf_used(&ctx, sd->workbuf_preamble_offset
-			     + sd->workbuf_preamble_size);
-	pre = (struct vb2_fw_preamble *)
-		(ctx.workbuf + sd->workbuf_preamble_offset);
+	sd->preamble_offset = ctx.workbuf_used;
+	sd->preamble_size = sizeof(*pre);
+	vb2_set_workbuf_used(&ctx, sd->preamble_offset
+			     + sd->preamble_size);
+	pre = vb2_member_of(sd, sd->preamble_offset);
 	pre->body_signature.data_size = mock_body_size;
 	pre->body_signature.sig_size = mock_sig_size;
 	if (hwcrypto_state == HWCRYPTO_FORBIDDEN)
@@ -87,12 +86,11 @@ static void reset_common_data(enum reset_type t)
 	else
 		pre->flags = 0;
 
-	sd->workbuf_data_key_offset = ctx.workbuf_used;
-	sd->workbuf_data_key_size = sizeof(*k) + 8;
-	vb2_set_workbuf_used(&ctx, sd->workbuf_data_key_offset +
-			     sd->workbuf_data_key_size);
-	k = (struct vb2_packed_key *)
-		(ctx.workbuf + sd->workbuf_data_key_offset);
+	sd->data_key_offset = ctx.workbuf_used;
+	sd->data_key_size = sizeof(*k) + 8;
+	vb2_set_workbuf_used(&ctx, sd->data_key_offset +
+			     sd->data_key_size);
+	k = vb2_member_of(sd, sd->data_key_offset);
 	k->algorithm = mock_algorithm;
 
 	if (t == FOR_EXTEND_HASH || t == FOR_CHECK_HASH)
@@ -255,13 +253,13 @@ static void init_hash_tests(void)
 	wb_used_before = ctx.workbuf_used;
 	TEST_SUCC(vb2api_init_hash(&ctx, VB2_HASH_TAG_FW_BODY, &size),
 		  "init hash good");
-	TEST_EQ(sd->workbuf_hash_offset, wb_used_before,
+	TEST_EQ(sd->hash_offset, wb_used_before,
 		"hash context offset");
-	TEST_EQ(sd->workbuf_hash_size, sizeof(struct vb2_digest_context),
+	TEST_EQ(sd->hash_size, sizeof(struct vb2_digest_context),
 		"hash context size");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_hash_offset +
-				sd->workbuf_hash_size),
+		vb2_wb_round_up(sd->hash_offset +
+				sd->hash_size),
 		"hash uses workbuf");
 	TEST_EQ(sd->hash_tag, VB2_HASH_TAG_FW_BODY, "hash tag");
 	TEST_EQ(sd->hash_remaining_size, mock_body_size, "hash remaining");
@@ -276,7 +274,7 @@ static void init_hash_tests(void)
 		VB2_ERROR_API_INIT_HASH_TAG, "init hash invalid tag");
 
 	reset_common_data(FOR_MISC);
-	sd->workbuf_preamble_size = 0;
+	sd->preamble_size = 0;
 	TEST_EQ(vb2api_init_hash(&ctx, VB2_HASH_TAG_FW_BODY, &size),
 		VB2_ERROR_API_INIT_HASH_PREAMBLE, "init hash preamble");
 
@@ -291,17 +289,17 @@ static void init_hash_tests(void)
 		VB2_ERROR_API_INIT_HASH_WORKBUF, "init hash workbuf");
 
 	reset_common_data(FOR_MISC);
-	sd->workbuf_data_key_size = 0;
+	sd->data_key_size = 0;
 	TEST_EQ(vb2api_init_hash(&ctx, VB2_HASH_TAG_FW_BODY, &size),
 		VB2_ERROR_API_INIT_HASH_DATA_KEY, "init hash data key");
 
 	reset_common_data(FOR_MISC);
-	sd->workbuf_data_key_size--;
+	sd->data_key_size--;
 	TEST_EQ(vb2api_init_hash(&ctx, VB2_HASH_TAG_FW_BODY, &size),
 		VB2_ERROR_UNPACK_KEY_SIZE, "init hash data key size");
 
 	reset_common_data(FOR_MISC);
-	k = (struct vb2_packed_key *)(ctx.workbuf + sd->workbuf_data_key_offset);
+	k = vb2_member_of(sd, sd->data_key_offset);
 	k->algorithm--;
 	TEST_EQ(vb2api_init_hash(&ctx, VB2_HASH_TAG_FW_BODY, &size),
 		VB2_ERROR_SHA_INIT_ALGORITHM, "init hash algorithm");
@@ -321,7 +319,7 @@ static void extend_hash_tests(void)
 	TEST_EQ(sd->hash_remaining_size, 0, "hash extend remaining 2");
 
 	reset_common_data(FOR_EXTEND_HASH);
-	sd->workbuf_hash_size = 0;
+	sd->hash_size = 0;
 	TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size),
 		VB2_ERROR_API_EXTEND_HASH_WORKBUF, "hash extend no workbuf");
 
@@ -336,7 +334,7 @@ static void extend_hash_tests(void)
 	if (hwcrypto_state != HWCRYPTO_ENABLED) {
 		reset_common_data(FOR_EXTEND_HASH);
 		dc = (struct vb2_digest_context *)
-			(ctx.workbuf + sd->workbuf_hash_offset);
+			vb2_member_of(sd, sd->hash_offset);
 		dc->hash_alg = mock_hash_alg + 1;
 		TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size),
 			VB2_ERROR_SHA_EXTEND_ALGORITHM, "hash extend fail");
@@ -366,12 +364,12 @@ static void check_hash_tests(void)
 		"check digest wrong size");
 
 	reset_common_data(FOR_CHECK_HASH);
-	sd->workbuf_preamble_size = 0;
+	sd->preamble_size = 0;
 	TEST_EQ(vb2api_check_hash(&ctx),
 		VB2_ERROR_API_CHECK_HASH_PREAMBLE, "check hash preamble");
 
 	reset_common_data(FOR_CHECK_HASH);
-	sd->workbuf_hash_size = 0;
+	sd->hash_size = 0;
 	TEST_EQ(vb2api_check_hash(&ctx),
 		VB2_ERROR_API_CHECK_HASH_WORKBUF, "check hash no workbuf");
 
@@ -395,18 +393,17 @@ static void check_hash_tests(void)
 		VB2_ERROR_API_CHECK_HASH_TAG, "check hash tag");
 
 	reset_common_data(FOR_CHECK_HASH);
-	sd->workbuf_data_key_size = 0;
+	sd->data_key_size = 0;
 	TEST_EQ(vb2api_check_hash(&ctx),
 		VB2_ERROR_API_CHECK_HASH_DATA_KEY, "check hash data key");
 
 	reset_common_data(FOR_CHECK_HASH);
-	sd->workbuf_data_key_size--;
+	sd->data_key_size--;
 	TEST_EQ(vb2api_check_hash(&ctx),
 		VB2_ERROR_UNPACK_KEY_SIZE, "check hash data key size");
 
 	reset_common_data(FOR_CHECK_HASH);
-	pre = (struct vb2_fw_preamble *)
-		(ctx.workbuf + sd->workbuf_preamble_offset);
+	pre = vb2_member_of(sd, sd->preamble_offset);
 	pre->body_signature.sig_size++;
 	TEST_EQ(vb2api_check_hash(&ctx),
 		VB2_ERROR_VDATA_SIG_SIZE, "check hash sig size");

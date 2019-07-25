@@ -92,18 +92,18 @@ static void reset_common_data(enum reset_type t)
 		uint8_t *kdata;
 
 		/* Create mock firmware preamble in the context */
-		sd->workbuf_preamble_offset = ctx.workbuf_used;
+		sd->preamble_offset = ctx.workbuf_used;
 		fwpre = (struct vb2_fw_preamble *)
-			(ctx.workbuf + sd->workbuf_preamble_offset);
+			vb2_member_of(sd, sd->preamble_offset);
 		k = &fwpre->kernel_subkey;
 		kdata = (uint8_t *)fwpre + sizeof(*fwpre);
 		memcpy(kdata, fw_kernel_key_data, sizeof(fw_kernel_key_data));
 		k->algorithm = 7;
 		k->key_offset = vb2_offset_of(k, kdata);
 		k->key_size = sizeof(fw_kernel_key_data);
-		sd->workbuf_preamble_size = sizeof(*fwpre) + k->key_size;
-		vb2_set_workbuf_used(&ctx, sd->workbuf_preamble_offset +
-				     sd->workbuf_preamble_size);
+		sd->preamble_size = sizeof(*fwpre) + k->key_size;
+		vb2_set_workbuf_used(&ctx, sd->preamble_offset +
+				     sd->preamble_size);
 
 	} else if (t == FOR_PHASE2) {
 		struct vb2_signature *sig;
@@ -111,18 +111,18 @@ static void reset_common_data(enum reset_type t)
 		uint8_t *sdata;
 
 		/* Create mock kernel data key */
-		sd->workbuf_data_key_offset = ctx.workbuf_used;
+		sd->data_key_offset = ctx.workbuf_used;
 		kdkey = (struct vb2_packed_key *)
-			(ctx.workbuf + sd->workbuf_data_key_offset);
+			vb2_member_of(sd, sd->data_key_offset);
 		kdkey->algorithm = VB2_ALG_RSA2048_SHA256;
-		sd->workbuf_data_key_size = sizeof(*kdkey);
-		vb2_set_workbuf_used(&ctx, sd->workbuf_data_key_offset +
-				     sd->workbuf_data_key_size);
+		sd->data_key_size = sizeof(*kdkey);
+		vb2_set_workbuf_used(&ctx, sd->data_key_offset +
+				     sd->data_key_size);
 
 		/* Create mock kernel preamble in the context */
-		sd->workbuf_preamble_offset = ctx.workbuf_used;
+		sd->preamble_offset = ctx.workbuf_used;
 		kpre = (struct vb2_kernel_preamble *)
-			(ctx.workbuf + sd->workbuf_preamble_offset);
+			vb2_member_of(sd, sd->preamble_offset);
 		sdata = (uint8_t *)kpre + sizeof(*kpre);
 
 		sig = &kpre->body_signature;
@@ -135,11 +135,11 @@ static void reset_common_data(enum reset_type t)
 				  sizeof(kernel_data));
 		vb2_digest_finalize(&dc, sdata, sig->sig_size);
 
-		sd->workbuf_preamble_size = sizeof(*kpre) + sig->sig_size;
+		sd->preamble_size = sizeof(*kpre) + sig->sig_size;
 		sd->vblock_preamble_offset =
-			0x10000 - sd->workbuf_preamble_size;
-		vb2_set_workbuf_used(&ctx, sd->workbuf_preamble_offset +
-				     sd->workbuf_preamble_size);
+			0x10000 - sd->preamble_size;
+		vb2_set_workbuf_used(&ctx, sd->preamble_offset +
+				     sd->preamble_size);
 
 	} else {
 		/* Set flags and versions for roll-forward */
@@ -224,19 +224,18 @@ static void phase1_tests(void)
 
 	/* Test successful call */
 	reset_common_data(FOR_PHASE1);
-	old_preamble_offset = sd->workbuf_preamble_offset;
+	old_preamble_offset = sd->preamble_offset;
 	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 good");
-	TEST_EQ(sd->workbuf_preamble_size, 0, "  no more fw preamble");
+	TEST_EQ(sd->preamble_size, 0, "  no more fw preamble");
 	/* Make sure normal key was loaded */
-	TEST_EQ(sd->workbuf_kernel_key_offset, old_preamble_offset,
+	TEST_EQ(sd->kernel_key_offset, old_preamble_offset,
 		"  workbuf key offset");
-	k = (struct vb2_packed_key *)
-		(ctx.workbuf + sd->workbuf_kernel_key_offset);
-	TEST_EQ(sd->workbuf_kernel_key_size, k->key_offset + k->key_size,
+	k = vb2_member_of(sd, sd->kernel_key_offset);
+	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
 		"  workbuf key size");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_kernel_key_offset +
-				sd->workbuf_kernel_key_size),
+		vb2_wb_round_up(sd->kernel_key_offset +
+				sd->kernel_key_size),
 		"  workbuf used");
 	TEST_EQ(k->algorithm, 7, "  key algorithm");
 	TEST_EQ(k->key_size, sizeof(fw_kernel_key_data), "  key_size");
@@ -248,20 +247,19 @@ static void phase1_tests(void)
 	reset_common_data(FOR_PHASE1);
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	/* No preamble loaded in recovery mode */
-	ctx.workbuf_used = old_preamble_offset = sd->workbuf_preamble_offset;
-	sd->workbuf_preamble_offset = sd->workbuf_preamble_size = 0;
+	ctx.workbuf_used = old_preamble_offset = sd->preamble_offset;
+	sd->preamble_offset = sd->preamble_size = 0;
 	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 rec good");
-	TEST_EQ(sd->workbuf_preamble_size, 0, "no more fw preamble");
+	TEST_EQ(sd->preamble_size, 0, "no more fw preamble");
 	/* Make sure recovery key was loaded */
-	TEST_EQ(sd->workbuf_kernel_key_offset, old_preamble_offset,
+	TEST_EQ(sd->kernel_key_offset, old_preamble_offset,
 		"  workbuf key offset");
-	k = (struct vb2_packed_key *)
-		(ctx.workbuf + sd->workbuf_kernel_key_offset);
-	TEST_EQ(sd->workbuf_kernel_key_size, k->key_offset + k->key_size,
+	k = vb2_member_of(sd, sd->kernel_key_offset);
+	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
 		"  workbuf key size");
 	TEST_EQ(ctx.workbuf_used,
-		vb2_wb_round_up(sd->workbuf_kernel_key_offset +
-				sd->workbuf_kernel_key_size),
+		vb2_wb_round_up(sd->kernel_key_offset +
+				sd->kernel_key_size),
 		"  workbuf used");
 	TEST_EQ(k->algorithm, 11, "  key algorithm");
 	TEST_EQ(k->key_size, sizeof(mock_gbb.recovery_key_data), "  key_size");
@@ -311,7 +309,7 @@ static void phase1_tests(void)
 
 	/* Failures while parsing subkey from firmware preamble */
 	reset_common_data(FOR_PHASE1);
-	sd->workbuf_preamble_size = 0;
+	sd->preamble_size = 0;
 	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_API_KPHASE1_PREAMBLE,
 		"phase1 fw preamble");
 }
@@ -347,7 +345,7 @@ static void get_kernel_size_tests(void)
 	TEST_SUCC(vb2api_get_kernel_size(&ctx, NULL, NULL), "get size null");
 
 	reset_common_data(FOR_PHASE2);
-	sd->workbuf_preamble_size = 0;
+	sd->preamble_size = 0;
 	TEST_EQ(vb2api_get_kernel_size(&ctx, &offs, &size),
 		VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE,
 		"get size no preamble");
@@ -361,7 +359,7 @@ static void verify_kernel_data_tests(void)
 		  "verify data good");
 
 	reset_common_data(FOR_PHASE2);
-	sd->workbuf_preamble_size = 0;
+	sd->preamble_size = 0;
 	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_VERIFY_KDATA_PREAMBLE, "verify no preamble");
@@ -379,7 +377,7 @@ static void verify_kernel_data_tests(void)
 		VB2_ERROR_API_VERIFY_KDATA_WORKBUF, "verify workbuf");
 
 	reset_common_data(FOR_PHASE2);
-	sd->workbuf_data_key_size = 0;
+	sd->data_key_size = 0;
 	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_VERIFY_KDATA_KEY, "verify no key");

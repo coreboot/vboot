@@ -74,19 +74,18 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		if (rv)
 			return rv;
 
-		sd->workbuf_kernel_key_offset =
-				vb2_offset_of(ctx->workbuf, key_data);
+		sd->kernel_key_offset = vb2_offset_of(sd, key_data);
 	} else {
 		/* Kernel subkey from firmware preamble */
 		struct vb2_fw_preamble *pre;
 		struct vb2_packed_key *pre_key, *packed_key;
 
 		/* Make sure we have a firmware preamble loaded */
-		if (!sd->workbuf_preamble_size)
+		if (!sd->preamble_size)
 			return VB2_ERROR_API_KPHASE1_PREAMBLE;
 
 		pre = (struct vb2_fw_preamble *)
-			(ctx->workbuf + sd->workbuf_preamble_offset);
+			vb2_member_of(sd, sd->preamble_offset);
 		pre_key = &pre->kernel_subkey;
 
 		/*
@@ -94,8 +93,8 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		 * data key, firmware preamble, or hash data.  So move the
 		 * kernel key from the preamble down after the shared data.
 		 */
-		sd->workbuf_kernel_key_offset = vb2_wb_round_up(sizeof(*sd));
-		key_data = ctx->workbuf + sd->workbuf_kernel_key_offset;
+		sd->kernel_key_offset = vb2_wb_round_up(sizeof(*sd));
+		key_data = vb2_member_of(sd, sd->kernel_key_offset);
 		packed_key = (struct vb2_packed_key *)key_data;
 		memmove(packed_key, pre_key, sizeof(*packed_key));
 		packed_key->key_offset = sizeof(*packed_key);
@@ -107,9 +106,9 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	}
 
 	/* Firmware stage structs are no longer present */
-	sd->workbuf_data_key_size = 0;
-	sd->workbuf_preamble_size = 0;
-	sd->workbuf_hash_size = 0;
+	sd->data_key_size = 0;
+	sd->preamble_size = 0;
+	sd->hash_size = 0;
 
 	/*
 	 * Kernel key will persist in the workbuf after we return.
@@ -118,9 +117,9 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	 *   - vb2_shared_data
 	 *   - kernel key
 	 */
-	sd->workbuf_kernel_key_size = key_size;
-	vb2_set_workbuf_used(ctx, sd->workbuf_kernel_key_offset +
-			     sd->workbuf_kernel_key_size);
+	sd->kernel_key_size = key_size;
+	vb2_set_workbuf_used(ctx, sd->kernel_key_offset +
+			     sd->kernel_key_size);
 
 	return VB2_SUCCESS;
 }
@@ -149,16 +148,16 @@ vb2_error_t vb2api_get_kernel_size(struct vb2_context *ctx,
 	const struct vb2_kernel_preamble *pre;
 
 	/* Get preamble pointer */
-	if (!sd->workbuf_preamble_size)
+	if (!sd->preamble_size)
 		return VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE;
 
 	pre = (const struct vb2_kernel_preamble *)
-		(ctx->workbuf + sd->workbuf_preamble_offset);
+		vb2_member_of(sd, sd->preamble_offset);
 
 	if (offset_ptr) {
 		/* The kernel implicitly follows the preamble */
 		*offset_ptr = sd->vblock_preamble_offset +
-			sd->workbuf_preamble_size;
+			sd->preamble_size;
 	}
 
 	if (size_ptr) {
@@ -186,11 +185,11 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Get preamble pointer */
-	if (!sd->workbuf_preamble_size)
+	if (!sd->preamble_size)
 		return VB2_ERROR_API_VERIFY_KDATA_PREAMBLE;
 
 	pre = (struct vb2_kernel_preamble *)
-		(ctx->workbuf + sd->workbuf_preamble_offset);
+		vb2_member_of(sd, sd->preamble_offset);
 
 	/* Make sure we were passed the right amount of data */
 	if (size != pre->body_signature.data_size)
@@ -210,12 +209,12 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 	 * the kernel preamble.  But until we can change the signing scripts,
 	 * we're stuck with a signature here instead of a hash.
 	 */
-	if (!sd->workbuf_data_key_size)
+	if (!sd->data_key_size)
 		return VB2_ERROR_API_VERIFY_KDATA_KEY;
 
 	rv = vb2_unpack_key_buffer(&key,
-			    ctx->workbuf + sd->workbuf_data_key_offset,
-			    sd->workbuf_data_key_size);
+				   vb2_member_of(sd, sd->data_key_offset),
+				   sd->data_key_size);
 	if (rv)
 		return rv;
 

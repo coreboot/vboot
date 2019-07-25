@@ -169,22 +169,22 @@ struct vb2_shared_data {
 	 * Offset and size of packed data key in work buffer.  Size is 0 if
 	 * data key is not stored in the work buffer.
 	 */
-	uint32_t workbuf_data_key_offset;
-	uint32_t workbuf_data_key_size;
+	uint32_t data_key_offset;
+	uint32_t data_key_size;
 
 	/*
 	 * Offset and size of firmware preamble in work buffer.  Size is 0 if
 	 * preamble is not stored in the work buffer.
 	 */
-	uint32_t workbuf_preamble_offset;
-	uint32_t workbuf_preamble_size;
+	uint32_t preamble_offset;
+	uint32_t preamble_size;
 
 	/*
 	 * Offset and size of hash context in work buffer.  Size is 0 if
 	 * hash context is not stored in the work buffer.
 	 */
-	uint32_t workbuf_hash_offset;
-	uint32_t workbuf_hash_size;
+	uint32_t hash_offset;
+	uint32_t hash_size;
 
 	/*
 	 * Current tag we're hashing
@@ -192,8 +192,7 @@ struct vb2_shared_data {
 	 * For new structs, this is the offset of the vb2_signature struct
 	 * in the work buffer.
 	 *
-	 * TODO: rename to workbuf_hash_sig_offset when vboot1 structs are
-	 * deprecated.
+	 * TODO: rename to hash_sig_offset when vboot1 structs are deprecated.
 	 */
 	uint32_t hash_tag;
 
@@ -222,8 +221,8 @@ struct vb2_shared_data {
 	 * subkey is not stored in the work buffer.  Note that kernel key may
 	 * be inside the firmware preamble.
 	 */
-	uint32_t workbuf_kernel_key_offset;
-	uint32_t workbuf_kernel_key_size;
+	uint32_t kernel_key_offset;
+	uint32_t kernel_key_size;
 } __attribute__((packed));
 
 /****************************************************************************/
