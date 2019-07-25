@@ -19,6 +19,10 @@
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 
+static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+static struct vb2_context *ctx;
+static struct vb2_shared_data *sd;
+
 static uint8_t *diskbuf;
 
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -107,39 +111,21 @@ int main(int argc, char *argv[])
 	/* TODO(chromium:441893): support dev-mode flag and external gpt flag */
 	params.boot_flags = 0;
 
-	/*
-	 * Set up vboot context.
-	 *
-	 * TODO: Propagate this up to higher API levels
-	 */
-	struct vb2_context ctx;
-	memset(&ctx, 0, sizeof(ctx));
-
-	/* TODO(chromium:441893): support dev-mode flag and external gpt flag */
-	ctx.workbuf = malloc(VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE);
-	if (!ctx.workbuf) {
-		fprintf(stderr, "Can't allocate workbuf\n");
+	if (vb2api_init(&workbuf, sizeof(workbuf), &ctx)) {
+		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
-	ctx.workbuf_size = VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE;
-
-	if (VB2_SUCCESS != vb2_init_context(&ctx)) {
-		free(ctx.workbuf);
-		fprintf(stderr, "Can't init context\n");
-		return 1;
-	}
-
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
 	/*
 	 * LoadKernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and only in
 	 * dev mode.  So just use defaults for nv storage.
 	 */
-	vb2_nv_init(&ctx);
+	vb2_nv_init(ctx);
 
 	/* Try loading kernel */
-	rv = LoadKernel(&ctx, &params);
+	rv = LoadKernel(ctx, &params);
 	if (rv != VB2_SUCCESS) {
 		fprintf(stderr, "LoadKernel() failed with code %d\n", rv);
 		return 1;

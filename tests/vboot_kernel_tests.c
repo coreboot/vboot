@@ -71,7 +71,7 @@ static GptHeader *mock_gpt_secondary =
 	(GptHeader*)&mock_disk[MOCK_SECTOR_SIZE * (MOCK_SECTOR_COUNT - 1)];
 static uint8_t mock_digest[VB2_SHA256_DIGEST_SIZE] = {12, 34, 56, 78};
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_packed_key mock_key;
 
 /**
@@ -171,14 +171,13 @@ static void ResetMocks(void)
 	mock_parts[0].size = 150;  /* 75 KB */
 	mock_part_next = 0;
 
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_nv_init(&ctx);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
+	vb2_nv_init(ctx);
 
 	memset(&mock_key, 0, sizeof(mock_key));
 
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
 	// TODO: more workbuf fields - flags, secdata_firmware, secdata_kernel
@@ -594,11 +593,7 @@ static void ReadWriteGptTest(void)
 
 static void TestLoadKernel(int expect_retval, const char *test_name)
 {
-	TEST_EQ(LoadKernel(&ctx, &lkp), expect_retval, test_name);
-
-	/* LoadKernel() should never request recovery directly. */
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		0, "  recovery request");
+	TEST_EQ(LoadKernel(ctx, &lkp), expect_retval, test_name);
 }
 
 /**
@@ -655,25 +650,25 @@ static void LoadKernelTest(void)
 
 	/* In dev mode, fail if hash is bad too */
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	keyblock_verify_fail = 2;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail keyblock dev hash");
 
 	/* But just bad sig is ok */
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	keyblock_verify_fail = 1;
 	TestLoadKernel(0, "Succeed keyblock dev sig");
 
 	/* In dev mode and requiring signed kernel, fail if sig is bad */
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	keyblock_verify_fail = 1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail keyblock dev sig");
 
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	lkp.fwmp = &fwmp;
 	fwmp.flags |= FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	keyblock_verify_fail = 1;
@@ -694,14 +689,14 @@ static void LoadKernelTest(void)
 		       "Keyblock rec flag mismatch");
 
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	kbh.keyblock_flags =
 		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Keyblock recdev flag mismatch");
 
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
 	kbh.keyblock_flags =
 		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
@@ -732,12 +727,12 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	TestLoadKernel(0, "Key version ignored in dev mode");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TestLoadKernel(0, "Key version ignored in rec mode");
 
 	ResetMocks();
@@ -754,17 +749,17 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	kph.kernel_version = 0;
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	TestLoadKernel(0, "Kernel version ignored in dev mode");
 
 	ResetMocks();
 	kph.kernel_version = 0;
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TestLoadKernel(0, "Kernel version ignored in rec mode");
 
 	/* Check developer key hash - bad */
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	lkp.fwmp = &fwmp;
 	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
 	fwmp.dev_key_hash[0]++;
@@ -773,7 +768,7 @@ static void LoadKernelTest(void)
 
 	/* Check developer key hash - good */
 	ResetMocks();
-	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	lkp.fwmp = &fwmp;
 	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
 	TestLoadKernel(0, "Good keyblock dev fwmp hash");

@@ -110,8 +110,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	 *   - kernel key
 	 */
 	sd->kernel_key_size = key_size;
-	vb2_set_workbuf_used(ctx, sd->kernel_key_offset +
-			     sd->kernel_key_size);
+	vb2_set_workbuf_used(ctx, sd->kernel_key_offset + sd->kernel_key_size);
 
 	return VB2_SUCCESS;
 }

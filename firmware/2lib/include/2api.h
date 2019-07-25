@@ -196,29 +196,33 @@ enum vb2_context_flags {
 	VB2_CONTEXT_NO_SECDATA_FWMP = (1 << 21),
 };
 
+/* Helper for aligning fields in vb2_context. */
+#define VB2_PAD_STRUCT3(size, align, count) \
+	uint8_t _pad##count[align - (((size - 1) % align) + 1)]
+#define VB2_PAD_STRUCT2(size, align, count) VB2_PAD_STRUCT3(size, align, count)
+#define VB2_PAD_STRUCT(size, align) VB2_PAD_STRUCT2(size, align, __COUNTER__)
+
 /*
  * Context for firmware verification.  Pass this to all vboot APIs.
  *
- * Caller may relocate this between calls to vboot APIs.
+ * Context is stored as part of vb2_shared_data, initialized with vb2api_init().
+ * Subsequent retrieval of the context object should be done by calling
+ * vb2api_reinit(), e.g. if switching firmware applications.
+ *
+ * The context struct can be seen as the "publicly accessible" portion of
+ * vb2_shared_data, and thus does not require its own magic and version fields.
  */
 struct vb2_context {
+
 	/**********************************************************************
-	 * Fields which must be initialized by caller.
+	 * Fields caller must initialize before calling any API functions.
 	 */
 
 	/*
 	 * Flags; see vb2_context_flags.  Some flags may only be set by caller
 	 * prior to calling vboot functions.
 	 */
-	uint32_t flags;
-
-	/*
-	 * Work buffer, and length in bytes.  Caller may relocate this between
-	 * calls to vboot APIs; it contains no internal pointers.  Caller must
-	 * not examine the contents of this work buffer directly.
-	 */
-	uint8_t *workbuf;
-	uint32_t workbuf_size;
+	uint64_t flags;
 
 	/*
 	 * Non-volatile data.  Caller must fill this from some non-volatile
@@ -228,6 +232,7 @@ struct vb2_context {
 	 * and then clear the flag.
 	 */
 	uint8_t nvdata[VB2_NVDATA_SIZE_V2];
+	VB2_PAD_STRUCT(VB2_NVDATA_SIZE_V2, 8);
 
 	/*
 	 * Secure data for firmware verification stage.  Caller must fill this
@@ -237,26 +242,7 @@ struct vb2_context {
 	 * secure non-volatile location and then clear the flag.
 	 */
 	uint8_t secdata_firmware[VB2_SECDATA_FIRMWARE_SIZE];
-
-	/*
-	 * Context pointer for use by caller.  Verified boot never looks at
-	 * this.  Put context here if you need it for APIs that verified boot
-	 * may call (vb2ex_...() functions).
-	 */
-	void *non_vboot_context;
-
-	/**********************************************************************
-	 * Fields caller may examine after calling vb2api_fw_phase1().  Caller
-	 * must set these fields to 0 before calling any vboot functions.
-	 */
-
-	/*
-	 * Amount of work buffer used so far.  Verified boot sub-calls use
-	 * this to know where the unused work area starts.  Caller may use
-	 * this between calls to vboot APIs to know how much data must be
-	 * copied when relocating the work buffer.
-	 */
-	uint32_t workbuf_used;
+	VB2_PAD_STRUCT(VB2_SECDATA_FIRMWARE_SIZE, 8);
 
 	/**********************************************************************
 	 * Fields caller must initialize before calling vb2api_kernel_phase1().
@@ -270,6 +256,7 @@ struct vb2_context {
 	 * to the secure non-volatile location and then clear the flag.
 	 */
 	uint8_t secdata_kernel[VB2_SECDATA_KERNEL_SIZE];
+	VB2_PAD_STRUCT(VB2_SECDATA_KERNEL_SIZE, 8);
 
 	/*
 	 * Firmware management parameters (FWMP) secure data.  Caller must fill
@@ -282,6 +269,7 @@ struct vb2_context {
 	 * location and then clear the flag.
 	 */
 	uint8_t secdata_fwmp[VB2_SECDATA_FWMP_MAX_SIZE];
+	VB2_PAD_STRUCT(VB2_SECDATA_FWMP_MAX_SIZE, 8);
 };
 
 /* Resource index for vb2ex_read_resource() */
@@ -424,6 +412,65 @@ enum vb2_pcr_digest {
  *	Lock down wherever you keep secdata_kernel.  It should no longer be
  *	writable this boot.
  */
+
+/**
+ * Initialize verified boot data structures.
+ *
+ * Needs to be called once per boot, before using any API functions that
+ * accept a vb2_context object.  Sets up the vboot work buffer, as well as
+ * vb2_shared_data and vb2_context.  A pointer to the context object is
+ * written to ctxptr.  After transitioning between different firmware
+ * applications, or any time the context pointer is lost, vb2api_reinit()
+ * should be used to restore access to the context and data on the workbuf.
+ *
+ * If the workbuf needs to be relocated, call vb2api_relocate() instead
+ * of copying memory manually.
+ *
+ * @param workbuf	Workbuf memory location to initialize
+ * @param size		Size of workbuf being initialized
+ * @param ctxptr	Pointer to a context pointer to be filled in
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_init(void *workbuf, uint32_t size,
+			struct vb2_context **ctxptr);
+
+/**
+ * Reinitialize vboot data structures.
+ *
+ * After transitioning between different firmware applications, or any time the
+ * context pointer is lost, this function should be called to restore access to
+ * the workbuf.  A pointer to the context object is written to ctxptr.  Returns
+ * an error if the vboot work buffer is inconsistent.
+ *
+ * If the workbuf needs to be relocated, call vb2api_relocate() instead
+ * of copying memory manually.
+ *
+ * @param workbuf	Workbuf memory location to check
+ * @param ctxptr	Pointer to a context pointer to be filled in
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_reinit(void *workbuf, struct vb2_context **ctxptr);
+
+/**
+ * Relocate vboot data structures.
+ *
+ * Move the vboot work buffer from one memory location to another, and expand
+ * or contract the workbuf to fit.  The target memory location may be the same
+ * as the original (used for a "resize" operation), and it is safe to call this
+ * function with overlapping memory regions.
+ *
+ * A pointer to the context object is written to ctxptr.  Returns an error if
+ * the vboot work buffer is inconsistent, or if the new memory space is too
+ * small to contain the work buffer.
+ *
+ * @param new_workbuf	Target workbuf memory location
+ * @param cur_workbuf	Original workbuf memory location to relocate
+ * @param size		Target size of relocated workbuf
+ * @param ctxptr	Pointer to a context pointer to be filled in
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_relocate(void *new_workbuf, void *cur_workbuf, uint32_t size,
+			    struct vb2_context **ctxptr);
 
 /**
  * Check the validity of firmware secure storage context.

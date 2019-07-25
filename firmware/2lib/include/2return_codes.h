@@ -454,11 +454,11 @@ enum vb2_return_code {
 	 */
 	VB2_ERROR_MISC = VB2_ERROR_BASE + 0x080000,
 
-	/* Work buffer too small in vb2_init_context() */
-	VB2_ERROR_INITCTX_WORKBUF_SMALL,
+	/* Work buffer too small (see vb2api_init and vb2api_reinit) */
+	VB2_ERROR_WORKBUF_SMALL,
 
-	/* Work buffer unaligned in vb2_init_context() */
-	VB2_ERROR_INITCTX_WORKBUF_ALIGN,
+	/* Work buffer unaligned (see vb2api_init and vb2api_reinit) */
+	VB2_ERROR_WORKBUF_ALIGN,
 
 	/* Work buffer too small in GBB-related function */
 	VB2_ERROR_GBB_WORKBUF,
@@ -607,6 +607,9 @@ enum vb2_return_code {
 
 	/* Invalid parameter */
 	VB2_ERROR_INVALID_PARAMETER,
+
+	/* Problem with workbuf validity (see vb2api_init and vb2api_reinit) */
+	VB2_ERROR_WORKBUF_INVALID,
 
 	/**********************************************************************
 	 * API-level errors

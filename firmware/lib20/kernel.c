@@ -212,7 +212,7 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	 * (which we might still need to verify the next kernel, if the
 	 * assoiciated kernel preamble and data don't verify).
 	 */
-	sd->data_key_offset = ctx->workbuf_used;
+	sd->data_key_offset = sd->workbuf_used;
 	key_data = vb2_member_of(sd, sd->data_key_offset);
 	packed_key = (struct vb2_packed_key *)key_data;
 	memmove(packed_key, &kb->data_key, sizeof(*packed_key));
@@ -233,8 +233,7 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	 *   - kernel key
 	 *   - packed kernel data key
 	 */
-	vb2_set_workbuf_used(ctx, sd->data_key_offset +
-			     sd->data_key_size);
+	vb2_set_workbuf_used(ctx, sd->data_key_offset + sd->data_key_size);
 
 	return VB2_SUCCESS;
 }

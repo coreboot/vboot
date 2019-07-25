@@ -303,17 +303,15 @@ static const char *got_load_disk;
 static uint32_t got_return_val;
 static uint32_t got_external_mismatch;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 
 /**
  * Reset mock data (for use before each test)
  */
 static void ResetMocks(int i)
 {
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_init_context(&ctx);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
 
 	memset(VbApiKernelGetParams(), 0, sizeof(LoadKernelParams));
 
@@ -431,7 +429,7 @@ static void VbTryLoadKernelTest(void)
 	for (i = 0; i < num_tests; i++) {
 		printf("Test case: %s ...\n", test[i].name);
 		ResetMocks(i);
-		TEST_EQ(VbTryLoadKernel(&ctx, test[i].want_flags),
+		TEST_EQ(VbTryLoadKernel(ctx, test[i].want_flags),
 			t->expected_return_val, "  return value");
 		TEST_EQ(got_recovery_request_val,
 			t->expected_recovery_request_val, "  recovery_request");

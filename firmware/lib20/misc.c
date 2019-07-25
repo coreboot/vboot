@@ -186,8 +186,7 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	 *   - vb2_shared_data
 	 *   - packed firmware data key
 	 */
-	vb2_set_workbuf_used(ctx, sd->data_key_offset +
-			     sd->data_key_size);
+	vb2_set_workbuf_used(ctx, sd->data_key_offset + sd->data_key_size);
 
 	return VB2_SUCCESS;
 }

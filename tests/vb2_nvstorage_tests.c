@@ -83,186 +83,186 @@ static void nv_storage_test(uint32_t ctxflags)
 	uint8_t goodcrc;
 	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 		__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-	struct vb2_context c = {
-		.flags = ctxflags,
-		.workbuf = workbuf,
-		.workbuf_size = sizeof(workbuf),
-	};
-	struct vb2_shared_data *sd = vb2_get_sd(&c);
+	struct vb2_context *ctx;
+
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
+	ctx->flags = ctxflags;
+
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	/* Things that change between V1 and V2 */
 	int expect_header = 0x30 | (ctxflags ? VB2_NV_HEADER_SIGNATURE_V2 :
 				    VB2_NV_HEADER_SIGNATURE_V1);
 	int crc_offs = ctxflags ? VB2_NV_OFFS_CRC_V2 : VB2_NV_OFFS_CRC_V1;
 
-	TEST_EQ(vb2_nv_get_size(&c), ctxflags ? VB2_NVDATA_SIZE_V2 :
+	TEST_EQ(vb2_nv_get_size(ctx), ctxflags ? VB2_NVDATA_SIZE_V2 :
 				VB2_NVDATA_SIZE, "vb2_nv_get_size()");
 
-	memset(c.nvdata, 0xA6, sizeof(c.nvdata));
-	vb2_init_context(&c);
+	memset(ctx->nvdata, 0xA6, sizeof(ctx->nvdata));
 
 	/* Init with invalid data should set defaults and regenerate CRC */
-	vb2_nv_init(&c);
-	TEST_EQ(c.nvdata[VB2_NV_OFFS_HEADER], expect_header,
+	vb2_nv_init(ctx);
+	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_HEADER], expect_header,
 		"vb2_nv_init() reset header byte");
-	TEST_NEQ(c.nvdata[crc_offs], 0, "vb2_nv_init() CRC");
+	TEST_NEQ(ctx->nvdata[crc_offs], 0, "vb2_nv_init() CRC");
 	TEST_EQ(sd->status, VB2_SD_STATUS_NV_INIT | VB2_SD_STATUS_NV_REINIT,
 		"vb2_nv_init() status changed");
-	test_changed(&c, 1, "vb2_nv_init() reset changed");
-	goodcrc = c.nvdata[crc_offs];
-	TEST_SUCC(vb2_nv_check_crc(&c), "vb2_nv_check_crc() good");
+	test_changed(ctx, 1, "vb2_nv_init() reset changed");
+	goodcrc = ctx->nvdata[crc_offs];
+	TEST_SUCC(vb2_nv_check_crc(ctx), "vb2_nv_check_crc() good");
 
 	/* Another init should not cause further changes */
-	c.flags = ctxflags;
+	ctx->flags = ctxflags;
 	sd->status = 0;
-	vb2_nv_init(&c);
-	test_changed(&c, 0, "vb2_nv_init() didn't re-reset");
-	TEST_EQ(c.nvdata[crc_offs], goodcrc,
+	vb2_nv_init(ctx);
+	test_changed(ctx, 0, "vb2_nv_init() didn't re-reset");
+	TEST_EQ(ctx->nvdata[crc_offs], goodcrc,
 		"vb2_nv_init() CRC same");
 	TEST_EQ(sd->status, VB2_SD_STATUS_NV_INIT,
 		"vb2_nv_init() status same");
 
 	/* Perturbing signature bits in the header should force defaults */
-	c.nvdata[VB2_NV_OFFS_HEADER] ^= 0x40;
-	TEST_EQ(vb2_nv_check_crc(&c),
+	ctx->nvdata[VB2_NV_OFFS_HEADER] ^= 0x40;
+	TEST_EQ(vb2_nv_check_crc(ctx),
 		VB2_ERROR_NV_HEADER, "vb2_nv_check_crc() bad header");
-	vb2_nv_init(&c);
-	TEST_EQ(c.nvdata[VB2_NV_OFFS_HEADER], expect_header,
+	vb2_nv_init(ctx);
+	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_HEADER], expect_header,
 		"vb2_nv_init() reset header byte again");
-	test_changed(&c, 1, "vb2_nv_init() corrupt changed");
-	TEST_EQ(c.nvdata[crc_offs], goodcrc,
+	test_changed(ctx, 1, "vb2_nv_init() corrupt changed");
+	TEST_EQ(ctx->nvdata[crc_offs], goodcrc,
 		"vb2_nv_init() CRC same again");
 
 	/* So should perturbing some other byte */
-	TEST_EQ(c.nvdata[VB2_NV_OFFS_KERNEL1], 0, "Kernel byte starts at 0");
-	c.nvdata[VB2_NV_OFFS_KERNEL1] = 12;
-	TEST_EQ(vb2_nv_check_crc(&c),
+	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_KERNEL1], 0, "Kernel byte starts at 0");
+	ctx->nvdata[VB2_NV_OFFS_KERNEL1] = 12;
+	TEST_EQ(vb2_nv_check_crc(ctx),
 		VB2_ERROR_NV_CRC, "vb2_nv_check_crc() bad CRC");
-	vb2_nv_init(&c);
-	TEST_EQ(c.nvdata[VB2_NV_OFFS_KERNEL1], 0,
+	vb2_nv_init(ctx);
+	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_KERNEL1], 0,
 		"vb2_nv_init() reset kernel byte");
-	test_changed(&c, 1, "vb2_nv_init() corrupt elsewhere changed");
-	TEST_EQ(c.nvdata[crc_offs], goodcrc,
+	test_changed(ctx, 1, "vb2_nv_init() corrupt elsewhere changed");
+	TEST_EQ(ctx->nvdata[crc_offs], goodcrc,
 		"vb2_nv_init() CRC same again");
 
 	/* Clear the kernel and firmware flags */
-	vb2_nv_init(&c);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FIRMWARE_SETTINGS_RESET),
+	vb2_nv_init(ctx);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		1, "Firmware settings are reset");
-	vb2_nv_set(&c, VB2_NV_FIRMWARE_SETTINGS_RESET, 0);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FIRMWARE_SETTINGS_RESET),
+	vb2_nv_set(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET, 0);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		0, "Firmware settings are clear");
 
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_KERNEL_SETTINGS_RESET),
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_KERNEL_SETTINGS_RESET),
 		1, "Kernel settings are reset");
-	vb2_nv_set(&c, VB2_NV_KERNEL_SETTINGS_RESET, 0);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_KERNEL_SETTINGS_RESET),
+	vb2_nv_set(ctx, VB2_NV_KERNEL_SETTINGS_RESET, 0);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_KERNEL_SETTINGS_RESET),
 		0, "Kernel settings are clear");
 
-	TEST_EQ(c.nvdata[VB2_NV_OFFS_HEADER],
+	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_HEADER],
 		expect_header & VB2_NV_HEADER_SIGNATURE_MASK,
 		"Header byte now just has the signature");
 	/* That should have changed the CRC */
-	TEST_NEQ(c.nvdata[crc_offs], goodcrc,
+	TEST_NEQ(ctx->nvdata[crc_offs], goodcrc,
 		 "vb2_nv_init() CRC changed due to flags clear");
 
 	/* Test explicitly setting the reset flags again */
-	vb2_nv_init(&c);
-	vb2_nv_set(&c, VB2_NV_FIRMWARE_SETTINGS_RESET, 1);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FIRMWARE_SETTINGS_RESET),
+	vb2_nv_init(ctx);
+	vb2_nv_set(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET, 1);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		1, "Firmware settings forced reset");
-	vb2_nv_set(&c, VB2_NV_FIRMWARE_SETTINGS_RESET, 0);
+	vb2_nv_set(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET, 0);
 
-	vb2_nv_set(&c, VB2_NV_KERNEL_SETTINGS_RESET, 1);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_KERNEL_SETTINGS_RESET),
+	vb2_nv_set(ctx, VB2_NV_KERNEL_SETTINGS_RESET, 1);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_KERNEL_SETTINGS_RESET),
 		1, "Kernel settings forced reset");
-	vb2_nv_set(&c, VB2_NV_KERNEL_SETTINGS_RESET, 0);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_SETTINGS_RESET, 0);
 
 	/* Get/set an invalid field */
-	vb2_nv_init(&c);
-	vb2_nv_set(&c, -1, 1);
-	TEST_EQ(vb2_nv_get(&c, -1), 0, "Get invalid setting");
+	vb2_nv_init(ctx);
+	vb2_nv_set(ctx, -1, 1);
+	TEST_EQ(vb2_nv_get(ctx, -1), 0, "Get invalid setting");
 
 	/* Test other fields */
-	vb2_nv_init(&c);
+	vb2_nv_init(ctx);
 	for (vnf = nvfields; vnf->desc; vnf++) {
-		TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->default_value,
+		TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->default_value,
 			vnf->desc);
-		vb2_nv_set(&c, vnf->param, vnf->test_value);
-		TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value, vnf->desc);
-		vb2_nv_set(&c, vnf->param, vnf->test_value2);
-		TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value2,
+		vb2_nv_set(ctx, vnf->param, vnf->test_value);
+		TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value, vnf->desc);
+		vb2_nv_set(ctx, vnf->param, vnf->test_value2);
+		TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value2,
 			vnf->desc);
 	}
 
 	for (vnf = nv2fields; vnf->desc; vnf++) {
 		if (ctxflags) {
-			TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->default_value,
+			TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->default_value,
 				vnf->desc);
-			vb2_nv_set(&c, vnf->param, vnf->test_value);
-			TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value,
+			vb2_nv_set(ctx, vnf->param, vnf->test_value);
+			TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value,
 				vnf->desc);
-			vb2_nv_set(&c, vnf->param, vnf->test_value2);
-			TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value2,
+			vb2_nv_set(ctx, vnf->param, vnf->test_value2);
+			TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value2,
 				vnf->desc);
 		} else {
 			/*
 			 * V2 fields always return defaults and can't be set if
 			 * a V1 struct is present.
 			 */
-			TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value,
+			TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value,
 				vnf->desc);
-			vb2_nv_set(&c, vnf->param, vnf->test_value2);
-			TEST_EQ(vb2_nv_get(&c, vnf->param), vnf->test_value,
+			vb2_nv_set(ctx, vnf->param, vnf->test_value2);
+			TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->test_value,
 				vnf->desc);
 		}
 	}
 
 	/* None of those changes should have caused a reset to defaults */
-	vb2_nv_init(&c);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FIRMWARE_SETTINGS_RESET),
+	vb2_nv_init(ctx);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		0, "Firmware settings are still clear");
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_KERNEL_SETTINGS_RESET),
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_KERNEL_SETTINGS_RESET),
 		0, "Kernel settings are still clear");
 
 	/* Writing identical settings doesn't cause the CRC to regenerate */
-	c.flags = ctxflags;
-	vb2_nv_init(&c);
-	test_changed(&c, 0, "No regen CRC on open");
+	ctx->flags = ctxflags;
+	vb2_nv_init(ctx);
+	test_changed(ctx, 0, "No regen CRC on open");
 	for (vnf = nvfields; vnf->desc; vnf++)
-		vb2_nv_set(&c, vnf->param, vnf->test_value2);
-	test_changed(&c, 0, "No regen CRC if data not changed");
+		vb2_nv_set(ctx, vnf->param, vnf->test_value2);
+	test_changed(ctx, 0, "No regen CRC if data not changed");
 	/*
 	 * If struct is V2, this is the same test.  If struct is V1, this
 	 * verifies that the field couldn't be changed anyway.
 	 */
 	for (vnf = nv2fields; vnf->desc; vnf++)
-		vb2_nv_set(&c, vnf->param, vnf->test_value2);
-	test_changed(&c, 0, "No regen CRC if V2 data not changed");
+		vb2_nv_set(ctx, vnf->param, vnf->test_value2);
+	test_changed(ctx, 0, "No regen CRC if V2 data not changed");
 
 	/* Test out-of-range fields mapping to defaults or failing */
-	vb2_nv_init(&c);
-	vb2_nv_set(&c, VB2_NV_TRY_COUNT, 16);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_TRY_COUNT),
+	vb2_nv_init(ctx);
+	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 16);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_COUNT),
 		15, "Try b count out of range");
-	vb2_nv_set(&c, VB2_NV_RECOVERY_REQUEST, 0x101);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_RECOVERY_REQUEST),
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 0x101);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_LEGACY, "Recovery request out of range");
-	vb2_nv_set(&c, VB2_NV_LOCALIZATION_INDEX, 0x102);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_LOCALIZATION_INDEX),
+	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 0x102);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX),
 		0, "Localization index out of range");
 
-	vb2_nv_set(&c, VB2_NV_FW_RESULT, 100);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FW_RESULT),
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, 100);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
 		VB2_FW_RESULT_UNKNOWN, "Firmware result out of range");
 
-	vb2_nv_set(&c, VB2_NV_FW_PREV_RESULT, 100);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_FW_PREV_RESULT),
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_RESULT, 100);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_PREV_RESULT),
 		VB2_FW_RESULT_UNKNOWN, "Fw prev result out of range");
 
-	vb2_nv_set(&c, VB2_NV_DEV_DEFAULT_BOOT,
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
 		   VB2_DEV_DEFAULT_BOOT_DISK + 100);
-	TEST_EQ(vb2_nv_get(&c, VB2_NV_DEV_DEFAULT_BOOT),
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT),
 		VB2_DEV_DEFAULT_BOOT_DISK, "default to booting from disk");
 }
 
