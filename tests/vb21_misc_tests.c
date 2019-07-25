@@ -19,7 +19,7 @@
 /* Common context for tests */
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
@@ -65,19 +65,16 @@ static void reset_common_data(enum reset_type t)
 
 	memset(workbuf, 0xaa, sizeof(workbuf));
 
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
 
 	memset(&gbb, 0, sizeof(gbb));
+	sd = vb2_get_sd(ctx);
 
-	vb2_init_context(&ctx);
-	sd = vb2_get_sd(&ctx);
+	vb2_nv_init(ctx);
 
-	vb2_nv_init(&ctx);
-
-	vb2api_secdata_firmware_create(&ctx);
-	vb2_secdata_firmware_init(&ctx);
+	vb2api_secdata_firmware_create(ctx);
+	vb2_secdata_firmware_init(ctx);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -86,7 +83,7 @@ static void reset_common_data(enum reset_type t)
 
 	/* Set up mock data for verifying keyblock */
 	sd->fw_version_secdata = 0x20002;
-	vb2_secdata_firmware_set(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
+	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
 				 sd->fw_version_secdata);
 
 	gbb.rootkey_offset = vb2_offset_of(&mock_gbb, &mock_gbb.rootkey);
@@ -116,7 +113,7 @@ static void reset_common_data(enum reset_type t)
 
 	/* If verifying preamble, verify keyblock first to set up data key */
 	if (t == FOR_PREAMBLE)
-		vb21_load_fw_keyblock(&ctx);
+		vb21_load_fw_keyblock(ctx);
 };
 
 /* Mocked functions */
@@ -183,18 +180,18 @@ static void load_keyblock_tests(void)
 	struct vb21_keyblock *kb = &mock_vblock.k.kb;
 	struct vb21_packed_key *dk = &mock_vblock.k.data_key;
 	struct vb21_packed_key *k;
-	int wb_used_before;
+	int expected_offset;
 
 	/* Test successful call */
 	reset_common_data(FOR_KEYBLOCK);
-	wb_used_before = ctx.workbuf_used;
-	TEST_SUCC(vb21_load_fw_keyblock(&ctx), "keyblock verify");
+	expected_offset = sd->workbuf_used;
+	TEST_SUCC(vb21_load_fw_keyblock(ctx), "keyblock verify");
 	TEST_EQ(sd->fw_version, 0x20000, "keyblock version");
 	TEST_EQ(sd->vblock_preamble_offset, sizeof(mock_vblock.k),
 		"preamble offset");
-	TEST_EQ(sd->data_key_offset, wb_used_before,
+	TEST_EQ(sd->data_key_offset, expected_offset,
 		"keyblock data key offset");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->data_key_offset +
 				sd->data_key_size),
 		"workbuf used");
@@ -209,80 +206,80 @@ static void load_keyblock_tests(void)
 		       mock_vblock.k.data_key_data,
 		       sizeof(mock_vblock.k.data_key_data)),
 		0, "data key data");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->data_key_offset +
 				sd->data_key_size),
 		"workbuf used after");
 
 	/* Test failures */
 	reset_common_data(FOR_KEYBLOCK);
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(gbb.rootkey_size);
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(gbb.rootkey_size);
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY,
 		"keyblock not enough workbuf for root key");
 
 	reset_common_data(FOR_KEYBLOCK);
 	gbb.rootkey_size = sizeof(mock_gbb);
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"keyblock read root key");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_unpack_key_retval = VB2_ERROR_UNPACK_KEY_SIG_ALGORITHM;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_UNPACK_KEY_SIG_ALGORITHM,
 		"keyblock unpack root key");
 
 	reset_common_data(FOR_KEYBLOCK);
-	ctx.workbuf_used = ctx.workbuf_size -
-			vb2_wb_round_up(gbb.rootkey_size);
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	sd->workbuf_used = sd->workbuf_size -
+			   vb2_wb_round_up(gbb.rootkey_size);
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
 		"keyblock not enough workbuf for header");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_read_res_fail_on_call = 2;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_EX_READ_RESOURCE_INDEX,
 		"keyblock read keyblock header");
 
 	reset_common_data(FOR_KEYBLOCK);
-	ctx.workbuf_used = ctx.workbuf_size -
-			vb2_wb_round_up(gbb.rootkey_size) -
+	sd->workbuf_used = sd->workbuf_size -
+			   vb2_wb_round_up(gbb.rootkey_size) -
 			vb2_wb_round_up(sizeof(struct vb21_keyblock));
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
 		"keyblock not enough workbuf for entire keyblock");
 
 	reset_common_data(FOR_KEYBLOCK);
 	kb->c.total_size = sizeof(mock_vblock) + 1;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"keyblock read keyblock");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_verify_keyblock_retval = VB2_ERROR_KEYBLOCK_MAGIC;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_KEYBLOCK_MAGIC,
 		"keyblock verify keyblock");
 
 	reset_common_data(FOR_KEYBLOCK);
 	dk->key_version = 0x10000;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_FW_KEYBLOCK_VERSION_RANGE,
 		"keyblock version range");
 
 	reset_common_data(FOR_KEYBLOCK);
 	dk->key_version = 1;
-	TEST_EQ(vb21_load_fw_keyblock(&ctx),
+	TEST_EQ(vb21_load_fw_keyblock(ctx),
 		VB2_ERROR_FW_KEYBLOCK_VERSION_ROLLBACK,
 		"keyblock rollback");
 
 	reset_common_data(FOR_KEYBLOCK);
 	dk->key_version = 1;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
-	TEST_SUCC(vb21_load_fw_keyblock(&ctx), "keyblock rollback + GBB flag");
+	TEST_SUCC(vb21_load_fw_keyblock(ctx), "keyblock rollback + GBB flag");
 }
 
 static void load_preamble_tests(void)
@@ -294,12 +291,12 @@ static void load_preamble_tests(void)
 	/* Test successful call */
 	reset_common_data(FOR_PREAMBLE);
 	data_key_offset_before = sd->data_key_offset;
-	TEST_SUCC(vb21_load_fw_preamble(&ctx), "preamble good");
+	TEST_SUCC(vb21_load_fw_preamble(ctx), "preamble good");
 	TEST_EQ(sd->fw_version, 0x20002, "combined version");
 	TEST_EQ(sd->preamble_offset, data_key_offset_before,
 		"preamble offset");
 	TEST_EQ(sd->preamble_size, pre->c.total_size, "preamble size");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->preamble_offset +
 				sd->preamble_size),
 		"workbuf used");
@@ -309,88 +306,88 @@ static void load_preamble_tests(void)
 	/* Expected failures */
 	reset_common_data(FOR_PREAMBLE);
 	sd->data_key_size = 0;
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_FW_PREAMBLE2_DATA_KEY,
 		"preamble no data key");
 
 	reset_common_data(FOR_PREAMBLE);
 	mock_unpack_key_retval = VB2_ERROR_UNPACK_KEY_HASH_ALGORITHM;
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_UNPACK_KEY_HASH_ALGORITHM,
 		"preamble unpack data key");
 
 	reset_common_data(FOR_PREAMBLE);
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sizeof(struct vb21_fw_preamble));
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(sizeof(struct vb21_fw_preamble));
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
 		"preamble not enough workbuf for header");
 
 	reset_common_data(FOR_PREAMBLE);
 	sd->vblock_preamble_offset = sizeof(mock_vblock);
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"preamble read header");
 
 	reset_common_data(FOR_PREAMBLE);
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sizeof(mock_vblock.p));
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(sizeof(mock_vblock.p));
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
 		"preamble not enough workbuf");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->c.total_size = sizeof(mock_vblock);
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_EX_READ_RESOURCE_SIZE,
 		"preamble read full");
 
 	reset_common_data(FOR_PREAMBLE);
 	mock_verify_preamble_retval = VB2_ERROR_PREAMBLE_SIG_INVALID;
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_PREAMBLE_SIG_INVALID,
 		"preamble verify");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 0x10000;
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_FW_PREAMBLE_VERSION_RANGE,
 		"preamble version range");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 1;
-	TEST_EQ(vb21_load_fw_preamble(&ctx),
+	TEST_EQ(vb21_load_fw_preamble(ctx),
 		VB2_ERROR_FW_PREAMBLE_VERSION_ROLLBACK,
 		"preamble version rollback");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 1;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK;
-	TEST_SUCC(vb21_load_fw_preamble(&ctx), "version rollback with GBB flag");
+	TEST_SUCC(vb21_load_fw_preamble(ctx), "version rollback with GBB flag");
 
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 3;
-	TEST_SUCC(vb21_load_fw_preamble(&ctx),
+	TEST_SUCC(vb21_load_fw_preamble(ctx),
 		  "preamble version roll forward");
-	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
+	v = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20003, "roll forward");
 
 	/* Newer version without result success doesn't roll forward */
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 3;
 	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
-	TEST_SUCC(vb21_load_fw_preamble(&ctx),
+	TEST_SUCC(vb21_load_fw_preamble(ctx),
 		  "preamble version no roll forward 1");
-	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
+	v = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20002, "no roll forward");
 
 	/* Newer version with success but for other slot doesn't roll forward */
 	reset_common_data(FOR_PREAMBLE);
 	pre->fw_version = 3;
 	sd->last_fw_slot = 1;
-	TEST_SUCC(vb21_load_fw_preamble(&ctx),
+	TEST_SUCC(vb21_load_fw_preamble(ctx),
 		  "preamble version no roll forward 2");
-	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
+	v = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20002, "no roll forward");
 }
 

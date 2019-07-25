@@ -93,7 +93,7 @@ test_case_t test[] = {
 
 /* Mock data */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -114,13 +114,11 @@ extern int audio_open_count;
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_init_context(&ctx);
-	vb2_nv_init(&ctx);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
+	vb2_nv_init(ctx);
 
-	sd = vb2_get_sd(&ctx);
+	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
 	memset(&gbb, 0, sizeof(gbb));
@@ -284,7 +282,7 @@ static void VbBootDeveloperSoundTest(void)
 		kbd_fire_at = test[i].keypress_at_count;
 		max_events = test[i].num_events;
 		expected_event = test[i].notes;
-		(void) VbBootDeveloper(&ctx);
+		(void) VbBootDeveloper(ctx);
 		VbExBeep(0, 0); /* Dummy call to determine end time */
 		VB2_DEBUG("INFO: matched %d total %d expected %d\n",
 			  matched_events, current_event, test[i].num_events);

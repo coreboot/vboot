@@ -149,8 +149,7 @@ vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx)
 	sd->data_key_size = packed_key->c.total_size;
 
 	/* Data key will persist in the workbuf after we return */
-	vb2_set_workbuf_used(ctx, sd->data_key_offset +
-			     sd->data_key_size);
+	vb2_set_workbuf_used(ctx, sd->data_key_offset + sd->data_key_size);
 
 	return VB2_SUCCESS;
 }
@@ -240,8 +239,7 @@ vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx)
 	sd->preamble_size = pre->c.total_size;
 
 	/* Preamble will persist in work buffer after we return */
-	vb2_set_workbuf_used(ctx, sd->preamble_offset +
-			     sd->preamble_size);
+	vb2_set_workbuf_used(ctx, sd->preamble_offset + sd->preamble_size);
 
 	return VB2_SUCCESS;
 }

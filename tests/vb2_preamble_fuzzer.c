@@ -11,7 +11,7 @@
 #include "2secdata.h"
 #include "vboot_test.h"
 
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 __attribute__((aligned(VB2_WORKBUF_ALIGN)))
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
 
@@ -62,19 +62,15 @@ vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	const size_t datakey_size = 4096;	// enough for all our signatures
-	vb2_error_t rv;
 
 	if (size < datakey_size)
 		return 0;
 
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	rv = vb2_init_context(&ctx);
-	assert(rv == VB2_SUCCESS);
+	if (vb2api_init(workbuf, sizeof(workbuf), &ctx))
+		abort();
 
 	struct vb2_workbuf wb;
-	vb2_workbuf_from_ctx(&ctx, &wb);
+	vb2_workbuf_from_ctx(ctx, &wb);
 
 	uint8_t *key = vb2_workbuf_alloc(&wb, datakey_size);
 	assert(key);
@@ -83,13 +79,13 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 	mock_preamble = data + datakey_size;
 	mock_preamble_size = size - datakey_size;
 
-	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	sd->data_key_offset = vb2_offset_of(sd, key);
 	sd->data_key_size = datakey_size;
-	vb2_set_workbuf_used(&ctx, sd->data_key_offset + sd->data_key_size);
+	vb2_set_workbuf_used(ctx, sd->data_key_offset + sd->data_key_size);
 
 	sd->vblock_preamble_offset = 0;
-	vb2_load_fw_preamble(&ctx);
+	vb2_load_fw_preamble(ctx);
 
 	return 0;
 }

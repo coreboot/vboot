@@ -22,7 +22,7 @@
 /* Common context for tests */
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 
 static const uint8_t mock_body[320] = "Mock body";
@@ -69,17 +69,14 @@ static void reset_common_data(enum reset_type t)
 
 	memset(workbuf, 0xaa, sizeof(workbuf));
 
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
 
-	vb2_init_context(&ctx);
-	sd = vb2_get_sd(&ctx);
+	sd = vb2_get_sd(ctx);
+	vb2_nv_init(ctx);
 
-	vb2_nv_init(&ctx);
-
-	vb2api_secdata_firmware_create(&ctx);
-	vb2_secdata_firmware_init(&ctx);
+	vb2api_secdata_firmware_create(ctx);
+	vb2_secdata_firmware_init(ctx);
 
 	memset(&hwcrypto_emulation_dc, 0, sizeof(hwcrypto_emulation_dc));
 	retval_hwcrypto = VB2_SUCCESS;
@@ -88,7 +85,7 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_private_key_hash(&hash_key, mock_hash_alg);
 
-	sd->preamble_offset = ctx.workbuf_used;
+	sd->preamble_offset = sd->workbuf_used;
 	pre = vb2_member_of(sd, sd->preamble_offset);
 	pre->hash_count = 3;
 	pre->hash_offset = sig_offset = sizeof(*pre);
@@ -108,14 +105,14 @@ static void reset_common_data(enum reset_type t)
 	}
 
 	sd->preamble_size = sig_offset;
-	ctx.workbuf_used = vb2_wb_round_up(sd->preamble_offset +
+	sd->workbuf_used = vb2_wb_round_up(sd->preamble_offset +
 					   sd->preamble_size);
 
 	if (t == FOR_EXTEND_HASH || t == FOR_CHECK_HASH)
-		vb21api_init_hash(&ctx, test_id, NULL);
+		vb21api_init_hash(ctx, test_id, NULL);
 
 	if (t == FOR_CHECK_HASH)
-		vb2api_extend_hash(&ctx, mock_body, mock_body_size);
+		vb2api_extend_hash(ctx, mock_body, mock_body_size);
 };
 
 /* Mocked functions */
@@ -175,18 +172,18 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 static void phase3_tests(void)
 {
 	reset_common_data(FOR_MISC);
-	TEST_SUCC(vb21api_fw_phase3(&ctx), "phase3 good");
+	TEST_SUCC(vb21api_fw_phase3(ctx), "phase3 good");
 
 	reset_common_data(FOR_MISC);
 	retval_vb21_load_fw_keyblock = VB2_ERROR_MOCK;
-	TEST_EQ(vb21api_fw_phase3(&ctx), VB2_ERROR_MOCK, "phase3 keyblock");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb21api_fw_phase3(ctx), VB2_ERROR_MOCK, "phase3 keyblock");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_INVALID_RW, "  recovery reason");
 
 	reset_common_data(FOR_MISC);
 	retval_vb21_load_fw_preamble = VB2_ERROR_MOCK;
-	TEST_EQ(vb21api_fw_phase3(&ctx), VB2_ERROR_MOCK, "phase3 keyblock");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb21api_fw_phase3(ctx), VB2_ERROR_MOCK, "phase3 keyblock");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_INVALID_RW, "  recovery reason");
 }
 
@@ -194,6 +191,7 @@ static void init_hash_tests(void)
 {
 	struct vb21_fw_preamble *pre;
 	struct vb21_signature *sig;
+	int expected_offset;
 	int wb_used_before;
 	uint32_t size;
 
@@ -201,14 +199,14 @@ static void init_hash_tests(void)
 	pre = vb2_member_of(sd, sd->preamble_offset);
 	sig = (struct vb21_signature *)((uint8_t *)pre + pre->hash_offset);
 
-	wb_used_before = ctx.workbuf_used;
-	TEST_SUCC(vb21api_init_hash(&ctx, test_id, &size),
+	expected_offset = sd->workbuf_used;
+	TEST_SUCC(vb21api_init_hash(ctx, test_id, &size),
 		  "init hash good");
-	TEST_EQ(sd->hash_offset, wb_used_before,
+	TEST_EQ(sd->hash_offset, expected_offset,
 		"hash context offset");
 	TEST_EQ(sd->hash_size, sizeof(struct vb2_digest_context),
 		"hash context size");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->hash_offset +
 				sd->hash_size),
 		"hash uses workbuf");
@@ -217,39 +215,39 @@ static void init_hash_tests(void)
 		"hash signature offset");
 	TEST_EQ(sd->hash_remaining_size, mock_body_size, "hash remaining");
 
-	wb_used_before = ctx.workbuf_used;
-	TEST_SUCC(vb21api_init_hash(&ctx, test_id + 2, NULL),
+	wb_used_before = sd->workbuf_used;
+	TEST_SUCC(vb21api_init_hash(ctx, test_id + 2, NULL),
 		  "init hash again");
-	TEST_EQ(ctx.workbuf_used, wb_used_before, "init hash reuses context");
+	TEST_EQ(sd->workbuf_used, wb_used_before, "init hash reuses context");
 	TEST_EQ(sd->hash_tag,
 		sd->preamble_offset + pre->hash_offset +
 		2 * mock_sig_size,
 		"hash signature offset 2");
 
 	reset_common_data(FOR_MISC);
-	TEST_EQ(vb21api_init_hash(&ctx, test_id + 3, &size),
+	TEST_EQ(vb21api_init_hash(ctx, test_id + 3, &size),
 		VB2_ERROR_API_INIT_HASH_ID, "init hash invalid id");
 
 	reset_common_data(FOR_MISC);
 	sd->preamble_size = 0;
-	TEST_EQ(vb21api_init_hash(&ctx, test_id, &size),
+	TEST_EQ(vb21api_init_hash(ctx, test_id, &size),
 		VB2_ERROR_API_INIT_HASH_PREAMBLE, "init hash preamble");
 
 	reset_common_data(FOR_MISC);
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sizeof(struct vb2_digest_context));
-	TEST_EQ(vb21api_init_hash(&ctx, test_id, &size),
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(sizeof(struct vb2_digest_context));
+	TEST_EQ(vb21api_init_hash(ctx, test_id, &size),
 		VB2_ERROR_API_INIT_HASH_WORKBUF, "init hash workbuf");
 
 	reset_common_data(FOR_MISC);
 	sig->hash_alg = VB2_HASH_INVALID;
-	TEST_EQ(vb21api_init_hash(&ctx, test_id, &size),
+	TEST_EQ(vb21api_init_hash(ctx, test_id, &size),
 		VB2_ERROR_SHA_INIT_ALGORITHM, "init hash algorithm");
 
 	if (hwcrypto_state == HWCRYPTO_ENABLED) {
 		reset_common_data(FOR_MISC);
 		retval_hwcrypto = VB2_ERROR_MOCK;
-		TEST_EQ(vb21api_init_hash(&ctx, test_id, &size),
+		TEST_EQ(vb21api_init_hash(ctx, test_id, &size),
 			VB2_ERROR_MOCK, "init hash use hwcrypto");
 	}
 }
@@ -259,38 +257,38 @@ static void extend_hash_tests(void)
 	struct vb2_digest_context *dc;
 
 	reset_common_data(FOR_EXTEND_HASH);
-	TEST_SUCC(vb2api_extend_hash(&ctx, mock_body, 32),
+	TEST_SUCC(vb2api_extend_hash(ctx, mock_body, 32),
 		"hash extend good");
 	TEST_EQ(sd->hash_remaining_size, mock_body_size - 32,
 		"hash extend remaining");
-	TEST_SUCC(vb2api_extend_hash(&ctx, mock_body, mock_body_size - 32),
+	TEST_SUCC(vb2api_extend_hash(ctx, mock_body, mock_body_size - 32),
 		"hash extend again");
 	TEST_EQ(sd->hash_remaining_size, 0, "hash extend remaining 2");
 
 	reset_common_data(FOR_EXTEND_HASH);
 	sd->hash_size = 0;
-	TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size),
+	TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size),
 		VB2_ERROR_API_EXTEND_HASH_WORKBUF, "hash extend no workbuf");
 
 	reset_common_data(FOR_EXTEND_HASH);
-	TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size + 1),
+	TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size + 1),
 		VB2_ERROR_API_EXTEND_HASH_SIZE, "hash extend too much");
 
 	reset_common_data(FOR_EXTEND_HASH);
-	TEST_EQ(vb2api_extend_hash(&ctx, mock_body, 0),
+	TEST_EQ(vb2api_extend_hash(ctx, mock_body, 0),
 		VB2_ERROR_API_EXTEND_HASH_SIZE, "hash extend empty");
 
 	if (hwcrypto_state == HWCRYPTO_ENABLED) {
 		reset_common_data(FOR_EXTEND_HASH);
 		retval_hwcrypto = VB2_ERROR_MOCK;
-		TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size),
+		TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size),
 			VB2_ERROR_MOCK, "hash extend use hwcrypto");
 	} else {
 		reset_common_data(FOR_EXTEND_HASH);
 		dc = (struct vb2_digest_context *)
 			vb2_member_of(sd, sd->hash_offset);
 		dc->hash_alg = VB2_HASH_INVALID;
-		TEST_EQ(vb2api_extend_hash(&ctx, mock_body, mock_body_size),
+		TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size),
 			VB2_ERROR_SHA_EXTEND_ALGORITHM, "hash extend fail");
 	}
 }
@@ -306,43 +304,43 @@ static void check_hash_tests(void)
 	sig = vb2_member_of(pre, pre->hash_offset);
 	dc = vb2_member_of(sd, sd->hash_offset);
 
-	TEST_SUCC(vb21api_check_hash(&ctx), "check hash good");
+	TEST_SUCC(vb21api_check_hash(ctx), "check hash good");
 
 	reset_common_data(FOR_CHECK_HASH);
 	sd->hash_tag = 0;
-	TEST_EQ(vb21api_check_hash(&ctx),
+	TEST_EQ(vb21api_check_hash(ctx),
 		VB2_ERROR_API_CHECK_HASH_TAG, "check hash tag");
 
 	reset_common_data(FOR_CHECK_HASH);
 	sd->hash_size = 0;
-	TEST_EQ(vb21api_check_hash(&ctx),
+	TEST_EQ(vb21api_check_hash(ctx),
 		VB2_ERROR_API_CHECK_HASH_WORKBUF, "check hash no workbuf");
 
 	reset_common_data(FOR_CHECK_HASH);
 	sd->hash_remaining_size = 1;
-	TEST_EQ(vb21api_check_hash(&ctx),
+	TEST_EQ(vb21api_check_hash(ctx),
 		VB2_ERROR_API_CHECK_HASH_SIZE, "check hash size");
 
 	reset_common_data(FOR_CHECK_HASH);
-	ctx.workbuf_used = ctx.workbuf_size;
-	TEST_EQ(vb21api_check_hash(&ctx),
+	sd->workbuf_used = sd->workbuf_size;
+	TEST_EQ(vb21api_check_hash(ctx),
 		VB2_ERROR_API_CHECK_HASH_WORKBUF_DIGEST, "check hash workbuf");
 
 	reset_common_data(FOR_CHECK_HASH);
 	*((uint8_t *)sig + sig->sig_offset) ^= 0x55;
-	TEST_EQ(vb21api_check_hash(&ctx),
+	TEST_EQ(vb21api_check_hash(ctx),
 		VB2_ERROR_API_CHECK_HASH_SIG, "check hash sig");
 
 	if (hwcrypto_state == HWCRYPTO_ENABLED) {
 		reset_common_data(FOR_CHECK_HASH);
 		retval_hwcrypto = VB2_ERROR_MOCK;
-		TEST_EQ(vb21api_check_hash(&ctx),
+		TEST_EQ(vb21api_check_hash(ctx),
 			VB2_ERROR_MOCK, "check hash use hwcrypto");
 	} else {
 		reset_common_data(FOR_CHECK_HASH);
 		dc->hash_alg = VB2_HASH_INVALID;
 		*((uint8_t *)sig + sig->sig_offset) ^= 0x55;
-		TEST_EQ(vb21api_check_hash(&ctx),
+		TEST_EQ(vb21api_check_hash(ctx),
 			VB2_ERROR_SHA_FINALIZE_ALGORITHM, "check hash finaliz");
 	}
 }

@@ -48,8 +48,8 @@ static int mock_ec_rw_hash_size;
 static uint8_t want_ec_hash[32];
 static uint8_t update_hash;
 static int want_ec_hash_size;
-static struct vb2_context ctx;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
@@ -65,14 +65,13 @@ static int ec_aux_fw_protected;
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	ctx.flags = VB2_CONTEXT_EC_SYNC_SUPPORTED;
-	vb2_init_context(&ctx);
-	vb2_nv_init(&ctx);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
 
-	sd = vb2_get_sd(&ctx);
+	ctx->flags = VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	vb2_nv_init(ctx);
+
+	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
@@ -243,8 +242,8 @@ vb2_error_t VbExEcVbootDone(int in_recovery)
 static void test_ssync(vb2_error_t retval, int recovery_reason,
 		       const char *desc)
 {
-	TEST_EQ(ec_sync_all(&ctx), retval, desc);
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(ec_sync_all(ctx), retval, desc);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }
 
@@ -294,7 +293,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	vb2_nv_set(&ctx, VB2_NV_TRY_RO_SYNC, 1);
+	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	test_ssync(0, 0, "Update rw without reboot");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
@@ -305,7 +304,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	mock_ec_ro_hash[0]++;
-	vb2_nv_set(&ctx, VB2_NV_TRY_RO_SYNC, 1);
+	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	test_ssync(0, 0, "Update rw and ro images without reboot");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
@@ -314,16 +313,16 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
 
 	ResetMocks();
-	vb2_nv_set(&ctx, VB2_NV_TRY_RO_SYNC, 1);
+	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	mock_ec_ro_hash[0]++;
-	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 	test_ssync(0, 0, "rw update not needed");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw not updated");
 	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 1,
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 1,
 		"  DISPLAY_REQUEST left untouched");
 
 	ResetMocks();
@@ -363,35 +362,35 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	test_ssync(0, 0, "Slow update");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	sd->flags &= ~VB2_SD_FLAG_DISPLAY_AVAILABLE;
 	test_ssync(VBERROR_REBOOT_REQUIRED, 0,
 		   "Slow update - reboot for display");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
-	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 	test_ssync(VB2_SUCCESS, 0,
 		   "Slow update with display request");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 1,
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 1,
 		"  DISPLAY_REQUEST left untouched");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
-	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 0);
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
 	test_ssync(VB2_SUCCESS, 0,
 		   "Slow update without display request (no reboot needed)");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 0,
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
 		"  DISPLAY_REQUEST left untouched");
 
 	/* RW cases, no update */

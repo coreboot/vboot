@@ -33,6 +33,7 @@
  * TODO: Make cleaner APIs to this stuff.
  */
 #ifdef NEED_VB20_INTERNALS
+#include "../2lib/include/2misc.h"  /* for vb2_get_sd */
 #include "../2lib/include/2nvstorage.h"
 #include "../2lib/include/2nvstorage_fields.h"
 #include "../2lib/include/2struct.h"

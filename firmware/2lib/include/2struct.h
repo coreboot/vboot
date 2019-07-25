@@ -16,16 +16,10 @@
 #ifndef VBOOT_REFERENCE_2STRUCT_H_
 #define VBOOT_REFERENCE_2STRUCT_H_
 
+#include "2api.h"
 #include "2constants.h"
 #include "2crypto.h"
 #include "2sysincludes.h"
-
-/* "V2CT" = vb2_context.magic */
-#define VB2_CONTEXT_MAGIC 0x54433256
-
-/* Current version of vb2_context struct */
-#define VB2_CONTEXT_VERSION_MAJOR 1
-#define VB2_CONTEXT_VERSION_MINOR 0
 
 /* Flags for vb2_shared_data.flags */
 enum vb2_shared_data_flags {
@@ -81,8 +75,10 @@ enum vb2_shared_data_status {
 #define VB2_SHARED_DATA_MAGIC 0x44533256
 
 /* Current version of vb2_shared_data struct */
-#define VB2_SHARED_DATA_VERSION_MAJOR 1
+#define VB2_SHARED_DATA_VERSION_MAJOR 2
 #define VB2_SHARED_DATA_VERSION_MINOR 0
+
+#define VB2_CONTEXT_MAX_SIZE 192
 
 /*
  * Data shared between vboot API calls.  Stored at the start of the work
@@ -95,6 +91,21 @@ struct vb2_shared_data {
 	/* Version of this structure */
 	uint16_t struct_version_major;
 	uint16_t struct_version_minor;
+
+	/* Public fields are stored in the context object */
+	struct vb2_context ctx;
+
+	/* Padding for adding future vb2_context fields */
+	uint8_t padding[VB2_CONTEXT_MAX_SIZE - sizeof(struct vb2_context)];
+
+	/* Work buffer length in bytes. */
+	uint32_t workbuf_size;
+
+	/*
+	 * Amount of work buffer used so far.  Verified boot sub-calls use
+	 * this to know where the unused work area starts.
+	 */
+	uint32_t workbuf_used;
 
 	/* Flags; see enum vb2_shared_data_flags */
 	uint32_t flags;

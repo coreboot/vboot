@@ -20,7 +20,7 @@
 /* Common context for tests */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_fw_preamble *fwpre;
 static struct vb2_kernel_preamble *kpre;
@@ -55,18 +55,16 @@ static void reset_common_data(enum reset_type t)
 
 	memset(workbuf, 0xaa, sizeof(workbuf));
 
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
 
-	vb2_init_context(&ctx);
-	sd = vb2_get_sd(&ctx);
+	sd = vb2_get_sd(ctx);
 
-	vb2_nv_init(&ctx);
+	vb2_nv_init(ctx);
 
-	vb2api_secdata_kernel_create(&ctx);
-	vb2_secdata_kernel_init(&ctx);
-	vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x20002);
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x20002);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -92,7 +90,7 @@ static void reset_common_data(enum reset_type t)
 		uint8_t *kdata;
 
 		/* Create mock firmware preamble in the context */
-		sd->preamble_offset = ctx.workbuf_used;
+		sd->preamble_offset = sd->workbuf_used;
 		fwpre = (struct vb2_fw_preamble *)
 			vb2_member_of(sd, sd->preamble_offset);
 		k = &fwpre->kernel_subkey;
@@ -102,8 +100,8 @@ static void reset_common_data(enum reset_type t)
 		k->key_offset = vb2_offset_of(k, kdata);
 		k->key_size = sizeof(fw_kernel_key_data);
 		sd->preamble_size = sizeof(*fwpre) + k->key_size;
-		vb2_set_workbuf_used(&ctx, sd->preamble_offset +
-				     sd->preamble_size);
+		vb2_set_workbuf_used(ctx, 
+				     sd->preamble_offset + sd->preamble_size);
 
 		/* Needed to check that secdata_kernel initialization is
 		   performed by phase1 function. */
@@ -115,16 +113,16 @@ static void reset_common_data(enum reset_type t)
 		uint8_t *sdata;
 
 		/* Create mock kernel data key */
-		sd->data_key_offset = ctx.workbuf_used;
+		sd->data_key_offset = sd->workbuf_used;
 		kdkey = (struct vb2_packed_key *)
 			vb2_member_of(sd, sd->data_key_offset);
 		kdkey->algorithm = VB2_ALG_RSA2048_SHA256;
 		sd->data_key_size = sizeof(*kdkey);
-		vb2_set_workbuf_used(&ctx, sd->data_key_offset +
-				     sd->data_key_size);
+		vb2_set_workbuf_used(ctx, 
+				     sd->data_key_offset + sd->data_key_size);
 
 		/* Create mock kernel preamble in the context */
-		sd->preamble_offset = ctx.workbuf_used;
+		sd->preamble_offset = sd->workbuf_used;
 		kpre = (struct vb2_kernel_preamble *)
 			vb2_member_of(sd, sd->preamble_offset);
 		sdata = (uint8_t *)kpre + sizeof(*kpre);
@@ -142,15 +140,15 @@ static void reset_common_data(enum reset_type t)
 		sd->preamble_size = sizeof(*kpre) + sig->sig_size;
 		sd->vblock_preamble_offset =
 			0x10000 - sd->preamble_size;
-		vb2_set_workbuf_used(&ctx, sd->preamble_offset +
-				     sd->preamble_size);
+		vb2_set_workbuf_used(ctx,
+				     sd->preamble_offset + sd->preamble_size);
 
 	} else {
 		/* Set flags and versions for roll-forward */
 		sd->kernel_version = 0x20004;
 		sd->kernel_version_secdata = 0x20002;
 		sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
-		ctx.flags |= VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
+		ctx->flags |= VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
 	}
 };
 
@@ -229,7 +227,7 @@ static void phase1_tests(void)
 	/* Test successful call */
 	reset_common_data(FOR_PHASE1);
 	old_preamble_offset = sd->preamble_offset;
-	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 good");
+	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 good");
 	TEST_EQ(sd->preamble_size, 0, "  no more fw preamble");
 	/* Make sure normal key was loaded */
 	TEST_EQ(sd->kernel_key_offset, old_preamble_offset,
@@ -237,7 +235,7 @@ static void phase1_tests(void)
 	k = vb2_member_of(sd, sd->kernel_key_offset);
 	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
 		"  workbuf key size");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->kernel_key_offset +
 				sd->kernel_key_size),
 		"  workbuf used");
@@ -250,11 +248,12 @@ static void phase1_tests(void)
 
 	/* Test successful call in recovery mode */
 	reset_common_data(FOR_PHASE1);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	/* No preamble loaded in recovery mode */
-	ctx.workbuf_used = old_preamble_offset = sd->preamble_offset;
+	old_preamble_offset = sd->preamble_offset;
+	sd->workbuf_used = sd->preamble_offset;
 	sd->preamble_offset = sd->preamble_size = 0;
-	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 rec good");
+	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
 	TEST_EQ(sd->preamble_size, 0, "no more fw preamble");
 	/* Make sure recovery key was loaded */
 	TEST_EQ(sd->kernel_key_offset, old_preamble_offset,
@@ -262,7 +261,7 @@ static void phase1_tests(void)
 	k = vb2_member_of(sd, sd->kernel_key_offset);
 	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
 		"  workbuf key size");
-	TEST_EQ(ctx.workbuf_used,
+	TEST_EQ(sd->workbuf_used,
 		vb2_wb_round_up(sd->kernel_key_offset +
 				sd->kernel_key_size),
 		"  workbuf used");
@@ -276,63 +275,63 @@ static void phase1_tests(void)
 
 	/* Bad secdata_kernel causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
-	ctx.secdata_kernel[0] ^= 0x33;
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
+	ctx->secdata_kernel[0] ^= 0x33;
+	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
 		"phase1 bad secdata");
 
 	reset_common_data(FOR_PHASE1);
-	ctx.secdata_kernel[0] ^= 0x33;
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 bad secdata rec");
+	ctx->secdata_kernel[0] ^= 0x33;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata rec");
 	TEST_EQ(sd->kernel_version_secdata, 0, "  secdata_kernel version");
 
 	/* Failures while reading recovery key */
 	reset_common_data(FOR_PHASE1);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sizeof(struct vb2_gbb_header));
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_GBB_WORKBUF,
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(sizeof(struct vb2_gbb_header));
+	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_GBB_WORKBUF,
 		"phase1 rec workbuf gbb header");
 
 	reset_common_data(FOR_PHASE1);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	mock_read_gbb_header_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_MOCK,
+	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_MOCK,
 		"phase1 rec gbb read header");
 
 	reset_common_data(FOR_PHASE1);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	mock_gbb.h.recovery_key_size = ctx.workbuf_size - 1;
-	TEST_EQ(vb2api_kernel_phase1(&ctx),
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	mock_gbb.h.recovery_key_size = sd->workbuf_size - 1;
+	TEST_EQ(vb2api_kernel_phase1(ctx),
 		VB2_ERROR_API_KPHASE1_WORKBUF_REC_KEY,
 		"phase1 rec workbuf key");
 
 	reset_common_data(FOR_PHASE1);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	mock_read_res_fail_on_call = 1;
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_MOCK,
+	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_MOCK,
 		"phase1 rec gbb read key");
 
 	/* Failures while parsing subkey from firmware preamble */
 	reset_common_data(FOR_PHASE1);
 	sd->preamble_size = 0;
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_API_KPHASE1_PREAMBLE,
+	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_API_KPHASE1_PREAMBLE,
 		"phase1 fw preamble");
 }
 
 static void load_kernel_vblock_tests(void)
 {
 	reset_common_data(FOR_PHASE1);
-	TEST_SUCC(vb2api_load_kernel_vblock(&ctx), "load vblock good");
+	TEST_SUCC(vb2api_load_kernel_vblock(ctx), "load vblock good");
 
 	reset_common_data(FOR_PHASE1);
 	mock_load_kernel_keyblock_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_load_kernel_vblock(&ctx), VB2_ERROR_MOCK,
+	TEST_EQ(vb2api_load_kernel_vblock(ctx), VB2_ERROR_MOCK,
 		"load vblock bad keyblock");
 
 	reset_common_data(FOR_PHASE1);
 	mock_load_kernel_preamble_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_load_kernel_vblock(&ctx), VB2_ERROR_MOCK,
+	TEST_EQ(vb2api_load_kernel_vblock(ctx), VB2_ERROR_MOCK,
 		"load vblock bad preamble");
 }
 
@@ -342,17 +341,17 @@ static void get_kernel_size_tests(void)
 
 	reset_common_data(FOR_PHASE2);
 	offs = size = 0;
-	TEST_SUCC(vb2api_get_kernel_size(&ctx, &offs, &size), "get size good");
+	TEST_SUCC(vb2api_get_kernel_size(ctx, &offs, &size), "get size good");
 	TEST_EQ(offs, 0x10000, "  offset");
 	TEST_EQ(size, sizeof(kernel_data), "  size");
 
 	/* Don't need to pass pointers */
 	reset_common_data(FOR_PHASE2);
-	TEST_SUCC(vb2api_get_kernel_size(&ctx, NULL, NULL), "get size null");
+	TEST_SUCC(vb2api_get_kernel_size(ctx, NULL, NULL), "get size null");
 
 	reset_common_data(FOR_PHASE2);
 	sd->preamble_size = 0;
-	TEST_EQ(vb2api_get_kernel_size(&ctx, &offs, &size),
+	TEST_EQ(vb2api_get_kernel_size(ctx, &offs, &size),
 		VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE,
 		"get size no preamble");
 }
@@ -360,56 +359,56 @@ static void get_kernel_size_tests(void)
 static void verify_kernel_data_tests(void)
 {
 	reset_common_data(FOR_PHASE2);
-	TEST_SUCC(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_SUCC(vb2api_verify_kernel_data(ctx, kernel_data,
 					    sizeof(kernel_data)),
 		  "verify data good");
 
 	reset_common_data(FOR_PHASE2);
 	sd->preamble_size = 0;
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_VERIFY_KDATA_PREAMBLE, "verify no preamble");
 
 	reset_common_data(FOR_PHASE2);
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data) + 1),
 		VB2_ERROR_API_VERIFY_KDATA_SIZE, "verify size");
 
 	reset_common_data(FOR_PHASE2);
-	ctx.workbuf_used = ctx.workbuf_size + VB2_WORKBUF_ALIGN -
-			vb2_wb_round_up(sizeof(struct vb2_digest_context));
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
+			   vb2_wb_round_up(sizeof(struct vb2_digest_context));
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_VERIFY_KDATA_WORKBUF, "verify workbuf");
 
 	reset_common_data(FOR_PHASE2);
 	sd->data_key_size = 0;
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_VERIFY_KDATA_KEY, "verify no key");
 
 	reset_common_data(FOR_PHASE2);
 	mock_unpack_key_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_MOCK, "verify unpack key");
 
 	reset_common_data(FOR_PHASE2);
 	kdkey->algorithm = VB2_ALG_COUNT;
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_SHA_INIT_ALGORITHM, "verify hash init");
 
 	reset_common_data(FOR_PHASE2);
-	ctx.workbuf_used = ctx.workbuf_size -
-			vb2_wb_round_up(sizeof(struct vb2_digest_context));
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	sd->workbuf_used = sd->workbuf_size -
+			   vb2_wb_round_up(sizeof(struct vb2_digest_context));
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_API_CHECK_HASH_WORKBUF_DIGEST, "verify hash workbuf");
 
 	reset_common_data(FOR_PHASE2);
 	kernel_data[3] ^= 0xd0;
-	TEST_EQ(vb2api_verify_kernel_data(&ctx, kernel_data,
+	TEST_EQ(vb2api_verify_kernel_data(ctx, kernel_data,
 					  sizeof(kernel_data)),
 		VB2_ERROR_VDATA_VERIFY_DIGEST, "verify hash digest");
 	kernel_data[3] ^= 0xd0;
@@ -420,37 +419,37 @@ static void phase3_tests(void)
 	uint32_t v;
 
 	reset_common_data(FOR_PHASE3);
-	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 good");
-	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
+	TEST_SUCC(vb2api_kernel_phase3(ctx), "phase3 good");
+	v = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20004, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->kernel_version = 0x20001;
-	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollback");
-	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
+	TEST_SUCC(vb2api_kernel_phase3(ctx), "phase3 no rollback");
+	v = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->flags &= ~VB2_SD_FLAG_KERNEL_SIGNED;
-	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 unsigned kernel");
-	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
+	TEST_SUCC(vb2api_kernel_phase3(ctx), "phase3 unsigned kernel");
+	v = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
-	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 recovery");
-	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2api_kernel_phase3(ctx), "phase3 recovery");
+	v = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
-	ctx.flags &= ~VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
-	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollforward");
-	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
+	ctx->flags &= ~VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
+	TEST_SUCC(vb2api_kernel_phase3(ctx), "phase3 no rollforward");
+	v = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
-	TEST_ABORT(vb2api_kernel_phase3(&ctx), "phase3 set fail");
+	TEST_ABORT(vb2api_kernel_phase3(ctx), "phase3 set fail");
 }
 
 int main(int argc, char* argv[])

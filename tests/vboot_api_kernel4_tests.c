@@ -25,7 +25,7 @@
 
 /* Mock data */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
-static struct vb2_context ctx;
+static struct vb2_context *ctx;
 static struct vb2_context ctx_nvram_backend;
 static struct vb2_shared_data *sd;
 static VbSelectAndLoadKernelParams kparams;
@@ -53,12 +53,9 @@ static void ResetMocks(void)
 	gbb.minor_version = VB2_GBB_MINOR_VER;
 	gbb.flags = 0;
 
-	/* ctx.workbuf will be initialized by VbSelectAndLoadKernel. */
-	memset(&ctx, 0, sizeof(ctx));
-	ctx.workbuf = workbuf;
-	ctx.workbuf_size = sizeof(workbuf);
-	vb2_init_context(&ctx);
-	sd = vb2_get_sd(&ctx);
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
+	sd = vb2_get_sd(ctx);
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
 	/*
@@ -166,7 +163,7 @@ vb2_error_t VbBootDiagnostic(struct vb2_context *c)
 
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 {
-	TEST_EQ(VbSelectAndLoadKernel(&ctx, shared, &kparams), retval, desc);
+	TEST_EQ(VbSelectAndLoadKernel(ctx, shared, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }
