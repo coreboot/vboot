@@ -132,7 +132,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	shared->kernel_version_tpm = new_version;
 
 	if (vbboot_retval == -1)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
 }
@@ -142,7 +142,7 @@ vb2_error_t VbBootDeveloper(struct vb2_context *c)
 	shared->kernel_version_tpm = new_version;
 
 	if (vbboot_retval == -2)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
 }
@@ -152,7 +152,7 @@ vb2_error_t VbBootRecovery(struct vb2_context *c)
 	shared->kernel_version_tpm = new_version;
 
 	if (vbboot_retval == -3)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
 }
@@ -160,7 +160,7 @@ vb2_error_t VbBootRecovery(struct vb2_context *c)
 vb2_error_t VbBootDiagnostic(struct vb2_context *c)
 {
 	if (vbboot_retval == -4)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
 }
@@ -260,7 +260,7 @@ static void VbSlkTest(void)
 	/* Boot normal */
 	ResetMocks();
 	vbboot_retval = -1;
-	test_slk(VBERROR_SIMULATED, 0, "Normal boot bad");
+	test_slk(VB2_ERROR_MOCK, 0, "Normal boot bad");
 
 	/* Check that NV_DIAG_REQUEST triggers diagnostic UI */
 	if (DIAGNOSTIC_UI) {
@@ -268,7 +268,7 @@ static void VbSlkTest(void)
 		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
 		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
 		vbboot_retval = -4;
-		test_slk(VBERROR_SIMULATED, 0,
+		test_slk(VB2_ERROR_MOCK, 0,
 			 "Normal boot with diag");
 		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST),
 			0, "  diag not requested");
@@ -278,7 +278,7 @@ static void VbSlkTest(void)
 	ResetMocks();
 	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
 	vbboot_retval = -2;
-	test_slk(VBERROR_SIMULATED, 0, "Dev boot bad");
+	test_slk(VB2_ERROR_MOCK, 0, "Dev boot bad");
 
 	ResetMocks();
 	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
@@ -290,7 +290,7 @@ static void VbSlkTest(void)
 	ResetMocks();
 	shared->recovery_reason = 123;
 	vbboot_retval = -3;
-	test_slk(VBERROR_SIMULATED, 0, "Recovery boot bad");
+	test_slk(VB2_ERROR_MOCK, 0, "Recovery boot bad");
 
 	ResetMocks();
 	shared->recovery_reason = 123;
@@ -300,7 +300,7 @@ static void VbSlkTest(void)
 
 	ResetMocks();
 	shared->recovery_reason = 123;
-	rkr_retval = rkw_retval = rkl_retval = VBERROR_SIMULATED;
+	rkr_retval = rkw_retval = rkl_retval = VB2_ERROR_MOCK;
 	test_slk(0, 0, "Recovery ignore TPM errors");
 
 	ResetMocks();

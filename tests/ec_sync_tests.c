@@ -175,7 +175,7 @@ vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 		mock_ec_ro_hash : mock_ec_rw_hash;
 	*hash_size = select == VB_SELECT_FIRMWARE_READONLY ?
 		     mock_ec_ro_hash_size : mock_ec_rw_hash_size;
-	return *hash_size ? VB2_SUCCESS : VBERROR_SIMULATED;
+	return *hash_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
 }
 
 vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
@@ -194,7 +194,7 @@ vb2_error_t VbExEcGetExpectedImageHash(int devidx,
 	*hash = want_ec_hash;
 	*hash_size = want_ec_hash_size;
 
-	return want_ec_hash_size ? VB2_SUCCESS : VBERROR_SIMULATED;
+	return want_ec_hash_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
 }
 
 vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
@@ -254,7 +254,7 @@ static void VbSoftwareSyncTest(void)
 {
 	/* AP-RO cases */
 	ResetMocks();
-	in_rw_retval = VBERROR_SIMULATED;
+	in_rw_retval = VB2_ERROR_MOCK;
 	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 		   VB2_RECOVERY_EC_UNKNOWN_IMAGE, "Unknown EC image");
 
@@ -357,7 +357,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	update_retval = VBERROR_SIMULATED;
+	update_retval = VB2_ERROR_MOCK;
 	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 		   VB2_RECOVERY_EC_UPDATE, "Update failed");
 
@@ -408,7 +408,7 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 
 	ResetMocks();
-	run_retval = VBERROR_SIMULATED;
+	run_retval = VB2_ERROR_MOCK;
 	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 		   VB2_RECOVERY_EC_JUMP_RW, "Jump to RW fail");
 
@@ -418,8 +418,8 @@ static void VbSoftwareSyncTest(void)
 		   0, "Jump to RW fail because locked");
 
 	ResetMocks();
-	protect_retval = VBERROR_SIMULATED;
-	test_ssync(VBERROR_SIMULATED,
+	protect_retval = VB2_ERROR_MOCK;
+	test_ssync(VB2_ERROR_MOCK,
 		   VB2_RECOVERY_EC_PROTECT, "Protect error");
 
 	/* No longer check for shutdown requested */

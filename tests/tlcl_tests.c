@@ -115,14 +115,14 @@ static void TlclTest(void)
 	TEST_EQ(TlclLibInit(), VB2_SUCCESS, "Init");
 
 	ResetMocks();
-	mock_retval = VBERROR_SIMULATED;
+	mock_retval = VB2_ERROR_MOCK;
 	TEST_EQ(TlclLibInit(), mock_retval, "Init bad");
 
 	ResetMocks();
 	TEST_EQ(TlclLibClose(), VB2_SUCCESS, "Close");
 
 	ResetMocks();
-	mock_retval = VBERROR_SIMULATED;
+	mock_retval = VB2_ERROR_MOCK;
 	TEST_EQ(TlclLibClose(), mock_retval, "Close bad");
 
 	ResetMocks();
@@ -136,9 +136,9 @@ static void TlclTest(void)
 	TEST_EQ(calls[0].req_size, 10, "SendReceive size");
 
 	ResetMocks();
-	calls[0].retval = VBERROR_SIMULATED;
+	calls[0].retval = VB2_ERROR_MOCK;
 	ToTpmUint32(buf + 2, 10);
-	TEST_EQ(TlclSendReceive(buf, buf2, sizeof(buf2)), VBERROR_SIMULATED,
+	TEST_EQ(TlclSendReceive(buf, buf2, sizeof(buf2)), VB2_ERROR_MOCK,
 		"SendReceive fail");
 
 	ResetMocks();
@@ -207,7 +207,7 @@ static void SendCommandTest(void)
 	TEST_EQ(TlclIsOwned(), 0, "IsOwned");
 	TEST_EQ(calls[0].req_cmd, TPM_ORD_ReadPubek, "  cmd");
 	ResetMocks();
-	calls[0].retval = VBERROR_SIMULATED;
+	calls[0].retval = VB2_ERROR_MOCK;
 	TEST_NEQ(TlclIsOwned(), 0, "IsOwned");
 
 	ResetMocks();

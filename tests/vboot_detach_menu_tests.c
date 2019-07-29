@@ -1018,7 +1018,7 @@ static void VbBootDevTest(void)
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	mock_keypress[1] = VB_BUTTON_VOL_UP_LONG_PRESS;
-	vbtlk_retval[0] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS,
 		"VolUp USB valid after invalid");
@@ -1404,7 +1404,7 @@ static void VbBootRecTest(void)
 	/* INSERT boots without screens if we have a valid image on first try */
 	ResetMocksForManualRecovery();
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[1] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VB2_SUCCESS,
 		"INSERT boots without screens if valid on first try");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1434,7 +1434,7 @@ static void VbBootRecTest(void)
 
 	/* invalid image, then remove, then valid image */
 	ResetMocksForManualRecovery();
-	vbtlk_retval[0] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[2] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[3] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
@@ -1720,7 +1720,7 @@ static void VbBootRecTest(void)
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // confirm enabling
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	virtdev_retval = VBERROR_SIMULATED;
+	virtdev_retval = VB2_ERROR_MOCK;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_TPM_SET_BOOT_MODE_STATE,
 		"todev TPM failure");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1771,7 +1771,7 @@ static void VbBootRecTest(void)
 	mock_keypress[55] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enter OPTIONS
 	mock_keypress[56] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[57] = VB_BUTTON_POWER_SHORT_PRESS;
-	vbtlk_retval[0] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Drop back to INSERT from TO_DEV when removing invalid USB");
@@ -1800,7 +1800,7 @@ static void VbBootRecTest(void)
 	mock_keypress[2] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // language
 	mock_keypress[3] = VB_BUTTON_POWER_SHORT_PRESS;
 	vbtlk_retval[0] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[1] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Drop back to NOGOOD from LANGUAGE when inserting invalid USB");
 	TEST_EQ(shutdown_request_calls_left, 0, "  timed out");

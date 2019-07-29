@@ -223,7 +223,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
 
 	if ((int)lba_start == disk_read_to_fail)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	memcpy(buffer, &mock_disk[lba_start * MOCK_SECTOR_SIZE],
 	       lba_count * MOCK_SECTOR_SIZE);
@@ -237,7 +237,7 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
 	LOGCALL("VbExDiskWrite(h, %d, %d)\n", (int)lba_start, (int)lba_count);
 
 	if ((int)lba_start == disk_write_to_fail)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 
 	memcpy(&mock_disk[lba_start * MOCK_SECTOR_SIZE], buffer,
 	       lba_count * MOCK_SECTOR_SIZE);

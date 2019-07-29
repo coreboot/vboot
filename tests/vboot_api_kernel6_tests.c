@@ -30,7 +30,7 @@ static void ResetMocks(void)
 vb2_error_t SetVirtualDevMode(int val)
 {
 	if (virtual_dev_mode_fail)
-		return VBERROR_SIMULATED;
+		return VB2_ERROR_MOCK;
 	return VB2_SUCCESS;
 }
 

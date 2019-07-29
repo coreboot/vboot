@@ -204,7 +204,7 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 {
 	if (mock_num_disks_count < ARRAY_SIZE(mock_num_disks)) {
 		if (mock_num_disks[mock_num_disks_count] == -1)
-			return VBERROR_SIMULATED;
+			return VB2_ERROR_MOCK;
 		else
 			*count = mock_num_disks[mock_num_disks_count++];
 	} else {
@@ -1358,7 +1358,7 @@ static void VbBootRecTest(void)
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	mock_keypress[1] = VB_KEY_ENTER;
 	mock_keyflags[1] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
-	virtdev_retval = VBERROR_SIMULATED;
+	virtdev_retval = VB2_ERROR_MOCK;
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_TPM_SET_BOOT_MODE_STATE,
 		"Ctrl+D todev failure");
