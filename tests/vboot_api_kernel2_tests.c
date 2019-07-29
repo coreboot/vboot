@@ -210,13 +210,13 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 	} else {
 		*count = 0;
 	}
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 			     VbExDiskHandle_t preserve_handle)
 {
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 int VbExTrustEC(int devidx)
@@ -245,7 +245,7 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t SetVirtualDevMode(int val)
@@ -259,7 +259,7 @@ vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 	set_vendor_data_called = 1;
 	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data));
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
@@ -538,7 +538,7 @@ static void VbBootDevTest(void)
 	vb2_nv_set(&ctx, VB2_NV_DEV_DEFAULT_BOOT,
 		   VB2_DEV_DEFAULT_BOOT_USB);
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
-	vbtlk_retval = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloper(&ctx), 0, "Ctrl+U USB");
 
 	/* Proceed to usb boot mode only if enabled */
@@ -773,21 +773,21 @@ static void VbBootDevTest(void)
 	ResetMocks();
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloper(&ctx), 0, "Ctrl+U USB");
 
 	/* Ctrl+U enabled via GBB */
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_BOOT_USB;
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloper(&ctx), 0, "Ctrl+U force USB");
 
 	/* Ctrl+U enabled via FWMP */
 	ResetMocks();
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_ENABLE_USB;
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloper(&ctx), 0, "Ctrl+U force USB");
 
 	/* Ctrl+S set vendor data and reboot */

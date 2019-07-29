@@ -190,7 +190,7 @@ vb2_error_t VbExTpmClose(void)
 		close(tpm_fd);
 		tpm_fd = -1;
 	}
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExTpmOpen(void)
@@ -200,7 +200,7 @@ vb2_error_t VbExTpmOpen(void)
 	int retries, saved_errno;
 
 	if (tpm_fd >= 0)
-		return VBERROR_SUCCESS;  /* Already open */
+		return VB2_SUCCESS;  /* Already open */
 
 	device_path = getenv("TPM_DEVICE_PATH");
 	if (device_path == NULL) {
@@ -213,7 +213,7 @@ vb2_error_t VbExTpmOpen(void)
 		tpm_fd = open(device_path, O_RDWR | O_CLOEXEC);
 		saved_errno = errno;
 		if (tpm_fd >= 0)
-			return VBERROR_SUCCESS;
+			return VB2_SUCCESS;
 		if (saved_errno != EBUSY)
 			break;
 
@@ -306,5 +306,5 @@ vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
 		return VBERROR_UNKNOWN;
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }

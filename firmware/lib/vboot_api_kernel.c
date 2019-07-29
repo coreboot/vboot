@@ -80,8 +80,8 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	lkp.disk_handle = NULL;
 
 	/* Find disks */
-	if (VBERROR_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count,
-					       get_info_flags))
+	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count,
+					   get_info_flags))
 		disk_count = 0;
 
 	VB2_DEBUG("VbTryLoadKernel() found %d disks\n", (int)disk_count);
@@ -131,12 +131,12 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 		 * get, instead of just returning the value from the last disk
 		 * attempted.
 		 */
-		if (VBERROR_SUCCESS == retval)
+		if (VB2_SUCCESS == retval)
 			break;
 	}
 
 	/* If we didn't find any good kernels, don't return a disk handle. */
-	if (VBERROR_SUCCESS != retval) {
+	if (VB2_SUCCESS != retval) {
 		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_NO_KERNEL);
 		lkp.disk_handle = NULL;
 	}
@@ -343,7 +343,7 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 		}
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t vb2_kernel_phase4(struct vb2_context *ctx,
@@ -370,7 +370,7 @@ static vb2_error_t vb2_kernel_phase4(struct vb2_context *ctx,
 		return VBERROR_TPM_LOCK_KERNEL;
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 static void vb2_kernel_cleanup(struct vb2_context *ctx)
@@ -448,7 +448,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 
  VbSelectAndLoadKernel_exit:
 
-	if (VBERROR_SUCCESS == retval)
+	if (VB2_SUCCESS == retval)
 		retval = vb2_kernel_phase4(ctx, kparams);
 
 	vb2_kernel_cleanup(ctx);
@@ -607,7 +607,7 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	if (VbKernelHasFlags(preamble) == VBOOT_SUCCESS)
 		kparams->flags = preamble->flags;
 
-	retval = VBERROR_SUCCESS;
+	retval = VB2_SUCCESS;
 
  fail:
 	vb2_kernel_cleanup(ctx);
@@ -617,9 +617,9 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 vb2_error_t VbUnlockDevice(void)
 {
 	VB2_DEBUG("Enabling dev-mode...\n");
-	if (VBERROR_SUCCESS != SetVirtualDevMode(1))
+	if (VB2_SUCCESS != SetVirtualDevMode(1))
 		return VBERROR_TPM_SET_BOOT_MODE_STATE;
 
 	VB2_DEBUG("Mode change will take effect on next reboot.\n");
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }

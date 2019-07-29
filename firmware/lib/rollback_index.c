@@ -166,7 +166,7 @@ vb2_error_t SetVirtualDevMode(int val)
 		return VBERROR_TPM_SET_BOOT_MODE_STATE;
 
 	VB2_DEBUG("TPM: Leaving\n");
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)

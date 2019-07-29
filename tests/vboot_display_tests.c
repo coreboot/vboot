@@ -59,7 +59,7 @@ vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
 		return VBERROR_UNKNOWN;
 
 	*count = mock_localization_count;
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 uint32_t VbExGetAltFwIdxMask() {
@@ -70,7 +70,7 @@ vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	strncpy(debug_info, info_str, sizeof(debug_info));
 	debug_info[sizeof(debug_info) - 1] = '\0';
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 /* Test displaying debug info */

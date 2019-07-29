@@ -80,8 +80,8 @@ static void ResetMocks(void)
 	rfr_retval = TPM_SUCCESS;
 
 	rkr_version = new_version = 0x10002;
-	rkr_retval = rkw_retval = rkl_retval = VBERROR_SUCCESS;
-	vbboot_retval = VBERROR_SUCCESS;
+	rkr_retval = rkw_retval = rkl_retval = VB2_SUCCESS;
+	vbboot_retval = VB2_SUCCESS;
 
 	memset(mock_switches, 0, sizeof(mock_switches));
 	mock_switches_count = 0;
@@ -94,14 +94,14 @@ vb2_error_t VbExNvStorageRead(uint8_t *buf)
 {
 	memcpy(buf, ctx_nvram_backend.nvdata,
 	       vb2_nv_get_size(&ctx_nvram_backend));
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExNvStorageWrite(const uint8_t *buf)
 {
 	memcpy(ctx_nvram_backend.nvdata, buf,
 	       vb2_nv_get_size(&ctx_nvram_backend));
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 uint32_t RollbackKernelRead(uint32_t *version)

@@ -78,14 +78,14 @@ test_case_t test[] = {
 			{512,  100,  VB_DISK_FLAG_REMOVABLE, "holygrail"},
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1,},
 		.external_expected = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = pickme,
 		.expected_to_load_disk = pickme,
-		.expected_return_val = VBERROR_SUCCESS
+		.expected_return_val = VB2_SUCCESS
 	},
 	{
 		.name = "first removable drive",
@@ -110,14 +110,14 @@ test_case_t test[] = {
 			{512,  100,  VB_DISK_FLAG_REMOVABLE, "holygrail"},
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1,},
 		.external_expected = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = pickme,
 		.expected_to_load_disk = pickme,
-		.expected_return_val = VBERROR_SUCCESS
+		.expected_return_val = VB2_SUCCESS
 	},
 	{
 		.name = "second removable drive",
@@ -129,13 +129,13 @@ test_case_t test[] = {
 			{512,  100,  VB_DISK_FLAG_REMOVABLE, pickme},
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {1, 0, 1, 1, 1, 1, 1, 1, 1, 1,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = pickme,
 		.expected_to_load_disk = pickme,
-		.expected_return_val = VBERROR_SUCCESS
+		.expected_return_val = VB2_SUCCESS
 	},
 	{
 		.name = "first fixed drive",
@@ -161,20 +161,20 @@ test_case_t test[] = {
 			{512,  100,  VB_DISK_FLAG_FIXED, "holygrail"},
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {0, 1, 1, 1, 1, 1, 1, 1, 1, 1,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = pickme,
 		.expected_to_load_disk = pickme,
-		.expected_return_val = VBERROR_SUCCESS
+		.expected_return_val = VB2_SUCCESS
 	},
 	{
 		.name = "no drives at all",
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_DISK,
@@ -204,7 +204,7 @@ test_case_t test[] = {
 			{512,  100,  VB_DISK_FLAG_FIXED, "bad2"},
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
-		.diskgetinfo_return_val = VBERROR_SUCCESS,
+		.diskgetinfo_return_val = VB2_SUCCESS,
 		.loadkernel_return_val = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1,},
 
 		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_KERNEL,
@@ -314,7 +314,7 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	got_load_disk = (const char *)preserve_handle;
 	VB2_DEBUG("%s(): got_load_disk = %s\n", __FUNCTION__,
 		  got_load_disk ? got_load_disk : "0");
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t LoadKernel(struct vb2_context *c, LoadKernelParams *params)

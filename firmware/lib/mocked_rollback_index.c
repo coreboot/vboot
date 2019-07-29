@@ -16,7 +16,7 @@
 
 vb2_error_t SetVirtualDevMode(int val)
 {
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 uint32_t TPMClearAndReenable(void)

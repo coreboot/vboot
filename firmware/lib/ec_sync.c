@@ -50,7 +50,7 @@ static vb2_error_t protect_ec(struct vb2_context *ctx, int devidx,
 
 	if (rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED) {
 		VB2_DEBUG("VbExEcProtect() needs reboot\n");
-	} else if (rv != VBERROR_SUCCESS) {
+	} else if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("VbExEcProtect() returned %d\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_PROTECT);
 	}
@@ -144,7 +144,7 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx, int devidx,
  * @param ctx		Vboot2 context
  * @param devidx	Index of EC device to check
  * @param select	Which firmware image to check
- * @return VBERROR_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
 			     enum VbSelectFirmware_t select)
@@ -166,7 +166,7 @@ static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
 	VB2_DEBUG("image len = %d\n", want_size);
 
 	rv = VbExEcUpdateImage(devidx, select, want, want_size);
-	if (rv != VBERROR_SUCCESS) {
+	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("VbExEcUpdateImage() returned %d\n", rv);
 
 		/*
@@ -194,7 +194,7 @@ static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 /**
@@ -216,7 +216,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
 	vb2_error_t rv = VbExEcRunningRW(devidx, &in_rw);
 
 	/* If we couldn't determine where the EC was, reboot to recovery. */
-	if (rv != VBERROR_SUCCESS) {
+	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("VbExEcRunningRW() returned %d\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_UNKNOWN_IMAGE);
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
@@ -225,7 +225,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
 	if (in_rw)
 		sd->flags |= IN_RW(devidx);
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 #define RO_RETRIES 2  /* Maximum times to retry flashing RO */
@@ -235,7 +235,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
  *
  * @param ctx		Vboot2 context
  * @param devidx	Which device (EC=0, PD=1)
- * @return VBERROR_SUCCESS, or non-zero if error.
+ * @return VB2_SUCCESS, or non-zero if error.
  */
 static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 {
@@ -264,7 +264,7 @@ static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 	if (!(sd->flags & IN_RW(devidx))) {
 		VB2_DEBUG("jumping to EC-RW\n");
 		rv = VbExEcJumpToRW(devidx);
-		if (rv != VBERROR_SUCCESS) {
+		if (rv != VB2_SUCCESS) {
 			VB2_DEBUG("VbExEcJumpToRW() returned %x\n", rv);
 
 			/*
@@ -319,16 +319,16 @@ static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 
 	/* Protect RO flash */
 	rv = protect_ec(ctx, devidx, VB_SELECT_FIRMWARE_READONLY);
-	if (rv != VBERROR_SUCCESS)
+	if (rv != VB2_SUCCESS)
 		return rv;
 
 	/* Protect RW flash */
 	rv = protect_ec(ctx, devidx, select_rw);
-	if (rv != VBERROR_SUCCESS)
+	if (rv != VB2_SUCCESS)
 		return rv;
 
 	rv = VbExEcDisableJump(devidx);
-	if (rv != VBERROR_SUCCESS) {
+	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("VbExEcDisableJump() returned %d\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_SOFTWARE_SYNC);
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
@@ -344,9 +344,9 @@ vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 
 	/* Reasons not to do sync at all */
 	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 
 #ifdef PD_SYNC
 	const int do_pd_sync = !(gbb->flags &
@@ -391,7 +391,7 @@ vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 int ec_will_update_slowly(struct vb2_context *ctx)
@@ -433,7 +433,7 @@ vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 	if (!ec_sync_allowed(ctx) ||
 	    (gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
 		*severity = VB_AUX_FW_NO_UPDATE;
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 	}
 	return VbExCheckAuxFw(severity);
 }
@@ -455,11 +455,11 @@ vb2_error_t ec_sync_update_aux_fw(struct vb2_context *ctx)
 vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 {
 	if (!ec_sync_allowed(ctx))
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 
 	/* Handle updates and jumps for EC */
 	vb2_error_t retval = sync_one_ec(ctx, 0);
-	if (retval != VBERROR_SUCCESS)
+	if (retval != VB2_SUCCESS)
 		return retval;
 
 #ifdef PD_SYNC
@@ -467,12 +467,12 @@ vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	if (!(gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
 		retval = sync_one_ec(ctx, 1);
-		if (retval != VBERROR_SUCCESS)
+		if (retval != VB2_SUCCESS)
 			return retval;
 	}
 #endif
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t ec_sync_phase3(struct vb2_context *ctx)
@@ -495,5 +495,5 @@ vb2_error_t ec_sync_phase3(struct vb2_context *ctx)
 		return VBERROR_SHUTDOWN_REQUESTED;
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }

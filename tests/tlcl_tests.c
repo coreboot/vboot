@@ -44,7 +44,7 @@ static void ResetMocks(void)
 	int i;
 
 	*debug_info = 0;
-	mock_retval = VBERROR_SUCCESS;
+	mock_retval = VB2_SUCCESS;
 
 	memset(calls, 0, sizeof(calls));
 	for (i = 0; i < MAXCALLS; i++)
@@ -101,7 +101,7 @@ uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
 vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
 {
 	memset(buf, 0xa5, length);
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 /**
@@ -112,14 +112,14 @@ static void TlclTest(void)
 	uint8_t buf[32], buf2[32];
 
 	ResetMocks();
-	TEST_EQ(TlclLibInit(), VBERROR_SUCCESS, "Init");
+	TEST_EQ(TlclLibInit(), VB2_SUCCESS, "Init");
 
 	ResetMocks();
 	mock_retval = VBERROR_SIMULATED;
 	TEST_EQ(TlclLibInit(), mock_retval, "Init bad");
 
 	ResetMocks();
-	TEST_EQ(TlclLibClose(), VBERROR_SUCCESS, "Close");
+	TEST_EQ(TlclLibClose(), VB2_SUCCESS, "Close");
 
 	ResetMocks();
 	mock_retval = VBERROR_SIMULATED;

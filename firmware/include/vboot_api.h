@@ -152,7 +152,7 @@ typedef struct VbSelectAndLoadKernelParams {
 /**
  * Select and loads the kernel.
  *
- * Returns VBERROR_SUCCESS if success, non-zero if error; on error, caller
+ * Returns VB2_SUCCESS if success, non-zero if error; on error, caller
  * should reboot. */
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSharedDataHeader *shared,
@@ -172,7 +172,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
  * @param kparams	kernel params
  * @param boot_image	Image in memory that needs to be verified
  * @param image_size	Size of the image in memory
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 				    VbSharedDataHeader *shared,
@@ -190,7 +190,7 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
  * before calling this function! Also, on successful return from this function,
  * the caller needs to reboot the device immediately for changes to take effect.
  *
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 vb2_error_t VbUnlockDevice(void);
 
@@ -437,7 +437,7 @@ typedef void *VbExStream_t;
  * @param lba_count	Maximum extent of the stream in sectors
  * @param stream	out-paramter for the generated stream
  *
- * @return Error code, or VBERROR_SUCCESS.
+ * @return Error code, or VB2_SUCCESS.
  *
  * This is used for access to the contents of the actual partitions on the
  * device. It is not used to access the GPT. The size of the content addressed
@@ -453,7 +453,7 @@ vb2_error_t VbExStreamOpen(VbExDiskHandle_t handle, uint64_t lba_start,
  * @param bytes		Number of bytes to read
  * @param buffer	Destination to read into
  *
- * @return Error code, or VBERROR_SUCCESS. Failure to read as much data as
+ * @return Error code, or VB2_SUCCESS. Failure to read as much data as
  * requested is an error.
  *
  * This is used for access to the contents of the actual partitions on the
@@ -561,7 +561,7 @@ vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
  *                          each bit corresponds to the menu item's index.
  * @param redraw_base       Setting 1 will force a full redraw of the screen
  *
- * @return VBERROR_SUCCESS or error code on error.
+ * @return VB2_SUCCESS or error code on error.
  */
 vb2_error_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
 			  uint32_t selected_index, uint32_t disabled_idx_mask,
@@ -578,7 +578,7 @@ vb2_error_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
  * @param info_str	The debug string to display
  * @param full_info	1 if firmware should append its own info, 0 if not
  *
- * @return VBERROR_SUCCESS or error code on error.
+ * @return VB2_SUCCESS or error code on error.
  */
 vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info);
 
@@ -589,7 +589,7 @@ vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info);
  *                            string length will be exactly VENDOR_DATA_LENGTH
  *                            characters and null-terminated.
  *
- * @return VBERROR_SUCCESS or error code on error.
+ * @return VB2_SUCCESS or error code on error.
  */
 vb2_error_t VbExSetVendorData(const char *vendor_data_value);
 
@@ -719,7 +719,7 @@ vb2_error_t VbExEcDisableJump(int devidx);
  * @param select    Image to get hash of. RO or RW.
  * @param hash      Pointer to the hash.
  * @param hash_size Pointer to the hash size.
- * @return          VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return          VBERROR_... error, VB2_SUCCESS on success.
  */
 vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 			    const uint8_t **hash, int *hash_size);
@@ -768,7 +768,7 @@ vb2_error_t VbExEcEnteringMode(int devidx, enum VbEcBootMode_t mode);
  * enough power is available to continue with boot.
  *
  * @param in_recovery	1 if recovery mode is selected by the AP, 0 otherwise.
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 vb2_error_t VbExEcVbootDone(int in_recovery);
 
@@ -801,7 +801,7 @@ typedef enum {
  *			0: no update needed
  *			1: fast update needed
  *			2: slow update needed
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 
 vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity);
@@ -812,7 +812,7 @@ vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity);
  * This is called after the EC has been updated and is intended to
  * update additional firmware blobs such as TCPCs.
  *
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 
 vb2_error_t VbExUpdateAuxFw(void);
@@ -903,7 +903,7 @@ uint8_t VbExOverrideGptEntryPriority(const GptEntry *e);
  * Return number of locales supported
  *
  * @param count		Pointer to the number of locales.
- * @return VBERROR_... error, VBERROR_SUCCESS on success.
+ * @return VBERROR_... error, VB2_SUCCESS on success.
  */
 vb2_error_t VbExGetLocalizationCount(uint32_t *count);
 

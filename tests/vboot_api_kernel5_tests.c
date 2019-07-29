@@ -203,7 +203,7 @@ vb2_error_t VbExNvStorageRead(uint8_t *buf)
 {
 	memcpy(buf, ctx_nvram_backend.nvdata,
 	       vb2_nv_get_size(&ctx_nvram_backend));
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 static void VerifyMemoryBootImageTest(void)
@@ -292,7 +292,7 @@ static void VerifyMemoryBootImageTest(void)
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
 					kernel_buffer_size),
-		VBERROR_SUCCESS,
+		VB2_SUCCESS,
 		"Developer flag mismatch - dev switch on(gbb override)");
 
 	/* Recovery flag mismatch - dev switch on with GBB override */
@@ -304,7 +304,7 @@ static void VerifyMemoryBootImageTest(void)
 	gbb.flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
 					kernel_buffer_size),
-		VBERROR_SUCCESS,
+		VB2_SUCCESS,
 		"Recovery flag mismatch - dev switch on(gbb override)");
 
 	/* Developer flag mismatch - dev switch off */

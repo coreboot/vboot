@@ -645,7 +645,7 @@ gpt_done:
 			shared->kernel_version_tpm = lowest_version;
 
 		/* Success! */
-		retval = VBERROR_SUCCESS;
+		retval = VB2_SUCCESS;
 	} else if (found_partitions > 0) {
 		shcall->check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
 		recovery = VB2_RECOVERY_RW_INVALID_OS;
@@ -659,7 +659,7 @@ gpt_done:
 load_kernel_exit:
 	/* Store recovery request, if any */
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-		   VBERROR_SUCCESS != retval ?
+		   VB2_SUCCESS != retval ?
 		   recovery : VB2_RECOVERY_NOT_REQUESTED);
 
 	shcall->return_code = (uint8_t)retval;

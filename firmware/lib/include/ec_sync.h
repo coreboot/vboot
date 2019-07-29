@@ -19,7 +19,7 @@ struct vb2_context;
  * whether any updates are necessary.
  *
  * @param ctx		Vboot2 context
- * @return VBERROR_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
+ * @return VB2_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
  * reboot back to its RO code to continue EC sync, or other non-zero error
  * code.
  */
@@ -42,7 +42,7 @@ int ec_will_update_slowly(struct vb2_context *ctx);
  *
  * @param ctx		Vboot2 context
  * @param severity	VB_AUX_FW_{NO,FAST,SLOW}_UPDATE
- * @return VBERROR_SUCCESS or non-zero error code.
+ * @return VB2_SUCCESS or non-zero error code.
  */
 vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 			       VbAuxFwUpdateSeverity_t *severity);
@@ -51,7 +51,7 @@ vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
  * Update and protect auxiliary firmware.
  *
  * @param ctx          Vboot2 context
- * @return VBERROR_SUCCESS or non-zero error code.
+ * @return VB2_SUCCESS or non-zero error code.
  */
 vb2_error_t ec_sync_update_aux_fw(struct vb2_context *ctx);
 
@@ -65,7 +65,7 @@ vb2_error_t ec_sync_update_aux_fw(struct vb2_context *ctx);
  * warning screen before calling phase 2.
  *
  * @param ctx		Vboot2 context
- * @return VBERROR_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
+ * @return VB2_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
  * reboot back to its RO code to continue EC sync, or other non-zero error
  * code.
  */
@@ -77,7 +77,7 @@ vb2_error_t ec_sync_phase2(struct vb2_context *ctx);
  * This completes EC sync and handles battery cutoff if needed.
  *
  * @param ctx		Vboot2 context
- * @return VBERROR_SUCCESS or non-zero error code.
+ * @return VB2_SUCCESS or non-zero error code.
  */
 vb2_error_t ec_sync_phase3(struct vb2_context *ctx);
 
@@ -87,7 +87,7 @@ vb2_error_t ec_sync_phase3(struct vb2_context *ctx);
  * This is a high-level function which calls the functions above.
  *
  * @param ctx		Vboot context
- * @return VBERROR_SUCCESS, or non-zero if error.
+ * @return VB2_SUCCESS, or non-zero if error.
  */
 vb2_error_t ec_sync_all(struct vb2_context *ctx);
 

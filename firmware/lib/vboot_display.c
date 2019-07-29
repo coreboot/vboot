@@ -39,7 +39,7 @@ vb2_error_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
 
 	/* If requested screen is the same as the current one, we're done. */
 	if (disp_current_screen == screen && !force)
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 
 	/* Keep track of the currently displayed screen */
 	disp_current_screen = screen;
@@ -63,7 +63,7 @@ vb2_error_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
 	if (disp_current_screen == screen &&
 	    disp_current_index == selected_index &&
 	    !force)
-		return VBERROR_SUCCESS;
+		return VB2_SUCCESS;
 
 	/*
 	 * If current screen is not the same, make sure we redraw the base
@@ -430,7 +430,7 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 	case VB_KEY_DOWN:
 		/* Arrow keys = change localization */
 		loc = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
-		if (VBERROR_SUCCESS != VbExGetLocalizationCount(&count))
+		if (VB2_SUCCESS != VbExGetLocalizationCount(&count))
 			loc = 0;  /* No localization count (bad GBB?) */
 		else if (VB_KEY_RIGHT == key || VB_KEY_UP == key)
 			loc = (loc < count - 1 ? loc + 1 : 0);
@@ -458,5 +458,5 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 		return VbDisplayScreen(ctx, disp_current_screen, 1, data);
 	}
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }

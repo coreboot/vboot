@@ -48,7 +48,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
     fprintf(stderr, "Read error.");
     return 1;
   }
-  return VBERROR_SUCCESS;
+  return VB2_SUCCESS;
 }
 
 
@@ -64,14 +64,14 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
   }
 
   /* TODO: enable writes, once we're sure it won't trash our example file */
-  return VBERROR_SUCCESS;
+  return VB2_SUCCESS;
 
   fseek(image_file, lba_start * lkp.bytes_per_lba, SEEK_SET);
   if (1 != fwrite(buffer, lba_count * lkp.bytes_per_lba, 1, image_file)) {
     fprintf(stderr, "Read error.");
     return 1;
   }
-  return VBERROR_SUCCESS;
+  return VB2_SUCCESS;
 }
 
 
@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
   rv = LoadKernel(&ctx, &lkp);
   printf("LoadKernel() returned %d\n", rv);
 
-  if (VBERROR_SUCCESS == rv) {
+  if (VB2_SUCCESS == rv) {
     printf("Partition number:   %u\n", lkp.partition_number);
     printf("Bootloader address: %" PRIu64 "\n", lkp.bootloader_address);
     printf("Bootloader size:    %u\n", lkp.bootloader_size);
@@ -277,5 +277,5 @@ int main(int argc, char* argv[]) {
 
   fclose(image_file);
   free(lkp.kernel_buffer);
-  return rv != VBERROR_SUCCESS;
+  return rv != VB2_SUCCESS;
 }

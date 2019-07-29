@@ -214,7 +214,7 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 		screens_displayed[screens_count++] = screen;
 	printf("VbDisplayScreen: screens_displayed[%d] = 0x%x\n",
 	       screens_count - 1, screen);
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
@@ -229,13 +229,13 @@ vb2_error_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
 	       screens_count - 1, screen,
 	       selected_index, disabled_idx_mask);
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbDisplayDebugInfo(struct vb2_context *c)
 {
 	debug_info_displayed = 1;
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
@@ -244,7 +244,7 @@ vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 		beeps_played[beeps_count++] = frequency;
 	printf("VbExBeep: beeps_played[%d] = %dHz for %dms\n",
 	       beeps_count - 1, frequency, msec);
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t SetVirtualDevMode(int val)
@@ -342,7 +342,7 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	vb2_nv_set(&ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_USB);
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperMenu(&ctx), 0, "Ctrl+U USB");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
@@ -704,8 +704,8 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS, "Ctrl+U USB");
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS, "Ctrl+U USB");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -740,8 +740,8 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_BOOT_USB;
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS, "Ctrl+U force USB");
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS, "Ctrl+U force USB");
 	TEST_NEQ(audio_looping_calls_left, 0, "  aborts audio");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
@@ -753,8 +753,8 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	VbApiKernelGetFwmp()->flags |= FWMP_DEV_ENABLE_USB;
 	mock_keypress[0] = VB_KEY_CTRL('U');
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS, "Ctrl+U force USB");
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS, "Ctrl+U force USB");
 	TEST_NEQ(audio_looping_calls_left, 0, "  aborts audio");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
@@ -791,8 +791,8 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From USB
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS,
 		"Menu selected USB boot");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -825,8 +825,8 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS,
 		"Menu selected USB default boot");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 	TEST_NEQ(audio_looping_calls_left, 0, "  aborts audio");
@@ -1002,8 +1002,8 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_USB, 1);
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS, "VolUp USB");
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS, "VolUp USB");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_NEQ(audio_looping_calls_left, 0, "  aborts audio");
@@ -1019,8 +1019,8 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	mock_keypress[1] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	vbtlk_retval[0] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS,
 		"VolUp USB valid after invalid");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1086,8 +1086,8 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Language
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_LONG_PRESS;
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootDeveloperMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootDeveloperMenu(&ctx), VB2_SUCCESS,
 		"VolUp USB from LANGUAGE");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1302,9 +1302,9 @@ static void VbBootRecTest(void)
 
 	/* BROKEN screen with disks inserted */
 	ResetMocks();
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[2] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[2] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[3] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested in BROKEN with disks");
@@ -1319,7 +1319,7 @@ static void VbBootRecTest(void)
 	/* BROKEN screen with disks on second attempt */
 	ResetMocks();
 	vbtlk_retval[0] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested in BROKEN with later disk");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1332,9 +1332,9 @@ static void VbBootRecTest(void)
 
 	/* BROKEN screen even if dev switch is on */
 	ResetMocks();
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[2] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[2] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested in BROKEN with dev switch");
@@ -1403,9 +1403,9 @@ static void VbBootRecTest(void)
 
 	/* INSERT boots without screens if we have a valid image on first try */
 	ResetMocksForManualRecovery();
-	vbtlk_retval[0] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VBERROR_SIMULATED - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SUCCESS,
+	TEST_EQ(VbBootRecoveryMenu(&ctx), VB2_SUCCESS,
 		"INSERT boots without screens if valid on first try");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1420,8 +1420,8 @@ static void VbBootRecTest(void)
 	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[2] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[3] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[4] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[4] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootRecoveryMenu(&ctx), VB2_SUCCESS,
 		"INSERT boots after valid image appears");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1438,8 +1438,8 @@ static void VbBootRecTest(void)
 	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[2] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[3] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[4] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[4] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootRecoveryMenu(&ctx), VB2_SUCCESS,
 		"INSERT boots after valid image appears");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1827,8 +1827,8 @@ static void VbBootRecTest(void)
 	ResetMocksForManualRecovery();
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enter OPTIONS
 	vbtlk_retval[0] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VBERROR_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SUCCESS,
+	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
+	TEST_EQ(VbBootRecoveryMenu(&ctx), VB2_SUCCESS,
 		"Boot by plugging in USB straight from OPTIONS menu");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  booted explicitly");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");

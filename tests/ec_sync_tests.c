@@ -87,11 +87,11 @@ static void ResetMocks(void)
 	ec_run_image = 0;   /* 0 = RO, 1 = RW */
 	ec_ro_updated = 0;
 	ec_rw_updated = 0;
-	in_rw_retval = VBERROR_SUCCESS;
-	protect_retval = VBERROR_SUCCESS;
-	update_retval = VBERROR_SUCCESS;
-	run_retval = VBERROR_SUCCESS;
-	get_expected_retval = VBERROR_SUCCESS;
+	in_rw_retval = VB2_SUCCESS;
+	protect_retval = VB2_SUCCESS;
+	update_retval = VB2_SUCCESS;
+	run_retval = VB2_SUCCESS;
+	get_expected_retval = VB2_SUCCESS;
 	shutdown_request_calls_left = -1;
 
 	memset(mock_ec_ro_hash, 0, sizeof(mock_ec_ro_hash));
@@ -113,7 +113,7 @@ static void ResetMocks(void)
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
 
-	ec_aux_fw_retval = VBERROR_SUCCESS;
+	ec_aux_fw_retval = VB2_SUCCESS;
 	ec_aux_fw_mock_severity = VB_AUX_FW_NO_UPDATE;
 	ec_aux_fw_update_severity = VB_AUX_FW_NO_UPDATE;
 	ec_aux_fw_update_req = 0;
@@ -175,7 +175,7 @@ vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 		mock_ec_ro_hash : mock_ec_rw_hash;
 	*hash_size = select == VB_SELECT_FIRMWARE_READONLY ?
 		     mock_ec_ro_hash_size : mock_ec_rw_hash_size;
-	return *hash_size ? VBERROR_SUCCESS : VBERROR_SIMULATED;
+	return *hash_size ? VB2_SUCCESS : VBERROR_SIMULATED;
 }
 
 vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
@@ -194,7 +194,7 @@ vb2_error_t VbExEcGetExpectedImageHash(int devidx,
 	*hash = want_ec_hash;
 	*hash_size = want_ec_hash_size;
 
-	return want_ec_hash_size ? VBERROR_SUCCESS : VBERROR_SIMULATED;
+	return want_ec_hash_size ? VB2_SUCCESS : VBERROR_SIMULATED;
 }
 
 vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
@@ -216,14 +216,14 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
 {
 	*severity = ec_aux_fw_mock_severity;
 	ec_aux_fw_update_severity = ec_aux_fw_mock_severity;
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExUpdateAuxFw()
@@ -378,7 +378,7 @@ static void VbSoftwareSyncTest(void)
 	mock_ec_rw_hash[0]++;
 	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "Slow update with display request");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 1,
@@ -388,7 +388,7 @@ static void VbSoftwareSyncTest(void)
 	mock_ec_rw_hash[0]++;
 	ctx.flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 0);
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "Slow update without display request (no reboot needed)");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT, "  wait screen");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_DISPLAY_REQUEST), 0,
@@ -436,7 +436,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC"
 		   " disables auxiliary FW update request");
 	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
@@ -445,7 +445,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC;
 	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC"
 		   " disables auxiliary FW update request");
 	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
@@ -453,7 +453,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_NO_DEVICE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "No auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");
@@ -462,7 +462,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_NO_UPDATE;
-	test_ssync(VBERROR_SUCCESS, 0,
+	test_ssync(VB2_SUCCESS, 0,
 		   "No auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");

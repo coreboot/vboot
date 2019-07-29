@@ -317,7 +317,7 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	const char *old_store;
 	char *command;
 
-	if (write_image(temp_image, &cfg->image_current) != VBERROR_SUCCESS)
+	if (write_image(temp_image, &cfg->image_current) != VB2_SUCCESS)
 		return -1;
 
 	old_store = extract_cbfs_file(cfg, temp_image, FMAP_RW_LEGACY,
@@ -329,7 +329,7 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	}
 
 	/* Reuse temp_image. */
-	if (write_image(temp_image, &cfg->image) != VBERROR_SUCCESS)
+	if (write_image(temp_image, &cfg->image) != VB2_SUCCESS)
 		return -1;
 
 	/* crosreview.com/1165109: The offset is fixed at 0x1bf000. */

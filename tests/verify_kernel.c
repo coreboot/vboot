@@ -37,7 +37,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 		return VBERROR_UNKNOWN;
 
 	memcpy(buffer, diskbuf + lba_start * 512, lba_count * 512);
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
@@ -51,7 +51,7 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 		return VBERROR_UNKNOWN;
 
 	memcpy(diskbuf + lba_start * 512, buffer, lba_count * 512);
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 static void print_help(const char *progname)
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 
 	/* Try loading kernel */
 	rv = LoadKernel(&ctx, &params);
-	if (rv != VBERROR_SUCCESS) {
+	if (rv != VB2_SUCCESS) {
 		fprintf(stderr, "LoadKernel() failed with code %d\n", rv);
 		return 1;
 	}

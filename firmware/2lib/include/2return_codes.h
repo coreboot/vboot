@@ -22,9 +22,6 @@ enum vb2_return_code {
 	/* Success - no error */
 	VB2_SUCCESS = 0,
 
-	/* vboot1-style success (TODO: deprecate) */
-	VBERROR_SUCCESS = 0,
-
 	/*
 	 * All vboot2 error codes start at a large offset from zero, to reduce
 	 * the risk of overlap with other error codes (TPM, etc.).

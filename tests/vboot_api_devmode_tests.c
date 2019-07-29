@@ -136,7 +136,7 @@ static void ResetMocks(void)
 	kbd_fire_at = 0;
 	kbd_fire_key = 0;
 
-	beep_return = VBERROR_SUCCESS;
+	beep_return = VB2_SUCCESS;
 	audio_open_count = 0;
 
 	matched_events = 0;
@@ -152,12 +152,12 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 
 vb2_error_t VbExNvStorageRead(uint8_t* buf)
 {
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExNvStorageWrite(const uint8_t* buf)
 {
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
@@ -169,7 +169,7 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
 vb2_error_t VbExDiskFreeInfo(VbDiskInfo* infos,
 			     VbExDiskHandle_t preserve_handle)
 {
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
@@ -265,7 +265,7 @@ vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
 
 	VB2_DEBUG("  current_time is %d msec\n", current_time);
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 /****************************************************************************/

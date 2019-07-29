@@ -228,7 +228,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 	memcpy(buffer, &mock_disk[lba_start * MOCK_SECTOR_SIZE],
 	       lba_count * MOCK_SECTOR_SIZE);
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
@@ -242,7 +242,7 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
 	memcpy(&mock_disk[lba_start * MOCK_SECTOR_SIZE], buffer,
 	       lba_count * MOCK_SECTOR_SIZE);
 
-	return VBERROR_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 int GptInit(GptData *gpt)
