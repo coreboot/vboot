@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 
+#include "2common.h"
 #include "vboot_api.h"
 
 /* The stub implementation assumes 512-byte disk sectors */

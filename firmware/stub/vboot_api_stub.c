@@ -13,6 +13,7 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "2common.h"
 #include "vboot_api.h"
 #include "vboot_test.h"
 
