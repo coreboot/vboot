@@ -38,8 +38,6 @@ enum vb2_return_code {
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* Unknown error */
-	VBERROR_UNKNOWN                       = 0x10000,
 	/* Unable to initialize shared data */
 	VBERROR_INIT_SHARED_DATA              = 0x10001,
 	/* Error resuming TPM during a S3 resume */

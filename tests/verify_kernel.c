@@ -30,11 +30,11 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	if (lba_start >= params.streaming_lba_count)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	if (lba_start + lba_count > params.streaming_lba_count)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	memcpy(buffer, diskbuf + lba_start * 512, lba_count * 512);
 	return VB2_SUCCESS;
@@ -44,11 +44,11 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 			  uint64_t lba_count, const void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	if (lba_start >= params.streaming_lba_count)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	if (lba_start + lba_count > params.streaming_lba_count)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	memcpy(diskbuf + lba_start * 512, buffer, lba_count * 512);
 	return VB2_SUCCESS;

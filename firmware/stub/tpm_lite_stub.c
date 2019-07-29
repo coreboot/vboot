@@ -225,7 +225,8 @@ vb2_error_t VbExTpmOpen(void)
 		delay.tv_nsec = OPEN_RETRY_DELAY_NS;
 		nanosleep(&delay, NULL);
 	}
-	return DoError(VBERROR_UNKNOWN, "TPM: Cannot open TPM device %s: %s\n",
+	return DoError(VB2_ERROR_UNKNOWN,
+		       "TPM: Cannot open TPM device %s: %s\n",
 		       device_path, strerror(saved_errno));
 }
 
@@ -298,12 +299,12 @@ vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
 	if (urandom_fd < 0) {
 		urandom_fd = open("/dev/urandom", O_RDONLY);
 		if (urandom_fd == -1) {
-			return VBERROR_UNKNOWN;
+			return VB2_ERROR_UNKNOWN;
 		}
 	}
 
 	if (length != read(urandom_fd, buf, length)) {
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	}
 
 	return VB2_SUCCESS;

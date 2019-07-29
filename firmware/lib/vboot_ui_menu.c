@@ -719,7 +719,7 @@ static vb2_error_t vb2_init_menus(struct vb2_context *ctx)
 
 	items = malloc(count * sizeof(struct vb2_menu_item));
 	if (!items)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	for (i = 0; i < count; i++) {
 		/* The actual language is drawn by the bootloader */

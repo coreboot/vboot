@@ -56,7 +56,7 @@ static void ResetMocks(void)
 vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
 
 	if (mock_localization_count == 0xffffffff)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	*count = mock_localization_count;
 	return VB2_SUCCESS;

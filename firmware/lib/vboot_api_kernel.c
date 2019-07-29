@@ -68,7 +68,7 @@ uint32_t vb2_get_fwmp_flags(void)
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
-	vb2_error_t retval = VBERROR_UNKNOWN;
+	vb2_error_t retval = VB2_ERROR_UNKNOWN;
 	VbDiskInfo* disk_info = NULL;
 	uint32_t disk_count = 0;
 	uint32_t i;

@@ -436,7 +436,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	VbSharedDataKernelCall *shcall = NULL;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
-	vb2_error_t retval = VBERROR_UNKNOWN;
+	vb2_error_t retval = VB2_ERROR_UNKNOWN;
 	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
 	vb2_error_t rv;
 

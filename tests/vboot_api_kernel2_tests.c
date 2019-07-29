@@ -186,7 +186,7 @@ vb2_error_t VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 	altfw_num = _altfw_num;
 
 	/* VbExLegacy() can only return failure, or not return at all. */
-	return VBERROR_UNKNOWN;
+	return VB2_ERROR_UNKNOWN;
 }
 
 void VbExSleepMs(uint32_t msec)

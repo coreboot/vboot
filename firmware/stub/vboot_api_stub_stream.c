@@ -32,7 +32,7 @@ vb2_error_t VbExStreamOpen(VbExDiskHandle_t handle, uint64_t lba_start,
 
 	if (!handle) {
 		*stream = NULL;
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 	}
 
 	s = malloc(sizeof(*s));
@@ -52,16 +52,16 @@ vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 	vb2_error_t rv;
 
 	if (!s)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	/* For now, require reads to be a multiple of the LBA size */
 	if (bytes % LBA_BYTES)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	/* Fail on overflow */
 	sectors = bytes / LBA_BYTES;
 	if (sectors > s->sectors_left)
-		return VBERROR_UNKNOWN;
+		return VB2_ERROR_UNKNOWN;
 
 	rv = VbExDiskRead(s->handle, s->sector, sectors, buffer);
 	if (rv != VB2_SUCCESS)

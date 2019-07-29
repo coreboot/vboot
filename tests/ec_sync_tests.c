@@ -495,8 +495,8 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	ec_aux_fw_retval = VBERROR_UNKNOWN;
-	test_ssync(VBERROR_UNKNOWN, VB2_RECOVERY_AUX_FW_UPDATE,
+	ec_aux_fw_retval = VB2_ERROR_UNKNOWN;
+	test_ssync(VB2_ERROR_UNKNOWN, VB2_RECOVERY_AUX_FW_UPDATE,
 		   "Error updating AUX firmware");
 }
 
