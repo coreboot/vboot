@@ -485,7 +485,7 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	if ((boot_image == NULL) || (image_size == 0)) {
-		retval = VBERROR_INVALID_PARAMETER;
+		retval = VB2_ERROR_INVALID_PARAMETER;
 		goto fail;
 	}
 

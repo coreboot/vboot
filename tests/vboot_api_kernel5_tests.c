@@ -236,13 +236,13 @@ static void VerifyMemoryBootImageTest(void)
 	ResetMocks();
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, NULL,
 					kernel_buffer_size),
-		VBERROR_INVALID_PARAMETER, "Empty image");
+		VB2_ERROR_INVALID_PARAMETER, "Empty image");
 
 	/* Illegal image size. */
 	ResetMocks();
 	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
 					0),
-		VBERROR_INVALID_PARAMETER, "Illegal image size");
+		VB2_ERROR_INVALID_PARAMETER, "Illegal image size");
 
 	/* Key Block Verification Failure */
 	ResetMocks();

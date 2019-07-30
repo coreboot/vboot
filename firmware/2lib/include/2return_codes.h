@@ -80,8 +80,6 @@ enum vb2_return_code {
 	VBERROR_INVALID_BMPFV                 = 0x10014,
 	/* Invalid screen index */
 	VBERROR_INVALID_SCREEN_INDEX          = 0x10015,
-	/* Invalid parameter */
-	VBERROR_INVALID_PARAMETER             = 0x10017,
 	/* VbExBeep() can't make sounds at all */
 	VBERROR_NO_SOUND                      = 0x10018,
 	/* VbExBeep() can't make sound in the background */
