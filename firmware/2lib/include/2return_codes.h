@@ -69,8 +69,6 @@ enum vb2_return_code {
 	VBERROR_TPM_LOCK_KERNEL               = 0x1000C,
 	/* Calling firmware requested shutdown via VbExIsShutdownRequested() */
 	VBERROR_SHUTDOWN_REQUESTED            = 0x1000D,
-	/* Invalid Google binary block */
-	VBERROR_INVALID_GBB                   = 0x10013,
 	/* Invalid bitmap volume */
 	VBERROR_INVALID_BMPFV                 = 0x10014,
 	/* Invalid screen index */

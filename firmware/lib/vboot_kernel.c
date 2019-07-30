@@ -444,7 +444,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	VbSharedDataKernelCall *shcall = NULL;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
-	vb2_error_t retval = VB2_ERROR_UNKNOWN;
 	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
@@ -475,7 +474,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
 		if (VB2_SUCCESS != rv) {
 			VB2_DEBUG("GBB read recovery key failed.\n");
-			retval = VBERROR_INVALID_GBB;
 			goto load_kernel_exit;
 		}
 	} else {
@@ -652,16 +650,16 @@ gpt_done:
 			shared->kernel_version_tpm = lowest_version;
 
 		/* Success! */
-		retval = VB2_SUCCESS;
+		rv = VB2_SUCCESS;
 	} else if (found_partitions > 0) {
 		shcall->check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
-		retval = VB2_ERROR_LK_INVALID_KERNEL_FOUND;
+		rv = VB2_ERROR_LK_INVALID_KERNEL_FOUND;
 	} else {
 		shcall->check_result = VBSD_LKC_CHECK_NO_PARTITIONS;
-		retval = VB2_ERROR_LK_NO_KERNEL_FOUND;
+		rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 	}
 
 load_kernel_exit:
-	shcall->return_code = (uint8_t)retval;
-	return retval;
+	shcall->return_code = (uint8_t)rv;
+	return rv;
 }
