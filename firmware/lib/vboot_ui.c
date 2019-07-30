@@ -606,53 +606,43 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("shared->flags=%#x\n", shared->flags);
-			if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON) {
-				/* Stop the countdown while we go ask... */
-				if (gbb->flags &
-				    VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
-					/*
-					 * TONORM won't work (only for
-					 * non-shipping devices).
-					 */
-					vb2_error_notify(
-						"WARNING: TONORM prohibited by "
-						"GBB FORCE_DEV_SWITCH_ON.\n",
-						NULL,
-						VB_BEEP_NOT_ALLOWED);
-					break;
-				}
-				VbDisplayScreen(ctx,
-					VB_SCREEN_DEVELOPER_TO_NORM,
+
+			/* Sanity check, should never fail. */
+			VB2_ASSERT(shared->flags & VBSD_BOOT_DEV_SWITCH_ON);
+
+			/* Stop the countdown while we go ask... */
+			if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+				/*
+				 * TONORM won't work (only for
+				 * non-shipping devices).
+				 */
+				vb2_error_notify(
+					"WARNING: TONORM prohibited by "
+					"GBB FORCE_DEV_SWITCH_ON.\n",
+					NULL, VB_BEEP_NOT_ALLOWED);
+				break;
+			}
+			VbDisplayScreen(ctx, VB_SCREEN_DEVELOPER_TO_NORM,
 					0, NULL);
-				/* Ignore space in VbUserConfirms()... */
-				switch (VbUserConfirms(ctx, 0)) {
-				case 1:
-					VB2_DEBUG("leaving dev-mode\n");
-					vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST,
-						1);
-					VbDisplayScreen(ctx,
-						VB_SCREEN_TO_NORM_CONFIRMED,
-						0, NULL);
-					VbExSleepMs(5000);
-					return VBERROR_REBOOT_REQUIRED;
-				case -1:
-					VB2_DEBUG("shutdown requested\n");
-					return VBERROR_SHUTDOWN_REQUESTED;
-				default:
-					/* Stay in dev-mode */
-					VB2_DEBUG("stay in dev-mode\n");
-					VbDisplayScreen(ctx,
-						VB_SCREEN_DEVELOPER_WARNING,
-						0, NULL);
-					/* Start new countdown */
-					vb2_audio_start(ctx);
-				}
-			} else {
-				/* This should never happen. */
-				VB2_DEBUG("going to recovery\n");
-				vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-					   VB2_RECOVERY_RW_UNSPECIFIED);
-				return VBERROR_LOAD_KERNEL_RECOVERY;
+			/* Ignore space in VbUserConfirms()... */
+			switch (VbUserConfirms(ctx, 0)) {
+			case 1:
+				VB2_DEBUG("leaving dev-mode\n");
+				vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
+				VbDisplayScreen(ctx,
+					VB_SCREEN_TO_NORM_CONFIRMED, 0, NULL);
+				VbExSleepMs(5000);
+				return VBERROR_REBOOT_REQUIRED;
+			case -1:
+				VB2_DEBUG("shutdown requested\n");
+				return VBERROR_SHUTDOWN_REQUESTED;
+			default:
+				/* Stay in dev-mode */
+				VB2_DEBUG("stay in dev-mode\n");
+				VbDisplayScreen(ctx,
+					VB_SCREEN_DEVELOPER_WARNING, 0, NULL);
+				/* Start new countdown */
+				vb2_audio_start(ctx);
 			}
 			break;
 		case VB_KEY_CTRL('D'):
@@ -845,10 +835,10 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		if (VB2_SUCCESS == retval)
 			break; /* Found a recovery kernel */
 
-		VbDisplayScreen(ctx, VBERROR_NO_DISK_FOUND == retval ?
-				VB_SCREEN_RECOVERY_INSERT :
-				VB_SCREEN_RECOVERY_NO_GOOD,
-				0, NULL);
+		enum VbScreenType_t next_screen =
+			retval == VB2_ERROR_LK_NO_DISK_FOUND ?
+			VB_SCREEN_RECOVERY_INSERT : VB_SCREEN_RECOVERY_NO_GOOD;
+		VbDisplayScreen(ctx, next_screen, 0, NULL);
 
 		key = VbExKeyboardRead();
 		/*

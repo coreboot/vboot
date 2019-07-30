@@ -60,7 +60,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
-	vb2_error_t rv = VBERROR_NO_DISK_FOUND;
+	vb2_error_t rv = VB2_ERROR_LK_NO_DISK_FOUND;
 	VbDiskInfo* disk_info = NULL;
 	uint32_t disk_count = 0;
 	uint32_t i;
@@ -113,20 +113,20 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 		}
 
 		/* Don't update error if we already have a more specific one. */
-		if (VBERROR_INVALID_KERNEL_FOUND != rv)
+		if (VB2_ERROR_LK_INVALID_KERNEL_FOUND != rv)
 			rv = new_rv;
 	}
 
 	/* If we drop out of the loop, we didn't find any usable kernel. */
 	if (get_info_flags & VB_DISK_FLAG_FIXED) {
 		switch (rv) {
-		case VBERROR_INVALID_KERNEL_FOUND:
+		case VB2_ERROR_LK_INVALID_KERNEL_FOUND:
 			vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);
 			break;
-		case VBERROR_NO_KERNEL_FOUND:
+		case VB2_ERROR_LK_NO_KERNEL_FOUND:
 			vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
 			break;
-		case VBERROR_NO_DISK_FOUND:
+		case VB2_ERROR_LK_NO_DISK_FOUND:
 			vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
 			break;
 		default:
