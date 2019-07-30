@@ -40,14 +40,6 @@ enum vb2_return_code {
 	 */
 	/* Unable to initialize shared data */
 	VBERROR_INIT_SHARED_DATA              = 0x10001,
-	/* Error resuming TPM during a S3 resume */
-	VBERROR_TPM_S3_RESUME                 = 0x10002,
-	/* VbSelectFirmware() failed to find a valid firmware */
-	VBERROR_LOAD_FIRMWARE                 = 0x10003,
-	/* Unable to write firmware versions to TPM */
-	VBERROR_TPM_WRITE_FIRMWARE            = 0x10004,
-	/* Unable to lock firmware versions in TPM */
-	VBERROR_TPM_LOCK_FIRMWARE             = 0x10005,
 	/* Unable to set boot mode state in TPM */
 	VBERROR_TPM_SET_BOOT_MODE_STATE       = 0x10006,
 	/* Calling firmware needs to perform a reboot. */
@@ -56,8 +48,6 @@ enum vb2_return_code {
 	VBERROR_TPM_FIRMWARE_SETUP            = 0x10008,
 	/* Unable to read kernel versions from TPM */
 	VBERROR_TPM_READ_KERNEL               = 0x10009,
-	/* Attempt to load developer-only firmware with developer switch off */
-	VBERROR_DEV_FIRMWARE_SWITCH_MISMATCH  = 0x1000A,
 	/* Unable to write kernel versions to TPM */
 	VBERROR_TPM_WRITE_KERNEL              = 0x1000B,
 	/* Unable to lock kernel versions in TPM */
@@ -80,44 +70,22 @@ enum vb2_return_code {
 	VBERROR_INVALID_BMPFV                 = 0x10014,
 	/* Invalid screen index */
 	VBERROR_INVALID_SCREEN_INDEX          = 0x10015,
-	/* VbExBeep() can't make sounds at all */
-	VBERROR_NO_SOUND                      = 0x10018,
 	/* VbExBeep() can't make sound in the background */
 	VBERROR_NO_BACKGROUND_SOUND           = 0x10019,
 	/* Need EC to reboot to read-only code to switch RW slot */
 	VBERROR_EC_REBOOT_TO_SWITCH_RW        = 0x1001A,
-	/* Developer has requested a BIOS shell */
-	VBERROR_BIOS_SHELL_REQUESTED          = 0x10020,
-	/* Need initialized display and don't have it, or vice-versa.
-	   Deprecated; should use VBERROR_REBOOT_REQUIRED instead. */
-	VBERROR_DEPRECATED_DISPLAY_INIT_MISMATCH = 0x10021,
 	/* Need EC to reboot to read-only code */
 	VBERROR_EC_REBOOT_TO_RO_REQUIRED      = 0x10022,
-	/* Invalid region read parameters */
-	VBERROR_REGION_READ_INVALID           = 0x10023,
-	/* Cannot read from region */
-	VBERROR_REGION_READ_FAILED            = 0x10024,
-	/* Unsupported region type */
-	VBERROR_UNSUPPORTED_REGION            = 0x10025,
-	/* No image present (was returned from VbGbbReadImage(); deprecated */
+	/* No image present */
 	VBERROR_NO_IMAGE_PRESENT              = 0x10026,
 	/* failed to draw screen */
 	VBERROR_SCREEN_DRAW                   = 0x10027,
-	/* failed to jump to RW image */
-	VBERROR_RW_JUMP_FAILED                = 0x10028,
 	/* Error reading FWMP from TPM (note: not present is not an error) */
 	VBERROR_TPM_READ_FWMP                 = 0x10029,
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
-	/* Error reading or writing Alt OS flags to TPM */
-	VBERROR_DEPRECATED_TPM_ALT_OS         = 0x10031,
 	/* Error writing VPD */
 	VBERROR_VPD_WRITE                     = 0x10032,
-
-	/* VbExEcGetExpectedRWHash() may return the following codes */
-	/* Compute expected RW hash from the EC image; BIOS doesn't have it */
-	VBERROR_EC_GET_EXPECTED_HASH_FROM_IMAGE = 0x20000,
-
 	/* Detachable UI internal functions may return the following codes */
 	/* No error; return to UI loop */
 	VBERROR_KEEP_LOOPING			= 0x30000,
