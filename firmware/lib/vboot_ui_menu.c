@@ -887,9 +887,9 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		if (VB2_SUCCESS == ret)
 			return ret; /* Found a recovery kernel */
 
-		if (usb_nogood != (ret != VBERROR_NO_DISK_FOUND)) {
+		if (usb_nogood != (ret != VB2_ERROR_LK_NO_DISK_FOUND)) {
 			/* USB state changed, force back to base screen */
-			usb_nogood = ret != VBERROR_NO_DISK_FOUND;
+			usb_nogood = ret != VB2_ERROR_LK_NO_DISK_FOUND;
 			enter_recovery_base_screen(ctx);
 		}
 

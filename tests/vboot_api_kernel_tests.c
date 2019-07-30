@@ -126,7 +126,7 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_INVALID_KERNEL_FOUND, 0},
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND, 0},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = pickme,
@@ -175,7 +175,7 @@ test_case_t test[] = {
 		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_DISK,
 		.expected_to_find_disk = 0,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_NO_DISK_FOUND
+		.expected_return_val = VB2_ERROR_LK_NO_DISK_FOUND
 	},
 	{
 		.name = "VbExDiskGetInfo() error",
@@ -190,7 +190,7 @@ test_case_t test[] = {
 		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_DISK,
 		.expected_to_find_disk = 0,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_NO_DISK_FOUND,
+		.expected_return_val = VB2_ERROR_LK_NO_DISK_FOUND,
 	},
 	{
 		.name = "invalid kernel",
@@ -215,13 +215,13 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_INVALID_KERNEL_FOUND,
-					  VBERROR_NO_KERNEL_FOUND},
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+					  VB2_ERROR_LK_NO_KERNEL_FOUND},
 
 		.expected_recovery_request_val = VB2_RECOVERY_RW_INVALID_OS,
 		.expected_to_find_disk = DONT_CARE,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_INVALID_KERNEL_FOUND,
+		.expected_return_val = VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 	},
 	{
 		.name = "invalid kernel, order flipped",
@@ -232,13 +232,13 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_NO_KERNEL_FOUND,
-					  VBERROR_INVALID_KERNEL_FOUND},
+		.loadkernel_return_val = {VB2_ERROR_LK_NO_KERNEL_FOUND,
+					  VB2_ERROR_LK_INVALID_KERNEL_FOUND},
 
 		.expected_recovery_request_val = VB2_RECOVERY_RW_INVALID_OS,
 		.expected_to_find_disk = DONT_CARE,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_INVALID_KERNEL_FOUND,
+		.expected_return_val = VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 	},
 	{
 		.name = "no Chrome OS partitions",
@@ -249,13 +249,13 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_NO_KERNEL_FOUND,
-					  VBERROR_NO_KERNEL_FOUND},
+		.loadkernel_return_val = {VB2_ERROR_LK_NO_KERNEL_FOUND,
+					  VB2_ERROR_LK_NO_KERNEL_FOUND},
 
 		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_KERNEL,
 		.expected_to_find_disk = DONT_CARE,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_NO_KERNEL_FOUND,
+		.expected_return_val = VB2_ERROR_LK_NO_KERNEL_FOUND,
 	},
 	{
 		.name = "invalid kernel (removable)",
@@ -266,13 +266,13 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_INVALID_KERNEL_FOUND,
-					  VBERROR_NO_KERNEL_FOUND},
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+					  VB2_ERROR_LK_NO_KERNEL_FOUND},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = DONT_CARE,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_INVALID_KERNEL_FOUND,
+		.expected_return_val = VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 	},
 	{
 		.name = "no kernel (removable)",
@@ -282,12 +282,12 @@ test_case_t test[] = {
 		},
 		.disk_count_to_return = DEFAULT_COUNT,
 		.diskgetinfo_return_val = VB2_SUCCESS,
-		.loadkernel_return_val = {VBERROR_NO_KERNEL_FOUND},
+		.loadkernel_return_val = {VB2_ERROR_LK_NO_KERNEL_FOUND},
 
 		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
 		.expected_to_find_disk = DONT_CARE,
 		.expected_to_load_disk = 0,
-		.expected_return_val = VBERROR_NO_KERNEL_FOUND,
+		.expected_return_val = VB2_ERROR_LK_NO_KERNEL_FOUND,
 	},
 };
 
