@@ -14,7 +14,7 @@
 #include "2sha.h"
 #include "2rsa.h"
 
-int vb2_validate_gbb_signature(uint8_t *sig)
+vb2_error_t vb2_validate_gbb_signature(uint8_t *sig)
 {
 	const static uint8_t sig_xor[VB2_GBB_SIGNATURE_SIZE] =
 			VB2_GBB_XOR_SIGNATURE;
@@ -44,9 +44,10 @@ void vb2_set_workbuf_used(struct vb2_context *ctx, uint32_t used)
 	ctx->workbuf_used = vb2_wb_round_up(used);
 }
 
-int vb2_read_gbb_header(struct vb2_context *ctx, struct vb2_gbb_header *gbb)
+vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
+				struct vb2_gbb_header *gbb)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/* Read the entire header */
 	rv = vb2ex_read_resource(ctx, VB2_RES_GBB, 0, gbb, sizeof(*gbb));
@@ -128,7 +129,7 @@ void vb2_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 #pragma GCC diagnostic push
 /* Don't warn for the version_minor check even if the checked version is 0. */
 #pragma GCC diagnostic ignored "-Wtype-limits"
-int vb2_init_context(struct vb2_context *ctx)
+vb2_error_t vb2_init_context(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
@@ -208,12 +209,12 @@ void vb2_check_recovery(struct vb2_context *ctx)
 	}
 }
 
-int vb2_fw_parse_gbb(struct vb2_context *ctx)
+vb2_error_t vb2_fw_parse_gbb(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb;
 	struct vb2_workbuf wb;
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -233,7 +234,7 @@ int vb2_fw_parse_gbb(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_check_dev_switch(struct vb2_context *ctx)
+vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -241,7 +242,7 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 	uint32_t old_flags;
 	int is_dev = 0;
 	int use_secdata = 1;
-	int rv;
+	vb2_error_t rv;
 
 	/* Read secure flags */
 	rv = vb2_secdata_get(ctx, VB2_SECDATA_FLAGS, &flags);
@@ -348,9 +349,9 @@ int vb2_check_dev_switch(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_check_tpm_clear(struct vb2_context *ctx)
+vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/* Check if we've been asked to clear the owner */
 	if (!vb2_nv_get(ctx, VB2_NV_CLEAR_TPM_OWNER_REQUEST))
@@ -376,7 +377,7 @@ int vb2_check_tpm_clear(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_select_fw_slot(struct vb2_context *ctx)
+vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint32_t tries;

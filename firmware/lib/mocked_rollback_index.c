@@ -14,7 +14,7 @@
 #include "tss_constants.h"
 
 
-uint32_t SetVirtualDevMode(int val)
+vb2_error_t SetVirtualDevMode(int val)
 {
 	return TPM_SUCCESS;
 }

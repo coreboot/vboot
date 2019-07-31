@@ -14,7 +14,7 @@
 #include "vboot_common.h"
 #include "utility.h"
 
-int VbSharedDataInit(VbSharedDataHeader *header, uint64_t size)
+vb2_error_t VbSharedDataInit(VbSharedDataHeader *header, uint64_t size)
 {
 	VB2_DEBUG("VbSharedDataInit, %d bytes, header %d bytes\n", (int)size,
 		  (int)sizeof(VbSharedDataHeader));

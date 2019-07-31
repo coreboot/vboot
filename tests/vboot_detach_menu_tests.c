@@ -176,7 +176,7 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 		return 0;
 }
 
-int VbExLegacy(enum VbAltFwIndex_t _altfw_num)
+vb2_error_t VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 {
 	vbexlegacy_called++;
 	altfw_num = _altfw_num;
@@ -247,7 +247,7 @@ vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 	return VBERROR_SUCCESS;
 }
 
-uint32_t SetVirtualDevMode(int val)
+vb2_error_t SetVirtualDevMode(int val)
 {
 	virtdev_set = val;
 	return virtdev_retval;

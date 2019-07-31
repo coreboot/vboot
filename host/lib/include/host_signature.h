@@ -45,8 +45,8 @@ struct vb2_signature *vb2_alloc_signature(uint32_t sig_size,
  * @param src		Source signature
  *
  * @return VB2_SUCCESS, or non-zero if error. */
-int vb2_copy_signature(struct vb2_signature *dest,
-		       const struct vb2_signature *src);
+vb2_error_t vb2_copy_signature(struct vb2_signature *dest,
+			       const struct vb2_signature *src);
 
 /**
  * Calculate a SHA-512 digest-only signature.
@@ -68,8 +68,7 @@ struct vb2_signature *vb2_sha512_signature(const uint8_t *data, uint32_t size);
  * @return The signature, or NULL if error.  Caller must free() it.
  */
 struct vb2_signature *vb2_calculate_signature(
-		const uint8_t *data, uint32_t size,
-		const struct vb2_private_key *key);
+	const uint8_t *data, uint32_t size, const struct vb2_private_key *key);
 
 /**
  * Calculate a signature for the data using an external signer.
@@ -82,8 +81,7 @@ struct vb2_signature *vb2_calculate_signature(
  *
  * @return The signature, or NULL if error.  Caller must free() it.
  */
-struct vb2_signature *vb2_external_signature(const uint8_t *data,
-					     uint32_t size,
+struct vb2_signature *vb2_external_signature(const uint8_t *data, uint32_t size,
 					     const char *key_file,
 					     uint32_t key_algorithm,
 					     const char *external_signer);

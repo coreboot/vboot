@@ -11,15 +11,14 @@
 #include "vb2_common.h"
 
 test_mockable
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-			  const uint8_t *buf,
-			  uint32_t size)
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size)
 {
 	const struct vb2_packed_key *packed_key =
 		(const struct vb2_packed_key *)buf;
 	const uint32_t *buf32;
 	uint32_t expected_key_size;
-	int rv;
+	vb2_error_t rv;
 
 	/* Make sure passed buffer is big enough for the packed key */
 	rv = vb2_verify_packed_key_inside(buf, size, packed_key);
@@ -64,8 +63,8 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-int vb2_unpack_key(struct vb2_public_key *key,
-		   const struct vb2_packed_key *packed_key)
+vb2_error_t vb2_unpack_key(struct vb2_public_key *key,
+			   const struct vb2_packed_key *packed_key)
 {
 	if (!packed_key)
 		return VB2_ERROR_UNPACK_KEY_BUFFER;

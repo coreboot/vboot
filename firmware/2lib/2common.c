@@ -11,7 +11,7 @@
 #include "2rsa.h"
 #include "2sha.h"
 
-int vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
+vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 {
 	const unsigned char *us1 = s1;
 	const unsigned char *us2 = s2;
@@ -30,7 +30,8 @@ int vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 	return result != 0;
 }
 
-int vb2_align(uint8_t **ptr, uint32_t *size, uint32_t align, uint32_t want_size)
+vb2_error_t vb2_align(uint8_t **ptr, uint32_t *size, uint32_t align,
+		      uint32_t want_size)
 {
 	uintptr_t p = (uintptr_t)*ptr;
 	uintptr_t offs = p & (align - 1);
@@ -77,8 +78,7 @@ void *vb2_workbuf_alloc(struct vb2_workbuf *wb, uint32_t size)
 	return ptr;
 }
 
-void *vb2_workbuf_realloc(struct vb2_workbuf *wb,
-			  uint32_t oldsize,
+void *vb2_workbuf_realloc(struct vb2_workbuf *wb, uint32_t oldsize,
 			  uint32_t newsize)
 {
 	/*
@@ -104,10 +104,10 @@ ptrdiff_t vb2_offset_of(const void *base, const void *ptr)
 	return (uintptr_t)ptr - (uintptr_t)base;
 }
 
-int vb2_verify_member_inside(const void *parent, size_t parent_size,
-			     const void *member, size_t member_size,
-			     ptrdiff_t member_data_offset,
-			     size_t member_data_size)
+vb2_error_t vb2_verify_member_inside(const void *parent, size_t parent_size,
+				     const void *member, size_t member_size,
+				     ptrdiff_t member_data_offset,
+				     size_t member_data_size)
 {
 	const uintptr_t parent_end = (uintptr_t)parent + parent_size;
 	const ptrdiff_t member_offs = vb2_offset_of(parent, member);

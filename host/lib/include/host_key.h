@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_HOST_KEY_H_
 
 #include "2crypto.h"
+#include "2return_codes.h"
 
 struct vb2_packed_key;
 struct vb2_private_key;
@@ -22,8 +23,8 @@ struct vb2_private_key;
  * @return The equivalent vb1 crypto algorithm or VB2_ALG_COUNT if error.
  */
 enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
-		enum vb2_hash_algorithm hash_alg,
-		enum vb2_signature_algorithm sig_alg);
+	enum vb2_hash_algorithm hash_alg,
+	enum vb2_signature_algorithm sig_alg);
 
 /**
  * Read a private key from a .pem file.
@@ -35,8 +36,8 @@ enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
  * @return The private key or NULL if error.  Caller must free() it.
  */
 struct vb2_private_key *vb2_read_private_key_pem(
-		const char *filename,
-		enum vb2_crypto_algorithm algorithm);
+	const char *filename,
+	enum vb2_crypto_algorithm algorithm);
 
 /**
  * Free a private key.
@@ -53,8 +54,8 @@ void vb2_free_private_key(struct vb2_private_key *key);
  *
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_write_private_key(const char *filename,
-			  const struct vb2_private_key *key);
+vb2_error_t vb2_write_private_key(const char *filename,
+				  const struct vb2_private_key *key);
 
 
 /**
@@ -96,8 +97,8 @@ void vb2_init_packed_key(struct vb2_packed_key *key, uint8_t *key_data,
  *
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_copy_packed_key(struct vb2_packed_key *dest,
-			const struct vb2_packed_key *src);
+vb2_error_t vb2_copy_packed_key(struct vb2_packed_key *dest,
+				const struct vb2_packed_key *src);
 
 /**
  * Read a packed key from a .vbpubk file.
@@ -141,7 +142,7 @@ struct vb2_packed_key *vb2_read_packed_keyb(const char *filename,
  *
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_write_packed_key(const char *filename,
-			 const struct vb2_packed_key *key);
+vb2_error_t vb2_write_packed_key(const char *filename,
+				 const struct vb2_packed_key *key);
 
 #endif  /* VBOOT_REFERENCE_HOST_KEY_H_ */

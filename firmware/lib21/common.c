@@ -18,7 +18,7 @@ const char *vb21_common_desc(const void *buf)
 	return c->desc_size ? (const char *)c + c->fixed_size : "";
 }
 
-int vb21_verify_common_header(const void *parent, uint32_t parent_size)
+vb2_error_t vb21_verify_common_header(const void *parent, uint32_t parent_size)
 {
 	const struct vb21_struct_common *c = parent;
 
@@ -57,10 +57,9 @@ int vb21_verify_common_header(const void *parent, uint32_t parent_size)
 	return VB2_SUCCESS;
 }
 
-int vb21_verify_common_member(const void *parent,
-			      uint32_t *min_offset,
-			      uint32_t member_offset,
-			      uint32_t member_size)
+vb2_error_t vb21_verify_common_member(const void *parent, uint32_t *min_offset,
+				      uint32_t member_offset,
+				      uint32_t member_size)
 {
 	const struct vb21_struct_common *c = parent;
 	uint32_t member_end = member_offset + member_size;
@@ -92,15 +91,15 @@ int vb21_verify_common_member(const void *parent,
 	return VB2_SUCCESS;
 }
 
-int vb21_verify_common_subobject(const void *parent,
-				 uint32_t *min_offset,
-				 uint32_t member_offset)
+vb2_error_t vb21_verify_common_subobject(const void *parent,
+					 uint32_t *min_offset,
+					 uint32_t member_offset)
 {
 	const struct vb21_struct_common *p = parent;
 	const struct vb21_struct_common *m =
 		(const struct vb21_struct_common *)
 		((const uint8_t *)parent + member_offset);
-	int rv;
+	vb2_error_t rv;
 
 	/*
 	 * Verify the parent has space at the member offset for the common
@@ -171,11 +170,12 @@ const struct vb2_id *vb2_hash_id(enum vb2_hash_algorithm hash_alg)
 	}
 }
 
-int vb21_verify_signature(const struct vb21_signature *sig, uint32_t size)
+vb2_error_t vb21_verify_signature(const struct vb21_signature *sig,
+				  uint32_t size)
 {
 	uint32_t min_offset = 0;
 	uint32_t expect_sig_size;
-	int rv;
+	vb2_error_t rv;
 
 	/* Check magic number */
 	if (sig->c.magic != VB21_MAGIC_SIGNATURE)
@@ -222,10 +222,10 @@ static uint8_t *vb21_signature_data(struct vb21_signature *sig)
 	return (uint8_t *)sig + sig->sig_offset;
 }
 
-int vb21_verify_digest(const struct vb2_public_key *key,
-		       struct vb21_signature *sig,
-		       const uint8_t *digest,
-		       const struct vb2_workbuf *wb)
+vb2_error_t vb21_verify_digest(const struct vb2_public_key *key,
+			       struct vb21_signature *sig,
+			       const uint8_t *digest,
+			       const struct vb2_workbuf *wb)
 {
 	uint32_t key_sig_size = vb2_sig_size(key->sig_alg, key->hash_alg);
 
@@ -255,17 +255,16 @@ int vb21_verify_digest(const struct vb2_public_key *key,
 	}
 }
 
-int vb21_verify_data(const void *data,
-		     uint32_t size,
-		     struct vb21_signature *sig,
-		     const struct vb2_public_key *key,
-		     const struct vb2_workbuf *wb)
+vb2_error_t vb21_verify_data(const void *data, uint32_t size,
+			     struct vb21_signature *sig,
+			     const struct vb2_public_key *key,
+			     const struct vb2_workbuf *wb)
 {
 	struct vb2_workbuf wblocal = *wb;
 	struct vb2_digest_context *dc;
 	uint8_t *digest;
 	uint32_t digest_size;
-	int rv;
+	vb2_error_t rv;
 
 	if (sig->data_size != size) {
 		VB2_DEBUG("Wrong amount of data signed.\n");
@@ -303,13 +302,12 @@ int vb21_verify_data(const void *data,
 	return vb21_verify_digest(key, sig, digest, &wblocal);
 }
 
-int vb21_verify_keyblock(struct vb21_keyblock *block,
-			 uint32_t size,
-			 const struct vb2_public_key *key,
-			 const struct vb2_workbuf *wb)
+vb2_error_t vb21_verify_keyblock(struct vb21_keyblock *block, uint32_t size,
+				 const struct vb2_public_key *key,
+				 const struct vb2_workbuf *wb)
 {
 	uint32_t min_offset = 0, sig_offset;
-	int rv, i;
+	vb2_error_t rv, i;
 
 	/* Check magic number */
 	if (block->c.magic != VB21_MAGIC_KEYBLOCK)
@@ -372,14 +370,14 @@ int vb21_verify_keyblock(struct vb21_keyblock *block,
 	return VB2_ERROR_KEYBLOCK_SIG_ID;
 }
 
-int vb21_verify_fw_preamble(struct vb21_fw_preamble *preamble,
-			    uint32_t size,
-			    const struct vb2_public_key *key,
-			    const struct vb2_workbuf *wb)
+vb2_error_t vb21_verify_fw_preamble(struct vb21_fw_preamble *preamble,
+				    uint32_t size,
+				    const struct vb2_public_key *key,
+				    const struct vb2_workbuf *wb)
 {
 	struct vb21_signature *sig;
 	uint32_t min_offset = 0, hash_offset;
-	int rv, i;
+	vb2_error_t rv, i;
 
 	/* Check magic number */
 	if (preamble->c.magic != VB21_MAGIC_FW_PREAMBLE)

@@ -180,7 +180,7 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 	return result;
 }
 
-int VbExLegacy(enum VbAltFwIndex_t _altfw_num)
+vb2_error_t VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 {
 	vbexlegacy_called++;
 	altfw_num = _altfw_num;
@@ -234,7 +234,7 @@ int vb2_audio_looping(void)
 	return 1;
 }
 
-uint32_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
 	return vbtlk_retval + get_info_flags;
 }
@@ -248,7 +248,7 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	return VBERROR_SUCCESS;
 }
 
-uint32_t SetVirtualDevMode(int val)
+vb2_error_t SetVirtualDevMode(int val)
 {
 	virtdev_set = val;
 	return virtdev_retval;
@@ -262,7 +262,7 @@ vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 	return VBERROR_SUCCESS;
 }
 
-int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
+vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
 	tpm_set_mode_called = 1;
 	/*

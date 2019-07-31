@@ -16,7 +16,7 @@ uint8_t *vb2_signature_data(struct vb2_signature *sig)
 	return (uint8_t *)sig + sig->sig_offset;
 }
 
-int vb2_verify_signature_inside(const void *parent,
+vb2_error_t vb2_verify_signature_inside(const void *parent,
 				uint32_t parent_size,
 				const struct vb2_signature *sig)
 {
@@ -25,10 +25,9 @@ int vb2_verify_signature_inside(const void *parent,
 					sig->sig_offset, sig->sig_size);
 }
 
-int vb2_verify_digest(const struct vb2_public_key *key,
-		      struct vb2_signature *sig,
-		      const uint8_t *digest,
-		      const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
+			      struct vb2_signature *sig, const uint8_t *digest,
+			      const struct vb2_workbuf *wb)
 {
 	uint8_t *sig_data = vb2_signature_data(sig);
 
@@ -43,7 +42,7 @@ int vb2_verify_digest(const struct vb2_public_key *key,
 	return vb2_rsa_verify_digest(key, sig_data, digest, wb);
 }
 
-int vb2_verify_data(const uint8_t *data,
+vb2_error_t vb2_verify_data(const uint8_t *data,
 		    uint32_t size,
 		    struct vb2_signature *sig,
 		    const struct vb2_public_key *key,
@@ -53,7 +52,7 @@ int vb2_verify_data(const uint8_t *data,
 	struct vb2_digest_context *dc;
 	uint8_t *digest;
 	uint32_t digest_size;
-	int rv;
+	vb2_error_t rv;
 
 	if (sig->data_size > size) {
 		VB2_DEBUG("Data buffer smaller than length of signed data.\n");
@@ -91,9 +90,8 @@ int vb2_verify_data(const uint8_t *data,
 	return vb2_verify_digest(key, sig, digest, &wblocal);
 }
 
-int vb2_check_keyblock(const struct vb2_keyblock *block,
-		       uint32_t size,
-		       const struct vb2_signature *sig)
+vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
+			       const struct vb2_signature *sig)
 {
 	if(size < sizeof(*block)) {
 		VB2_DEBUG("Not enough space for key block header.\n");
@@ -147,13 +145,12 @@ int vb2_check_keyblock(const struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_keyblock(struct vb2_keyblock *block,
-			uint32_t size,
-			const struct vb2_public_key *key,
-			const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
+				const struct vb2_public_key *key,
+				const struct vb2_workbuf *wb)
 {
 	struct vb2_signature *sig = &block->keyblock_signature;
-	int rv;
+	vb2_error_t rv;
 
 	/* Sanity check keyblock before attempting signature check of data */
 	rv = vb2_check_keyblock(block, size, sig);
@@ -171,10 +168,10 @@ int vb2_verify_keyblock(struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
-			   uint32_t size,
-			   const struct vb2_public_key *key,
-			   const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
+				   uint32_t size,
+				   const struct vb2_public_key *key,
+				   const struct vb2_workbuf *wb)
 {
 	struct vb2_signature *sig = &preamble->preamble_signature;
 

@@ -65,7 +65,7 @@ static void vb2_report_dev_firmware(struct vb2_public_key *root)
 		VB2_DEBUG("This is developer signed firmware\n");
 }
 
-int vb2_load_fw_keyblock(struct vb2_context *ctx)
+vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -79,7 +79,7 @@ int vb2_load_fw_keyblock(struct vb2_context *ctx)
 	struct vb2_keyblock *kb;
 	uint32_t block_size;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -192,7 +192,7 @@ int vb2_load_fw_keyblock(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_load_fw_preamble(struct vb2_context *ctx)
+vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -206,7 +206,7 @@ int vb2_load_fw_preamble(struct vb2_context *ctx)
 	struct vb2_fw_preamble *pre;
 	uint32_t pre_size;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

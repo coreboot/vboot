@@ -877,7 +877,7 @@ enum VbAltFwIndex_t {
  *        verified before they are run. Currently these #s are defined:
  *          -1 diagnostic payload
  */
-int VbExLegacy(enum VbAltFwIndex_t altfw_num);
+vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num);
 
 /* Regions for VbExRegionRead() */
 enum vb_firmware_region {

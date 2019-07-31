@@ -15,9 +15,9 @@
 #include "2rsa.h"
 #include "vb2_common.h"
 
-int vb2api_fw_phase3(struct vb2_context *ctx)
+vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/* Verify firmware keyblock */
 	rv = vb2_load_fw_keyblock(ctx);
@@ -36,14 +36,15 @@ int vb2api_fw_phase3(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2api_init_hash(struct vb2_context *ctx, uint32_t tag, uint32_t *size)
+vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag,
+			     uint32_t *size)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	const struct vb2_fw_preamble *pre;
 	struct vb2_digest_context *dc;
 	struct vb2_public_key key;
 	struct vb2_workbuf wb;
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -129,8 +130,9 @@ int vb2api_init_hash(struct vb2_context *ctx, uint32_t tag, uint32_t *size)
 	return vb2_digest_init(dc, key.hash_alg);
 }
 
-int vb2api_check_hash_get_digest(struct vb2_context *ctx, void *digest_out,
-				uint32_t digest_out_size)
+vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
+					 void *digest_out,
+					 uint32_t digest_out_size)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_digest_context *dc = (struct vb2_digest_context *)
@@ -142,7 +144,7 @@ int vb2api_check_hash_get_digest(struct vb2_context *ctx, void *digest_out,
 
 	struct vb2_fw_preamble *pre;
 	struct vb2_public_key key;
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

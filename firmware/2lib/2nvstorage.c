@@ -38,7 +38,7 @@ int vb2_nv_get_size(const struct vb2_context *ctx)
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_nv_check_crc(const struct vb2_context *ctx)
+vb2_error_t vb2_nv_check_crc(const struct vb2_context *ctx)
 {
 	const uint8_t *p = ctx->nvdata;
 	const int offs = ctx->flags & VB2_CONTEXT_NVDATA_V2 ?

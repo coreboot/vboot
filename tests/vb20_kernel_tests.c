@@ -135,11 +135,9 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb2ex_read_resource(struct vb2_context *c,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size)
+vb2_error_t vb2ex_read_resource(struct vb2_context *c,
+				enum vb2_resource_index index, uint32_t offset,
+				void *buf, uint32_t size)
 {
 	uint8_t *rptr;
 	uint32_t rsize;
@@ -167,26 +165,24 @@ int vb2ex_read_resource(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-		   const uint8_t *buf,
-		   uint32_t size)
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size)
 {
 	key->arrsize = 0;
 	return mock_unpack_key_retval;
 }
 
-int vb2_verify_keyblock(struct vb2_keyblock *block,
-			uint32_t size,
-			const struct vb2_public_key *key,
-			const struct vb2_workbuf *w)
+vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
+				const struct vb2_public_key *key,
+				const struct vb2_workbuf *w)
 {
 	return mock_verify_keyblock_retval;
 }
 
-int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
-			       uint32_t size,
-			       const struct vb2_public_key *key,
-			       const struct vb2_workbuf *w)
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+				       uint32_t size,
+				       const struct vb2_public_key *key,
+				       const struct vb2_workbuf *w)
 {
 	return mock_verify_preamble_retval;
 }

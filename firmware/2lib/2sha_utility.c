@@ -56,7 +56,7 @@ enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm)
 		return VB2_HASH_INVALID;
 }
 
-int vb2_digest_size(enum vb2_hash_algorithm hash_alg)
+vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg)
 {
 	switch (hash_alg) {
 #if VB2_SUPPORT_SHA1
@@ -76,7 +76,7 @@ int vb2_digest_size(enum vb2_hash_algorithm hash_alg)
 	}
 }
 
-int vb2_hash_block_size(enum vb2_hash_algorithm alg)
+vb2_error_t vb2_hash_block_size(enum vb2_hash_algorithm alg)
 {
 	switch (alg) {
 #if VB2_SUPPORT_SHA1
@@ -116,8 +116,8 @@ const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg)
 	}
 }
 
-int vb2_digest_init(struct vb2_digest_context *dc,
-		    enum vb2_hash_algorithm hash_alg)
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
+			    enum vb2_hash_algorithm hash_alg)
 {
 	dc->hash_alg = hash_alg;
 	dc->using_hwcrypto = 0;
@@ -143,9 +143,8 @@ int vb2_digest_init(struct vb2_digest_context *dc,
 	}
 }
 
-int vb2_digest_extend(struct vb2_digest_context *dc,
-		      const uint8_t *buf,
-		      uint32_t size)
+vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
+			      uint32_t size)
 {
 	switch (dc->hash_alg) {
 #if VB2_SUPPORT_SHA1
@@ -168,9 +167,8 @@ int vb2_digest_extend(struct vb2_digest_context *dc,
 	}
 }
 
-int vb2_digest_finalize(struct vb2_digest_context *dc,
-			uint8_t *digest,
-			uint32_t digest_size)
+vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
+				uint32_t digest_size)
 {
 	if (digest_size < vb2_digest_size(dc->hash_alg))
 		return VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE;
@@ -196,14 +194,12 @@ int vb2_digest_finalize(struct vb2_digest_context *dc,
 	}
 }
 
-int vb2_digest_buffer(const uint8_t *buf,
-		      uint32_t size,
-		      enum vb2_hash_algorithm hash_alg,
-		      uint8_t *digest,
-		      uint32_t digest_size)
+vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
+			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
+			      uint32_t digest_size)
 {
 	struct vb2_digest_context dc;
-	int rv;
+	vb2_error_t rv;
 
 	rv = vb2_digest_init(&dc, hash_alg);
 	if (rv)

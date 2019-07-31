@@ -114,37 +114,32 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-int vb2ex_read_resource(struct vb2_context *c,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size)
+vb2_error_t vb2ex_read_resource(struct vb2_context *c,
+				enum vb2_resource_index index, uint32_t offset,
+				void *buf, uint32_t size)
 {
 	memset(buf, 0, size);
 	return VB2_SUCCESS;
 }
 
-int vb2_gbb_read_root_key(struct vb2_context *c,
-			  struct vb2_packed_key **keyp,
-			  uint32_t *size,
-			  struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_root_key(struct vb2_context *c,
+				  struct vb2_packed_key **keyp, uint32_t *size,
+				  struct vb2_workbuf *wb)
 {
 	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 
-int vb2_gbb_read_recovery_key(struct vb2_context *c,
-			      struct vb2_packed_key **keyp,
-			      uint32_t *size,
-			      struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *c,
+				      struct vb2_packed_key **keyp,
+				      uint32_t *size, struct vb2_workbuf *wb)
 {
 	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-		   const uint8_t *buf,
-		   uint32_t size)
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size)
 {
 	if (--unpack_key_fail == 0)
 		return VB2_ERROR_MOCK;
@@ -152,10 +147,9 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_keyblock(struct vb2_keyblock *block,
-			uint32_t size,
-			const struct vb2_public_key *key,
-			const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
+				const struct vb2_public_key *key,
+				const struct vb2_workbuf *wb)
 {
 	hash_only_check = 0;
 
@@ -167,9 +161,9 @@ int vb2_verify_keyblock(struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
-			     uint32_t size,
-			     const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
+				     uint32_t size,
+				     const struct vb2_workbuf *wb)
 {
 	hash_only_check = 1;
 
@@ -181,10 +175,10 @@ int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
-			       uint32_t size,
-			       const struct vb2_public_key *key,
-			       const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+				       uint32_t size,
+				       const struct vb2_public_key *key,
+				       const struct vb2_workbuf *wb)
 {
 	if (preamble_verify_fail)
 		return VB2_ERROR_MOCK;
@@ -194,11 +188,10 @@ int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_data(const uint8_t *data,
-		    uint32_t size,
-		    struct vb2_signature *sig,
-		    const struct vb2_public_key *key,
-		    const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
+			    struct vb2_signature *sig,
+			    const struct vb2_public_key *key,
+			    const struct vb2_workbuf *wb)
 {
 	if (verify_data_fail)
 		return VB2_ERROR_MOCK;

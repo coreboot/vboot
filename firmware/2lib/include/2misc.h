@@ -39,7 +39,7 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx);
  * @param sig		Pointer to the signature bytes to validate
  * @return VB2_SUCCESS if valid or non-zero if error.
  */
-int vb2_validate_gbb_signature(uint8_t *sig);
+vb2_error_t vb2_validate_gbb_signature(uint8_t *sig);
 
 /**
  * Initialize a work buffer from the vboot context.
@@ -69,7 +69,8 @@ void vb2_set_workbuf_used(struct vb2_context *ctx, uint32_t used);
  * @param gbb		Destination for header
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_read_gbb_header(struct vb2_context *ctx, struct vb2_gbb_header *gbb);
+vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
+				struct vb2_gbb_header *gbb);
 
 /**
  * Handle vboot failure.
@@ -95,7 +96,7 @@ void vb2_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode);
  * @param ctx		Vboot context to initialize
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_init_context(struct vb2_context *ctx);
+vb2_error_t vb2_init_context(struct vb2_context *ctx);
 
 /**
  * Check for recovery reasons we can determine early in the boot process.
@@ -116,7 +117,7 @@ void vb2_check_recovery(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_fw_parse_gbb(struct vb2_context *ctx);
+vb2_error_t vb2_fw_parse_gbb(struct vb2_context *ctx);
 
 /**
  * Check developer switch position.
@@ -124,7 +125,7 @@ int vb2_fw_parse_gbb(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_check_dev_switch(struct vb2_context *ctx);
+vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx);
 
 /**
  * Check if we need to clear the TPM owner.
@@ -132,7 +133,7 @@ int vb2_check_dev_switch(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_check_tpm_clear(struct vb2_context *ctx);
+vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx);
 
 /**
  * Decide which firmware slot to try this boot.
@@ -140,7 +141,7 @@ int vb2_check_tpm_clear(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_select_fw_slot(struct vb2_context *ctx);
+vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx);
 
 /**
  * Verify the firmware keyblock using the root key.
@@ -150,8 +151,8 @@ int vb2_select_fw_slot(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_load_fw_keyblock(struct vb2_context *ctx);
-int vb21_load_fw_keyblock(struct vb2_context *ctx);
+vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx);
+vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx);
 
 /**
  * Verify the firmware preamble using the data subkey from the keyblock.
@@ -161,8 +162,8 @@ int vb21_load_fw_keyblock(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_load_fw_preamble(struct vb2_context *ctx);
-int vb21_load_fw_preamble(struct vb2_context *ctx);
+vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx);
+vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx);
 
 /**
  * Verify the kernel keyblock using the previously-loaded kernel key.
@@ -172,7 +173,7 @@ int vb21_load_fw_preamble(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_load_kernel_keyblock(struct vb2_context *ctx);
+vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx);
 
 /**
  * Verify the kernel preamble using the data subkey from the keyblock.
@@ -182,6 +183,6 @@ int vb2_load_kernel_keyblock(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2_load_kernel_preamble(struct vb2_context *ctx);
+vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_2MISC_H_ */

@@ -46,7 +46,7 @@ static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
 static vb2_error_t protect_ec(struct vb2_context *ctx, int devidx,
 			      enum VbSelectFirmware_t select)
 {
-	int rv = VbExEcProtect(devidx, select);
+	vb2_error_t rv = VbExEcProtect(devidx, select);
 
 	if (rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED) {
 		VB2_DEBUG("VbExEcProtect() needs reboot\n");
@@ -97,15 +97,16 @@ static const char *image_name_to_string(enum VbSelectFirmware_t select)
  * @param select	Which firmware image to check
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static int check_ec_hash(struct vb2_context *ctx, int devidx,
-			 enum VbSelectFirmware_t select)
+static vb2_error_t check_ec_hash(struct vb2_context *ctx, int devidx,
+				 enum VbSelectFirmware_t select)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	/* Get current EC hash. */
 	const uint8_t *ec_hash = NULL;
 	int ec_hash_size;
-	int rv = VbExEcHashImage(devidx, select, &ec_hash, &ec_hash_size);
+	vb2_error_t rv = VbExEcHashImage(devidx, select, &ec_hash,
+					 &ec_hash_size);
 	if (rv) {
 		VB2_DEBUG("VbExEcHashImage() returned %d\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_HASH_FAILED);
@@ -155,7 +156,8 @@ static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
 	/* Get expected EC image */
 	const uint8_t *want = NULL;
 	int want_size;
-	int rv = VbExEcGetExpectedImage(devidx, select, &want, &want_size);
+	vb2_error_t rv = VbExEcGetExpectedImage(devidx, select, &want,
+						&want_size);
 	if (rv) {
 		VB2_DEBUG("VbExEcGetExpectedImage() returned %d\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_EXPECTED_IMAGE);
@@ -211,7 +213,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
 	 * trust what EC-RW says. If it lies it's in RO, we'll flash RW while
 	 * it's in RW.
 	 */
-	int rv = VbExEcRunningRW(devidx, &in_rw);
+	vb2_error_t rv = VbExEcRunningRW(devidx, &in_rw);
 
 	/* If we couldn't determine where the EC was, reboot to recovery. */
 	if (rv != VBERROR_SUCCESS) {
@@ -239,7 +241,7 @@ static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int is_rw_ab = ctx->flags & RW_AB(devidx);
-	int rv;
+	vb2_error_t rv;
 
 	const enum VbSelectFirmware_t select_rw = is_rw_ab ?
 			VB_SELECT_FIRMWARE_EC_UPDATE :

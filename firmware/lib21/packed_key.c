@@ -10,9 +10,8 @@
 #include "2rsa.h"
 #include "vb21_common.h"
 
-int vb2_unpack_key_data(struct vb2_public_key *key,
-			const uint8_t *key_data,
-			uint32_t key_size)
+vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,
+				const uint8_t *key_data, uint32_t key_size)
 {
 	const uint32_t *buf32 = (const uint32_t *)key_data;
 	uint32_t expected_key_size = vb2_packed_key_size(key->sig_alg);
@@ -42,15 +41,14 @@ int vb2_unpack_key_data(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-int vb21_unpack_key(struct vb2_public_key *key,
-		    const uint8_t *buf,
-		    uint32_t size)
+vb2_error_t vb21_unpack_key(struct vb2_public_key *key, const uint8_t *buf,
+			    uint32_t size)
 {
 	const struct vb21_packed_key *pkey =
 		(const struct vb21_packed_key *)buf;
 	uint32_t sig_size;
 	uint32_t min_offset = 0;
-	int rv;
+	vb2_error_t rv;
 
 	/* Check magic number */
 	if (pkey->c.magic != VB21_MAGIC_PACKED_KEY)

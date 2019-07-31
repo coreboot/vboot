@@ -83,7 +83,7 @@ static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
 	return shutdown_request;
 }
 
-static uint32_t VbTryUsb(struct vb2_context *ctx)
+static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 {
 	uint32_t retval = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
 	if (VBERROR_SUCCESS == retval) {
@@ -677,7 +677,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+L; Try alt firmware\n");
 			if (allow_legacy) {
-				int ret;
+				vb2_error_t ret;
 
 				ret = vb2_altfw_ui(ctx);
 				if (ret)
@@ -693,7 +693,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			 * Only show the vendor data ui if it is tag is settable
 			 */
 			if (ctx->flags & VB2_CONTEXT_VENDOR_DATA_SETTABLE) {
-				int ret;
+				vb2_error_t ret;
 
 				VB2_DEBUG("VbBootDeveloper() - user pressed "
 					  "Ctrl+S; Try set vendor data\n");

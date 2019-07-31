@@ -278,7 +278,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	char buf[DEBUG_INFO_SIZE] = "";
 	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
 	uint32_t used = 0;
-	int ret;
+	vb2_error_t ret;
 	uint32_t i;
 
 	vb2_workbuf_from_ctx(ctx, &wb);

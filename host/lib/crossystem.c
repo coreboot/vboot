@@ -187,7 +187,7 @@ static VbBuildOption VbScanBuildOption(void)
 
 /* Determine whether the running OS image was built for debugging.
  * Returns 1 if yes, 0 if no or indeterminate. */
-static int VbGetDebugBuild(void)
+static vb2_error_t VbGetDebugBuild(void)
 {
 	return VB_BUILD_OPTION_DEBUG == VbScanBuildOption();
 }

@@ -50,9 +50,9 @@ static enum {
 
 static struct vb2_digest_context hwcrypto_emulation_dc;
 
-static int retval_hwcrypto;
-static int retval_vb21_load_fw_keyblock;
-static int retval_vb21_load_fw_preamble;
+static vb2_error_t retval_hwcrypto;
+static vb2_error_t retval_vb21_load_fw_keyblock;
+static vb2_error_t retval_vb21_load_fw_preamble;
 
 /* Type of test to reset for */
 enum reset_type {
@@ -124,18 +124,18 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb21_load_fw_keyblock(struct vb2_context *c)
+vb2_error_t vb21_load_fw_keyblock(struct vb2_context *c)
 {
 	return retval_vb21_load_fw_keyblock;
 }
 
-int vb21_load_fw_preamble(struct vb2_context *c)
+vb2_error_t vb21_load_fw_preamble(struct vb2_context *c)
 {
 	return retval_vb21_load_fw_preamble;
 }
 
-int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
-			       uint32_t data_size)
+vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
+				       uint32_t data_size)
 {
 	vb2_digest_init(&hwcrypto_emulation_dc, hash_alg);
 
@@ -153,8 +153,7 @@ int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
 	}
 }
 
-int vb2ex_hwcrypto_digest_extend(const uint8_t *buf,
-				 uint32_t size)
+vb2_error_t vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size)
 {
 	vb2_digest_extend(&hwcrypto_emulation_dc, buf, size);
 
@@ -164,8 +163,8 @@ int vb2ex_hwcrypto_digest_extend(const uint8_t *buf,
 	return retval_hwcrypto;
 }
 
-int vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
-				   uint32_t digest_size)
+vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
+					   uint32_t digest_size)
 {
 	vb2_digest_finalize(&hwcrypto_emulation_dc, digest, digest_size);
 

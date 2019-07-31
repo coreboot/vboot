@@ -16,13 +16,11 @@
 #include "host_signature2.h"
 #include "vb21_common.h"
 
-int vb21_fw_preamble_create(struct vb21_fw_preamble **fp_ptr,
-			    const struct vb2_private_key *signing_key,
-			    const struct vb21_signature **hash_list,
-			    uint32_t hash_count,
-			    uint32_t fw_version,
-			    uint32_t flags,
-			    const char *desc)
+vb2_error_t vb21_fw_preamble_create(struct vb21_fw_preamble **fp_ptr,
+				    const struct vb2_private_key *signing_key,
+				    const struct vb21_signature **hash_list,
+				    uint32_t hash_count, uint32_t fw_version,
+				    uint32_t flags, const char *desc)
 {
 	struct vb21_fw_preamble fp = {
 		.c.magic = VB21_MAGIC_FW_PREAMBLE,

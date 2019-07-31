@@ -20,11 +20,9 @@ const char *body_fname;
  * Local implementation which reads resources from individual files.  Could be
  * more elegant and read from bios.bin, if we understood the fmap.
  */
-int vb2ex_read_resource(struct vb2_context *c,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size)
+vb2_error_t vb2ex_read_resource(struct vb2_context *c,
+				enum vb2_resource_index index, uint32_t offset,
+				void *buf, uint32_t size)
 {
 	const char *fname;
 	FILE *f;
@@ -60,7 +58,7 @@ int vb2ex_read_resource(struct vb2_context *c,
 	return got_size == size ? VB2_SUCCESS : VB2_ERROR_UNKNOWN;
 }
 
-int vb2ex_tpm_clear_owner(struct vb2_context *c)
+vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *c)
 {
 	// TODO: implement
 	return VB2_SUCCESS;
@@ -86,13 +84,13 @@ static void save_if_needed(struct vb2_context *c)
 /**
  * Verify firmware body
  */
-static int hash_body(struct vb2_context *c)
+static vb2_error_t hash_body(struct vb2_context *c)
 {
 	uint32_t expect_size;
 	uint8_t block[8192];
 	uint32_t size;
 	FILE *f;
-	int rv;
+	vb2_error_t rv;
 
 	/* Open the body data */
 	f = fopen(body_fname, "rb");
@@ -148,7 +146,7 @@ int main(int argc, char *argv[])
 {
 	struct vb2_context ctx;
 	uint8_t workbuf[16384] __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
-	int rv;
+	vb2_error_t rv;
 
 	if (argc < 4) {
 		print_help(argv[0]);

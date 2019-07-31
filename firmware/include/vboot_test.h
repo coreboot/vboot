@@ -19,7 +19,8 @@
  */
 struct vb2_public_key;
 int vb2_mont_ge(const struct vb2_public_key *key, uint32_t *a);
-int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key);
+vb2_error_t vb2_check_padding(const uint8_t *sig,
+			      const struct vb2_public_key *key);
 
 enum VbEcBootMode_t;
 enum VbEcBootMode_t VbGetMode(void);

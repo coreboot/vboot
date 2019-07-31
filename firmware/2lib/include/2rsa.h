@@ -7,6 +7,7 @@
 #define VBOOT_REFERENCE_2RSA_H_
 
 #include "2crypto.h"
+#include "2return_codes.h"
 #include "2struct.h"
 
 struct vb2_workbuf;
@@ -63,9 +64,8 @@ uint32_t vb2_packed_key_size(enum vb2_signature_algorithm sig_alg);
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_rsa_verify_digest(const struct vb2_public_key *key,
-			  uint8_t *sig,
-			  const uint8_t *digest,
-			  const struct vb2_workbuf *wb);
+vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
+				  uint8_t *sig, const uint8_t *digest,
+				  const struct vb2_workbuf *wb);
 
 #endif  /* VBOOT_REFERENCE_2RSA_H_ */

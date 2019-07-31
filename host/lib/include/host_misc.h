@@ -41,7 +41,7 @@ int ReadFileBit(const char* filename, int bitmask);
 /* Writes [size] bytes of [data] to [filename].
  *
  * Returns 0 if success, 1 if error. */
-int WriteFile(const char* filename, const void *data, uint64_t size);
+vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size);
 
 /**
  * Read data from a file into a newly allocated buffer.
@@ -53,7 +53,8 @@ int WriteFile(const char* filename, const void *data, uint64_t size);
  * @param size_ptr	On exit, size of data will be stored here.
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_read_file(const char *filename, uint8_t **data_ptr, uint32_t *size_ptr);
+vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
+			  uint32_t *size_ptr);
 
 /**
  * Write data to a file from a buffer.
@@ -63,7 +64,8 @@ int vb2_read_file(const char *filename, uint8_t **data_ptr, uint32_t *size_ptr);
  * @param size		Number of bytes of data to write
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_write_file(const char *filename, const void *buf, uint32_t size);
+vb2_error_t vb2_write_file(const char *filename, const void *buf,
+			   uint32_t size);
 
 /**
  * Write a buffer which starts with a standard vb21_struct_common header.
@@ -74,7 +76,7 @@ int vb2_write_file(const char *filename, const void *buf, uint32_t size);
  * @param buf		Buffer to write
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb21_write_object(const char *filename, const void *buf);
+vb2_error_t vb21_write_object(const char *filename, const void *buf);
 
 /**
  * Round up a size to a multiple of 32 bits (4 bytes).

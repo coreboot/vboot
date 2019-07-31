@@ -111,8 +111,7 @@ void *vb2_workbuf_alloc(struct vb2_workbuf *wb, uint32_t size);
  * @param newsize	Requested size in bytes
  * @return A pointer to the allocated space, or NULL if error.
  */
-void *vb2_workbuf_realloc(struct vb2_workbuf *wb,
-			  uint32_t oldsize,
+void *vb2_workbuf_realloc(struct vb2_workbuf *wb, uint32_t oldsize,
 			  uint32_t newsize);
 
 /**
@@ -143,7 +142,7 @@ void vb2_workbuf_free(struct vb2_workbuf *wb, uint32_t size);
  * @param size		Number of bytes to compare
  * @return 0 if match or size=0, non-zero if at least one byte mismatched.
  */
-int vb2_safe_memcmp(const void *s1, const void *s2, size_t size);
+vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size);
 
 /**
  * Align a buffer and check its size.
@@ -154,10 +153,8 @@ int vb2_safe_memcmp(const void *s1, const void *s2, size_t size);
  * @param want_size	Required size
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_align(uint8_t **ptr,
-	      uint32_t *size,
-	      uint32_t align,
-	      uint32_t want_size);
+vb2_error_t vb2_align(uint8_t **ptr, uint32_t *size, uint32_t align,
+		      uint32_t want_size);
 
 /**
  * Return offset of ptr from base.
@@ -233,10 +230,10 @@ const struct vb2_id *vb2_hash_id(enum vb2_hash_algorithm hash_alg);
  * @param member_data_size	Size of member data in bytes
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_verify_member_inside(const void *parent, size_t parent_size,
-			     const void *member, size_t member_size,
-			     ptrdiff_t member_data_offset,
-			     size_t member_data_size);
+vb2_error_t vb2_verify_member_inside(const void *parent, size_t parent_size,
+				     const void *member, size_t member_size,
+				     ptrdiff_t member_data_offset,
+				     size_t member_data_size);
 
 /*
  * Helper function to get data pointed to by a public key.

@@ -404,7 +404,7 @@ enum vb2_pcr_digest {
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2api_secdata_check(const struct vb2_context *ctx);
+vb2_error_t vb2api_secdata_check(const struct vb2_context *ctx);
 
 /**
  * Create fresh data in the secure storage context.
@@ -420,7 +420,7 @@ int vb2api_secdata_check(const struct vb2_context *ctx);
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2api_secdata_create(struct vb2_context *ctx);
+vb2_error_t vb2api_secdata_create(struct vb2_context *ctx);
 
 /**
  * Check the CRC of the kernel version secure storage context.
@@ -434,7 +434,7 @@ int vb2api_secdata_create(struct vb2_context *ctx);
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2api_secdatak_check(const struct vb2_context *ctx);
+vb2_error_t vb2api_secdatak_check(const struct vb2_context *ctx);
 
 /**
  * Create fresh data in the kernel version secure storage context.
@@ -450,7 +450,7 @@ int vb2api_secdatak_check(const struct vb2_context *ctx);
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2api_secdatak_create(struct vb2_context *ctx);
+vb2_error_t vb2api_secdatak_create(struct vb2_context *ctx);
 
 /**
  * Report firmware failure to vboot.
@@ -478,7 +478,7 @@ void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_fw_phase1(struct vb2_context *ctx);
+vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx);
 
 /**
  * Firmware selection, phase 2.
@@ -489,7 +489,7 @@ int vb2api_fw_phase1(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_fw_phase2(struct vb2_context *ctx);
+vb2_error_t vb2api_fw_phase2(struct vb2_context *ctx);
 
 /**
  * Firmware selection, phase 3.
@@ -503,12 +503,12 @@ int vb2api_fw_phase2(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_fw_phase3(struct vb2_context *ctx);
+vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx);
 
 /**
  * Same, but for new-style structs.
  */
-int vb21api_fw_phase3(struct vb2_context *ctx);
+vb2_error_t vb21api_fw_phase3(struct vb2_context *ctx);
 
 /**
  * Initialize hashing data for the specified tag.
@@ -519,14 +519,14 @@ int vb21api_fw_phase3(struct vb2_context *ctx);
  *			stored here on output.
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_init_hash(struct vb2_context *ctx, uint32_t tag, uint32_t *size);
+vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag,
+			     uint32_t *size);
 
 /**
  * Same, but for new-style structs.
  */
-int vb21api_init_hash(struct vb2_context *ctx,
-		      const struct vb2_id *id,
-		      uint32_t *size);
+vb2_error_t vb21api_init_hash(struct vb2_context *ctx, const struct vb2_id *id,
+			      uint32_t *size);
 
 /**
  * Extend the hash started by vb2api_init_hash() with additional data.
@@ -538,9 +538,8 @@ int vb21api_init_hash(struct vb2_context *ctx,
  * @param size		Size of data in bytes
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_extend_hash(struct vb2_context *ctx,
-		       const void *buf,
-		       uint32_t size);
+vb2_error_t vb2api_extend_hash(struct vb2_context *ctx, const void *buf,
+			       uint32_t size);
 
 /**
  * Check the hash value started by vb2api_init_hash().
@@ -553,7 +552,7 @@ int vb2api_check_hash(struct vb2_context *ctx);
 /**
  * Same, but for new-style structs.
  */
-int vb21api_check_hash(struct vb2_context *ctx);
+vb2_error_t vb21api_check_hash(struct vb2_context *ctx);
 
 /**
  * Check the hash value started by vb2api_init_hash() while retrieving
@@ -564,8 +563,9 @@ int vb21api_check_hash(struct vb2_context *ctx);
  * @param digest_out_size	optional size of buffer to store digest
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_check_hash_get_digest(struct vb2_context *ctx, void *digest_out,
-				 uint32_t digest_out_size);
+vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
+					 void *digest_out,
+					 uint32_t digest_out_size);
 
 /**
  * Get a PCR digest
@@ -578,10 +578,9 @@ int vb2api_check_hash_get_digest(struct vb2_context *ctx, void *digest_out,
  * 			OUT: size of the copied digest
  * @return VB2_SUCCESS, or error code on error
  */
-int vb2api_get_pcr_digest(struct vb2_context *ctx,
-			  enum vb2_pcr_digest which_digest,
-			  uint8_t *dest,
-			  uint32_t *dest_size);
+vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
+				  enum vb2_pcr_digest which_digest,
+				  uint8_t *dest, uint32_t *dest_size);
 
 /**
  * Prepare for kernel verification stage.
@@ -591,7 +590,7 @@ int vb2api_get_pcr_digest(struct vb2_context *ctx,
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_kernel_phase1(struct vb2_context *ctx);
+vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx);
 
 /**
  * Load the verified boot block (vblock) for a kernel.
@@ -603,7 +602,7 @@ int vb2api_kernel_phase1(struct vb2_context *ctx);
  * @param stream	Kernel stream
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_load_kernel_vblock(struct vb2_context *ctx);
+vb2_error_t vb2api_load_kernel_vblock(struct vb2_context *ctx);
 
 /**
  * Get the size and offset of the kernel data for the most recent vblock.
@@ -616,9 +615,8 @@ int vb2api_load_kernel_vblock(struct vb2_context *ctx);
  * @param size_ptr      Destination for size of kernel data in bytes.
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_get_kernel_size(struct vb2_context *ctx,
-			   uint32_t *offset_ptr,
-			   uint32_t *size_ptr);
+vb2_error_t vb2api_get_kernel_size(struct vb2_context *ctx,
+				   uint32_t *offset_ptr, uint32_t *size_ptr);
 
 /**
  * Verify kernel data using the previously loaded kernel vblock.
@@ -632,9 +630,8 @@ int vb2api_get_kernel_size(struct vb2_context *ctx,
  * @param size		Size of kernel data in bytes
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_verify_kernel_data(struct vb2_context *ctx,
-			      const void *buf,
-			      uint32_t size);
+vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
+				      uint32_t size);
 
 /**
  * Clean up after kernel verification.
@@ -645,7 +642,7 @@ int vb2api_verify_kernel_data(struct vb2_context *ctx,
  * This cleans up intermediate data structures in the vboot context, and
  * updates the version in the secure data if necessary.
  */
-int vb2api_kernel_phase3(struct vb2_context *ctx);
+vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx);
 
 /**
  * Read the hardware ID from the GBB, and store it onto the given buffer.
@@ -660,9 +657,8 @@ int vb2api_kernel_phase3(struct vb2_context *ctx);
  * 			also including null terminator.
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2api_gbb_read_hwid(struct vb2_context *ctx,
-			 char *hwid,
-			 uint32_t *size);
+vb2_error_t vb2api_gbb_read_hwid(struct vb2_context *ctx, char *hwid,
+				 uint32_t *size);
 
 /**
  * Retrieve current GBB flags.
@@ -684,7 +680,7 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2ex_tpm_clear_owner(struct vb2_context *ctx);
+vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx);
 
 /**
  * Read a verified boot resource.
@@ -696,11 +692,9 @@ int vb2ex_tpm_clear_owner(struct vb2_context *ctx);
  * @param size		Amount of data to read
  * @return VB2_SUCCESS, or error code on error.
  */
-int vb2ex_read_resource(struct vb2_context *ctx,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size);
+vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
+				enum vb2_resource_index index, uint32_t offset,
+				void *buf, uint32_t size);
 
 /**
  * Print debug output
@@ -723,8 +717,8 @@ void vb2ex_printf(const char *func, const char *fmt, ...);
  * @param data_size	Expected total size of data to hash
  * @return VB2_SUCCESS, or non-zero error code (HWCRYPTO_UNSUPPORTED not fatal).
  */
-int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
-			       uint32_t data_size);
+vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
+				       uint32_t data_size);
 
 /**
  * Extend the hash in the hardware crypto engine with another block of data.
@@ -733,7 +727,7 @@ int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
  * @param size		Length of data block in bytes
  * @return VB2_SUCCESS, or non-zero error code.
  */
-int vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size);
+vb2_error_t vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size);
 
 /**
  * Finalize the digest in the hardware crypto engine and extract the result.
@@ -742,7 +736,8 @@ int vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size);
  * @param digest_size	Length of digest buffer in bytes
  * @return VB2_SUCCESS, or non-zero error code.
  */
-int vb2ex_hwcrypto_digest_finalize(uint8_t *digest, uint32_t digest_size);
+vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
+					   uint32_t digest_size);
 
 /*
  * Set the current TPM mode value, and validate that it was changed.  If one
@@ -757,6 +752,6 @@ int vb2ex_hwcrypto_digest_finalize(uint8_t *digest, uint32_t digest_size);
  *                       or DISABLED from vb2_tpm_mode enum.
  * @returns VB2_SUCCESS, or non-zero error code.
  */
-int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
+vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
 
 #endif  /* VBOOT_2_API_H_ */

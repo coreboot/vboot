@@ -193,36 +193,32 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-int vb2ex_read_resource(struct vb2_context *c,
-			enum vb2_resource_index index,
-			uint32_t offset,
-			void *buf,
-			uint32_t size)
+vb2_error_t vb2ex_read_resource(struct vb2_context *c,
+				enum vb2_resource_index index, uint32_t offset,
+				void *buf, uint32_t size)
 {
 	memset(buf, 0, size);
 	return VB2_SUCCESS;
 }
 
-int vb2_gbb_read_root_key(struct vb2_context *c,
-			  struct vb2_packed_key **keyp,
-			  uint32_t *size,
-			  struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_root_key(struct vb2_context *c,
+				  struct vb2_packed_key **keyp, uint32_t *size,
+				  struct vb2_workbuf *wb)
 {
 	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 
-int vb2_gbb_read_recovery_key(struct vb2_context *c,
-			      struct vb2_packed_key **keyp,
-			      uint32_t *size,
-			      struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *c,
+				      struct vb2_packed_key **keyp,
+				      uint32_t *size, struct vb2_workbuf *wb)
 {
 	*keyp = &mock_key;
 	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
-		       uint64_t lba_count, void *buffer)
+			 uint64_t lba_count, void *buffer)
 {
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
 
@@ -236,7 +232,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 }
 
 vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
-			uint64_t lba_count, const void *buffer)
+			  uint64_t lba_count, const void *buffer)
 {
 	LOGCALL("VbExDiskWrite(h, %d, %d)\n", (int)lba_start, (int)lba_count);
 
@@ -278,9 +274,8 @@ void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
 	memcpy(dest, fake_guid, sizeof(fake_guid));
 }
 
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-		   const uint8_t *buf,
-		   uint32_t size)
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size)
 {
 	if (--unpack_key_fail == 0)
 		return VB2_ERROR_MOCK;
@@ -288,10 +283,9 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_keyblock(struct vb2_keyblock *block,
-			uint32_t size,
-			const struct vb2_public_key *key,
-			const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
+				const struct vb2_public_key *key,
+				const struct vb2_workbuf *wb)
 {
 	if (key_block_verify_fail >= 1)
 		return VB2_ERROR_MOCK;
@@ -301,9 +295,9 @@ int vb2_verify_keyblock(struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
-			     uint32_t size,
-			     const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
+				     uint32_t size,
+				     const struct vb2_workbuf *wb)
 {
 	if (key_block_verify_fail >= 2)
 		return VB2_ERROR_MOCK;
@@ -313,9 +307,8 @@ int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
-			       uint32_t size,
-			       const struct vb2_public_key *key,
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+			       uint32_t size, const struct vb2_public_key *key,
 			       const struct vb2_workbuf *wb)
 {
 	if (preamble_verify_fail)
@@ -326,11 +319,10 @@ int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_data(const uint8_t *data,
-		    uint32_t size,
-		    struct vb2_signature *sig,
-		    const struct vb2_public_key *key,
-		    const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
+			    struct vb2_signature *sig,
+			    const struct vb2_public_key *key,
+			    const struct vb2_workbuf *wb)
 {
 	if (verify_data_fail)
 		return VB2_ERROR_MOCK;
@@ -338,11 +330,9 @@ int vb2_verify_data(const uint8_t *data,
 	return VB2_SUCCESS;
 }
 
-int vb2_digest_buffer(const uint8_t *buf,
-		      uint32_t size,
-		      enum vb2_hash_algorithm hash_alg,
-		      uint8_t *digest,
-		      uint32_t digest_size)
+vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
+			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
+			      uint32_t digest_size)
 {
 	memcpy(digest, mock_digest, sizeof(mock_digest));
 	return VB2_SUCCESS;

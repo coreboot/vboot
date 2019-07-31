@@ -27,7 +27,7 @@ static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams params;
 
 vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
-		       uint64_t lba_count, void *buffer)
+			 uint64_t lba_count, void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
 		return VBERROR_UNKNOWN;
@@ -41,7 +41,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 }
 
 vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
-			uint64_t lba_count, const void *buffer)
+			  uint64_t lba_count, const void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
 		return VBERROR_UNKNOWN;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 {
 	struct vb2_packed_key *kernkey;
 	uint64_t disk_bytes = 0;
-	int rv;
+	vb2_error_t rv;
 
 	if (argc < 3) {
 		print_help(argv[0]);

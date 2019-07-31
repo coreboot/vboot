@@ -24,9 +24,9 @@ void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 	vb2_fail(ctx, reason, subcode);
 }
 
-int vb2api_fw_phase1(struct vb2_context *ctx)
+vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 	struct vb2_shared_data *sd;
 
 	/* Initialize the vboot context if it hasn't been yet */
@@ -116,9 +116,9 @@ int vb2api_fw_phase1(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2api_fw_phase2(struct vb2_context *ctx)
+vb2_error_t vb2api_fw_phase2(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/*
 	 * Use the slot from the last boot if this is a resume.  Do not set
@@ -159,7 +159,7 @@ int vb2api_fw_phase2(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2api_extend_hash(struct vb2_context *ctx,
+vb2_error_t vb2api_extend_hash(struct vb2_context *ctx,
 		       const void *buf,
 		       uint32_t size)
 {
@@ -183,7 +183,7 @@ int vb2api_extend_hash(struct vb2_context *ctx,
 		return vb2_digest_extend(dc, buf, size);
 }
 
-int vb2api_get_pcr_digest(struct vb2_context *ctx,
+vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
 			  enum vb2_pcr_digest which_digest,
 			  uint8_t *dest,
 			  uint32_t *dest_size)

@@ -12,6 +12,7 @@
 #define VBOOT_REFERENCE_2SHA_H_
 
 #include "2crypto.h"
+#include "2return_codes.h"
 
 /* Hash algorithms may be disabled individually to save code space */
 
@@ -158,7 +159,7 @@ enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm);
  * @param hash_alg	Hash algorithm
  * @return The size of the digest, or 0 if error.
  */
-int vb2_digest_size(enum vb2_hash_algorithm hash_alg);
+vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
 
 /**
  * Return the block size of a hash algorithm.
@@ -166,7 +167,7 @@ int vb2_digest_size(enum vb2_hash_algorithm hash_alg);
  * @param hash_alg	Hash algorithm
  * @return The block size of the algorithm, or 0 if error.
  */
-int vb2_hash_block_size(enum vb2_hash_algorithm alg);
+vb2_error_t vb2_hash_block_size(enum vb2_hash_algorithm alg);
 
 /**
  * Return the name of a hash algorithm
@@ -184,8 +185,8 @@ const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg);
  * @param hash_alg	Hash algorithm
  * @return VB2_SUCCESS, or non-zero on error.
  */
-int vb2_digest_init(struct vb2_digest_context *dc,
-		    enum vb2_hash_algorithm hash_alg);
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
+			    enum vb2_hash_algorithm hash_alg);
 
 /**
  * Extend a digest's hash with another block of data.
@@ -195,9 +196,8 @@ int vb2_digest_init(struct vb2_digest_context *dc,
  * @param size		Length of data in bytes
  * @return VB2_SUCCESS, or non-zero on error.
  */
-int vb2_digest_extend(struct vb2_digest_context *dc,
-		      const uint8_t *buf,
-		      uint32_t size);
+vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
+			      uint32_t size);
 
 /**
  * Finalize a digest and store the result.
@@ -209,9 +209,8 @@ int vb2_digest_extend(struct vb2_digest_context *dc,
  * @param digest_size	Length of digest buffer in bytes.
  * @return VB2_SUCCESS, or non-zero on error.
  */
-int vb2_digest_finalize(struct vb2_digest_context *dc,
-			uint8_t *digest,
-			uint32_t digest_size);
+vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc,
+				uint8_t *digest, uint32_t digest_size);
 
 /**
  * Calculate the digest of a buffer and store the result.
@@ -223,10 +222,8 @@ int vb2_digest_finalize(struct vb2_digest_context *dc,
  * @param digest_size	Length of digest buffer in bytes.
  * @return VB2_SUCCESS, or non-zero on error.
  */
-int vb2_digest_buffer(const uint8_t *buf,
-		      uint32_t size,
-		      enum vb2_hash_algorithm hash_alg,
-		      uint8_t *digest,
-		      uint32_t digest_size);
+vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
+			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
+			      uint32_t digest_size);
 
 #endif  /* VBOOT_REFERENCE_2SHA_H_ */

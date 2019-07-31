@@ -14,7 +14,7 @@
  * hash algorithm [alg] and stores it into [digest], which is of size
  * [digest_size].  Returns VB2_SUCCESS, or non-zero on error.
  */
-int DigestFile(char *input_file, enum vb2_hash_algorithm alg,
-	       uint8_t *digest, uint32_t digest_size);
+vb2_error_t DigestFile(char *input_file, enum vb2_hash_algorithm alg,
+		       uint8_t *digest, uint32_t digest_size);
 
 #endif  /* VBOOT_REFERENCE_FILE_KEYS_H_ */

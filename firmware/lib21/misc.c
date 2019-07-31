@@ -28,15 +28,15 @@
  * @param buf_ptr	Destination for object pointer
  * @return VB2_SUCCESS, or error code on error.
  */
-static int vb21_read_resource_object(struct vb2_context *ctx,
-				     enum vb2_resource_index index,
-				     uint32_t offset,
-				     struct vb2_workbuf *wb,
-				     void **buf_ptr)
+static vb2_error_t vb21_read_resource_object(struct vb2_context *ctx,
+					     enum vb2_resource_index index,
+					     uint32_t offset,
+					     struct vb2_workbuf *wb,
+					     void **buf_ptr)
 {
 	struct vb21_struct_common c;
 	void *buf;
-	int rv;
+	vb2_error_t rv;
 
 	*buf_ptr = NULL;
 
@@ -62,7 +62,7 @@ static int vb21_read_resource_object(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-int vb21_load_fw_keyblock(struct vb2_context *ctx)
+vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -74,7 +74,7 @@ int vb21_load_fw_keyblock(struct vb2_context *ctx)
 	struct vb2_public_key root_key;
 	struct vb21_keyblock *kb;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -155,7 +155,7 @@ int vb21_load_fw_keyblock(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb21_load_fw_preamble(struct vb2_context *ctx)
+vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -168,7 +168,7 @@ int vb21_load_fw_preamble(struct vb2_context *ctx)
 	/* Preamble goes in the next unused chunk of work buffer */
 	struct vb21_fw_preamble *pre;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

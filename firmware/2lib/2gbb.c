@@ -8,14 +8,13 @@
 #include "2common.h"
 #include "2misc.h"
 
-static int vb2_gbb_read_key(struct vb2_context *ctx,
-			    uint32_t offset,
-			    uint32_t *size,
-			    struct vb2_packed_key **keyp,
-			    struct vb2_workbuf *wb)
+static vb2_error_t vb2_gbb_read_key(struct vb2_context *ctx, uint32_t offset,
+				    uint32_t *size,
+				    struct vb2_packed_key **keyp,
+				    struct vb2_workbuf *wb)
 {
 	struct vb2_workbuf wblocal = *wb;
-	int rv;
+	vb2_error_t rv;
 
 	/* Check offset and size. */
 	if (offset < sizeof(struct vb2_gbb_header))
@@ -56,41 +55,38 @@ static int vb2_gbb_read_key(struct vb2_context *ctx,
 	return rv;
 }
 
-int vb2_gbb_read_root_key(struct vb2_context *ctx,
-			  struct vb2_packed_key **keyp,
-			  uint32_t *size,
-			  struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_root_key(struct vb2_context *ctx,
+				  struct vb2_packed_key **keyp, uint32_t *size,
+				  struct vb2_workbuf *wb)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t size_in = gbb->rootkey_size;
-	int ret = vb2_gbb_read_key(ctx, gbb->rootkey_offset,
-				   &size_in, keyp, wb);
+	vb2_error_t ret = vb2_gbb_read_key(ctx, gbb->rootkey_offset,
+					   &size_in, keyp, wb);
 	if (size)
 		*size = size_in;
 	return ret;
 }
 
-int vb2_gbb_read_recovery_key(struct vb2_context *ctx,
-			      struct vb2_packed_key **keyp,
-			      uint32_t *size,
-			      struct vb2_workbuf *wb)
+vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *ctx,
+				      struct vb2_packed_key **keyp,
+				      uint32_t *size, struct vb2_workbuf *wb)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t size_in = gbb->recovery_key_size;
-	int ret = vb2_gbb_read_key(ctx, gbb->recovery_key_offset,
-				   &size_in, keyp, wb);
+	vb2_error_t ret = vb2_gbb_read_key(ctx, gbb->recovery_key_offset,
+					   &size_in, keyp, wb);
 	if (size)
 		*size = size_in;
 	return ret;
 }
 
-int vb2api_gbb_read_hwid(struct vb2_context *ctx,
-			 char *hwid,
-			 uint32_t *size)
+vb2_error_t vb2api_gbb_read_hwid(struct vb2_context *ctx, char *hwid,
+				 uint32_t *size)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	uint32_t i;
-	int ret;
+	vb2_error_t ret;
 
 	if (gbb->hwid_size == 0) {
 		VB2_DEBUG("invalid HWID size %d\n", gbb->hwid_size);

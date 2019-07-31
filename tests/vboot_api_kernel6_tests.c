@@ -27,7 +27,7 @@ static void ResetMocks(void)
 }
 
 /* Mocks */
-uint32_t SetVirtualDevMode(int val)
+vb2_error_t SetVirtualDevMode(int val)
 {
 	if (virtual_dev_mode_fail)
 		return VBERROR_SIMULATED;

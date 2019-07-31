@@ -21,6 +21,6 @@
  * @param id            Destination for binary representation
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_str_to_id(const char *str, struct vb2_id *id);
+vb2_error_t vb2_str_to_id(const char *str, struct vb2_id *id);
 
 #endif  /* VBOOT_REFERENCE_HOST_MISC2_H_ */

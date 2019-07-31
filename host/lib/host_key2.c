@@ -25,8 +25,8 @@
 #include "vboot_common.h"
 
 enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
-		enum vb2_hash_algorithm hash_alg,
-		enum vb2_signature_algorithm sig_alg)
+	enum vb2_hash_algorithm hash_alg,
+	enum vb2_signature_algorithm sig_alg)
 {
 	/* Make sure algorithms are in the range supported by crypto alg */
 	if (sig_alg < VB2_SIG_RSA1024 || sig_alg >= VB2_SIG_ALG_COUNT)
@@ -76,8 +76,8 @@ struct vb2_private_key *vb2_read_private_key(const char *filename)
 }
 
 struct vb2_private_key *vb2_read_private_key_pem(
-		const char* filename,
-		enum vb2_crypto_algorithm algorithm)
+	const char* filename,
+	enum vb2_crypto_algorithm algorithm)
 {
 	if (algorithm >= VB2_ALG_COUNT) {
 		VB2_DEBUG("%s() called with invalid algorithm!\n",
@@ -124,8 +124,8 @@ void vb2_free_private_key(struct vb2_private_key *key)
 	free(key);
 }
 
-int vb2_write_private_key(const char *filename,
-			  const struct vb2_private_key *key)
+vb2_error_t vb2_write_private_key(const char *filename,
+				  const struct vb2_private_key *key)
 {
 	/* Convert back to legacy vb1 algorithm enum */
 	uint64_t alg = vb2_get_crypto_algorithm(key->hash_alg, key->sig_alg);
@@ -187,8 +187,8 @@ struct vb2_packed_key *vb2_alloc_packed_key(uint32_t key_size,
 	return key;
 }
 
-int vb2_copy_packed_key(struct vb2_packed_key *dest,
-			const struct vb2_packed_key *src)
+vb2_error_t vb2_copy_packed_key(struct vb2_packed_key *dest,
+				const struct vb2_packed_key *src)
 {
 	if (dest->key_size < src->key_size)
 		return VB2_ERROR_COPY_KEY_SIZE;
@@ -260,8 +260,8 @@ struct vb2_packed_key *vb2_read_packed_keyb(const char *filename,
 	return key;
 }
 
-int vb2_write_packed_key(const char *filename,
-			 const struct vb2_packed_key *key)
+vb2_error_t vb2_write_packed_key(const char *filename,
+				 const struct vb2_packed_key *key)
 {
 	/* Copy the key, so its data is contiguous with the header */
 	struct vb2_packed_key *kcopy =
@@ -274,7 +274,7 @@ int vb2_write_packed_key(const char *filename,
 	}
 
 	/* Write the copy, then free it */
-	int rv = vb2_write_file(filename, kcopy,
+	vb2_error_t rv = vb2_write_file(filename, kcopy,
 				kcopy->key_offset + kcopy->key_size);
 	free(kcopy);
 	return rv;

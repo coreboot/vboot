@@ -38,10 +38,10 @@ static enum {
 	HWCRYPTO_FORBIDDEN,
 } hwcrypto_state;
 
-static int retval_vb2_load_fw_keyblock;
-static int retval_vb2_load_fw_preamble;
-static int retval_vb2_digest_finalize;
-static int retval_vb2_verify_digest;
+static vb2_error_t retval_vb2_load_fw_keyblock;
+static vb2_error_t retval_vb2_load_fw_preamble;
+static vb2_error_t retval_vb2_digest_finalize;
+static vb2_error_t retval_vb2_verify_digest;
 
 /* Type of test to reset for */
 enum reset_type {
@@ -107,19 +107,18 @@ static void reset_common_data(enum reset_type t)
 
 /* Mocked functions */
 
-int vb2_load_fw_keyblock(struct vb2_context *c)
+vb2_error_t vb2_load_fw_keyblock(struct vb2_context *c)
 {
 	return retval_vb2_load_fw_keyblock;
 }
 
-int vb2_load_fw_preamble(struct vb2_context *c)
+vb2_error_t vb2_load_fw_preamble(struct vb2_context *c)
 {
 	return retval_vb2_load_fw_preamble;
 }
 
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-		   const uint8_t *buf,
-		   uint32_t size)
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size)
 {
 	struct vb2_packed_key *k = (struct vb2_packed_key *)buf;
 
@@ -132,8 +131,8 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
-			       uint32_t data_size)
+vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
+				       uint32_t data_size)
 {
 	switch (hwcrypto_state) {
 	case HWCRYPTO_DISABLED:
@@ -149,8 +148,8 @@ int vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
 	}
 }
 
-int vb2ex_hwcrypto_digest_extend(const uint8_t *buf,
-				 uint32_t size)
+vb2_error_t vb2ex_hwcrypto_digest_extend(const uint8_t *buf,
+					 uint32_t size)
 {
 	if (hwcrypto_state != HWCRYPTO_ENABLED)
 		return VB2_ERROR_UNKNOWN;
@@ -164,7 +163,7 @@ static void fill_digest(uint8_t *digest, uint32_t digest_size)
 	memset(digest, 0x0a, digest_size);
 }
 
-int vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
+vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 				   uint32_t digest_size)
 {
 	if (hwcrypto_state != HWCRYPTO_ENABLED)
@@ -176,7 +175,7 @@ int vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 	return retval_vb2_digest_finalize;
 }
 
-int vb2_digest_init(struct vb2_digest_context *dc,
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
 		    enum vb2_hash_algorithm hash_alg)
 {
 	if (hwcrypto_state == HWCRYPTO_ENABLED)
@@ -190,9 +189,8 @@ int vb2_digest_init(struct vb2_digest_context *dc,
 	return VB2_SUCCESS;
 }
 
-int vb2_digest_extend(struct vb2_digest_context *dc,
-		      const uint8_t *buf,
-		      uint32_t size)
+vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
+			      uint32_t size)
 {
 	if (hwcrypto_state == HWCRYPTO_ENABLED)
 		return VB2_ERROR_UNKNOWN;
@@ -202,9 +200,8 @@ int vb2_digest_extend(struct vb2_digest_context *dc,
 	return VB2_SUCCESS;
 }
 
-int vb2_digest_finalize(struct vb2_digest_context *dc,
-			uint8_t *digest,
-			uint32_t digest_size)
+vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
+				uint32_t digest_size)
 {
 	if (hwcrypto_state == HWCRYPTO_ENABLED)
 		return VB2_ERROR_UNKNOWN;
@@ -220,10 +217,9 @@ uint32_t vb2_rsa_sig_size(enum vb2_signature_algorithm sig_alg)
 	return mock_sig_size;
 }
 
-int vb2_rsa_verify_digest(const struct vb2_public_key *key,
-			  uint8_t *sig,
-			  const uint8_t *digest,
-			  const struct vb2_workbuf *wb)
+vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
+				  uint8_t *sig, const uint8_t *digest,
+				  const struct vb2_workbuf *wb)
 {
 	return retval_vb2_verify_digest;
 }

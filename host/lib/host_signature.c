@@ -28,11 +28,8 @@
  * [inbuf] passed redirected to stdin, and the stdout of the command is put
  * back into [outbuf].  Returns -1 on error, 0 on success.
  */
-static int sign_external(uint32_t size,
-			 const uint8_t *inbuf,
-			 uint8_t *outbuf,
-			 uint32_t outbufsize,
-			 const char *pem_file,
+static int sign_external(uint32_t size, const uint8_t *inbuf, uint8_t *outbuf,
+			 uint32_t outbufsize, const char *pem_file,
 			 const char *external_signer)
 {
 	int rv = 0, n;
@@ -113,8 +110,7 @@ static int sign_external(uint32_t size,
 	return rv;
 }
 
-struct vb2_signature *vb2_external_signature(const uint8_t *data,
-					     uint32_t size,
+struct vb2_signature *vb2_external_signature(const uint8_t *data, uint32_t size,
 					     const char *key_file,
 					     uint32_t key_algorithm,
 					     const char *external_signer)

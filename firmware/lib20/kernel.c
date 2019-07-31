@@ -40,16 +40,16 @@ static int vb2_need_signed_kernel(struct vb2_context *ctx)
 	return 0;
 }
 
-int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
-			     uint32_t size,
-			     const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
+				     uint32_t size,
+				     const struct vb2_workbuf *wb)
 {
 	const struct vb2_signature *sig = &block->keyblock_hash;
 	struct vb2_workbuf wblocal = *wb;
 	struct vb2_digest_context *dc;
 	uint8_t *digest;
 	uint32_t digest_size;
-	int rv;
+	vb2_error_t rv;
 
 	/* Sanity check keyblock before attempting hash check of data */
 	rv = vb2_check_keyblock(block, size, sig);
@@ -91,7 +91,7 @@ int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	return VB2_SUCCESS;
 }
 
-int vb2_load_kernel_keyblock(struct vb2_context *ctx)
+vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
@@ -109,7 +109,7 @@ int vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	int need_keyblock_valid = vb2_need_signed_kernel(ctx);
 	int keyblock_is_valid = 1;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -244,10 +244,10 @@ int vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
-			       uint32_t size,
-			       const struct vb2_public_key *key,
-			       const struct vb2_workbuf *wb)
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+				       uint32_t size,
+				       const struct vb2_public_key *key,
+				       const struct vb2_workbuf *wb)
 {
 	struct vb2_signature *sig = &preamble->preamble_signature;
 	uint32_t min_size = EXPECTED_VB2_KERNEL_PREAMBLE_2_0_SIZE;
@@ -352,7 +352,7 @@ int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 	return VB2_SUCCESS;
 }
 
-int vb2_load_kernel_preamble(struct vb2_context *ctx)
+vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
@@ -367,7 +367,7 @@ int vb2_load_kernel_preamble(struct vb2_context *ctx)
 	struct vb2_kernel_preamble *pre;
 	uint32_t pre_size;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

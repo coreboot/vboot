@@ -99,7 +99,7 @@ int ReadFileBit(const char* filename, int bitmask)
 	else return (value & bitmask ? 1 : 0);
 }
 
-int WriteFile(const char* filename, const void *data, uint64_t size)
+vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size)
 {
 	FILE *f = fopen(filename, "wb");
 	if (!f) {

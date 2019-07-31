@@ -32,9 +32,9 @@ uint8_t *vb2_signature_data(struct vb2_signature *sig);
  * @param sig		Signature pointer
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_verify_signature_inside(const void *parent,
-				uint32_t parent_size,
-				const struct vb2_signature *sig);
+vb2_error_t vb2_verify_signature_inside(const void *parent,
+					uint32_t parent_size,
+					const struct vb2_signature *sig);
 
 /**
  * Unpack a vboot1-format key buffer for use in verification
@@ -47,9 +47,8 @@ int vb2_verify_signature_inside(const void *parent,
  * @param size		Size of buffer in bytes
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_unpack_key_buffer(struct vb2_public_key *key,
-			  const uint8_t *buf,
-			  uint32_t size);
+vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
+				  const uint8_t *buf, uint32_t size);
 
 /**
  * Unpack a vboot1-format key for use in verification
@@ -62,8 +61,8 @@ int vb2_unpack_key_buffer(struct vb2_public_key *key,
  * @param size		Size of buffer in bytes
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_unpack_key(struct vb2_public_key *key,
-		   const struct vb2_packed_key *packed_key);
+vb2_error_t vb2_unpack_key(struct vb2_public_key *key,
+			   const struct vb2_packed_key *packed_key);
 
 /**
  * Verify a signature against an expected hash digest.
@@ -74,10 +73,9 @@ int vb2_unpack_key(struct vb2_public_key *key,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_verify_digest(const struct vb2_public_key *key,
-		      struct vb2_signature *sig,
-		      const uint8_t *digest,
-		      const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
+			      struct vb2_signature *sig, const uint8_t *digest,
+			      const struct vb2_workbuf *wb);
 
 /**
  * Verify data matches signature.
@@ -90,11 +88,10 @@ int vb2_verify_digest(const struct vb2_public_key *key,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_verify_data(const uint8_t *data,
-		    uint32_t size,
-		    struct vb2_signature *sig,
-		    const struct vb2_public_key *key,
-		    const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
+			    struct vb2_signature *sig,
+			    const struct vb2_public_key *key,
+			    const struct vb2_workbuf *wb);
 
 /**
  * Check the sanity of a key block structure.
@@ -108,9 +105,8 @@ int vb2_verify_data(const uint8_t *data,
  * @param size		Size of key block buffer
  * @param sig		Which signature inside the keyblock to use
  */
-int vb2_check_keyblock(const struct vb2_keyblock *block,
-		       uint32_t size,
-		       const struct vb2_signature *sig);
+vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
+			       const struct vb2_signature *sig);
 
 /**
  * Verify a key block using a public key.
@@ -124,10 +120,9 @@ int vb2_check_keyblock(const struct vb2_keyblock *block,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_verify_keyblock(struct vb2_keyblock *block,
-			uint32_t size,
-			const struct vb2_public_key *key,
-			const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
+				const struct vb2_public_key *key,
+				const struct vb2_workbuf *wb);
 
 /**
  * Verify a key block using its hash.
@@ -141,9 +136,9 @@ int vb2_verify_keyblock(struct vb2_keyblock *block,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
-			     uint32_t size,
-			     const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
+				     uint32_t size,
+				     const struct vb2_workbuf *wb);
 
 /**
  * Check the sanity of a firmware preamble using a public key.
@@ -156,10 +151,10 @@ int vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
-			   uint32_t size,
-			   const struct vb2_public_key *key,
-			   const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
+				   uint32_t size,
+				   const struct vb2_public_key *key,
+				   const struct vb2_workbuf *wb);
 
 /**
  * Check the sanity of a kernel preamble using a public key.
@@ -172,10 +167,10 @@ int vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
-			       uint32_t size,
-			       const struct vb2_public_key *key,
-			       const struct vb2_workbuf *wb);
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+				       uint32_t size,
+				       const struct vb2_public_key *key,
+				       const struct vb2_workbuf *wb);
 
 /**
  * Retrieve the 16-bit vmlinuz header address and size from the preamble.

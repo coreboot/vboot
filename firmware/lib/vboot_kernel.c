@@ -126,14 +126,11 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  *			VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static int vb2_verify_kernel_vblock(struct vb2_context *ctx,
-				    uint8_t *kbuf,
-				    uint32_t kbuf_size,
-				    const struct vb2_packed_key *kernel_subkey,
-				    const LoadKernelParams *params,
-				    uint32_t min_version,
-				    VbSharedDataKernelPart *shpart,
-				    struct vb2_workbuf *wb)
+static vb2_error_t vb2_verify_kernel_vblock(
+	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
+	const struct vb2_packed_key *kernel_subkey,
+	const LoadKernelParams *params, uint32_t min_version,
+	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
 	/* Unpack kernel subkey */
 	struct vb2_public_key kernel_subkey2;
@@ -311,14 +308,11 @@ enum vb2_load_partition_flags {
  * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static int vb2_load_partition(struct vb2_context *ctx,
-			      VbExStream_t stream,
-			      const struct vb2_packed_key *kernel_subkey,
-			      uint32_t flags,
-			      LoadKernelParams *params,
-			      uint32_t min_version,
-			      VbSharedDataKernelPart *shpart,
-			      struct vb2_workbuf *wb)
+static vb2_error_t vb2_load_partition(
+	struct vb2_context *ctx, VbExStream_t stream,
+	const struct vb2_packed_key *kernel_subkey, uint32_t flags,
+	LoadKernelParams *params, uint32_t min_version,
+	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
 	uint64_t read_us = 0, start_ts;
 	struct vb2_workbuf wblocal = *wb;
@@ -444,7 +438,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t retval = VBERROR_UNKNOWN;
 	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

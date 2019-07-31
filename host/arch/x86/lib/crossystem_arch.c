@@ -442,7 +442,7 @@ static const char* VbReadMainFwType(char* dest, int size)
 
 
 /* Read the recovery reason.  Returns the reason code or -1 if error. */
-static int VbGetRecoveryReason(void)
+static vb2_error_t VbGetRecoveryReason(void)
 {
 	unsigned value;
 

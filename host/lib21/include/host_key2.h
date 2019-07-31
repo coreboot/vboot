@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_HOST_KEY2_H_
 
 #include "2id.h"
+#include "2return_codes.h"
 #include "2struct.h"
 
 struct vb2_public_key;
@@ -98,9 +99,8 @@ void vb2_private_key_free(struct vb2_private_key *key);
  * @param size		Size of buffer in bytes
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb21_private_key_unpack(struct vb2_private_key **key_ptr,
-			    const uint8_t *buf,
-			    uint32_t size);
+vb2_error_t vb21_private_key_unpack(struct vb2_private_key **key_ptr,
+				    const uint8_t *buf, uint32_t size);
 
 /**
  * Read a private key from vb21_packed_private_key format.
@@ -110,8 +110,8 @@ int vb21_private_key_unpack(struct vb2_private_key **key_ptr,
  * @param filename	File to read key data from.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb21_private_key_read(struct vb2_private_key **key_ptr,
-			  const char *filename);
+vb2_error_t vb21_private_key_read(struct vb2_private_key **key_ptr,
+				  const char *filename);
 
 /**
  * Read a private key from a .pem file.
@@ -124,8 +124,8 @@ int vb21_private_key_read(struct vb2_private_key **key_ptr,
  * @param filename	File to read key data from.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_private_key_read_pem(struct vb2_private_key **key_ptr,
-			     const char *filename);
+vb2_error_t vb2_private_key_read_pem(struct vb2_private_key **key_ptr,
+				     const char *filename);
 
 /**
  * Set the description of a private key.
@@ -134,7 +134,8 @@ int vb2_private_key_read_pem(struct vb2_private_key **key_ptr,
  * @param desc		Description string, or NULL if no description.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_private_key_set_desc(struct vb2_private_key *key, const char *desc);
+vb2_error_t vb2_private_key_set_desc(struct vb2_private_key *key,
+				     const char *desc);
 
 /**
  * Write a private key to vb21_packed_private_key format.
@@ -143,8 +144,8 @@ int vb2_private_key_set_desc(struct vb2_private_key *key, const char *desc);
  * @param filename	File to write key data to.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb21_private_key_write(const struct vb2_private_key *key,
-			   const char *filename);
+vb2_error_t vb21_private_key_write(const struct vb2_private_key *key,
+				   const char *filename);
 
 /**
  * Get a private key for an unsigned hash
@@ -154,8 +155,8 @@ int vb21_private_key_write(const struct vb2_private_key *key,
  * @param hash_alg	Hash algorithm to use
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_private_key_hash(const struct vb2_private_key **key_ptr,
-			 enum vb2_hash_algorithm hash_alg);
+vb2_error_t vb2_private_key_hash(const struct vb2_private_key **key_ptr,
+				 enum vb2_hash_algorithm hash_alg);
 
 /**
  * Allocate a public key buffer of sufficient size for the signature algorithm.
@@ -168,8 +169,8 @@ int vb2_private_key_hash(const struct vb2_private_key **key_ptr,
  * @param sig_alg	Signature algorithm for key.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_public_key_alloc(struct vb2_public_key **key_ptr,
-			 enum vb2_signature_algorithm sig_alg);
+vb2_error_t vb2_public_key_alloc(struct vb2_public_key **key_ptr,
+				 enum vb2_signature_algorithm sig_alg);
 
 /**
  * Return the packed data for a key allocated with vb2_public_key_alloc().
@@ -202,8 +203,8 @@ void vb2_public_key_free(struct vb2_public_key *key);
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
 
-int vb2_public_key_read_keyb(struct vb2_public_key **key_ptr,
-			     const char *filename);
+vb2_error_t vb2_public_key_read_keyb(struct vb2_public_key **key_ptr,
+				     const char *filename);
 
 /**
  * Set the description of a public key.
@@ -212,7 +213,8 @@ int vb2_public_key_read_keyb(struct vb2_public_key **key_ptr,
  * @param desc		Description string, or NULL if no description.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_public_key_set_desc(struct vb2_public_key *key, const char *desc);
+vb2_error_t vb2_public_key_set_desc(struct vb2_public_key *key,
+				    const char *desc);
 
 /**
  * Read a public key in vb21_packed_key format.
@@ -221,8 +223,8 @@ int vb2_public_key_set_desc(struct vb2_public_key *key, const char *desc);
  *			Caller is responsible for calling free() on this.
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb21_packed_key_read(struct vb21_packed_key **key_ptr,
-			 const char *filename);
+vb2_error_t vb21_packed_key_read(struct vb21_packed_key **key_ptr,
+				 const char *filename);
 
 /**
  * Pack a public key into vb21_packed_key format.
@@ -233,8 +235,8 @@ int vb21_packed_key_read(struct vb21_packed_key **key_ptr,
  *			this.
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb21_public_key_pack(struct vb21_packed_key **key_ptr,
-			 const struct vb2_public_key *pubk);
+vb2_error_t vb21_public_key_pack(struct vb21_packed_key **key_ptr,
+				 const struct vb2_public_key *pubk);
 
 /**
  * Get a public key for an unsigned hash.
@@ -243,8 +245,8 @@ int vb21_public_key_pack(struct vb21_packed_key **key_ptr,
  * @param hash_alg	Hash algorithm to use
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb2_public_key_hash(struct vb2_public_key *key,
-			enum vb2_hash_algorithm hash_alg);
+vb2_error_t vb2_public_key_hash(struct vb2_public_key *key,
+				enum vb2_hash_algorithm hash_alg);
 
 
 /**
@@ -262,7 +264,7 @@ enum vb2_signature_algorithm vb2_rsa_sig_alg(struct rsa_st *rsa);
  * @param filename	File to write key data to.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-int vb21_public_key_write(const struct vb2_public_key *key,
-			  const char *filename);
+vb2_error_t vb21_public_key_write(const struct vb2_public_key *key,
+				  const char *filename);
 
 #endif  /* VBOOT_REFERENCE_HOST_KEY2_H_ */

@@ -17,7 +17,8 @@
 #include "host_common.h"
 #include "host_misc2.h"
 
-int vb2_read_file(const char *filename, uint8_t **data_ptr, uint32_t *size_ptr)
+vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
+			  uint32_t *size_ptr)
 {
 	FILE *f;
 	uint8_t *buf;
@@ -61,7 +62,7 @@ int vb2_read_file(const char *filename, uint8_t **data_ptr, uint32_t *size_ptr)
 	return VB2_SUCCESS;
 }
 
-int vb2_write_file(const char *filename, const void *buf, uint32_t size)
+vb2_error_t vb2_write_file(const char *filename, const void *buf, uint32_t size)
 {
 	FILE *f = fopen(filename, "wb");
 
@@ -81,7 +82,7 @@ int vb2_write_file(const char *filename, const void *buf, uint32_t size)
 	return VB2_SUCCESS;
 }
 
-int vb21_write_object(const char *filename, const void *buf)
+vb2_error_t vb21_write_object(const char *filename, const void *buf)
 {
 	const struct vb21_struct_common *cptr = buf;
 
@@ -136,7 +137,7 @@ static const char *onebyte(const char *str, uint8_t *vptr)
 	return str;
 }
 
-int vb2_str_to_id(const char *str, struct vb2_id *id)
+vb2_error_t vb2_str_to_id(const char *str, struct vb2_id *id)
 {
 	uint8_t val = 0;
 	int i;

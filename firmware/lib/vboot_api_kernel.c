@@ -66,7 +66,7 @@ uint32_t vb2_get_fwmp_flags(void)
 	return fwmp.flags;
 }
 
-uint32_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
 	vb2_error_t retval = VBERROR_UNKNOWN;
 	VbDiskInfo* disk_info = NULL;
@@ -473,7 +473,7 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
 	vb2_error_t retval;
-	int rv;
+	vb2_error_t rv;
 
 	/* Allocate work buffer */
 	vb2_workbuf_from_ctx(ctx, &wb);

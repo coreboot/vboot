@@ -143,7 +143,7 @@ uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf)
 	return TPM_E_CORRUPTED_STATE;
 }
 
-uint32_t SetVirtualDevMode(int val)
+vb2_error_t SetVirtualDevMode(int val)
 {
 	RollbackSpaceFirmware rsf;
 

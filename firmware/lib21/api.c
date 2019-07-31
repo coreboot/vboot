@@ -16,9 +16,9 @@
 #include "2rsa.h"
 #include "vb21_common.h"
 
-int vb21api_fw_phase3(struct vb2_context *ctx)
+vb2_error_t vb21api_fw_phase3(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/* Verify firmware keyblock */
 	rv = vb21_load_fw_keyblock(ctx);
@@ -37,7 +37,7 @@ int vb21api_fw_phase3(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb21api_init_hash(struct vb2_context *ctx,
+vb2_error_t vb21api_init_hash(struct vb2_context *ctx,
 		      const struct vb2_id *id,
 		      uint32_t *size)
 {
@@ -113,7 +113,7 @@ int vb21api_init_hash(struct vb2_context *ctx,
 	return vb2_digest_init(dc, sig->hash_alg);
 }
 
-int vb21api_check_hash(struct vb2_context *ctx)
+vb2_error_t vb21api_check_hash(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_digest_context *dc = (struct vb2_digest_context *)
@@ -125,7 +125,7 @@ int vb21api_check_hash(struct vb2_context *ctx)
 
 	const struct vb21_signature *sig;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 

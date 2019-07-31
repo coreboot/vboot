@@ -36,10 +36,10 @@ static const uint8_t mock_hwid_digest[VB2_GBB_HWID_DIGEST_SIZE] = {
 
 /* Mocked function data */
 static int force_dev_mode;
-static int retval_vb2_fw_parse_gbb;
-static int retval_vb2_check_dev_switch;
-static int retval_vb2_check_tpm_clear;
-static int retval_vb2_select_fw_slot;
+static vb2_error_t retval_vb2_fw_parse_gbb;
+static vb2_error_t retval_vb2_check_dev_switch;
+static vb2_error_t retval_vb2_check_tpm_clear;
+static vb2_error_t retval_vb2_select_fw_slot;
 
 /* Type of test to reset for */
 enum reset_type {
@@ -78,24 +78,24 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-int vb2_fw_parse_gbb(struct vb2_context *c)
+vb2_error_t vb2_fw_parse_gbb(struct vb2_context *c)
 {
 	return retval_vb2_fw_parse_gbb;
 }
 
-int vb2_check_dev_switch(struct vb2_context *c)
+vb2_error_t vb2_check_dev_switch(struct vb2_context *c)
 {
 	if (force_dev_mode)
 		sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	return retval_vb2_check_dev_switch;
 }
 
-int vb2_check_tpm_clear(struct vb2_context *c)
+vb2_error_t vb2_check_tpm_clear(struct vb2_context *c)
 {
 	return retval_vb2_check_tpm_clear;
 }
 
-int vb2_select_fw_slot(struct vb2_context *c)
+vb2_error_t vb2_select_fw_slot(struct vb2_context *c)
 {
 	return retval_vb2_select_fw_slot;
 }

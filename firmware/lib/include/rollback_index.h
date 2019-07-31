@@ -9,6 +9,7 @@
 #ifndef VBOOT_REFERENCE_ROLLBACK_INDEX_H_
 #define VBOOT_REFERENCE_ROLLBACK_INDEX_H_
 
+#include "2return_codes.h"
 #include "sysincludes.h"
 #include "tss_constants.h"
 
@@ -164,6 +165,6 @@ uint32_t SafeWrite(uint32_t index, const void *data, uint32_t length);
 /**
  * Utility function to turn the virtual dev-mode flag on or off. 0=off, 1=on.
  */
-uint32_t SetVirtualDevMode(int val);
+vb2_error_t SetVirtualDevMode(int val);
 
 #endif  /* VBOOT_REFERENCE_ROLLBACK_INDEX_H_ */

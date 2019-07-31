@@ -320,7 +320,8 @@ static const uint8_t sha512_tail[] = {
  * @param key		Key to take signature and hash algorithms from
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key)
+vb2_error_t vb2_check_padding(const uint8_t *sig,
+			      const struct vb2_public_key *key)
 {
 	/* Determine padding to use depending on the signature type */
 	uint32_t sig_size = vb2_rsa_sig_size(key->sig_alg);
@@ -368,10 +369,9 @@ int vb2_check_padding(const uint8_t *sig, const struct vb2_public_key *key)
 	return result ? VB2_ERROR_RSA_PADDING : VB2_SUCCESS;
 }
 
-int vb2_rsa_verify_digest(const struct vb2_public_key *key,
-			  uint8_t *sig,
-			  const uint8_t *digest,
-			  const struct vb2_workbuf *wb)
+vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
+				  uint8_t *sig, const uint8_t *digest,
+				  const struct vb2_workbuf *wb)
 {
 	struct vb2_workbuf wblocal = *wb;
 	uint32_t *workbuf32;
@@ -379,7 +379,7 @@ int vb2_rsa_verify_digest(const struct vb2_public_key *key,
 	int sig_size;
 	int pad_size;
 	int exp;
-	int rv;
+	vb2_error_t rv;
 
 	if (!key || !sig || !digest)
 		return VB2_ERROR_RSA_VERIFY_PARAM;

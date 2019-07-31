@@ -127,7 +127,7 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	return rfr_retval;
 }
 
-uint32_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
 	shared->kernel_version_tpm = new_version;
 
@@ -182,7 +182,7 @@ uint32_t VbExGetSwitches(uint32_t request_mask)
 		return 0;
 }
 
-int vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
+vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
 	return VB2_SUCCESS;
 }

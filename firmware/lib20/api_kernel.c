@@ -15,13 +15,13 @@
 #include "2rsa.h"
 #include "vb2_common.h"
 
-int vb2api_kernel_phase1(struct vb2_context *ctx)
+vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
 	uint8_t *key_data;
 	uint32_t key_size;
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -125,9 +125,9 @@ int vb2api_kernel_phase1(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2api_load_kernel_vblock(struct vb2_context *ctx)
+vb2_error_t vb2api_load_kernel_vblock(struct vb2_context *ctx)
 {
-	int rv;
+	vb2_error_t rv;
 
 	/* Verify kernel keyblock */
 	rv = vb2_load_kernel_keyblock(ctx);
@@ -142,9 +142,8 @@ int vb2api_load_kernel_vblock(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-int vb2api_get_kernel_size(struct vb2_context *ctx,
-			   uint32_t *offset_ptr,
-			   uint32_t *size_ptr)
+vb2_error_t vb2api_get_kernel_size(struct vb2_context *ctx,
+				   uint32_t *offset_ptr, uint32_t *size_ptr)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	const struct vb2_kernel_preamble *pre;
@@ -170,9 +169,8 @@ int vb2api_get_kernel_size(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-int vb2api_verify_kernel_data(struct vb2_context *ctx,
-			      const void *buf,
-			      uint32_t size)
+vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
+				      uint32_t size)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_kernel_preamble *pre;
@@ -183,7 +181,7 @@ int vb2api_verify_kernel_data(struct vb2_context *ctx,
 	uint8_t *digest;
 	uint32_t digest_size;
 
-	int rv;
+	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -250,10 +248,10 @@ int vb2api_verify_kernel_data(struct vb2_context *ctx,
 	return vb2_verify_digest(&key, &pre->body_signature, digest, &wb);
 }
 
-int vb2api_kernel_phase3(struct vb2_context *ctx)
+vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	int rv;
+	vb2_error_t rv;
 
 	/*
 	 * If the kernel is a newer version than in secure storage, and the
