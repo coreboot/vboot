@@ -362,7 +362,7 @@ static vb2_error_t to_dev_action(struct vb2_context *ctx)
 		return VBERROR_KEEP_LOOPING;
 
 	VB2_DEBUG("Enabling dev-mode...\n");
-	if (TPM_SUCCESS != SetVirtualDevMode(1))
+	if (VBERROR_SUCCESS != SetVirtualDevMode(1))
 		return VBERROR_TPM_SET_BOOT_MODE_STATE;
 
 	/* This was meant for headless devices, shouldn't really matter here. */
