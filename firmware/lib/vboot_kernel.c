@@ -434,7 +434,7 @@ static int vb2_load_partition(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
+vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
@@ -442,7 +442,7 @@ VbError_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	VbSharedDataKernelCall *shcall = NULL;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
-	VbError_t retval = VBERROR_UNKNOWN;
+	vb2_error_t retval = VBERROR_UNKNOWN;
 	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
 	int rv;
 

@@ -13,7 +13,7 @@
 
 struct vb2_menu_item {
 	const char *text;
-	VbError_t (*action)(struct vb2_context *ctx);
+	vb2_error_t (*action)(struct vb2_context *ctx);
 };
 
 struct vb2_menu {

@@ -206,7 +206,7 @@ int vb2_verify_data(const uint8_t *data,
 	return VB2_SUCCESS;
 }
 
-VbError_t VbExNvStorageRead(uint8_t *buf)
+vb2_error_t VbExNvStorageRead(uint8_t *buf)
 {
 	memcpy(buf, ctx_nvram_backend.nvdata,
 	       vb2_nv_get_size(&ctx_nvram_backend));

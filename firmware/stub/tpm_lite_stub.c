@@ -176,7 +176,7 @@ static inline int TpmResponseSize(const uint8_t* buffer)
 	return (int) size;
 }
 
-VbError_t VbExTpmInit(void)
+vb2_error_t VbExTpmInit(void)
 {
 	char *no_exit = getenv("TPM_NO_EXIT");
 	if (no_exit)
@@ -184,7 +184,7 @@ VbError_t VbExTpmInit(void)
 	return VbExTpmOpen();
 }
 
-VbError_t VbExTpmClose(void)
+vb2_error_t VbExTpmClose(void)
 {
 	if (tpm_fd != -1) {
 		close(tpm_fd);
@@ -193,7 +193,7 @@ VbError_t VbExTpmClose(void)
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExTpmOpen(void)
+vb2_error_t VbExTpmOpen(void)
 {
 	const char *device_path;
 	struct timespec delay;
@@ -292,7 +292,7 @@ uint32_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 	return TPM_SUCCESS;
 }
 
-VbError_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
+vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
 {
 	static int urandom_fd = -1;
 	if (urandom_fd < 0) {

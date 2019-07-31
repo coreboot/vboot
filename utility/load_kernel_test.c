@@ -32,7 +32,7 @@ static FILE *image_file = NULL;
 
 
 /* Boot device stub implementations to read from the image file */
-VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
                        uint64_t lba_count, void *buffer) {
   printf("Read(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
@@ -52,7 +52,7 @@ VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 }
 
 
-VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
                         uint64_t lba_count, const void *buffer) {
   printf("Write(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
   uint8_t* key_blob = NULL;
   VbSharedDataHeader* shared;
   struct vb2_gbb_header* gbb;
-  VbError_t rv;
+  vb2_error_t rv;
   int c, argsleft;
   int errorcnt = 0;
   char *e = 0;

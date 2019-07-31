@@ -23,7 +23,7 @@ struct vb2_context;
  * reboot back to its RO code to continue EC sync, or other non-zero error
  * code.
  */
-VbError_t ec_sync_phase1(struct vb2_context *ctx);
+vb2_error_t ec_sync_phase1(struct vb2_context *ctx);
 
 /**
  * Returns non-zero if the EC will perform a slow update during phase 2.
@@ -44,7 +44,7 @@ int ec_will_update_slowly(struct vb2_context *ctx);
  * @param severity	VB_AUX_FW_{NO,FAST,SLOW}_UPDATE
  * @return VBERROR_SUCCESS or non-zero error code.
  */
-VbError_t ec_sync_check_aux_fw(struct vb2_context *ctx,
+vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 			       VbAuxFwUpdateSeverity_t *severity);
 
 /**
@@ -53,7 +53,7 @@ VbError_t ec_sync_check_aux_fw(struct vb2_context *ctx,
  * @param ctx          Vboot2 context
  * @return VBERROR_SUCCESS or non-zero error code.
  */
-VbError_t ec_sync_update_aux_fw(struct vb2_context *ctx);
+vb2_error_t ec_sync_update_aux_fw(struct vb2_context *ctx);
 
 /**
  * EC sync, phase 2
@@ -69,7 +69,7 @@ VbError_t ec_sync_update_aux_fw(struct vb2_context *ctx);
  * reboot back to its RO code to continue EC sync, or other non-zero error
  * code.
  */
-VbError_t ec_sync_phase2(struct vb2_context *ctx);
+vb2_error_t ec_sync_phase2(struct vb2_context *ctx);
 
 /**
  * EC sync, phase 3
@@ -79,7 +79,7 @@ VbError_t ec_sync_phase2(struct vb2_context *ctx);
  * @param ctx		Vboot2 context
  * @return VBERROR_SUCCESS or non-zero error code.
  */
-VbError_t ec_sync_phase3(struct vb2_context *ctx);
+vb2_error_t ec_sync_phase3(struct vb2_context *ctx);
 
 /**
  * Sync all EC devices to expected versions.
@@ -89,6 +89,6 @@ VbError_t ec_sync_phase3(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VBERROR_SUCCESS, or non-zero if error.
  */
-VbError_t ec_sync_all(struct vb2_context *ctx);
+vb2_error_t ec_sync_all(struct vb2_context *ctx);
 
 #endif  /* VBOOT_REFERENCE_EC_SYNC_H_ */

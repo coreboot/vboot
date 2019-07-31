@@ -36,10 +36,10 @@ typedef struct {
 
 	/* inputs for test case */
 	uint32_t want_flags;
-	VbError_t diskgetinfo_return_val;
+	vb2_error_t diskgetinfo_return_val;
 	disk_desc_t disks_to_provide[MAX_TEST_DISKS];
 	int disk_count_to_return;
-	VbError_t loadkernel_return_val[MAX_TEST_DISKS];
+	vb2_error_t loadkernel_return_val[MAX_TEST_DISKS];
 	uint8_t external_expected[MAX_TEST_DISKS];
 
 	/* outputs from test */
@@ -260,8 +260,8 @@ static int is_nonzero(const void *vptr, size_t count)
 /****************************************************************************/
 /* Mocked verification functions */
 
-VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
-			  uint32_t disk_flags)
+vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
+			    uint32_t disk_flags)
 {
 	int i;
 	int num_disks = 0;
@@ -308,7 +308,7 @@ VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 	return t->diskgetinfo_return_val;
 }
 
-VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
+vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 			   VbExDiskHandle_t preserve_handle)
 {
 	got_load_disk = (const char *)preserve_handle;
@@ -317,7 +317,7 @@ VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t LoadKernel(struct vb2_context *c, LoadKernelParams *params)
+vb2_error_t LoadKernel(struct vb2_context *c, LoadKernelParams *params)
 {
 	got_find_disk = (const char *)params->disk_handle;
 	VB2_DEBUG("%s(%d): got_find_disk = %s\n", __FUNCTION__,

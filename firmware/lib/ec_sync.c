@@ -43,8 +43,8 @@ static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
 /**
  * Wrapper around VbExEcProtect() which sets recovery reason on error.
  */
-static VbError_t protect_ec(struct vb2_context *ctx, int devidx,
-			   enum VbSelectFirmware_t select)
+static vb2_error_t protect_ec(struct vb2_context *ctx, int devidx,
+			      enum VbSelectFirmware_t select)
 {
 	int rv = VbExEcProtect(devidx, select);
 
@@ -145,8 +145,8 @@ static int check_ec_hash(struct vb2_context *ctx, int devidx,
  * @param select	Which firmware image to check
  * @return VBERROR_SUCCESS, or non-zero error code.
  */
-static VbError_t update_ec(struct vb2_context *ctx, int devidx,
-			   enum VbSelectFirmware_t select)
+static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
+			     enum VbSelectFirmware_t select)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
@@ -201,7 +201,7 @@ static VbError_t update_ec(struct vb2_context *ctx, int devidx,
  * @param ctx		Vboot2 context
  * @param devidx	Which device (EC=0, PD=1)
  */
-static VbError_t check_ec_active(struct vb2_context *ctx, int devidx)
+static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int in_rw = 0;
@@ -235,7 +235,7 @@ static VbError_t check_ec_active(struct vb2_context *ctx, int devidx)
  * @param devidx	Which device (EC=0, PD=1)
  * @return VBERROR_SUCCESS, or non-zero if error.
  */
-static VbError_t sync_one_ec(struct vb2_context *ctx, int devidx)
+static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int is_rw_ab = ctx->flags & RW_AB(devidx);
@@ -335,7 +335,7 @@ static VbError_t sync_one_ec(struct vb2_context *ctx, int devidx)
 	return rv;
 }
 
-VbError_t ec_sync_phase1(struct vb2_context *ctx)
+vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -422,8 +422,8 @@ static int ec_sync_allowed(struct vb2_context *ctx)
 	return 1;
 }
 
-VbError_t ec_sync_check_aux_fw(struct vb2_context *ctx,
-			       VbAuxFwUpdateSeverity_t *severity)
+vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
+				 VbAuxFwUpdateSeverity_t *severity)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
@@ -436,9 +436,9 @@ VbError_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 	return VbExCheckAuxFw(severity);
 }
 
-VbError_t ec_sync_update_aux_fw(struct vb2_context *ctx)
+vb2_error_t ec_sync_update_aux_fw(struct vb2_context *ctx)
 {
-	VbError_t rv = VbExUpdateAuxFw();
+	vb2_error_t rv = VbExUpdateAuxFw();
 	if (rv) {
 		if (rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED) {
 			VB2_DEBUG("AUX firmware update requires RO reboot.\n");
@@ -450,13 +450,13 @@ VbError_t ec_sync_update_aux_fw(struct vb2_context *ctx)
 	return rv;
 }
 
-VbError_t ec_sync_phase2(struct vb2_context *ctx)
+vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 {
 	if (!ec_sync_allowed(ctx))
 		return VBERROR_SUCCESS;
 
 	/* Handle updates and jumps for EC */
-	VbError_t retval = sync_one_ec(ctx, 0);
+	vb2_error_t retval = sync_one_ec(ctx, 0);
 	if (retval != VBERROR_SUCCESS)
 		return retval;
 
@@ -473,12 +473,12 @@ VbError_t ec_sync_phase2(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
-VbError_t ec_sync_phase3(struct vb2_context *ctx)
+vb2_error_t ec_sync_phase3(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	/* EC verification (and possibly updating / jumping) is done */
-	VbError_t rv = VbExEcVbootDone(!!sd->recovery_reason);
+	vb2_error_t rv = VbExEcVbootDone(!!sd->recovery_reason);
 	if (rv)
 		return rv;
 

@@ -23,25 +23,25 @@ void VbExSleepMs(uint32_t msec)
 {
 }
 
-VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
+vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
-			    const VbScreenData *data)
+vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
+			      const VbScreenData *data)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
-			  uint32_t selected_index, uint32_t disabled_idx_mask,
-			  uint32_t redraw_base)
+vb2_error_t VbExDisplayMenu(uint32_t screen_type, uint32_t locale,
+			    uint32_t selected_index, uint32_t disabled_idx_mask,
+			    uint32_t redraw_base)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info)
+vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	return VBERROR_SUCCESS;
 }
@@ -71,26 +71,26 @@ int VbExTrustEC(int devidx)
 	return 1;
 }
 
-VbError_t VbExEcRunningRW(int devidx, int *in_rw)
+vb2_error_t VbExEcRunningRW(int devidx, int *in_rw)
 {
 	*in_rw = 0;
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcJumpToRW(int devidx)
+vb2_error_t VbExEcJumpToRW(int devidx)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcDisableJump(int devidx)
+vb2_error_t VbExEcDisableJump(int devidx)
 {
 	return VBERROR_SUCCESS;
 }
 
 #define SHA256_HASH_SIZE 32
 
-VbError_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
-			  const uint8_t **hash, int *hash_size)
+vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
+			    const uint8_t **hash, int *hash_size)
 {
 	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
 
@@ -99,8 +99,8 @@ VbError_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
-				 const uint8_t **image, int *image_size)
+vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
+				   const uint8_t **image, int *image_size)
 {
 	static uint8_t fake_image[64] = {5, 6, 7, 8};
 	*image = fake_image;
@@ -108,8 +108,9 @@ VbError_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcGetExpectedImageHash(int devidx, enum VbSelectFirmware_t select,
-				     const uint8_t **hash, int *hash_size)
+vb2_error_t VbExEcGetExpectedImageHash(int devidx,
+				       enum VbSelectFirmware_t select,
+				       const uint8_t **hash, int *hash_size)
 {
 	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
 
@@ -118,40 +119,40 @@ VbError_t VbExEcGetExpectedImageHash(int devidx, enum VbSelectFirmware_t select,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
-			    const uint8_t *image, int image_size)
+vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
+			      const uint8_t *image, int image_size)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select)
+vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcEnteringMode(int devidx, enum VbEcBootMode_t mode)
+vb2_error_t VbExEcEnteringMode(int devidx, enum VbEcBootMode_t mode)
 {
 	vboot_mode = mode;
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcVbootDone(int in_recovery)
+vb2_error_t VbExEcVbootDone(int in_recovery)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExEcBatteryCutOff(void)
+vb2_error_t VbExEcBatteryCutOff(void)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
+vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
 {
 	*severity = VB_AUX_FW_NO_UPDATE;
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExUpdateAuxFw(void)
+vb2_error_t VbExUpdateAuxFw(void)
 {
 	return VBERROR_SUCCESS;
 }
@@ -171,7 +172,7 @@ uint8_t VbExOverrideGptEntryPriority(const GptEntry *e)
 	return 0;
 }
 
-VbError_t VbExSetVendorData(const char *vendor_data_value)
+vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 {
 	return 0;
 }

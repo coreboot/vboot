@@ -36,10 +36,10 @@ static struct vb2_gbb_header gbb;
 
 static int shutdown_request_calls_left;
 static int audio_looping_calls_left;
-static VbError_t vbtlk_retval[5];
-static VbError_t vbtlk_last_retval;
+static vb2_error_t vbtlk_retval[5];
+static vb2_error_t vbtlk_last_retval;
 static int vbtlk_retval_count;
-static const VbError_t vbtlk_retval_fixed = 1002;
+static const vb2_error_t vbtlk_retval_fixed = 1002;
 static int vbexlegacy_called;
 static enum VbAltFwIndex_t altfw_num;
 static int debug_info_displayed;
@@ -199,7 +199,7 @@ int vb2_audio_looping(void)
 	return 1;
 }
 
-VbError_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
 	if (vbtlk_retval_count < ARRAY_SIZE(vbtlk_retval) &&
 	    vbtlk_retval[vbtlk_retval_count] != 0)
@@ -207,8 +207,8 @@ VbError_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	return vbtlk_last_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
-			  const VbScreenData *data)
+vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
+			    const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
@@ -217,8 +217,8 @@ VbError_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
-			uint32_t selected_index, uint32_t disabled_idx_mask)
+vb2_error_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
+			  uint32_t selected_index, uint32_t disabled_idx_mask)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
@@ -232,13 +232,13 @@ VbError_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbDisplayDebugInfo(struct vb2_context *c)
+vb2_error_t VbDisplayDebugInfo(struct vb2_context *c)
 {
 	debug_info_displayed = 1;
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
+vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 {
 	if (beeps_count < ARRAY_SIZE(beeps_played))
 		beeps_played[beeps_count++] = frequency;

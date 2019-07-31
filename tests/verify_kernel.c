@@ -26,7 +26,7 @@ static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 
 static LoadKernelParams params;
 
-VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 		       uint64_t lba_count, void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
@@ -40,7 +40,7 @@ VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 			uint64_t lba_count, const void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)

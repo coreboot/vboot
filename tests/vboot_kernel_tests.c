@@ -221,7 +221,7 @@ int vb2_gbb_read_recovery_key(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
-VbError_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 		       uint64_t lba_count, void *buffer)
 {
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
@@ -235,7 +235,7 @@ VbError_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
 			uint64_t lba_count, const void *buffer)
 {
 	LOGCALL("VbExDiskWrite(h, %d, %d)\n", (int)lba_start, (int)lba_count);

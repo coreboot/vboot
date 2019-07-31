@@ -38,7 +38,7 @@ static uint32_t rkr_version;
 static uint32_t new_version;
 static struct RollbackSpaceFwmp rfr_fwmp;
 static int rkr_retval, rkw_retval, rkl_retval, rfr_retval;
-static VbError_t vbboot_retval;
+static vb2_error_t vbboot_retval;
 
 static uint32_t mock_switches[8];
 static uint32_t mock_switches_count;
@@ -90,14 +90,14 @@ static void ResetMocks(void)
 
 /* Mock functions */
 
-VbError_t VbExNvStorageRead(uint8_t *buf)
+vb2_error_t VbExNvStorageRead(uint8_t *buf)
 {
 	memcpy(buf, ctx_nvram_backend.nvdata,
 	       vb2_nv_get_size(&ctx_nvram_backend));
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExNvStorageWrite(const uint8_t *buf)
+vb2_error_t VbExNvStorageWrite(const uint8_t *buf)
 {
 	memcpy(ctx_nvram_backend.nvdata, buf,
 	       vb2_nv_get_size(&ctx_nvram_backend));
@@ -137,7 +137,7 @@ uint32_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	return vbboot_retval;
 }
 
-VbError_t VbBootDeveloper(struct vb2_context *c)
+vb2_error_t VbBootDeveloper(struct vb2_context *c)
 {
 	shared->kernel_version_tpm = new_version;
 
@@ -147,7 +147,7 @@ VbError_t VbBootDeveloper(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-VbError_t VbBootRecovery(struct vb2_context *c)
+vb2_error_t VbBootRecovery(struct vb2_context *c)
 {
 	shared->kernel_version_tpm = new_version;
 
@@ -157,7 +157,7 @@ VbError_t VbBootRecovery(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-VbError_t VbBootDiagnostic(struct vb2_context *c)
+vb2_error_t VbBootDiagnostic(struct vb2_context *c)
 {
 	if (vbboot_retval == -4)
 		return VBERROR_SIMULATED;
@@ -165,7 +165,7 @@ VbError_t VbBootDiagnostic(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-static void test_slk(VbError_t retval, int recovery_reason, const char *desc)
+static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 {
 	TEST_EQ(VbSelectAndLoadKernel(&ctx, shared, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST),

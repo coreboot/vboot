@@ -61,8 +61,8 @@ static int VbWantShutdownMenu(struct vb2_context *ctx)
 }
 
 /* (Re-)Draw the menu identified by current_menu[_idx] to the screen. */
-static VbError_t vb2_draw_current_screen(struct vb2_context *ctx) {
-	VbError_t ret = VbDisplayMenu(ctx, menus[current_menu].screen,
+static vb2_error_t vb2_draw_current_screen(struct vb2_context *ctx) {
+	vb2_error_t ret = VbDisplayMenu(ctx, menus[current_menu].screen,
 			force_redraw, current_menu_idx, disabled_idx_mask);
 	force_redraw = 0;
 	return ret;
@@ -130,7 +130,7 @@ static void vb2_change_menu(VB_MENU new_current_menu,
  ************************/
 
 /* Boot from internal disk if allowed. */
-static VbError_t boot_disk_action(struct vb2_context *ctx)
+static vb2_error_t boot_disk_action(struct vb2_context *ctx)
 {
 	if (disable_dev_boot) {
 		vb2_flash_screen(ctx);
@@ -143,7 +143,7 @@ static VbError_t boot_disk_action(struct vb2_context *ctx)
 }
 
 /* Boot legacy BIOS if allowed and available. */
-static VbError_t boot_legacy_action(struct vb2_context *ctx)
+static vb2_error_t boot_legacy_action(struct vb2_context *ctx)
 {
 	if (disable_dev_boot) {
 		vb2_flash_screen(ctx);
@@ -168,7 +168,7 @@ static VbError_t boot_legacy_action(struct vb2_context *ctx)
 }
 
 /* Boot from USB or SD card if allowed and available. */
-static VbError_t boot_usb_action(struct vb2_context *ctx)
+static vb2_error_t boot_usb_action(struct vb2_context *ctx)
 {
 	const char no_kernel[] = "No bootable kernel found on USB/SD.\n";
 
@@ -204,7 +204,7 @@ static VbError_t boot_usb_action(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_developer_menu(struct vb2_context *ctx)
+static vb2_error_t enter_developer_menu(struct vb2_context *ctx)
 {
 	int menu_idx;
 	switch(default_boot) {
@@ -224,14 +224,14 @@ static VbError_t enter_developer_menu(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_dev_warning_menu(struct vb2_context *ctx)
+static vb2_error_t enter_dev_warning_menu(struct vb2_context *ctx)
 {
 	vb2_change_menu(VB_MENU_DEV_WARNING, VB_WARN_POWER_OFF);
 	vb2_draw_current_screen(ctx);
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_language_menu(struct vb2_context *ctx)
+static vb2_error_t enter_language_menu(struct vb2_context *ctx)
 {
 	vb2_change_menu(VB_MENU_LANGUAGES,
 			vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX));
@@ -239,7 +239,7 @@ static VbError_t enter_language_menu(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_recovery_base_screen(struct vb2_context *ctx)
+static vb2_error_t enter_recovery_base_screen(struct vb2_context *ctx)
 {
 	if (!vb2_allow_recovery(ctx))
 		vb2_change_menu(VB_MENU_RECOVERY_BROKEN, 0);
@@ -251,14 +251,14 @@ static VbError_t enter_recovery_base_screen(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_options_menu(struct vb2_context *ctx)
+static vb2_error_t enter_options_menu(struct vb2_context *ctx)
 {
 	vb2_change_menu(VB_MENU_OPTIONS, VB_OPTIONS_CANCEL);
 	vb2_draw_current_screen(ctx);
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_to_dev_menu(struct vb2_context *ctx)
+static vb2_error_t enter_to_dev_menu(struct vb2_context *ctx)
 {
 	const char dev_already_on[] =
 		"WARNING: TODEV rejected, developer mode is already on.\n";
@@ -272,7 +272,7 @@ static VbError_t enter_to_dev_menu(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t enter_to_norm_menu(struct vb2_context *ctx)
+static vb2_error_t enter_to_norm_menu(struct vb2_context *ctx)
 {
 	vb2_change_menu(VB_MENU_TO_NORM, VB_TO_NORM_CONFIRM);
 	vb2_draw_current_screen(ctx);
@@ -280,7 +280,7 @@ static VbError_t enter_to_norm_menu(struct vb2_context *ctx)
 }
 
 /* Boot alternative bootloader if allowed and available. */
-static VbError_t enter_altfw_menu(struct vb2_context *ctx)
+static vb2_error_t enter_altfw_menu(struct vb2_context *ctx)
 {
 	VB2_DEBUG("enter_altfw_menu()\n");
 	if (disable_dev_boot) {
@@ -299,7 +299,7 @@ static VbError_t enter_altfw_menu(struct vb2_context *ctx)
 	return VBERROR_KEEP_LOOPING;
 }
 
-static VbError_t debug_info_action(struct vb2_context *ctx)
+static vb2_error_t debug_info_action(struct vb2_context *ctx)
 {
 	force_redraw = 1;
 	VbDisplayDebugInfo(ctx);
@@ -307,7 +307,7 @@ static VbError_t debug_info_action(struct vb2_context *ctx)
 }
 
 /* Action when selecting a language entry in the language menu. */
-static VbError_t language_action(struct vb2_context *ctx)
+static vb2_error_t language_action(struct vb2_context *ctx)
 {
 	VbSharedDataHeader *vbsd = vb2_get_sd(ctx)->vbsd;
 
@@ -341,7 +341,7 @@ static VbError_t language_action(struct vb2_context *ctx)
 }
 
 /* Action when selecting a bootloader in the alternative firmware menu. */
-static VbError_t altfw_action(struct vb2_context *ctx)
+static vb2_error_t altfw_action(struct vb2_context *ctx)
 {
 	vb2_run_altfw(ctx, current_menu_idx + 1);
 	vb2_flash_screen(ctx);
@@ -352,7 +352,7 @@ static VbError_t altfw_action(struct vb2_context *ctx)
 }
 
 /* Action that enables developer mode and reboots. */
-static VbError_t to_dev_action(struct vb2_context *ctx)
+static vb2_error_t to_dev_action(struct vb2_context *ctx)
 {
 	uint32_t vbsd_flags = vb2_get_sd(ctx)->vbsd->flags;
 
@@ -374,7 +374,7 @@ static VbError_t to_dev_action(struct vb2_context *ctx)
 }
 
 /* Action that disables developer mode, shows TO_NORM_CONFIRMED and reboots. */
-static VbError_t to_norm_action(struct vb2_context *ctx)
+static vb2_error_t to_norm_action(struct vb2_context *ctx)
 {
 	if (vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		vb2_flash_screen(ctx);
@@ -393,7 +393,7 @@ static VbError_t to_norm_action(struct vb2_context *ctx)
 }
 
 /* Action that will power off the system. */
-static VbError_t power_off_action(struct vb2_context *ctx)
+static vb2_error_t power_off_action(struct vb2_context *ctx)
 {
 	VB2_DEBUG("Power off requested from screen 0x%x\n",
 		  menus[current_menu].screen);
@@ -442,8 +442,8 @@ static void vb2_update_selection(uint32_t key) {
 	vb2_log_menu_change();
 }
 
-static VbError_t vb2_handle_menu_input(struct vb2_context *ctx,
-				       uint32_t key, uint32_t key_flags)
+static vb2_error_t vb2_handle_menu_input(struct vb2_context *ctx,
+					 uint32_t key, uint32_t key_flags)
 {
 	switch (key) {
 	case 0:
@@ -706,7 +706,7 @@ static struct vb2_menu menus[VB_MENU_COUNT] = {
 };
 
 /* Initialize menu state. Must be called once before displaying any menus. */
-static VbError_t vb2_init_menus(struct vb2_context *ctx)
+static vb2_error_t vb2_init_menus(struct vb2_context *ctx)
 {
 	struct vb2_menu_item *items;
 	uint32_t count;
@@ -738,10 +738,10 @@ static VbError_t vb2_init_menus(struct vb2_context *ctx)
  * @param ctx		Vboot2 context
  * @return VBERROR_SUCCESS, or non-zero error code if error.
  */
-static VbError_t vb2_developer_menu(struct vb2_context *ctx)
+static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	VbError_t ret;
+	vb2_error_t ret;
 
 	/* Check if the default is to boot using disk, usb, or legacy */
 	default_boot = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
@@ -833,9 +833,9 @@ static VbError_t vb2_developer_menu(struct vb2_context *ctx)
 }
 
 /* Developer mode entry point. */
-VbError_t VbBootDeveloperMenu(struct vb2_context *ctx)
+vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx)
 {
-	VbError_t retval = vb2_init_menus(ctx);
+	vb2_error_t retval = vb2_init_menus(ctx);
 	if (VBERROR_SUCCESS != retval)
 		return retval;
 	retval = vb2_developer_menu(ctx);
@@ -844,7 +844,7 @@ VbError_t VbBootDeveloperMenu(struct vb2_context *ctx)
 }
 
 /* Main function that handles non-manual recovery (BROKEN) menu functionality */
-static VbError_t broken_ui(struct vb2_context *ctx)
+static vb2_error_t broken_ui(struct vb2_context *ctx)
 {
 	VbSharedDataHeader *vbsd = vb2_get_sd(ctx)->vbsd;
 
@@ -863,7 +863,7 @@ static VbError_t broken_ui(struct vb2_context *ctx)
 	VB2_DEBUG("waiting for manual recovery\n");
 	while (1) {
 		uint32_t key = VbExKeyboardRead();
-		VbError_t ret = vb2_handle_menu_input(ctx, key, 0);
+		vb2_error_t ret = vb2_handle_menu_input(ctx, key, 0);
 		if (ret != VBERROR_KEEP_LOOPING)
 			return ret;
 	}
@@ -880,11 +880,11 @@ static VbError_t broken_ui(struct vb2_context *ctx)
  * @param ctx		Vboot2 context
  * @return VBERROR_SUCCESS, or non-zero error code if error.
  */
-static VbError_t recovery_ui(struct vb2_context *ctx)
+static vb2_error_t recovery_ui(struct vb2_context *ctx)
 {
 	uint32_t key;
 	uint32_t key_flags;
-	VbError_t ret;
+	vb2_error_t ret;
 	int i;
 
 	/* Loop and wait for a recovery image */
@@ -935,9 +935,9 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 }
 
 /* Recovery mode entry point. */
-VbError_t VbBootRecoveryMenu(struct vb2_context *ctx)
+vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx)
 {
-	VbError_t retval = vb2_init_menus(ctx);
+	vb2_error_t retval = vb2_init_menus(ctx);
 	if (VBERROR_SUCCESS != retval)
 		return retval;
 	if (vb2_allow_recovery(ctx))

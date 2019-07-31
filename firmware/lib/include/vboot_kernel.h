@@ -52,32 +52,32 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags);
 /**
  * Handle a normal boot.
  */
-VbError_t VbBootNormal(struct vb2_context *ctx);
+vb2_error_t VbBootNormal(struct vb2_context *ctx);
 
 /**
  * Handle a developer-mode boot.
  */
-VbError_t VbBootDeveloper(struct vb2_context *ctx);
+vb2_error_t VbBootDeveloper(struct vb2_context *ctx);
 
 /**
  * Handle a diagnostic-mode boot.
  */
-VbError_t VbBootDiagnostic(struct vb2_context *ctx);
+vb2_error_t VbBootDiagnostic(struct vb2_context *ctx);
 
 /**
  * Handle a recovery-mode boot.
  */
-VbError_t VbBootRecovery(struct vb2_context *ctx);
+vb2_error_t VbBootRecovery(struct vb2_context *ctx);
 
 /**
  * Handle a developer-mode boot using detachable menu ui
  */
-VbError_t VbBootDeveloperMenu(struct vb2_context *ctx);
+vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx);
 
 /**
  * Handle a recovery-mode boot using detachable menu ui
  */
-VbError_t VbBootRecoveryMenu(struct vb2_context *ctx);
+vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx);
 
 /**
  * Return the current FWMP flags.  Valid only inside VbSelectAndLoadKernel().

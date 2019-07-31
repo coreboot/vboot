@@ -33,13 +33,13 @@ static void display_wait_screen(struct vb2_context *ctx, const char *fw_name)
 	VbDisplayScreen(ctx, VB_SCREEN_WAIT, 0, NULL);
 }
 
-VbError_t ec_sync_all(struct vb2_context *ctx)
+vb2_error_t ec_sync_all(struct vb2_context *ctx)
 {
 	VbAuxFwUpdateSeverity_t fw_update = VB_AUX_FW_NO_UPDATE;
-	VbError_t rv;
+	vb2_error_t rv;
 
 	/* Phase 1; this determines if we need an update */
-	VbError_t phase1_rv = ec_sync_phase1(ctx);
+	vb2_error_t phase1_rv = ec_sync_phase1(ctx);
 	int need_wait_screen = ec_will_update_slowly(ctx);
 
 	/* Check if EC SW Sync Phase1 needs reboot */

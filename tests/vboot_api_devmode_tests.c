@@ -40,7 +40,7 @@ typedef struct {
 typedef struct {
 	const char *name;
 	uint32_t gbb_flags;
-	VbError_t beep_return;
+	vb2_error_t beep_return;
 	uint32_t keypress_key;
 	int keypress_at_count;
 	int num_events;
@@ -105,7 +105,7 @@ static int max_events;
 static int matched_events;
 static int kbd_fire_at;
 static uint32_t kbd_fire_key;
-static VbError_t beep_return;
+static vb2_error_t beep_return;
 static note_event_t *expected_event;
 
 /* Audio open count, so we can reset it */
@@ -150,36 +150,36 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-VbError_t VbExNvStorageRead(uint8_t* buf)
+vb2_error_t VbExNvStorageRead(uint8_t* buf)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExNvStorageWrite(const uint8_t* buf)
+vb2_error_t VbExNvStorageWrite(const uint8_t* buf)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
-			  uint32_t disk_flags)
+vb2_error_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
+			    uint32_t disk_flags)
 {
 	return VBERROR_UNKNOWN;
 }
 
-VbError_t VbExDiskFreeInfo(VbDiskInfo* infos,
-			   VbExDiskHandle_t preserve_handle)
+vb2_error_t VbExDiskFreeInfo(VbDiskInfo* infos,
+			     VbExDiskHandle_t preserve_handle)
 {
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
-		       uint64_t lba_count, void* buffer)
+vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
+			 uint64_t lba_count, void* buffer)
 {
 	return VBERROR_UNKNOWN;
 }
 
-VbError_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
-			uint64_t lba_count, const void* buffer)
+vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
+			  uint64_t lba_count, const void* buffer)
 {
 	return VBERROR_UNKNOWN;
 }
@@ -221,7 +221,7 @@ uint64_t VbExGetTimer(void)
 	return current_ticks;
 }
 
-VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
+vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 {
 	VB2_DEBUG("VbExBeep(%d, %d) at %d msec\n",
 		  msec, frequency, current_time);
@@ -240,8 +240,8 @@ VbError_t VbExBeep(uint32_t msec, uint32_t frequency)
 	return beep_return;
 }
 
-VbError_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
-			    const VbScreenData *data)
+vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
+			      const VbScreenData *data)
 {
 	switch(screen_type) {
 		case VB_SCREEN_BLANK:

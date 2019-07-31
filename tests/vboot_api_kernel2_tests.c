@@ -199,8 +199,8 @@ uint64_t VbExGetTimer(void)
 	return current_ticks;
 }
 
-VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
-			  uint32_t disk_flags)
+vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
+			    uint32_t disk_flags)
 {
 	if (mock_num_disks_count < ARRAY_SIZE(mock_num_disks)) {
 		if (mock_num_disks[mock_num_disks_count] == -1)
@@ -213,8 +213,8 @@ VbError_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbExDiskFreeInfo(VbDiskInfo *infos,
-			   VbExDiskHandle_t preserve_handle)
+vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
+			     VbExDiskHandle_t preserve_handle)
 {
 	return VBERROR_SUCCESS;
 }
@@ -239,8 +239,8 @@ uint32_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	return vbtlk_retval + get_info_flags;
 }
 
-VbError_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
-			  const VbScreenData *data)
+vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
+			    const VbScreenData *data)
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
@@ -254,7 +254,7 @@ uint32_t SetVirtualDevMode(int val)
 	return virtdev_retval;
 }
 
-VbError_t VbExSetVendorData(const char *vendor_data_value)
+vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 {
 	set_vendor_data_called = 1;
 	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data));

@@ -185,7 +185,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
  * This shows the user a list of bootloaders and allows selection of one of
  * them. We loop forever until something is chosen or Escape is pressed.
  */
-static VbError_t vb2_altfw_ui(struct vb2_context *ctx)
+static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 {
 	int active = 1;
 
@@ -243,8 +243,8 @@ static inline int is_vowel(uint32_t key) {
 /*
  * Prompt the user to enter the vendor data
  */
-static VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
-					  char *data_value)
+static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
+					    char *data_value)
 {
 	int len = 0;
 	VbScreenData data = {
@@ -323,14 +323,14 @@ static VbError_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 /*
  * User interface for setting the vendor data in VPD
  */
-static VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
+static vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 {
 	char data_value[VENDOR_DATA_LENGTH + 1];
 	VbScreenData data = {
 		.vendor_data = { data_value }
 	};
 
-	VbError_t ret = vb2_enter_vendor_data_ui(ctx, data_value);
+	vb2_error_t ret = vb2_enter_vendor_data_ui(ctx, data_value);
 
 	if (ret)
 		return ret;
@@ -387,8 +387,8 @@ static VbError_t vb2_vendor_data_ui(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
-static VbError_t vb2_check_diagnostic_key(struct vb2_context *ctx,
-					  uint32_t key) {
+static vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,
+					    uint32_t key) {
 	if (DIAGNOSTIC_UI && (key == VB_KEY_CTRL('C') || key == VB_KEY_F(12))) {
 		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
@@ -406,12 +406,12 @@ static VbError_t vb2_check_diagnostic_key(struct vb2_context *ctx,
  * can press the power button to confirm or press escape. There is a 30-second
  * timeout which acts the same as escape.
  */
-static VbError_t vb2_diagnostics_ui(struct vb2_context *ctx)
+static vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 {
 	int active = 1;
 	int power_button_was_released = 0;
 	int power_button_was_pressed = 0;
-	VbError_t result = VBERROR_REBOOT_REQUIRED;
+	vb2_error_t result = VBERROR_REBOOT_REQUIRED;
 	int action_confirmed = 0;
 	uint64_t start_time_us;
 
@@ -512,7 +512,7 @@ static const char dev_disable_msg[] =
 	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
 	"\n";
 
-static VbError_t vb2_developer_ui(struct vb2_context *ctx)
+static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
@@ -782,18 +782,18 @@ static VbError_t vb2_developer_ui(struct vb2_context *ctx)
 	return VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED);
 }
 
-VbError_t VbBootDeveloper(struct vb2_context *ctx)
+vb2_error_t VbBootDeveloper(struct vb2_context *ctx)
 {
 	vb2_init_ui();
-	VbError_t retval = vb2_developer_ui(ctx);
+	vb2_error_t retval = vb2_developer_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }
 
-VbError_t VbBootDiagnostic(struct vb2_context *ctx)
+vb2_error_t VbBootDiagnostic(struct vb2_context *ctx)
 {
 	vb2_init_ui();
-	VbError_t retval = vb2_diagnostics_ui(ctx);
+	vb2_error_t retval = vb2_diagnostics_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }
@@ -803,7 +803,7 @@ VbError_t VbBootDiagnostic(struct vb2_context *ctx)
 #define REC_KEY_DELAY        20       /* Check keys every 20ms */
 #define REC_MEDIA_INIT_DELAY 500      /* Check removable media every 500ms */
 
-static VbError_t recovery_ui(struct vb2_context *ctx)
+static vb2_error_t recovery_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbSharedDataHeader *shared = sd->vbsd;
@@ -953,9 +953,9 @@ static VbError_t recovery_ui(struct vb2_context *ctx)
 	return VBERROR_SUCCESS;
 }
 
-VbError_t VbBootRecovery(struct vb2_context *ctx)
+vb2_error_t VbBootRecovery(struct vb2_context *ctx)
 {
-	VbError_t retval = recovery_ui(ctx);
+	vb2_error_t retval = recovery_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }

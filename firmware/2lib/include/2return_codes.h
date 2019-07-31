@@ -7,6 +7,12 @@
 #define VBOOT_2_RETURN_CODES_H_
 
 /*
+ * Functions which return an error all return this type.  This is a 32-bit
+ * value rather than an int so it's consistent across different architectures.
+ */
+typedef uint32_t vb2_error_t;
+
+/*
  * Return codes from verified boot functions.
  *
  * Note that other values may be passed through from vb2ex_*() calls; see

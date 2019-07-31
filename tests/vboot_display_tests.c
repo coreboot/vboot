@@ -53,7 +53,7 @@ static void ResetMocks(void)
 }
 
 /* Mocks */
-VbError_t VbExGetLocalizationCount(uint32_t *count) {
+vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
 
 	if (mock_localization_count == 0xffffffff)
 		return VBERROR_UNKNOWN;
@@ -66,7 +66,7 @@ uint32_t VbExGetAltFwIdxMask() {
 	return mock_altfw_mask;
 }
 
-VbError_t VbExDisplayDebugInfo(const char *info_str, int full_info)
+vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	strncpy(debug_info, info_str, sizeof(debug_info));
 	debug_info[sizeof(debug_info) - 1] = '\0';
