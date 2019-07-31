@@ -46,6 +46,14 @@ uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk);
 		}							\
 	} while (0)
 
+#define PRINT_BYTES(title, value) do { \
+		int i; \
+		VB2_DEBUG(title); \
+		VB2_DEBUG_RAW(":"); \
+		for (i = 0; i < sizeof(*(value)); i++) \
+			VB2_DEBUG_RAW(" %02x", *((uint8_t *)(value) + i)); \
+		VB2_DEBUG_RAW("\n"); \
+	} while (0)
 
 uint32_t TPMClearAndReenable(void)
 {
@@ -78,6 +86,7 @@ uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf)
 		VB2_DEBUG("TPM: read secdata returned 0x%x\n", r);
 		return r;
 	}
+	PRINT_BYTES("TPM: read secdata", rsf);
 
 	if (rsf->struct_version < ROLLBACK_SPACE_FIRMWARE_VERSION)
 		return TPM_E_STRUCT_VERSION;
@@ -96,6 +105,7 @@ uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf)
 
 	rsf->crc8 = vb2_crc8(rsf, offsetof(RollbackSpaceFirmware, crc8));
 
+	PRINT_BYTES("TPM: write secdata", rsf);
 	r = SafeWrite(FIRMWARE_NV_INDEX, rsf, sizeof(RollbackSpaceFirmware));
 	if (TPM_SUCCESS != r) {
 		VB2_DEBUG("TPM: write secdata failure\n");
@@ -138,6 +148,7 @@ uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 		VB2_DEBUG("TPM: read secdatak returned 0x%x\n", r);
 		return r;
 	}
+	PRINT_BYTES("TPM: read secdatak", rsk);
 
 	if (rsk->struct_version < ROLLBACK_SPACE_FIRMWARE_VERSION)
 		return TPM_E_STRUCT_VERSION;
@@ -156,6 +167,7 @@ uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk)
 
 	rsk->crc8 = vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8));
 
+	PRINT_BYTES("TPM: write secdatak", rsk);
 	r = SafeWrite(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
 	if (TPM_SUCCESS != r) {
 		VB2_DEBUG("TPM: write secdatak failure\n");
