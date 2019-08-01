@@ -263,12 +263,22 @@ VbError_t VbExTpmClose(void);
 VbError_t VbExTpmOpen(void);
 
 /**
+ * Send request to TPM and receive response
+ *
  * Send a request_length-byte request to the TPM and receive a response.  On
  * input, response_length is the size of the response buffer in bytes.  On
  * exit, response_length is set to the actual received response length in
- * bytes. */
-VbError_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
-			     uint8_t *response, uint32_t *response_length);
+ * bytes.
+ *
+ * @param request		Pointer to request buffer
+ * @param request_length	Number of bytes to send
+ * @param response		Pointer to response buffer
+ * @param response_length	Size of response buffer; on return,
+ * 				set to number of received bytes
+ * @return TPM_SUCCESS, or non-zero if error.
+ */
+uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
+			    uint8_t *response, uint32_t *response_length);
 
 #ifdef CHROMEOS_ENVIRONMENT
 

@@ -38,7 +38,8 @@ static uint32_t tpm_get_response(TPM_CC command,
 {
 	/* Command/response buffer. */
 	static uint8_t cr_buffer[TPM_BUFFER_SIZE];
-	int out_size, res;
+	int out_size;
+	uint32_t res;
 	uint32_t in_size;
 
 	out_size = tpm_marshal_command(command, command_body,

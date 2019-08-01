@@ -49,7 +49,7 @@ static int exit_on_failure = 1;
 
 /* Similar to VbExError, only handle the non-exit case.
  */
-static VbError_t DoError(VbError_t result, const char* format, ...)
+static int DoError(int result, const char* format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
@@ -78,8 +78,8 @@ __attribute__((unused)) static void DbgPrintBytes(const uint8_t* a, int n)
 
 /* Executes a command on the TPM.
  */
-static VbError_t TpmExecute(const uint8_t *in, const uint32_t in_len,
-			    uint8_t *out, uint32_t *pout_len)
+static uint32_t TpmExecute(const uint8_t *in, const uint32_t in_len,
+			   uint8_t *out, uint32_t *pout_len)
 {
 	uint8_t response[TPM_MAX_COMMAND_SIZE];
 	if (in_len <= 0) {
@@ -153,7 +153,7 @@ static VbError_t TpmExecute(const uint8_t *in, const uint32_t in_len,
 			}
 		}
 	}
-	return VBERROR_SUCCESS;
+	return TPM_SUCCESS;
 }
 
 /* Gets the tag field of a TPM command.
@@ -225,12 +225,12 @@ VbError_t VbExTpmOpen(void)
 		delay.tv_nsec = OPEN_RETRY_DELAY_NS;
 		nanosleep(&delay, NULL);
 	}
-	return DoError(TPM_E_NO_DEVICE, "TPM: Cannot open TPM device %s: %s\n",
+	return DoError(VBERROR_UNKNOWN, "TPM: Cannot open TPM device %s: %s\n",
 		       device_path, strerror(saved_errno));
 }
 
-VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
-			     uint8_t* response, uint32_t* response_length)
+uint32_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
+			    uint8_t* response, uint32_t* response_length)
 {
 	/*
 	 * In a real firmware implementation, this function should contain
@@ -253,7 +253,7 @@ VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 #ifndef NDEBUG
 	int tag, response_tag;
 #endif
-	VbError_t result;
+	uint32_t result;
 
 #ifdef VBOOT_DEBUG
 	struct timeval before, after;
@@ -263,7 +263,7 @@ VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 #endif
 
 	result = TpmExecute(request, request_length, response, response_length);
-	if (result != VBERROR_SUCCESS)
+	if (result != TPM_SUCCESS)
 		return result;
 
 #ifdef VBOOT_DEBUG
@@ -289,7 +289,7 @@ VbError_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 	assert(*response_length == TpmResponseSize(response));
 #endif
 
-	return VBERROR_SUCCESS;
+	return TPM_SUCCESS;
 }
 
 VbError_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)

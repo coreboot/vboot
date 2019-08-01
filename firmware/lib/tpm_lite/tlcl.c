@@ -80,7 +80,7 @@ static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
 
 	result = VbExTpmSendReceive(request, TpmCommandSize(request),
 				    response, &response_length);
-	if (0 != result) {
+	if (TPM_SUCCESS != result) {
 		/* Communication with TPM failed, so response is garbage */
 		VB2_DEBUG("TPM: command 0x%x send/receive failed: 0x%x\n",
 			  TpmCommandCode(request), result);
