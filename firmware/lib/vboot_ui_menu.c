@@ -713,9 +713,8 @@ static vb2_error_t vb2_init_menus(struct vb2_context *ctx)
 	int i;
 
 	/* Initialize language menu with the correct amount of entries. */
-	VbExGetLocalizationCount(&count);
-	if (!count)
-		count = 1;	/* Always need at least one language entry. */
+	if (VB2_SUCCESS != VbExGetLocalizationCount(&count) || count == 0)
+		count = 1;  /* Fall back to 1 language entry on failure */
 
 	items = malloc(count * sizeof(struct vb2_menu_item));
 	if (!items)
