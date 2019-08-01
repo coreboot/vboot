@@ -9,12 +9,9 @@
 #include "2sysincludes.h"
 #include "2common.h"
 #include "2crc8.h"
-
-#include "sysincludes.h"
 #include "rollback_index.h"
 #include "tlcl.h"
 #include "tss_constants.h"
-#include "utility.h"
 #include "vboot_api.h"
 
 #ifndef offsetof
@@ -75,72 +72,40 @@ uint32_t SafeWrite(uint32_t index, const void *data, uint32_t length)
 uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf)
 {
 	uint32_t r;
-	int attempts = 3;
 
-	while (attempts--) {
-		r = TlclRead(FIRMWARE_NV_INDEX, rsf,
-			     sizeof(RollbackSpaceFirmware));
-		if (r != TPM_SUCCESS)
-			return r;
+	r = TlclRead(FIRMWARE_NV_INDEX, rsf, sizeof(RollbackSpaceFirmware));
+	if (TPM_SUCCESS != r)
+		return r;
 
-		/*
-		 * No CRC in this version, so we'll create one when we write
-		 * it. Note that we're marking this as version 2, not
-		 * ROLLBACK_SPACE_FIRMWARE_VERSION, because version 2 just
-		 * added the CRC. Later versions will need to set default
-		 * values for any extra fields explicitly (probably here).
-		 */
-		if (rsf->struct_version < 2) {
-			/* Danger Will Robinson! Danger! */
-			rsf->struct_version = 2;
-			return TPM_SUCCESS;
-		}
-
-		/*
-		 * If the CRC is good, we're done. If it's bad, try a couple
-		 * more times to see if it gets better before we give up. It
-		 * could just be noise.
-		 */
-		if (rsf->crc8 == vb2_crc8(rsf,
-				      offsetof(RollbackSpaceFirmware, crc8)))
-			return TPM_SUCCESS;
-
-		VB2_DEBUG("TPM: bad CRC\n");
+	/*
+	 * No CRC in this version, so we'll create one when we write
+	 * it. Note that we're marking this as version 2, not
+	 * ROLLBACK_SPACE_FIRMWARE_VERSION, because version 2 just
+	 * added the CRC. Later versions will need to set default
+	 * values for any extra fields explicitly (probably here).
+	 */
+	if (rsf->struct_version < 2) {
+		/* Danger Will Robinson! Danger! */
+		rsf->struct_version = 2;
+		return TPM_SUCCESS;
 	}
 
-	VB2_DEBUG("TPM: too many bad CRCs, giving up\n");
-	return TPM_E_CORRUPTED_STATE;
+	if (rsf->crc8 != vb2_crc8(rsf, offsetof(RollbackSpaceFirmware, crc8))) {
+		VB2_DEBUG("TPM: bad CRC\n");
+		return TPM_E_CORRUPTED_STATE;
+	}
+
+	return TPM_SUCCESS;
 }
 
 uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf)
 {
-	RollbackSpaceFirmware rsf2;
-	uint32_t r;
-	int attempts = 3;
-
 	/* All writes should use struct_version 2 or greater. */
 	if (rsf->struct_version < 2)
 		rsf->struct_version = 2;
 	rsf->crc8 = vb2_crc8(rsf, offsetof(RollbackSpaceFirmware, crc8));
 
-	while (attempts--) {
-		r = SafeWrite(FIRMWARE_NV_INDEX, rsf,
-			      sizeof(RollbackSpaceFirmware));
-		/* Can't write, not gonna try again */
-		if (r != TPM_SUCCESS)
-			return r;
-
-		/* Read it back to be sure it got the right values. */
-		r = ReadSpaceFirmware(&rsf2);    /* This checks the CRC */
-		if (r == TPM_SUCCESS)
-			return r;
-
-		VB2_DEBUG("TPM: bad CRC\n");
-		/* Try writing it again. Maybe it was garbled on the way out. */
-	}
-
-	VB2_DEBUG("TPM: too many bad CRCs, giving up\n");
-	return TPM_E_CORRUPTED_STATE;
+	return SafeWrite(FIRMWARE_NV_INDEX, rsf, sizeof(RollbackSpaceFirmware));
 }
 
 vb2_error_t SetVirtualDevMode(int val)
@@ -172,71 +137,40 @@ vb2_error_t SetVirtualDevMode(int val)
 uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 {
 	uint32_t r;
-	int attempts = 3;
 
-	while (attempts--) {
-		r = TlclRead(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
-		if (r != TPM_SUCCESS)
-			return r;
+	r = TlclRead(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
+	if (TPM_SUCCESS != r)
+		return r;
 
-		/*
-		 * No CRC in this version, so we'll create one when we write
-		 * it. Note that we're marking this as version 2, not
-		 * ROLLBACK_SPACE_KERNEL_VERSION, because version 2 just added
-		 * the CRC. Later versions will need to set default values for
-		 * any extra fields explicitly (probably here).
-		 */
-		if (rsk->struct_version < 2) {
-			/* Danger Will Robinson! Danger! */
-			rsk->struct_version = 2;
-			return TPM_SUCCESS;
-		}
-
-		/*
-		 * If the CRC is good, we're done. If it's bad, try a couple
-		 * more times to see if it gets better before we give up. It
-		 * could just be noise.
-		 */
-		if (rsk->crc8 ==
-		    vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8)))
-			return TPM_SUCCESS;
-
-		VB2_DEBUG("TPM: bad CRC\n");
+	/*
+	 * No CRC in this version, so we'll create one when we write
+	 * it. Note that we're marking this as version 2, not
+	 * ROLLBACK_SPACE_KERNEL_VERSION, because version 2 just added
+	 * the CRC. Later versions will need to set default values for
+	 * any extra fields explicitly (probably here).
+	 */
+	if (rsk->struct_version < 2) {
+		/* Danger Will Robinson! Danger! */
+		rsk->struct_version = 2;
+		return TPM_SUCCESS;
 	}
 
-	VB2_DEBUG("TPM: too many bad CRCs, giving up\n");
-	return TPM_E_CORRUPTED_STATE;
+	if (rsk->crc8 != vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8))) {
+		VB2_DEBUG("TPM: bad CRC\n");
+		return TPM_E_CORRUPTED_STATE;
+	}
+
+	return TPM_SUCCESS;
 }
 
 uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk)
 {
-	RollbackSpaceKernel rsk2;
-	uint32_t r;
-	int attempts = 3;
-
 	/* All writes should use struct_version 2 or greater. */
 	if (rsk->struct_version < 2)
 		rsk->struct_version = 2;
 	rsk->crc8 = vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8));
 
-	while (attempts--) {
-		r = SafeWrite(KERNEL_NV_INDEX, rsk,
-			      sizeof(RollbackSpaceKernel));
-		/* Can't write, not gonna try again */
-		if (r != TPM_SUCCESS)
-			return r;
-
-		/* Read it back to be sure it got the right values. */
-		r = ReadSpaceKernel(&rsk2);    /* This checks the CRC */
-		if (r == TPM_SUCCESS)
-			return r;
-
-		VB2_DEBUG("TPM: bad CRC\n");
-		/* Try writing it again. Maybe it was garbled on the way out. */
-	}
-
-	VB2_DEBUG("TPM: too many bad CRCs, giving up\n");
-	return TPM_E_CORRUPTED_STATE;
+	return SafeWrite(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
 }
 
 #ifdef DISABLE_ROLLBACK_TPM
@@ -337,67 +271,61 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 		struct RollbackSpaceFwmp bf;
 	} u;
 	uint32_t r;
-	int attempts = 3;
 
 	/* Clear destination in case error or FWMP not present */
 	memset(fwmp, 0, sizeof(*fwmp));
 
-	while (attempts--) {
-		/* Try to read entire 1.0 struct */
-		r = TlclRead(FWMP_NV_INDEX, u.buf, sizeof(u.bf));
-		if (r == TPM_E_BADINDEX) {
-			/* Missing space is not an error; use defaults */
-			VB2_DEBUG("TPM: no FWMP space\n");
-			return TPM_SUCCESS;
-		} else if (r != TPM_SUCCESS) {
-			VB2_DEBUG("TPM: read returned 0x%x\n", r);
-			return r;
-		}
-
-		/*
-		 * Struct must be at least big enough for 1.0, but not bigger
-		 * than our buffer size.
-		 */
-		if (u.bf.struct_size < sizeof(u.bf) ||
-		    u.bf.struct_size > sizeof(u.buf))
-			return TPM_E_STRUCT_SIZE;
-
-		/*
-		 * If space is bigger than we expect, re-read so we properly
-		 * compute the CRC.
-		 */
-		if (u.bf.struct_size > sizeof(u.bf)) {
-			r = TlclRead(FWMP_NV_INDEX, u.buf, u.bf.struct_size);
-			if (r != TPM_SUCCESS)
-				return r;
-		}
-
-		/* Verify CRC */
-		if (u.bf.crc != vb2_crc8(u.buf + 2, u.bf.struct_size - 2)) {
-			VB2_DEBUG("TPM: bad CRC\n");
-			continue;
-		}
-
-		/* Verify major version is compatible */
-		if ((u.bf.struct_version >> 4) !=
-		    (ROLLBACK_SPACE_FWMP_VERSION >> 4))
-			return TPM_E_STRUCT_VERSION;
-
-		/*
-		 * Copy to destination.  Note that if the space is bigger than
-		 * we expect (due to a minor version change), we only copy the
-		 * part of the FWMP that we know what to do with.
-		 *
-		 * If this were a 1.1+ reader and the source was a 1.0 struct,
-		 * we would need to take care of initializing the extra fields
-		 * added in 1.1+.  But that's not an issue yet.
-		 */
-		memcpy(fwmp, &u.bf, sizeof(*fwmp));
+	/* Try to read entire 1.0 struct */
+	r = TlclRead(FWMP_NV_INDEX, u.buf, sizeof(u.bf));
+	if (TPM_E_BADINDEX == r) {
+		/* Missing space is not an error; use defaults */
+		VB2_DEBUG("TPM: no FWMP space\n");
 		return TPM_SUCCESS;
+	} else if (TPM_SUCCESS != r) {
+		VB2_DEBUG("TPM: read returned 0x%x\n", r);
+		return r;
 	}
 
-	VB2_DEBUG("TPM: too many bad CRCs, giving up\n");
-	return TPM_E_CORRUPTED_STATE;
+	/*
+	 * Struct must be at least big enough for 1.0, but not bigger
+	 * than our buffer size.
+	 */
+	if (u.bf.struct_size < sizeof(u.bf) ||
+	    u.bf.struct_size > sizeof(u.buf))
+		return TPM_E_STRUCT_SIZE;
+
+	/*
+	 * If space is bigger than we expect, re-read so we properly
+	 * compute the CRC.
+	 */
+	if (u.bf.struct_size > sizeof(u.bf)) {
+		r = TlclRead(FWMP_NV_INDEX, u.buf, u.bf.struct_size);
+		if (TPM_SUCCESS != r)
+			return r;
+	}
+
+	/* Verify CRC */
+	if (u.bf.crc != vb2_crc8(u.buf + 2, u.bf.struct_size - 2)) {
+		VB2_DEBUG("TPM: bad CRC\n");
+		return TPM_E_CORRUPTED_STATE;
+	}
+
+	/* Verify major version is compatible */
+	if ((u.bf.struct_version >> 4) !=
+	    (ROLLBACK_SPACE_FWMP_VERSION >> 4))
+		return TPM_E_STRUCT_VERSION;
+
+	/*
+	 * Copy to destination.  Note that if the space is bigger than
+	 * we expect (due to a minor version change), we only copy the
+	 * part of the FWMP that we know what to do with.
+	 *
+	 * If this were a 1.1+ reader and the source was a 1.0 struct,
+	 * we would need to take care of initializing the extra fields
+	 * added in 1.1+.  But that's not an issue yet.
+	 */
+	memcpy(fwmp, &u.bf, sizeof(*fwmp));
+	return TPM_SUCCESS;
 }
 
 #endif /* DISABLE_ROLLBACK_TPM */
