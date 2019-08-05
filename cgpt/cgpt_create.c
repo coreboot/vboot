@@ -79,7 +79,7 @@ static int GptCreate(struct drive *drive, CgptCreateParams *params) {
       size_t half_size =
           (drive->gpt.gpt_drive_sectors / 2) * drive->gpt.sector_bytes;
       if (half_size < required_min_size) {
-        Error("Not enough space to store GPT structures. Required %d bytes.\n",
+        Error("Not enough space to store GPT structures. Required %zu bytes.\n",
               required_min_size * 2);
         return -1;
       }
