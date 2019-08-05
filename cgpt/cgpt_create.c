@@ -15,7 +15,7 @@ static void AllocAndClear(uint8_t **buf, uint64_t size) {
   } else {
     *buf = calloc(1, size);
     if (!*buf) {
-      Error("Cannot allocate %u bytes.\n", size);
+      Error("Cannot allocate %" PRIu64 " bytes.\n", size);
       abort();
     }
   }

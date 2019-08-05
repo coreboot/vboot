@@ -85,13 +85,13 @@ int Load(struct drive *drive, uint8_t **buf,
 
   require(buf);
   if (!sector_count || !sector_bytes) {
-    Error("%s() failed at line %d: sector_count=%d, sector_bytes=%d\n",
+    Error("%s() failed at line %d: sector_count=%" PRIu64 ", sector_bytes=%" PRIu64 "\n",
           __FUNCTION__, __LINE__, sector_count, sector_bytes);
     return CGPT_FAILED;
   }
   /* Make sure that sector_bytes * sector_count doesn't roll over. */
   if (sector_bytes > (UINT64_MAX / sector_count)) {
-    Error("%s() failed at line %d: sector_count=%d, sector_bytes=%d\n",
+    Error("%s() failed at line %d: sector_count=%" PRIu64 ", sector_bytes=%" PRIu64 "\n",
           __FUNCTION__, __LINE__, sector_count, sector_bytes);
     return CGPT_FAILED;
   }
