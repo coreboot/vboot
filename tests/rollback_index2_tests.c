@@ -15,6 +15,12 @@
 #include "test_common.h"
 #include "tlcl.h"
 
+_Static_assert(ROLLBACK_SPACE_FIRMWARE_VERSION > 0,
+	       "ROLLBACK_SPACE_FIRMWARE_VERSION must be greater than 0");
+
+_Static_assert(ROLLBACK_SPACE_KERNEL_VERSION > 0,
+	       "ROLLBACK_SPACE_KERNEL_VERSION must be greater than 0");
+
 /*
  * Buffer to hold accumulated list of calls to mocked Tlcl functions.
  * Each function appends itself to the buffer and updates mock_cnext.
@@ -240,103 +246,74 @@ uint32_t TlclGetPermissions(uint32_t index, uint32_t* permissions)
 extern uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf);
 extern uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf);
 
-static void CrcTestFirmware(void)
+static void FirmwareSpaceTest(void)
 {
 	RollbackSpaceFirmware rsf;
 
-	/* Empty structure, so CRC is valid */
+	/* A read with old version should fail */
 	ResetMocks(0, 0);
-	TEST_EQ(ReadSpaceFirmware(&rsf), 0, "ReadSpaceFirmware(), v0");
+	mock_rsf.struct_version = ROLLBACK_SPACE_FIRMWARE_VERSION - 1;
+	TEST_EQ(ReadSpaceFirmware(&rsf), TPM_E_STRUCT_VERSION,
+		"ReadSpaceFirmware(), old version");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1007, 10)\n",
 		    "tlcl calls");
 
-	/* version == 1 without CRC value gets silently updated */
+	/* A read with current version should fail on bad CRC */
 	ResetMocks(0, 0);
-	mock_rsf.struct_version = 1;
-	TEST_EQ(ReadSpaceFirmware(&rsf), 0, "ReadSpaceFirmware(), v1");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x1007, 10)\n",
-		    "tlcl calls");
-
-	/* If version == 2, CRC is no longer valid */
-	ResetMocks(0, 0);
-	mock_rsf.struct_version = 2;
+	mock_rsf.struct_version = ROLLBACK_SPACE_FIRMWARE_VERSION;
 	TEST_EQ(ReadSpaceFirmware(&rsf), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceFirmware(), v2, bad CRC");
+		"ReadSpaceFirmware(), current version, bad CRC");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1007, 10)\n",
 		    "tlcl calls");
 
-	/* Version set with valid CRC */
+	/* Current version with valid CRC */
 	ResetMocks(0, 0);
-	mock_rsf.struct_version = 2;
+	mock_rsf.struct_version = ROLLBACK_SPACE_FIRMWARE_VERSION;
 	mock_rsf.crc8 = vb2_crc8(&mock_rsf,
 				 offsetof(RollbackSpaceFirmware, crc8));
 	TEST_EQ(ReadSpaceFirmware(&rsf), 0,
-		"ReadSpaceFirmware(), v2, good CRC");
+		"ReadSpaceFirmware(), current version, good CRC");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1007, 10)\n",
-		    "tlcl calls");
-
-	/* A write with version < 2 should convert to v2 and create the CRC */
-	ResetMocks(0, 0);
-	memset(&rsf, 0, sizeof(rsf));
-	TEST_EQ(WriteSpaceFirmware(&rsf), 0, "WriteSpaceFirmware(), v0");
-	TEST_EQ(mock_rsf.struct_version, 2, "WriteSpaceFirmware(), check v2");
-	TEST_STR_EQ(mock_calls,
-		    "TlclWrite(0x1007, 10)\n",
 		    "tlcl calls");
 }
 
 extern uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk);
 extern uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk);
 
-static void CrcTestKernel(void)
+static void KernelSpaceTest(void)
 {
 	RollbackSpaceKernel rsk;
 
-	/* Empty structure, so CRC is valid */
+	/* A read with version old version should fail */
 	ResetMocks(0, 0);
-	TEST_EQ(ReadSpaceKernel(&rsk), 0, "ReadSpaceKernel(), v0");
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION - 1;
+	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_STRUCT_VERSION,
+		"ReadSpaceKernel(), old version");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1008, 13)\n",
 		    "tlcl calls");
 
-	/* version == 1 without CRC value gets silently updated */
+	/* A read with current version should fail on bad CRC */
 	ResetMocks(0, 0);
-	mock_rsk.struct_version = 1;
-	TEST_EQ(ReadSpaceKernel(&rsk), 0, "ReadSpaceKernel(), v1");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-
-	/* If version == 2, CRC is no longer valid */
-	ResetMocks(0, 0);
-	mock_rsk.struct_version = 2;
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
 	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceKernel(), v2, bad CRC");
+		"ReadSpaceKernel(), current version, bad CRC");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1008, 13)\n",
 		    "tlcl calls");
 
-	/* Version set with valid CRC */
+	/* Current version with valid CRC */
 	ResetMocks(0, 0);
-	mock_rsk.struct_version = 2;
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
 	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
 				 offsetof(RollbackSpaceKernel, crc8));
-	TEST_EQ(ReadSpaceKernel(&rsk), 0, "ReadSpaceKernel(), v2, good CRC");
+	TEST_EQ(ReadSpaceKernel(&rsk), 0,
+		"ReadSpaceKernel(), current version, good CRC");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-
-	/* A write with version < 2 should convert to v2 and create the CRC */
-	ResetMocks(0, 0);
-	memset(&rsk, 0, sizeof(rsk));
-	TEST_EQ(WriteSpaceKernel(&rsk), 0, "WriteSpaceKernel(), v0");
-	TEST_EQ(mock_rsk.struct_version, 2, "WriteSpaceKernel(), check v2");
-	TEST_STR_EQ(mock_calls,
-		    "TlclWrite(0x1008, 13)\n",
 		    "tlcl calls");
 }
 
@@ -388,8 +365,11 @@ static void RollbackKernelTest(void)
 	/* Normal read */
 	ResetMocks(0, 0);
 	mock_rsk.uid = ROLLBACK_SPACE_KERNEL_UID;
-	mock_permissions = TPM_NV_PER_PPWRITE;
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
 	mock_rsk.kernel_versions = 0x87654321;
+	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
+				 offsetof(RollbackSpaceKernel, crc8));
+	mock_permissions = TPM_NV_PER_PPWRITE;
 	TEST_EQ(RollbackKernelRead(&version), 0, "RollbackKernelRead()");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x1008, 13)\n"
@@ -408,18 +388,23 @@ static void RollbackKernelTest(void)
 	/* Wrong permission or UID will return error */
 	ResetMocks(0, 0);
 	mock_rsk.uid = ROLLBACK_SPACE_KERNEL_UID + 1;
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
 	mock_permissions = TPM_NV_PER_PPWRITE;
 	TEST_EQ(RollbackKernelRead(&version), TPM_E_CORRUPTED_STATE,
 		"RollbackKernelRead() bad uid");
 
 	ResetMocks(0, 0);
 	mock_rsk.uid = ROLLBACK_SPACE_KERNEL_UID;
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
 	mock_permissions = TPM_NV_PER_PPWRITE + 1;
 	TEST_EQ(RollbackKernelRead(&version), TPM_E_CORRUPTED_STATE,
 		"RollbackKernelRead() bad permissions");
 
 	/* Test write */
 	ResetMocks(0, 0);
+	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
+	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
+				 offsetof(RollbackSpaceKernel, crc8));
 	TEST_EQ(RollbackKernelWrite(0xBEAD4321), 0, "RollbackKernelWrite()");
 	TEST_EQ(mock_rsk.kernel_versions, 0xBEAD4321,
 		"RollbackKernelWrite() version");
@@ -538,8 +523,8 @@ static void RollbackFwmpTest(void)
 
 int main(int argc, char* argv[])
 {
-	CrcTestFirmware();
-	CrcTestKernel();
+	FirmwareSpaceTest();
+	KernelSpaceTest();
 	MiscTest();
 	RollbackKernelTest();
 	RollbackFwmpTest();
