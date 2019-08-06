@@ -274,6 +274,7 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 			return VBERROR_SUCCESS;
 		case 'a'...'z':
 			key = toupper(key);
+			/* fall through */
 		case '0'...'9':
 		case 'A'...'Z':
 			if ((len > 0 && is_vowel(key)) ||
@@ -609,6 +610,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			/* Only disable virtual dev switch if allowed by GBB */
 			if (!(gbb->flags & VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM))
 				break;
+			/* fall through */
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("shared->flags=0x%x\n", shared->flags);
