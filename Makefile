@@ -140,7 +140,8 @@ WERROR := -Werror
 FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls \
-	-Wwrite-strings -Wstrict-aliasing -Wshadow -Wdate-time ${DEBUG_FLAGS}
+	-Wwrite-strings -Wstrict-aliasing -Wshadow -Wdate-time \
+	-Wno-address-of-packed-member ${DEBUG_FLAGS}
 
 # Note: FIRMWARE_ARCH is defined by the Chromium OS ebuild.
 ifeq (${FIRMWARE_ARCH}, arm)
