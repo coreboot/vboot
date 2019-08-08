@@ -1030,7 +1030,8 @@ static void print_json_image(
 	const struct vb2_gbb_header *gbb = NULL;
 	if (!fpath)
 		return;
-	load_firmware_image(&image, fpath, archive);
+	if (load_firmware_image(&image, fpath, archive))
+		return;
 	if (is_host)
 		gbb = find_gbb(&image);
 	else
