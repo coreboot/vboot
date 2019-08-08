@@ -722,6 +722,20 @@ resign_firmware_payload() {
   info "Re-signed firmware AU payload in ${loopdev}"
 }
 
+# Remove old container key if it exists.
+# We can drop this logic once all devices that shipped R78 have gone EOL.
+# So probably in like 2025.
+remove_old_container_key() {
+  local loopdev="$1"
+
+  local rootfs_dir=$(make_temp_dir)
+  mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
+
+  sudo rm -f "${rootfs_dir}/usr/share/misc/oci-container-key-pub.der"
+
+  sudo umount "${rootfs_dir}"
+}
+
 # Re-sign Android image if exists.
 resign_android_image_if_exists() {
   local loopdev="$1"
@@ -1010,6 +1024,7 @@ sign_image_file() {
   local loop_rootfs="${loopdev}p3"
 
   resign_firmware_payload "${loopdev}"
+  remove_old_container_key "${loopdev}"
   resign_android_image_if_exists "${loopdev}"
   sign_uefi_binaries "${loopdev}"
   # We do NOT strip /boot for factory installer, since some devices need it to
