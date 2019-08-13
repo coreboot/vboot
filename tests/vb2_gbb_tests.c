@@ -78,7 +78,7 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *c,
 		return VB2_ERROR_EX_READ_RESOURCE_INDEX;
 	}
 
-	if (offset > rsize || offset + size > rsize)
+	if (offset + size >= rsize)
 		return VB2_ERROR_EX_READ_RESOURCE_SIZE;
 
 	memcpy(buf, rptr + offset, size);
