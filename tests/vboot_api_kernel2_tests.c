@@ -62,7 +62,8 @@ static uint32_t mock_num_disks_count;
 static int tpm_set_mode_called;
 static enum vb2_tpm_mode tpm_mode;
 
-static char set_vendor_data[32];
+// Extra character to guarantee null termination.
+static char set_vendor_data[VENDOR_DATA_LENGTH + 2];
 static int set_vendor_data_called;
 
 /*
@@ -264,7 +265,10 @@ vb2_error_t SetVirtualDevMode(int val)
 vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 {
 	set_vendor_data_called = 1;
-	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data));
+	// set_vendor_data is a global variable, so it is automatically
+	// initialized to zero, and so the -1 will ensure the string is null
+	// terminated.
+	strncpy(set_vendor_data, vendor_data_value, sizeof(set_vendor_data) - 1);
 
 	return VB2_SUCCESS;
 }
