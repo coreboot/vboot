@@ -263,12 +263,12 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 {
 	union {
 		/*
-		 * Use a union for buf and bf, rather than making bf a pointer
-		 * to a bare uint8_t[] buffer.  This ensures bf will be aligned
-		 * if necesssary for the target platform.
+		 * Use a union for buf and fwmp, rather than making fwmp a
+		 * pointer to a bare uint8_t[] buffer.  This ensures fwmp will
+		 * be aligned if necesssary for the target platform.
 		 */
 		uint8_t buf[FWMP_NV_MAX_SIZE];
-		struct RollbackSpaceFwmp bf;
+		struct RollbackSpaceFwmp fwmp;
 	} u;
 	uint32_t r;
 
@@ -276,7 +276,7 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	memset(fwmp, 0, sizeof(*fwmp));
 
 	/* Try to read entire 1.0 struct */
-	r = TlclRead(FWMP_NV_INDEX, u.buf, sizeof(u.bf));
+	r = TlclRead(FWMP_NV_INDEX, u.buf, sizeof(u.fwmp));
 	if (TPM_E_BADINDEX == r) {
 		/* Missing space is not an error; use defaults */
 		VB2_DEBUG("TPM: no FWMP space\n");
@@ -290,28 +290,28 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	 * Struct must be at least big enough for 1.0, but not bigger
 	 * than our buffer size.
 	 */
-	if (u.bf.struct_size < sizeof(u.bf) ||
-	    u.bf.struct_size > sizeof(u.buf))
+	if (u.fwmp.struct_size < sizeof(u.fwmp) ||
+	    u.fwmp.struct_size > sizeof(u.buf))
 		return TPM_E_STRUCT_SIZE;
 
 	/*
 	 * If space is bigger than we expect, re-read so we properly
 	 * compute the CRC.
 	 */
-	if (u.bf.struct_size > sizeof(u.bf)) {
-		r = TlclRead(FWMP_NV_INDEX, u.buf, u.bf.struct_size);
+	if (u.fwmp.struct_size > sizeof(u.fwmp)) {
+		r = TlclRead(FWMP_NV_INDEX, u.buf, u.fwmp.struct_size);
 		if (TPM_SUCCESS != r)
 			return r;
 	}
 
 	/* Verify CRC */
-	if (u.bf.crc != vb2_crc8(u.buf + 2, u.bf.struct_size - 2)) {
+	if (u.fwmp.crc != vb2_crc8(u.buf + 2, u.fwmp.struct_size - 2)) {
 		VB2_DEBUG("TPM: bad CRC\n");
 		return TPM_E_CORRUPTED_STATE;
 	}
 
 	/* Verify major version is compatible */
-	if ((u.bf.struct_version >> 4) !=
+	if ((u.fwmp.struct_version >> 4) !=
 	    (ROLLBACK_SPACE_FWMP_VERSION >> 4))
 		return TPM_E_STRUCT_VERSION;
 
@@ -324,7 +324,7 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	 * we would need to take care of initializing the extra fields
 	 * added in 1.1+.  But that's not an issue yet.
 	 */
-	memcpy(fwmp, &u.bf, sizeof(*fwmp));
+	memcpy(fwmp, &u.fwmp, sizeof(*fwmp));
 	return TPM_SUCCESS;
 }
 
