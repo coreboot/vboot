@@ -157,7 +157,8 @@ uint32_t VbExKeyboardRead(void)
 uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 {
 	if (mock_keypress_count < ARRAY_SIZE(mock_keypress)) {
-		if (key_flags != NULL)
+		if (key_flags != NULL &&
+		    mock_keypress_count < ARRAY_SIZE(mock_keyflags))
 			*key_flags = mock_keyflags[mock_keypress_count];
 		return mock_keypress[mock_keypress_count++];
 	} else
