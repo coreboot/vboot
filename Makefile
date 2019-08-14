@@ -141,7 +141,8 @@ FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls \
 	-Wwrite-strings -Wstrict-aliasing -Wshadow -Wdate-time \
-	-Wno-address-of-packed-member ${DEBUG_FLAGS}
+	-Wno-address-of-packed-member -ffunction-sections -fdata-sections \
+	${DEBUG_FLAGS}
 
 # Note: FIRMWARE_ARCH is defined by the Chromium OS ebuild.
 ifeq (${FIRMWARE_ARCH}, arm)
@@ -151,7 +152,7 @@ CFLAGS ?= -march=armv5 -fno-common -ffixed-r8 -mfloat-abi=hard -marm
 else ifeq (${FIRMWARE_ARCH}, x86)
 CC ?= i686-pc-linux-gnu-gcc
 # Drop -march=i386 to permit use of SSE instructions
-CFLAGS ?= -ffunction-sections -fvisibility=hidden -fomit-frame-pointer \
+CFLAGS ?= -fvisibility=hidden -fomit-frame-pointer \
 	-fno-toplevel-reorder -fno-dwarf2-cfi-asm -mpreferred-stack-boundary=2 \
 	${FIRMWARE_FLAGS} ${COMMON_FLAGS}
 else ifeq (${FIRMWARE_ARCH}, x86_64)
@@ -163,6 +164,9 @@ CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT ${COMMON_FLAGS}
 CHROMEOS_ENVIRONMENT = 1
 endif
+
+# Needs -Wl because LD is actually set to CC by default.
+LDFLAGS ?= -Wl,--gc-sections
 
 ifneq (${DEBUG},)
 CFLAGS += -DVBOOT_DEBUG

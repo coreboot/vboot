@@ -1086,7 +1086,15 @@ void PMBRToStr(struct pmbr *pmbr, char *str, unsigned int buflen) {
   }
 }
 
-/* Optional */
+/*
+ * This is here because some CGPT functionality is provided in libvboot_host.a
+ * for other host utilities. GenerateGuid() is implemented (in cgpt.c which is
+ * *not* linked into libvboot_host.a) by calling into libuuid. We don't want to
+ * mandate libuuid as a dependency for every utilitity that wants to link
+ * libvboot_host.a, since they usually don't use the functionality that needs
+ * to generate new UUIDs anyway (just other functionality implemented in the
+ * same files).
+ */
 #ifndef HAVE_MACOS
 __attribute__((weak)) int GenerateGuid(Guid *newguid) { return CGPT_FAILED; };
 #endif

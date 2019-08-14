@@ -34,13 +34,6 @@ extern "C" {
 struct vb2_context;
 typedef struct VbSharedDataHeader VbSharedDataHeader;
 
-/*
- * Define test_mockable for mocking functions.
- */
-#ifndef test_mockable
-#define test_mockable __attribute__((weak))
-#endif
-
 
 /*****************************************************************************/
 /* Main entry points from firmware into vboot_reference */
