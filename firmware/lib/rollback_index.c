@@ -141,6 +141,22 @@ vb2_error_t SetVirtualDevMode(int val)
 
 uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 {
+#ifndef TPM2_MODE
+	/*
+	 * Before reading the kernel space, verify its permissions.  If the
+	 * kernel space has the wrong permission, we give up.  This will need
+	 * to be fixed by the recovery kernel.  We will have to worry about
+	 * this because at any time (even with PP turned off) the TPM owner can
+	 * remove and redefine a PP-protected space (but not write to it).
+	 */
+	uint32_t perms;
+
+	RETURN_ON_FAILURE(TlclGetPermissions(KERNEL_NV_INDEX, &perms));
+
+	if (perms != TPM_NV_PER_PPWRITE)
+		return TPM_E_CORRUPTED_STATE;
+#endif
+
 	uint32_t r;
 
 	r = TlclRead(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
@@ -152,6 +168,9 @@ uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 
 	if (rsk->struct_version < ROLLBACK_SPACE_FIRMWARE_VERSION)
 		return TPM_E_STRUCT_VERSION;
+
+	if (rsk->uid != ROLLBACK_SPACE_KERNEL_UID)
+		return TPM_E_CORRUPTED_STATE;
 
 	if (rsk->crc8 != vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8))) {
 		VB2_DEBUG("TPM: bad secdatak CRC\n");
@@ -207,31 +226,7 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 uint32_t RollbackKernelRead(uint32_t* version)
 {
 	RollbackSpaceKernel rsk;
-
-	/*
-	 * Read the kernel space and verify its permissions.  If the kernel
-	 * space has the wrong permission, or it doesn't contain the right
-	 * identifier, we give up.  This will need to be fixed by the
-	 * recovery kernel.  We have to worry about this because at any time
-	 * (even with PP turned off) the TPM owner can remove and redefine a
-	 * PP-protected space (but not write to it).
-	 */
 	RETURN_ON_FAILURE(ReadSpaceKernel(&rsk));
-#ifndef TPM2_MODE
-	/*
-	 * TODO(vbendeb): restore this when it is defined how the kernel space
-	 * gets protected.
-	 */
-	{
-		uint32_t perms, uid;
-
-		RETURN_ON_FAILURE(TlclGetPermissions(KERNEL_NV_INDEX, &perms));
-		memcpy(&uid, &rsk.uid, sizeof(uid));
-		if (TPM_NV_PER_PPWRITE != perms ||
-		    ROLLBACK_SPACE_KERNEL_UID != uid)
-			return TPM_E_CORRUPTED_STATE;
-	}
-#endif
 	memcpy(version, &rsk.kernel_versions, sizeof(*version));
 	VB2_DEBUG("TPM: RollbackKernelRead 0x%x\n", (int)*version);
 	return TPM_SUCCESS;
