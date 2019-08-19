@@ -291,7 +291,7 @@ export BUILD_RUN
 
 # Default target.
 .PHONY: all
-all: fwlib fwlib2x fwlib20 fwlib21 \
+all: $(if ${NO_BUILD_TOOLS},,fwlib fwlib2x fwlib20 fwlib21) \
 	$(if ${FIRMWARE_ARCH},,host_stuff) \
 	$(if ${COV},coverage)
 
@@ -812,22 +812,24 @@ _dir_create := $(foreach d, \
 host_tools: utils futil tests
 
 .PHONY: host_stuff
-host_stuff: utillib hostlib cgpt \
-	$(if ${NO_BUILD_TOOLS},,host_tools)
+host_stuff: utillib hostlib \
+	$(if ${NO_BUILD_TOOLS},,cgpt host_tools)
 
 .PHONY: clean
 clean:
 	${Q}/bin/rm -rf ${BUILD}
 
 .PHONY: install
-install: cgpt_install utils_install signing_install futil_install \
+install: $(if ${NO_BUILD_TOOLS},,cgpt_install) \
+	utils_install signing_install futil_install \
 	pc_files_install
 
 .PHONY: install_dev
 install_dev: headers_install lib_install
 
 .PHONY: install_mtd
-install_mtd: install cgpt_wrapper_install
+install_mtd: install \
+	$(if ${NO_BUILD_TOOLS},,cgpt_wrapper_install)
 
 .PHONY: install_for_test
 install_for_test: override DESTDIR = ${TEST_INSTALL_DIR}
@@ -956,7 +958,7 @@ TEST_OBJS += ${BUILD}/host/linktest/extern.o
 
 .PHONY: hostlib
 hostlib: ${HOSTLIB} \
-	${BUILD}/host/linktest/extern
+	$(if ${NO_BUILD_TOOLS},,${BUILD}/host/linktest/extern)
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${HOSTLIB}: ${HOSTLIB_OBJS}
