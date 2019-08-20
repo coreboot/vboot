@@ -701,7 +701,7 @@ TEST_NAMES = \
 	tests/vboot_api_kernel4_tests \
 	tests/vboot_api_kernel5_tests \
 	tests/vboot_detach_menu_tests \
-tests/vboot_common_tests \
+	tests/vboot_common_tests \
 	tests/vboot_display_tests \
 	tests/vboot_kernel_tests \
 	tests/verify_kernel
@@ -713,7 +713,7 @@ TEST_NAMES += \
 	tests/rollback_index2_tests
 endif
 
-TEST_FUTIL_NAMES  = \
+TEST_FUTIL_NAMES = \
 	tests/futility/binary_editor \
 	tests/futility/test_file_types \
 	tests/futility/test_not_really
@@ -762,15 +762,15 @@ ifeq (${TPM2_MODE},)
 TLCL_TEST_NAMES = \
 	tests/tpm_lite/tpmtest_earlyextend \
 	tests/tpm_lite/tpmtest_earlynvram \
-        tests/tpm_lite/tpmtest_earlynvram2 \
+	tests/tpm_lite/tpmtest_earlynvram2 \
 	tests/tpm_lite/tpmtest_enable \
 	tests/tpm_lite/tpmtest_fastenable \
 	tests/tpm_lite/tpmtest_globallock \
-        tests/tpm_lite/tpmtest_redefine_unowned \
-        tests/tpm_lite/tpmtest_spaceperm \
+	tests/tpm_lite/tpmtest_redefine_unowned \
+	tests/tpm_lite/tpmtest_spaceperm \
 	tests/tpm_lite/tpmtest_testsetup \
 	tests/tpm_lite/tpmtest_timing \
-        tests/tpm_lite/tpmtest_writelimit
+	tests/tpm_lite/tpmtest_writelimit
 else
 # TODO(apronin): tests for TPM2 case?
 TLCL_TEST_NAMES =

@@ -1,13 +1,12 @@
 /* Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
+ *
+ * Common definitions for test programs.
  */
 
-/* Common definitions for test programs.
- */
-
-#ifndef TLCL_TESTS_H
-#define TLCL_TESTS_H
+#ifndef VBOOT_REFERENCE_TLCL_TESTS_H_
+#define VBOOT_REFERENCE_TLCL_TESTS_H_
 
 /* Standard testing indexes. */
 #define INDEX0 0xcafe
@@ -32,4 +31,4 @@
  */
 uint32_t TlclStartupIfNeeded(void);
 
-#endif // TLCL_TESTS_H
+#endif  /* VBOOT_REFERENCE_TLCL_TESTS_H_ */

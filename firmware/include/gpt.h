@@ -7,8 +7,10 @@
  * To download UEFI standard, please visit UEFI homepage:
  *    http://www.uefi.org/
  */
+
 #ifndef VBOOT_REFERENCE_CGPTLIB_GPT_H_
 #define VBOOT_REFERENCE_CGPTLIB_GPT_H_
+
 #include <stdint.h>
 
 #ifdef __cplusplus

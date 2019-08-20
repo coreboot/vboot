@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef VBOOT_REFERENCE_CGPT_MISC_H_
-#define VBOOT_REFERENCE_CGPT_MISC_H_
+#ifndef VBOOT_REFERENCE_GPT_MISC_H_
+#define VBOOT_REFERENCE_GPT_MISC_H_
 
 #include "gpt.h"
 #include "vboot_api.h"
@@ -217,4 +217,4 @@ void SetEntryTries(GptEntry *e, int tries);
 }
 #endif  /* __cplusplus */
 
-#endif  /* VBOOT_REFERENCE_CGPT_MISC_H_ */
+#endif  /* VBOOT_REFERENCE_GPT_MISC_H_ */

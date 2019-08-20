@@ -6,8 +6,8 @@
  * and write to NOR flash.
  */
 
-#ifndef VBOOT_REFERCENCE_CGPT_CGPT_NOR_H_
-#define VBOOT_REFERCENCE_CGPT_CGPT_NOR_H_
+#ifndef VBOOT_REFERENCE_CGPT_NOR_H_
+#define VBOOT_REFERENCE_CGPT_NOR_H_
 
 // Obtain the MTD size from its sysfs node. |mtd_device| should point to
 // a dev node such as /dev/mtd0. This function returns 0 on success.
@@ -31,4 +31,4 @@ int ReadNorFlash(char *temp_dir_template);
 // Write "rw_gpt" back to NOR flash. We write the file in two parts for safety.
 int WriteNorFlash(const char *dir);
 
-#endif  // VBOOT_REFERCENCE_CGPT_CGPT_NOR_H_
+#endif  /* VBOOT_REFERENCE_CGPT_NOR_H_ */

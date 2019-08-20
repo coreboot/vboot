@@ -1,10 +1,7 @@
-/*
- * Copyright 2015 The Chromium OS Authors. All rights reserved.
+/* Copyright 2015 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/*
+ *
  * The USB Type-C chargers released with Samus ("Pixel (2015)") have upgradable
  * firmware. Due to space considerations, we don't have room for handy things
  * like an FMAP or headers for the signatures. Accordingly, all the normally

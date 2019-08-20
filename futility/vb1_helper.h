@@ -1,10 +1,9 @@
-/*
- * Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
+/* Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
-#ifndef VBOOT_REFERENCE_FUTILITY_VB1_HELPER_H_
-#define VBOOT_REFERENCE_FUTILITY_VB1_HELPER_H_
+#ifndef VBOOT_REFERENCE_VB1_HELPER_H_
+#define VBOOT_REFERENCE_VB1_HELPER_H_
 
 struct vb2_kernel_preamble;
 struct vb2_keyblock;
@@ -67,4 +66,4 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 
 uint64_t kernel_cmd_line_offset(const struct vb2_kernel_preamble *preamble);
 
-#endif	/* VBOOT_REFERENCE_FUTILITY_VB1_HELPER_H_ */
+#endif  /* VBOOT_REFERENCE_VB1_HELPER_H_ */

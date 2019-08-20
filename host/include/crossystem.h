@@ -49,4 +49,4 @@ int VbSetSystemPropertyString(const char* name, const char* value);
 }
 #endif
 
-#endif  /* VBOOT_REFERENCE__CROSSYSTEM_H_ */
+#endif  /* VBOOT_REFERENCE_CROSSYSTEM_H_ */

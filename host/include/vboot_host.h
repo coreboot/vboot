@@ -5,8 +5,9 @@
  * vboot-related functions exported for use by userspace programs
  */
 
-#ifndef VBOOT_HOST_H_
-#define VBOOT_HOST_H_
+#ifndef VBOOT_REFERENCE_VBOOT_HOST_H_
+#define VBOOT_REFERENCE_VBOOT_HOST_H_
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -76,4 +77,4 @@ int ExtractVmlinuz(void *kpart_data, size_t kpart_size,
 }
 #endif  /* __cplusplus */
 
-#endif  /* VBOOT_HOST_H_ */
+#endif  /* VBOOT_REFERENCE_VBOOT_HOST_H_ */

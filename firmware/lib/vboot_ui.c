@@ -531,9 +531,9 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 	/* Check if the default is to boot using disk, usb, or legacy */
 	uint32_t default_boot = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
 
-	if(default_boot == VB2_DEV_DEFAULT_BOOT_USB)
+	if (default_boot == VB2_DEV_DEFAULT_BOOT_USB)
 		use_usb = 1;
-	if(default_boot == VB2_DEV_DEFAULT_BOOT_LEGACY)
+	if (default_boot == VB2_DEV_DEFAULT_BOOT_LEGACY)
 		use_legacy = 1;
 
 	/* Handle GBB flag override */

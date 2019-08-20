@@ -5,10 +5,9 @@
  * High-level firmware wrapper API - user interface for RW firmware
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
-
 #include "rollback_index.h"
+#include "2sysincludes.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 #include "vboot_ui_common.h"

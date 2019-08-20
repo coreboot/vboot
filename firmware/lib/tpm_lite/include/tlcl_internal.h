@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef TPM_LITE_TLCL_INTERNAL_H_
-#define TPM_LITE_TLCL_INTERNAL_H_
+#ifndef VBOOT_REFERENCE_TLCL_INTERNAL_H_
+#define VBOOT_REFERENCE_TLCL_INTERNAL_H_
 
 /*
  * These numbers derive from adding the sizes of command fields as shown in the
@@ -84,4 +84,4 @@ static inline uint16_t ReadTpmUint16(const uint8_t **buffer) {
 	return value;
 }
 
-#endif  /* TPM_LITE_TLCL_INTERNAL_H_ */
+#endif  /* VBOOT_REFERENCE_TLCL_INTERNAL_H_ */

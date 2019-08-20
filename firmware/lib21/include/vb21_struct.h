@@ -10,6 +10,7 @@
 
 #ifndef VBOOT_REFERENCE_VB21_STRUCT_H_
 #define VBOOT_REFERENCE_VB21_STRUCT_H_
+
 #include <stdint.h>
 
 #include "2id.h"

@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef VBOOT_2_RETURN_CODES_H_
-#define VBOOT_2_RETURN_CODES_H_
+#ifndef VBOOT_REFERENCE_2RETURN_CODES_H_
+#define VBOOT_REFERENCE_2RETURN_CODES_H_
 
 /*
  * Functions which return an error all return this type.  This is a 32-bit
@@ -905,4 +905,4 @@ enum vb2_return_code {
 	VB2_ERROR_MAX = VB2_ERROR_BASE + 0x1fffffff,
 };
 
-#endif  /* VBOOT_2_RETURN_CODES_H_ */
+#endif  /* VBOOT_REFERENCE_2RETURN_CODES_H_ */

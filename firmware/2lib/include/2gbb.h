@@ -5,8 +5,8 @@
  * GBB accessor functions.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2GBB_H_
-#define VBOOT_REFERENCE_VBOOT_2GBB_H_
+#ifndef VBOOT_REFERENCE_2GBB_H_
+#define VBOOT_REFERENCE_2GBB_H_
 
 #include "2common.h"
 
@@ -43,4 +43,4 @@ vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *ctx,
 				      struct vb2_packed_key **keyp,
 				      uint32_t *size, struct vb2_workbuf *wb);
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2GBB_H_ */
+#endif  /* VBOOT_REFERENCE_2GBB_H_ */

@@ -1,9 +1,8 @@
 /* Copyright (c) 2014 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/* APIs between calling firmware and vboot_reference
+ *
+ * APIs between calling firmware and vboot_reference
  *
  * DO NOT INCLUDE THE HEADERS BELOW DIRECTLY!  ONLY INCLUDE THIS FILE!
  *
@@ -18,8 +17,8 @@
  *   this switch is a bug, and it should be removed when it is no longer used.
  */
 
-#ifndef VBOOT_VB2_API_H_
-#define VBOOT_VB2_API_H_
+#ifndef VBOOT_REFERENCE_VB2_API_H_
+#define VBOOT_REFERENCE_VB2_API_H_
 
 /* Standard APIs */
 #include "../2lib/include/2api.h"
@@ -40,4 +39,4 @@
 #include "../lib20/include/vb2_struct.h"
 #endif
 
-#endif  /* VBOOT_VB2_API_H_ */
+#endif  /* VBOOT_REFERENCE_VB2_API_H_ */

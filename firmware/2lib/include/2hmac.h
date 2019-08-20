@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2HMAC_H_
-#define VBOOT_REFERENCE_VBOOT_2HMAC_H_
+#ifndef VBOOT_REFERENCE_2HMAC_H_
+#define VBOOT_REFERENCE_2HMAC_H_
 
 #include <stdint.h>
 #include "2crypto.h"
@@ -26,4 +26,4 @@ int hmac(enum vb2_hash_algorithm alg,
 	 const void *msg, uint32_t msg_size,
 	 uint8_t *mac, uint32_t mac_size);
 
-#endif
+#endif  /* VBOOT_REFERENCE_2HMAC_H_ */

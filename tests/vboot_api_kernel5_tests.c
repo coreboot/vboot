@@ -108,7 +108,8 @@ static void copy_kbh(void)
 	memcpy(kernel_buffer, &kbh, sizeof(kbh));
 }
 
-/* Mocks */
+/* Mock functions */
+
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;

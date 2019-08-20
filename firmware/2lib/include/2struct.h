@@ -13,8 +13,9 @@
  * have trouble with accessing unaligned integers.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2STRUCT_H_
-#define VBOOT_REFERENCE_VBOOT_2STRUCT_H_
+#ifndef VBOOT_REFERENCE_2STRUCT_H_
+#define VBOOT_REFERENCE_2STRUCT_H_
+
 #include "2constants.h"
 #include "2crypto.h"
 #include "2sysincludes.h"
@@ -333,4 +334,4 @@ struct vb2_packed_key {
 
 #define EXPECTED_VB2_PACKED_KEY_SIZE 32
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2STRUCT_H_ */
+#endif  /* VBOOT_REFERENCE_2STRUCT_H_ */

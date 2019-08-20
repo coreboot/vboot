@@ -5,8 +5,8 @@
  * Recovery reasons
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2RECOVERY_REASONS_H_
-#define VBOOT_REFERENCE_VBOOT_2RECOVERY_REASONS_H_
+#ifndef VBOOT_REFERENCE_2RECOVERY_REASONS_H_
+#define VBOOT_REFERENCE_2RECOVERY_REASONS_H_
 
 /* Recovery reason codes */
 enum vb2_nv_recovery {
@@ -250,4 +250,4 @@ enum vb2_nv_recovery {
 	VB2_RECOVERY_US_UNSPECIFIED  = 0xff,
 };
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2RECOVERY_REASONS_H_ */
+#endif  /* VBOOT_REFERENCE_2RECOVERY_REASONS_H_ */

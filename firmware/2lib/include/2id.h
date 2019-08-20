@@ -8,8 +8,9 @@
  * resistant to collisions and easy to compare.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2ID_H_
-#define VBOOT_REFERENCE_VBOOT_2ID_H_
+#ifndef VBOOT_REFERENCE_2ID_H_
+#define VBOOT_REFERENCE_2ID_H_
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -33,4 +34,4 @@ struct vb2_id {
 }
 #endif  /* __cplusplus */
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2ID_H_ */
+#endif  /* VBOOT_REFERENCE_2ID_H_ */

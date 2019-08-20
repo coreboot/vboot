@@ -1,10 +1,10 @@
-/*
- * Copyright 2016 The Chromium OS Authors. All rights reserved.
+/* Copyright 2016 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
-#ifndef __SRC_LIB_TPM2_MARSHALING_H
-#define __SRC_LIB_TPM2_MARSHALING_H
+
+#ifndef VBOOT_REFERENCE_TPM2_MARSHALING_H_
+#define VBOOT_REFERENCE_TPM2_MARSHALING_H_
 
 #include "tss_constants.h"
 
@@ -94,4 +94,4 @@ int tpm_is_ph_disabled(void);
 }
 #endif  /* __cplusplus */
 
-#endif // __SRC_LIB_TPM2_MARSHALING_H
+#endif  /* VBOOT_REFERENCE_TPM2_MARSHALING_H_ */

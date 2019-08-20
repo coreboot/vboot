@@ -1,5 +1,4 @@
-/*
- * Copyright 2016 The Chromium OS Authors. All rights reserved.
+/* Copyright 2016 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
@@ -7,13 +6,12 @@
  * in the firmware
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
-
 #include "rollback_index.h"
+#include "2sysincludes.h"
+#include "tlcl.h"
 #include "tpm2_marshaling.h"
 #include "utility.h"
-#include "tlcl.h"
 
 /* Global buffer for deserialized responses. */
 struct tpm2_response tpm2_resp;

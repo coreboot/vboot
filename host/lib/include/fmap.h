@@ -1,11 +1,10 @@
-/*
- * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+/* Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
 
-#ifndef __FMAP_H__
-#define __FMAP_H__
+#ifndef VBOOT_REFERENCE_FMAP_H_
+#define VBOOT_REFERENCE_FMAP_H_
 
 #include <inttypes.h>
 #include <stddef.h>
@@ -55,4 +54,4 @@ uint8_t *fmap_find_by_name(uint8_t *ptr, size_t size,
 			   /* optional, return pointer to entry if not NULL */
 			   FmapAreaHeader **ah);
 
-#endif  /* __FMAP_H__ */
+#endif  /* VBOOT_REFERENCE_FMAP_H_ */

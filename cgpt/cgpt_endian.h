@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef VBOOT_REFERENCE_UTILITY_CGPT_ENDIAN_H_
-#define VBOOT_REFERENCE_UTILITY_CGPT_ENDIAN_H_
+#ifndef VBOOT_REFERENCE_CGPT_ENDIAN_H_
+#define VBOOT_REFERENCE_CGPT_ENDIAN_H_
 
 // Newer distros already have this. For those that don't, we add it here.
 #ifndef HAVE_MACOS
@@ -50,4 +50,5 @@
 # endif
 
 #endif
-#endif  // VBOOT_REFERENCE_UTILITY_CGPT_ENDIAN_H_
+
+#endif  /* VBOOT_REFERENCE_CGPT_ENDIAN_H_ */

@@ -5,8 +5,12 @@
  * Secure non-volatile storage routines
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2SECDATA_H_
-#define VBOOT_REFERENCE_VBOOT_2SECDATA_H_
+#ifndef VBOOT_REFERENCE_2SECDATA_H_
+#define VBOOT_REFERENCE_2SECDATA_H_
+
+/* Avoid circular dependency with 2api.h */
+struct vb2_context;
+typedef uint32_t vb2_error_t;
 
 /*****************************************************************************/
 /* Firmware version space */
@@ -161,4 +165,4 @@ vb2_error_t vb2_secdatak_get(struct vb2_context *ctx,
 vb2_error_t vb2_secdatak_set(struct vb2_context *ctx,
 			     enum vb2_secdatak_param param, uint32_t value);
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2SECDATA_H_ */
+#endif  /* VBOOT_REFERENCE_2SECDATA_H_ */

@@ -5,8 +5,8 @@
  * Common functions between firmware and kernel verified boot.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2COMMON_H_
-#define VBOOT_REFERENCE_VBOOT_2COMMON_H_
+#ifndef VBOOT_REFERENCE_2COMMON_H_
+#define VBOOT_REFERENCE_2COMMON_H_
 
 #include "2api.h"
 #include "2gbb.h"
@@ -261,4 +261,4 @@ int vb2_verify_packed_key_inside(const void *parent,
 				 uint32_t parent_size,
 				 const struct vb2_packed_key *key);
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2COMMON_H_ */
+#endif  /* VBOOT_REFERENCE_2COMMON_H_ */

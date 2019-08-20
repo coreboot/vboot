@@ -1,16 +1,15 @@
 /* Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/* TPM error codes.
+ *
+ * TPM error codes.
  *
  * Copy-pasted and lightly edited from TCG TPM Main Part 2 TPM Structures
  * Version 1.2 Level 2 Revision 103 26 October 2006 Draft.
  */
 
-#ifndef TPM_ERROR_MESSAGES_H
-#define TPM_ERROR_MESSAGES_H
+#ifndef VBOOT_REFERENCE_TPM_ERROR_MESSAGES_H_
+#define VBOOT_REFERENCE_TPM_ERROR_MESSAGES_H_
 
 #define TPM_E_BASE 0x0
 #define TPM_E_NON_FATAL 0x800
@@ -247,4 +246,4 @@ because the ordinal required resources that have not been tested" },
 time-out period" },
 };
 
-#endif  /* TPM_ERROR_MESSAGES_H */
+#endif  /* VBOOT_REFERENCE_TPM_ERROR_MESSAGES_H_ */

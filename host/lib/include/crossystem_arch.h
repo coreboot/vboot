@@ -93,4 +93,4 @@ int VbSetArchPropertyInt(const char* name, int value);
  * Returns 0 if success, -1 if error. */
 int VbSetArchPropertyString(const char* name, const char* value);
 
-#endif  /* VBOOT_REFERENCE__CROSSYSTEM_ARCH_H_ */
+#endif  /* VBOOT_REFERENCE_CROSSYSTEM_ARCH_H_ */

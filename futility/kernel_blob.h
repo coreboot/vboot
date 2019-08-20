@@ -4,6 +4,7 @@
  *
  * Constants describing the kernel blob content.
  */
+
 #ifndef VBOOT_REFERENCE_KERNEL_BLOB_H_
 #define VBOOT_REFERENCE_KERNEL_BLOB_H_
 
@@ -63,4 +64,4 @@ struct linux_kernel_params {
 		e820_entries[E820_ENTRY_MAX];	/* 2d0-cd0 */
 } __attribute__ ((packed));
 
-#endif /* VBOOT_REFERENCE_KERNEL_BLOB_H_ */
+#endif  /* VBOOT_REFERENCE_KERNEL_BLOB_H_ */

@@ -15,6 +15,7 @@
 
 #ifndef VBOOT_REFERENCE_VB2_STRUCT_H_
 #define VBOOT_REFERENCE_VB2_STRUCT_H_
+
 #include <stdint.h>
 
 /*

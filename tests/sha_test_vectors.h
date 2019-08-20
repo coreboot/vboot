@@ -1,9 +1,9 @@
 /* Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
+ *
+ * FIPS 180-2 test vectors for SHA-1, SHA-256 and SHA-512
  */
-
-/* FIPS 180-2 test vectors for SHA-1, SHA-256 and SHA-512 */
 
 #ifndef VBOOT_REFERENCE_SHA_TEST_VECTORS_H_
 #define VBOOT_REFERENCE_SHA_TEST_VECTORS_H_
@@ -88,4 +88,4 @@ uint8_t sha512_results[][VB2_SHA512_DIGEST_SIZE] = {
 	}
 };
 
-#endif	/* VBOOT_REFERENCE_SHA_TEST_VECTORS_H_ */
+#endif  /* VBOOT_REFERENCE_SHA_TEST_VECTORS_H_ */

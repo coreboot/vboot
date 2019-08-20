@@ -10,6 +10,8 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
+#include "2secdata.h"
+#include "2sysincludes.h"
 #include "ec_sync.h"
 #include "load_kernel_fw.h"
 #include "rollback_index.h"

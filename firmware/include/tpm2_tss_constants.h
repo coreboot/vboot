@@ -1,5 +1,4 @@
-/*
- * Copyright 2016 The Chromium OS Authors. All rights reserved.
+/* Copyright 2016 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
@@ -7,8 +6,8 @@
  * in the firmware
  */
 
-#ifndef __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H
-#define __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H
+#ifndef VBOOT_REFERENCE_TPM2_TSS_CONSTANTS_H_
+#define VBOOT_REFERENCE_TPM2_TSS_CONSTANTS_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -319,4 +318,4 @@ typedef struct tdTPM_IFX_FIELDUPGRADEINFO
 }
 #endif  /* __cplusplus */
 
-#endif  /* ! __VBOOT_REFERENCE_FIRMWARE_INCLUDE_TPM2_TSS_CONSTANTS_H */
+#endif  /* VBOOT_REFERENCE_TPM2_TSS_CONSTANTS_H_ */

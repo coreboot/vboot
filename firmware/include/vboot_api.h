@@ -1,9 +1,8 @@
 /* Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/* APIs provided by firmware to vboot_reference.
+ *
+ * APIs provided by firmware to vboot_reference.
  *
  * General notes:
  *
@@ -21,6 +20,7 @@
 
 #ifndef VBOOT_REFERENCE_VBOOT_API_H_
 #define VBOOT_REFERENCE_VBOOT_API_H_
+
 #include <stdint.h>
 #include <stdlib.h>
 

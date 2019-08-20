@@ -166,4 +166,4 @@ const char *GptErrorText(int error_code);
  */
 size_t CalculateEntriesSectors(GptHeader* h, uint32_t sector_bytes);
 
-#endif /* VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_ */
+#endif  /* VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_ */

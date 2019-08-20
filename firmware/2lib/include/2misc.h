@@ -5,8 +5,8 @@
  * Misc functions which need access to vb2_context but are not public APIs
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2MISC_H_
-#define VBOOT_REFERENCE_VBOOT_2MISC_H_
+#ifndef VBOOT_REFERENCE_2MISC_H_
+#define VBOOT_REFERENCE_2MISC_H_
 
 #include "2api.h"
 #include "2struct.h"
@@ -185,4 +185,4 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx);
  */
 vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
 
-#endif  /* VBOOT_REFERENCE_VBOOT_2MISC_H_ */
+#endif  /* VBOOT_REFERENCE_2MISC_H_ */

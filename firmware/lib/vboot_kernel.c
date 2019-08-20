@@ -6,12 +6,12 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
 #include "gpt_misc.h"

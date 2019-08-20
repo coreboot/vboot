@@ -22,5 +22,4 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
  */
 const char *RecoveryReasonString(uint8_t code);
 
-#endif /* VBOOT_REFERENCE_VBOOT_DISPLAY_H_ */
-
+#endif  /* VBOOT_REFERENCE_VBOOT_DISPLAY_H_ */

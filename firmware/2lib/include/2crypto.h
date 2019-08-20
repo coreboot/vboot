@@ -5,8 +5,9 @@
  * Crypto constants for verified boot
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_2CRYPTO_H_
-#define VBOOT_REFERENCE_VBOOT_2CRYPTO_H_
+#ifndef VBOOT_REFERENCE_2CRYPTO_H_
+#define VBOOT_REFERENCE_2CRYPTO_H_
+
 #include <stdint.h>
 
 /* Verified boot crypto algorithms */
@@ -72,4 +73,4 @@ enum vb2_hash_algorithm {
 	VB2_HASH_ALG_COUNT,
 };
 
-#endif /* VBOOT_REFERENCE_VBOOT_2CRYPTO_H_ */
+#endif  /* VBOOT_REFERENCE_2CRYPTO_H_ */

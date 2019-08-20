@@ -1,16 +1,14 @@
-/*
- * Copyright 2015 The Chromium OS Authors. All rights reserved.
+/* Copyright 2015 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/*
+ *
  * We centralize option parsing but may split operations into multiple files,
  * so let's declare the option structures in a single place (here).
  */
 
 #ifndef VBOOT_REFERENCE_FUTILITY_OPTIONS_H_
 #define VBOOT_REFERENCE_FUTILITY_OPTIONS_H_
+
 #include <stdint.h>
 #include "vboot_common.h"
 #include "file_type.h"
@@ -72,4 +70,4 @@ extern struct sign_option_s sign_option;
 /* Return true if hash_alg was identified, either by name or number */
 int vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *alg);
 
-#endif	/* VBOOT_REFERENCE_FUTILITY_OPTIONS_H_ */
+#endif  /* VBOOT_REFERENCE_FUTILITY_OPTIONS_H_ */

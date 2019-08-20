@@ -8,6 +8,7 @@
 
 #ifndef VBOOT_REFERENCE_VBOOT_STRUCT_H_
 #define VBOOT_REFERENCE_VBOOT_STRUCT_H_
+
 #include <stdint.h>
 
 /*

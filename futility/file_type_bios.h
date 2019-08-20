@@ -1,10 +1,11 @@
-/*
- * Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
+/* Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
-#ifndef VBOOT_REFERENCE_FUTILITY_FILE_TYPE_BIOS_H_
-#define VBOOT_REFERENCE_FUTILITY_FILE_TYPE_BIOS_H_
+
+#ifndef VBOOT_REFERENCE_FILE_TYPE_BIOS_H_
+#define VBOOT_REFERENCE_FILE_TYPE_BIOS_H_
+
 #include <stdint.h>
 
 /*
@@ -39,4 +40,4 @@ struct bios_state_s {
 	struct bios_area_s rootkey;
 };
 
-#endif	/* VBOOT_REFERENCE_FUTILITY_FILE_TYPE_BIOS_H_ */
+#endif  /* VBOOT_REFERENCE_FILE_TYPE_BIOS_H_ */

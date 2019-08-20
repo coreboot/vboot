@@ -7,8 +7,8 @@
  * Should be imported externally via vb2_api.h.
  */
 
-#ifndef VBOOT_2_GBB_FLAGS_H_
-#define VBOOT_2_GBB_FLAGS_H_
+#ifndef VBOOT_REFERENCE_2GBB_FLAGS_H_
+#define VBOOT_REFERENCE_2GBB_FLAGS_H_
 
 enum vb2_gbb_flag {
 	/*
@@ -84,4 +84,4 @@ enum vb2_gbb_flag {
 	VB2_GBB_FLAG_ENABLE_UDC = 1 << 16,
 };
 
-#endif  /* VBOOT_2_GBB_FLAGS_H_ */
+#endif  /* VBOOT_REFERENCE_2GBB_FLAGS_H_ */

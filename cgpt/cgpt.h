@@ -1,9 +1,10 @@
-// Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/* Copyright (c) 2012 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
 
-#ifndef VBOOT_REFERENCE_UTILITY_CGPT_CGPT_H_
-#define VBOOT_REFERENCE_UTILITY_CGPT_CGPT_H_
+#ifndef VBOOT_REFERENCE_CGPT_H_
+#define VBOOT_REFERENCE_CGPT_H_
 
 #include <fcntl.h>
 #ifndef HAVE_MACOS
@@ -207,4 +208,4 @@ const char *GptError(int errnum);
     exit(1); } \
   } while (0)
 
-#endif  // VBOOT_REFERENCE_UTILITY_CGPT_CGPT_H_
+#endif  /* VBOOT_REFERENCE_CGPT_H_ */

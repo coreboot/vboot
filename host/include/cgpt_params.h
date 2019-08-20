@@ -3,8 +3,8 @@
  * found in the LICENSE file.
  */
 
-#ifndef VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_
-#define VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_
+#ifndef VBOOT_REFERENCE_CGPT_PARAMS_H_
+#define VBOOT_REFERENCE_CGPT_PARAMS_H_
 
 #include <stdint.h>
 
@@ -139,4 +139,4 @@ typedef struct CgptLegacyParams {
 }
 #endif  /* __cplusplus */
 
-#endif  /* VBOOT_REFERENCE_CGPT_CGPT_PARAMS_H_ */
+#endif  /* VBOOT_REFERENCE_CGPT_PARAMS_H_ */

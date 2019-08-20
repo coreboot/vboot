@@ -1,16 +1,15 @@
 /* Copyright (c) 2013 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/*
+ *
  * TPM Lightweight Command Library.
  *
  * A low-level library for interfacing to TPM hardware or an emulator.
  */
 
-#ifndef TPM_LITE_TLCL_H_
-#define TPM_LITE_TLCL_H_
+#ifndef VBOOT_REFERENCE_TLCL_H_
+#define VBOOT_REFERENCE_TLCL_H_
+
 #include <stdint.h>
 
 #include "tss_constants.h"
@@ -322,4 +321,4 @@ uint32_t TlclReadDelegationFamilyTable(TPM_FAMILY_TABLE_ENTRY *table,
 }
 #endif
 
-#endif  /* TPM_LITE_TLCL_H_ */
+#endif  /* VBOOT_REFERENCE_TLCL_H_ */

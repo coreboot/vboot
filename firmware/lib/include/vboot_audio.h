@@ -20,5 +20,4 @@ void vb2_audio_start(struct vb2_context *ctx);
  */
 int vb2_audio_looping(void);
 
-#endif /* VBOOT_REFERENCE_VBOOT_AUDIO_H_ */
-
+#endif  /* VBOOT_REFERENCE_VBOOT_AUDIO_H_ */

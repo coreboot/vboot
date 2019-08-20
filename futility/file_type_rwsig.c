@@ -1,10 +1,7 @@
-/*
- * Copyright 2015 The Chromium OS Authors. All rights reserved.
+/* Copyright 2015 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
- */
-
-/*
+ *
  * Some instances of the Chrome OS embedded controller firmware can't do a
  * normal software sync handshake at boot, but will verify their own RW images
  * instead. This is typically done by putting a struct vb2_packed_key in the RO
