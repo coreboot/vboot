@@ -172,21 +172,6 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 				    VbSelectAndLoadKernelParams *kparams,
 				    void *boot_image, size_t image_size);
 
-/**
- * Fastboot API to enter dev mode.
- *
- * This routine is used by fastboot oem unlock command to switch the device into
- * dev mode.
- *
- * NOTE: The caller MUST be in read-only firmware, and MUST have just obtained
- * explicit physical confirmation from the user via a trusted input method
- * before calling this function! Also, on successful return from this function,
- * the caller needs to reboot the device immediately for changes to take effect.
- *
- * @return VBERROR_... error, VB2_SUCCESS on success.
- */
-vb2_error_t VbUnlockDevice(void);
-
 /*****************************************************************************/
 /* Timer and delay (first two from utility.h) */
 

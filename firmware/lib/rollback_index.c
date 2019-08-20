@@ -119,6 +119,8 @@ vb2_error_t SetVirtualDevMode(int val)
 {
 	RollbackSpaceFirmware rsf;
 
+	VB2_DEBUG("Enabling developer mode...\n");
+
 	if (TPM_SUCCESS != ReadSpaceFirmware(&rsf))
 		return VBERROR_TPM_FIRMWARE_SETUP;
 
@@ -135,6 +137,8 @@ vb2_error_t SetVirtualDevMode(int val)
 
 	if (TPM_SUCCESS != WriteSpaceFirmware(&rsf))
 		return VBERROR_TPM_SET_BOOT_MODE_STATE;
+
+	VB2_DEBUG("Mode change will take effect on next reboot\n");
 
 	return VB2_SUCCESS;
 }
