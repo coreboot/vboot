@@ -70,9 +70,9 @@ enum vb2_gbb_flag {
 
 	/*
 	 * Allow full fastboot capability in firmware even if
-	 * dev_boot_fastboot_full_cap=0.
+	 * dev_boot_fastboot_full_cap=0.  Deprecated; see chromium:995172.
 	 */
-	VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP = 1 << 13,
+	VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP = 1 << 13,
 
 	/* Recovery mode always assumes manual recovery, even if EC_IN_RW=1 */
 	VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY = 1 << 14,

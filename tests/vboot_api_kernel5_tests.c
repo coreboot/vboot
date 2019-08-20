@@ -284,26 +284,6 @@ static void VerifyMemoryBootImageTest(void)
 		VBERROR_INVALID_KERNEL_FOUND, "Key verify failed");
 	TEST_EQ(hash_only_check, 0, "  hash check");
 
-	/* Key Block Hash Failure */
-	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	gbb.flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
-	key_block_verify_fail = 1;
-	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
-					kernel_buffer_size),
-		VBERROR_INVALID_KERNEL_FOUND, "Key verify failed");
-	TEST_EQ(hash_only_check, 1, "  hash check");
-
-	/* Key Block Hash Failure -- VBNV */
-	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	key_block_verify_fail = 1;
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, 1);
-	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
-					kernel_buffer_size),
-		VBERROR_INVALID_KERNEL_FOUND, "Key verify failed");
-	TEST_EQ(hash_only_check, 1, "  hash check -- VBNV flag");
-
 	/* Developer flag mismatch - dev switch on */
 	ResetMocks();
 	kbh.key_block_flags = KEY_BLOCK_FLAG_DEVELOPER_0 |
@@ -314,30 +294,6 @@ static void VerifyMemoryBootImageTest(void)
 					kernel_buffer_size),
 		VBERROR_INVALID_KERNEL_FOUND,
 		"Developer flag mismatch - dev switch on");
-
-	/* Developer flag mismatch - dev switch on with GBB override */
-	ResetMocks();
-	kbh.key_block_flags = KEY_BLOCK_FLAG_DEVELOPER_0 |
-		KEY_BLOCK_FLAG_RECOVERY_1;
-	copy_kbh();
-	gbb.flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
-					kernel_buffer_size),
-		VB2_SUCCESS,
-		"Developer flag mismatch - dev switch on(gbb override)");
-
-	/* Recovery flag mismatch - dev switch on with GBB override */
-	ResetMocks();
-	kbh.key_block_flags = KEY_BLOCK_FLAG_DEVELOPER_0 |
-		KEY_BLOCK_FLAG_RECOVERY_0;
-	copy_kbh();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
-	gbb.flags = VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP;
-	TEST_EQ(VbVerifyMemoryBootImage(&ctx, shared, &kparams, kernel_buffer,
-					kernel_buffer_size),
-		VB2_SUCCESS,
-		"Recovery flag mismatch - dev switch on(gbb override)");
 
 	/* Developer flag mismatch - dev switch off */
 	ResetMocks();

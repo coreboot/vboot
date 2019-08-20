@@ -525,8 +525,6 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_LEGACY);
 	} else if (!strcasecmp(name,"dev_boot_signed_only")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_SIGNED_ONLY);
-	} else if (!strcasecmp(name,"dev_boot_fastboot_full_cap")) {
-		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
 	} else if (!strcasecmp(name,"dev_enable_udc")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_ENABLE_UDC);
 	} else if (!strcasecmp(name,"display_request")) {
@@ -561,8 +559,6 @@ int VbGetSystemPropertyInt(const char *name)
 		value = GetVdatInt(VDAT_INT_TRIED_FIRMWARE_B);
 	} else if (!strcasecmp(name,"recovery_reason")) {
 		value = GetVdatInt(VDAT_INT_RECOVERY_REASON);
-	} else if (!strcasecmp(name, "fastboot_unlock_in_fw")) {
-		value = vb2_get_nv_storage(VB2_NV_FASTBOOT_UNLOCK_IN_FW);
 	} else if (!strcasecmp(name, "boot_on_ac_detect")) {
 		value = vb2_get_nv_storage(VB2_NV_BOOT_ON_AC_DETECT);
 	} else if (!strcasecmp(name, "try_ro_sync")) {
@@ -726,12 +722,6 @@ int VbSetSystemPropertyInt(const char *name, int value)
 	} else if (!strcasecmp(name,"dev_boot_signed_only")) {
 		return vb2_set_nv_storage_with_backup(
 			VB2_NV_DEV_BOOT_SIGNED_ONLY, value);
-	} else if (!strcasecmp(name,"dev_boot_fastboot_full_cap")) {
-		return vb2_set_nv_storage_with_backup(
-			VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP, value);
-	} else if (!strcasecmp(name, "fastboot_unlock_in_fw")) {
-		return vb2_set_nv_storage_with_backup(
-			VB2_NV_FASTBOOT_UNLOCK_IN_FW, value);
 	} else if (!strcasecmp(name, "dev_enable_udc")) {
 		return vb2_set_nv_storage_with_backup(
 			VB2_NV_DEV_ENABLE_UDC, value);

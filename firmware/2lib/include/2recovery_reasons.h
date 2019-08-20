@@ -214,7 +214,7 @@ enum vb2_nv_recovery {
 	VB2_RECOVERY_SECDATAK_INIT = 0x5d,
 
 	/* Fastboot mode requested in firmware */
-	VB2_RECOVERY_FW_FASTBOOT     = 0x5e,
+	VB2_RECOVERY_DEPRECATED_FW_FASTBOOT     = 0x5e,
 
 	/* Recovery hash space lock error in RO firmware */
 	VB2_RECOVERY_RO_TPM_REC_HASH_L_ERROR = 0x5f,
@@ -241,7 +241,7 @@ enum vb2_nv_recovery {
 	VB2_RECOVERY_BCB_USER_MODE   = 0xc2,
 
 	/* Fastboot mode requested by user-mode */
-	VB2_RECOVERY_US_FASTBOOT     = 0xc3,
+	VB2_RECOVERY_DEPRECATED_US_FASTBOOT     = 0xc3,
 
 	/* User requested recovery for training memory and rebooting. */
 	VB2_RECOVERY_TRAIN_AND_REBOOT = 0xc4,

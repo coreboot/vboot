@@ -54,9 +54,9 @@ enum vb2_nv_param {
 	VB2_NV_DEV_BOOT_SIGNED_ONLY,
 	/*
 	 * Allow full fastboot capability in firmware in developer mode.
-	 * 0=no, 1=yes.
+	 * 0=no, 1=yes.  Deprecated; see chromium:995172.
 	 */
-	VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP,
+	VB2_NV_DEPRECATED_DEV_BOOT_FASTBOOT_FULL_CAP,
 	/* Set default boot mode (see vb2_dev_default_boot) */
 	VB2_NV_DEV_DEFAULT_BOOT,
 	/* Enable USB Device Controller */
@@ -94,8 +94,9 @@ enum vb2_nv_param {
 	/* Request wipeout of the device by the app. */
 	VB2_NV_REQ_WIPEOUT,
 
-	/* Fastboot: Unlock in firmware, 0=disabled, 1=enabled. */
-	VB2_NV_FASTBOOT_UNLOCK_IN_FW,
+	/* Fastboot: Unlock in firmware, 0=disabled, 1=enabled.
+	   Deprecated; see chromium:995172. */
+	VB2_NV_DEPRECATED_FASTBOOT_UNLOCK_IN_FW,
 	/* Boot system when AC detected (0=no, 1=yes). */
 	VB2_NV_BOOT_ON_AC_DETECT,
 	/*

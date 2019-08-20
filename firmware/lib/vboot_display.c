@@ -241,8 +241,6 @@ const char *RecoveryReasonString(uint8_t code)
 		return "No bootable kernel found on disk";
 	case VB2_RECOVERY_RW_BCB_ERROR:
 		return "BCB partition error on disk";
-	case VB2_RECOVERY_FW_FASTBOOT:
-		return "Fastboot-mode requested in firmware";
 	case VB2_RECOVERY_RO_TPM_REC_HASH_L_ERROR:
 		return "Recovery hash space lock error in RO firmware";
 	case VB2_RECOVERY_RW_UNSPECIFIED:
@@ -255,8 +253,6 @@ const char *RecoveryReasonString(uint8_t code)
 		return "Recovery mode test from user-mode";
 	case VB2_RECOVERY_BCB_USER_MODE:
 		return "User-mode requested recovery via BCB";
-	case VB2_RECOVERY_US_FASTBOOT:
-		return "User-mode requested fastboot mode";
 	case VB2_RECOVERY_TRAIN_AND_REBOOT:
 		return "User-mode requested DRAM train and reboot";
 	case VB2_RECOVERY_US_UNSPECIFIED:
@@ -339,12 +335,6 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	/* Add dev_boot_signed_only flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY);
 	used += StrnAppend(buf + used, "\ndev_boot_signed_only: ",
-			DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
-
-	/* Add dev_boot_fastboot_full_cap flag */
-	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
-	used += StrnAppend(buf + used, "\ndev_boot_fastboot_full_cap: ",
 			DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
 

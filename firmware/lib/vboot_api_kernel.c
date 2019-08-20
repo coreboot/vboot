@@ -470,7 +470,6 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	uint64_t body_offset;
 	int hash_only = 0;
 	int dev_switch;
-	uint32_t allow_fastboot_full_cap = 0;
 	struct vb2_workbuf wb;
 	vb2_error_t retval;
 	vb2_error_t rv;
@@ -482,8 +481,6 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	if (retval)
 		goto fail;
 
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-
 	if ((boot_image == NULL) || (image_size == 0)) {
 		retval = VB2_ERROR_INVALID_PARAMETER;
 		goto fail;
@@ -491,34 +488,12 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 
 	kbuf = boot_image;
 
-	/*
-	 * We don't care verifying the image if:
-	 * 1. dev-mode switch is on and
-	 * 2a. GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP is set, or
-	 * 2b. DEV_BOOT_FASTBOOT_FULL_CAP flag is set in NvStorage
-	 *
-	 * Check only the integrity of the image.
-	 */
-	dev_switch = shared->flags & VBSD_BOOT_DEV_SWITCH_ON;
-	allow_fastboot_full_cap =
-			vb2_nv_get(ctx, VB2_NV_DEV_BOOT_FASTBOOT_FULL_CAP);
-
-	if (0 == allow_fastboot_full_cap) {
-		allow_fastboot_full_cap = !!(gbb->flags &
-				VB2_GBB_FLAG_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP);
-	}
-
-	if (dev_switch && allow_fastboot_full_cap) {
-		VB2_DEBUG("Only performing integrity-check.\n");
-		hash_only = 1;
-	} else {
-		/* Get recovery key. */
-		rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
-		if (VB2_SUCCESS != rv) {
-			VB2_DEBUG("GBB read recovery key failed.\n");
-			retval = VBERROR_INVALID_GBB;
-			goto fail;
-		}
+	/* Get recovery key. */
+	rv = vb2_gbb_read_recovery_key(ctx, &kernel_subkey, NULL, &wb);
+	if (VB2_SUCCESS != rv) {
+		VB2_DEBUG("GBB read recovery key failed.\n");
+		retval = VBERROR_INVALID_GBB;
+		goto fail;
 	}
 
 	/* If we fail at any step, retval returned would be invalid kernel. */
@@ -548,6 +523,7 @@ vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
 	}
 
 	/* Check the key block flags against the current boot mode. */
+	dev_switch = shared->flags & VBSD_BOOT_DEV_SWITCH_ON;
 	if (!(key_block->key_block_flags &
 	      (dev_switch ? KEY_BLOCK_FLAG_DEVELOPER_1 :
 	       KEY_BLOCK_FLAG_DEVELOPER_0))) {
