@@ -155,8 +155,8 @@ enum vb2_return_code {
 	/* Bad CRC in vb2api_secdata_check() */
 	VB2_ERROR_SECDATA_CRC,
 
-	/* Secdata is all zeroes (uninitialized) in vb2api_secdata_check() */
-	VB2_ERROR_SECDATA_ZERO,
+	/* Bad struct version in vb2_secdata_check() */
+	VB2_ERROR_SECDATA_VERSION,
 
 	/* Invalid param in vb2_secdata_get() */
 	VB2_ERROR_SECDATA_GET_PARAM,

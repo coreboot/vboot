@@ -5,20 +5,14 @@
  * Tests for firmware secure storage library.
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "2sysincludes.h"
-
-#include "test_common.h"
-#include "vboot_common.h"
-
-#include "2common.h"
 #include "2api.h"
+#include "2common.h"
+#include "2crc8.h"
 #include "2misc.h"
 #include "2secdata.h"
+#include "2sysincludes.h"
+#include "test_common.h"
+#include "vboot_common.h"
 
 static void test_changed(struct vb2_context *c, int changed, const char *why)
 {
@@ -39,9 +33,11 @@ static void secdata_test(void)
 		.workbuf = workbuf,
 		.workbuf_size = sizeof(workbuf),
 	};
+	struct vb2_secdata *sec = (struct vb2_secdata *)c.secdata;
+	struct vb2_shared_data *sd = vb2_get_sd(&c);
 	uint32_t v = 1;
 
-	/* Check size constant  */
+	/* Check size constant */
 	TEST_EQ(VB2_SECDATA_SIZE, sizeof(struct vb2_secdata),
 		"Struct size constant");
 
@@ -50,16 +46,29 @@ static void secdata_test(void)
 	TEST_EQ(vb2api_secdata_check(&c),
 		VB2_ERROR_SECDATA_CRC, "Check blank CRC");
 	TEST_EQ(vb2_secdata_init(&c),
-		 VB2_ERROR_SECDATA_CRC, "Init blank CRC");
+		VB2_ERROR_SECDATA_CRC, "Init blank CRC");
 
 	/* Ensure zeroed buffers are invalid (coreboot relies on this) */
 	memset(c.secdata, 0, sizeof(c.secdata));
-	TEST_EQ(vb2_secdata_init(&c), VB2_ERROR_SECDATA_ZERO, "Zeroed buffer");
+	TEST_EQ(vb2_secdata_init(&c), VB2_ERROR_SECDATA_VERSION,
+		"Zeroed buffer (invalid version)");
+
+	/* Try with bad version */
+	TEST_SUCC(vb2api_secdata_create(&c), "Create");
+	sec->struct_version -= 1;
+	sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdata, crc8));
+	TEST_EQ(vb2api_secdata_check(&c),
+		VB2_ERROR_SECDATA_VERSION, "Check invalid version");
+	TEST_EQ(vb2_secdata_init(&c),
+		VB2_ERROR_SECDATA_VERSION, "Init invalid version");
 
 	/* Create good data */
 	TEST_SUCC(vb2api_secdata_create(&c), "Create");
 	TEST_SUCC(vb2api_secdata_check(&c), "Check created CRC");
 	TEST_SUCC(vb2_secdata_init(&c), "Init created CRC");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_SECDATA_INIT, 0,
+		 "Init set SD status");
+	sd->status &= ~VB2_SD_STATUS_SECDATA_INIT;
 	test_changed(&c, 1, "Create changes data");
 
 	/* Now corrupt it */
@@ -67,12 +76,12 @@ static void secdata_test(void)
 	TEST_EQ(vb2api_secdata_check(&c),
 		VB2_ERROR_SECDATA_CRC, "Check invalid CRC");
 	TEST_EQ(vb2_secdata_init(&c),
-		 VB2_ERROR_SECDATA_CRC, "Init invalid CRC");
-
-	vb2api_secdata_create(&c);
-	c.flags = 0;
+		VB2_ERROR_SECDATA_CRC, "Init invalid CRC");
 
 	/* Read/write flags */
+	vb2api_secdata_create(&c);
+	vb2_secdata_init(&c);
+	c.flags = 0;
 	TEST_SUCC(vb2_secdata_get(&c, VB2_SECDATA_FLAGS, &v), "Get flags");
 	TEST_EQ(v, 0, "Flags created 0");
 	test_changed(&c, 0, "Get doesn't change data");
@@ -108,7 +117,7 @@ static void secdata_test(void)
 	test_changed(&c, 0, "Set invalid field doesn't change data");
 
 	/* Read/write uninitialized data fails */
-	vb2_get_sd(&c)->status &= ~VB2_SD_STATUS_SECDATA_INIT;
+	sd->status &= ~VB2_SD_STATUS_SECDATA_INIT;
 	TEST_EQ(vb2_secdata_get(&c, VB2_SECDATA_VERSIONS, &v),
 		VB2_ERROR_SECDATA_GET_UNINITIALIZED, "Get uninitialized");
 	test_changed(&c, 0, "Get uninitialized doesn't change data");

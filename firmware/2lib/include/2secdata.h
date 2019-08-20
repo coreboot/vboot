@@ -5,13 +5,12 @@
  * Secure non-volatile storage routines
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_SECDATA_H_
-#define VBOOT_REFERENCE_VBOOT_SECDATA_H_
+#ifndef VBOOT_REFERENCE_VBOOT_2SECDATA_H_
+#define VBOOT_REFERENCE_VBOOT_2SECDATA_H_
 
 /*****************************************************************************/
 /* Firmware version space */
 
-/* Expected value of vb2_secdata.version */
 #define VB2_SECDATA_VERSION 2
 
 /* Flags for firmware space */
@@ -124,7 +123,7 @@ vb2_error_t vb2_secdata_set(struct vb2_context *ctx,
 			    enum vb2_secdata_param param, uint32_t value);
 
 /*****************************************************************************/
-/* Kernel version space functions.
+/* Kernel version space functions
  *
  * These are separate functions so that they don't bloat the size of the early
  * boot code which uses the firmware version space functions.

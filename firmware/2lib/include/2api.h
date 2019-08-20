@@ -393,18 +393,14 @@ enum vb2_pcr_digest {
  */
 
 /**
- * Check the CRC of the secure storage context.
+ * Check the validity of the secure storage context.
  *
- * Use this if reading from secure storage may be flaky, and you want to retry
- * reading it several times.
- *
- * This may be called before vb2api_phase1() (externally), and before
- * vb2_context_init() (internally).
+ * Checks version and CRC.
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2api_secdata_check(const struct vb2_context *ctx);
+vb2_error_t vb2api_secdata_check(struct vb2_context *ctx);
 
 /**
  * Create fresh data in the secure storage context.
@@ -414,27 +410,20 @@ vb2_error_t vb2api_secdata_check(const struct vb2_context *ctx);
  * (or any other API in this library) fails; that could allow the secure data
  * to be rolled back to an insecure state.
  *
- * This may be called before vb2api_phase1() (externally), and before
- * vb2_context_init() (internally).
- *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
 vb2_error_t vb2api_secdata_create(struct vb2_context *ctx);
 
 /**
- * Check the CRC of the kernel version secure storage context.
+ * Check the validity of the kernel version secure storage context.
  *
- * Use this if reading from secure storage may be flaky, and you want to retry
- * reading it several times.
- *
- * This may be called before vb2api_phase1() (externally), and before
- * vb2_context_init() (internally).
+ * Checks version, UID, and CRC.
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2api_secdatak_check(const struct vb2_context *ctx);
+vb2_error_t vb2api_secdatak_check(struct vb2_context *ctx);
 
 /**
  * Create fresh data in the kernel version secure storage context.
@@ -443,9 +432,6 @@ vb2_error_t vb2api_secdatak_check(const struct vb2_context *ctx);
  * the first time it boots.  Do NOT simply use this if vb2api_secdatak_check()
  * (or any other API in this library) fails; that could allow the secure data
  * to be rolled back to an insecure state.
- *
- * This may be called before vb2api_phase1() (externally), and before
- * vb2_context_init() (internally).
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.

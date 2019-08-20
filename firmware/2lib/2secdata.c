@@ -11,18 +11,21 @@
 #include "2misc.h"
 #include "2secdata.h"
 
-vb2_error_t vb2api_secdata_check(const struct vb2_context *ctx)
+vb2_error_t vb2api_secdata_check(struct vb2_context *ctx)
 {
-	const struct vb2_secdata *sec =
-		(const struct vb2_secdata *)ctx->secdata;
+	struct vb2_secdata *sec = (struct vb2_secdata *)ctx->secdata;
 
 	/* Verify CRC */
-	if (sec->crc8 != vb2_crc8(sec, offsetof(struct vb2_secdata, crc8)))
+	if (sec->crc8 != vb2_crc8(sec, offsetof(struct vb2_secdata, crc8))) {
+		VB2_DEBUG("secdata_firmware: bad CRC\n");
 		return VB2_ERROR_SECDATA_CRC;
+	}
 
-	/* CRC(<000...00>) is 0, so check version as well (should never be 0) */
-	if (!sec->struct_version)
-		return VB2_ERROR_SECDATA_ZERO;
+	/* Verify version */
+	if (sec->struct_version < VB2_SECDATA_VERSION) {
+		VB2_DEBUG("secdata_firmware: version incompatible\n");
+		return VB2_ERROR_SECDATA_VERSION;
+	}
 
 	return VB2_SUCCESS;
 }
@@ -54,7 +57,6 @@ vb2_error_t vb2_secdata_init(struct vb2_context *ctx)
 
 	/* Set status flag */
 	sd->status |= VB2_SD_STATUS_SECDATA_INIT;
-	/* TODO: unit test for that */
 
 	/* Read this now to make sure crossystem has it even in rec mode. */
 	rv = vb2_secdata_get(ctx, VB2_SECDATA_VERSIONS,
@@ -68,9 +70,10 @@ vb2_error_t vb2_secdata_init(struct vb2_context *ctx)
 vb2_error_t vb2_secdata_get(struct vb2_context *ctx,
 			    enum vb2_secdata_param param, uint32_t *dest)
 {
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_secdata *sec = (struct vb2_secdata *)ctx->secdata;
 
-	if (!(vb2_get_sd(ctx)->status & VB2_SD_STATUS_SECDATA_INIT))
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_INIT))
 		return VB2_ERROR_SECDATA_GET_UNINITIALIZED;
 
 	switch(param) {
@@ -106,10 +109,14 @@ vb2_error_t vb2_secdata_set(struct vb2_context *ctx,
 		if (value > 0xff)
 			return VB2_ERROR_SECDATA_SET_FLAGS;
 
+		VB2_DEBUG("secdata flags updated from 0x%x to 0x%x\n",
+			  sec->flags, value);
 		sec->flags = value;
 		break;
 
 	case VB2_SECDATA_VERSIONS:
+		VB2_DEBUG("secdata versions updated from 0x%x to 0x%x\n",
+			  sec->fw_versions, value);
 		sec->fw_versions = value;
 		break;
 
