@@ -146,19 +146,30 @@ main() {
       fi
     done
 
+    local sedout
     for expected_dmparams in "${required_dmparams_regex[@]}"; do
-      if [[ -z $(echo "${mangled_dmparams}" | \
-           sed "s${M}^${expected_dmparams}\$${M}${M}") ]]; then
+      if ! sedout=$(echo "${mangled_dmparams}" | \
+                    sed "s${M}^${expected_dmparams}\$${M}${M}"); then
+        echo "INTERNAL ERROR from sed script: ${expected_dmparams}"
+        break
+      elif [[ -z "${sedout}" ]]; then
         testfail=0
         break
       fi
     done
 
     if [ $testfail -eq 1 ]; then
-        echo "Kernel dm= parameter does not match any expected values!"
-        echo "Actual:   $dmparams"
-        echo "Expected: ${required_dmparams[*]}"
-        echo "Expected (regex): ${required_dmparams_regex[*]}"
+      echo "Kernel dm= parameter does not match any expected values!"
+      echo "Actual value:          ${dmparams}"
+      echo "Mangled testing value: ${mangled_dmparams}"
+      if [[ ${#required_dmparams[@]} -gt 0 ]]; then
+        echo "Expected -- only one need match:"
+        printf "  >>> %s\n" "${required_dmparams[@]}"
+      fi
+      if [[ ${#required_dmparams_regex[@]} -gt 0 ]]; then
+        echo "Expected (regex) -- only one need match:"
+        printf "  >>> %s\n" "${required_dmparams_regex[@]}"
+      fi
     fi
 
     # Ensure all other required params are present.
