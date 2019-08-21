@@ -1738,8 +1738,8 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	/* Providing more hints for what to do on failure. */
 	if (r == UPDATE_ERR_ROOT_KEY && wp_enabled)
-		ERROR("To change keys in RO area, you must first remove \n"
-		      "write protection ( " REMOVE_WP_URL " ).");
+		ERROR("To change keys in RO area, you must first remove "
+		      "write protection ( " REMOVE_WP_URL " ).\n");
 
 	return r;
 }
