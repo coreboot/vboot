@@ -19,6 +19,7 @@
 #include "2struct.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
+#include "rollback_index.h"
 #include "test_common.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
@@ -113,6 +114,36 @@ static void copy_kbh(void)
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;
+}
+
+uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsk)
+{
+	return VB2_SUCCESS;
+}
+
+uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsk)
+{
+	return VB2_SUCCESS;
+}
+
+uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
+{
+	return VB2_SUCCESS;
+}
+
+uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk)
+{
+	return VB2_SUCCESS;
+}
+
+uint32_t RollbackKernelLock(int recovery_mode)
+{
+	return TPM_SUCCESS;
+}
+
+uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
+{
+	return TPM_SUCCESS;
 }
 
 vb2_error_t vb2ex_read_resource(struct vb2_context *c,

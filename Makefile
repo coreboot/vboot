@@ -867,12 +867,6 @@ ${FWLIB21_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB_OBJS}: CFLAGS += -DSAVE_LOCALE_IMMEDIATELY
 endif
 
-ifeq (${FIRMWARE_ARCH},)
-# Disable rollback TPM when compiling locally, since otherwise
-# load_kernel_test attempts to talk to the TPM.
-${FWLIB_OBJS}: CFLAGS += -DDISABLE_ROLLBACK_TPM
-endif
-
 ${FWLIB21_OBJS}: INCLUDES += -Ifirmware/lib21/include
 
 # Linktest ensures firmware lib doesn't rely on outside libraries

@@ -118,6 +118,11 @@ enum fwmp_flags {
  * global variables.
  */
 
+uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf);
+uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf);
+uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk);
+uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk);
+
 /**
  * Read stored kernel version.
  */

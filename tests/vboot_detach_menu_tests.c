@@ -129,6 +129,11 @@ static void ResetMocksForManualRecovery(void)
 }
 
 /* Mock functions */
+uint32_t RollbackKernelLock(int recovery_mode)
+{
+	return TPM_SUCCESS;
+}
+
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;

@@ -18,25 +18,6 @@
 #define offsetof(A,B) __builtin_offsetof(A,B)
 #endif
 
-/*
- * Provide protoypes for functions not in the header file. These prototypes
- * fix -Wmissing-prototypes warnings.
- */
-uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf);
-uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf);
-uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk);
-uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk);
-
-#ifdef FOR_TEST
-/*
- * Compiling for unit test, so we need the real implementations of
- * rollback functions.  The unit test mocks the underlying tlcl
- * functions, so this is okay to run on the host.
- */
-#undef CHROMEOS_ENVIRONMENT
-#undef DISABLE_ROLLBACK_TPM
-#endif
-
 #define RETURN_ON_FAILURE(tpm_command) do {				\
 		uint32_t result_;					\
 		if ((result_ = (tpm_command)) != TPM_SUCCESS) {		\
@@ -200,33 +181,6 @@ uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk)
 	return TPM_SUCCESS;
 }
 
-#ifdef DISABLE_ROLLBACK_TPM
-/* Dummy implementations which don't support TPM rollback protection */
-
-uint32_t RollbackKernelRead(uint32_t* version)
-{
-	*version = 0;
-	return TPM_SUCCESS;
-}
-
-uint32_t RollbackKernelWrite(uint32_t version)
-{
-	return TPM_SUCCESS;
-}
-
-uint32_t RollbackKernelLock(int recovery_mode)
-{
-	return TPM_SUCCESS;
-}
-
-uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
-{
-	memset(fwmp, 0, sizeof(*fwmp));
-	return TPM_SUCCESS;
-}
-
-#else
-
 uint32_t RollbackKernelRead(uint32_t* version)
 {
 	RollbackSpaceKernel rsk;
@@ -338,5 +292,3 @@ uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 	memcpy(fwmp, &u.fwmp, sizeof(*fwmp));
 	return TPM_SUCCESS;
 }
-
-#endif /* DISABLE_ROLLBACK_TPM */
