@@ -692,7 +692,6 @@ TEST_OBJS += ${TESTLIB_OBJS}
 TEST_NAMES = \
 	tests/cgptlib_test \
 	tests/ec_sync_tests \
-	tests/rollback_index3_tests \
 	tests/sha_benchmark \
 	tests/utility_string_tests \
 	tests/vboot_api_devmode_tests \
@@ -1305,7 +1304,6 @@ ifeq (${TPM2_MODE},)
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 	${RUNTEST} ${BUILD_RUN}/tests/rollback_index2_tests
 endif
-	${RUNTEST} ${BUILD_RUN}/tests/rollback_index3_tests
 	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
