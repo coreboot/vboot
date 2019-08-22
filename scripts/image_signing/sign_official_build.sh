@@ -40,7 +40,6 @@ where <type> is one of:
              nv_lp0_firmware (sign nvidia lp0 firmware)
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
-             oci-container (sign an OCI container)
              cr50_firmware (sign a cr50 firmware image)
 
 output_image: File name of the signed output image
@@ -821,17 +820,6 @@ verify_uefi_signatures() {
   fi
 }
 
-# Sign an oci container with the given keys.
-# Args: CONTAINER KEY_DIR [OUTPUT_CONTAINER]
-sign_oci_container() {
-  local image=$1
-  local key_dir=$2
-  local output=$3
-
-  "${SCRIPT_DIR}/sign_oci_container.sh" \
-    "${image}" "${key_dir}" --output "${output}"
-}
-
 # Sign a cr50 firmware image with the given keys.
 # Args: CONTAINER KEY_DIR [OUTPUT_CONTAINER]
 sign_cr50_firmware() {
@@ -1161,8 +1149,6 @@ elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
   futility sign --type rwsig --prikey "${KEY_NAME}" \
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "oci-container" ]]; then
-  sign_oci_container "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "cr50_firmware" ]]; then
   sign_cr50_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 else
