@@ -871,11 +871,6 @@ ${FWLIB21_OBJS}: CFLAGS += -DUNROLL_LOOPS
 # Way to do things. See chrome-os-partner:7689, and the commit message
 # that made this change.
 ${FWLIB_OBJS}: CFLAGS += -DSAVE_LOCALE_IMMEDIATELY
-
-# On x86 we don't actually read the GBB data into RAM until it is needed.
-# Therefore it makes sense to cache it rather than reading it each time.
-# Enable this feature.
-${FWLIB_OBJS}: CFLAGS += -DCOPY_BMP_DATA
 endif
 
 ifeq (${FIRMWARE_ARCH},)
