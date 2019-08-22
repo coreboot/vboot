@@ -588,10 +588,6 @@ UTIL_NAMES = \
 	utility/dumpRSAPublicKey \
 	utility/tpmc
 
-ifeq (${TPM2_MODE},)
-UTIL_NAMES += utility/tpm_init_temp_fix
-endif
-
 ifeq (${MINIMAL},)
 UTIL_NAMES += \
 	utility/load_kernel_test \
