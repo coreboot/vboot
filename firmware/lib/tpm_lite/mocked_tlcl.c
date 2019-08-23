@@ -50,6 +50,11 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 	return TPM_SUCCESS;
 }
 
+uint32_t TlclUndefineSpace(uint32_t index)
+{
+	return TPM_SUCCESS;
+}
+
 uint32_t TlclWrite(uint32_t index, const void* data, uint32_t length)
 {
 	return TPM_SUCCESS;
