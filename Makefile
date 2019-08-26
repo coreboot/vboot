@@ -139,8 +139,8 @@ DEBUG_FLAGS := $(if ${DEBUG},-g -O0,-Os)
 WERROR := -Werror
 FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
-	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls \
-	-Wwrite-strings -Wstrict-aliasing -Wshadow -Wdate-time \
+	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls -Wshadow \
+	-Wwrite-strings -Wstrict-aliasing -Wdate-time -Wno-unknown-warning \
 	-Wno-address-of-packed-member -ffunction-sections -fdata-sections \
 	-Wimplicit-fallthrough ${DEBUG_FLAGS}
 
