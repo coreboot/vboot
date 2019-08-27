@@ -618,6 +618,11 @@ static int load_firmware_version(struct firmware_image *image,
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive)
 {
+	if (!file_name) {
+		ERROR("No file name given\n");
+		return -1;
+	}
+
 	VB2_DEBUG("Load image file from %s...\n", file_name);
 
 	if (!archive_has_entry(archive, file_name)) {
