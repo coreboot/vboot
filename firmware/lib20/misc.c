@@ -286,7 +286,8 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 	    sd->last_fw_result == VB2_FW_RESULT_SUCCESS) {
 
 		sd->fw_version_secdata = sd->fw_version;
-		rv = vb2_secdata_set(ctx, VB2_SECDATA_VERSIONS, sd->fw_version);
+		rv = vb2_secdata_firmware_set(
+			ctx, VB2_SECDATA_FIRMWARE_VERSIONS, sd->fw_version);
 		if (rv)
 			return rv;
 	}

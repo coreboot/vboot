@@ -26,18 +26,18 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Initialize secure kernel data and read version */
-	rv = vb2_secdatak_init(ctx);
+	rv = vb2_secdata_kernel_init(ctx);
 	if (!rv) {
-		rv = vb2_secdatak_get(ctx, VB2_SECDATAK_VERSIONS,
-				      &sd->kernel_version_secdatak);
+		rv = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS,
+					    &sd->kernel_version_secdata);
 	}
 
 	if (rv) {
 		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 			/* Ignore failure to get kernel version in recovery */
-			sd->kernel_version_secdatak = 0;
+			sd->kernel_version_secdata = 0;
 		} else {
-			vb2_fail(ctx, VB2_RECOVERY_SECDATAK_INIT, rv);
+			vb2_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
 			return rv;
 		}
 	}
@@ -257,15 +257,15 @@ vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx)
 	 * kernel signature is valid, and we're not in recovery mode, and we're
 	 * allowed to, roll forward the version in secure storage.
 	 */
-	if (sd->kernel_version > sd->kernel_version_secdatak &&
+	if (sd->kernel_version > sd->kernel_version_secdata &&
 	    (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED) &&
 	    !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 	    (ctx->flags & VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD)) {
-		rv = vb2_secdatak_set(ctx, VB2_SECDATAK_VERSIONS,
-				      sd->kernel_version);
+		rv = vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
+					    sd->kernel_version);
 		if (rv)
 			return rv;
-		sd->kernel_version_secdatak = sd->kernel_version;
+		sd->kernel_version_secdata = sd->kernel_version;
 	}
 
 	return VB2_SUCCESS;

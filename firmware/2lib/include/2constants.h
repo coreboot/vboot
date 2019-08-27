@@ -22,6 +22,10 @@
 #define VB2_NVDATA_SIZE_V2 64
 
 /* Size of secure data spaces used by vboot */
+#define VB2_SECDATA_FIRMWARE_SIZE 10
+#define VB2_SECDATA_KERNEL_SIZE 13
+
+/* TODO(chromium:972956): Remove once coreboot is using updated names */
 #define VB2_SECDATA_SIZE 10
 #define VB2_SECDATAK_SIZE 13
 

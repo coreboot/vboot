@@ -57,10 +57,10 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 		return VB2_ERROR_API_PHASE1_SECDATA_REBOOT;
 	}
 
-	/* Initialize secure data */
-	rv = vb2_secdata_init(ctx);
+	/* Initialize firmware secure data */
+	rv = vb2_secdata_firmware_init(ctx);
 	if (rv)
-		vb2_fail(ctx, VB2_RECOVERY_SECDATA_INIT, rv);
+		vb2_fail(ctx, VB2_RECOVERY_SECDATA_FIRMWARE_INIT, rv);
 
 	/* Load and parse the GBB header */
 	rv = vb2_fw_parse_gbb(ctx);

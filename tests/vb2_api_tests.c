@@ -59,8 +59,8 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2api_secdata_create(&ctx);
-	vb2_secdata_init(&ctx);
+	vb2api_secdata_firmware_create(&ctx);
+	vb2_secdata_firmware_init(&ctx);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_parse_gbb = VB2_SUCCESS;
@@ -104,14 +104,17 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *c)
 
 static void misc_tests(void)
 {
-	/* Test secdata passthru functions */
+	/* Test secdata_firmware passthru functions */
 	reset_common_data(FOR_MISC);
-	/* Corrupt secdata so initial check will fail */
-	ctx.secdata[0] ^= 0x42;
-	TEST_EQ(vb2api_secdata_check(&ctx), VB2_ERROR_SECDATA_CRC,
-		"secdata check");
-	TEST_SUCC(vb2api_secdata_create(&ctx), "secdata create");
-	TEST_SUCC(vb2api_secdata_check(&ctx), "secdata check 2");
+	/* Corrupt secdata_firmware so initial check will fail */
+	ctx.secdata_firmware[0] ^= 0x42;
+	TEST_EQ(vb2api_secdata_firmware_check(&ctx),
+		VB2_ERROR_SECDATA_FIRMWARE_CRC,
+		"secdata_firmware check");
+	TEST_SUCC(vb2api_secdata_firmware_create(&ctx),
+		  "secdata_firmware create");
+	TEST_SUCC(vb2api_secdata_firmware_check(&ctx),
+		  "secdata_firmware check 2");
 
 	/* Test fail passthru */
 	reset_common_data(FOR_MISC);
@@ -165,19 +168,19 @@ static void phase1_tests(void)
 		 0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
-	ctx.secdata[0] ^= 0x42;
+	ctx.secdata_firmware[0] ^= 0x42;
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
-		"phase1 secdata");
-	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_SECDATA_INIT,
+		"phase1 secdata_firmware");
+	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_SECDATA_FIRMWARE_INIT,
 		"  recovery reason");
 	TEST_NEQ(ctx.flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx.flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
 
-	/* Test secdata-requested reboot */
+	/* Test secdata_firmware-requested reboot */
 	reset_common_data(FOR_MISC);
 	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
-		"phase1 secdata reboot normal");
+		"phase1 secdata_firmware reboot normal");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
@@ -186,7 +189,8 @@ static void phase1_tests(void)
 
 	reset_common_data(FOR_MISC);
 	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
-	TEST_SUCC(vb2api_fw_phase1(&ctx), "phase1 secdata reboot back normal");
+	TEST_SUCC(vb2api_fw_phase1(&ctx),
+		  "phase1 secdata_firmware reboot back normal");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		0, "  tpm reboot request");
@@ -195,9 +199,10 @@ static void phase1_tests(void)
 
 	reset_common_data(FOR_MISC);
 	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
-	memset(ctx.secdata, 0, sizeof(ctx.secdata));
+	memset(ctx.secdata_firmware, 0, sizeof(ctx.secdata_firmware));
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
-		"phase1 secdata reboot normal, secdata blank");
+		"phase1 secdata_firmware reboot normal, "
+		"secdata_firmware blank");
 	TEST_EQ(sd->recovery_reason, 0,	"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
 		1, "  tpm reboot request");
@@ -208,7 +213,7 @@ static void phase1_tests(void)
 	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
 	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
-		"phase1 secdata reboot normal again");
+		"phase1 secdata_firmware reboot normal again");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_TPM_REBOOT,
 		"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
@@ -220,7 +225,7 @@ static void phase1_tests(void)
 	ctx.flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
 	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_SECDATA_REBOOT,
-		"phase1 secdata reboot recovery");
+		"phase1 secdata_firmware reboot recovery");
 	/* Recovery reason isn't set this boot because we're rebooting first */
 	TEST_EQ(sd->recovery_reason, 0, "  recovery reason not set THIS boot");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
@@ -232,7 +237,7 @@ static void phase1_tests(void)
 	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
 	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
-		"phase1 secdata reboot back recovery");
+		"phase1 secdata_firmware reboot back recovery");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
 		"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),
@@ -245,7 +250,7 @@ static void phase1_tests(void)
 	vb2_nv_set(&ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
 	vb2_nv_set(&ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
-		"phase1 secdata reboot recovery again");
+		"phase1 secdata_firmware reboot recovery again");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
 		"  recovery reason");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TPM_REQUESTED_REBOOT),

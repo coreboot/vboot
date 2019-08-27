@@ -64,9 +64,9 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2api_secdatak_create(&ctx);
-	vb2_secdatak_init(&ctx);
-	vb2_secdatak_set(&ctx, VB2_SECDATAK_VERSIONS, 0x20002);
+	vb2api_secdata_kernel_create(&ctx);
+	vb2_secdata_kernel_init(&ctx);
+	vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x20002);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -144,7 +144,7 @@ static void reset_common_data(enum reset_type t)
 	} else {
 		/* Set flags and versions for roll-forward */
 		sd->kernel_version = 0x20004;
-		sd->kernel_version_secdatak = 0x20002;
+		sd->kernel_version_secdata = 0x20002;
 		sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
 		ctx.flags |= VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
 	}
@@ -241,7 +241,8 @@ static void phase1_tests(void)
 	TEST_EQ(k->key_size, sizeof(fw_kernel_key_data), "  key_size");
 	TEST_EQ(memcmp((uint8_t *)k + k->key_offset, fw_kernel_key_data,
 		       k->key_size), 0, "  key data");
-	TEST_EQ(sd->kernel_version_secdatak, 0x20002, "  secdatak version");
+	TEST_EQ(sd->kernel_version_secdata, 0x20002,
+		"  secdata_kernel version");
 
 	/* Test successful call in recovery mode */
 	reset_common_data(FOR_PHASE1);
@@ -266,19 +267,20 @@ static void phase1_tests(void)
 	TEST_EQ(memcmp((uint8_t *)k + k->key_offset,
 		       mock_gbb.recovery_key_data, k->key_size), 0,
 		"  key data");
-	TEST_EQ(sd->kernel_version_secdatak, 0x20002, "  secdatak version");
+	TEST_EQ(sd->kernel_version_secdata, 0x20002,
+		"  secdata_kernel version");
 
-	/* Bad secdatak causes failure in normal mode only */
+	/* Bad secdata_kernel causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
-	ctx.secdatak[0] ^= 0x33;
-	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_SECDATAK_CRC,
+	ctx.secdata_kernel[0] ^= 0x33;
+	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
 		"phase1 bad secdata");
 	reset_common_data(FOR_PHASE1);
 
-	ctx.secdatak[0] ^= 0x33;
+	ctx.secdata_kernel[0] ^= 0x33;
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 bad secdata rec");
-	TEST_EQ(sd->kernel_version_secdatak, 0, "  secdatak version");
+	TEST_EQ(sd->kernel_version_secdata, 0, "  secdata_kernel version");
 
 	/* Failures while reading recovery key */
 	reset_common_data(FOR_PHASE1);
@@ -415,37 +417,37 @@ static void phase3_tests(void)
 
 	reset_common_data(FOR_PHASE3);
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 good");
-	vb2_secdatak_get(&ctx, VB2_SECDATAK_VERSIONS, &v);
+	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
 	TEST_EQ(v, 0x20004, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->kernel_version = 0x20001;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollback");
-	vb2_secdatak_get(&ctx, VB2_SECDATAK_VERSIONS, &v);
+	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->flags &= ~VB2_SD_FLAG_KERNEL_SIGNED;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 unsigned kernel");
-	vb2_secdatak_get(&ctx, VB2_SECDATAK_VERSIONS, &v);
+	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 recovery");
-	vb2_secdatak_get(&ctx, VB2_SECDATAK_VERSIONS, &v);
+	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	ctx.flags &= ~VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollforward");
-	vb2_secdatak_get(&ctx, VB2_SECDATAK_VERSIONS, &v);
+	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
-	sd->status &= ~VB2_SD_STATUS_SECDATAK_INIT;
+	sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
 	TEST_EQ(vb2api_kernel_phase3(&ctx),
-		VB2_ERROR_SECDATAK_SET_UNINITIALIZED, "phase3 set fail");
+		VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED, "phase3 set fail");
 }
 
 int main(int argc, char* argv[])

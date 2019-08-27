@@ -78,8 +78,8 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2api_secdata_create(&ctx);
-	vb2_secdata_init(&ctx);
+	vb2api_secdata_firmware_create(&ctx);
+	vb2_secdata_firmware_init(&ctx);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -88,7 +88,8 @@ static void reset_common_data(enum reset_type t)
 
 	/* Set up mock data for verifying keyblock */
 	sd->fw_version_secdata = 0x20002;
-	vb2_secdata_set(&ctx, VB2_SECDATA_VERSIONS, sd->fw_version_secdata);
+	vb2_secdata_firmware_set(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
+				 sd->fw_version_secdata);
 
 	gbb.rootkey_offset = vb2_offset_of(&mock_gbb, &mock_gbb.rootkey);
 	gbb.rootkey_size = sizeof(mock_gbb.rootkey_data);
@@ -373,7 +374,7 @@ static void load_preamble_tests(void)
 	pre->fw_version = 3;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version roll forward");
-	vb2_secdata_get(&ctx, VB2_SECDATA_VERSIONS, &v);
+	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
 	TEST_EQ(v, 0x20003, "roll forward");
 
 	/* Newer version without result success doesn't roll forward */
@@ -382,7 +383,7 @@ static void load_preamble_tests(void)
 	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version no roll forward 1");
-	vb2_secdata_get(&ctx, VB2_SECDATA_VERSIONS, &v);
+	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "no roll forward");
 
 	/* Newer version with success but for other slot doesn't roll forward */
@@ -391,7 +392,7 @@ static void load_preamble_tests(void)
 	sd->last_fw_slot = 1;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version no roll forward 2");
-	vb2_secdata_get(&ctx, VB2_SECDATA_VERSIONS, &v);
+	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
 	TEST_EQ(v, 0x20002, "no roll forward");
 }
 

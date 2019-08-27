@@ -90,8 +90,8 @@ static void reset_common_data(enum reset_type t)
 
 	vb2_nv_init(&ctx);
 
-	vb2api_secdatak_create(&ctx);
-	vb2_secdatak_init(&ctx);
+	vb2api_secdata_kernel_create(&ctx);
+	vb2_secdata_kernel_init(&ctx);
 
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
@@ -99,8 +99,8 @@ static void reset_common_data(enum reset_type t)
 	mock_verify_preamble_retval = VB2_SUCCESS;
 
 	/* Set up mock data for verifying keyblock */
-	sd->kernel_version_secdatak = 0x20002;
-	vb2_secdatak_set(&ctx, VB2_SECDATAK_VERSIONS, 0x20002);
+	sd->kernel_version_secdata = 0x20002;
+	vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x20002);
 
 	mock_gbb.recovery_key.algorithm = 11;
 	mock_gbb.recovery_key.key_offset =

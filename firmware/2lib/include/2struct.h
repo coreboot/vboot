@@ -72,13 +72,13 @@ enum vb2_shared_data_status {
 	VB2_SD_STATUS_NV_INIT = (1 << 1),
 
 	/* Secure data initialized */
-	VB2_SD_STATUS_SECDATA_INIT = (1 << 2),
+	VB2_SD_STATUS_SECDATA_FIRMWARE_INIT = (1 << 2),
 
 	/* Chose a firmware slot */
 	VB2_SD_STATUS_CHOSE_SLOT = (1 << 3),
 
 	/* Secure data kernel version space initialized */
-	VB2_SD_STATUS_SECDATAK_INIT = (1 << 4),
+	VB2_SD_STATUS_SECDATA_KERNEL_INIT = (1 << 4),
 };
 
 /* "V2SD" = vb2_shared_data.magic */
@@ -126,7 +126,7 @@ struct vb2_shared_data {
 	 */
 	uint32_t fw_version;
 
-	/* Version stored in secdata (must be <= fw_version to boot). */
+	/* Version from secdata_firmware (must be <= fw_version to boot). */
 	uint32_t fw_version_secdata;
 
 	/*
@@ -154,8 +154,8 @@ struct vb2_shared_data {
 	 */
 	uint32_t kernel_version;
 
-	/* Kernel version from secdatak (must be <= kernel_version to boot) */
-	uint32_t kernel_version_secdatak;
+	/* Version from secdata_kernel (must be <= kernel_version to boot) */
+	uint32_t kernel_version_secdata;
 
 	/**********************************************************************
 	 * Temporary variables used during firmware verification.  These don't

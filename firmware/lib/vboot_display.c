@@ -183,8 +183,8 @@ const char *RecoveryReasonString(uint8_t code)
 		return "EC software sync unable to jump to EC-RW";
 	case VB2_RECOVERY_EC_PROTECT:
 		return "EC software sync protection error";
-	case VB2_RECOVERY_SECDATA_INIT:
-		return "Secure NVRAM (TPM) initialization error";
+	case VB2_RECOVERY_SECDATA_FIRMWARE_INIT:
+		return "Firmware secure NVRAM (TPM) initialization error";
 	case VB2_RECOVERY_GBB_HEADER:
 		return "Error parsing GBB header";
 	case VB2_RECOVERY_TPM_CLEAR_OWNER:
@@ -241,6 +241,8 @@ const char *RecoveryReasonString(uint8_t code)
 		return "No bootable kernel found on disk";
 	case VB2_RECOVERY_RW_BCB_ERROR:
 		return "BCB partition error on disk";
+	case VB2_RECOVERY_SECDATA_KERNEL_INIT:
+		return "Kernel secure NVRAM (TPM) initialization error";
 	case VB2_RECOVERY_RO_TPM_REC_HASH_L_ERROR:
 		return "Recovery hash space lock error in RO firmware";
 	case VB2_RECOVERY_RW_UNSPECIFIED:
@@ -345,7 +347,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 			       sd->fw_version_secdata, 16, 8);
 	used += StrnAppend(buf + used, " kernver=0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->kernel_version_secdatak, 16, 8);
+			       sd->kernel_version_secdata, 16, 8);
 
 	/* Add GBB flags */
 	used += StrnAppend(buf + used,

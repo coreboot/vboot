@@ -365,8 +365,8 @@ FWLIB2X_SRCS = \
 	firmware/2lib/2nvstorage.c \
 	firmware/2lib/2packed_key.c \
 	firmware/2lib/2rsa.c \
-	firmware/2lib/2secdata.c \
-	firmware/2lib/2secdatak.c \
+	firmware/2lib/2secdata_firmware.c \
+	firmware/2lib/2secdata_kernel.c \
 	firmware/2lib/2sha1.c \
 	firmware/2lib/2sha256.c \
 	firmware/2lib/2sha512.c \
@@ -726,8 +726,8 @@ TEST2X_NAMES = \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
 	tests/vb2_rsa_utility_tests \
-	tests/vb2_secdata_tests \
-	tests/vb2_secdatak_tests \
+	tests/vb2_secdata_firmware_tests \
+	tests/vb2_secdata_kernel_tests \
 	tests/vb2_sha_tests \
 	tests/hmac_test
 
@@ -1317,8 +1317,8 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_rsa_utility_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdatak_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_firmware_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests

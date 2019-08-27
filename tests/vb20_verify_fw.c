@@ -75,9 +75,9 @@ static void save_if_needed(struct vb2_context *c)
 		c->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	}
 
-	if (c->flags & VB2_CONTEXT_SECDATA_CHANGED) {
+	if (c->flags & VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED) {
 		// TODO: implement
-		c->flags &= ~VB2_CONTEXT_SECDATA_CHANGED;
+		c->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
 	}
 }
 
@@ -164,10 +164,11 @@ int main(int argc, char *argv[])
 	ctx.workbuf_size = sizeof(workbuf);
 
 	/* Initialize secure context */
-	rv = vb2api_secdata_create(&ctx);
+	rv = vb2api_secdata_firmware_create(&ctx);
 	if (rv) {
 		fprintf(stderr,
-			"error: vb2api_secdata_create() failed (%d)\n", rv);
+			"error: vb2api_secdata_firmware_create() failed (%d)\n",
+			rv);
 		return 1;
 	}
 

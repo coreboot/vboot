@@ -152,50 +152,50 @@ enum vb2_return_code {
 	 */
 	VB2_ERROR_SECDATA = VB2_ERROR_BASE + 0x040000,
 
-	/* Bad CRC in vb2api_secdata_check() */
-	VB2_ERROR_SECDATA_CRC,
+	/* Bad CRC in vb2api_secdata_firmware_check() */
+	VB2_ERROR_SECDATA_FIRMWARE_CRC,
 
-	/* Bad struct version in vb2_secdata_check() */
-	VB2_ERROR_SECDATA_VERSION,
+	/* Bad struct version in vb2api_secdata_firmware_check() */
+	VB2_ERROR_SECDATA_FIRMWARE_VERSION,
 
-	/* Invalid param in vb2_secdata_get() */
-	VB2_ERROR_SECDATA_GET_PARAM,
+	/* Invalid param in vb2_secdata_firmware_get() */
+	VB2_ERROR_SECDATA_FIRMWARE_GET_PARAM,
 
-	/* Invalid param in vb2_secdata_set() */
-	VB2_ERROR_SECDATA_SET_PARAM,
+	/* Invalid param in vb2_secdata_firmware_set() */
+	VB2_ERROR_SECDATA_FIRMWARE_SET_PARAM,
 
-	/* Invalid flags passed to vb2_secdata_set() */
-	VB2_ERROR_SECDATA_SET_FLAGS,
+	/* Invalid flags passed to vb2_secdata_firmware_set() */
+	VB2_ERROR_SECDATA_FIRMWARE_SET_FLAGS,
 
-	/* Called vb2_secdata_get() with uninitialized secdata */
-	VB2_ERROR_SECDATA_GET_UNINITIALIZED,
+	/* Called vb2_secdata_firmware_get() with uninitialized secdata */
+	VB2_ERROR_SECDATA_FIRMWARE_GET_UNINITIALIZED,
 
-	/* Called vb2_secdata_set() with uninitialized secdata */
-	VB2_ERROR_SECDATA_SET_UNINITIALIZED,
+	/* Called vb2_secdata_firmware_set() with uninitialized secdata */
+	VB2_ERROR_SECDATA_FIRMWARE_SET_UNINITIALIZED,
 
-	/* Bad CRC in vb2api_secdatak_check() */
-	VB2_ERROR_SECDATAK_CRC,
+	/* Bad CRC in vb2api_secdata_kernel_check() */
+	VB2_ERROR_SECDATA_KERNEL_CRC,
 
-	/* Bad struct version in vb2_secdatak_init() */
-	VB2_ERROR_SECDATAK_VERSION,
+	/* Bad struct version in vb2_secdata_kernel_init() */
+	VB2_ERROR_SECDATA_KERNEL_VERSION,
 
-	/* Bad uid in vb2_secdatak_init() */
-	VB2_ERROR_SECDATAK_UID,
+	/* Bad uid in vb2_secdata_kernel_init() */
+	VB2_ERROR_SECDATA_KERNEL_UID,
 
-	/* Invalid param in vb2_secdatak_get() */
-	VB2_ERROR_SECDATAK_GET_PARAM,
+	/* Invalid param in vb2_secdata_kernel_get() */
+	VB2_ERROR_SECDATA_KERNEL_GET_PARAM,
 
-	/* Invalid param in vb2_secdatak_set() */
-	VB2_ERROR_SECDATAK_SET_PARAM,
+	/* Invalid param in vb2_secdata_kernel_set() */
+	VB2_ERROR_SECDATA_KERNEL_SET_PARAM,
 
-	/* Invalid flags passed to vb2_secdatak_set() */
-	VB2_ERROR_SECDATAK_SET_FLAGS,
+	/* Invalid flags passed to vb2_secdata_kernel_set() */
+	VB2_ERROR_SECDATA_KERNEL_SET_FLAGS,
 
-	/* Called vb2_secdatak_get() with uninitialized secdatak */
-	VB2_ERROR_SECDATAK_GET_UNINITIALIZED,
+	/* Called vb2_secdata_kernel_get() with uninitialized secdata_kernel */
+	VB2_ERROR_SECDATA_KERNEL_GET_UNINITIALIZED,
 
-	/* Called vb2_secdatak_set() with uninitialized secdatak */
-	VB2_ERROR_SECDATAK_SET_UNINITIALIZED,
+	/* Called vb2_secdata_kernel_set() with uninitialized secdata_kernel */
+	VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED,
 
 	/**********************************************************************
 	 * Common code errors

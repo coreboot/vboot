@@ -192,7 +192,7 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 			return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_RANGE;
 	}
 	if (!rec_switch && kb->data_key.key_version <
-	    (sd->kernel_version_secdatak >> 16)) {
+	    (sd->kernel_version_secdata >> 16)) {
 		keyblock_is_valid = 0;
 		if (need_keyblock_valid)
 			return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
@@ -427,7 +427,7 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx)
 	sd->kernel_version |= pre->kernel_version;
 
 	if (vb2_need_signed_kernel(ctx) &&
-	    sd->kernel_version < sd->kernel_version_secdatak)
+	    sd->kernel_version < sd->kernel_version_secdata)
 		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK;
 
 	/* Keep track of where we put the preamble */

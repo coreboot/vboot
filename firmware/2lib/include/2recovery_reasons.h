@@ -117,8 +117,8 @@ enum vb2_nv_recovery {
 	/* New error codes from VB2 */
 	/* TODO: may need to add strings for these in the original fwlib */
 
-	/* Secure data inititalization error */
-	VB2_RECOVERY_SECDATA_INIT = 0x2b,
+	/* Firmware secure data initialization error */
+	VB2_RECOVERY_SECDATA_FIRMWARE_INIT = 0x2b,
 
 	/* GBB header is bad */
 	VB2_RECOVERY_GBB_HEADER = 0x2c,
@@ -210,8 +210,8 @@ enum vb2_nv_recovery {
 	/* New error codes from VB2 */
 	/* TODO: may need to add strings for these in the original fwlib */
 
-	/* Secure data inititalization error */
-	VB2_RECOVERY_SECDATAK_INIT = 0x5d,
+	/* Kernel secure data initialization error */
+	VB2_RECOVERY_SECDATA_KERNEL_INIT = 0x5d,
 
 	/* Fastboot mode requested in firmware */
 	VB2_RECOVERY_DEPRECATED_FW_FASTBOOT     = 0x5e,

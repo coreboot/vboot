@@ -64,16 +64,16 @@ uint32_t ReadSpaceFirmware(RollbackSpaceFirmware *rsf)
 
 	r = TlclRead(FIRMWARE_NV_INDEX, rsf, sizeof(RollbackSpaceFirmware));
 	if (TPM_SUCCESS != r) {
-		VB2_DEBUG("TPM: read secdata returned 0x%x\n", r);
+		VB2_DEBUG("TPM: read secdata_firmware returned 0x%x\n", r);
 		return r;
 	}
-	PRINT_BYTES("TPM: read secdata", rsf);
+	PRINT_BYTES("TPM: read secdata_firmware", rsf);
 
 	if (rsf->struct_version < ROLLBACK_SPACE_FIRMWARE_VERSION)
 		return TPM_E_STRUCT_VERSION;
 
 	if (rsf->crc8 != vb2_crc8(rsf, offsetof(RollbackSpaceFirmware, crc8))) {
-		VB2_DEBUG("TPM: bad secdata CRC\n");
+		VB2_DEBUG("TPM: bad secdata_firmware CRC\n");
 		return TPM_E_CORRUPTED_STATE;
 	}
 
@@ -89,7 +89,7 @@ uint32_t WriteSpaceFirmware(RollbackSpaceFirmware *rsf)
 	PRINT_BYTES("TPM: write secdata", rsf);
 	r = SafeWrite(FIRMWARE_NV_INDEX, rsf, sizeof(RollbackSpaceFirmware));
 	if (TPM_SUCCESS != r) {
-		VB2_DEBUG("TPM: write secdata failure\n");
+		VB2_DEBUG("TPM: write secdata_firmware failure\n");
 		return r;
 	}
 
@@ -146,10 +146,10 @@ uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 
 	r = TlclRead(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
 	if (TPM_SUCCESS != r) {
-		VB2_DEBUG("TPM: read secdatak returned 0x%x\n", r);
+		VB2_DEBUG("TPM: read secdata_kernel returned 0x%x\n", r);
 		return r;
 	}
-	PRINT_BYTES("TPM: read secdatak", rsk);
+	PRINT_BYTES("TPM: read secdata_kernel", rsk);
 
 	if (rsk->struct_version < ROLLBACK_SPACE_FIRMWARE_VERSION)
 		return TPM_E_STRUCT_VERSION;
@@ -158,7 +158,7 @@ uint32_t ReadSpaceKernel(RollbackSpaceKernel *rsk)
 		return TPM_E_CORRUPTED_STATE;
 
 	if (rsk->crc8 != vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8))) {
-		VB2_DEBUG("TPM: bad secdatak CRC\n");
+		VB2_DEBUG("TPM: bad secdata_kernel CRC\n");
 		return TPM_E_CORRUPTED_STATE;
 	}
 
@@ -171,10 +171,10 @@ uint32_t WriteSpaceKernel(RollbackSpaceKernel *rsk)
 
 	rsk->crc8 = vb2_crc8(rsk, offsetof(RollbackSpaceKernel, crc8));
 
-	PRINT_BYTES("TPM: write secdatak", rsk);
+	PRINT_BYTES("TPM: write secdata_kernel", rsk);
 	r = SafeWrite(KERNEL_NV_INDEX, rsk, sizeof(RollbackSpaceKernel));
 	if (TPM_SUCCESS != r) {
-		VB2_DEBUG("TPM: write secdatak failure\n");
+		VB2_DEBUG("TPM: write secdata_kernel failure\n");
 		return r;
 	}
 
@@ -214,7 +214,7 @@ uint32_t RollbackKernelLock(int recovery_mode)
 	if (TPM_SUCCESS == r)
 		kernel_locked = 1;
 
-	VB2_DEBUG("TPM: lock secdatak returned 0x%x\n", r);
+	VB2_DEBUG("TPM: lock secdata_kernel returned 0x%x\n", r);
 	return r;
 }
 

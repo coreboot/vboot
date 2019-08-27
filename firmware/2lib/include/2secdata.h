@@ -15,31 +15,30 @@ typedef uint32_t vb2_error_t;
 /*****************************************************************************/
 /* Firmware version space */
 
-#define VB2_SECDATA_VERSION 2
+#define VB2_SECDATA_FIRMWARE_VERSION 2
 
 /* Flags for firmware space */
-enum vb2_secdata_flags {
+enum vb2_secdata_firmware_flags {
 	/*
 	 * Last boot was developer mode.  TPM ownership is cleared when
 	 * transitioning to/from developer mode.  Set/cleared by
 	 * vb2_check_dev_switch().
 	 */
-	VB2_SECDATA_FLAG_LAST_BOOT_DEVELOPER = (1 << 0),
+	VB2_SECDATA_FIRMWARE_FLAG_LAST_BOOT_DEVELOPER = (1 << 0),
 
 	/*
 	 * Virtual developer mode switch is on.  Set/cleared by the
 	 * keyboard-controlled dev screens in recovery mode.  Cleared by
 	 * vb2_check_dev_switch().
 	 */
-	VB2_SECDATA_FLAG_DEV_MODE = (1 << 1),
+	VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE = (1 << 1),
 };
 
-/* Secure data area (firmware space) */
-struct vb2_secdata {
+struct vb2_secdata_firmware {
 	/* Struct version, for backwards compatibility */
 	uint8_t struct_version;
 
-	/* Flags; see vb2_secdata_flags */
+	/* Flags; see vb2_secdata_firmware_flags */
 	uint8_t flags;
 
 	/* Firmware versions */
@@ -52,23 +51,23 @@ struct vb2_secdata {
 	uint8_t crc8;
 } __attribute__((packed));
 
-/* Which param to get/set for vb2_secdata_get() / vb2_secdata_set() */
-enum vb2_secdata_param {
-	/* Flags; see vb2_secdata_flags */
-	VB2_SECDATA_FLAGS = 0,
+/* Which param to get/set for vb2_secdata_firmware_get/set() */
+enum vb2_secdata_firmware_param {
+	/* Flags; see vb2_secdata_firmware_flags */
+	VB2_SECDATA_FIRMWARE_FLAGS = 0,
 
 	/* Firmware versions */
-	VB2_SECDATA_VERSIONS,
+	VB2_SECDATA_FIRMWARE_VERSIONS,
 };
 
 /*****************************************************************************/
 /* Kernel version space */
 
 /* Kernel space - KERNEL_NV_INDEX, locked with physical presence. */
-#define VB2_SECDATAK_VERSION 2
-#define VB2_SECDATAK_UID 0x4752574c  /* 'GRWL' */
+#define VB2_SECDATA_KERNEL_VERSION 2
+#define VB2_SECDATA_KERNEL_UID 0x4752574c  /* 'GRWL' */
 
-struct vb2_secdatak {
+struct vb2_secdata_kernel {
 	/* Struct version, for backwards compatibility */
 	uint8_t struct_version;
 
@@ -85,84 +84,88 @@ struct vb2_secdatak {
 	uint8_t crc8;
 } __attribute__((packed));
 
-/* Which param to get/set for vb2_secdatak_get() / vb2_secdatak_set() */
-enum vb2_secdatak_param {
+/* Which param to get/set for vb2_secdata_kernel_get/set() */
+enum vb2_secdata_kernel_param {
 	/* Kernel versions */
-	VB2_SECDATAK_VERSIONS = 0,
+	VB2_SECDATA_KERNEL_VERSIONS = 0,
 };
 
 /*****************************************************************************/
-/* Firmware version space functions */
+/* Firmware secure storage space functions */
 
 /**
- * Initialize the secure storage context and verify its CRC.
+ * Initialize firmware secure storage context and verify its CRC.
  *
- * This must be called before vb2_secdata_get() or vb2_secdata_set().
+ * This must be called before vb2_secdata_firmware_get/set().
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdata_init(struct vb2_context *ctx);
+vb2_error_t vb2_secdata_firmware_init(struct vb2_context *ctx);
 
 /**
- * Read a secure storage value.
+ * Read a firmware secure storage value.
  *
  * @param ctx		Context pointer
  * @param param		Parameter to read
  * @param dest		Destination for value
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdata_get(struct vb2_context *ctx,
-			    enum vb2_secdata_param param, uint32_t *dest);
+vb2_error_t vb2_secdata_firmware_get(struct vb2_context *ctx,
+				     enum vb2_secdata_firmware_param param,
+				     uint32_t *dest);
 
 /**
- * Write a secure storage value.
+ * Write a firmware secure storage value.
  *
  * @param ctx		Context pointer
  * @param param		Parameter to write
  * @param value		New value
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdata_set(struct vb2_context *ctx,
-			    enum vb2_secdata_param param, uint32_t value);
+vb2_error_t vb2_secdata_firmware_set(struct vb2_context *ctx,
+				     enum vb2_secdata_firmware_param param,
+				     uint32_t value);
 
 /*****************************************************************************/
-/* Kernel version space functions
+/* Kernel secure storage space functions
  *
  * These are separate functions so that they don't bloat the size of the early
  * boot code which uses the firmware version space functions.
  */
 
 /**
- * Initialize the secure storage context and verify its CRC.
+ * Initialize kernel secure storage context and verify its CRC.
  *
- * This must be called before vb2_secdatak_get() or vb2_secdatak_set().
+ * This must be called before vb2_secdata_kernel_get/set().
  *
  * @param ctx		Context pointer
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdatak_init(struct vb2_context *ctx);
+vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx);
 
 /**
- * Read a secure storage value.
+ * Read a kernel secure storage value.
  *
  * @param ctx		Context pointer
  * @param param		Parameter to read
  * @param dest		Destination for value
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdatak_get(struct vb2_context *ctx,
-			     enum vb2_secdatak_param param, uint32_t *dest);
+vb2_error_t vb2_secdata_kernel_get(struct vb2_context *ctx,
+				   enum vb2_secdata_kernel_param param,
+				   uint32_t *dest);
 
 /**
- * Write a secure storage value.
+ * Write a kernel secure storage value.
  *
  * @param ctx		Context pointer
  * @param param		Parameter to write
  * @param value		New value
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdatak_set(struct vb2_context *ctx,
-			     enum vb2_secdatak_param param, uint32_t value);
+vb2_error_t vb2_secdata_kernel_set(struct vb2_context *ctx,
+				   enum vb2_secdata_kernel_param param,
+				   uint32_t value);
 
 #endif  /* VBOOT_REFERENCE_2SECDATA_H_ */

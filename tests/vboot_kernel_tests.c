@@ -184,7 +184,7 @@ static void ResetMocks(void)
 	struct vb2_shared_data *sd = vb2_get_sd(&ctx);
 	sd->vbsd = shared;
 
-	// TODO: more workbuf fields - flags, secdata, secdatak
+	// TODO: more workbuf fields - flags, secdata_firmware, secdata_kernel
 }
 
 /* Mocks */
