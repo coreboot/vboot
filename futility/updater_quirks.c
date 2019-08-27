@@ -338,7 +338,7 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 		 " -t raw -b 0x1bf000", temp_image, FMAP_RW_LEGACY,
 		 smm_store_name, temp_image, FMAP_RW_LEGACY,
 		 smm_store_name, old_store);
-	host_shell(command);
+	free(host_shell(command));
 	free(command);
 
 	return reload_firmware_image(temp_image, &cfg->image);
