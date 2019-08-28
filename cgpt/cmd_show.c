@@ -70,6 +70,10 @@ int cmd_show(int argc, char *argv[]) {
     case 'i':
       params.partition = (uint32_t)strtoul(optarg, &e, 0);
       errorcnt += check_int_parse(c, e);
+      if (params.partition <= 0) {
+        Error("-i requires a number between 1 and 128 (inclusive)\n");
+        errorcnt++;
+      }
       break;
     case 'b':
     case 's':
@@ -82,6 +86,12 @@ int cmd_show(int argc, char *argv[]) {
     case 'R':
     case 'B':
     case 'A':
+      if (params.single_item) {
+        Error("-%c already specified; rejecting additional -%c\n",
+              params.single_item, c);
+        Error("Only a single item may be displayed at a time\n");
+        errorcnt++;
+      }
       params.single_item = c;
       break;
 
@@ -104,6 +114,10 @@ int cmd_show(int argc, char *argv[]) {
       errorcnt++;
       break;
     }
+  }
+  if (!params.partition && params.single_item) {
+    Error("-i required when displaying a single item\n");
+    errorcnt++;
   }
   if (errorcnt)
   {
