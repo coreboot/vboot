@@ -16,7 +16,7 @@ static void Usage(void)
   printf("\nUsage: %s legacy [OPTIONS] DRIVE\n\n"
          "Switch GPT header signature to \"CHROMEOS\".\n\n"
          "Options:\n"
-         "  -D NUM       Size (in bytes) of the disk where partitions reside\n"
+         "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
          "                 default 0, meaning partitions and GPT structs are\n"
          "                 both on DRIVE\n"
          "  -e           Switch GPT header signature back to \"EFI PART\"\n"

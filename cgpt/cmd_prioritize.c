@@ -19,7 +19,7 @@ static void Usage(void)
   printf("\nUsage: %s prioritize [OPTIONS] DRIVE\n\n"
          "Reorder the priority of all active ChromeOS Kernel partitions.\n\n"
          "Options:\n"
-         "  -D NUM       Size (in bytes) of the disk where partitions reside\n"
+         "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
          "                 default 0, meaning partitions and GPT structs are\n"
          "                 both on DRIVE\n"
          "  -P NUM       Highest priority to use in the new ordering. The\n"

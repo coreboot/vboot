@@ -16,7 +16,7 @@ static void Usage(void)
   printf("\nUsage: %s boot [OPTIONS] DRIVE\n\n"
          "Edit the PMBR sector for legacy BIOSes\n\n"
          "Options:\n"
-         "  -D NUM       Size (in bytes) of the disk where partitions reside\n"
+         "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
          "                 default 0, meaning partitions and GPT structs are\n"
          "                 both on DRIVE\n"
          "  -i NUM       Set bootable partition\n"

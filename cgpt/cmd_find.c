@@ -17,7 +17,7 @@ static void Usage(void)
          "Find a partition by its UUID or label. With no specified DRIVE\n"
          "it scans all physical drives.\n\n"
          "Options:\n"
-         "  -D NUM       Size (in bytes) of the disk where partitions reside\n"
+         "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
          "                 default 0, meaning partitions and GPT structs are\n"
          "                 both on DRIVE\n"
          "  -t GUID      Search for Partition Type GUID\n"
