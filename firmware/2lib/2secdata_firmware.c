@@ -32,7 +32,7 @@ vb2_error_t vb2api_secdata_firmware_check(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2api_secdata_firmware_create(struct vb2_context *ctx)
+uint32_t vb2api_secdata_firmware_create(struct vb2_context *ctx)
 {
 	struct vb2_secdata_firmware *sec =
 		(struct vb2_secdata_firmware *)ctx->secdata_firmware;
@@ -49,7 +49,7 @@ vb2_error_t vb2api_secdata_firmware_create(struct vb2_context *ctx)
 	/* Mark as changed */
 	ctx->flags |= VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
 
-	return VB2_SUCCESS;
+	return sizeof(*sec);
 }
 
 vb2_error_t vb2_secdata_firmware_init(struct vb2_context *ctx)
@@ -64,7 +64,7 @@ vb2_error_t vb2_secdata_firmware_init(struct vb2_context *ctx)
 	/* Set status flag */
 	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
 
-	/* Read this now to make sure crossystem has it even in rec mode. */
+	/* Read this now to make sure crossystem has it even in rec mode */
 	rv = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
 				      &sd->fw_version_secdata);
 	if (rv)
@@ -109,7 +109,7 @@ vb2_error_t vb2_secdata_firmware_set(struct vb2_context *ctx,
 	if (!(vb2_get_sd(ctx)->status & VB2_SD_STATUS_SECDATA_FIRMWARE_INIT))
 		return VB2_ERROR_SECDATA_FIRMWARE_SET_UNINITIALIZED;
 
-	/* If not changing the value, don't regenerate the CRC. */
+	/* If not changing the value, don't regenerate the CRC */
 	if (vb2_secdata_firmware_get(ctx, param, &now) == VB2_SUCCESS &&
 	    now == value)
 		return VB2_SUCCESS;

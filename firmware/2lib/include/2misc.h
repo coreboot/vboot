@@ -117,7 +117,7 @@ void vb2_check_recovery(struct vb2_context *ctx);
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2_fw_parse_gbb(struct vb2_context *ctx);
+vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx);
 
 /**
  * Check developer switch position.

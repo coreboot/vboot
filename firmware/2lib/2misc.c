@@ -209,7 +209,7 @@ void vb2_check_recovery(struct vb2_context *ctx)
 	}
 }
 
-vb2_error_t vb2_fw_parse_gbb(struct vb2_context *ctx)
+vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb;
@@ -230,6 +230,10 @@ vb2_error_t vb2_fw_parse_gbb(struct vb2_context *ctx)
 	/* Keep on the work buffer permanently */
 	sd->gbb_offset = vb2_offset_of(sd, gbb);
 	ctx->workbuf_used = vb2_offset_of(ctx->workbuf, wb.buf);
+
+	/* Set any context flags based on GBB flags */
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_FWMP)
+		ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
 
 	return VB2_SUCCESS;
 }

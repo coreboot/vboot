@@ -79,6 +79,9 @@ enum vb2_shared_data_status {
 
 	/* Secure data kernel version space initialized */
 	VB2_SD_STATUS_SECDATA_KERNEL_INIT = (1 << 4),
+
+	/* FWMP secure data initialized */
+	VB2_SD_STATUS_SECDATA_FWMP_INIT = (1 << 5),
 };
 
 /* "V2SD" = vb2_shared_data.magic */

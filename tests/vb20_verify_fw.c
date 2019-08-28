@@ -164,13 +164,7 @@ int main(int argc, char *argv[])
 	ctx.workbuf_size = sizeof(workbuf);
 
 	/* Initialize secure context */
-	rv = vb2api_secdata_firmware_create(&ctx);
-	if (rv) {
-		fprintf(stderr,
-			"error: vb2api_secdata_firmware_create() failed (%d)\n",
-			rv);
-		return 1;
-	}
+	vb2api_secdata_firmware_create(&ctx);
 
 	// TODO: optional args to set contents for nvdata, secdata?
 

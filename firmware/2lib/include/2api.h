@@ -185,6 +185,15 @@ enum vb2_context_flags {
 	 * support.
 	 */
 	VB2_CONTEXT_DISPLAY_INIT = (1 << 20),
+
+	/*
+	 * Caller may set this before running vb2api_kernel_phase1.  It means
+	 * that there is no FWMP on this system, and thus default values should
+	 * be used instead.
+	 *
+	 * Caller should *not* set this when FWMP is available but invalid.
+	 */
+	VB2_CONTEXT_NO_SECDATA_FWMP = (1 << 21),
 };
 
 /*
@@ -213,18 +222,19 @@ struct vb2_context {
 
 	/*
 	 * Non-volatile data.  Caller must fill this from some non-volatile
-	 * location.  If the VB2_CONTEXT_NVDATA_CHANGED flag is set when a
-	 * vb2api function returns, caller must save the data back to the
-	 * non-volatile location and then clear the flag.
+	 * location before calling vb2api_fw_phase1.  If the
+	 * VB2_CONTEXT_NVDATA_CHANGED flag is set when a vb2api function
+	 * returns, caller must save the data back to the non-volatile location
+	 * and then clear the flag.
 	 */
 	uint8_t nvdata[VB2_NVDATA_SIZE_V2];
 
 	/*
 	 * Secure data for firmware verification stage.  Caller must fill this
-	 * from some secure non-volatile location.  If the
-	 * VB2_CONTEXT_SECDATA_CHANGED flag is set when a function returns,
-	 * caller must save the data back to the secure non-volatile location
-	 * and then clear the flag.
+	 * from some secure non-volatile location before calling
+	 * vb2api_fw_phase1.  If the VB2_CONTEXT_SECDATA_CHANGED flag is set
+	 * when a function returns, caller must save the data back to the
+	 * secure non-volatile location and then clear the flag.
 	 */
 	uint8_t secdata_firmware[VB2_SECDATA_FIRMWARE_SIZE];
 
@@ -254,12 +264,24 @@ struct vb2_context {
 
 	/*
 	 * Secure data for kernel verification stage.  Caller must fill this
-	 * from some secure non-volatile location.  If the
-	 * VB2_CONTEXT_SECDATA_KERNEL_CHANGED flag is set when a function
+	 * from some secure non-volatile location before calling
+	 * vb2api_kernel_phase1.  If the VB2_CONTEXT_SECDATA_KERNEL_CHANGED
+	 * flag is set when a function returns, caller must save the data back
+	 * to the secure non-volatile location and then clear the flag.
+	 */
+	uint8_t secdata_kernel[VB2_SECDATA_KERNEL_SIZE];
+
+	/*
+	 * Firmware management parameters (FWMP) secure data.  Caller must fill
+	 * this from some secure non-volatile location before calling
+	 * vb2api_kernel_phase1.  Since FWMP is a variable-size space, caller
+	 * should initially fill in VB2_SECDATA_FWMP_MIN_SIZE bytes, and call
+	 * vb2_secdata_fwmp_check() to see whether more should be read.  If the
+	 * VB2_CONTEXT_SECDATA_FWMP_CHANGED flag is set when a function
 	 * returns, caller must save the data back to the secure non-volatile
 	 * location and then clear the flag.
 	 */
-	uint8_t secdata_kernel[VB2_SECDATA_KERNEL_SIZE];
+	uint8_t secdata_fwmp[VB2_SECDATA_FWMP_MAX_SIZE];
 };
 
 /* Resource index for vb2ex_read_resource() */
@@ -404,7 +426,7 @@ enum vb2_pcr_digest {
  */
 
 /**
- * Check the validity of the firmware secure storage context.
+ * Check the validity of firmware secure storage context.
  *
  * Checks version and CRC.
  *
@@ -414,7 +436,7 @@ enum vb2_pcr_digest {
 vb2_error_t vb2api_secdata_firmware_check(struct vb2_context *ctx);
 
 /**
- * Create fresh data in the firmware secure storage context.
+ * Create fresh data in firmware secure storage context.
  *
  * Use this only when initializing the secure storage context on a new machine
  * the first time it boots.  Do NOT simply use this if
@@ -422,12 +444,12 @@ vb2_error_t vb2api_secdata_firmware_check(struct vb2_context *ctx);
  * that could allow the secure data to be rolled back to an insecure state.
  *
  * @param ctx		Context pointer
- * @return VB2_SUCCESS, or non-zero error code if error.
+ * @return size of created firmware secure storage data in bytes
  */
-vb2_error_t vb2api_secdata_firmware_create(struct vb2_context *ctx);
+uint32_t vb2api_secdata_firmware_create(struct vb2_context *ctx);
 
 /**
- * Check the validity of the kernel secure storage context.
+ * Check the validity of kernel secure storage context.
  *
  * Checks version, UID, and CRC.
  *
@@ -437,7 +459,7 @@ vb2_error_t vb2api_secdata_firmware_create(struct vb2_context *ctx);
 vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx);
 
 /**
- * Create fresh data in the kernel secure storage context.
+ * Create fresh data in kernel secure storage context.
  *
  * Use this only when initializing the secure storage context on a new machine
  * the first time it boots.  Do NOT simply use this if
@@ -445,9 +467,23 @@ vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx);
  * could allow the secure data to be rolled back to an insecure state.
  *
  * @param ctx		Context pointer
+ * @return size of created kernel secure storage data in bytes
+ */
+uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx);
+
+/**
+ * Check the validity of firmware management parameters (FWMP) space.
+ *
+ * Checks size, version, and CRC.  If the struct size is larger than the size
+ * passed in, the size pointer is set to the expected full size of the struct,
+ * and VB2_ERROR_SECDATA_FWMP_INCOMPLETE is returned.  The caller should
+ * re-read the returned number of bytes, and call this function again.
+ *
+ * @param ctx		Context pointer
+ * @param size		Amount of struct which has been read
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2api_secdata_kernel_create(struct vb2_context *ctx);
+vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size);
 
 /**
  * Report firmware failure to vboot.

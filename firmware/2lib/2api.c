@@ -63,7 +63,7 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 		vb2_fail(ctx, VB2_RECOVERY_SECDATA_FIRMWARE_INIT, rv);
 
 	/* Load and parse the GBB header */
-	rv = vb2_fw_parse_gbb(ctx);
+	rv = vb2_fw_init_gbb(ctx);
 	if (rv)
 		vb2_fail(ctx, VB2_RECOVERY_GBB_HEADER, rv);
 

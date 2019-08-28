@@ -24,6 +24,8 @@
 /* Size of secure data spaces used by vboot */
 #define VB2_SECDATA_FIRMWARE_SIZE 10
 #define VB2_SECDATA_KERNEL_SIZE 13
+#define VB2_SECDATA_FWMP_MIN_SIZE 40
+#define VB2_SECDATA_FWMP_MAX_SIZE 64
 
 /* TODO(chromium:972956): Remove once coreboot is using updated names */
 #define VB2_SECDATA_SIZE 10

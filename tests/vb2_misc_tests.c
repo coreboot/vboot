@@ -219,13 +219,13 @@ static void gbb_tests(void)
 	gbbsrc.header_size--;
 	TEST_EQ(vb2_read_gbb_header(&ctx, &gbbdest),
 		VB2_ERROR_GBB_HEADER_SIZE, "read gbb header size");
-	TEST_EQ(vb2_fw_parse_gbb(&ctx),
-		VB2_ERROR_GBB_HEADER_SIZE, "parse gbb failure");
+	TEST_EQ(vb2_fw_init_gbb(&ctx),
+		VB2_ERROR_GBB_HEADER_SIZE, "init gbb failure");
 	gbbsrc.header_size++;
 
-	/* Parse GBB */
+	/* Init GBB */
 	int used_before = ctx.workbuf_used;
-	TEST_SUCC(vb2_fw_parse_gbb(&ctx), "parse gbb");
+	TEST_SUCC(vb2_fw_init_gbb(&ctx), "init gbb");
 	/* Manually calculate the location of GBB since we have mocked out the
 	   original definition of vb2_get_gbb. */
 	struct vb2_gbb_header *current_gbb = vb2_member_of(sd, sd->gbb_offset);
@@ -237,8 +237,19 @@ static void gbb_tests(void)
 	/* Workbuf failure */
 	reset_common_data();
 	ctx.workbuf_used = ctx.workbuf_size - 4;
-	TEST_EQ(vb2_fw_parse_gbb(&ctx),
-		VB2_ERROR_GBB_WORKBUF, "parse gbb no workbuf");
+	TEST_EQ(vb2_fw_init_gbb(&ctx),
+		VB2_ERROR_GBB_WORKBUF, "init gbb no workbuf");
+
+	/* Check for setting NO_SECDATA_FWMP context flag */
+	reset_common_data();
+	TEST_SUCC(vb2_fw_init_gbb(&ctx), "init gbb");
+	TEST_EQ(ctx.flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"without DISABLE_FWMP: NO_SECDATA_FWMP shouldn't be set");
+	reset_common_data();
+	gbbsrc.flags |= VB2_GBB_FLAG_DISABLE_FWMP;
+	TEST_SUCC(vb2_fw_init_gbb(&ctx), "init gbb");
+	TEST_NEQ(ctx.flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		 "with DISABLE_FWMP: NO_SECDATA_FWMP should be set");
 }
 
 static void fail_tests(void)

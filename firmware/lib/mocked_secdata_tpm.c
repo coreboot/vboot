@@ -33,6 +33,6 @@ uint32_t RollbackKernelLock(int recovery_mode)
 
 uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
 {
-	memset(fwmp, 0, sizeof(*fwmp));
+	ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
 	return TPM_SUCCESS;
 }

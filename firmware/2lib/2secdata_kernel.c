@@ -38,7 +38,7 @@ vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
+uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
 {
 	struct vb2_secdata_kernel *sec =
 		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
@@ -58,7 +58,7 @@ vb2_error_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
 	/* Mark as changed */
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 
-	return VB2_SUCCESS;
+	return sizeof(*sec);
 }
 
 vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx)
@@ -109,7 +109,7 @@ vb2_error_t vb2_secdata_kernel_set(struct vb2_context *ctx,
 	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT))
 		return VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED;
 
-	/* If not changing the value, don't regenerate the CRC. */
+	/* If not changing the value, don't regenerate the CRC */
 	if (vb2_secdata_kernel_get(ctx, param, &now) == VB2_SUCCESS &&
 	    now == value)
 		return VB2_SUCCESS;

@@ -36,7 +36,7 @@ static const uint8_t mock_hwid_digest[VB2_GBB_HWID_DIGEST_SIZE] = {
 
 /* Mocked function data */
 static int force_dev_mode;
-static vb2_error_t retval_vb2_fw_parse_gbb;
+static vb2_error_t retval_vb2_fw_init_gbb;
 static vb2_error_t retval_vb2_check_dev_switch;
 static vb2_error_t retval_vb2_check_tpm_clear;
 static vb2_error_t retval_vb2_select_fw_slot;
@@ -63,7 +63,7 @@ static void reset_common_data(enum reset_type t)
 	vb2_secdata_firmware_init(&ctx);
 
 	force_dev_mode = 0;
-	retval_vb2_fw_parse_gbb = VB2_SUCCESS;
+	retval_vb2_fw_init_gbb = VB2_SUCCESS;
 	retval_vb2_check_dev_switch = VB2_SUCCESS;
 	retval_vb2_check_tpm_clear = VB2_SUCCESS;
 	retval_vb2_select_fw_slot = VB2_SUCCESS;
@@ -78,9 +78,9 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-vb2_error_t vb2_fw_parse_gbb(struct vb2_context *c)
+vb2_error_t vb2_fw_init_gbb(struct vb2_context *c)
 {
-	return retval_vb2_fw_parse_gbb;
+	return retval_vb2_fw_init_gbb;
 }
 
 vb2_error_t vb2_check_dev_switch(struct vb2_context *c)
@@ -111,7 +111,7 @@ static void misc_tests(void)
 	TEST_EQ(vb2api_secdata_firmware_check(&ctx),
 		VB2_ERROR_SECDATA_FIRMWARE_CRC,
 		"secdata_firmware check");
-	TEST_SUCC(vb2api_secdata_firmware_create(&ctx),
+	TEST_EQ(vb2api_secdata_firmware_create(&ctx), VB2_SECDATA_FIRMWARE_SIZE,
 		  "secdata_firmware create");
 	TEST_SUCC(vb2api_secdata_firmware_check(&ctx),
 		  "secdata_firmware check 2");
@@ -138,7 +138,7 @@ static void phase1_tests(void)
 		0, "  display available SD flag");
 
 	reset_common_data(FOR_MISC);
-	retval_vb2_fw_parse_gbb = VB2_ERROR_GBB_MAGIC;
+	retval_vb2_fw_init_gbb = VB2_ERROR_GBB_MAGIC;
 	TEST_EQ(vb2api_fw_phase1(&ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 gbb");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_GBB_HEADER,
