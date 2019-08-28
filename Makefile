@@ -145,24 +145,23 @@ COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wimplicit-fallthrough ${DEBUG_FLAGS}
 
 # Note: FIRMWARE_ARCH is defined by the Chromium OS ebuild.
-ifeq (${FIRMWARE_ARCH}, arm)
+ifeq (${FIRMWARE_ARCH},arm)
 CC ?= armv7a-cros-linux-gnueabihf-gcc
 CFLAGS ?= -march=armv5 -fno-common -ffixed-r8 -mfloat-abi=hard -marm
 	-mabi=aapcs-linux -mno-thumb-interwork ${FIRMWARE_FLAGS} ${COMMON_FLAGS}
-else ifeq (${FIRMWARE_ARCH}, x86)
+else ifeq (${FIRMWARE_ARCH},x86)
 CC ?= i686-pc-linux-gnu-gcc
 # Drop -march=i386 to permit use of SSE instructions
 CFLAGS ?= -fvisibility=hidden -fomit-frame-pointer \
 	-fno-toplevel-reorder -fno-dwarf2-cfi-asm -mpreferred-stack-boundary=2 \
 	${FIRMWARE_FLAGS} ${COMMON_FLAGS}
-else ifeq (${FIRMWARE_ARCH}, x86_64)
+else ifeq (${FIRMWARE_ARCH},x86_64)
 CFLAGS ?= ${FIRMWARE_FLAGS} ${COMMON_FLAGS} -fvisibility=hidden \
 	-fomit-frame-pointer
 else
 # FIRMWARE_ARCH not defined; assuming local compile.
 CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT ${COMMON_FLAGS}
-CHROMEOS_ENVIRONMENT = 1
 endif
 
 # Needs -Wl because LD is actually set to CC by default.
@@ -189,7 +188,7 @@ CFLAGS += -DTPM2_MODE
 endif
 
 # enable all features during local compile (permits testing)
-ifeq (${CHROMEOS_ENVIRONMENT},1)
+ifeq (${FIRMWARE_ARCH},)
 DIAGNOSTIC_UI := 1
 endif
 
@@ -330,25 +329,19 @@ FWLIB20 = ${BUILD}/vboot_fw20.a
 # Vboot 2.1 (not yet ready - see firmware/README)
 FWLIB21 = ${BUILD}/vboot_fw21.a
 
-# Firmware library sources needed by VbInit() call
-VBINIT_SRCS = \
-	firmware/lib/vboot_common_init.c \
-
-# Additional firmware library sources needed by VbSelectFirmware() call
-VBSF_SRCS = \
-	firmware/lib/vboot_common.c
-
 # Additional firmware library sources needed by VbSelectAndLoadKernel() call
-VBSLK_SRCS = \
+FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/ec_sync.c \
 	firmware/lib/ec_sync_all.c \
+	firmware/lib/ec_sync.c \
 	firmware/lib/gpt_misc.c \
 	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_audio.c \
+	firmware/lib/vboot_common.c \
+	firmware/lib/vboot_common_init.c \
 	firmware/lib/vboot_display.c \
 	firmware/lib/vboot_kernel.c \
 	firmware/lib/vboot_ui.c \
@@ -393,6 +386,7 @@ ifeq (${TPM2_MODE},)
 TLCL_SRCS = \
 	firmware/lib/tpm_lite/tlcl.c
 else
+# TODO(apronin): tests for TPM2 case?
 TLCL_SRCS = \
 	firmware/lib/tpm2_lite/tlcl.c \
 	firmware/lib/tpm2_lite/marshaling.c
@@ -400,18 +394,18 @@ endif
 
 # Support real TPM unless BIOS sets MOCK_TPM
 ifeq (${MOCK_TPM},)
-VBINIT_SRCS += \
+FWLIB_SRCS += \
 	firmware/lib/rollback_index.c \
 	${TLCL_SRCS}
 else
-VBINIT_SRCS += \
+FWLIB_SRCS += \
 	firmware/lib/mocked_rollback_index.c \
 	firmware/lib/tpm_lite/mocked_tlcl.c
 endif
 
 ifneq (${VENDOR_DATA_LENGTH},)
 CFLAGS += -DVENDOR_DATA_LENGTH=${VENDOR_DATA_LENGTH}
-else ifeq (${CHROMEOS_ENVIRONMENT},1)
+else ifeq (${FIRMWARE_ARCH},)
 CFLAGS += -DVENDOR_DATA_LENGTH=4
 else
 CFLAGS += -DVENDOR_DATA_LENGTH=0
@@ -420,26 +414,16 @@ endif
 ifeq (${FIRMWARE_ARCH},)
 # Include BIOS stubs in the firmware library when compiling for host
 # TODO: split out other stub funcs too
-VBINIT_SRCS += \
+FWLIB_SRCS += \
 	firmware/stub/tpm_lite_stub.c \
-	firmware/stub/vboot_api_stub_init.c
-
-VBSLK_SRCS += \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
+	firmware/stub/vboot_api_stub_init.c \
 	firmware/stub/vboot_api_stub_stream.c
 
 FWLIB2X_SRCS += \
 	firmware/2lib/2stub.c
-
 endif
-
-VBSF_SRCS += ${VBINIT_SRCS}
-FWLIB_SRCS += ${VBSF_SRCS} ${VBSLK_SRCS}
-
-VBINIT_OBJS = ${VBINIT_SRCS:%.c=${BUILD}/%.o}
-VBSF_OBJS = ${VBSF_SRCS:%.c=${BUILD}/%.o}
-ALL_OBJS +=  ${VBINIT_OBJS} ${VBSF_OBJS}
 
 FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 FWLIB2X_OBJS = ${FWLIB2X_SRCS:%.c=${BUILD}/%.o}
@@ -451,14 +435,14 @@ ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS}
 UTILLIB = ${BUILD}/libvboot_util.a
 
 UTILLIB_SRCS = \
-	cgpt/cgpt_create.c \
 	cgpt/cgpt_add.c \
 	cgpt/cgpt_boot.c \
-	cgpt/cgpt_edit.c \
-	cgpt/cgpt_show.c \
-	cgpt/cgpt_repair.c \
-	cgpt/cgpt_prioritize.c \
 	cgpt/cgpt_common.c \
+	cgpt/cgpt_create.c \
+	cgpt/cgpt_edit.c \
+	cgpt/cgpt_prioritize.c \
+	cgpt/cgpt_repair.c \
+	cgpt/cgpt_show.c \
 	futility/dump_kernel_config_lib.c \
 	host/arch/${ARCH}/lib/crossystem_arch.c \
 	host/lib/crossystem.c \
@@ -469,10 +453,10 @@ UTILLIB_SRCS = \
 	host/lib/host_key2.c \
 	host/lib/host_keyblock.c \
 	host/lib/host_misc.c \
-	host/lib/util_misc.c \
 	host/lib/host_signature.c \
 	host/lib/host_signature2.c \
 	host/lib/signature_digest.c \
+	host/lib/util_misc.c \
 	host/lib21/host_fw_preamble.c \
 	host/lib21/host_key.c \
 	host/lib21/host_keyblock.c \
@@ -508,7 +492,6 @@ HOSTLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
 	firmware/lib/gpt_misc.c \
-	${TLCL_SRCS} \
 	firmware/lib/utility_string.c \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/vboot_api_stub.c \
@@ -519,7 +502,8 @@ HOSTLIB_SRCS = \
 	host/lib/crossystem.c \
 	host/lib/extract_vmlinuz.c \
 	host/lib/fmap.c \
-	host/lib/host_misc.c
+	host/lib/host_misc.c \
+	${TLCL_SRCS}
 
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${HOSTLIB_OBJS}
@@ -695,12 +679,12 @@ TEST_NAMES = \
 	tests/sha_benchmark \
 	tests/utility_string_tests \
 	tests/vboot_api_devmode_tests \
-	tests/vboot_api_kernel_tests \
 	tests/vboot_api_kernel2_tests \
 	tests/vboot_api_kernel4_tests \
 	tests/vboot_api_kernel5_tests \
-	tests/vboot_detach_menu_tests \
+	tests/vboot_api_kernel_tests \
 	tests/vboot_common_tests \
+	tests/vboot_detach_menu_tests \
 	tests/vboot_display_tests \
 	tests/vboot_kernel_tests \
 	tests/verify_kernel
@@ -1130,18 +1114,6 @@ ${BUILD}/%.o: ${BUILD}/%.c
 	@${PRINTF} "    CC            $(subst ${BUILD}/,,$@)\n"
 	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
 
-# Rules to recompile a single source file for library and test
-# TODO: is there a tidier way to do this?
-${BUILD}/%_for_lib.o: CFLAGS += -DFOR_LIBRARY
-${BUILD}/%_for_lib.o: %.c
-	@${PRINTF} "    CC-for-lib    $(subst ${BUILD}/,,$@)\n"
-	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
-
-${BUILD}/%_for_test.o: CFLAGS += -DFOR_TEST
-${BUILD}/%_for_test.o: %.c
-	@${PRINTF} "    CC-for-test   $(subst ${BUILD}/,,$@)\n"
-	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
-
 # TODO: C++ files don't belong in vboot reference at all.  Convert to C.
 ${BUILD}/%.o: %.cc
 	@${PRINTF} "    CXX           $(subst ${BUILD}/,,$@)\n"
@@ -1181,15 +1153,6 @@ ${TEST21_BINS}: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/%: CFLAGS += -Xlinker --allow-multiple-definition
 ${BUILD}/tests/%: LDLIBS += -lrt -luuid
 ${BUILD}/tests/%: LIBS += ${TESTLIB}
-
-ifeq (${TPM2_MODE},)
-# TODO(apronin): tests for TPM2 case?
-${BUILD}/tests/rollback_index2_tests: OBJS += \
-	${BUILD}/firmware/lib/rollback_index_for_test.o
-${BUILD}/tests/rollback_index2_tests: \
-	${BUILD}/firmware/lib/rollback_index_for_test.o
-TEST_OBJS += ${BUILD}/firmware/lib/rollback_index_for_test.o
-endif
 
 ifeq (${TPM2_MODE},)
 # TODO(apronin): tests for TPM2 case?
@@ -1303,12 +1266,12 @@ ifeq (${TPM2_MODE}${MOCK_TPM},)
 endif
 	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel5_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vboot_detach_menu_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_detach_menu_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel_tests
 
@@ -1357,10 +1320,6 @@ runlongtests: test_setup genkeys genfuzztestcases
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_common2_tests ${TEST_KEYS} --all
 	tests/run_preamble_tests.sh --all
 	tests/run_vbutil_tests.sh --all
-
-# TODO: There were a number of ancient tests that hadn't been run in years.
-# They were removed with https://chromium-review.googlesource.com/#/c/214610/
-# Some day it might be nice to see what they were supposed to do.
 
 .PHONY: runalltests
 runalltests: runtests runfutiltests runlongtests
