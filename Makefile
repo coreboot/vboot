@@ -705,8 +705,9 @@ TEST_NAMES = \
 	tests/vboot_kernel_tests \
 	tests/verify_kernel
 
-ifeq (${TPM2_MODE},)
+ifeq (${TPM2_MODE}${MOCK_TPM},)
 # TODO(apronin): tests for TPM2 case?
+# tlcl_tests and rollback_index2_tests only work when MOCK_TPM is disabled
 TEST_NAMES += \
 	tests/tlcl_tests \
 	tests/rollback_index2_tests
@@ -1294,7 +1295,9 @@ runtestscripts: test_setup genfuzztestcases
 .PHONY: runmisctests
 runmisctests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/ec_sync_tests
-ifeq (${TPM2_MODE},)
+ifeq (${TPM2_MODE}${MOCK_TPM},)
+# TODO(apronin): tests for TPM2 case?
+# tlcl_tests and rollback_index2_tests only work when MOCK_TPM is disabled
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 	${RUNTEST} ${BUILD_RUN}/tests/rollback_index2_tests
 endif
