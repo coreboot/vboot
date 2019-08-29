@@ -7,7 +7,7 @@
  */
 
 #include "2common.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tpm2_marshaling.h"

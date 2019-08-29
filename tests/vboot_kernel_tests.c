@@ -22,7 +22,7 @@
 #include "gpt.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "test_common.h"
 #include "vb2_common.h"
 #include "vb2_struct.h"

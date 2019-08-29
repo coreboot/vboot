@@ -2,7 +2,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Tests for rollback_index functions
+ * Tests for secdata_tpm functions
  */
 
 #include <stdint.h>
@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "2crc8.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "test_common.h"
 #include "tlcl.h"
 

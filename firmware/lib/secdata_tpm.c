@@ -2,14 +2,14 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Functions for querying, manipulating and locking rollback indices
+ * Functions for querying, manipulating and locking secure data spaces
  * stored in the TPM NVRAM.
  */
 
 #include "2sysincludes.h"
 #include "2common.h"
 #include "2crc8.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "tlcl.h"
 #include "tss_constants.h"
 #include "vboot_api.h"
@@ -17,7 +17,7 @@
 #define RETURN_ON_FAILURE(tpm_command) do { \
 		uint32_t result_; \
 		if ((result_ = (tpm_command)) != TPM_SUCCESS) { \
-			VB2_DEBUG("Rollback: %08x returned by " #tpm_command \
+			VB2_DEBUG("TPM: 0x%x returned by " #tpm_command \
 				  "\n", (int)result_); \
 			return result_; \
 		} \

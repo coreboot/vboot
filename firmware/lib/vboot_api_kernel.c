@@ -14,7 +14,7 @@
 #include "2sysincludes.h"
 #include "ec_sync.h"
 #include "load_kernel_fw.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"

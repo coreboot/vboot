@@ -2,12 +2,12 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Functions for querying, manipulating and locking rollback indices
+ * Functions for querying, manipulating and locking secure data spaces
  * stored in the TPM NVRAM.
  */
 
 #include "utility.h"
-#include "rollback_index.h"
+#include "secdata_tpm.h"
 #include "tss_constants.h"
 
 vb2_error_t SetVirtualDevMode(int val)
