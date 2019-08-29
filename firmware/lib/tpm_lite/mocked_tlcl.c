@@ -50,10 +50,21 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 	return TPM_SUCCESS;
 }
 
+uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
+			   uint32_t index, uint32_t perm, uint32_t size,
+			   const void* auth_policy, uint32_t auth_policy_size)
+{
+	return TPM_SUCCESS;
+}
+
+#ifdef CHROMEOS_ENVIRONMENT
+
 uint32_t TlclUndefineSpace(uint32_t index)
 {
 	return TPM_SUCCESS;
 }
+
+#endif  /* CHROMEOS_ENVIRONMENT */
 
 uint32_t TlclWrite(uint32_t index, const void* data, uint32_t length)
 {
