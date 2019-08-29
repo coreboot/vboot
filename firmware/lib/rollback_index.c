@@ -14,17 +14,13 @@
 #include "tss_constants.h"
 #include "vboot_api.h"
 
-#ifndef offsetof
-#define offsetof(A,B) __builtin_offsetof(A,B)
-#endif
-
-#define RETURN_ON_FAILURE(tpm_command) do {				\
-		uint32_t result_;					\
-		if ((result_ = (tpm_command)) != TPM_SUCCESS) {		\
+#define RETURN_ON_FAILURE(tpm_command) do { \
+		uint32_t result_; \
+		if ((result_ = (tpm_command)) != TPM_SUCCESS) { \
 			VB2_DEBUG("Rollback: %08x returned by " #tpm_command \
-				  "\n", (int)result_);			\
-			return result_;					\
-		}							\
+				  "\n", (int)result_); \
+			return result_; \
+		} \
 	} while (0)
 
 #define PRINT_BYTES(title, value) do { \
