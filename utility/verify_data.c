@@ -15,11 +15,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
-
 #include "2common.h"
-#include "2sha.h"
 #include "2rsa.h"
+#include "2sha.h"
+#include "2sysincludes.h"
 #include "file_keys.h"
 #include "host_common.h"
 #include "vb2_common.h"

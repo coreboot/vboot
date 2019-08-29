@@ -6,9 +6,9 @@
  */
 
 #include "2sysincludes.h"
+#include "test_common.h"
 #include "vb2_common.h"
 #include "vboot_struct.h"  /* For old struct sizes */
-#include "test_common.h"
 
 /*
  * Test struct packing for vboot_struct.h structs which are passed between

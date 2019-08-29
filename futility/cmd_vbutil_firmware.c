@@ -12,18 +12,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2rsa.h"
+#include "2sysincludes.h"
 #include "futility.h"
 #include "host_common.h"
 #include "host_key2.h"
 #include "kernel_blob.h"
 #include "util_misc.h"
-#include "vboot_common.h"
 #include "vb1_helper.h"
 #include "vb2_common.h"
+#include "vboot_common.h"
 
 /* Command line options */
 enum {

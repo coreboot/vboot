@@ -13,10 +13,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_misc.h"
 #include "vb2_common.h"

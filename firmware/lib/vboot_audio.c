@@ -5,10 +5,9 @@
  * Delay/beep functions used in dev-mode kernel selection.
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"
-
+#include "2sysincludes.h"
 #include "utility.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"

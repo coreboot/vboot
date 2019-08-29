@@ -5,20 +5,19 @@
  * Tests for vboot_api_kernel, part 4 - select and load kernel
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2secdata.h"
+#include "2sysincludes.h"
 #include "ec_sync.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "secdata_tpm.h"
 #include "test_common.h"
+#include "tlcl.h"
+#include "tss_constants.h"
 #include "vboot_audio.h"
 #include "vboot_common.h"
 #include "vboot_kernel.h"

@@ -3,16 +3,14 @@
  * found in the LICENSE file.
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
-
+#include "2sysincludes.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
 #include "crc32.h"
 #include "gpt.h"
 #include "utility.h"
 #include "vboot_api.h"
-
 
 /**
  * Allocate and read GPT data from the drive.

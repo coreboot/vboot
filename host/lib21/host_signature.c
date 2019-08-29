@@ -7,15 +7,15 @@
 
 #include <openssl/rsa.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "vb21_common.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_key2.h"
-#include "host_signature2.h"
 #include "host_misc.h"
+#include "host_signature2.h"
+#include "vb21_common.h"
 
 vb2_error_t vb2_digest_info(enum vb2_hash_algorithm hash_alg,
 			    const uint8_t **buf_ptr, uint32_t *size_ptr)

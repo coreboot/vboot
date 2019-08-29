@@ -14,7 +14,6 @@
 #include "vboot_host.h"
 #include "vboot_struct.h"
 
-
 int ExtractVmlinuz(void *kpart_data, size_t kpart_size,
 		   void **vmlinuz_out, size_t *vmlinuz_size) {
 	size_t now = 0;

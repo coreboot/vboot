@@ -4,8 +4,8 @@
  */
 
 #include "cgpt.h"
-#include "cgpt_params.h"
 #include "cgptlib_internal.h"
+#include "cgpt_params.h"
 #include "vboot_host.h"
 
 int CgptEdit(CgptEditParams *params) {

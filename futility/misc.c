@@ -20,10 +20,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
-
 #include "2common.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "cgptlib_internal.h"
 #include "file_type.h"
 #include "futility.h"

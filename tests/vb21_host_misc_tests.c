@@ -8,13 +8,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
-#include "vb21_common.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_misc.h"
-
 #include "test_common.h"
+#include "vb21_common.h"
 
 static void misc_tests(void)
 {

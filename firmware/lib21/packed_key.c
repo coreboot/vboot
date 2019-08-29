@@ -5,9 +5,9 @@
  * Key unpacking functions
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
+#include "2sysincludes.h"
 #include "vb21_common.h"
 
 vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,

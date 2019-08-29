@@ -3,9 +3,8 @@
  * found in the LICENSE file.
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
-
+#include "2sysincludes.h"
 #include "tpm2_marshaling.h"
 #include "utility.h"
 

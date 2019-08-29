@@ -10,6 +10,7 @@
 
 #include "host_key.h"
 #include "vboot_struct.h"
+
 struct rsa_st;
 struct vb2_packed_key;
 struct vb2_private_key;

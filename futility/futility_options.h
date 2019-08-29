@@ -10,9 +10,10 @@
 #define VBOOT_REFERENCE_FUTILITY_OPTIONS_H_
 
 #include <stdint.h>
-#include "vboot_common.h"
-#include "file_type.h"
+
 #include "2rsa.h"
+#include "file_type.h"
+#include "vboot_common.h"
 
 struct vb2_private_key;
 struct vb21_packed_key;

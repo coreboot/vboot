@@ -7,15 +7,15 @@
 
 #include <stdio.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "2secdata.h"
-#include "vb2_common.h"
+#include "2sysincludes.h"
 #include "test_common.h"
+#include "vb2_common.h"
 
 /* Common context for tests */
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]

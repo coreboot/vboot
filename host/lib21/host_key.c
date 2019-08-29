@@ -9,15 +9,15 @@
 
 #include <openssl/pem.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "vb21_common.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_key2.h"
 #include "host_misc.h"
 #include "openssl_compat.h"
+#include "vb21_common.h"
 
 const struct vb2_text_vs_enum vb2_text_vs_sig[] = {
 	{"RSA1024", VB2_SIG_RSA1024},

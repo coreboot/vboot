@@ -16,16 +16,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2nvstorage.h"
-
-#include "host_common.h"
-
-#include "crossystem.h"
+#include "2sysincludes.h"
 #include "crossystem_arch.h"
+#include "crossystem.h"
 #include "crossystem_vbnv.h"
+#include "host_common.h"
 #include "utility.h"
 #include "vboot_struct.h"
 

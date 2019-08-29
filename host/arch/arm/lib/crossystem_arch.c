@@ -22,11 +22,11 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-#include "vboot_common.h"
-#include "host_common.h"
-#include "crossystem.h"
 #include "crossystem_arch.h"
+#include "crossystem.h"
 #include "crossystem_vbnv.h"
+#include "host_common.h"
+#include "vboot_common.h"
 
 /* Base name for firmware FDT files */
 #define FDT_BASE_PATH "/proc/device-tree/firmware/chromeos"

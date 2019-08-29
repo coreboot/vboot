@@ -5,9 +5,9 @@
  * Functions for updating the TPM state with the status of boot path.
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "2tpm_bootmode.h"
 
 /*

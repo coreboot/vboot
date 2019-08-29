@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "futility.h"
 
 static const char usage[] = "\n"

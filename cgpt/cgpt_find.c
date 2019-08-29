@@ -10,8 +10,8 @@
 #include <unistd.h>
 
 #include "cgpt.h"
-#include "cgpt_nor.h"
 #include "cgptlib_internal.h"
+#include "cgpt_nor.h"
 #include "vboot_host.h"
 
 #define BUFSIZE 1024

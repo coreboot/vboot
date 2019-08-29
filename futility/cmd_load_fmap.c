@@ -20,7 +20,6 @@
 #include "fmap.h"
 #include "futility.h"
 
-
 static const char usage[] = "\n"
 	"Usage:  " MYNAME " %s [OPTIONS] FILE AREA:file [AREA:file ...]\n"
 	"\n"

@@ -6,9 +6,11 @@
  * stored in the TPM NVRAM.
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2crc8.h"
+#include "2nvstorage.h"
+#include "2secdata.h"
+#include "2sysincludes.h"
 #include "secdata_tpm.h"
 #include "tlcl.h"
 #include "tss_constants.h"

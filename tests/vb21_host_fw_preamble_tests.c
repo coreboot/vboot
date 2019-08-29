@@ -8,18 +8,15 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
-
-#include "vb21_common.h"
-
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_fw_preamble2.h"
 #include "host_key2.h"
 #include "host_signature2.h"
-
 #include "test_common.h"
+#include "vb21_common.h"
 
 const uint8_t test_data1[] = "Some test data";
 const uint8_t test_data2[] = "Some more test data";

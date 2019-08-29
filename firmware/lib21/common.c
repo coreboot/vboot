@@ -5,10 +5,10 @@
  * Signature validation functions
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "vb21_common.h"
 
 const char *vb21_common_desc(const void *buf)

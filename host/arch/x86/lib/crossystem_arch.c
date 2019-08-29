@@ -16,14 +16,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "crossystem.h"
 #include "crossystem_arch.h"
+#include "crossystem.h"
 #include "crossystem_vbnv.h"
 #include "host_common.h"
 #include "utility.h"
 #include "vboot_common.h"
 #include "vboot_struct.h"
-
 
 /* ACPI constants from Chrome OS Main Processor Firmware Spec */
 /* Boot reasons from BINF.0, from early H2C firmware */

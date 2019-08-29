@@ -10,16 +10,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "2sysincludes.h"
-
-#include "test_common.h"
-#include "vboot_common.h"
-
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
-#include "2nvstorage.h"
 #include "2nvstorage_fields.h"
+#include "2nvstorage.h"
+#include "2sysincludes.h"
+#include "test_common.h"
+#include "vboot_common.h"
 
 /* Single NV storage field to test */
 struct nv_field {

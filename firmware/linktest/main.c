@@ -11,7 +11,6 @@
 #include "vboot_common.h"
 #include "vboot_kernel.h"
 
-
 int main(void)
 {
 	/* cgptlib.h */

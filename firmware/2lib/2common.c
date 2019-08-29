@@ -6,10 +6,10 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 
 vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 {

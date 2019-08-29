@@ -15,9 +15,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "futility.h"
 
 #define SEARCH_STRIDE 4

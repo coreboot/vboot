@@ -5,22 +5,20 @@
 
 #include <openssl/pem.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2id.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "openssl_compat.h"
-#include "util_misc.h"
-#include "vb21_common.h"
-
-#include "host_common.h"
-#include "host_key2.h"
-#include "host_misc2.h"
-
+#include "2sysincludes.h"
 #include "file_type.h"
 #include "futility.h"
 #include "futility_options.h"
+#include "host_common.h"
+#include "host_key2.h"
+#include "host_misc2.h"
+#include "openssl_compat.h"
+#include "util_misc.h"
+#include "vb21_common.h"
 
 int vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *alg)
 {

@@ -7,11 +7,10 @@
 
 #include <stdio.h>
 
-#include "2sysincludes.h"
+#include "2return_codes.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "2return_codes.h"
-
+#include "2sysincludes.h"
 #include "sha_test_vectors.h"
 #include "test_common.h"
 

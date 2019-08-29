@@ -6,14 +6,14 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
+#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
-#include "utility.h"
 
 const char *kVbootErrors[VBOOT_ERROR_MAX] = {
 	"Success.",

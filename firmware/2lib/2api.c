@@ -6,14 +6,14 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2rsa.h"
 #include "2secdata.h"
 #include "2sha.h"
-#include "2rsa.h"
+#include "2sysincludes.h"
 #include "2tpm_bootmode.h"
 
 void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)

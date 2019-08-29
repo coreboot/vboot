@@ -18,12 +18,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2sha.h"
-#include "file_type.h"
+#include "2sysincludes.h"
 #include "file_type_bios.h"
+#include "file_type.h"
 #include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"

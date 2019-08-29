@@ -7,8 +7,8 @@
  */
 
 #include "2common.h"
-#include "secdata_tpm.h"
 #include "2sysincludes.h"
+#include "secdata_tpm.h"
 #include "tlcl.h"
 #include "tpm2_marshaling.h"
 #include "utility.h"

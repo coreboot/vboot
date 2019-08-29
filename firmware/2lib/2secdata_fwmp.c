@@ -5,8 +5,8 @@
  * Firmware management parameters (FWMP) APIs
  */
 
-#include "2crc8.h"
 #include "2common.h"
+#include "2crc8.h"
 #include "2misc.h"
 #include "2secdata.h"
 #include "2secdata_struct.h"

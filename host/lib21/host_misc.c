@@ -10,12 +10,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2sha.h"
-#include "vb21_common.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_misc2.h"
+#include "vb21_common.h"
 
 vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
 			  uint32_t *size_ptr)

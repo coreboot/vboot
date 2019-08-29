@@ -6,9 +6,9 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "vb2_common.h"
 
 uint8_t *vb2_signature_data(struct vb2_signature *sig)

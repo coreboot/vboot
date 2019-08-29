@@ -6,9 +6,7 @@
  */
 
 #include "2sysincludes.h"
-
 #include "utility.h"
-
 
 uint32_t Uint64ToString(char *buf, uint32_t bufsize, uint64_t value,
 			uint32_t radix, uint32_t zero_pad_width)

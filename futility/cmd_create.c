@@ -3,28 +3,26 @@
  * found in the LICENSE file.
  */
 
+#include <openssl/pem.h>
+
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
 
-#include <openssl/pem.h>
-
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2id.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "openssl_compat.h"
-#include "util_misc.h"
-#include "vb2_common.h"
-#include "vb21_common.h"
-
-#include "host_key.h"
-#include "host_key2.h"
-#include "host_misc2.h"
-
+#include "2sysincludes.h"
 #include "futility.h"
 #include "futility_options.h"
+#include "host_key2.h"
+#include "host_key.h"
+#include "host_misc2.h"
+#include "openssl_compat.h"
+#include "util_misc.h"
+#include "vb21_common.h"
+#include "vb2_common.h"
 
 /* Command line options */
 enum {

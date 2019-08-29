@@ -6,12 +6,11 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2common.h"
-
+#include "2sysincludes.h"
+#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
-#include "utility.h"
 
 vb2_error_t VbSharedDataInit(VbSharedDataHeader *header, uint64_t size)
 {

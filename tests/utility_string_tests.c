@@ -14,7 +14,6 @@
 #include "utility.h"
 #include "vboot_common.h"
 
-
 /* Test string concatenation */
 static void StrncatTest(void) {
 	char dest[128];

@@ -5,14 +5,14 @@
  * Misc functions which need access to vb2_context but are not public APIs
  */
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2rsa.h"
 #include "2secdata.h"
 #include "2sha.h"
-#include "2rsa.h"
+#include "2sysincludes.h"
 #include "vb21_common.h"
 
 /**

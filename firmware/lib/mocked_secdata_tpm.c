@@ -6,9 +6,9 @@
  * stored in the TPM NVRAM.
  */
 
-#include "utility.h"
 #include "secdata_tpm.h"
 #include "tss_constants.h"
+#include "utility.h"
 
 vb2_error_t SetVirtualDevMode(int val)
 {

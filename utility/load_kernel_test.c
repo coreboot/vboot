@@ -10,9 +10,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2misc.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "secdata_tpm.h"

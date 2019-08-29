@@ -5,13 +5,12 @@
  * Tests for misc library
  */
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"
-
+#include "2sysincludes.h"
 #include "test_common.h"
 
 /* Common context for tests */

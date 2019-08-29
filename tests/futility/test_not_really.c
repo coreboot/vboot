@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+
 #include "2struct.h"
 #include "test_common.h"
 

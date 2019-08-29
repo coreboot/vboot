@@ -6,6 +6,8 @@
 #ifndef VBOOT_REFERENCE_2RETURN_CODES_H_
 #define VBOOT_REFERENCE_2RETURN_CODES_H_
 
+#include "2sysincludes.h"
+
 /*
  * Functions which return an error all return this type.  This is a 32-bit
  * value rather than an int so it's consistent across different architectures.

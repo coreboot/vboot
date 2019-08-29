@@ -8,8 +8,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "2sysincludes.h"
 #include "2api.h"
+#include "2sysincludes.h"
 
 __attribute__((weak))
 void vb2ex_printf(const char *func, const char *fmt, ...)

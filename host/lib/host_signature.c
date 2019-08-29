@@ -15,11 +15,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
-
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_signature2.h"
 #include "vb2_common.h"

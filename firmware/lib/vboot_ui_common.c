@@ -6,8 +6,8 @@
  */
 
 #include "2common.h"
-#include "secdata_tpm.h"
 #include "2sysincludes.h"
+#include "secdata_tpm.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 #include "vboot_ui_common.h"

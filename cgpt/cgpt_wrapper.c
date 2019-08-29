@@ -22,10 +22,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "2sysincludes.h"
-
 #include "2common.h"
 #include "2sha.h"
+#include "2sysincludes.h"
 #include "cgpt.h"
 #include "cgpt_nor.h"
 #include "file_keys.h"

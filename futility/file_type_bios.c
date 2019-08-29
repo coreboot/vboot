@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fmap.h"
-#include "file_type.h"
 #include "file_type_bios.h"
+#include "file_type.h"
+#include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"

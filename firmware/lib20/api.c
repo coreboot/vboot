@@ -6,13 +6,13 @@
  * (Firmware portion)
  */
 
-#include "2sysincludes.h"
 #include "2api.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2rsa.h"
 #include "2secdata.h"
 #include "2sha.h"
-#include "2rsa.h"
+#include "2sysincludes.h"
 #include "vb2_common.h"
 
 vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx)

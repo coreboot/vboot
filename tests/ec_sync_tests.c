@@ -9,10 +9,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2sysincludes.h"
 #include "ec_sync.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"

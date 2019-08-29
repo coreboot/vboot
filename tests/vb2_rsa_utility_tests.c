@@ -3,14 +3,12 @@
  * found in the LICENSE file.
  */
 
-
 #include <stdint.h>
 #include <stdio.h>
 
-#include "2sysincludes.h"
-
 #include "2common.h"
 #include "2rsa.h"
+#include "2sysincludes.h"
 #include "file_keys.h"
 #include "rsa_padding_test.h"
 #include "test_common.h"

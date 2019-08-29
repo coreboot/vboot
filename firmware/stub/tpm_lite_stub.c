@@ -7,15 +7,6 @@
  */
 
 #include <stdint.h>
-
-#include "2sysincludes.h"
-#include "2common.h"
-
-#include "tlcl.h"
-#include "tlcl_internal.h"
-#include "utility.h"
-#include "vboot_api.h"
-
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -28,6 +19,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "2common.h"
+#include "2sysincludes.h"
+#include "tlcl.h"
+#include "tlcl_internal.h"
+#include "utility.h"
+#include "vboot_api.h"
 
 #define TPM_DEVICE_PATH "/dev/tpm0"
 /* Retry failed open()s for 5 seconds in 10ms polling intervals. */

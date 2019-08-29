@@ -9,16 +9,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "2sysincludes.h"
 #include "2common.h"
 #include "2rsa.h"
-#include "vb21_common.h"
+#include "2sysincludes.h"
 #include "host_common.h"
 #include "host_key2.h"
 #include "host_signature2.h"
 #include "test_common.h"
 #include "util_misc.h"
-
+#include "vb21_common.h"
 
 static const uint8_t test_data[] = "This is some test data to sign.";
 static const uint32_t test_size = sizeof(test_data);

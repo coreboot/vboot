@@ -5,8 +5,8 @@
  * Very simple 8-bit CRC function.
  */
 
-#include "2sysincludes.h"
 #include "2crc8.h"
+#include "2sysincludes.h"
 
 /* Uses CRC-8 ITU version, with x^8 + x^2 + x + 1 polynomial.
    Note that result will evaluate to zero for a buffer of all zeroes. */
