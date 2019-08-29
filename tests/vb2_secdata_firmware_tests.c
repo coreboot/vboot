@@ -10,6 +10,7 @@
 #include "2crc8.h"
 #include "2misc.h"
 #include "2secdata.h"
+#include "2secdata_struct.h"
 #include "2sysincludes.h"
 #include "test_common.h"
 #include "vboot_common.h"

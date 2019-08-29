@@ -9,13 +9,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2secdata.h"
-
-uint32_t vb2_secdata_fwmp_crc(struct vb2_secdata_fwmp *sec)
-{
-	int version_offset = offsetof(struct vb2_secdata_fwmp, struct_version);
-	return vb2_crc8((void *)sec + version_offset,
-			sec->struct_size - version_offset);
-}
+#include "2secdata_struct.h"
 
 vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size)
 {
