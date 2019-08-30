@@ -682,7 +682,6 @@ TEST_NAMES = \
 	tests/vboot_api_devmode_tests \
 	tests/vboot_api_kernel2_tests \
 	tests/vboot_api_kernel4_tests \
-	tests/vboot_api_kernel5_tests \
 	tests/vboot_api_kernel_tests \
 	tests/vboot_common_tests \
 	tests/vboot_detach_menu_tests \
@@ -1243,7 +1242,6 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel5_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_detach_menu_tests

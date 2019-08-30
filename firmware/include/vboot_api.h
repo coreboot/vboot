@@ -151,27 +151,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams);
 
-/**
- * Verify Kernel Image loaded in memory.
- *
- * This routine is used by fastboot boot command to verify the kernel image in
- * memory sent by the host device using fastboot protocol. It checks if the
- * image in memory is signed using official recovery keys. In case of GBB
- * override to allow full fastboot functionality, it checks image integrity, but
- * does not check the image signature.
- *
- * @param ctx		Vboot context
- * @param shared 	Vboot1 VBSD struct
- * @param kparams	kernel params
- * @param boot_image	Image in memory that needs to be verified
- * @param image_size	Size of the image in memory
- * @return VBERROR_... error, VB2_SUCCESS on success.
- */
-vb2_error_t VbVerifyMemoryBootImage(struct vb2_context *ctx,
-				    VbSharedDataHeader *shared,
-				    VbSelectAndLoadKernelParams *kparams,
-				    void *boot_image, size_t image_size);
-
 /*****************************************************************************/
 /* Timer and delay (first two from utility.h) */
 
