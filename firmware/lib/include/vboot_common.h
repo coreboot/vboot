@@ -12,29 +12,6 @@
 #include "2struct.h"
 #include "vboot_struct.h"
 
-/* Error Codes for all common functions. */
-enum {
-	VBOOT_SUCCESS = 0,
-	/* Keyblock internal structure is invalid, or not a keyblock */
-	VBOOT_KEYBLOCK_INVALID,
-	/* Keyblock signature check failed */
-	VBOOT_KEYBLOCK_SIGNATURE,
-	/* Keyblock hash check failed */
-	VBOOT_KEYBLOCK_HASH,
-	/* Invalid public key passed to a signature verficiation function. */
-	VBOOT_PUBLIC_KEY_INVALID,
-	/* Preamble internal structure is invalid */
-	VBOOT_PREAMBLE_INVALID,
-	/* Preamble signature check failed */
-	VBOOT_PREAMBLE_SIGNATURE,
-	/* Shared data is invalid. */
-	VBOOT_SHARED_DATA_INVALID,
-	/* Kernel Preamble does not contain flags */
-	VBOOT_KERNEL_PREAMBLE_NO_FLAGS,
-	VBOOT_ERROR_MAX,
-};
-extern const char *kVbootErrors[VBOOT_ERROR_MAX];
-
 /*
  * Helper functions to get data pointed to by a public key or signature.
  */
@@ -75,7 +52,7 @@ int PublicKeyCopy(struct vb2_packed_key *dest,
  * >= 2.1.  If given a header 2.0 or lower, will set address and size to 0 (this
  * is not considered an error).
  *
- * Returns VBOOT_SUCCESS if successful.
+ * Returns VB2_SUCCESS if successful.
  */
 vb2_error_t VbGetKernelVmlinuzHeader(const VbKernelPreambleHeader *preamble,
 				     uint64_t *vmlinuz_header_address,
@@ -86,14 +63,14 @@ vb2_error_t VbGetKernelVmlinuzHeader(const VbKernelPreambleHeader *preamble,
  * Kernel Preamble Header version >=2.2. If give a header of 2.1 or lower, it
  * will return VBOOT_KERNEL_PREAMBLE_NO_FLAGS.
  *
- * Returns VBOOT_SUCCESS if version is >=2.2.
+ * Returns VB2_SUCCESS if version is >=2.2.
  */
 vb2_error_t VbKernelHasFlags(const VbKernelPreambleHeader *preamble);
 
 /**
  * Verify that the Vmlinuz Header is contained inside of the kernel blob.
  *
- * Returns VBOOT_SUCCESS or VBOOT_PREAMBLE_INVALID on error
+ * Returns VB2_SUCCESS or VBOOT_PREAMBLE_INVALID on error
  */
 vb2_error_t VerifyVmlinuzInsideKBlob(uint64_t kblob, uint64_t kblob_size,
 				     uint64_t header, uint64_t header_size);

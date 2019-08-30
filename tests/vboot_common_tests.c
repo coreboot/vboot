@@ -88,18 +88,18 @@ static void VbSharedDataTest(void)
 	uint8_t buf[VB_SHARED_DATA_MIN_SIZE + 1];
 	VbSharedDataHeader* d = (VbSharedDataHeader*)buf;
 
-	TEST_NEQ(VBOOT_SUCCESS,
+	TEST_NEQ(VB2_SUCCESS,
 		 VbSharedDataInit(d, sizeof(VbSharedDataHeader) - 1),
 		 "VbSharedDataInit too small");
-	TEST_NEQ(VBOOT_SUCCESS,
+	TEST_NEQ(VB2_SUCCESS,
 		 VbSharedDataInit(d, VB_SHARED_DATA_MIN_SIZE - 1),
 		 "VbSharedDataInit too small 2");
-	TEST_NEQ(VBOOT_SUCCESS,
+	TEST_NEQ(VB2_SUCCESS,
 		 VbSharedDataInit(NULL, VB_SHARED_DATA_MIN_SIZE),
 		 "VbSharedDataInit null");
 
 	memset(buf, 0x68, sizeof(buf));
-	TEST_EQ(VBOOT_SUCCESS, VbSharedDataInit(d, VB_SHARED_DATA_MIN_SIZE),
+	TEST_EQ(VB2_SUCCESS, VbSharedDataInit(d, VB_SHARED_DATA_MIN_SIZE),
 		"VbSharedDataInit");
 
 	/* Check fields that should have been initialized */

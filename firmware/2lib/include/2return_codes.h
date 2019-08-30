@@ -37,6 +37,19 @@ enum vb2_return_code {
 	VB2_ERROR_MOCK,
 
 	/**********************************************************************
+	 * ancient pre-vboot1 errors
+	 * TODO: deprecate these once they have all moved over to vboot2 style
+	 */
+	/* Invalid public key passed to a signature verficiation function. */
+	VBOOT_PUBLIC_KEY_INVALID = 4,
+	/* Preamble internal structure is invalid */
+	VBOOT_PREAMBLE_INVALID = 5,
+	/* Shared data is invalid. */
+	VBOOT_SHARED_DATA_INVALID = 7,
+	/* Kernel Preamble does not contain flags */
+	VBOOT_KERNEL_PREAMBLE_NO_FLAGS = 8,
+
+	/**********************************************************************
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
