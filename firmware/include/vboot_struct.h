@@ -23,73 +23,6 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-/* Signature data (a secure hash, possibly signed) */
-typedef struct VbSignature {
-	/* Offset of signature data from start of this struct */
-	uint64_t sig_offset;
-	/* Size of signature data in bytes */
-	uint64_t sig_size;
-	/* Size of the data block which was signed in bytes */
-	uint64_t data_size;
-} __attribute__((packed)) VbSignature;
-
-#define EXPECTED_VBSIGNATURE_SIZE 24
-
-#define KEYBLOCK_MAGIC "CHROMEOS"
-#define KEYBLOCK_MAGIC_SIZE 8
-
-#define KEYBLOCK_HEADER_VERSION_MAJOR 2
-#define KEYBLOCK_HEADER_VERSION_MINOR 1
-
-/* Flags for keyblock_flags */
-/* The following flags set where the key is valid */
-#define KEYBLOCK_FLAG_DEVELOPER_0  (0x01ULL) /* Developer switch off */
-#define KEYBLOCK_FLAG_DEVELOPER_1  (0x02ULL) /* Developer switch on */
-#define KEYBLOCK_FLAG_RECOVERY_0   (0x04ULL) /* Not recovery mode */
-#define KEYBLOCK_FLAG_RECOVERY_1   (0x08ULL) /* Recovery mode */
-
-/*
- * Keyblock, containing the public key used to sign some other chunk of data.
- *
- * This should be followed by:
- *   1) The data_key key data, pointed to by data_key.key_offset.
- *   2) The checksum data for (VBKeyBlockHeader + data_key data), pointed to
- *      by keyblock_checksum.sig_offset.
- *   3) The signature data for (VBKeyBlockHeader + data_key data), pointed to
- *      by keyblock_signature.sig_offset.
- */
-typedef struct VbKeyBlockHeader {
-	/* Magic number */
-	uint8_t magic[KEYBLOCK_MAGIC_SIZE];
-	/* Version of this header format */
-	uint32_t header_version_major;
-	/* Version of this header format */
-	uint32_t header_version_minor;
-	/*
-	 * Length of this entire keyblock, including keys, signatures, and
-	 * padding, in bytes
-	 */
-	uint64_t keyblock_size;
-	/*
-	 * Signature for this keyblock (header + data pointed to by data_key)
-	 * For use with signed data keys
-	 */
-	VbSignature keyblock_signature;
-	/*
-	 * SHA-512 checksum for this keyblock (header + data pointed to by
-	 * data_key) For use with unsigned data keys
-	 */
-	VbSignature keyblock_checksum;
-	/* Flags for key (KEYBLOCK_FLAG_*) */
-	uint64_t keyblock_flags;
-	/* Key to verify the chunk of data */
-	struct vb2_packed_key data_key;
-} __attribute__((packed)) VbKeyBlockHeader;
-
-#define EXPECTED_VBKEYBLOCKHEADER_SIZE 112
-
-/****************************************************************************/
-
 #define KERNEL_PREAMBLE_HEADER_VERSION_MAJOR 2
 #define KERNEL_PREAMBLE_HEADER_VERSION_MINOR 2
 
@@ -108,7 +41,7 @@ typedef struct VbKernelPreambleHeader2_0 {
 	 */
 	uint64_t preamble_size;
 	/* Signature for this preamble (header + body signature) */
-	VbSignature preamble_signature;
+	struct vb2_signature preamble_signature;
 	/* Version of this header format */
 	uint32_t header_version_major;
 	/* Version of this header format */
@@ -123,7 +56,7 @@ typedef struct VbKernelPreambleHeader2_0 {
 	/* Size of bootloader in bytes */
 	uint64_t bootloader_size;
 	/* Signature for the kernel body */
-	VbSignature body_signature;
+	struct vb2_signature body_signature;
 } __attribute__((packed)) VbKernelPreambleHeader2_0;
 
 #define EXPECTED_VBKERNELPREAMBLEHEADER2_0_SIZE 96
@@ -145,7 +78,7 @@ typedef struct VbKernelPreambleHeader {
 	 */
 	uint64_t preamble_size;
 	/* Signature for this preamble (header + body signature) */
-	VbSignature preamble_signature;
+	struct vb2_signature preamble_signature;
 	/* Version of this header format */
 	uint32_t header_version_major;
 	/* Version of this header format */
@@ -160,7 +93,7 @@ typedef struct VbKernelPreambleHeader {
 	/* Size of bootloader in bytes */
 	uint64_t bootloader_size;
 	/* Signature for the kernel body */
-	VbSignature body_signature;
+	struct vb2_signature body_signature;
 	/*
 	 * Fields added in header version 2.1.  You must verify the header
 	 * version before reading these fields!

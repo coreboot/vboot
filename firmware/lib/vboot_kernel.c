@@ -166,14 +166,16 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	/* Check the keyblock flags against boot flags. */
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ?
-	       KEYBLOCK_FLAG_DEVELOPER_1 : KEYBLOCK_FLAG_DEVELOPER_0))) {
+	       VB2_KEYBLOCK_FLAG_DEVELOPER_1 :
+	       VB2_KEYBLOCK_FLAG_DEVELOPER_0))) {
 		VB2_DEBUG("Keyblock developer flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_DEV_MISMATCH;
 		keyblock_valid = 0;
 	}
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) ?
-	       KEYBLOCK_FLAG_RECOVERY_1 : KEYBLOCK_FLAG_RECOVERY_0))) {
+	       VB2_KEYBLOCK_FLAG_RECOVERY_1 :
+	       VB2_KEYBLOCK_FLAG_RECOVERY_0))) {
 		VB2_DEBUG("Keyblock recovery flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_REC_MISMATCH;
 		keyblock_valid = 0;

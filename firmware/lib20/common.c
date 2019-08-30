@@ -11,20 +11,6 @@
 #include "2sysincludes.h"
 #include "vb2_common.h"
 
-uint8_t *vb2_signature_data(struct vb2_signature *sig)
-{
-	return (uint8_t *)sig + sig->sig_offset;
-}
-
-vb2_error_t vb2_verify_signature_inside(const void *parent,
-				uint32_t parent_size,
-				const struct vb2_signature *sig)
-{
-	return vb2_verify_member_inside(parent, parent_size,
-					sig, sizeof(*sig),
-					sig->sig_offset, sig->sig_size);
-}
-
 vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 			      struct vb2_signature *sig, const uint8_t *digest,
 			      const struct vb2_workbuf *wb)
@@ -98,12 +84,12 @@ vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 		return VB2_ERROR_KEYBLOCK_TOO_SMALL_FOR_HEADER;
 	}
 
-	if (memcmp(block->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE)) {
+	if (memcmp(block->magic, VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE)) {
 		VB2_DEBUG("Not a valid verified boot keyblock.\n");
 		return VB2_ERROR_KEYBLOCK_MAGIC;
 	}
 
-	if (block->header_version_major != KEYBLOCK_HEADER_VERSION_MAJOR) {
+	if (block->header_version_major != VB2_KEYBLOCK_VERSION_MAJOR) {
 		VB2_DEBUG("Incompatible keyblock header version.\n");
 		return VB2_ERROR_KEYBLOCK_HEADER_VERSION;
 	}

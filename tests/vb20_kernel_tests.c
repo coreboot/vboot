@@ -109,13 +109,13 @@ static void reset_common_data(enum reset_type t)
 	mock_gbb.recovery_key.key_size = sizeof(mock_gbb.recovery_key_data);
 
 	kb->keyblock_size = sizeof(mock_vblock.k);
-	memcpy(kb->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
+	memcpy(kb->magic, VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE);
 
 	kb->keyblock_flags = VB2_KEYBLOCK_FLAG_DEVELOPER_1 |
 		VB2_KEYBLOCK_FLAG_DEVELOPER_0 |
 		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_RECOVERY_0;
-	kb->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
-	kb->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
+	kb->header_version_major = VB2_KEYBLOCK_VERSION_MAJOR;
+	kb->header_version_minor = VB2_KEYBLOCK_VERSION_MINOR;
 	kb->data_key.algorithm = 7;
 	kb->data_key.key_version = 2;
 	kb->data_key.key_offset =

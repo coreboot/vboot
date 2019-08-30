@@ -300,4 +300,30 @@ int vb2_verify_packed_key_inside(const void *parent,
 				 uint32_t parent_size,
 				 const struct vb2_packed_key *key);
 
+/*
+ * Helper functions to get data pointed to by a public key or signature.
+ */
+static __inline uint8_t *vb2_signature_data(struct vb2_signature *sig)
+{
+	return (uint8_t *)sig + sig->sig_offset;
+}
+
+/**
+ * Verify a signature is fully contained in its parent data
+ *
+ * @param parent	Parent data
+ * @param parent_size	Parent size in bytes
+ * @param sig		Signature pointer
+ * @return VB2_SUCCESS, or non-zero if error.
+ */
+static __inline vb2_error_t vb2_verify_signature_inside(
+	const void *parent,
+	uint32_t parent_size,
+	const struct vb2_signature *sig)
+{
+	return vb2_verify_member_inside(parent, parent_size,
+					sig, sizeof(*sig),
+					sig->sig_offset, sig->sig_size);
+}
+
 #endif  /* VBOOT_REFERENCE_2COMMON_H_ */

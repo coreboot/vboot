@@ -86,6 +86,12 @@ static void test_struct_packing(void)
 	TEST_EQ(EXPECTED_VB2_GBB_HEADER_SIZE,
 		sizeof(struct vb2_gbb_header),
 		"sizeof(vb2_gbb_header)");
+	TEST_EQ(EXPECTED_VB2_SIGNATURE_SIZE,
+		sizeof(struct vb2_signature),
+		"sizeof(vb2_signature)");
+	TEST_EQ(EXPECTED_VB2_KEYBLOCK_SIZE,
+		sizeof(struct vb2_keyblock),
+		"sizeof(vb2_keyblock)");
 }
 
 /**
@@ -204,6 +210,17 @@ static void test_helper_functions(void)
 		TEST_EQ((int)vb2_offset_of(&k, vb2_packed_key_data(&k)), 123,
 			"vb2_packed_key_data() spaced");
 	}
+	{
+		struct vb2_signature s = {.sig_offset = sizeof(s)};
+		TEST_EQ((int)vb2_offset_of(&s, vb2_signature_data(&s)),
+			sizeof(s), "vb2_signature_data() adjacent");
+	}
+
+	{
+		struct vb2_signature s = {.sig_offset = 123};
+		TEST_EQ((int)vb2_offset_of(&s, vb2_signature_data(&s)), 123,
+			"vb2_signature_data() spaced");
+	}
 
 	{
 		uint8_t *p = (uint8_t *)test_helper_functions;
@@ -271,6 +288,27 @@ static void test_helper_functions(void)
 		TEST_EQ(vb2_verify_packed_key_inside(&k, 99, &k),
 			VB2_ERROR_INSIDE_DATA_OUTSIDE,
 			"vb2_packed_key_inside() offset too big");
+	}
+
+	{
+		struct vb2_signature s = {.sig_offset = sizeof(s),
+					  .sig_size = 128};
+		TEST_SUCC(vb2_verify_signature_inside(&s, sizeof(s)+128, &s),
+			"vb2_verify_signature_inside() ok 1");
+		TEST_SUCC(vb2_verify_signature_inside(&s - 1,
+						      2*sizeof(s)+128, &s),
+			  "vb2_verify_signature_inside() ok 2");
+		TEST_EQ(vb2_verify_signature_inside(&s, 128, &s),
+			VB2_ERROR_INSIDE_DATA_OUTSIDE,
+			"vb2_verify_signature_inside() sig too big");
+	}
+
+	{
+		struct vb2_signature s = {.sig_offset = 100,
+					  .sig_size = 4};
+		TEST_EQ(vb2_verify_signature_inside(&s, 99, &s),
+			VB2_ERROR_INSIDE_DATA_OUTSIDE,
+			"vb2_verify_signature_inside() offset too big");
 	}
 }
 

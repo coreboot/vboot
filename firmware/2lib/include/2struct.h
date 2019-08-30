@@ -20,19 +20,12 @@
 #include "2crypto.h"
 #include "2sysincludes.h"
 
-/*
- * Keyblock flags.
- *
- *The following flags set where the key is valid.  Not used by firmware
- * verification; only kernel verification.
- */
-#define VB2_KEYBLOCK_FLAG_DEVELOPER_0  0x01 /* Developer switch off */
-#define VB2_KEYBLOCK_FLAG_DEVELOPER_1  0x02 /* Developer switch on */
-#define VB2_KEYBLOCK_FLAG_RECOVERY_0   0x04 /* Not recovery mode */
-#define VB2_KEYBLOCK_FLAG_RECOVERY_1   0x08 /* Recovery mode */
-#define VB2_GBB_HWID_DIGEST_SIZE	32
+/* "V2CT" = vb2_context.magic */
+#define VB2_CONTEXT_MAGIC 0x54433256
 
-/****************************************************************************/
+/* Current version of vb2_context struct */
+#define VB2_CONTEXT_VERSION_MAJOR 1
+#define VB2_CONTEXT_VERSION_MINOR 0
 
 /* Flags for vb2_shared_data.flags */
 enum vb2_shared_data_flags {
@@ -240,9 +233,11 @@ struct vb2_shared_data {
 /* TODO: can we write a macro to produce this at compile time? */
 #define VB2_GBB_XOR_SIGNATURE { 0x0e, 0x6d, 0x68, 0x68 }
 
+#define VB2_GBB_HWID_DIGEST_SIZE 32
+
 /* VB2 GBB struct version */
-#define VB2_GBB_MAJOR_VER      1
-#define VB2_GBB_MINOR_VER      2
+#define VB2_GBB_MAJOR_VER 1
+#define VB2_GBB_MINOR_VER 2
 /* v1.2 - added fields for sha256 digest of the HWID */
 
 struct vb2_gbb_header {
@@ -278,12 +273,13 @@ struct vb2_gbb_header {
 _Static_assert(VB2_GBB_FLAGS_OFFSET == offsetof(struct vb2_gbb_header, flags),
 	       "VB2_GBB_FLAGS_OFFSET set incorrectly");
 
+/****************************************************************************/
+
 /*
  * Root key hash for Ryu devices only.  Contains the hash of the root key.
  * This will be embedded somewhere inside the RO part of the firmware, so that
  * it can verify the GBB contains only the official root key.
  */
-
 #define RYU_ROOT_KEY_HASH_MAGIC "RtKyHash"
 #define RYU_ROOT_KEY_HASH_MAGIC_INVCASE "rTkYhASH"
 #define RYU_ROOT_KEY_HASH_MAGIC_SIZE 8
@@ -314,6 +310,8 @@ struct vb2_ryu_root_key_hash {
 
 #define EXPECTED_VB2_RYU_ROOT_KEY_HASH_SIZE 48
 
+/****************************************************************************/
+
 /* Packed public key data */
 struct vb2_packed_key {
 	/* Offset of key data from start of this struct */
@@ -336,5 +334,92 @@ struct vb2_packed_key {
 } __attribute__((packed));
 
 #define EXPECTED_VB2_PACKED_KEY_SIZE 32
+
+/****************************************************************************/
+
+/* Signature data (a secure hash, possibly signed) */
+struct vb2_signature {
+	/* Offset of signature data from start of this struct */
+	uint32_t sig_offset;
+	uint32_t reserved0;
+
+	/* Size of signature data in bytes */
+	uint32_t sig_size;
+	uint32_t reserved1;
+
+	/* Size of the data block which was signed in bytes */
+	uint32_t data_size;
+	uint32_t reserved2;
+} __attribute__((packed));
+
+#define EXPECTED_VB2_SIGNATURE_SIZE 24
+
+/****************************************************************************/
+
+#define VB2_KEYBLOCK_MAGIC "CHROMEOS"
+#define VB2_KEYBLOCK_MAGIC_SIZE 8
+
+#define VB2_KEYBLOCK_VERSION_MAJOR 2
+#define VB2_KEYBLOCK_VERSION_MINOR 1
+
+/*
+ * Keyblock flags.
+ *
+ * The following flags set where the key is valid.  Not used by firmware
+ * verification; only kernel verification.
+ */
+#define VB2_KEYBLOCK_FLAG_DEVELOPER_0 0x1  /* Developer switch off */
+#define VB2_KEYBLOCK_FLAG_DEVELOPER_1 0x2  /* Developer switch on */
+#define VB2_KEYBLOCK_FLAG_RECOVERY_0 0x4  /* Not recovery mode */
+#define VB2_KEYBLOCK_FLAG_RECOVERY_1 0x8  /* Recovery mode */
+
+/*
+ * Keyblock, containing the public key used to sign some other chunk of data.
+ *
+ * This should be followed by:
+ *   1) The data_key key data, pointed to by data_key.key_offset.
+ *   2) The checksum data for (vb2_keyblock + data_key data), pointed to
+ *      by keyblock_checksum.sig_offset.
+ *   3) The signature data for (vb2_keyblock + data_key data), pointed to
+ *      by keyblock_signature.sig_offset.
+ */
+struct vb2_keyblock {
+	/* Magic number */
+	uint8_t magic[VB2_KEYBLOCK_MAGIC_SIZE];
+
+	/* Version of this header format */
+	uint32_t header_version_major;
+	uint32_t header_version_minor;
+
+	/*
+	 * Length of this entire keyblock, including keys, signatures, and
+	 * padding, in bytes
+	 */
+	uint32_t keyblock_size;
+	uint32_t reserved0;
+
+	/*
+	 * Signature for this keyblock (header + data pointed to by data_key)
+	 * For use with signed data keys
+	 */
+	struct vb2_signature keyblock_signature;
+
+	/*
+	 * SHA-512 hash for this keyblock (header + data pointed to by
+	 * data_key) For use with unsigned data keys.
+	 *
+	 * Only supported for kernel keyblocks, not firmware keyblocks.
+	 */
+	struct vb2_signature keyblock_hash;
+
+	/* Flags for key (VB2_KEYBLOCK_FLAG_*) */
+	uint32_t keyblock_flags;
+	uint32_t reserved1;
+
+	/* Key to verify the chunk of data */
+	struct vb2_packed_key data_key;
+} __attribute__((packed));
+
+#define EXPECTED_VB2_KEYBLOCK_SIZE 112
 
 #endif  /* VBOOT_REFERENCE_2STRUCT_H_ */

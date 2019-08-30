@@ -61,7 +61,7 @@ static VbExDiskHandle_t handle;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
-static VbKeyBlockHeader kbh;
+static struct vb2_keyblock kbh;
 static VbKernelPreambleHeader kph;
 static struct RollbackSpaceFwmp fwmp;
 static uint8_t mock_disk[MOCK_SECTOR_SIZE * MOCK_SECTOR_COUNT];
@@ -683,27 +683,27 @@ static void LoadKernelTest(void)
 	/* Check keyblock flag mismatches */
 	ResetMocks();
 	kbh.keyblock_flags =
-		KEYBLOCK_FLAG_RECOVERY_0 | KEYBLOCK_FLAG_DEVELOPER_1;
+		VB2_KEYBLOCK_FLAG_RECOVERY_0 | VB2_KEYBLOCK_FLAG_DEVELOPER_1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Keyblock dev flag mismatch");
 
 	ResetMocks();
 	kbh.keyblock_flags =
-		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_0;
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Keyblock rec flag mismatch");
 
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	kbh.keyblock_flags =
-		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_1;
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Keyblock recdev flag mismatch");
 
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
 	kbh.keyblock_flags =
-		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_0;
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Keyblock rec!dev flag mismatch");
 

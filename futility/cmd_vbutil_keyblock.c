@@ -215,13 +215,13 @@ static int Unpack(const char *infile, const char *datapubkey,
 	printf("Keyblock file:        %s\n", infile);
 	printf("Signature             %s\n", sign_key ? "valid" : "ignored");
 	printf("Flags:                %u ", block->keyblock_flags);
-	if (block->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_0)
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
-	if (block->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_1)
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_1)
 		printf(" DEV");
-	if (block->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_0)
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_0)
 		printf(" !REC");
-	if (block->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_1)
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
 	printf("\n");
 

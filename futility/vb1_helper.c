@@ -538,13 +538,13 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 	       signpub_key ? "valid" : "ignored");
 	printf("  Size:                %#x\n", g_keyblock->keyblock_size);
 	printf("  Flags:               %u ", g_keyblock->keyblock_flags);
-	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_0)
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
-	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_1)
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_1)
 		printf(" DEV");
-	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_0)
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_0)
 		printf(" !REC");
-	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_1)
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
 	printf("\n");
 	printf("  Data key algorithm:  %u %s\n", data_key->algorithm,

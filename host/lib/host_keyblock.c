@@ -40,9 +40,9 @@ struct vb2_keyblock *vb2_create_keyblock(
 	uint8_t *block_chk_dest = data_key_dest + data_key->key_size;
 	uint8_t *block_sig_dest = block_chk_dest + VB2_SHA512_DIGEST_SIZE;
 
-	memcpy(h->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
-	h->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
-	h->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
+	memcpy(h->magic, VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE);
+	h->header_version_major = VB2_KEYBLOCK_VERSION_MAJOR;
+	h->header_version_minor = VB2_KEYBLOCK_VERSION_MINOR;
 	h->keyblock_size = block_size;
 	h->keyblock_flags = flags;
 
@@ -108,9 +108,9 @@ struct vb2_keyblock *vb2_create_keyblock_external(
 	uint8_t *block_chk_dest = data_key_dest + data_key->key_size;
 	uint8_t *block_sig_dest = block_chk_dest + VB2_SHA512_DIGEST_SIZE;
 
-	memcpy(h->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
-	h->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
-	h->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
+	memcpy(h->magic, VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE);
+	h->header_version_major = VB2_KEYBLOCK_VERSION_MAJOR;
+	h->header_version_minor = VB2_KEYBLOCK_VERSION_MINOR;
 	h->keyblock_size = block_size;
 	h->keyblock_flags = flags;
 

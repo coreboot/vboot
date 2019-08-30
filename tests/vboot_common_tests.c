@@ -21,10 +21,6 @@
  */
 static void StructPackingTest(void)
 {
-	TEST_EQ(EXPECTED_VBSIGNATURE_SIZE, sizeof(VbSignature),
-		"sizeof(VbSignature)");
-	TEST_EQ(EXPECTED_VBKEYBLOCKHEADER_SIZE, sizeof(VbKeyBlockHeader),
-		"sizeof(VbKeyBlockHeader)");
 	TEST_EQ(EXPECTED_VBKERNELPREAMBLEHEADER2_2_SIZE,
 		sizeof(VbKernelPreambleHeader),
 		"sizeof(VbKernelPreambleHeader)");
@@ -36,26 +32,6 @@ static void StructPackingTest(void)
 	TEST_EQ(VB_SHARED_DATA_HEADER_SIZE_V2,
 		sizeof(VbSharedDataHeader),
 		"sizeof(VbSharedDataHeader) V2");
-}
-
-/* Helper functions not dependent on specific key sizes */
-static void VerifyHelperFunctions(void)
-{
-	{
-		VbSignature s = {sizeof(s), 128, 2000};
-		TEST_EQ(VerifySignatureInside(&s, sizeof(s)+128, &s), 0,
-			"SignatureInside ok 1");
-		TEST_EQ(VerifySignatureInside(&s - 1, 2*sizeof(s)+128, &s), 0,
-			"SignatureInside ok 2");
-		TEST_NEQ(VerifySignatureInside(&s, 128, &s), 0,
-			 "SignatureInside sig too big");
-	}
-
-	{
-		VbSignature s = {100, 4, 0};
-		TEST_NEQ(VerifySignatureInside(&s, 99, &s), 0,
-			 "SignatureInside offset too big");
-	}
 }
 
 /* Public key utility functions */
@@ -152,7 +128,6 @@ static void VbSharedDataTest(void)
 int main(int argc, char* argv[])
 {
 	StructPackingTest();
-	VerifyHelperFunctions();
 	PublicKeyTest();
 	VbSharedDataTest();
 

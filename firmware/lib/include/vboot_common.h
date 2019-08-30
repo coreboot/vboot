@@ -50,8 +50,8 @@ extern const char *kVbootErrors[VBOOT_ERROR_MAX];
 
 uint8_t *GetPublicKeyData(struct vb2_packed_key *key);
 const uint8_t *GetPublicKeyDataC(const struct vb2_packed_key *key);
-uint8_t *GetSignatureData(VbSignature *sig);
-const uint8_t *GetSignatureDataC(const VbSignature *sig);
+uint8_t *GetSignatureData(struct vb2_signature *sig);
+const uint8_t *GetSignatureDataC(const struct vb2_signature *sig);
 
 /*
  * Helper functions to verify the data pointed to by a subfield is inside the
@@ -62,7 +62,7 @@ vb2_error_t VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
 				  const struct vb2_packed_key *key);
 
 vb2_error_t VerifySignatureInside(const void *parent, uint64_t parent_size,
-				  const VbSignature *sig);
+				  const struct vb2_signature *sig);
 
 /**
  * Initialize a public key to refer to [key_data].

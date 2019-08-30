@@ -38,12 +38,12 @@ const uint8_t *GetPublicKeyDataC(const struct vb2_packed_key *key)
 	return (const uint8_t *)key + key->key_offset;
 }
 
-uint8_t *GetSignatureData(VbSignature *sig)
+uint8_t *GetSignatureData(struct vb2_signature *sig)
 {
 	return (uint8_t *)sig + sig->sig_offset;
 }
 
-const uint8_t *GetSignatureDataC(const VbSignature *sig)
+const uint8_t *GetSignatureDataC(const struct vb2_signature *sig)
 {
 	return (const uint8_t *)sig + sig->sig_offset;
 }
@@ -62,10 +62,10 @@ vb2_error_t VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
 }
 
 vb2_error_t VerifySignatureInside(const void *parent, uint64_t parent_size,
-				  const VbSignature *sig)
+				  const struct vb2_signature *sig)
 {
 	return vb2_verify_member_inside(parent, parent_size,
-					sig, sizeof(VbSignature),
+					sig, sizeof(struct vb2_signature),
 					sig->sig_offset, sig->sig_size);
 }
 
