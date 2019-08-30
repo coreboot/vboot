@@ -47,27 +47,6 @@ int PublicKeyCopy(struct vb2_packed_key *dest,
 		  const struct vb2_packed_key *src);
 
 /**
- * Retrieve the 16-bit vmlinuz header address and size from the kernel preamble
- * if there is one.  These are only available in Kernel Preamble Header version
- * >= 2.1.  If given a header 2.0 or lower, will set address and size to 0 (this
- * is not considered an error).
- *
- * Returns VB2_SUCCESS if successful.
- */
-vb2_error_t VbGetKernelVmlinuzHeader(const VbKernelPreambleHeader *preamble,
-				     uint64_t *vmlinuz_header_address,
-				     uint64_t *vmlinuz_header_size);
-
-/**
- * Checks if the kernel preamble has flags field. This is available only if the
- * Kernel Preamble Header version >=2.2. If give a header of 2.1 or lower, it
- * will return VBOOT_KERNEL_PREAMBLE_NO_FLAGS.
- *
- * Returns VB2_SUCCESS if version is >=2.2.
- */
-vb2_error_t VbKernelHasFlags(const VbKernelPreambleHeader *preamble);
-
-/**
  * Verify that the Vmlinuz Header is contained inside of the kernel blob.
  *
  * Returns VB2_SUCCESS or VBOOT_PREAMBLE_INVALID on error

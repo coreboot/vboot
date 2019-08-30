@@ -79,33 +79,6 @@ int PublicKeyCopy(struct vb2_packed_key *dest, const struct vb2_packed_key *src)
 	return 0;
 }
 
-vb2_error_t VbGetKernelVmlinuzHeader(const VbKernelPreambleHeader *preamble,
-				     uint64_t *vmlinuz_header_address,
-				     uint64_t *vmlinuz_header_size)
-{
-	*vmlinuz_header_address = 0;
-	*vmlinuz_header_size = 0;
-	if (preamble->header_version_minor > 0) {
-		/*
-		 * Set header and size only if the preamble header version is >
-		 * 2.1 as they don't exist in version 2.0 (Note that we don't
-		 * need to check header_version_major; if that's not 2 then
-		 * VerifyKernelPreamble() would have already failed.
-		 */
-		*vmlinuz_header_address = preamble->vmlinuz_header_address;
-		*vmlinuz_header_size = preamble->vmlinuz_header_size;
-	}
-	return VB2_SUCCESS;
-}
-
-vb2_error_t VbKernelHasFlags(const VbKernelPreambleHeader *preamble)
-{
-	if (preamble->header_version_minor > 1)
-		return VB2_SUCCESS;
-
-	return VBOOT_KERNEL_PREAMBLE_NO_FLAGS;
-}
-
 vb2_error_t VerifyVmlinuzInsideKBlob(uint64_t kblob, uint64_t kblob_size,
 				     uint64_t header, uint64_t header_size)
 {
