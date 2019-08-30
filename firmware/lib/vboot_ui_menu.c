@@ -162,7 +162,7 @@ static vb2_error_t boot_legacy_action(struct vb2_context *ctx)
 		return VBERROR_KEEP_LOOPING;
 	}
 
-	vb2_run_altfw(ctx, VB_ALTFW_DEFAULT);
+	vb2_try_altfw(ctx, 1, VB_ALTFW_DEFAULT);
 	vb2_flash_screen(ctx);
 	return VBERROR_KEEP_LOOPING;
 }
@@ -341,7 +341,7 @@ static vb2_error_t language_action(struct vb2_context *ctx)
 /* Action when selecting a bootloader in the alternative firmware menu. */
 static vb2_error_t altfw_action(struct vb2_context *ctx)
 {
-	vb2_run_altfw(ctx, current_menu_idx + 1);
+	vb2_try_altfw(ctx, 1, current_menu_idx + 1);
 	vb2_flash_screen(ctx);
 	VB2_DEBUG(no_legacy);
 	VbExDisplayDebugInfo(no_legacy, 0);
@@ -796,7 +796,7 @@ static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
-			vb2_try_alt_fw(ctx, altfw_allowed, key - '0');
+			vb2_try_altfw(ctx, altfw_allowed, key - '0');
 			ret = VBERROR_KEEP_LOOPING;
 			break;
 		default:

@@ -41,20 +41,6 @@ void vb2_error_notify(const char *print_msg,
 	vb2_error_beep(beep);
 }
 
-void vb2_run_altfw(struct vb2_context *ctx, enum VbAltFwIndex_t altfw_num)
-{
-	if (secdata_kernel_lock(ctx)) {
-		vb2_error_notify("Error locking kernel versions on legacy "
-				 "boot.\n", NULL, VB_BEEP_FAILED);
-	} else {
-		/* TODO: Figure out what to do on commit error in altfw. */
-		vb2_commit_data(ctx);
-		VbExLegacy(altfw_num);	/* will not return if found */
-		vb2_error_notify("Legacy boot failed. Missing BIOS?\n", NULL,
-				 VB_BEEP_FAILED);
-	}
-}
-
 void vb2_error_no_altfw(void)
 {
 	VB2_DEBUG("Legacy boot is disabled\n");
@@ -64,11 +50,38 @@ void vb2_error_no_altfw(void)
 	vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 }
 
-void vb2_try_alt_fw(struct vb2_context *ctx, int allowed,
-		    enum VbAltFwIndex_t altfw_num)
+/**
+ * Run alternative firmware
+ *
+ * This will only return if vboot data fails to commit, secdata_kernel fails to
+ * lock, or the bootloader cannot be found / fails to start.
+ *
+ * @param ctx		Context pointer
+ * @param altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
+ */
+void vb2_try_altfw(struct vb2_context *ctx, int allowed,
+		   enum VbAltFwIndex_t altfw_num)
 {
-	if (allowed)
-		vb2_run_altfw(ctx, altfw_num);	/* will not return if found */
-	else
+	if (!allowed) {
 		vb2_error_no_altfw();
+		return;
+	}
+
+	if (vb2_commit_data(ctx)) {
+		vb2_error_notify("Error committing data on legacy boot.\n",
+				 NULL, VB_BEEP_FAILED);
+		return;
+	}
+
+	if (secdata_kernel_lock(ctx)) {
+		vb2_error_notify("Error locking kernel versions on legacy "
+				 "boot.\n", NULL, VB_BEEP_FAILED);
+		return;
+	}
+
+	/* Will not return if successful */
+	VbExLegacy(altfw_num);
+
+	vb2_error_notify("Legacy boot failed. Missing BIOS?\n", NULL,
+			 VB_BEEP_FAILED);
 }
