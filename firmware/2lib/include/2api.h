@@ -26,7 +26,6 @@
 #include "2id.h"
 #include "2recovery_reasons.h"
 #include "2return_codes.h"
-#include "2secdata.h"
 
 /* TODO(chromium:972956): Remove once coreboot is using updated names */
 #define secdata secdata_firmware

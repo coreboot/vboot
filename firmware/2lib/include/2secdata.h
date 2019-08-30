@@ -8,9 +8,7 @@
 #ifndef VBOOT_REFERENCE_2SECDATA_H_
 #define VBOOT_REFERENCE_2SECDATA_H_
 
-/* Avoid circular dependency with 2api.h */
-struct vb2_context;
-typedef uint32_t vb2_error_t;
+#include "2api.h"
 
 /*****************************************************************************/
 /* Firmware version space */

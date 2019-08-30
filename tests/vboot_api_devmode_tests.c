@@ -14,6 +14,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2secdata.h"
 #include "crc32.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
