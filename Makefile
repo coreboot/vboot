@@ -1114,11 +1114,6 @@ ${BUILD}/%.o: ${BUILD}/%.c
 	@${PRINTF} "    CC            $(subst ${BUILD}/,,$@)\n"
 	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
 
-# TODO: C++ files don't belong in vboot reference at all.  Convert to C.
-${BUILD}/%.o: %.cc
-	@${PRINTF} "    CXX           $(subst ${BUILD}/,,$@)\n"
-	${Q}${CXX} ${CFLAGS} ${INCLUDES} -c -o $@ $<
-
 # ----------------------------------------------------------------------------
 # Here are the special tweaks to the generic rules.
 
