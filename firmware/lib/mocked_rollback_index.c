@@ -10,15 +10,9 @@
 #include "rollback_index.h"
 #include "tss_constants.h"
 
-
 vb2_error_t SetVirtualDevMode(int val)
 {
 	return VB2_SUCCESS;
-}
-
-uint32_t TPMClearAndReenable(void)
-{
-	return TPM_SUCCESS;
 }
 
 uint32_t RollbackKernelRead(uint32_t *version)
