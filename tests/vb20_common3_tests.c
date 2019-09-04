@@ -174,7 +174,7 @@ static void test_verify_keyblock(const struct vb2_public_key *public_key,
 		"vb2_verify_keyblock() sig too small");
 
 	memcpy(h, hdr, hsize);
-	((uint8_t *)vb2_packed_key_data(&h->data_key))[0] ^= 0x34;
+	((uint8_t *)vb2_packed_key_data_mutable(&h->data_key))[0] ^= 0x34;
 	TEST_EQ(vb2_verify_keyblock(h, hsize, public_key, &wb),
 		VB2_ERROR_KEYBLOCK_SIG_INVALID,
 		"vb2_verify_keyblock() sig mismatch");
@@ -293,7 +293,7 @@ static void test_verify_fw_preamble(struct vb2_packed_key *public_key,
 		"vb2_verify_fw_preamble() sig too small");
 
 	memcpy(h, hdr, hsize);
-	((uint8_t *)vb2_packed_key_data(&h->kernel_subkey))[0] ^= 0x34;
+	((uint8_t *)vb2_packed_key_data_mutable(&h->kernel_subkey))[0] ^= 0x34;
 	TEST_EQ(vb2_verify_fw_preamble(h, hsize, &rsa, &wb),
 		VB2_ERROR_PREAMBLE_SIG_INVALID,
 		"vb2_verify_fw_preamble() sig mismatch");

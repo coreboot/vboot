@@ -15,7 +15,8 @@ vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 			      struct vb2_signature *sig, const uint8_t *digest,
 			      const struct vb2_workbuf *wb)
 {
-	uint8_t *sig_data = vb2_signature_data(sig);
+	/* A signature is destroyed in the process of being verified. */
+	uint8_t *sig_data = vb2_signature_data_mutable(sig);
 
 	if (sig->sig_size != vb2_rsa_sig_size(key->sig_alg)) {
 		VB2_DEBUG("Wrong data signature size for algorithm, "

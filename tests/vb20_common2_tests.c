@@ -130,7 +130,7 @@ static void test_verify_data(const struct vb2_packed_key *key1,
 		 0, "vb2_verify_data() input buffer too small");
 
 	memcpy(sig2, sig, sig_total_size);
-	vb2_signature_data(sig2)[0] ^= 0x5A;
+	vb2_signature_data_mutable(sig2)[0] ^= 0x5A;
 	TEST_NEQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
 		 0, "vb2_verify_data() wrong sig");
 

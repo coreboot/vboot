@@ -286,7 +286,17 @@ vb2_error_t vb2_verify_member_inside(const void *parent, size_t parent_size,
 /*
  * Helper function to get data pointed to by a public key.
  */
-const uint8_t *vb2_packed_key_data(const struct vb2_packed_key *key);
+static inline uint8_t *vb2_packed_key_data_mutable(
+	struct vb2_packed_key *key)
+{
+	return (uint8_t *)key + key->key_offset;
+}
+
+static inline const uint8_t *vb2_packed_key_data(
+	const struct vb2_packed_key *key)
+{
+	return (const uint8_t *)key + key->key_offset;
+}
 
 /**
  * Verify a packed key is fully contained in its parent data
@@ -296,16 +306,29 @@ const uint8_t *vb2_packed_key_data(const struct vb2_packed_key *key);
  * @param key		Packed key pointer
  * @return VB2_SUCCESS, or non-zero if error.
  */
-int vb2_verify_packed_key_inside(const void *parent,
-				 uint32_t parent_size,
-				 const struct vb2_packed_key *key);
+static inline vb2_error_t vb2_verify_packed_key_inside(
+	const void *parent,
+	uint32_t parent_size,
+	const struct vb2_packed_key *key)
+{
+	return vb2_verify_member_inside(parent, parent_size,
+					key, sizeof(*key),
+					key->key_offset, key->key_size);
+}
 
 /*
  * Helper functions to get data pointed to by a public key or signature.
  */
-static inline uint8_t *vb2_signature_data(struct vb2_signature *sig)
+static inline uint8_t *vb2_signature_data_mutable(
+	struct vb2_signature *sig)
 {
 	return (uint8_t *)sig + sig->sig_offset;
+}
+
+static inline const uint8_t *vb2_signature_data(
+	const struct vb2_signature *sig)
+{
+	return (const uint8_t *)sig + sig->sig_offset;
 }
 
 /**

@@ -155,7 +155,7 @@ struct vb2_signature *vb2_external_signature(const uint8_t *data, uint32_t size,
 	/* Sign the signature_digest into our output buffer */
 	rv = sign_external(signature_digest_len,    /* Input length */
 			   signature_digest,        /* Input data */
-			   vb2_signature_data(sig), /* Output sig */
+			   vb2_signature_data_mutable(sig),  /* Output sig */
 			   sig_size,                /* Max Output sig size */
 			   key_file,                /* Key file to use */
 			   external_signer);        /* External cmd to invoke */

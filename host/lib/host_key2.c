@@ -196,8 +196,9 @@ vb2_error_t vb2_copy_packed_key(struct vb2_packed_key *dest,
 	dest->key_size = src->key_size;
 	dest->algorithm = src->algorithm;
 	dest->key_version = src->key_version;
-	memcpy((uint8_t *)vb2_packed_key_data(dest),
-	       vb2_packed_key_data(src), src->key_size);
+	memcpy(vb2_packed_key_data_mutable(dest),
+	       vb2_packed_key_data(src),
+	       src->key_size);
 	return VB2_SUCCESS;
 }
 
@@ -254,7 +255,7 @@ struct vb2_packed_key *vb2_read_packed_keyb(const char *filename,
 		free(key_data);
 		return NULL;
 	}
-	memcpy((uint8_t *)vb2_packed_key_data(key), key_data, key_size);
+	memcpy(vb2_packed_key_data_mutable(key), key_data, key_size);
 
 	free(key_data);
 	return key;

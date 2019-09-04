@@ -78,7 +78,8 @@ static void PublicKeyTest(void)
 	TEST_EQ(k->key_version, j->key_version, "PublicKeyCopy key_version");
 	/* Data should have been copied */
 	TEST_EQ(0,
-		memcmp(GetPublicKeyData(k), GetPublicKeyData(j), k->key_size),
+		memcmp(vb2_packed_key_data(k),
+		       vb2_packed_key_data(j), k->key_size),
 		"PublicKeyCopy data");
 }
 

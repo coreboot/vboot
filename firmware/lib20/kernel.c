@@ -14,11 +14,6 @@
 #include "2sysincludes.h"
 #include "vb2_common.h"
 
-static const uint8_t *vb2_signature_data_const(const struct vb2_signature *sig)
-{
-	return (uint8_t *)sig + sig->sig_offset;
-}
-
 /**
  * Returns non-zero if the kernel needs to have a valid signature, instead of
  * just a valid hash.
@@ -81,7 +76,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	if (rv)
 		return rv;
 
-	if (vb2_safe_memcmp(vb2_signature_data_const(sig), digest,
+	if (vb2_safe_memcmp(vb2_signature_data(sig), digest,
 			    digest_size) != 0) {
 		VB2_DEBUG("Invalid keyblock hash.\n");
 		return VB2_ERROR_KEYBLOCK_SIG_INVALID;

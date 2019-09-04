@@ -58,8 +58,8 @@ vb2_error_t vb2_copy_signature(struct vb2_signature *dest,
 	dest->sig_size = src->sig_size;
 	dest->data_size = src->data_size;
 
-	memcpy(vb2_signature_data(dest),
-	       vb2_signature_data((struct vb2_signature *)src),
+	memcpy(vb2_signature_data_mutable(dest),
+	       vb2_signature_data(src),
 	       src->sig_size);
 
 	return VB2_SUCCESS;
@@ -77,7 +77,7 @@ struct vb2_signature *vb2_sha512_signature(const uint8_t *data, uint32_t size)
 	if (!sig)
 		return NULL;
 
-	memcpy(vb2_signature_data(sig), digest, VB2_SHA512_DIGEST_SIZE);
+	memcpy(vb2_signature_data_mutable(sig), digest, VB2_SHA512_DIGEST_SIZE);
 	return sig;
 }
 
@@ -119,7 +119,7 @@ struct vb2_signature *vb2_calculate_signature(
 	/* Sign the signature_digest into our output buffer */
 	int rv = RSA_private_encrypt(signature_digest_len,    /* Input length */
 				     signature_digest,        /* Input data */
-				     vb2_signature_data(sig), /* Output sig */
+				     vb2_signature_data_mutable(sig),  /* Output sig */
 				     key->rsa_private_key,    /* Key to use */
 				     RSA_PKCS1_PADDING);      /* Padding */
 	free(signature_digest);
