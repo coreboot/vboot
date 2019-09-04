@@ -21,15 +21,15 @@
 #include "2sysincludes.h"
 
 /*
- * Key block flags.
+ * Keyblock flags.
  *
  *The following flags set where the key is valid.  Not used by firmware
  * verification; only kernel verification.
  */
-#define VB2_KEY_BLOCK_FLAG_DEVELOPER_0  0x01 /* Developer switch off */
-#define VB2_KEY_BLOCK_FLAG_DEVELOPER_1  0x02 /* Developer switch on */
-#define VB2_KEY_BLOCK_FLAG_RECOVERY_0   0x04 /* Not recovery mode */
-#define VB2_KEY_BLOCK_FLAG_RECOVERY_1   0x08 /* Recovery mode */
+#define VB2_KEYBLOCK_FLAG_DEVELOPER_0  0x01 /* Developer switch off */
+#define VB2_KEYBLOCK_FLAG_DEVELOPER_1  0x02 /* Developer switch on */
+#define VB2_KEYBLOCK_FLAG_RECOVERY_0   0x04 /* Not recovery mode */
+#define VB2_KEYBLOCK_FLAG_RECOVERY_1   0x08 /* Recovery mode */
 #define VB2_GBB_HWID_DIGEST_SIZE	32
 
 /****************************************************************************/

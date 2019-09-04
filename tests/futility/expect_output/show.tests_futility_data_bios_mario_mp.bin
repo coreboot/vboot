@@ -27,7 +27,7 @@ Firmware body:           Firmware A Data
 Firmware body:           Firmware B Data
   Offset:                0x00120000
   Size:                  0x000d0000
-Key block:               Firmware A Key
+Keyblock:                Firmware A Key
   Signature:             valid
   Size:                  0x8b8
   Flags:                 7  !DEV DEV !REC
@@ -44,7 +44,7 @@ Firmware Preamble:
   Firmware body size:    851968
   Preamble flags:        0
 Body verification succeeded.
-Key block:               Firmware B Key
+Keyblock:                Firmware B Key
   Signature:             valid
   Size:                  0x8b8
   Flags:                 7  !DEV DEV !REC

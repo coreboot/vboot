@@ -56,7 +56,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	if (rv)
 		return rv;
 
-	VB2_DEBUG("Checking key block hash...\n");
+	VB2_DEBUG("Checking keyblock hash...\n");
 
 	/* Digest goes at start of work buffer */
 	digest_size = vb2_digest_size(VB2_HASH_SHA512);
@@ -83,7 +83,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 
 	if (vb2_safe_memcmp(vb2_signature_data_const(sig), digest,
 			    digest_size) != 0) {
-		VB2_DEBUG("Invalid key block hash.\n");
+		VB2_DEBUG("Invalid keyblock hash.\n");
 		return VB2_ERROR_KEYBLOCK_SIG_INVALID;
 	}
 
@@ -166,19 +166,19 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 			return rv;
 	}
 
-	/* Check the key block flags against the current boot mode */
+	/* Check the keyblock flags against the current boot mode */
 	if (!(kb->keyblock_flags &
-	      (dev_switch ? VB2_KEY_BLOCK_FLAG_DEVELOPER_1 :
-	       VB2_KEY_BLOCK_FLAG_DEVELOPER_0))) {
-		VB2_DEBUG("Key block developer flag mismatch.\n");
+	      (dev_switch ? VB2_KEYBLOCK_FLAG_DEVELOPER_1 :
+	       VB2_KEYBLOCK_FLAG_DEVELOPER_0))) {
+		VB2_DEBUG("Keyblock developer flag mismatch.\n");
 		keyblock_is_valid = 0;
 		if (need_keyblock_valid)
 			return VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG;
 	}
 	if (!(kb->keyblock_flags &
-	      (rec_switch ? VB2_KEY_BLOCK_FLAG_RECOVERY_1 :
-	       VB2_KEY_BLOCK_FLAG_RECOVERY_0))) {
-		VB2_DEBUG("Key block recovery flag mismatch.\n");
+	      (rec_switch ? VB2_KEYBLOCK_FLAG_RECOVERY_1 :
+	       VB2_KEYBLOCK_FLAG_RECOVERY_0))) {
+		VB2_DEBUG("Keyblock recovery flag mismatch.\n");
 		keyblock_is_valid = 0;
 		if (need_keyblock_valid)
 			return VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG;

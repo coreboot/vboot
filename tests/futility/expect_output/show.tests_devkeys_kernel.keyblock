@@ -1,4 +1,4 @@
-Key block:               tests/devkeys/kernel.keyblock
+Keyblock:                tests/devkeys/kernel.keyblock
   Signature:             ignored
   Size:                  0x4b8
   Flags:                 7  !DEV DEV !REC

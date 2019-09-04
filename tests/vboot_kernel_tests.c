@@ -50,7 +50,7 @@ static uint8_t kernel_buffer[80000];
 static int disk_read_to_fail;
 static int disk_write_to_fail;
 static int gpt_init_fail;
-static int key_block_verify_fail;  /* 0=ok, 1=sig, 2=hash */
+static int keyblock_verify_fail;  /* 0=ok, 1=sig, 2=hash */
 static int preamble_verify_fail;
 static int verify_data_fail;
 static int unpack_key_fail;
@@ -127,7 +127,7 @@ static void ResetMocks(void)
 	disk_write_to_fail = -1;
 
 	gpt_init_fail = 0;
-	key_block_verify_fail = 0;
+	keyblock_verify_fail = 0;
 	preamble_verify_fail = 0;
 	verify_data_fail = 0;
 	unpack_key_fail = 0;
@@ -153,12 +153,12 @@ static void ResetMocks(void)
 
 	memset(&kbh, 0, sizeof(kbh));
 	kbh.data_key.key_version = 2;
-	kbh.key_block_flags = -1;
-	kbh.key_block_size = sizeof(kbh);
+	kbh.keyblock_flags = -1;
+	kbh.keyblock_size = sizeof(kbh);
 
 	memset(&kph, 0, sizeof(kph));
 	kph.kernel_version = 1;
-	kph.preamble_size = 4096 - kbh.key_block_size;
+	kph.preamble_size = 4096 - kbh.keyblock_size;
 	kph.body_signature.data_size = 70144;
 	kph.bootloader_address = 0xbeadd008;
 	kph.bootloader_size = 0x1234;
@@ -284,10 +284,10 @@ vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 				const struct vb2_public_key *key,
 				const struct vb2_workbuf *wb)
 {
-	if (key_block_verify_fail >= 1)
+	if (keyblock_verify_fail >= 1)
 		return VB2_ERROR_MOCK;
 
-	/* Use this as an opportunity to override the key block */
+	/* Use this as an opportunity to override the keyblock */
 	memcpy((void *)block, &kbh, sizeof(kbh));
 	return VB2_SUCCESS;
 }
@@ -296,10 +296,10 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 				     uint32_t size,
 				     const struct vb2_workbuf *wb)
 {
-	if (key_block_verify_fail >= 2)
+	if (keyblock_verify_fail >= 2)
 		return VB2_ERROR_MOCK;
 
-	/* Use this as an opportunity to override the key block */
+	/* Use this as an opportunity to override the keyblock */
 	memcpy((void *)block, &kbh, sizeof(kbh));
 	return VB2_SUCCESS;
 }
@@ -650,76 +650,76 @@ static void LoadKernelTest(void)
 		       "Fail reading kernel start");
 
 	ResetMocks();
-	key_block_verify_fail = 1;
-	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail key block sig");
+	keyblock_verify_fail = 1;
+	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail keyblock sig");
 
 	/* In dev mode, fail if hash is bad too */
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	key_block_verify_fail = 2;
-	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail key block dev hash");
+	keyblock_verify_fail = 2;
+	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail keyblock dev hash");
 
 	/* But just bad sig is ok */
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	key_block_verify_fail = 1;
-	TestLoadKernel(0, "Succeed key block dev sig");
+	keyblock_verify_fail = 1;
+	TestLoadKernel(0, "Succeed keyblock dev sig");
 
 	/* In dev mode and requiring signed kernel, fail if sig is bad */
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	vb2_nv_set(&ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
-	key_block_verify_fail = 1;
-	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail key block dev sig");
+	keyblock_verify_fail = 1;
+	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Fail keyblock dev sig");
 
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	lkp.fwmp = &fwmp;
 	fwmp.flags |= FWMP_DEV_ENABLE_OFFICIAL_ONLY;
-	key_block_verify_fail = 1;
+	keyblock_verify_fail = 1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Fail key block dev sig fwmp");
+		       "Fail keyblock dev sig fwmp");
 
-	/* Check key block flag mismatches */
+	/* Check keyblock flag mismatches */
 	ResetMocks();
-	kbh.key_block_flags =
-		KEY_BLOCK_FLAG_RECOVERY_0 | KEY_BLOCK_FLAG_DEVELOPER_1;
+	kbh.keyblock_flags =
+		KEYBLOCK_FLAG_RECOVERY_0 | KEYBLOCK_FLAG_DEVELOPER_1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block dev flag mismatch");
+		       "Keyblock dev flag mismatch");
 
 	ResetMocks();
-	kbh.key_block_flags =
-		KEY_BLOCK_FLAG_RECOVERY_1 | KEY_BLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags =
+		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_0;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block rec flag mismatch");
+		       "Keyblock rec flag mismatch");
 
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
-	kbh.key_block_flags =
-		KEY_BLOCK_FLAG_RECOVERY_1 | KEY_BLOCK_FLAG_DEVELOPER_1;
+	kbh.keyblock_flags =
+		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block recdev flag mismatch");
+		       "Keyblock recdev flag mismatch");
 
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
-	kbh.key_block_flags =
-		KEY_BLOCK_FLAG_RECOVERY_1 | KEY_BLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags =
+		KEYBLOCK_FLAG_RECOVERY_1 | KEYBLOCK_FLAG_DEVELOPER_0;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block rec!dev flag mismatch");
+		       "Keyblock rec!dev flag mismatch");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block kernel key rollback");
+		       "Keyblock kernel key rollback");
 
 	ResetMocks();
 	kbh.data_key.key_version = 0x10000;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Key block kernel key version too big");
+		       "Keyblock kernel key version too big");
 
 	ResetMocks();
 	kbh.data_key.key_version = 3;
-	TestLoadKernel(0, "Key block version roll forward");
+	TestLoadKernel(0, "Keyblock version roll forward");
 	TEST_EQ(shared->kernel_version_tpm, 0x30001, "  shared version");
 
 	ResetMocks();
@@ -769,14 +769,14 @@ static void LoadKernelTest(void)
 	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
 	fwmp.dev_key_hash[0]++;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
-		       "Fail key block dev fwmp hash");
+		       "Fail keyblock dev fwmp hash");
 
 	/* Check developer key hash - good */
 	ResetMocks();
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	lkp.fwmp = &fwmp;
 	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
-	TestLoadKernel(0, "Good key block dev fwmp hash");
+	TestLoadKernel(0, "Good keyblock dev fwmp hash");
 
 	ResetMocks();
 	kph.preamble_size |= 0x07;

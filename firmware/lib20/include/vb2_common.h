@@ -94,28 +94,28 @@ vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 			    const struct vb2_workbuf *wb);
 
 /**
- * Check the sanity of a key block structure.
+ * Check the sanity of a keyblock structure.
  *
- * Verifies all the header fields.  Does not verify key index or key block
- * flags.  Should be called before verifying the key block data itself using
+ * Verifies all the header fields.  Does not verify key index or keyblock
+ * flags.  Should be called before verifying the keyblock data itself using
  * the key.  (This function does not itself verify the signature - just that
  * the right amount of data is claimed to be signed.)
  *
- * @param block		Key block to verify
- * @param size		Size of key block buffer
+ * @param block		Keyblock to verify
+ * @param size		Size of keyblock buffer
  * @param sig		Which signature inside the keyblock to use
  */
 vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 			       const struct vb2_signature *sig);
 
 /**
- * Verify a key block using a public key.
+ * Verify a keyblock using a public key.
  *
  * Header fields are also checked for sanity.  Does not verify key index or key
  * block flags.  Signature inside block is destroyed during check.
  *
- * @param block		Key block to verify
- * @param size		Size of key block buffer
+ * @param block		Keyblock to verify
+ * @param size		Size of keyblock buffer
  * @param key		Key to use to verify block
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.
@@ -125,13 +125,13 @@ vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 				const struct vb2_workbuf *wb);
 
 /**
- * Verify a key block using its hash.
+ * Verify a keyblock using its hash.
  *
  * Header fields are also checked for sanity.  Does not verify key index or key
  * block flags.  Use this for self-signed keyblocks in developer mode.
  *
- * @param block		Key block to verify
- * @param size		Size of key block buffer
+ * @param block		Keyblock to verify
+ * @param size		Size of keyblock buffer
  * @param key		Key to use to verify block
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.

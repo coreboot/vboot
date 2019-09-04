@@ -91,7 +91,7 @@ static const char usage[] =
 	"Usage:  " MYNAME " %s --pack <file> [PARAMETERS]\n"
 	"\n"
 	"  Required parameters:\n"
-	"    --keyblock <file>         Key block in .keyblock format\n"
+	"    --keyblock <file>         Keyblock in .keyblock format\n"
 	"    --signprivate <file>      Private key to sign kernel data,\n"
 	"                                in .vbprivk format\n"
 	"    --version <number>        Kernel version\n"
@@ -115,7 +115,7 @@ static const char usage[] =
 	"                                (including verfication blob)\n"
 	"\n"
 	"  Optional:\n"
-	"    --keyblock <file>         Key block in .keyblock format\n"
+	"    --keyblock <file>         Keyblock in .keyblock format\n"
 	"    --config <file>           New command line file\n"
 	"    --version <number>        Kernel version\n"
 	"    --kloadaddr <address>     Assign kernel body load address\n"
@@ -129,7 +129,7 @@ static const char usage[] =
 	"       Public key to verify kernel keyblock,\n"
 	"                                in .vbpubk format\n"
 	"    --verbose                 Print a more detailed report\n"
-	"    --keyblock <file>         Outputs the verified key block,\n"
+	"    --keyblock <file>         Outputs the verified keyblock,\n"
 	"                                in .keyblock format\n"
 	"    --pad <number>            Verification padding size in bytes\n"
 	"    --minversion <number>     Minimum combined kernel key version\n"
@@ -392,7 +392,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 
 		t_keyblock = (struct vb2_keyblock *)ReadFile(keyblock_file, 0);
 		if (!t_keyblock)
-			FATAL("Error reading key block.\n");
+			FATAL("Error reading keyblock.\n");
 
 		if (!signprivkey_file)
 			FATAL("Missing required signprivate file.\n");
@@ -523,7 +523,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			t_keyblock = (struct vb2_keyblock *)
 				ReadFile(keyblock_file, 0);
 			if (!t_keyblock)
-				FATAL("Error reading key block.\n");
+				FATAL("Error reading keyblock.\n");
 		}
 
 		/* Reuse previous body size */

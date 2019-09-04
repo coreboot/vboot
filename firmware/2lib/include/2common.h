@@ -242,7 +242,7 @@ const struct vb2_id *vb2_hash_id(enum vb2_hash_algorithm hash_alg);
 		 sizeof(struct vb2_digest_context)))
 
 /* Size of work buffer sufficient for vb2_verify_keyblock() worst case. */
-#define VB2_KEY_BLOCK_VERIFY_WORKBUF_BYTES VB2_VERIFY_DATA_WORKBUF_BYTES
+#define VB2_KEYBLOCK_VERIFY_WORKBUF_BYTES VB2_VERIFY_DATA_WORKBUF_BYTES
 
 /* Size of work buffer sufficient for vb2_verify_fw_preamble() worst case. */
 #define VB2_VERIFY_FIRMWARE_PREAMBLE_WORKBUF_BYTES VB2_VERIFY_DATA_WORKBUF_BYTES

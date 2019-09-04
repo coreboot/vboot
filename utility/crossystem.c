@@ -68,7 +68,7 @@ const Param sys_param_list[] = {
   {"kern_nv", 0, "Non-volatile field for kernel use", "0x%04x"},
   {"kernel_max_rollforward", CAN_WRITE, "Max kernel version to store into TPM",
    "0x%08x"},
-  {"kernkey_vfy", IS_STRING, "Type of verification done on kernel key block"},
+  {"kernkey_vfy", IS_STRING, "Type of verification done on kernel keyblock"},
   {"loc_idx", CAN_WRITE, "Localization index for firmware screens"},
   {"mainfw_act", IS_STRING, "Active main firmware"},
   {"mainfw_type", IS_STRING, "Active main firmware type"},

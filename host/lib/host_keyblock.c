@@ -26,7 +26,7 @@ struct vb2_keyblock *vb2_create_keyblock(
 		const struct vb2_private_key *signing_key,
 		uint32_t flags)
 {
-	/* Allocate key block */
+	/* Allocate keyblock */
 	uint32_t signed_size = sizeof(struct vb2_keyblock) + data_key->key_size;
 	uint32_t sig_data_size =
 		(signing_key ? vb2_rsa_sig_size(signing_key->sig_alg) : 0);
@@ -40,9 +40,9 @@ struct vb2_keyblock *vb2_create_keyblock(
 	uint8_t *block_chk_dest = data_key_dest + data_key->key_size;
 	uint8_t *block_sig_dest = block_chk_dest + VB2_SHA512_DIGEST_SIZE;
 
-	memcpy(h->magic, KEY_BLOCK_MAGIC, KEY_BLOCK_MAGIC_SIZE);
-	h->header_version_major = KEY_BLOCK_HEADER_VERSION_MAJOR;
-	h->header_version_minor = KEY_BLOCK_HEADER_VERSION_MINOR;
+	memcpy(h->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
+	h->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
+	h->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
 	h->keyblock_size = block_size;
 	h->keyblock_flags = flags;
 
@@ -99,7 +99,7 @@ struct vb2_keyblock *vb2_create_keyblock_external(
 	uint32_t block_size =
 		signed_size + VB2_SHA512_DIGEST_SIZE + sig_data_size;
 
-	/* Allocate key block */
+	/* Allocate keyblock */
 	struct vb2_keyblock *h = (struct vb2_keyblock *)calloc(block_size, 1);
 	if (!h)
 		return NULL;
@@ -108,9 +108,9 @@ struct vb2_keyblock *vb2_create_keyblock_external(
 	uint8_t *block_chk_dest = data_key_dest + data_key->key_size;
 	uint8_t *block_sig_dest = block_chk_dest + VB2_SHA512_DIGEST_SIZE;
 
-	memcpy(h->magic, KEY_BLOCK_MAGIC, KEY_BLOCK_MAGIC_SIZE);
-	h->header_version_major = KEY_BLOCK_HEADER_VERSION_MAJOR;
-	h->header_version_minor = KEY_BLOCK_HEADER_VERSION_MINOR;
+	memcpy(h->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
+	h->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
+	h->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
 	h->keyblock_size = block_size;
 	h->keyblock_flags = flags;
 
@@ -152,14 +152,14 @@ struct vb2_keyblock *vb2_read_keyblock(const char *filename)
 	uint32_t file_size;
 	if (VB2_SUCCESS !=
 	    vb2_read_file(filename, (uint8_t **)&block, &file_size)) {
-		fprintf(stderr, "Error reading key block file: %s\n", filename);
+		fprintf(stderr, "Error reading keyblock file: %s\n", filename);
 		return NULL;
 	}
 
-	/* Verify the hash of the key block, since we can do that without
+	/* Verify the hash of the keyblock, since we can do that without
 	 * the public signing key. */
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(block, file_size, &wb)) {
-		fprintf(stderr, "Invalid key block file: %s\n", filename);
+		fprintf(stderr, "Invalid keyblock file: %s\n", filename);
 		free(block);
 		return NULL;
 	}

@@ -94,27 +94,27 @@ vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 			       const struct vb2_signature *sig)
 {
 	if(size < sizeof(*block)) {
-		VB2_DEBUG("Not enough space for key block header.\n");
+		VB2_DEBUG("Not enough space for keyblock header.\n");
 		return VB2_ERROR_KEYBLOCK_TOO_SMALL_FOR_HEADER;
 	}
 
-	if (memcmp(block->magic, KEY_BLOCK_MAGIC, KEY_BLOCK_MAGIC_SIZE)) {
-		VB2_DEBUG("Not a valid verified boot key block.\n");
+	if (memcmp(block->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE)) {
+		VB2_DEBUG("Not a valid verified boot keyblock.\n");
 		return VB2_ERROR_KEYBLOCK_MAGIC;
 	}
 
-	if (block->header_version_major != KEY_BLOCK_HEADER_VERSION_MAJOR) {
-		VB2_DEBUG("Incompatible key block header version.\n");
+	if (block->header_version_major != KEYBLOCK_HEADER_VERSION_MAJOR) {
+		VB2_DEBUG("Incompatible keyblock header version.\n");
 		return VB2_ERROR_KEYBLOCK_HEADER_VERSION;
 	}
 
 	if (size < block->keyblock_size) {
-		VB2_DEBUG("Not enough data for key block.\n");
+		VB2_DEBUG("Not enough data for keyblock.\n");
 		return VB2_ERROR_KEYBLOCK_SIZE;
 	}
 
 	if (vb2_verify_signature_inside(block, block->keyblock_size, sig)) {
-		VB2_DEBUG("Key block signature off end of block\n");
+		VB2_DEBUG("Keyblock signature off end of block\n");
 		return VB2_ERROR_KEYBLOCK_SIG_OUTSIDE;
 	}
 
@@ -133,7 +133,7 @@ vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 	/* Verify data key is inside the block and inside signed data */
 	if (vb2_verify_packed_key_inside(block, block->keyblock_size,
 					 &block->data_key)) {
-		VB2_DEBUG("Data key off end of key block\n");
+		VB2_DEBUG("Data key off end of keyblock\n");
 		return VB2_ERROR_KEYBLOCK_DATA_KEY_OUTSIDE;
 	}
 	if (vb2_verify_packed_key_inside(block, sig->data_size,
@@ -157,10 +157,10 @@ vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 	if (rv)
 		return rv;
 
-	VB2_DEBUG("Checking key block signature...\n");
+	VB2_DEBUG("Checking keyblock signature...\n");
 	rv = vb2_verify_data((const uint8_t *)block, size, sig, key, wb);
 	if (rv) {
-		VB2_DEBUG("Invalid key block signature.\n");
+		VB2_DEBUG("Invalid keyblock signature.\n");
 		return VB2_ERROR_KEYBLOCK_SIG_INVALID;
 	}
 

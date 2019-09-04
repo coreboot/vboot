@@ -1,5 +1,5 @@
 Kernel partition:        tests/futility/data/kern_preamble.bin
-Key block:
+Keyblock:
   Signature:             ignored
   Size:                  0x5b8
   Flags:                 15  !DEV DEV !REC REC

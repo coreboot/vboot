@@ -27,7 +27,7 @@ Firmware body:           FW_MAIN_A
 Firmware body:           FW_MAIN_B
   Offset:                0x00120000
   Size:                  0x000dffc0
-Key block:               VBLOCK_A
+Keyblock:                VBLOCK_A
   Signature:             valid
   Size:                  0x8b8
   Flags:                 6  DEV !REC
@@ -44,7 +44,7 @@ Firmware Preamble:
   Firmware body size:    917440
   Preamble flags:        0
 Body verification succeeded.
-Key block:               VBLOCK_B
+Keyblock:                VBLOCK_B
   Signature:             valid
   Size:                  0x8b8
   Flags:                 7  !DEV DEV !REC

@@ -521,30 +521,30 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 		if (VB2_SUCCESS !=
 		    vb2_verify_keyblock(g_keyblock, g_keyblock->keyblock_size,
 					&pubkey, &wb)) {
-			fprintf(stderr, "Error verifying key block.\n");
+			fprintf(stderr, "Error verifying keyblock.\n");
 			goto done;
 		}
 	} else if (VB2_SUCCESS !=
 		   vb2_verify_keyblock_hash(g_keyblock,
 					    g_keyblock->keyblock_size,
 					    &wb)) {
-		fprintf(stderr, "Error verifying key block.\n");
+		fprintf(stderr, "Error verifying keyblock.\n");
 		goto done;
 	}
 
-	printf("Key block:\n");
+	printf("Keyblock:\n");
 	struct vb2_packed_key *data_key = &g_keyblock->data_key;
 	printf("  Signature:           %s\n",
 	       signpub_key ? "valid" : "ignored");
 	printf("  Size:                %#x\n", g_keyblock->keyblock_size);
 	printf("  Flags:               %u ", g_keyblock->keyblock_flags);
-	if (g_keyblock->keyblock_flags & KEY_BLOCK_FLAG_DEVELOPER_0)
+	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
-	if (g_keyblock->keyblock_flags & KEY_BLOCK_FLAG_DEVELOPER_1)
+	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_1)
 		printf(" DEV");
-	if (g_keyblock->keyblock_flags & KEY_BLOCK_FLAG_RECOVERY_0)
+	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_0)
 		printf(" !REC");
-	if (g_keyblock->keyblock_flags & KEY_BLOCK_FLAG_RECOVERY_1)
+	if (g_keyblock->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
 	printf("\n");
 	printf("  Data key algorithm:  %u %s\n", data_key->algorithm,
@@ -557,12 +557,12 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 		FILE *f = NULL;
 		f = fopen(keyblock_outfile, "wb");
 		if (!f)  {
-			fprintf(stderr, "Can't open key block file %s: %s\n",
+			fprintf(stderr, "Can't open keyblock file %s: %s\n",
 				keyblock_outfile, strerror(errno));
 			goto done;
 		}
 		if (1 != fwrite(g_keyblock, g_keyblock->keyblock_size, 1, f)) {
-			fprintf(stderr, "Can't write key block file %s: %s\n",
+			fprintf(stderr, "Can't write keyblock file %s: %s\n",
 				keyblock_outfile, strerror(errno));
 			fclose(f);
 			goto done;

@@ -259,7 +259,7 @@ static void test_verify_keyblock(void)
 	uint32_t buf_size;
 	uint8_t *buf, *buf2;
 
-	uint8_t workbuf[VB2_KEY_BLOCK_VERIFY_WORKBUF_BYTES]
+	uint8_t workbuf[VB2_KEYBLOCK_VERIFY_WORKBUF_BYTES]
 		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 

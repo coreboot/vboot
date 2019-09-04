@@ -57,20 +57,20 @@ static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
 			  int sign_key, int good_sig)
 {
 	if (name)
-		printf("Key block:               %s\n", name);
+		printf("Keyblock:                %s\n", name);
 	else
-		printf("Key block:\n");
+		printf("Keyblock:\n");
 	printf("  Signature:             %s\n",
 	       sign_key ? (good_sig ? "valid" : "invalid") : "ignored");
 	printf("  Size:                  %#x\n", keyblock->keyblock_size);
 	printf("  Flags:                 %d ", keyblock->keyblock_flags);
-	if (keyblock->keyblock_flags & VB2_KEY_BLOCK_FLAG_DEVELOPER_0)
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
-	if (keyblock->keyblock_flags & VB2_KEY_BLOCK_FLAG_DEVELOPER_1)
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_1)
 		printf(" DEV");
-	if (keyblock->keyblock_flags & VB2_KEY_BLOCK_FLAG_RECOVERY_0)
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_0)
 		printf(" !REC");
-	if (keyblock->keyblock_flags & VB2_KEY_BLOCK_FLAG_RECOVERY_1)
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
 	printf("\n");
 

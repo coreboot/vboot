@@ -145,13 +145,13 @@ vb2_error_t vb21_verify_data(const void *data, uint32_t size,
 			     const struct vb2_workbuf *wb);
 
 /**
- * Check the sanity of a key block using a public key.
+ * Check the sanity of a keyblock using a public key.
  *
  * Header fields are also checked for sanity.  Does not verify key index or key
  * block flags.  Signature inside block is destroyed during check.
  *
- * @param block		Key block to verify
- * @param size		Size of key block buffer
+ * @param block		Keyblock to verify
+ * @param size		Size of keyblock buffer
  * @param key		Key to use to verify block
  * @param wb		Work buffer
  * @return VB2_SUCCESS, or non-zero error code if error.

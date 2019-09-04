@@ -109,13 +109,13 @@ static void reset_common_data(enum reset_type t)
 	mock_gbb.recovery_key.key_size = sizeof(mock_gbb.recovery_key_data);
 
 	kb->keyblock_size = sizeof(mock_vblock.k);
-	memcpy(kb->magic, KEY_BLOCK_MAGIC, KEY_BLOCK_MAGIC_SIZE);
+	memcpy(kb->magic, KEYBLOCK_MAGIC, KEYBLOCK_MAGIC_SIZE);
 
-	kb->keyblock_flags = VB2_KEY_BLOCK_FLAG_DEVELOPER_1 |
-		VB2_KEY_BLOCK_FLAG_DEVELOPER_0 |
-		VB2_KEY_BLOCK_FLAG_RECOVERY_1 | VB2_KEY_BLOCK_FLAG_RECOVERY_0;
-	kb->header_version_major = KEY_BLOCK_HEADER_VERSION_MAJOR;
-	kb->header_version_minor = KEY_BLOCK_HEADER_VERSION_MINOR;
+	kb->keyblock_flags = VB2_KEYBLOCK_FLAG_DEVELOPER_1 |
+		VB2_KEYBLOCK_FLAG_DEVELOPER_0 |
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_RECOVERY_0;
+	kb->header_version_major = KEYBLOCK_HEADER_VERSION_MAJOR;
+	kb->header_version_minor = KEYBLOCK_HEADER_VERSION_MINOR;
 	kb->data_key.algorithm = 7;
 	kb->data_key.key_version = 2;
 	kb->data_key.key_offset =
@@ -322,35 +322,35 @@ static void load_kernel_keyblock_tests(void)
 
 	/* Test keyblock flags matching mode */
 	reset_common_data(FOR_KEYBLOCK);
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_DEVELOPER_0;
 	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG,
 		"Kernel keyblock dev only");
 
 	reset_common_data(FOR_KEYBLOCK);
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_RECOVERY_0;
 	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG,
 		"Kernel keyblock rec only");
 
 	reset_common_data(FOR_KEYBLOCK);
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_1;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_RECOVERY_1;
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG,
 		"Kernel keyblock not rec");
 
 	reset_common_data(FOR_KEYBLOCK);
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_RECOVERY_0;
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_EQ(vb2_load_kernel_keyblock(&ctx),
 		VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG,
 		"Kernel keyblock rec but not dev+rec");
 
 	reset_common_data(FOR_KEYBLOCK);
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_DEVELOPER_0;
-	kb->keyblock_flags &= ~VB2_KEY_BLOCK_FLAG_RECOVERY_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kb->keyblock_flags &= ~VB2_KEYBLOCK_FLAG_RECOVERY_0;
 	ctx.flags |= VB2_CONTEXT_DEVELOPER_MODE | VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2_load_kernel_keyblock(&ctx),
 		  "Kernel keyblock flags dev+rec");

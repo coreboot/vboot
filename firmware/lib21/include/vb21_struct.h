@@ -242,10 +242,10 @@ struct vb21_signature {
 #define VB21_KEYBLOCK_VERSION_MINOR 0
 
 /*
- * Key block.  This contains a signed, versioned key for use in the next stage
+ * Keyblock.  This contains a signed, versioned key for use in the next stage
  * of verified boot.
  *
- * The key block data must be arranged like this:
+ * The keyblock data must be arranged like this:
  *     1) vb21_keyblock header struct h
  *     2) Keyblock description (pointed to by h.c.fixed_size)
  *     3) Data key (pointed to by h.data_key_offset)
@@ -258,7 +258,7 @@ struct vb21_keyblock {
 	/* Common header fields */
 	struct vb21_struct_common c;
 
-	/* Flags (VB2_KEY_BLOCK_FLAG_*) */
+	/* Flags (VB2_KEYBLOCK_FLAG_*) */
 	uint32_t flags;
 
 	/*

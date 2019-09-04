@@ -140,7 +140,7 @@ static void test_verify_keyblock(const struct vb2_public_key *public_key,
 				const struct vb2_private_key *private_key,
 				const struct vb2_packed_key *data_key)
 {
-	uint8_t workbuf[VB2_KEY_BLOCK_VERIFY_WORKBUF_BYTES]
+	uint8_t workbuf[VB2_KEYBLOCK_VERIFY_WORKBUF_BYTES]
 		__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	struct vb2_keyblock *hdr;

@@ -35,53 +35,53 @@ typedef struct VbSignature {
 
 #define EXPECTED_VBSIGNATURE_SIZE 24
 
-#define KEY_BLOCK_MAGIC "CHROMEOS"
-#define KEY_BLOCK_MAGIC_SIZE 8
+#define KEYBLOCK_MAGIC "CHROMEOS"
+#define KEYBLOCK_MAGIC_SIZE 8
 
-#define KEY_BLOCK_HEADER_VERSION_MAJOR 2
-#define KEY_BLOCK_HEADER_VERSION_MINOR 1
+#define KEYBLOCK_HEADER_VERSION_MAJOR 2
+#define KEYBLOCK_HEADER_VERSION_MINOR 1
 
-/* Flags for key_block_flags */
+/* Flags for keyblock_flags */
 /* The following flags set where the key is valid */
-#define KEY_BLOCK_FLAG_DEVELOPER_0  (0x01ULL) /* Developer switch off */
-#define KEY_BLOCK_FLAG_DEVELOPER_1  (0x02ULL) /* Developer switch on */
-#define KEY_BLOCK_FLAG_RECOVERY_0   (0x04ULL) /* Not recovery mode */
-#define KEY_BLOCK_FLAG_RECOVERY_1   (0x08ULL) /* Recovery mode */
+#define KEYBLOCK_FLAG_DEVELOPER_0  (0x01ULL) /* Developer switch off */
+#define KEYBLOCK_FLAG_DEVELOPER_1  (0x02ULL) /* Developer switch on */
+#define KEYBLOCK_FLAG_RECOVERY_0   (0x04ULL) /* Not recovery mode */
+#define KEYBLOCK_FLAG_RECOVERY_1   (0x08ULL) /* Recovery mode */
 
 /*
- * Key block, containing the public key used to sign some other chunk of data.
+ * Keyblock, containing the public key used to sign some other chunk of data.
  *
  * This should be followed by:
  *   1) The data_key key data, pointed to by data_key.key_offset.
  *   2) The checksum data for (VBKeyBlockHeader + data_key data), pointed to
- *      by key_block_checksum.sig_offset.
+ *      by keyblock_checksum.sig_offset.
  *   3) The signature data for (VBKeyBlockHeader + data_key data), pointed to
- *      by key_block_signature.sig_offset.
+ *      by keyblock_signature.sig_offset.
  */
 typedef struct VbKeyBlockHeader {
 	/* Magic number */
-	uint8_t magic[KEY_BLOCK_MAGIC_SIZE];
+	uint8_t magic[KEYBLOCK_MAGIC_SIZE];
 	/* Version of this header format */
 	uint32_t header_version_major;
 	/* Version of this header format */
 	uint32_t header_version_minor;
 	/*
-	 * Length of this entire key block, including keys, signatures, and
+	 * Length of this entire keyblock, including keys, signatures, and
 	 * padding, in bytes
 	 */
-	uint64_t key_block_size;
+	uint64_t keyblock_size;
 	/*
-	 * Signature for this key block (header + data pointed to by data_key)
+	 * Signature for this keyblock (header + data pointed to by data_key)
 	 * For use with signed data keys
 	 */
-	VbSignature key_block_signature;
+	VbSignature keyblock_signature;
 	/*
-	 * SHA-512 checksum for this key block (header + data pointed to by
+	 * SHA-512 checksum for this keyblock (header + data pointed to by
 	 * data_key) For use with unsigned data keys
 	 */
-	VbSignature key_block_checksum;
-	/* Flags for key (KEY_BLOCK_FLAG_*) */
-	uint64_t key_block_flags;
+	VbSignature keyblock_checksum;
+	/* Flags for key (KEYBLOCK_FLAG_*) */
+	uint64_t keyblock_flags;
 	/* Key to verify the chunk of data */
 	struct vb2_packed_key data_key;
 } __attribute__((packed)) VbKeyBlockHeader;
@@ -284,14 +284,14 @@ typedef struct VbKernelPreambleHeader {
 #define VBSD_LK_BOOT_MODE_DEVELOPER     2
 
 /* Flags for VbSharedDataKernelPart.flags */
-#define VBSD_LKP_FLAG_KEY_BLOCK_VALID   0x01
+#define VBSD_LKP_FLAG_KEYBLOCK_VALID   0x01
 
 /* Result codes for VbSharedDataKernelPart.check_result */
 #define VBSD_LKP_CHECK_NOT_DONE           0
 #define VBSD_LKP_CHECK_TOO_SMALL          1
 #define VBSD_LKP_CHECK_READ_START         2
-#define VBSD_LKP_CHECK_KEY_BLOCK_SIG      3
-#define VBSD_LKP_CHECK_KEY_BLOCK_HASH     4
+#define VBSD_LKP_CHECK_KEYBLOCK_SIG      3
+#define VBSD_LKP_CHECK_KEYBLOCK_HASH     4
 #define VBSD_LKP_CHECK_DEV_MISMATCH       5
 #define VBSD_LKP_CHECK_REC_MISMATCH       6
 #define VBSD_LKP_CHECK_KEY_ROLLBACK       7

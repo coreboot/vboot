@@ -46,14 +46,14 @@ struct vb2_signature {
 #define EXPECTED_VB2_SIGNATURE_SIZE 24
 
 
-#define KEY_BLOCK_MAGIC "CHROMEOS"
-#define KEY_BLOCK_MAGIC_SIZE 8
+#define KEYBLOCK_MAGIC "CHROMEOS"
+#define KEYBLOCK_MAGIC_SIZE 8
 
-#define KEY_BLOCK_HEADER_VERSION_MAJOR 2
-#define KEY_BLOCK_HEADER_VERSION_MINOR 1
+#define KEYBLOCK_HEADER_VERSION_MAJOR 2
+#define KEYBLOCK_HEADER_VERSION_MINOR 1
 
 /*
- * Key block, containing the public key used to sign some other chunk of data.
+ * Keyblock, containing the public key used to sign some other chunk of data.
  *
  * This should be followed by:
  *   1) The data_key key data, pointed to by data_key.key_offset.
@@ -64,34 +64,34 @@ struct vb2_signature {
  */
 struct vb2_keyblock {
 	/* Magic number */
-	uint8_t magic[KEY_BLOCK_MAGIC_SIZE];
+	uint8_t magic[KEYBLOCK_MAGIC_SIZE];
 
 	/* Version of this header format */
 	uint32_t header_version_major;
 	uint32_t header_version_minor;
 
 	/*
-	 * Length of this entire key block, including keys, signatures, and
+	 * Length of this entire keyblock, including keys, signatures, and
 	 * padding, in bytes
 	 */
 	uint32_t keyblock_size;
 	uint32_t reserved0;
 
 	/*
-	 * Signature for this key block (header + data pointed to by data_key)
+	 * Signature for this keyblock (header + data pointed to by data_key)
 	 * For use with signed data keys
 	 */
 	struct vb2_signature keyblock_signature;
 
 	/*
-	 * SHA-512 hash for this key block (header + data pointed to by
+	 * SHA-512 hash for this keyblock (header + data pointed to by
 	 * data_key) For use with unsigned data keys.
 	 *
 	 * Only supported for kernel keyblocks, not firmware keyblocks.
 	 */
 	struct vb2_signature keyblock_hash;
 
-	/* Flags for key (VB2_KEY_BLOCK_FLAG_*) */
+	/* Flags for key (VB2_KEYBLOCK_FLAG_*) */
 	uint32_t keyblock_flags;
 	uint32_t reserved1;
 
@@ -143,7 +143,7 @@ struct vb2_fw_preamble {
 	uint32_t firmware_version;
 	uint32_t reserved1;
 
-	/* Key to verify kernel key block */
+	/* Key to verify kernel keyblock */
 	struct vb2_packed_key kernel_subkey;
 
 	/* Signature for the firmware body */

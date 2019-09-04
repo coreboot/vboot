@@ -23,15 +23,15 @@ TEST_CONFIG_FILE=${TESTCASE_DIR}/testconfig
 TEST_CONFIG_SIZE=3000
 
 function generate_fuzzing_images {
-  echo "Generating key blocks..."
-  # Firmware key block - RSA8192/SHA512 root key, RSA4096/SHA512 firmware
+  echo "Generating keyblocks..."
+  # Firmware keyblock - RSA8192/SHA512 root key, RSA4096/SHA512 firmware
   # signing key.
   ${FUTILITY} vbutil_keyblock \
     --pack ${TESTCASE_DIR}/firmware.keyblock \
     --datapubkey ${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk \
     --signprivate ${TESTKEY_DIR}/key_rsa8192.sha1.vbprivk
 
-  # Kernel key block - RSA4096/SHA512 kernel signing subkey, RSA4096/SHA512
+  # Kernel keyblock - RSA4096/SHA512 kernel signing subkey, RSA4096/SHA512
   # kernel signing key.
   ${FUTILITY} vbutil_keyblock \
     --pack ${TESTCASE_DIR}/kernel.keyblock \

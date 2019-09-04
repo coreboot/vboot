@@ -1,4 +1,4 @@
-Key block:               tests/futility/data/fw_vblock.bin
+Keyblock:                tests/futility/data/fw_vblock.bin
   Signature:             ignored
   Size:                  0x8b8
   Flags:                 7  !DEV DEV !REC

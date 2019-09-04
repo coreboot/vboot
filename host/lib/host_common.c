@@ -29,7 +29,7 @@ struct vb2_fw_preamble *vb2_create_fw_preamble(
 	uint32_t block_size = signed_size +
 		vb2_rsa_sig_size(signing_key->sig_alg);
 
-	/* Allocate key block */
+	/* Allocate keyblock */
 	struct vb2_fw_preamble *h =
 		(struct vb2_fw_preamble *)calloc(block_size, 1);
 	if (!h)
@@ -98,7 +98,7 @@ struct vb2_kernel_preamble *vb2_create_kernel_preamble(
 	if (block_size < desired_size)
 		block_size = desired_size;
 
-	/* Allocate key block */
+	/* Allocate keyblock */
 	struct vb2_kernel_preamble *h =
 		(struct vb2_kernel_preamble *)calloc(block_size, 1);
 	if (!h)

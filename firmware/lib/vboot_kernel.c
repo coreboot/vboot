@@ -138,13 +138,13 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		return VB2_ERROR_VBLOCK_KERNEL_SUBKEY;
 	}
 
-	/* Verify the key block. */
+	/* Verify the keyblock. */
 	int keyblock_valid = 1;  /* Assume valid */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
 	if (VB2_SUCCESS != vb2_verify_keyblock(keyblock, kbuf_size,
 					       &kernel_subkey2, wb)) {
-		VB2_DEBUG("Verifying key block signature failed.\n");
-		shpart->check_result = VBSD_LKP_CHECK_KEY_BLOCK_SIG;
+		VB2_DEBUG("Verifying keyblock signature failed.\n");
+		shpart->check_result = VBSD_LKP_CHECK_KEYBLOCK_SIG;
 		keyblock_valid = 0;
 
 		/* Check if we must have an officially signed kernel */
@@ -154,27 +154,27 @@ static vb2_error_t vb2_verify_kernel_vblock(
 			return VB2_ERROR_VBLOCK_SELF_SIGNED;
 		}
 
-		/* Otherwise, allow the kernel if the key block hash is valid */
+		/* Otherwise, allow the kernel if the keyblock hash is valid */
 		if (VB2_SUCCESS !=
 		    vb2_verify_keyblock_hash(keyblock, kbuf_size, wb)) {
-			VB2_DEBUG("Verifying key block hash failed.\n");
-			shpart->check_result = VBSD_LKP_CHECK_KEY_BLOCK_HASH;
+			VB2_DEBUG("Verifying keyblock hash failed.\n");
+			shpart->check_result = VBSD_LKP_CHECK_KEYBLOCK_HASH;
 			return VB2_ERROR_VBLOCK_KEYBLOCK_HASH;
 		}
 	}
 
-	/* Check the key block flags against boot flags. */
+	/* Check the keyblock flags against boot flags. */
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ?
-	       KEY_BLOCK_FLAG_DEVELOPER_1 : KEY_BLOCK_FLAG_DEVELOPER_0))) {
-		VB2_DEBUG("Key block developer flag mismatch.\n");
+	       KEYBLOCK_FLAG_DEVELOPER_1 : KEYBLOCK_FLAG_DEVELOPER_0))) {
+		VB2_DEBUG("Keyblock developer flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_DEV_MISMATCH;
 		keyblock_valid = 0;
 	}
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) ?
-	       KEY_BLOCK_FLAG_RECOVERY_1 : KEY_BLOCK_FLAG_RECOVERY_0))) {
-		VB2_DEBUG("Key block recovery flag mismatch.\n");
+	       KEYBLOCK_FLAG_RECOVERY_1 : KEYBLOCK_FLAG_RECOVERY_0))) {
+		VB2_DEBUG("Keyblock recovery flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_REC_MISMATCH;
 		keyblock_valid = 0;
 	}
@@ -200,9 +200,9 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		}
 	}
 
-	/* If not in developer mode, key block required to be valid. */
+	/* If not in developer mode, keyblock required to be valid. */
 	if (kBootDev != boot_mode && !keyblock_valid) {
-		VB2_DEBUG("Key block is invalid.\n");
+		VB2_DEBUG("Keyblock is invalid.\n");
 		return VB2_ERROR_VBLOCK_KEYBLOCK;
 	}
 
@@ -235,7 +235,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		}
 	}
 
-	/* Get key for preamble verification from the key block. */
+	/* Get key for preamble verification from the keyblock. */
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
 		VB2_DEBUG("Unable to unpack kernel data key\n");
@@ -243,7 +243,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		return VB2_ERROR_UNKNOWN;
 	}
 
-	/* Verify the preamble, which follows the key block */
+	/* Verify the preamble, which follows the keyblock */
 	struct vb2_kernel_preamble *preamble = get_preamble(kbuf);
 	if (VB2_SUCCESS !=
 	    vb2_verify_kernel_preamble(preamble,
@@ -256,7 +256,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	}
 
 	/*
-	 * If the key block is valid and we're not in recovery mode, check for
+	 * If the keyblock is valid and we're not in recovery mode, check for
 	 * rollback of the kernel version.
 	 */
 	uint32_t combined_version = (key_version << 16) |
@@ -278,7 +278,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	VB2_DEBUG("Kernel preamble is good.\n");
 	shpart->check_result = VBSD_LKP_CHECK_PREAMBLE_VALID;
 	if (keyblock_valid)
-		shpart->flags |= VBSD_LKP_FLAG_KEY_BLOCK_VALID;
+		shpart->flags |= VBSD_LKP_FLAG_KEYBLOCK_VALID;
 
 	return VB2_SUCCESS;
 }
@@ -394,7 +394,7 @@ static vb2_error_t vb2_load_partition(
 		  ((uint64_t)(body_toread + KBUF_SIZE) * 1000 * 1000) /
 			  (read_us * 1024));
 
-	/* Get key for preamble/data verification from the key block. */
+	/* Get key for preamble/data verification from the keyblock. */
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
 		VB2_DEBUG("Unable to unpack kernel data key\n");
@@ -561,14 +561,14 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		}
 
 		int keyblock_valid = (shpart->flags &
-				      VBSD_LKP_FLAG_KEY_BLOCK_VALID);
+				      VBSD_LKP_FLAG_KEYBLOCK_VALID);
 		if (keyblock_valid) {
 			shared->flags |= VBSD_KERNEL_KEY_VERIFIED;
 			/* Track lowest version from a valid header. */
 			if (lowest_version > shpart->combined_version)
 				lowest_version = shpart->combined_version;
 		}
-		VB2_DEBUG("Key block valid: %d\n", keyblock_valid);
+		VB2_DEBUG("Keyblock valid: %d\n", keyblock_valid);
 		VB2_DEBUG("Combined version: %u\n", shpart->combined_version);
 
 		/*

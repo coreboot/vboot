@@ -24,12 +24,12 @@
 /* Error Codes for all common functions. */
 enum {
 	VBOOT_SUCCESS = 0,
-	/* Key block internal structure is invalid, or not a key block */
-	VBOOT_KEY_BLOCK_INVALID,
-	/* Key block signature check failed */
-	VBOOT_KEY_BLOCK_SIGNATURE,
-	/* Key block hash check failed */
-	VBOOT_KEY_BLOCK_HASH,
+	/* Keyblock internal structure is invalid, or not a keyblock */
+	VBOOT_KEYBLOCK_INVALID,
+	/* Keyblock signature check failed */
+	VBOOT_KEYBLOCK_SIGNATURE,
+	/* Keyblock hash check failed */
+	VBOOT_KEYBLOCK_HASH,
 	/* Invalid public key passed to a signature verficiation function. */
 	VBOOT_PUBLIC_KEY_INVALID,
 	/* Preamble internal structure is invalid */

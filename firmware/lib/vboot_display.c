@@ -122,7 +122,7 @@ const char *RecoveryReasonString(uint8_t code)
 	case VB2_RECOVERY_RO_SHARED_DATA:
 		return "Shared data error in read-only firmware";
 	case VB2_RECOVERY_FW_KEYBLOCK:
-		return "RW firmware unable to verify key block";
+		return "RW firmware unable to verify keyblock";
 	case VB2_RECOVERY_FW_KEY_ROLLBACK:
 		return "RW firmware key version rollback detected";
 	case VB2_RECOVERY_FW_PREAMBLE:

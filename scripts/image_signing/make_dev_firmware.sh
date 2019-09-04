@@ -316,7 +316,7 @@ main() {
     vbutil_keyblock --unpack "$firmware_keyblock" |
     sed -n '/^ *Data key version:/s/.*:[ \t]*//p')"
 
-  # TODO(hungte) Change key block by data_key_version.
+  # TODO(hungte) Change keyblock by data_key_version.
   if [ "$data_key_version" -gt "$new_data_key_version" ]; then
     echo "$(tput bold)$(tput setaf 1)
     Warning: firmware data key version <$new_data_key_version> in your new keys

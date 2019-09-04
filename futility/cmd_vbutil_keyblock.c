@@ -2,7 +2,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Verified boot key block utility
+ * Verified boot keyblock utility
  */
 
 #include <getopt.h>
@@ -152,7 +152,7 @@ static int Pack(const char *outfile, const char *datapubkey,
 		free(signing_key);
 
 	if (VB2_SUCCESS != vb2_write_keyblock(outfile, block)) {
-		fprintf(stderr, "vbutil_keyblock: Error writing key block.\n");
+		fprintf(stderr, "vbutil_keyblock: Error writing keyblock.\n");
 		return 1;
 	}
 	free(block);
@@ -171,7 +171,7 @@ static int Unpack(const char *infile, const char *datapubkey,
 
 	struct vb2_keyblock *block = vb2_read_keyblock(infile);
 	if (!block) {
-		fprintf(stderr, "vbutil_keyblock: Error reading key block.\n");
+		fprintf(stderr, "vbutil_keyblock: Error reading keyblock.\n");
 		return 1;
 	}
 
@@ -206,22 +206,22 @@ static int Unpack(const char *infile, const char *datapubkey,
 		    vb2_verify_keyblock(block, block->keyblock_size,
 					&key, &wb)) {
 			fprintf(stderr, "vbutil_keyblock:"
-				" Error verifying key block.\n");
+				" Error verifying keyblock.\n");
 			return 1;
 		}
 		free(sign_key);
 	}
 
-	printf("Key block file:       %s\n", infile);
+	printf("Keyblock file:        %s\n", infile);
 	printf("Signature             %s\n", sign_key ? "valid" : "ignored");
 	printf("Flags:                %u ", block->keyblock_flags);
-	if (block->keyblock_flags & KEY_BLOCK_FLAG_DEVELOPER_0)
+	if (block->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
-	if (block->keyblock_flags & KEY_BLOCK_FLAG_DEVELOPER_1)
+	if (block->keyblock_flags & KEYBLOCK_FLAG_DEVELOPER_1)
 		printf(" DEV");
-	if (block->keyblock_flags & KEY_BLOCK_FLAG_RECOVERY_0)
+	if (block->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_0)
 		printf(" !REC");
-	if (block->keyblock_flags & KEY_BLOCK_FLAG_RECOVERY_1)
+	if (block->keyblock_flags & KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
 	printf("\n");
 

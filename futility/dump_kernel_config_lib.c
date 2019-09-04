@@ -66,7 +66,7 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 	uint32_t now = 0;
 	uint32_t offset = 0;
 
-	/* Skip the key block */
+	/* Skip the keyblock */
 	if (read_fn(ctx, &keyblock, sizeof(keyblock)) != sizeof(keyblock)) {
 		FATAL("not enough data to fill keyblock header\n");
 		return NULL;
