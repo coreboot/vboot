@@ -74,15 +74,6 @@ extern const struct futil_cmd_t *const futil_cmds[];
 #define ARRAY_SIZE(array) (sizeof(array)/sizeof(array[0]))
 #endif
 
-/* Test an important condition at compile time, not run time */
-#ifndef BUILD_ASSERT
-#define _BA1_(cond, line) \
-	extern int __build_assertion_ ## line[1 - 2*!(cond)]	\
-	__attribute__ ((unused))
-#define _BA0_(c, x) _BA1_(c, x)
-#define BUILD_ASSERT(cond) _BA0_(cond, __LINE__)
-#endif
-
 /* Fatal error (print error message and exit). */
 #define FATAL(format, ...) do { \
 		fprintf(stderr, "FATAL: %s: " format, __func__, \

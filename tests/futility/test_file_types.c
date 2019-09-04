@@ -39,7 +39,8 @@ static struct {
 	{FILE_TYPE_USBPD1,          "tests/futility/data/zinger_mp_image.bin"},
 	{FILE_TYPE_RWSIG,           },		/* need a test for this */
 };
-BUILD_ASSERT(ARRAY_SIZE(test_case) == NUM_FILE_TYPES);
+_Static_assert(ARRAY_SIZE(test_case) == NUM_FILE_TYPES,
+	       "Need a test case for each file type (total NUM_FILE_TYPES)");
 
 int main(int argc, char *argv[])
 {

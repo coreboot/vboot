@@ -25,7 +25,8 @@ static const char * const fmap_name[] = {
 	"VBLOCK_A",				/* BIOS_FMAP_VBLOCK_A */
 	"VBLOCK_B",				/* BIOS_FMAP_VBLOCK_B */
 };
-BUILD_ASSERT(ARRAY_SIZE(fmap_name) == NUM_BIOS_COMPONENTS);
+_Static_assert(ARRAY_SIZE(fmap_name) == NUM_BIOS_COMPONENTS,
+	       "Size of fmap_name[] should match NUM_BIOS_COMPONENTS");
 
 static const char * const fmap_oldname[] = {
 	"GBB Area",	  			/* BIOS_FMAP_GBB */
@@ -34,7 +35,8 @@ static const char * const fmap_oldname[] = {
 	"Firmware A Key",  			/* BIOS_FMAP_VBLOCK_A */
 	"Firmware B Key",  			/* BIOS_FMAP_VBLOCK_B */
 };
-BUILD_ASSERT(ARRAY_SIZE(fmap_oldname) == NUM_BIOS_COMPONENTS);
+_Static_assert(ARRAY_SIZE(fmap_oldname) == NUM_BIOS_COMPONENTS,
+	       "Size of fmap_oldname[] should match NUM_BIOS_COMPONENTS");
 
 static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 {
@@ -169,7 +171,8 @@ static int (*fmap_show_fn[])(const char *name, uint8_t *buf, uint32_t len,
 	ft_show_fw_preamble,
 	ft_show_fw_preamble,
 };
-BUILD_ASSERT(ARRAY_SIZE(fmap_show_fn) == NUM_BIOS_COMPONENTS);
+_Static_assert(ARRAY_SIZE(fmap_show_fn) == NUM_BIOS_COMPONENTS,
+	       "Size of fmap_show_fn[] should match NUM_BIOS_COMPONENTS");
 
 int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 {
@@ -432,7 +435,8 @@ static int (*fmap_sign_fn[])(const char *name, uint8_t *buf, uint32_t len,
 	fmap_sign_fw_preamble,
 	fmap_sign_fw_preamble,
 };
-BUILD_ASSERT(ARRAY_SIZE(fmap_sign_fn) == NUM_BIOS_COMPONENTS);
+_Static_assert(ARRAY_SIZE(fmap_sign_fn) == NUM_BIOS_COMPONENTS,
+	       "Size of fmap_sign_fn[] should match NUM_BIOS_COMPONENTS");
 
 int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 {
