@@ -15,49 +15,6 @@
 #include "vboot_api.h"
 #include "vboot_common.h"
 
-/* Helper functions to get data pointed to by a public key or signature. */
-
-uint8_t *GetPublicKeyData(struct vb2_packed_key *key)
-{
-	return (uint8_t *)key + key->key_offset;
-}
-
-const uint8_t *GetPublicKeyDataC(const struct vb2_packed_key *key)
-{
-	return (const uint8_t *)key + key->key_offset;
-}
-
-uint8_t *GetSignatureData(struct vb2_signature *sig)
-{
-	return (uint8_t *)sig + sig->sig_offset;
-}
-
-const uint8_t *GetSignatureDataC(const struct vb2_signature *sig)
-{
-	return (const uint8_t *)sig + sig->sig_offset;
-}
-
-/*
- * Helper functions to verify the data pointed to by a subfield is inside
- * the parent data.
- */
-
-vb2_error_t VerifyPublicKeyInside(const void *parent, uint64_t parent_size,
-				  const struct vb2_packed_key *key)
-{
-	return vb2_verify_member_inside(parent, parent_size,
-					key, sizeof(struct vb2_packed_key),
-					key->key_offset, key->key_size);
-}
-
-vb2_error_t VerifySignatureInside(const void *parent, uint64_t parent_size,
-				  const struct vb2_signature *sig)
-{
-	return vb2_verify_member_inside(parent, parent_size,
-					sig, sizeof(struct vb2_signature),
-					sig->sig_offset, sig->sig_size);
-}
-
 void PublicKeyInit(struct vb2_packed_key *key,
 		   uint8_t *key_data, uint64_t key_size)
 {
