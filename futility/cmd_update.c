@@ -174,6 +174,7 @@ static int do_update(int argc, char *argv[])
 			break;
 		case OPT_QUIRKS_LIST:
 			updater_list_config_quirks(cfg);
+			updater_delete_config(cfg);
 			return 0;
 		case OPT_OUTPUT_DIR:
 			args.output_dir = optarg;
