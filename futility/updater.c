@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -229,12 +230,19 @@ static int host_get_fw_vboot2(void)
 static int host_get_platform_version(void)
 {
 	char *result = host_shell("mosys platform version");
-	int rev = -1;
+	long rev = -1;
 
 	/* Result should be 'revN' */
 	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
 		rev = strtol(result + strlen(STR_REV), NULL, 0);
-	VB2_DEBUG("Raw data = [%s], parsed version is %d\n", result, rev);
+
+	/* we should never have that large versions,
+	 * but clamp just to be sure
+	 */
+	if (rev > INT_MAX)
+		rev = INT_MAX;
+
+	VB2_DEBUG("Raw data = [%s], parsed version is %ld\n", result, rev);
 
 	free(result);
 	return rev;
