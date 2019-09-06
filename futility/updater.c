@@ -1794,7 +1794,10 @@ static int save_from_stdin(const char *output)
 
 	while (!feof(in)) {
 		sz = fread(buffer, 1, sizeof(buffer), in);
-		fwrite(buffer, 1, sz, out);
+		if (fwrite(buffer, 1, sz, out) != sz) {
+			fclose(out);
+			return -1;
+		}
 	}
 	fclose(out);
 	return 0;
