@@ -165,8 +165,7 @@ CFLAGS += -DCHROMEOS_ENVIRONMENT ${COMMON_FLAGS}
 endif
 
 # Needs -Wl because LD is actually set to CC by default.
-# Build with bfd linker, https://crbub.com/999217.
-LDFLAGS ?= -Wl,--gc-sections -fuse-ld=bfd
+LDFLAGS ?= -Wl,--gc-sections
 
 ifneq (${DEBUG},)
 CFLAGS += -DVBOOT_DEBUG
