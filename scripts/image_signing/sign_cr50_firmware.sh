@@ -53,13 +53,9 @@ verify_cr50_manifest() {
   fi
 
   if (( major & 1 )); then
-    if (( bid_flags & MP_BID_FLAG )); then
-      return 0
-    fi
-  else
-    if (( bid_flags & PRE_PVT_BID_FLAG )); then
-      return 0
-    fi
+    return 0
+  elif (( bid_flags & PRE_PVT_BID_FLAG )); then
+    return 0
   fi
   die "Inconsistent manifest ${manifest_source}: major = '${major}'," \
       "board_id_flags = '${bid_flags}'"
@@ -338,9 +334,14 @@ sign_cr50_firmware_dir() {
     output="${output}/cr50.bin.prod"
   fi
 
+  local manifest_file="${input}/prod.json"
+  if [[ ! -e "$manifest_file" ]]; then
+     manifest_file="${input}/ec_RW-manifest-prod.json"
+  fi
+
   sign_cr50_firmware \
           "${key_file}" \
-          "${input}/ec_RW-manifest-prod.json" \
+          "${manifest_file}" \
           "${input}/fuses.xml" \
           "${input}" \
           "${input}/prod.ro.A" \
