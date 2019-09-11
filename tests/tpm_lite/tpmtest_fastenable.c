@@ -15,6 +15,7 @@
 #include <stdio.h>
 
 #include "host_common.h"
+#include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
 
@@ -33,12 +34,14 @@ int main(int argc, char** argv) {
 		TPM_CHECK(TlclForceClear());
 		TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
 		printf("disable is %d, deactivated is %d\n", disable, deactivated);
-		VbAssert(disable == 1 && deactivated == 1);
+		TEST_EQ(disable, 1, "after ForceClear, disable");
+		TEST_EQ(deactivated, 1, "after ForceClear, deactivated");
 		TPM_CHECK(TlclSetEnable());
 		TPM_CHECK(TlclSetDeactivated(0));
 		TPM_CHECK(TlclGetFlags(&disable, &deactivated, NULL));
 		printf("disable is %d, deactivated is %d\n", disable, deactivated);
-		VbAssert(disable == 0 && deactivated == 0);
+		TEST_EQ(disable, 0, "after SetEnable, enabled");
+		TEST_EQ(deactivated, 0, "after SetDeactivated(0), activated");
 	}
 
 	printf("TEST SUCCEEDED\n");

@@ -66,3 +66,10 @@ vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 	fprintf(stderr, "%s: function not implemented\n", __func__);
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
+
+__attribute__((weak))
+void vb2ex_abort(void)
+{
+	/* Stub simply exits. */
+	exit(1);
+}

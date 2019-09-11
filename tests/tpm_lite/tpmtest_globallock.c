@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "host_common.h"
+#include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
 
@@ -33,13 +34,13 @@ int main(int argc, char** argv) {
 	TPM_EXPECT(TlclWrite(INDEX0, (uint8_t*) &x, sizeof(x)),
 		   TPM_E_AREA_LOCKED);
 	TPM_CHECK(TlclRead(INDEX0, (uint8_t*) &x, sizeof(x)));
-	VbAssert(x == 0);
+	TEST_EQ(x, 0, "Read from INDEX0 should give 0");
 
 	// Verifies that write to index1 is still possible.
 	x = 2;
 	TPM_CHECK(TlclWrite(INDEX1, (uint8_t*) &x, sizeof(x)));
 	TPM_CHECK(TlclRead(INDEX1, (uint8_t*) &x, sizeof(x)));
-	VbAssert(x == 2);
+	TEST_EQ(x, 0, "Read from INDEX1 should give 2");
 
 	// Turns off PP.
 	TlclLockPhysicalPresence();
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
 	TPM_EXPECT(TlclWrite(INDEX1, (uint8_t*) &x, sizeof(x)),
 		   TPM_E_BAD_PRESENCE);
 	TPM_CHECK(TlclRead(INDEX1, (uint8_t*) &x, sizeof(x)));
-	VbAssert(x == 2);
+	TEST_EQ(x, 2, "Read from INDEX1 should give 2");
 	printf("TEST SUCCEEDED\n");
 	exit(0);
 }

@@ -274,6 +274,23 @@ static void test_helper_functions(void)
 	}
 }
 
+/* Helper for test_assert_die() below */
+static int _true_assertion_helper(void)
+{
+	VB2_ASSERT(2 + 2 == 4);
+	return 1;
+}
+
+/**
+ * Test VB2_ASSERT and VB2_DIE macros
+ */
+static void test_assert_die(void)
+{
+	TEST_ABORT(VB2_DIE("die"), "DIE should abort");
+	TEST_ABORT(VB2_ASSERT(2 + 2 == 5), "ASSERT false should abort");
+	TEST_TRUE(_true_assertion_helper(), "ASSERT true should continue");
+}
+
 int main(int argc, char* argv[])
 {
 	test_arithmetic();
@@ -283,6 +300,7 @@ int main(int argc, char* argv[])
 	test_align();
 	test_workbuf();
 	test_helper_functions();
+	test_assert_die();
 
 	return gTestSuccess ? 0 : 255;
 }

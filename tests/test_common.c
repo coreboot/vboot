@@ -9,10 +9,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "2common.h"
 #include "test_common.h"
 
 /* Global test success flag. */
 int gTestSuccess = 1;
+int gTestAbortArmed = 0;
+jmp_buf gTestJmpEnv;
 
 int test_eq(int result, int expected,
 	    const char *preamble, const char *desc, const char *comment)
@@ -172,4 +175,34 @@ int test_false(int result,
 		gTestSuccess = 0;
 	}
 	return !result;
+}
+
+int test_abort(int aborted,
+	       const char *preamble, const char *desc, const char *comment)
+{
+	if (aborted) {
+		fprintf(stderr, "%s: %s ... " COL_GREEN "PASSED\n" COL_STOP,
+			preamble, comment ? comment : desc);
+	} else {
+		fprintf(stderr, "%s: %s ... " COL_RED "FAILED\n" COL_STOP,
+			preamble, comment ? comment : desc);
+		fprintf(stderr, "	Expected ABORT, but did not get it\n");
+		gTestSuccess = 0;
+	}
+	return aborted;
+}
+
+void vb2ex_abort(void)
+{
+	/*
+	 * If expecting an abort call, jump back to TEST_ABORT macro.
+	 * Otherwise, force exit to ensure the test fails.
+	 */
+	if (gTestAbortArmed) {
+		longjmp(gTestJmpEnv, 1);
+	} else {
+		fprintf(stderr, COL_RED "Unexpected ABORT encountered, "
+			"exiting\n" COL_STOP);
+		exit(1);
+	}
 }

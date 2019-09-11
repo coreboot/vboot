@@ -751,4 +751,14 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
  */
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
 
+/*
+ * Abort vboot flow due to a failed assertion or broken assumption.
+ *
+ * Likely due to caller misusing vboot (e.g. calling API functions
+ * out-of-order, filling in vb2_context fields inappropriately).
+ * Implementation should reboot or halt the machine, or fall back to some
+ * alternative boot flow.  Retrying vboot is unlikely to succeed.
+ */
+void vb2ex_abort(void);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */

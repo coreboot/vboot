@@ -209,7 +209,7 @@ uint32_t TlclUndefineSpaceEx(const uint8_t* owner_auth,
 	uint32_t rv;
 
 	/* Authentication support is not implemented. */
-	VbAssert(owner_auth == NULL && owner_auth_size == 0);
+	VB2_ASSERT(owner_auth == NULL && owner_auth_size == 0);
 
 	/* get the publicInfo of index */
 	rv = TlclGetPermissions(index, &permissions);
@@ -231,7 +231,7 @@ uint32_t TlclDefineSpaceEx(const uint8_t* owner_auth, uint32_t owner_auth_size,
 	struct tpm2_nv_define_space_cmd define_space;
 
 	/* Authentication support is not implemented. */
-	VbAssert(owner_auth == NULL && owner_auth_size == 0);
+	VB2_ASSERT(owner_auth == NULL && owner_auth_size == 0);
 
 	/* For backwards-compatibility, if no READ or WRITE permissions are set,
 	 * assume readable/writeable with empty auth value.
@@ -260,7 +260,7 @@ uint32_t TlclInitNvAuthPolicy(uint32_t pcr_selection_bitmap,
 			      void* auth_policy, uint32_t* auth_policy_size)
 {
 	/* Actual PCR selection isn't implemented. */
-	VbAssert(pcr_selection_bitmap == 0);
+	VB2_ASSERT(pcr_selection_bitmap == 0);
 	*auth_policy_size = 0;
 	return TPM_SUCCESS;
 }
@@ -649,8 +649,8 @@ uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
 
 		size_t prop_len = tlcl_vendor_string_parse(
 				prop_value, prop_string + total_size);
-		VbAssert(prop_len <= 4 &&
-			 total_size + prop_len <= sizeof(prop_string));
+		VB2_ASSERT(prop_len <= 4 &&
+			   total_size + prop_len <= sizeof(prop_string));
 		total_size += prop_len;
 		if (prop_len < 4)
 			break;

@@ -183,7 +183,7 @@ static uint32_t StartOIAPSession(struct auth_session* session,
 	session->handle = ReadTpmUint32(&cursor);
 	memcpy(session->nonce_even.nonce, cursor, sizeof(TPM_NONCE));
 	cursor += sizeof(TPM_NONCE);
-	VbAssert(cursor - response <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
+	VB2_ASSERT(cursor - response <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
 
 	memcpy(session->shared_secret, secret, TPM_AUTH_DATA_LEN);
 	session->valid = 1;
@@ -231,7 +231,7 @@ static uint32_t StartOSAPSession(
 	cursor += sizeof(TPM_NONCE);
 	const uint8_t* nonce_even_osap = cursor;
 	cursor += sizeof(TPM_NONCE);
-	VbAssert(cursor - response <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
+	VB2_ASSERT(cursor - response <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
 
 	/* Compute shared secret */
 	uint8_t hmac_input[2 * sizeof(TPM_NONCE)];
@@ -544,7 +544,7 @@ uint32_t TlclInitNvAuthPolicy(uint32_t pcr_selection_bitmap,
 	select->pcrSelect[0] = (pcr_selection_bitmap >> 0) & 0xff;
 	select->pcrSelect[1] = (pcr_selection_bitmap >> 8) & 0xff;
 	select->pcrSelect[2] = (pcr_selection_bitmap >> 16) & 0xff;
-	VbAssert((pcr_selection_bitmap & 0xff000000) == 0);
+	VB2_ASSERT((pcr_selection_bitmap & 0xff000000) == 0);
 
 	/* Allow all localities except locality 3. Rationale:
 	 *
@@ -624,7 +624,7 @@ uint32_t TlclWrite(uint32_t index, const void* data, uint32_t length)
 
 	VB2_DEBUG("TPM: TlclWrite(0x%x, %d)\n", index, length);
 	memcpy(&cmd, &tpm_nv_write_cmd, sizeof(cmd));
-	VbAssert(total_length <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
+	VB2_ASSERT(total_length <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
 	SetTpmCommandSize(cmd.buffer, total_length);
 
 	ToTpmUint32(cmd.buffer + tpm_nv_write_cmd.index, index);
@@ -776,7 +776,7 @@ uint32_t TlclGetPermanentFlags(TPM_PERMANENT_FLAGS* pflags)
 		return result;
 	FromTpmUint32(response + kTpmResponseHeaderLength, &size);
 	/* TODO(crbug.com/379255): This fails. Find out why.
-	 * VbAssert(size == sizeof(TPM_PERMANENT_FLAGS));
+	 * VB2_ASSERT(size == sizeof(TPM_PERMANENT_FLAGS));
 	 */
 	memcpy(pflags,
 	       response + kTpmResponseHeaderLength + sizeof(size),
@@ -795,7 +795,7 @@ uint32_t TlclGetSTClearFlags(TPM_STCLEAR_FLAGS* vflags)
 	FromTpmUint32(response + kTpmResponseHeaderLength, &size);
 	/* Ugly assertion, but the struct is padded up by one byte. */
 	/* TODO(crbug.com/379255): This fails. Find out why.
-	 * VbAssert(size == 7 && sizeof(TPM_STCLEAR_FLAGS) - 1 == 7);
+	 * VB2_ASSERT(size == 7 && sizeof(TPM_STCLEAR_FLAGS) - 1 == 7);
 	 */
 	memcpy(vflags,
 	       response + kTpmResponseHeaderLength + sizeof(size),
@@ -968,7 +968,7 @@ uint32_t TlclGetOwnership(uint8_t* owned)
 		return result;
 	FromTpmUint32(response + kTpmResponseHeaderLength, &size);
 	/* TODO(crbug.com/379255): This fails. Find out why.
-	 * VbAssert(size == sizeof(*owned));
+	 * VB2_ASSERT(size == sizeof(*owned));
 	 */
 	memcpy(owned,
 	       response + kTpmResponseHeaderLength + sizeof(size),
@@ -1113,7 +1113,7 @@ uint32_t TlclIFXFieldUpgradeInfo(TPM_IFX_FIELDUPGRADEINFO* info)
 	info->wFieldUpgradeCounter = ReadTpmUint16(&cursor);
 
 	uint32_t parsed_bytes = cursor - response;
-	VbAssert(parsed_bytes <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
+	VB2_ASSERT(parsed_bytes <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
 	if (parsed_bytes > kTpmResponseHeaderLength + sizeof(size) + size) {
 		return TPM_E_INVALID_RESPONSE;
 	}

@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "host_common.h"
+#include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
 
@@ -26,10 +27,10 @@ int main(int argc, char** argv) {
 	TPM_CHECK(TlclAssertPhysicalPresence());
 
 	TPM_CHECK(TlclGetPermissions(INDEX0, &perm));
-	VbAssert((perm & PERMPPGL) == PERMPPGL);
+	TEST_NEQ(perm & PERMPPGL, 0, "INDEX0: PERMPPGL is not set");
 
 	TPM_CHECK(TlclGetPermissions(INDEX1, &perm));
-	VbAssert((perm & PERMPP) == PERMPP);
+	TEST_NEQ(perm & PERMPP, 0, "INDEX1: PERMPP is not set");
 
 	printf("TEST SUCCEEDED\n");
 	exit(0);

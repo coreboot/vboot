@@ -12,6 +12,7 @@
 
 #include "2common.h"
 #include "host_common.h"
+#include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
 
@@ -37,7 +38,9 @@ int main(int argc, char** argv) {
 					sizeof(i))) != TPM_SUCCESS) {
 			switch (result) {
 			case TPM_E_MAXNVWRITES:
-				VbAssert(i >= TPM_MAX_NV_WRITES_NOOWNER);
+				TEST_TRUE(i >= TPM_MAX_NV_WRITES_NOOWNER,
+					  "MAXNVWRITES should only occur after "
+					  "MAX_NV_WRITES_NOOWNER reached");
 				break;
 			default:
 				VB2_DEBUG("unexpected error code %d (0x%x)\n",

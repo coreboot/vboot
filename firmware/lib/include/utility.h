@@ -13,15 +13,6 @@
 #include "2sysincludes.h"
 #include "vboot_api.h"
 
-#ifdef VBOOT_DEBUG
-#define VbAssert(expr) do { if (!(expr)) { \
-	VB2_DEBUG("assert fail: %s at %s:%d\n", \
-		  #expr, __FILE__, __LINE__); \
-	exit(1); }} while(0)
-#else
-#define VbAssert(expr)
-#endif
-
 /*
  * Buffer size required to hold the longest possible output of Uint64ToString()
  * - that is, Uint64ToString(~0, 2).

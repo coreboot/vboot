@@ -37,9 +37,27 @@ struct vb2_public_key;
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
-/* Platform-dependent debug output macros. */
-#define VB2_DEBUG(format, args...) vb2ex_printf(__func__, format, ## args)
-#define VB2_DEBUG_RAW(format, args...) vb2ex_printf(NULL, format, ## args)
+/* Platform-dependent debug/assert output macros. */
+#define VB2_DEBUG(format, args...) \
+	vb2ex_printf(__func__, format, ## args)
+
+#define VB2_DEBUG_RAW(format, args...) \
+	vb2ex_printf(NULL, format, ## args)
+
+#define VB2_ASSERT(expr) do { \
+	if (!(expr)) { \
+		VB2_DEBUG("assertion failed: %s at %s:%d\n", \
+			  #expr, __FILE__, __LINE__); \
+		vb2ex_abort(); \
+		for (;;); \
+	} \
+} while (0)
+
+#define VB2_DIE(format, args...) do { \
+	VB2_DEBUG(format, ## args); \
+	vb2ex_abort(); \
+	for (;;); \
+} while (0)
 
 /*
  * Define test_mockable and for mocking functions when compiled for Chrome OS
