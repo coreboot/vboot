@@ -856,16 +856,8 @@ endif
 
 ${FWLIB21_OBJS}: INCLUDES += -Ifirmware/lib21/include
 
-# Linktest ensures firmware lib doesn't rely on outside libraries
-${BUILD}/firmware/linktest/main: ${FWLIB}
-${BUILD}/firmware/linktest/main: LIBS = ${FWLIB}
-TEST_OBJS += ${BUILD}/firmware/linktest/main.o
-
-.PHONY: fwlinktest
-fwlinktest: ${BUILD}/firmware/linktest/main
-
 .PHONY: fwlib
-fwlib: $(if ${FIRMWARE_ARCH},${FWLIB},fwlinktest)
+fwlib: $(if ${FIRMWARE_ARCH},${FWLIB},)
 
 ${FWLIB}: ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
@@ -903,14 +895,8 @@ ${FWLIB21}: ${FWLIB2X_OBJS} ${FWLIB21_OBJS}
 # ----------------------------------------------------------------------------
 # Host library(s)
 
-# Link tests for local utilities
-${BUILD}/host/linktest/main: ${UTILLIB}
-${BUILD}/host/linktest/main: LIBS = ${UTILLIB}
-TEST_OBJS += ${BUILD}/host/linktest/main.o
-
 .PHONY: utillib
-utillib: ${UTILLIB} \
-	${BUILD}/host/linktest/main
+utillib: ${UTILLIB}
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} \
@@ -920,15 +906,8 @@ ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} \
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
 	${Q}ar qc $@ $^
 
-# Link tests for external repos
-${BUILD}/host/linktest/extern: ${HOSTLIB}
-${BUILD}/host/linktest/extern: LIBS = ${HOSTLIB}
-${BUILD}/host/linktest/extern: LDLIBS += -static
-TEST_OBJS += ${BUILD}/host/linktest/extern.o
-
 .PHONY: hostlib
-hostlib: ${HOSTLIB} \
-	$(if ${NO_BUILD_TOOLS},,${BUILD}/host/linktest/extern)
+hostlib: ${HOSTLIB}
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${HOSTLIB}: ${HOSTLIB_OBJS}
@@ -1138,7 +1117,6 @@ ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/verify_data: LDLIBS += ${CRYPTO_LIBS}
 
-${BUILD}/host/linktest/main: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
@@ -1332,7 +1310,7 @@ coverage_init: test_setup
 coverage_html:
 	lcov -c -d . -b . -o ${COV_INFO}.tests
 	lcov -a ${COV_INFO}.initial -a ${COV_INFO}.tests -o ${COV_INFO}.total
-	lcov -r ${COV_INFO}.total '/usr/*' '*/linktest/*' -o ${COV_INFO}.local
+	lcov -r ${COV_INFO}.total '/usr/*' -o ${COV_INFO}.local
 	genhtml ${COV_INFO}.local -o ${BUILD}/coverage
 # Generate addtional coverage stats just for firmware subdir, because the stats
 # for the whole project don't include subdirectory summaries. This will print
