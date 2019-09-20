@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <linux/nvram.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -239,11 +240,15 @@ static uint8_t* VbGetBuffer(const char* filename, int* buffer_size)
 		int rv, i, real_size;
 		int parsed_size = 0;
 
-		rv = stat(filename, &fs);
+		int fd = open(filename, O_RDONLY);
+		if (fd == -1)
+			break;
+
+		rv = fstat(fd, &fs);
 		if (rv || !S_ISREG(fs.st_mode))
 			break;
 
-		f = fopen(filename, "r");
+		f = fdopen(fd, "r");
 		if (!f)
 			break;
 
