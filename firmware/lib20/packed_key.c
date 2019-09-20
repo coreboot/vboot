@@ -59,6 +59,10 @@ vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 	key->n = buf32 + 2;
 	key->rr = buf32 + 2 + key->arrsize;
 
+#ifdef __COVERITY__
+	__coverity_tainted_data_sanitize__(key);
+	__coverity_tainted_data_sanitize__(buf);
+#endif
 	return VB2_SUCCESS;
 }
 
