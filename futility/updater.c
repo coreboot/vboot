@@ -236,9 +236,11 @@ static int host_get_platform_version(void)
 	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
 		rev = strtol(result + strlen(STR_REV), NULL, 0);
 
-	/* we should never have that large versions,
+	/* we should never have negative or extremely large versions,
 	 * but clamp just to be sure
 	 */
+	if (rev < 0)
+		rev = 0;
 	if (rev > INT_MAX)
 		rev = INT_MAX;
 
