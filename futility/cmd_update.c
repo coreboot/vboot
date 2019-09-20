@@ -133,6 +133,7 @@ static int do_update(int argc, char *argv[])
 		switch (i) {
 		case 'h':
 			print_help(argc, argv);
+			updater_delete_config(cfg);
 			return !!errorcnt;
 		case 'd':
 			debugging_enabled = 1;
