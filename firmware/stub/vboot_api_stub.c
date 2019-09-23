@@ -87,8 +87,6 @@ vb2_error_t VbExEcDisableJump(int devidx)
 	return VB2_SUCCESS;
 }
 
-#define SHA256_HASH_SIZE 32
-
 vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 			    const uint8_t **hash, int *hash_size)
 {
