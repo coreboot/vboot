@@ -63,7 +63,7 @@ static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
 static struct vb2_keyblock kbh;
 static VbKernelPreambleHeader kph;
-static struct RollbackSpaceFwmp fwmp;
+static struct vb2_secdata_fwmp *fwmp;
 static uint8_t mock_disk[MOCK_SECTOR_SIZE * MOCK_SECTOR_COUNT];
 static GptHeader *mock_gpt_primary =
 	(GptHeader*)&mock_disk[MOCK_SECTOR_SIZE * 1];
@@ -164,9 +164,6 @@ static void ResetMocks(void)
 	kph.bootloader_address = 0xbeadd008;
 	kph.bootloader_size = 0x1234;
 
-	memset(&fwmp, 0, sizeof(fwmp));
-	memcpy(fwmp.dev_key_hash, mock_digest, sizeof(fwmp.dev_key_hash));
-
 	memset(mock_parts, 0, sizeof(mock_parts));
 	mock_parts[0].start = 100;
 	mock_parts[0].size = 150;  /* 75 KB */
@@ -180,6 +177,11 @@ static void ResetMocks(void)
 
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
+
+	/* CRC will be invalid after here, but nobody's checking */
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	fwmp = (struct vb2_secdata_fwmp *)ctx->secdata_fwmp;
+	memcpy(&fwmp->dev_key_hash, mock_digest, sizeof(fwmp->dev_key_hash));
 
 	// TODO: more workbuf fields - flags, secdata_firmware, secdata_kernel
 }
@@ -670,8 +672,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	lkp.fwmp = &fwmp;
-	fwmp.flags |= FWMP_DEV_ENABLE_OFFICIAL_ONLY;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	keyblock_verify_fail = 1;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Fail keyblock dev sig fwmp");
@@ -761,17 +762,15 @@ static void LoadKernelTest(void)
 	/* Check developer key hash - bad */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	lkp.fwmp = &fwmp;
-	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
-	fwmp.dev_key_hash[0]++;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
+	fwmp->dev_key_hash[0]++;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND,
 		       "Fail keyblock dev fwmp hash");
 
 	/* Check developer key hash - good */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	lkp.fwmp = &fwmp;
-	fwmp.flags |= FWMP_DEV_USE_KEY_HASH;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	TestLoadKernel(0, "Good keyblock dev fwmp hash");
 
 	ResetMocks();

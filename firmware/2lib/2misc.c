@@ -369,3 +369,18 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 
 	return VB2_SUCCESS;
 }
+
+vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx)
+{
+	uint32_t flags;
+
+	VB2_DEBUG("Enabling developer mode...\n");
+
+	flags = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS);
+	flags |= VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE;
+	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS, flags);
+
+	VB2_DEBUG("Mode change will take effect on next reboot\n");
+
+	return VB2_SUCCESS;
+}

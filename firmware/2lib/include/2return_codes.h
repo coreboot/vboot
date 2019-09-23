@@ -240,6 +240,27 @@ enum vb2_return_code {
 	/* Bad struct version in vb2_secdata_fwmp_check() */
 	VB2_ERROR_SECDATA_FWMP_VERSION,
 
+	/* Error reading secdata_firmware from storage backend */
+	VB2_ERROR_SECDATA_FIRMWARE_READ,
+
+	/* Error writing secdata_firmware to storage backend */
+	VB2_ERROR_SECDATA_FIRMWARE_WRITE,
+
+	/* Error locking secdata_firmware in storage backend */
+	VB2_ERROR_SECDATA_FIRMWARE_LOCK,
+
+	/* Error reading secdata_kernel from storage backend */
+	VB2_ERROR_SECDATA_KERNEL_READ,
+
+	/* Error writing secdata_kernel to storage backend */
+	VB2_ERROR_SECDATA_KERNEL_WRITE,
+
+	/* Error locking secdata_kernel in storage backend */
+	VB2_ERROR_SECDATA_KERNEL_LOCK,
+
+	/* Error reading secdata_fwmp from storage backend */
+	VB2_ERROR_SECDATA_FWMP_READ,
+
 	/**********************************************************************
 	 * Common code errors
 	 */

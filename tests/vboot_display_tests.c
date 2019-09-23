@@ -16,6 +16,7 @@
 #include "2struct.h"
 #include "2sysincludes.h"
 #include "host_common.h"
+#include "secdata_tpm.h"
 #include "test_common.h"
 #include "vboot_common.h"
 #include "vboot_display.h"
@@ -69,6 +70,11 @@ vb2_error_t VbExDisplayDebugInfo(const char *info_str, int full_info)
 {
 	strncpy(debug_info, info_str, sizeof(debug_info));
 	debug_info[sizeof(debug_info) - 1] = '\0';
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2_commit_data(struct vb2_context *c)
+{
 	return VB2_SUCCESS;
 }
 

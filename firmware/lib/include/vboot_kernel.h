@@ -80,22 +80,32 @@ vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx);
 vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx);
 
 /**
- * Return the current FWMP flags.  Valid only inside VbSelectAndLoadKernel().
- */
-uint32_t vb2_get_fwmp_flags(void);
-
-/**
- * Commit NvStorage.
- *
- * This may be called by UI functions which need to save settings before they
- * sit in an infinite loop waiting for shutdown (this is, by a UI state which
- * will never return).
- */
-void vb2_nv_commit(struct vb2_context *ctx);
-
-/**
  * Reinitialize global state. This should only need to be called by init tests.
  */
 void vb2_init_ui(void);
+
+/**
+ * Locks secdata_kernel.
+ *
+ * Should be used right before attempting to leave vboot (by booting
+ * an OS or chainloading to another firmware).
+ *
+ * @param ctx		Vboot context
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2_secdata_kernel_lock(struct vb2_context *ctx);
+
+/**
+ * Writes modified secdata spaces and nvdata.
+ *
+ * This is a temporary wrapper around vb2ex_commit_data, until secdata-writing
+ * functions are relocated into depthcharge.
+ *
+ * (See chromium:972956, chromium:1006689.)
+ *
+ * @param ctx		Vboot context
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2_commit_data(struct vb2_context *ctx);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */

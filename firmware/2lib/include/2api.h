@@ -930,4 +930,19 @@ vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *ctx);
  */
 void vb2ex_abort(void);
 
+/**
+ * Commit any pending data to disk.
+ *
+ * Commit nvdata and secdata spaces if modified.  Normally this should be
+ * performed after vboot has completed executing and control has been passed
+ * back to the caller.  However, in certain kernel verification cases (e.g.
+ * right before attempting to boot an OS; from a UI screen which requires
+ * user-initiated shutdown; just prior to triggering battery cut-off), the
+ * caller may not get a chance to commit this data.
+ *
+ * @param ctx		Vboot context
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */

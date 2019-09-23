@@ -231,6 +231,9 @@ enum vb2_nv_recovery {
 	/* Alt FW Failed hash verification */
 	VB2_RECOVERY_ALTFW_HASH_FAILED = 0x61,
 
+	/* FWMP secure data initialization error */
+	VB2_RECOVERY_SECDATA_FWMP_INIT = 0x62,
+
 	/* Unspecified/unknown error in rewritable firmware */
 	VB2_RECOVERY_RW_UNSPECIFIED = 0x7f,
 

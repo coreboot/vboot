@@ -122,6 +122,9 @@ static void ResetMocks(void)
 	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
+	ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
+
 	memset(&gbb, 0, sizeof(gbb));
 
 	memset(&shared_data, 0, sizeof(shared_data));
@@ -149,12 +152,7 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-vb2_error_t VbExNvStorageRead(uint8_t* buf)
-{
-	return VB2_SUCCESS;
-}
-
-vb2_error_t VbExNvStorageWrite(const uint8_t* buf)
+vb2_error_t vb2_commit_data(struct vb2_context *c)
 {
 	return VB2_SUCCESS;
 }

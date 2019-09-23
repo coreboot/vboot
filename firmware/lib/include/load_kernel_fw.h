@@ -19,8 +19,6 @@ struct vb2_context;
 /* GPT is external */
 #define BOOT_FLAG_EXTERNAL_GPT (0x04ULL)
 
-struct RollbackSpaceFwmp;
-
 typedef struct LoadKernelParams {
 	/* Inputs to LoadKernel() */
 	/* Disk handle for current device */
@@ -37,8 +35,6 @@ typedef struct LoadKernelParams {
 	uint64_t kernel_buffer_size;
 	/* Boot flags */
 	uint64_t boot_flags;
-	/* Firmware management parameters; may be NULL if not present. */
-	const struct RollbackSpaceFwmp *fwmp;
 
 	/*
 	 * Outputs from LoadKernel(); valid only if LoadKernel() returns
