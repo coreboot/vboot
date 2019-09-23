@@ -231,21 +231,6 @@ vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length);
 #endif  /* CHROMEOS_ENVIRONMENT */
 
 /*****************************************************************************/
-/* Non-volatile storage */
-
-#define VBNV_BLOCK_SIZE 16  /* Size of NV storage block in bytes */
-
-/**
- * Read the VBNV_BLOCK_SIZE-byte non-volatile storage into buf.
- */
-vb2_error_t VbExNvStorageRead(uint8_t *buf);
-
-/**
- * Write the VBNV_BLOCK_SIZE-byte non-volatile storage from buf.
- */
-vb2_error_t VbExNvStorageWrite(const uint8_t *buf);
-
-/*****************************************************************************/
 /* Disk access (previously in boot_device.h) */
 
 /* Flags for VbDisk APIs */

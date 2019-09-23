@@ -109,7 +109,7 @@ int test_false(int result,
 		   #result " == false", \
 		   comment)
 
-/* Return 1 if result is 0 (VB_ERROR_SUCCESS / VB2_SUCCESS), else return 0.
+/* Return 1 if result is 0 (VB2_SUCCESS or other), else return 0.
  * Also update the global gTestSuccess flag if test fails. */
 int test_succ(int result,
 	      const char *preamble, const char *desc, const char *comment);

@@ -2,24 +2,16 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Tests for secdata_tpm functions
+ * Tests for TPM secure data space functions
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "2crc8.h"
+#include "2api.h"
+#include "2secdata.h"
 #include "secdata_tpm.h"
 #include "test_common.h"
 #include "tlcl.h"
-
-_Static_assert(ROLLBACK_SPACE_FIRMWARE_VERSION > 0,
-	       "ROLLBACK_SPACE_FIRMWARE_VERSION must be greater than 0");
-
-_Static_assert(ROLLBACK_SPACE_KERNEL_VERSION > 0,
-	       "ROLLBACK_SPACE_KERNEL_VERSION must be greater than 0");
+#include "tss_constants.h"
+#include "vboot_test.h"
 
 /*
  * Buffer to hold accumulated list of calls to mocked Tlcl functions.
@@ -45,59 +37,85 @@ static char *mock_cnext = mock_calls;
 static int mock_count = 0;
 static int fail_at_count = 0;
 static uint32_t fail_with_error = TPM_SUCCESS;
+static int mock_bad_crc = 0;
 
 /* Params / backing store for mocked Tlcl functions. */
 static TPM_PERMANENT_FLAGS mock_pflags;
-static RollbackSpaceFirmware mock_rsf;
-static RollbackSpaceKernel mock_rsk;
-
-static union {
-	struct RollbackSpaceFwmp fwmp;
-	uint8_t buf[FWMP_NV_MAX_SIZE];
-} mock_fwmp;
-
+static uint8_t mock_rsf[VB2_SECDATA_FIRMWARE_SIZE];
+static uint8_t mock_rsk[VB2_SECDATA_KERNEL_SIZE];
+static uint8_t mock_fwmp[VB2_SECDATA_FWMP_MAX_SIZE];
+static uint32_t mock_fwmp_real_size;
 static uint32_t mock_permissions;
 
-/* Recalculate CRC of FWMP data */
-static void RecalcFwmpCrc(void)
-{
-	mock_fwmp.fwmp.crc = vb2_crc8(mock_fwmp.buf + 2,
-				  mock_fwmp.fwmp.struct_size - 2);
-}
+static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+static struct vb2_context *ctx;
 
 /* Reset the variables for the Tlcl mock functions. */
-static void ResetMocks(int fail_on_call, uint32_t fail_with_err)
+static void reset_common_data(int fail_on_call, uint32_t fail_with_err)
 {
 	*mock_calls = 0;
 	mock_cnext = mock_calls;
 	mock_count = 0;
 	fail_at_count = fail_on_call;
 	fail_with_error = fail_with_err;
+	mock_bad_crc = 0;
 
 	memset(&mock_pflags, 0, sizeof(mock_pflags));
 
-	memset(&mock_rsf, 0, sizeof(mock_rsf));
-	mock_rsf.struct_version = ROLLBACK_SPACE_FIRMWARE_VERSION;
-	mock_rsf.crc8 = vb2_crc8(&mock_rsf,
-				 offsetof(RollbackSpaceFirmware, crc8));
+	/* Use value other than 0 for memcmp() checks */
+	memset(&mock_rsf, 0xa6, sizeof(mock_rsf));
+	memset(&mock_rsk, 0xa7, sizeof(mock_rsk));
+	memset(&mock_fwmp, 0xa8, sizeof(mock_fwmp));
 
-	memset(&mock_rsk, 0, sizeof(mock_rsk));
-	mock_rsk.uid = ROLLBACK_SPACE_KERNEL_UID;
-	mock_rsk.struct_version = ROLLBACK_SPACE_KERNEL_VERSION;
-	mock_rsk.kernel_versions = 0x87654321;
-	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
-				 offsetof(RollbackSpaceKernel, crc8));
+	mock_fwmp_real_size = VB2_SECDATA_FWMP_MIN_SIZE;
 
+	/* Note: only used when TPM2_MODE is disabled. */
+#ifndef TPM2_MODE
 	mock_permissions = TPM_NV_PER_PPWRITE;
+#else
+	mock_permissions = 0;
+#endif
 
-	memset(mock_fwmp.buf, 0, sizeof(mock_fwmp.buf));
-	mock_fwmp.fwmp.struct_size = sizeof(mock_fwmp.fwmp);
-	mock_fwmp.fwmp.struct_version = ROLLBACK_SPACE_FWMP_VERSION;
-	mock_fwmp.fwmp.flags = 0x1234;
-	/* Put some data in the hash */
-	mock_fwmp.fwmp.dev_key_hash[0] = 0xaa;
-	mock_fwmp.fwmp.dev_key_hash[FWMP_HASH_SIZE - 1] = 0xbb;
-	RecalcFwmpCrc();
+	secdata_kernel_locked = 0;
+
+	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
+		  "vb2api_init failed");
+
+	ctx->flags |= VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
+	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+}
+
+/* Mock functions */
+
+vb2_error_t vb2api_secdata_firmware_check(struct vb2_context *c)
+{
+	if (mock_bad_crc)
+		return VB2_ERROR_SECDATA_FIRMWARE_CRC;
+
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *c)
+{
+	if (mock_bad_crc)
+		return VB2_ERROR_SECDATA_FIRMWARE_CRC;
+
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *c, uint8_t *size)
+{
+	if (*size < mock_fwmp_real_size) {
+		*size = mock_fwmp_real_size;
+		return VB2_ERROR_SECDATA_FWMP_INCOMPLETE;
+	}
+
+	if (mock_bad_crc)
+		return VB2_ERROR_SECDATA_FIRMWARE_CRC;
+
+	return VB2_SUCCESS;
 }
 
 /****************************************************************************/
@@ -212,23 +230,9 @@ uint32_t TlclAssertPhysicalPresence(void)
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
 
-uint32_t TlclFinalizePhysicalPresence(void)
-{
-	mock_cnext += sprintf(mock_cnext, "TlclFinalizePhysicalPresence()\n");
-	mock_pflags.physicalPresenceLifetimeLock = 1;
-	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
-}
-
 uint32_t TlclPhysicalPresenceCMDEnable(void)
 {
 	mock_cnext += sprintf(mock_cnext, "TlclPhysicalPresenceCMDEnable()\n");
-	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
-}
-
-uint32_t TlclSetNvLocked(void)
-{
-	mock_cnext += sprintf(mock_cnext, "TlclSetNvLocked()\n");
-	mock_pflags.nvLocked = 1;
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
 
@@ -244,6 +248,7 @@ uint32_t TlclLockPhysicalPresence(void)
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
 
+#ifndef TPM2_MODE
 uint32_t TlclGetPermissions(uint32_t index, uint32_t* permissions)
 {
 	mock_cnext += sprintf(mock_cnext, "TlclGetPermissions(%#x)\n", index);
@@ -251,297 +256,332 @@ uint32_t TlclGetPermissions(uint32_t index, uint32_t* permissions)
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
 
-/****************************************************************************/
-/* Tests for CRC errors  */
-
-static void FirmwareSpaceTest(void)
+uint32_t TlclFinalizePhysicalPresence(void)
 {
-	RollbackSpaceFirmware rsf;
-
-	/* Old version, valid CRC */
-	ResetMocks(0, 0);
-	mock_rsf.struct_version -= 1;
-	mock_rsf.crc8 = vb2_crc8(&mock_rsf,
-				 offsetof(RollbackSpaceFirmware, crc8));
-	TEST_EQ(ReadSpaceFirmware(&rsf), TPM_E_STRUCT_VERSION,
-		"ReadSpaceFirmware(), old version");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x1007, 10)\n",
-		    "tlcl calls");
-
-	/* Current version, bad CRC */
-	ResetMocks(0, 0);
-	mock_rsf.crc8 = 0;
-	TEST_EQ(ReadSpaceFirmware(&rsf), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceFirmware(), bad CRC");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x1007, 10)\n",
-		    "tlcl calls");
-
-	/* Current version, valid CRC */
-	ResetMocks(0, 0);
-	TEST_EQ(ReadSpaceFirmware(&rsf), 0,
-		"ReadSpaceFirmware(), successful read");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x1007, 10)\n",
-		    "tlcl calls");
+	mock_cnext += sprintf(mock_cnext, "TlclFinalizePhysicalPresence()\n");
+	mock_pflags.physicalPresenceLifetimeLock = 1;
+	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
 
-static void KernelSpaceTest(void)
+uint32_t TlclSetNvLocked(void)
 {
-	RollbackSpaceKernel rsk;
-
-	/* Current version, bad perms, valid CRC, valid UID */
-	ResetMocks(0, 0);
-	mock_permissions = 0;
-	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceKernel(), bad permissions");
-	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n",
-		    "tlcl calls");
-
-	/* Old version, good perms, valid CRC, valid UID */
-	ResetMocks(0, 0);
-	mock_rsk.struct_version -= 1;
-	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
-				 offsetof(RollbackSpaceKernel, crc8));
-	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_STRUCT_VERSION,
-		"ReadSpaceKernel(), old version");
-	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n"
-		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-
-	/* Current version, good perms, bad CRC, valid UID */
-	ResetMocks(0, 0);
-	mock_rsk.crc8 = 0;
-	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceKernel(), bad CRC");
-	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n"
-		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-
-	/* Current version, good perms, valid CRC, bad UID */
-	ResetMocks(0, 0);
-	mock_rsk.uid = 0;
-	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
-				 offsetof(RollbackSpaceKernel, crc8));
-	TEST_EQ(ReadSpaceKernel(&rsk), TPM_E_CORRUPTED_STATE,
-		"ReadSpaceKernel(), bad UID");
-	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n"
-		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-
-	/* Current version, good perms, valid CRC, valid UID */
-	ResetMocks(0, 0);
-	TEST_EQ(ReadSpaceKernel(&rsk), 0,
-		"ReadSpaceKernel(), successful read");
-	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n"
-		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
+	mock_cnext += sprintf(mock_cnext, "TlclSetNvLocked()\n");
+	mock_pflags.nvLocked = 1;
+	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
+#endif
 
 /****************************************************************************/
 /* Tests for misc helper functions */
 
-static void MiscTest(void)
+static void misc_tests(void)
 {
 	uint8_t buf[8];
 
-	ResetMocks(0, 0);
-	TEST_EQ(TPMClearAndReenable(), 0, "TPMClearAndReenable()");
+	reset_common_data(0, 0);
+	TEST_EQ(tlcl_clear_and_reenable(), 0, "tlcl_clear_and_enable()");
 	TEST_STR_EQ(mock_calls,
 		    "TlclForceClear()\n"
 		    "TlclSetEnable()\n"
 		    "TlclSetDeactivated(0)\n",
-		    "tlcl calls");
+		    "  tlcl calls");
 
-	ResetMocks(0, 0);
-	TEST_EQ(SafeWrite(0x123, buf, 8), 0, "SafeWrite()");
+	reset_common_data(0, 0);
+	TEST_EQ(tlcl_safe_write(0x123, buf, 8), 0, "tlcl_safe_write()");
 	TEST_STR_EQ(mock_calls,
 		    "TlclWrite(0x123, 8)\n",
-		    "tlcl calls");
+		    "  tlcl calls");
 
-	ResetMocks(1, TPM_E_BADINDEX);
-	TEST_EQ(SafeWrite(0x123, buf, 8), TPM_E_BADINDEX, "SafeWrite() bad");
+	reset_common_data(1, TPM_E_BADINDEX);
+	TEST_EQ(tlcl_safe_write(0x123, buf, 8), TPM_E_BADINDEX,
+		"tlcl_safe_write() bad");
 	TEST_STR_EQ(mock_calls,
 		    "TlclWrite(0x123, 8)\n",
-		    "tlcl calls");
+		    "  tlcl calls");
 
-	ResetMocks(1, TPM_E_MAXNVWRITES);
-	TEST_EQ(SafeWrite(0x123, buf, 8), 0, "SafeWrite() retry max writes");
+	reset_common_data(1, TPM_E_MAXNVWRITES);
+	TEST_EQ(tlcl_safe_write(0x123, buf, 8), 0,
+		"tlcl_safe_write() retry max writes");
 	TEST_STR_EQ(mock_calls,
 		    "TlclWrite(0x123, 8)\n"
 		    "TlclForceClear()\n"
 		    "TlclSetEnable()\n"
 		    "TlclSetDeactivated(0)\n"
 		    "TlclWrite(0x123, 8)\n",
-		    "tlcl calls");
+		    "  tlcl calls");
 }
 
 /****************************************************************************/
-/* Tests for RollbackKernel() calls */
+/* Tests for firmware space functions */
 
-static void RollbackKernelTest(void)
+static void secdata_firmware_tests(void)
 {
-	uint32_t version = 0;
-
-	/* Normal read */
-	ResetMocks(0, 0);
-	TEST_EQ(RollbackKernelRead(&version), 0, "RollbackKernelRead()");
+	/* Write with no new changes */
+	reset_common_data(0, 0);
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
+	TEST_SUCC(secdata_firmware_write(ctx),
+		  "secdata_firmware_write(), no changes, success");
 	TEST_STR_EQ(mock_calls,
-		    "TlclGetPermissions(0x1008)\n"
+		    "",
+		    "  tlcl calls");
+
+	/* Write failure */
+	reset_common_data(1, TPM_E_IOERROR);
+	TEST_EQ(secdata_firmware_write(ctx), TPM_E_IOERROR,
+		"secdata_firmware_write(), failure");
+	TEST_STR_EQ(mock_calls,
+		    "TlclWrite(0x1007, 10)\n",
+		    "  tlcl calls");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED, 0,
+		 "  should leave SECDATA_FIRMWARE_CHANGED context flag");
+
+	/* Write in normal mode */
+	reset_common_data(0, 0);
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	TEST_EQ(secdata_firmware_write(ctx), TPM_E_AREA_LOCKED,
+		"secdata_firmware_write(), normal mode, failure");
+	TEST_STR_EQ(mock_calls,
+		    "",
+		    "  tlcl calls");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED, 0,
+		 "  should leave SECDATA_FIRMWARE_CHANGED context flag");
+
+	/* Write success and readback */
+	reset_common_data(0, 0);
+	memset(ctx->secdata_firmware, 0xaa, sizeof(ctx->secdata_firmware));
+	TEST_SUCC(secdata_firmware_write(ctx),
+		  "secdata_firmware_write(), success");
+	TEST_STR_EQ(mock_calls,
+		    "TlclWrite(0x1007, 10)\n",
+		    "  tlcl calls");
+	memset(ctx->secdata_firmware, 0xaa, sizeof(ctx->secdata_firmware));
+	TEST_EQ(memcmp(ctx->secdata_firmware, &mock_rsf,
+		       sizeof(ctx->secdata_firmware)), 0,
+		"  unchanged on readback");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED, 0,
+		"  should reset SECDATA_FIRMWARE_CHANGED context flag");
+}
+
+/****************************************************************************/
+/* Tests for kernel space functions */
+
+static void secdata_kernel_tests(void)
+{
+	/* Not present is an error */
+	reset_common_data(1, TPM_E_BADINDEX);
+	TEST_EQ(secdata_kernel_read(ctx), TPM_E_BADINDEX,
+		"secdata_kernel_read(), not present");
+	TEST_STR_EQ(mock_calls,
+#ifndef TPM2_MODE
+		    "TlclGetPermissions(0x1008)\n",
+#else
 		    "TlclRead(0x1008, 13)\n",
-		    "tlcl calls");
-	TEST_EQ(version, 0x87654321, "RollbackKernelRead() version");
+#endif
+		    "  tlcl calls");
 
-	/* Read error */
-	ResetMocks(1, TPM_E_IOERROR);
-	TEST_EQ(RollbackKernelRead(&version), TPM_E_IOERROR,
-		"RollbackKernelRead() error");
-
-	/* Wrong permission or UID will return error */
-	ResetMocks(0, 0);
-	mock_rsk.uid = 0;
-	mock_rsk.crc8 = vb2_crc8(&mock_rsk,
-				 offsetof(RollbackSpaceKernel, crc8));
-	TEST_EQ(RollbackKernelRead(&version), TPM_E_CORRUPTED_STATE,
-		"RollbackKernelRead() bad uid");
-
-	ResetMocks(0, 0);
+#ifndef TPM2_MODE
+	/* Bad permissions */
+	reset_common_data(0, 0);
 	mock_permissions = 0;
-	TEST_EQ(RollbackKernelRead(&version), TPM_E_CORRUPTED_STATE,
-		"RollbackKernelRead() bad permissions");
-
-	/* Test write */
-	ResetMocks(0, 0);
-	TEST_EQ(RollbackKernelWrite(0xBEAD4321), 0, "RollbackKernelWrite()");
-	TEST_EQ(mock_rsk.kernel_versions, 0xBEAD4321,
-		"RollbackKernelWrite() version");
+	TEST_EQ(secdata_kernel_read(ctx), TPM_E_CORRUPTED_STATE,
+		"secdata_kernel_read(), bad permissions");
 	TEST_STR_EQ(mock_calls,
+		    "TlclGetPermissions(0x1008)\n",
+		    "  tlcl calls");
+#endif
+
+	/* Good permissions, read failure */
+#ifndef TPM2_MODE
+	int read_failure_on_call = 2;
+#else
+	int read_failure_on_call = 1;
+#endif
+	reset_common_data(read_failure_on_call, TPM_E_IOERROR);
+	TEST_EQ(secdata_kernel_read(ctx), TPM_E_IOERROR,
+		"secdata_kernel_read(), good permissions, failure");
+	TEST_STR_EQ(mock_calls,
+#ifndef TPM2_MODE
 		    "TlclGetPermissions(0x1008)\n"
-		    "TlclRead(0x1008, 13)\n"
+#endif
+		    "TlclRead(0x1008, 13)\n",
+		    "  tlcl calls");
+
+	/* Good permissions, read success, bad CRC */
+	reset_common_data(0, 0);
+	mock_bad_crc = 1;
+	TEST_EQ(secdata_kernel_read(ctx), TPM_E_CORRUPTED_STATE,
+		"secdata_kernel_read(), read success, bad CRC");
+	TEST_STR_EQ(mock_calls,
+#ifndef TPM2_MODE
+		    "TlclGetPermissions(0x1008)\n"
+#endif
+		    "TlclRead(0x1008, 13)\n",
+		    "  tlcl calls");
+
+	/* Good permissions, read success */
+	reset_common_data(0, 0);
+	TEST_SUCC(secdata_kernel_read(ctx),
+		  "secdata_kernel_read(), good permissions, success");
+	TEST_STR_EQ(mock_calls,
+#ifndef TPM2_MODE
+		    "TlclGetPermissions(0x1008)\n"
+#endif
+		    "TlclRead(0x1008, 13)\n",
+		    "  tlcl calls");
+	TEST_EQ(memcmp(ctx->secdata_kernel, &mock_rsk,
+		       sizeof(ctx->secdata_kernel)), 0, "  data");
+
+	/* Write with no new changes */
+	reset_common_data(0, 0);
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+	TEST_SUCC(secdata_kernel_write(ctx),
+		  "secdata_kernel_write(), no changes, success");
+	TEST_STR_EQ(mock_calls,
+		    "",
+		    "  tlcl calls");
+
+	/* Write failure */
+	reset_common_data(1, TPM_E_IOERROR);
+	TEST_EQ(secdata_kernel_write(ctx), TPM_E_IOERROR,
+		"secdata_kernel_write(), failure");
+	TEST_STR_EQ(mock_calls,
 		    "TlclWrite(0x1008, 13)\n",
-		    "tlcl calls");
+		    "  tlcl calls");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_SECDATA_KERNEL_CHANGED, 0,
+		 "  should leave SECDATA_KERNEL_CHANGED context flag");
 
-	ResetMocks(1, TPM_E_IOERROR);
-	TEST_EQ(RollbackKernelWrite(123), TPM_E_IOERROR,
-		"RollbackKernelWrite() error");
+	/* Write success and readback */
+	reset_common_data(0, 0);
+	memset(ctx->secdata_kernel, 0xaa, sizeof(ctx->secdata_kernel));
+	TEST_SUCC(secdata_kernel_write(ctx),
+		  "secdata_kernel_write(), failure");
+	TEST_STR_EQ(mock_calls,
+		    "TlclWrite(0x1008, 13)\n",
+		    "  tlcl calls");
+	memset(ctx->secdata_kernel, 0xaa, sizeof(ctx->secdata_kernel));
+	TEST_EQ(memcmp(ctx->secdata_kernel, &mock_rsk,
+		       sizeof(ctx->secdata_kernel)), 0,
+		"  unchanged on readback");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_SECDATA_KERNEL_CHANGED, 0,
+		"  should reset SECDATA_KERNEL_CHANGED context flag");
 
-	/* Test lock (recovery off) */
-	ResetMocks(1, TPM_E_IOERROR);
-	TEST_EQ(RollbackKernelLock(0), TPM_E_IOERROR,
-		"RollbackKernelLock() error");
-
-	/* Test lock with recovery on; shouldn't lock PP */
-	ResetMocks(0, 0);
-	TEST_EQ(RollbackKernelLock(1), 0, "RollbackKernelLock() in recovery");
-	TEST_STR_EQ(mock_calls, "", "no tlcl calls");
-
-	ResetMocks(0, 0);
-	TEST_EQ(RollbackKernelLock(0), 0, "RollbackKernelLock()");
+	/* Lock in normal mode with failure */
+	reset_common_data(1, TPM_E_AREA_LOCKED);
+	TEST_EQ(secdata_kernel_lock(ctx), TPM_E_AREA_LOCKED,
+		"secdata_kernel_lock(), lock failure");
 	TEST_STR_EQ(mock_calls,
 		    "TlclLockPhysicalPresence()\n",
-		    "tlcl calls");
+		    "  tlcl calls");
+
+	/* Lock in normal mode */
+	reset_common_data(0, 0);
+	TEST_SUCC(secdata_kernel_lock(ctx),
+		  "secdata_kernel_lock(), success (locked)");
+	TEST_STR_EQ(mock_calls,
+		    "TlclLockPhysicalPresence()\n",
+		    "  tlcl calls");
+
+	/* Lock after already locked (only one TlclLockPhysicalPresence). */
+	reset_common_data(0, 0);
+	TEST_SUCC(secdata_kernel_lock(ctx),
+		  "secdata_kernel_lock(), lock first run");
+	TEST_SUCC(secdata_kernel_lock(ctx),
+		  "secdata_kernel_lock(), already locked");
+	TEST_STR_EQ(mock_calls,
+		    "TlclLockPhysicalPresence()\n",
+		    "  tlcl calls");
 }
 
 /****************************************************************************/
-/* Tests for RollbackFwmpRead() calls */
+/* Tests for fwmp space functions */
 
-static void RollbackFwmpTest(void)
+static void secdata_fwmp_tests(void)
 {
-	struct RollbackSpaceFwmp fwmp;
-	struct RollbackSpaceFwmp fwmp_zero = {0};
+	/* Read failure */
+	reset_common_data(1, TPM_E_IOERROR);
+	TEST_EQ(secdata_fwmp_read(ctx), TPM_E_IOERROR,
+		"secdata_fwmp_read(), failure");
+	TEST_STR_EQ(mock_calls,
+		    "TlclRead(0x100a, 40)\n",
+		    "  tlcl calls");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
+
+	/* Normal read, bad CRC */
+	reset_common_data(0, 0);
+	mock_bad_crc = 1;
+	TEST_EQ(secdata_fwmp_read(ctx), TPM_E_CORRUPTED_STATE,
+		"secdata_fwmp_read(), success, bad CRC");
+	TEST_STR_EQ(mock_calls,
+		    "TlclRead(0x100a, 40)\n",
+		    "  tlcl calls");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
 
 	/* Normal read */
-	ResetMocks(0, 0);
-	TEST_EQ(RollbackFwmpRead(&fwmp), 0, "RollbackFwmpRead()");
+	reset_common_data(0, 0);
+	TEST_SUCC(secdata_fwmp_read(ctx),
+		  "secdata_fwmp_read(), success");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x100a, 40)\n",
 		    "  tlcl calls");
-	TEST_EQ(0, memcmp(&fwmp, &mock_fwmp, sizeof(fwmp)), "  data");
+	TEST_EQ(memcmp(ctx->secdata_fwmp, &mock_fwmp,
+		       mock_fwmp_real_size), 0, "  data");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
 
 	/* Read error */
-	ResetMocks(1, TPM_E_IOERROR);
-	TEST_EQ(RollbackFwmpRead(&fwmp), TPM_E_IOERROR,
-		"RollbackFwmpRead() error");
+	reset_common_data(1, TPM_E_IOERROR);
+	TEST_EQ(secdata_fwmp_read(ctx), TPM_E_IOERROR,
+		"secdata_fwmp_read(), error");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x100a, 40)\n",
 		    "  tlcl calls");
-	TEST_EQ(0, memcmp(&fwmp, &fwmp_zero, sizeof(fwmp)), "  data clear");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
 
-	/* Not present isn't an error; just returns empty data */
-	ResetMocks(1, TPM_E_BADINDEX);
-	TEST_EQ(RollbackFwmpRead(&fwmp), 0, "RollbackFwmpRead() not present");
+	/* Not present isn't an error; just sets context flag */
+	reset_common_data(1, TPM_E_BADINDEX);
+	TEST_SUCC(secdata_fwmp_read(ctx), "secdata_fwmp_read(), not present");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x100a, 40)\n",
 		    "  tlcl calls");
-	TEST_EQ(0, memcmp(&fwmp, &fwmp_zero, sizeof(fwmp)), "  data clear");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		 "  should set NO_SECDATA_FWMP context flag");
 
-	/* Struct size too small */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.struct_size--;
-	TEST_EQ(RollbackFwmpRead(&fwmp), TPM_E_STRUCT_SIZE,
-		"RollbackFwmpRead() too small");
-
-	/* Struct size too large with good CRC */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.struct_size += 4;
-	RecalcFwmpCrc();
-	TEST_EQ(RollbackFwmpRead(&fwmp), 0, "RollbackFwmpRead() bigger");
+	/* Struct size too large, then bad CRC */
+	reset_common_data(0, 0);
+	mock_fwmp_real_size += 4;
+	mock_bad_crc = 1;
+	TEST_EQ(secdata_fwmp_read(ctx), TPM_E_CORRUPTED_STATE,
+		  "secdata_fwmp_read(), bigger, bad CRC");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x100a, 40)\n"
 		    "TlclRead(0x100a, 44)\n",
 		    "  tlcl calls");
-	TEST_EQ(0, memcmp(&fwmp, &mock_fwmp, sizeof(fwmp)), "  data");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
 
-	/* Bad CRC causes retry, then eventual failure */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.crc++;
-	TEST_EQ(RollbackFwmpRead(&fwmp), TPM_E_CORRUPTED_STATE,
-		"RollbackFwmpRead() crc");
-	TEST_STR_EQ(mock_calls,
-		    "TlclRead(0x100a, 40)\n",
-		    "  tlcl calls");
-
-	/* Struct size too large with bad CRC */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.struct_size += 4;
-	RecalcFwmpCrc();
-	mock_fwmp.fwmp.crc++;
-	TEST_EQ(RollbackFwmpRead(&fwmp), TPM_E_CORRUPTED_STATE,
-		"RollbackFwmpRead() bigger crc");
+	/* Struct size too large */
+	reset_common_data(0, 0);
+	mock_fwmp_real_size += 4;
+	TEST_SUCC(secdata_fwmp_read(ctx), "secdata_fwmp_read(), bigger");
 	TEST_STR_EQ(mock_calls,
 		    "TlclRead(0x100a, 40)\n"
 		    "TlclRead(0x100a, 44)\n",
 		    "  tlcl calls");
-	TEST_EQ(0, memcmp(&fwmp, &fwmp_zero, sizeof(fwmp)), "  data");
-
-	/* Minor version difference ok */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.struct_version++;
-	RecalcFwmpCrc();
-	TEST_EQ(RollbackFwmpRead(&fwmp), 0, "RollbackFwmpRead() minor version");
-	TEST_EQ(0, memcmp(&fwmp, &mock_fwmp, sizeof(fwmp)), "  data");
-
-	/* Major version difference not ok */
-	ResetMocks(0, 0);
-	mock_fwmp.fwmp.struct_version += 0x10;
-	RecalcFwmpCrc();
-	TEST_EQ(RollbackFwmpRead(&fwmp), TPM_E_STRUCT_VERSION,
-		"RollbackFwmpRead() major version");
+	TEST_EQ(memcmp(ctx->secdata_fwmp, &mock_fwmp,
+		       mock_fwmp_real_size), 0, "  data");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP, 0,
+		"  should leave NO_SECDATA_FWMP context flag");
 }
 
 int main(int argc, char* argv[])
 {
-	FirmwareSpaceTest();
-	KernelSpaceTest();
-	MiscTest();
-	RollbackKernelTest();
-	RollbackFwmpTest();
+	misc_tests();
+	secdata_firmware_tests();
+	secdata_kernel_tests();
+	secdata_fwmp_tests();
 
 	return gTestSuccess ? 0 : 255;
 }

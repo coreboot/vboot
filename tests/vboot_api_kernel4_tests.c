@@ -21,27 +21,31 @@
 #include "vboot_common.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
+#include "vboot_test.h"
 
 /* Mock data */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
-static struct vb2_context ctx_nvram_backend;
 static struct vb2_shared_data *sd;
 static VbSelectAndLoadKernelParams kparams;
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static struct vb2_gbb_header gbb;
 
-static uint32_t rkr_version;
+static uint32_t kernel_version;
 static uint32_t new_version;
-static struct RollbackSpaceFwmp rfr_fwmp;
-static int rkr_retval, rkw_retval, rkl_retval, rfr_retval;
+static uint8_t fwmp_buf[VB2_SECDATA_FWMP_MIN_SIZE];
+static uint32_t kernel_read_retval;
+static uint32_t kernel_write_retval;
+static uint32_t kernel_lock_retval;
+static uint32_t fwmp_read_retval;
 static vb2_error_t vbboot_retval;
 
 static uint32_t mock_switches[8];
 static uint32_t mock_switches_count;
 static int mock_switches_are_stuck;
+static int commit_data_called;
 
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
@@ -57,26 +61,22 @@ static void ResetMocks(void)
 		  "vb2api_init failed");
 	sd = vb2_get_sd(ctx);
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
+	ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
 
-	/*
-	 * ctx_nvram_backend is only used as an NVRAM backend (see
-	 * VbExNvStorageRead and VbExNvStorageWrite), and with
-	 * vb2_set_nvdata and nv2_get_nvdata to manually read and tweak
-	 * contents.  No other initialization is needed.
-	 */
-	memset(&ctx_nvram_backend, 0, sizeof(ctx_nvram_backend));
-	vb2_nv_init(&ctx_nvram_backend);
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD,
-		   0xffffffff);
+	vb2_nv_init(ctx);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0xffffffff);
+	commit_data_called = 0;
 
 	memset(&shared_data, 0, sizeof(shared_data));
 	VbSharedDataInit(shared, sizeof(shared_data));
 
-	memset(&rfr_fwmp, 0, sizeof(rfr_fwmp));
-	rfr_retval = TPM_SUCCESS;
+	memset(&fwmp_buf, 0, sizeof(fwmp_buf));
+	fwmp_read_retval = TPM_SUCCESS;
 
-	rkr_version = new_version = 0x10002;
-	rkr_retval = rkw_retval = rkl_retval = VB2_SUCCESS;
+	kernel_version = new_version = 0x10002;
+	kernel_read_retval = TPM_SUCCESS;
+	kernel_write_retval = TPM_SUCCESS;
+	kernel_lock_retval = TPM_SUCCESS;
 	vbboot_retval = VB2_SUCCESS;
 
 	memset(mock_switches, 0, sizeof(mock_switches));
@@ -86,41 +86,59 @@ static void ResetMocks(void)
 
 /* Mock functions */
 
-vb2_error_t VbExNvStorageRead(uint8_t *buf)
+vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 {
-	memcpy(buf, ctx_nvram_backend.nvdata,
-	       vb2_nv_get_size(&ctx_nvram_backend));
+	commit_data_called = 1;
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExNvStorageWrite(const uint8_t *buf)
+uint32_t secdata_firmware_write(struct vb2_context *c)
 {
-	memcpy(ctx_nvram_backend.nvdata, buf,
-	       vb2_nv_get_size(&ctx_nvram_backend));
+	return TPM_SUCCESS;
+}
+
+uint32_t secdata_kernel_read(struct vb2_context *c)
+{
+	return kernel_read_retval;
+}
+
+uint32_t secdata_kernel_write(struct vb2_context *c)
+{
+	return kernel_write_retval;
+}
+
+uint32_t secdata_kernel_lock(struct vb2_context *c)
+{
+	return kernel_lock_retval;
+}
+
+uint32_t secdata_fwmp_read(struct vb2_context *c)
+{
+	memcpy(&c->secdata_fwmp, &fwmp_buf, sizeof(fwmp_buf));
+	return fwmp_read_retval;
+}
+
+vb2_error_t vb2_secdata_firmware_init(struct vb2_context *c)
+{
 	return VB2_SUCCESS;
 }
 
-uint32_t RollbackKernelRead(uint32_t *version)
+vb2_error_t vb2_secdata_kernel_init(struct vb2_context *c)
 {
-	*version = rkr_version;
-	return rkr_retval;
+	return VB2_SUCCESS;
 }
 
-uint32_t RollbackKernelWrite(uint32_t version)
+uint32_t vb2_secdata_kernel_get(struct vb2_context *c,
+				enum vb2_secdata_kernel_param param)
 {
-	rkr_version = version;
-	return rkw_retval;
+	return kernel_version;
 }
 
-uint32_t RollbackKernelLock(int recovery_mode)
+void vb2_secdata_kernel_set(struct vb2_context *c,
+			    enum vb2_secdata_kernel_param param,
+			    uint32_t value)
 {
-	return rkl_retval;
-}
-
-uint32_t RollbackFwmpRead(struct RollbackSpaceFwmp *fwmp)
-{
-	memcpy(fwmp, &rfr_fwmp, sizeof(*fwmp));
-	return rfr_retval;
+	kernel_version = value;
 }
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
@@ -164,8 +182,10 @@ vb2_error_t VbBootDiagnostic(struct vb2_context *c)
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 {
 	TEST_EQ(VbSelectAndLoadKernel(ctx, shared, &kparams), retval, desc);
-	TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST),
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
+	if (recovery_reason)
+		TEST_TRUE(commit_data_called, "  didn't commit nvdata");
 }
 
 uint32_t VbExGetSwitches(uint32_t request_mask)
@@ -189,7 +209,7 @@ static void VbSlkTest(void)
 {
 	ResetMocks();
 	test_slk(0, 0, "Normal");
-	TEST_EQ(rkr_version, 0x10002, "  version");
+	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	/*
 	 * If shared->flags doesn't ask for software sync, we won't notice
@@ -206,42 +226,43 @@ static void VbSlkTest(void)
 
 	/* Rollback kernel version */
 	ResetMocks();
-	rkr_retval = 123;
-	test_slk(VBERROR_TPM_READ_KERNEL,
+	kernel_read_retval = 123;
+	test_slk(VB2_ERROR_SECDATA_KERNEL_READ,
 		 VB2_RECOVERY_RW_TPM_R_ERROR, "Read kernel rollback");
 
 	ResetMocks();
 	new_version = 0x20003;
 	test_slk(0, 0, "Roll forward");
-	TEST_EQ(rkr_version, 0x20003, "  version");
+	TEST_EQ(kernel_version, 0x20003, "  version");
 
 	ResetMocks();
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
 	new_version = 0x20003;
 	test_slk(0, 0, "Don't roll forward kernel when trying new FW");
-	TEST_EQ(rkr_version, 0x10002, "  version");
+	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	ResetMocks();
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
 	new_version = 0x40006;
 	test_slk(0, 0, "Limit max roll forward");
-	TEST_EQ(rkr_version, 0x30005, "  version");
+	TEST_EQ(kernel_version, 0x30005, "  version");
 
 	ResetMocks();
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
 	new_version = 0x40006;
 	test_slk(0, 0, "Max roll forward can't rollback");
-	TEST_EQ(rkr_version, 0x10002, "  version");
+	TEST_EQ(kernel_version, 0x10002, "  version");
+
 
 	ResetMocks();
 	new_version = 0x20003;
-	rkw_retval = 123;
-	test_slk(VBERROR_TPM_WRITE_KERNEL,
+	kernel_write_retval = 123;
+	test_slk(VB2_ERROR_SECDATA_KERNEL_WRITE,
 		 VB2_RECOVERY_RW_TPM_W_ERROR, "Write kernel rollback");
 
 	ResetMocks();
-	rkl_retval = 123;
-	test_slk(VBERROR_TPM_LOCK_KERNEL,
+	kernel_lock_retval = 123;
+	test_slk(VB2_ERROR_SECDATA_KERNEL_LOCK,
 		 VB2_RECOVERY_RW_TPM_L_ERROR, "Lock kernel rollback");
 
 	/* Boot normal */
@@ -253,12 +274,14 @@ static void VbSlkTest(void)
 	if (DIAGNOSTIC_UI) {
 		ResetMocks();
 		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
-		vb2_nv_set(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST, 1);
+		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 		vbboot_retval = -4;
 		test_slk(VB2_ERROR_MOCK, 0,
 			 "Normal boot with diag");
-		TEST_EQ(vb2_nv_get(&ctx_nvram_backend, VB2_NV_DIAG_REQUEST),
+		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST),
 			0, "  diag not requested");
+		TEST_TRUE(commit_data_called,
+			  "  didn't commit nvdata");
 	}
 
 	/* Boot dev */
@@ -271,7 +294,7 @@ static void VbSlkTest(void)
 	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
 	new_version = 0x20003;
 	test_slk(0, 0, "Dev doesn't roll forward");
-	TEST_EQ(rkr_version, 0x10002, "  version");
+	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	/* Boot recovery */
 	ResetMocks();
@@ -283,11 +306,13 @@ static void VbSlkTest(void)
 	shared->recovery_reason = 123;
 	new_version = 0x20003;
 	test_slk(0, 0, "Recovery doesn't roll forward");
-	TEST_EQ(rkr_version, 0x10002, "  version");
+	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	ResetMocks();
 	shared->recovery_reason = 123;
-	rkr_retval = rkw_retval = rkl_retval = VB2_ERROR_MOCK;
+	kernel_read_retval = TPM_E_IOERROR;
+	kernel_write_retval = TPM_E_IOERROR;
+	kernel_lock_retval = TPM_E_IOERROR;
 	test_slk(0, 0, "Recovery ignore TPM errors");
 
 	ResetMocks();

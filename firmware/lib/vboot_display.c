@@ -383,11 +383,11 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 		/*
 		 * Non-manual recovery mode is meant to be left via three-finger
 		 * salute (into manual recovery mode). Need to commit nvdata
-		 * changes immediately.
+		 * changes immediately.  Ignore commit errors in recovery mode.
 		 */
 		if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 		    !vb2_allow_recovery(ctx))
-			vb2_nv_commit(ctx);
+			 vb2_commit_data(ctx);
 
 		/* Force redraw of current screen */
 		return VbDisplayScreen(ctx, disp_current_screen, 1, data);

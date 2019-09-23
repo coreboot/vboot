@@ -43,11 +43,12 @@ void vb2_error_notify(const char *print_msg,
 
 void vb2_run_altfw(struct vb2_context *ctx, enum VbAltFwIndex_t altfw_num)
 {
-	if (RollbackKernelLock(0)) {
+	if (secdata_kernel_lock(ctx)) {
 		vb2_error_notify("Error locking kernel versions on legacy "
 				 "boot.\n", NULL, VB_BEEP_FAILED);
 	} else {
-		vb2_nv_commit(ctx);
+		/* TODO: Figure out what to do on commit error in altfw. */
+		vb2_commit_data(ctx);
 		VbExLegacy(altfw_num);	/* will not return if found */
 		vb2_error_notify("Legacy boot failed. Missing BIOS?\n", NULL,
 				 VB_BEEP_FAILED);
