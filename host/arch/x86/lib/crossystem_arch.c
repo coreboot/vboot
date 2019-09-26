@@ -245,12 +245,16 @@ static uint8_t* VbGetBuffer(const char* filename, int* buffer_size)
 			break;
 
 		rv = fstat(fd, &fs);
-		if (rv || !S_ISREG(fs.st_mode))
+		if (rv || !S_ISREG(fs.st_mode)) {
+			close(fd);
 			break;
+		}
 
 		f = fdopen(fd, "r");
-		if (!f)
+		if (!f) {
+			close(fd);
 			break;
+		}
 
 		file_buffer = malloc(fs.st_size + 1);
 		if (!file_buffer)
