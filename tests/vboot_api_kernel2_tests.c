@@ -471,9 +471,7 @@ static void VbUserConfirmsTest(void)
 static void VbBootTest(void)
 {
 	ResetMocks();
-	VbExEcEnteringMode(0, VB_EC_NORMAL);
 	TEST_EQ(VbBootNormal(&ctx), 1002, "VbBootNormal()");
-	TEST_EQ(VbGetMode(), VB_EC_NORMAL, "vboot_mode normal");
 
 	ResetMocks();
 	vb2_nv_set(&ctx, VB2_NV_DISPLAY_REQUEST, 1);
@@ -498,9 +496,7 @@ static void VbBootDevTest(void)
 
 	/* Proceed after timeout */
 	ResetMocks();
-	VbExEcEnteringMode(0, VB_EC_DEVELOPER);
 	TEST_EQ(VbBootDeveloper(&ctx), 1002, "Timeout");
-	TEST_EQ(VbGetMode(), VB_EC_DEVELOPER, "vboot_mode developer");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING,
 		"  warning screen");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0,
@@ -1068,11 +1064,9 @@ static void VbBootRecTest(void)
 	/* Shutdown requested in loop */
 	ResetMocks();
 	MockGpioAfter(10, GPIO_SHUTDOWN);
-	VbExEcEnteringMode(0, VB_EC_RECOVERY);
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested");
-	TEST_EQ(VbGetMode(), VB_EC_RECOVERY, "vboot_mode recovery");
 
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0,
 		"  recovery reason");
@@ -1081,7 +1075,6 @@ static void VbBootRecTest(void)
 
 	/* Shutdown requested by keyboard */
 	ResetMocks();
-	VbExEcEnteringMode(0, VB_EC_RECOVERY);
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootRecovery(&ctx),
 		VBERROR_SHUTDOWN_REQUESTED,

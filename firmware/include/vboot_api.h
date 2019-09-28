@@ -710,13 +710,6 @@ vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
 vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select);
 
 /**
- * Info the EC of the boot mode selected by the AP.
- * mode: Normal, Developer, or Recovery
- */
-enum VbEcBootMode_t {VB_EC_NORMAL, VB_EC_DEVELOPER, VB_EC_RECOVERY };
-vb2_error_t VbExEcEnteringMode(int devidx, enum VbEcBootMode_t mode);
-
-/**
  * Perform EC post-verification / updating / jumping actions.
  *
  * This routine is called to perform certain actions that must wait until

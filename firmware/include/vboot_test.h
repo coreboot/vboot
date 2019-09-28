@@ -8,7 +8,9 @@
 #ifndef VBOOT_REFERENCE_TEST_API_H_
 #define VBOOT_REFERENCE_TEST_API_H_
 
-/*
+/****************************************************************************
+ * 2rsa.c
+ *
  * Internal functions from 2rsa.c that have error conditions we can't trigger
  * from the public APIs.  These include checks for bad algorithms where the
  * next call level up already checks for bad algorithms, etc.
@@ -21,8 +23,8 @@ int vb2_mont_ge(const struct vb2_public_key *key, uint32_t *a);
 vb2_error_t vb2_check_padding(const uint8_t *sig,
 			      const struct vb2_public_key *key);
 
-enum VbEcBootMode_t;
-enum VbEcBootMode_t VbGetMode(void);
+/****************************************************************************
+ * vboot_api_kernel.c */
 
 struct RollbackSpaceFwmp;
 struct RollbackSpaceFwmp *VbApiKernelGetFwmp(void);
