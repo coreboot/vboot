@@ -23,14 +23,14 @@ vb2_error_t vb21api_fw_phase3(struct vb2_context *ctx)
 	/* Verify firmware keyblock */
 	rv = vb21_load_fw_keyblock(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
 		return rv;
 	}
 
 	/* Verify firmware preamble */
 	rv = vb21_load_fw_preamble(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
 		return rv;
 	}
 
@@ -160,8 +160,8 @@ vb2_error_t vb21api_check_hash(struct vb2_context *ctx)
 			    digest_size))
 		return VB2_ERROR_API_CHECK_HASH_SIG;
 
-	/* TODO: the old check-hash function called vb2_fail() on any mismatch.
-	 * I don't think it should do that; the caller should. */
+	/* TODO: The old check-hash function called vb2api_fail() on any
+	   mismatch.  I don't think it should do that; the caller should. */
 
 	return VB2_SUCCESS;
 }

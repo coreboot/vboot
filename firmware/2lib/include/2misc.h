@@ -73,20 +73,6 @@ vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 				struct vb2_gbb_header *gbb);
 
 /**
- * Handle vboot failure.
- *
- * If the failure occurred after choosing a firmware slot, and the other
- * firmware slot is not known-bad, try the other firmware slot after reboot.
- *
- * If the failure occurred before choosing a firmware slot, or both slots have
- * failed in successive boots, request recovery.
- *
- * @param reason	Recovery reason
- * @param subcode	Recovery subcode
- */
-void vb2_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode);
-
-/**
  * Set up the verified boot context data, if not already set up.
  *
  * This uses ctx->workbuf_used=0 as a flag to indicate that the data has not

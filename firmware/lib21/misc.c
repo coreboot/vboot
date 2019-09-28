@@ -106,7 +106,7 @@ vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx)
 	/* Verify the keyblock */
 	rv = vb21_verify_keyblock(kb, kb->c.total_size, &root_key, &wb);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_FW_KEYBLOCK, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_KEYBLOCK, rv);
 		return rv;
 	}
 
@@ -125,7 +125,7 @@ vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx)
 			rv = VB2_ERROR_FW_KEYBLOCK_VERSION_ROLLBACK;
 	}
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_FW_KEY_ROLLBACK, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_KEY_ROLLBACK, rv);
 		return rv;
 	}
 
@@ -192,7 +192,7 @@ vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx)
 	/* Verify the preamble */
 	rv = vb21_verify_fw_preamble(pre, pre->c.total_size, &data_key, &wb);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_FW_PREAMBLE, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_PREAMBLE, rv);
 		return rv;
 	}
 
@@ -218,7 +218,7 @@ vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx)
 			rv = VB2_ERROR_FW_PREAMBLE_VERSION_ROLLBACK;
 	}
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_FW_ROLLBACK, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_ROLLBACK, rv);
 		return rv;
 	}
 

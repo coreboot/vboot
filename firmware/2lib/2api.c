@@ -16,14 +16,6 @@
 #include "2sysincludes.h"
 #include "2tpm_bootmode.h"
 
-void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
-{
-	/* Initialize the vboot context if it hasn't been yet */
-	vb2_init_context(ctx);
-
-	vb2_fail(ctx, reason, subcode);
-}
-
 vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 {
 	vb2_error_t rv;
@@ -50,7 +42,7 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 		 * Fool me twice, shame on me.  Fail into recovery to avoid
 		 * a reboot loop.
 		 */
-		vb2_fail(ctx, VB2_RECOVERY_RO_TPM_REBOOT, 0);
+		vb2api_fail(ctx, VB2_RECOVERY_RO_TPM_REBOOT, 0);
 	} else {
 		/* Reboot requested for the first time */
 		vb2_nv_set(ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
@@ -60,12 +52,12 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 	/* Initialize firmware secure data */
 	rv = vb2_secdata_firmware_init(ctx);
 	if (rv)
-		vb2_fail(ctx, VB2_RECOVERY_SECDATA_FIRMWARE_INIT, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_FIRMWARE_INIT, rv);
 
 	/* Load and parse the GBB header */
 	rv = vb2_fw_init_gbb(ctx);
 	if (rv)
-		vb2_fail(ctx, VB2_RECOVERY_GBB_HEADER, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_GBB_HEADER, rv);
 
 	/*
 	 * Check for recovery.  Note that this function returns void, since any
@@ -85,7 +77,7 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 		 * to take a different path through the dev switch checking
 		 * code in that case.
 		 */
-		vb2_fail(ctx, VB2_RECOVERY_DEV_SWITCH, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_DEV_SWITCH, rv);
 		return rv;
 	}
 
@@ -145,14 +137,14 @@ vb2_error_t vb2api_fw_phase2(struct vb2_context *ctx)
 	/* Check for explicit request to clear TPM */
 	rv = vb2_check_tpm_clear(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
 		return rv;
 	}
 
 	/* Decide which firmware slot to try this boot */
 	rv = vb2_select_fw_slot(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_FW_SLOT, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_SLOT, rv);
 		return rv;
 	}
 

@@ -488,11 +488,15 @@ vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size);
 /**
  * Report firmware failure to vboot.
  *
- * This may be called before vb2api_phase1() to indicate errors in the boot
- * process prior to the start of vboot.
+ * If the failure occurred after choosing a firmware slot, and the other
+ * firmware slot is not known-bad, try the other firmware slot after reboot.
  *
- * If this is called after vb2api_phase1(), on return, the calling firmware
- * should check for updates to secdata and/or nvdata, then reboot.
+ * If the failure occurred before choosing a firmware slot, or both slots have
+ * failed in successive boots, request recovery.
+ *
+ * This may be called before vb2api_phase1() to indicate errors in the boot
+ * process prior to the start of vboot.  On return, the calling firmware should
+ * check for updates to secdata and/or nvdata, then reboot.
  *
  * @param reason	Recovery reason
  * @param subcode	Recovery subcode

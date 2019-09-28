@@ -488,11 +488,11 @@ static vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 
 		if (RollbackKernelLock(0)) {
 			VB2_DEBUG("Failed to lock TPM PP\n");
-			vb2_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
+			vb2api_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
 		} else if (vb2ex_tpm_set_mode(VB2_TPM_MODE_DISABLED) !=
 			   VB2_SUCCESS) {
 			VB2_DEBUG("Failed to disable TPM\n");
-			vb2_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
+			vb2api_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
 		} else {
 			vb2_run_altfw(ctx, VB_ALTFW_DIAGNOSTIC);
 			VB2_DEBUG("Diagnostic failed to run\n");
@@ -500,7 +500,7 @@ static vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 			 * Assuming failure was due to bad hash, though
 			 * the rom could just be missing or invalid.
 			 */
-			vb2_fail(ctx, VB2_RECOVERY_ALTFW_HASH_FAILED, 0);
+			vb2api_fail(ctx, VB2_RECOVERY_ALTFW_HASH_FAILED, 0);
 		}
 	}
 

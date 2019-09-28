@@ -37,7 +37,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 			/* Ignore failure to get kernel version in recovery */
 			sd->kernel_version_secdata = 0;
 		} else {
-			vb2_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
+			vb2api_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
 			return rv;
 		}
 	}

@@ -22,14 +22,14 @@ vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx)
 	/* Verify firmware keyblock */
 	rv = vb2_load_fw_keyblock(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
 		return rv;
 	}
 
 	/* Verify firmware preamble */
 	rv = vb2_load_fw_preamble(ctx);
 	if (rv) {
-		vb2_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_RO_INVALID_RW, rv);
 		return rv;
 	}
 
@@ -199,7 +199,7 @@ vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 	 */
 	rv = vb2_verify_digest(&key, &pre->body_signature, digest, &wb);
 	if (rv)
-		vb2_fail(ctx, VB2_RECOVERY_FW_BODY, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_FW_BODY, rv);
 
 	if (digest_out != NULL) {
 		if (digest_out_size < digest_size)

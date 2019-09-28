@@ -256,19 +256,19 @@ static void fail_tests(void)
 	/* Early fail (before even NV init) */
 	reset_common_data();
 	sd->status &= ~VB2_SD_STATUS_NV_INIT;
-	vb2_fail(&ctx, 1, 2);
-	TEST_NEQ(sd->status & VB2_SD_STATUS_NV_INIT, 0, "vb2_fail inits NV");
+	vb2api_fail(&ctx, 1, 2);
+	TEST_NEQ(sd->status & VB2_SD_STATUS_NV_INIT, 0, "vb2api_fail inits NV");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		1, "vb2_fail request");
+		1, "vb2api_fail request");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_SUBCODE),
-		2, "vb2_fail subcode");
+		2, "vb2api_fail subcode");
 
 	/* Repeated fail doesn't overwrite the error code */
-	vb2_fail(&ctx, 3, 4);
+	vb2api_fail(&ctx, 3, 4);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		1, "vb2_fail repeat");
+		1, "vb2api_fail repeat");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_SUBCODE),
-		2, "vb2_fail repeat2");
+		2, "vb2api_fail repeat2");
 
 	/* Fail with other slot good doesn't trigger recovery */
 	reset_common_data();
@@ -278,12 +278,14 @@ static void fail_tests(void)
 	sd->fw_slot = 0;
 	sd->last_fw_slot = 1;
 	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
-	vb2_fail(&ctx, 5, 6);
+	vb2api_fail(&ctx, 5, 6);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 0, "vb2_failover");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_FW_RESULT),
-		VB2_FW_RESULT_FAILURE, "vb2_fail this fw");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_COUNT), 0, "vb2_fail use up tries");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_NEXT), 1, "vb2_fail try other slot");
+		VB2_FW_RESULT_FAILURE, "vb2api_fail this fw");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_COUNT), 0,
+		"vb2api_fail use up tries");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_NEXT), 1,
+		"vb2api_fail try other slot");
 
 	/* Fail with other slot already failing triggers recovery */
 	reset_common_data();
@@ -291,12 +293,13 @@ static void fail_tests(void)
 	sd->fw_slot = 1;
 	sd->last_fw_slot = 0;
 	sd->last_fw_result = VB2_FW_RESULT_FAILURE;
-	vb2_fail(&ctx, 7, 8);
+	vb2api_fail(&ctx, 7, 8);
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST), 7,
-		"vb2_fail both slots bad");
+		"vb2api_fail both slots bad");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_FW_RESULT),
-		VB2_FW_RESULT_FAILURE, "vb2_fail this fw");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_NEXT), 0, "vb2_fail try other slot");
+		VB2_FW_RESULT_FAILURE, "vb2api_fail this fw");
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_TRY_NEXT), 0,
+		"vb2api_fail try other slot");
 }
 
 static void recovery_tests(void)

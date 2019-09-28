@@ -77,8 +77,11 @@ vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-void vb2_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
+void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 {
+	/* Initialize the vboot context if it hasn't been yet */
+	vb2_init_context(ctx);
+
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	/* If NV data hasn't been initialized, initialize it now */
@@ -337,7 +340,8 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 				 * we don't have NVRAM space to store the full
 				 * 32-bit code.
 				 */
-				vb2_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
+				vb2api_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER,
+					    rv);
 				return rv;
 			}
 
@@ -371,7 +375,7 @@ vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx)
 		 * useful as the full error code, but we don't have NVRAM space
 		 * to store the full 32-bit code.
 		 */
-		vb2_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
+		vb2api_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
 		return rv;
 	}
 
