@@ -97,6 +97,36 @@ struct vb2_digest_context {
 	int using_hwcrypto;
 };
 
+/*
+ * Serializable data structure that can store any vboot hash. Layout used in
+ * CBFS attributes that need to be backwards-compatible -- do not change!
+ * When serializing/deserizaling this, you should store/load (offsetof(bytes) +
+ * vb2_digest_size(algo)), not the full size of this structure.
+ */
+struct vb2_hash {
+	/* enum vb2_hash_algorithm. Fixed width for serialization.
+	   Single byte to avoid endianness issues. */
+	uint8_t algo;
+	/* Padding to align and to match existing CBFS attribute. */
+	uint8_t reserved[3];
+	/* The actual digest. Can add new types here as required. */
+	union {
+		uint8_t raw[0];
+#if VB2_SUPPORT_SHA1
+		uint8_t sha1[VB2_SHA1_DIGEST_SIZE];
+#endif
+#if VB2_SUPPORT_SHA256
+		uint8_t sha256[VB2_SHA256_DIGEST_SIZE];
+#endif
+#if VB2_SUPPORT_SHA512
+		uint8_t sha512[VB2_SHA512_DIGEST_SIZE];
+#endif
+	} bytes;  /* This has a name so that it's easy to sizeof(). */
+};
+_Static_assert(sizeof(((struct vb2_hash *)0)->bytes) <= VB2_MAX_DIGEST_SIZE,
+	       "Must update VB2_MAX_DIGEST_SIZE for new digests!");
+_Static_assert(VB2_HASH_ALG_COUNT <= UINT8_MAX, "vb2_hash.algo overflow!");
+
 /**
  * Initialize a hash context.
  *
@@ -159,7 +189,7 @@ enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm);
  * @param hash_alg	Hash algorithm
  * @return The size of the digest, or 0 if error.
  */
-vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
+size_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
 
 /**
  * Return the block size of a hash algorithm.
@@ -167,7 +197,7 @@ vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
  * @param hash_alg	Hash algorithm
  * @return The block size of the algorithm, or 0 if error.
  */
-vb2_error_t vb2_hash_block_size(enum vb2_hash_algorithm alg);
+size_t vb2_hash_block_size(enum vb2_hash_algorithm alg);
 
 /**
  * Return the name of a hash algorithm
@@ -225,5 +255,35 @@ vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc,
 vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
 			      uint32_t digest_size);
+
+/**
+ * Fill a vb2_hash structure with the hash of a buffer.
+ *
+ * @param buf		Buffer to hash
+ * @param size		Size of |buf| in bytes
+ * @param algo		The hash algorithm to use (and store in |hash|)
+ * @param hash		vb2_hash structure to fill with the hash of |buf|
+ * @return VB2_SUCCESS, or non-zero on error.
+ */
+static inline vb2_error_t vb2_hash_calculate(const void *buf, uint32_t size,
+					     enum vb2_hash_algorithm algo,
+					     struct vb2_hash *hash)
+{
+	hash->algo = algo;
+	return vb2_digest_buffer(buf, size, algo, hash->bytes.raw,
+				 vb2_digest_size(algo));
+}
+
+/**
+ * Verify that a vb2_hash matches a buffer.
+ *
+ * @param buf		Buffer to hash and match to |hash|
+ * @param size		Size of |buf| in bytes
+ * @param hash		Hash to compare to the buffer
+ * @return VB2_SUCCESS if hash matches, VB2_ERROR_SHA_MISMATCH if hash doesn't
+ *  match, or non-zero on other error.
+ */
+vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
+			    const struct vb2_hash *hash);
 
 #endif  /* VBOOT_REFERENCE_2SHA_H_ */

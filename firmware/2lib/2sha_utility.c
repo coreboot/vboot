@@ -56,7 +56,7 @@ enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm)
 		return VB2_HASH_INVALID;
 }
 
-vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg)
+size_t vb2_digest_size(enum vb2_hash_algorithm hash_alg)
 {
 	switch (hash_alg) {
 #if VB2_SUPPORT_SHA1
@@ -76,7 +76,7 @@ vb2_error_t vb2_digest_size(enum vb2_hash_algorithm hash_alg)
 	}
 }
 
-vb2_error_t vb2_hash_block_size(enum vb2_hash_algorithm alg)
+size_t vb2_hash_block_size(enum vb2_hash_algorithm alg)
 {
 	switch (alg) {
 #if VB2_SUPPORT_SHA1
@@ -210,4 +210,19 @@ vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 		return rv;
 
 	return vb2_digest_finalize(&dc, digest, digest_size);
+}
+
+vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
+			    const struct vb2_hash *hash)
+{
+	uint8_t hash_buf[VB2_MAX_DIGEST_SIZE];
+	size_t hash_size = vb2_digest_size(hash->algo);
+	vb2_error_t rv = vb2_digest_buffer(buf, size, hash->algo,
+					   hash_buf, hash_size);
+	if (rv)
+		return rv;
+	if (memcmp(hash_buf, hash->bytes.raw, hash_size))
+		return VB2_ERROR_SHA_MISMATCH;
+	else
+		return VB2_SUCCESS;
 }

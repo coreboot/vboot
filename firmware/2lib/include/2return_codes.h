@@ -110,6 +110,9 @@ enum vb2_return_code {
 	/* Digest size buffer too small in vb2_digest_finalize() */
 	VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE,
 
+	/* Hash mismatch in vb2_hash_verify() */
+	VB2_ERROR_SHA_MISMATCH,
+
 	/**********************************************************************
 	 * RSA errors
 	 */

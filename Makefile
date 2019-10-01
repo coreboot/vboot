@@ -756,6 +756,7 @@ TEST2X_NAMES = \
 	tests/vb2_secdata_firmware_tests \
 	tests/vb2_secdata_fwmp_tests \
 	tests/vb2_secdata_kernel_tests \
+	tests/vb2_sha_api_tests \
 	tests/vb2_sha_tests \
 	tests/hmac_test
 
@@ -1317,6 +1318,7 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_firmware_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_fwmp_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
