@@ -40,16 +40,6 @@ struct LoadKernelParams *VbApiKernelGetParams(void)
 
 #endif
 
-/**
- * Set recovery request (called from vboot_api_kernel.c functions only)
- */
-static void VbSetRecoveryRequest(struct vb2_context *ctx,
-				 uint32_t recovery_request)
-{
-	VB2_DEBUG("VbSetRecoveryRequest(%d)\n", (int)recovery_request);
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, recovery_request);
-}
-
 void vb2_nv_commit(struct vb2_context *ctx)
 {
 	/* Exit if nothing has changed */
@@ -67,7 +57,7 @@ uint32_t vb2_get_fwmp_flags(void)
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
-	vb2_error_t retval = VB2_ERROR_UNKNOWN;
+	vb2_error_t rv;
 	VbDiskInfo* disk_info = NULL;
 	uint32_t disk_count = 0;
 	uint32_t i;
@@ -79,13 +69,13 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	lkp.disk_handle = NULL;
 
 	/* Find disks */
-	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count,
-					   get_info_flags))
+	rv = VbExDiskGetInfo(&disk_info, &disk_count, get_info_flags);
+	if (VB2_SUCCESS != rv)
 		disk_count = 0;
 
 	VB2_DEBUG("VbTryLoadKernel() found %d disks\n", (int)disk_count);
 	if (0 == disk_count) {
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_NO_DISK);
+		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
 		return VBERROR_NO_DISK_FOUND;
 	}
 
@@ -119,9 +109,9 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 						?: lkp.gpt_lba_count;
 		lkp.boot_flags |= disk_info[i].flags & VB_DISK_FLAG_EXTERNAL_GPT
 				? BOOT_FLAG_EXTERNAL_GPT : 0;
-		retval = LoadKernel(ctx, &lkp);
+		rv = LoadKernel(ctx, &lkp);
 
-		VB2_DEBUG("VbTryLoadKernel() LoadKernel() = %d\n", retval);
+		VB2_DEBUG("VbTryLoadKernel() LoadKernel() = %d\n", rv);
 
 		/*
 		 * Stop now if we found a kernel.
@@ -130,13 +120,13 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 		 * get, instead of just returning the value from the last disk
 		 * attempted.
 		 */
-		if (VB2_SUCCESS == retval)
+		if (VB2_SUCCESS == rv)
 			break;
 	}
 
 	/* If we didn't find any good kernels, don't return a disk handle. */
-	if (VB2_SUCCESS != retval) {
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_NO_KERNEL);
+	if (VB2_SUCCESS != rv) {
+		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
 		lkp.disk_handle = NULL;
 	}
 
@@ -146,7 +136,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	 * Pass through return code.  Recovery reason (if any) has already been
 	 * set by LoadKernel().
 	 */
-	return retval;
+	return rv;
 }
 
 /**
@@ -223,11 +213,14 @@ vb2_error_t VbBootNormal(struct vb2_context *ctx)
 		shared->kernel_version_tpm = max_rollforward;
 	}
 
-	if ((shared->kernel_version_tpm > shared->kernel_version_tpm_start) &&
-	    RollbackKernelWrite(shared->kernel_version_tpm)) {
-		VB2_DEBUG("Error writing kernel versions to TPM.\n");
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_W_ERROR);
-		return VBERROR_TPM_WRITE_KERNEL;
+	if (shared->kernel_version_tpm > shared->kernel_version_tpm_start) {
+		uint32_t tpm_rv =
+			RollbackKernelWrite(shared->kernel_version_tpm);
+		if (tpm_rv) {
+			VB2_DEBUG("Error writing kernel versions to TPM.\n");
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, tpm_rv);
+			return VBERROR_TPM_WRITE_KERNEL;
+		}
 	}
 
 	return rv;
@@ -237,9 +230,13 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 				    VbSharedDataHeader *shared,
 				    VbSelectAndLoadKernelParams *kparams)
 {
-	if (VB2_SUCCESS != vb2_init_context(ctx)) {
+	vb2_error_t rv;
+	uint32_t tpm_rv;
+
+	rv = vb2_init_context(ctx);
+	if (VB2_SUCCESS != rv) {
 		VB2_DEBUG("Can't init vb2_context\n");
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_SHARED_DATA);
+		vb2api_fail(ctx, VB2_RECOVERY_RW_SHARED_DATA, rv);
 		return VBERROR_INIT_SHARED_DATA;
 	}
 
@@ -307,10 +304,11 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	memset(kparams->partition_guid, 0, sizeof(kparams->partition_guid));
 
 	/* Read kernel version from the TPM.  Ignore errors in recovery mode. */
-	if (RollbackKernelRead(&shared->kernel_version_tpm)) {
+	tpm_rv = RollbackKernelRead(&shared->kernel_version_tpm);
+	if (tpm_rv) {
 		VB2_DEBUG("Unable to get kernel versions from TPM\n");
 		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_R_ERROR, tpm_rv);
 			return VBERROR_TPM_READ_KERNEL;
 		}
 	}
@@ -320,10 +318,14 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	/* Read FWMP.  Ignore errors in recovery mode. */
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_FWMP) {
 		memset(&fwmp, 0, sizeof(fwmp));
-	} else if (RollbackFwmpRead(&fwmp)) {
+		return VB2_SUCCESS;
+	}
+
+	tpm_rv = RollbackFwmpRead(&fwmp);
+	if (tpm_rv) {
 		VB2_DEBUG("Unable to get FWMP from TPM\n");
 		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_R_ERROR);
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_R_ERROR, tpm_rv);
 			return VBERROR_TPM_READ_FWMP;
 		}
 	}
@@ -348,11 +350,13 @@ static vb2_error_t vb2_kernel_phase4(struct vb2_context *ctx,
 	       sizeof(kparams->partition_guid));
 
 	/* Lock the kernel versions if not in recovery mode */
-	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
-	    RollbackKernelLock(sd->recovery_reason)) {
-		VB2_DEBUG("Error locking kernel versions.\n");
-		VbSetRecoveryRequest(ctx, VB2_RECOVERY_RW_TPM_L_ERROR);
-		return VBERROR_TPM_LOCK_KERNEL;
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+		uint32_t tpm_rv = RollbackKernelLock(sd->recovery_reason);
+		if (tpm_rv) {
+			VB2_DEBUG("Error locking kernel versions.\n");
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_L_ERROR, tpm_rv);
+			return VBERROR_TPM_LOCK_KERNEL;
+		}
 	}
 
 	return VB2_SUCCESS;
@@ -374,8 +378,8 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams)
 {
-	vb2_error_t retval = vb2_kernel_setup(ctx, shared, kparams);
-	if (retval)
+	vb2_error_t rv = vb2_kernel_setup(ctx, shared, kparams);
+	if (rv)
 		goto VbSelectAndLoadKernel_exit;
 
 	VB2_DEBUG("GBB flags are %#x\n", vb2_get_gbb(ctx)->flags);
@@ -385,8 +389,8 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	 * it's just a single non-interactive WAIT screen.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		retval = ec_sync_all(ctx);
-		if (retval)
+		rv = ec_sync_all(ctx);
+		if (rv)
 			goto VbSelectAndLoadKernel_exit;
 	}
 
@@ -394,9 +398,9 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 		/* Recovery boot.  This has UI. */
 		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
-			retval = VbBootRecoveryMenu(ctx);
+			rv = VbBootRecoveryMenu(ctx);
 		else
-			retval = VbBootRecovery(ctx);
+			rv = VbBootRecovery(ctx);
 		VbExEcEnteringMode(0, VB_EC_RECOVERY);
 	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
@@ -407,38 +411,38 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * needed.  This mode is also 1-shot so it's placed
 		 * before developer mode.
 		 */
-		retval = VbBootDiagnostic(ctx);
+		rv = VbBootDiagnostic(ctx);
 		/*
 		 * The diagnostic menu should either boot a rom, or
 		 * return either of reboot or shutdown.  The following
 		 * check is a safety precaution.
 		 */
-		if (!retval)
-			retval = VBERROR_REBOOT_REQUIRED;
+		if (!rv)
+			rv = VBERROR_REBOOT_REQUIRED;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		if (kparams->inflags & VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE)
 			ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
 
 		/* Developer boot.  This has UI. */
 		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
-			retval = VbBootDeveloperMenu(ctx);
+			rv = VbBootDeveloperMenu(ctx);
 		else
-			retval = VbBootDeveloper(ctx);
+			rv = VbBootDeveloper(ctx);
 		VbExEcEnteringMode(0, VB_EC_DEVELOPER);
 	} else {
 		/* Normal boot */
-		retval = VbBootNormal(ctx);
+		rv = VbBootNormal(ctx);
 		VbExEcEnteringMode(0, VB_EC_NORMAL);
 	}
 
  VbSelectAndLoadKernel_exit:
 
-	if (VB2_SUCCESS == retval)
-		retval = vb2_kernel_phase4(ctx, kparams);
+	if (VB2_SUCCESS == rv)
+		rv = vb2_kernel_phase4(ctx, kparams);
 
 	vb2_kernel_cleanup(ctx);
 
 	/* Pass through return value from boot path */
-	VB2_DEBUG("Returning %d\n", (int)retval);
-	return retval;
+	VB2_DEBUG("Returning %d\n", (int)rv);
+	return rv;
 }

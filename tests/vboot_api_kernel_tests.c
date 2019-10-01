@@ -6,6 +6,7 @@
  */
 
 #include "2common.h"
+#include "2misc.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
 #include "load_kernel_fw.h"
@@ -220,6 +221,7 @@ static const char *got_find_disk;
 static const char *got_load_disk;
 static uint32_t got_return_val;
 static uint32_t got_external_mismatch;
+static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context ctx;
 
 /**
@@ -228,6 +230,9 @@ static struct vb2_context ctx;
 static void ResetMocks(int i)
 {
 	memset(&ctx, 0, sizeof(ctx));
+	ctx.workbuf = workbuf;
+	ctx.workbuf_size = sizeof(workbuf);
+	vb2_init_context(&ctx);
 
 	memset(VbApiKernelGetParams(), 0, sizeof(LoadKernelParams));
 
@@ -328,6 +333,8 @@ void vb2_nv_set(struct vb2_context *c,
 		enum vb2_nv_param param,
 		uint32_t value)
 {
+	if (param != VB2_NV_RECOVERY_REQUEST)
+		return;
 	VB2_DEBUG("%s(): got_recovery_request_val = %d (0x%x)\n", __FUNCTION__,
 		  value, value);
 	got_recovery_request_val = value;
