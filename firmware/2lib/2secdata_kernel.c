@@ -77,43 +77,51 @@ vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_secdata_kernel_get(struct vb2_context *ctx,
-				   enum vb2_secdata_kernel_param param,
-				   uint32_t *dest)
+uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
+				enum vb2_secdata_kernel_param param)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_secdata_kernel *sec =
 		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
+	const char *msg;
 
-	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT))
-		return VB2_ERROR_SECDATA_KERNEL_GET_UNINITIALIZED;
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
+		msg = "get before init";
+		goto fail;
+	}
 
 	switch (param) {
 	case VB2_SECDATA_KERNEL_VERSIONS:
-		*dest = sec->kernel_versions;
-		return VB2_SUCCESS;
+		return sec->kernel_versions;
 
 	default:
-		return VB2_ERROR_SECDATA_KERNEL_GET_PARAM;
+		msg = "invalid param";
 	}
+
+ fail:
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
+		VB2_DIE("%s\n", msg);
+	VB2_DEBUG("ERROR [%s] ignored in recovery mode\n", msg);
+	return 0;
 }
 
-vb2_error_t vb2_secdata_kernel_set(struct vb2_context *ctx,
-				   enum vb2_secdata_kernel_param param,
-				   uint32_t value)
+void vb2_secdata_kernel_set(struct vb2_context *ctx,
+			    enum vb2_secdata_kernel_param param,
+			    uint32_t value)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_secdata_kernel *sec =
 		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
-	uint32_t now;
+	const char *msg;
 
-	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT))
-		return VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED;
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
+		msg = "set before init";
+		goto fail;
+	}
 
-	/* If not changing the value, don't regenerate the CRC */
-	if (vb2_secdata_kernel_get(ctx, param, &now) == VB2_SUCCESS &&
-	    now == value)
-		return VB2_SUCCESS;
+	/* If not changing the value, just return early */
+	if (value == vb2_secdata_kernel_get(ctx, param))
+		return;
 
 	switch (param) {
 	case VB2_SECDATA_KERNEL_VERSIONS:
@@ -123,11 +131,17 @@ vb2_error_t vb2_secdata_kernel_set(struct vb2_context *ctx,
 		break;
 
 	default:
-		return VB2_ERROR_SECDATA_KERNEL_SET_PARAM;
+		msg = "invalid param";
+		goto fail;
 	}
 
 	/* Regenerate CRC */
 	sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdata_kernel, crc8));
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
-	return VB2_SUCCESS;
+	return;
+
+ fail:
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
+		VB2_DIE("%s\n", msg);
+	VB2_DEBUG("ERROR [%s] ignored in recovery mode\n", msg);
 }

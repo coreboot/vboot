@@ -27,20 +27,12 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 
 	/* Initialize secure kernel data and read version */
 	rv = vb2_secdata_kernel_init(ctx);
-	if (!rv) {
-		rv = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS,
-					    &sd->kernel_version_secdata);
+	if (rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
+		return rv;
 	}
-
-	if (rv) {
-		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-			/* Ignore failure to get kernel version in recovery */
-			sd->kernel_version_secdata = 0;
-		} else {
-			vb2api_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
-			return rv;
-		}
-	}
+	sd->kernel_version_secdata =
+		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 
 	/* Find the key to use to verify the kernel keyblock */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
@@ -250,7 +242,6 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
 	/*
 	 * If the kernel is a newer version than in secure storage, and the
@@ -261,10 +252,8 @@ vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx)
 	    (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED) &&
 	    !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 	    (ctx->flags & VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD)) {
-		rv = vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
+		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
 					    sd->kernel_version);
-		if (rv)
-			return rv;
 		sd->kernel_version_secdata = sd->kernel_version;
 	}
 

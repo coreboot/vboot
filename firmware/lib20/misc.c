@@ -284,12 +284,9 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 	if (sd->fw_version > sd->fw_version_secdata &&
 	    sd->last_fw_slot == sd->fw_slot &&
 	    sd->last_fw_result == VB2_FW_RESULT_SUCCESS) {
-
 		sd->fw_version_secdata = sd->fw_version;
-		rv = vb2_secdata_firmware_set(
-			ctx, VB2_SECDATA_FIRMWARE_VERSIONS, sd->fw_version);
-		if (rv)
-			return rv;
+		vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
+					 sd->fw_version);
 	}
 
 	/* Keep track of where we put the preamble */

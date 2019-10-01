@@ -399,7 +399,7 @@ static void dev_switch_tests(void)
 				 VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE);
 	TEST_SUCC(vb2_check_dev_switch(&ctx), "to dev mode");
 	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS);
 	TEST_EQ(v, (VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE |
 		    VB2_SECDATA_FIRMWARE_FLAG_LAST_BOOT_DEVELOPER),
 		"  last boot developer now");
@@ -410,7 +410,7 @@ static void dev_switch_tests(void)
 				 VB2_SECDATA_FIRMWARE_FLAG_LAST_BOOT_DEVELOPER);
 	TEST_SUCC(vb2_check_dev_switch(&ctx), "from dev mode");
 	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS);
 	TEST_EQ(v, 0, "  last boot not developer now");
 
 	/* Disable dev mode */
@@ -430,7 +430,7 @@ static void dev_switch_tests(void)
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	TEST_SUCC(vb2_check_dev_switch(&ctx), "dev on via gbb");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd in dev");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS);
 	TEST_EQ(v, VB2_SECDATA_FIRMWARE_FLAG_LAST_BOOT_DEVELOPER,
 		"  doesn't set dev on in secdata_firmware "
 		"but does set last boot dev");
@@ -454,7 +454,7 @@ static void dev_switch_tests(void)
 	TEST_EQ(vb2_check_dev_switch(&ctx),
 		VB2_ERROR_EX_TPM_CLEAR_OWNER, "tpm clear fail");
 	TEST_EQ(mock_tpm_clear_called, 1, "  tpm clear");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_FLAGS);
 	TEST_EQ(v, VB2_SECDATA_FIRMWARE_FLAG_LAST_BOOT_DEVELOPER,
 		"  last boot still developer");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
@@ -463,20 +463,18 @@ static void dev_switch_tests(void)
 		(uint8_t)VB2_ERROR_EX_TPM_CLEAR_OWNER, "  recovery subcode");
 
 	/*
-	 * Secdata failure in normal mode fails and shows dev=0 even if dev
-	 * mode was on in the (inaccessible) secdata_firmware.
+	 * secdata_firmware failure in normal mode fails and shows dev=0 even
+	 * if dev mode was on in the (inaccessible) secdata_firmware.
 	 */
 	reset_common_data();
 	vb2_secdata_firmware_set(&ctx, VB2_SECDATA_FIRMWARE_FLAGS,
 				 VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE);
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
-	TEST_EQ(vb2_check_dev_switch(&ctx),
-		VB2_ERROR_SECDATA_FIRMWARE_GET_UNINITIALIZED,
-		"secdata_firmware fail normal");
+	TEST_ABORT(vb2_check_dev_switch(&ctx), "secdata_firmware fail normal");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd not in dev");
 	TEST_EQ(ctx.flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx not in dev");
 
-	/* Secdata failure in recovery mode continues */
+	/* secdata_firmware failure in recovery mode continues */
 	reset_common_data();
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;

@@ -105,6 +105,10 @@ static void reset_common_data(enum reset_type t)
 		vb2_set_workbuf_used(&ctx, sd->preamble_offset +
 				     sd->preamble_size);
 
+		/* Needed to check that secdata_kernel initialization is
+		   performed by phase1 function. */
+		sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
+
 	} else if (t == FOR_PHASE2) {
 		struct vb2_signature *sig;
 		struct vb2_digest_context dc;
@@ -275,8 +279,8 @@ static void phase1_tests(void)
 	ctx.secdata_kernel[0] ^= 0x33;
 	TEST_EQ(vb2api_kernel_phase1(&ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
 		"phase1 bad secdata");
-	reset_common_data(FOR_PHASE1);
 
+	reset_common_data(FOR_PHASE1);
 	ctx.secdata_kernel[0] ^= 0x33;
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase1(&ctx), "phase1 bad secdata rec");
@@ -417,37 +421,36 @@ static void phase3_tests(void)
 
 	reset_common_data(FOR_PHASE3);
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 good");
-	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20004, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->kernel_version = 0x20001;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollback");
-	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->flags &= ~VB2_SD_FLAG_KERNEL_SIGNED;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 unsigned kernel");
-	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	ctx.flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 recovery");
-	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	ctx.flags &= ~VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD;
 	TEST_SUCC(vb2api_kernel_phase3(&ctx), "phase3 no rollforward");
-	vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v);
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x20002, "  version");
 
 	reset_common_data(FOR_PHASE3);
 	sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
-	TEST_EQ(vb2api_kernel_phase3(&ctx),
-		VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED, "phase3 set fail");
+	TEST_ABORT(vb2api_kernel_phase3(&ctx), "phase3 set fail");
 }
 
 int main(int argc, char* argv[])

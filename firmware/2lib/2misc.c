@@ -248,30 +248,19 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 	uint32_t flags = 0;
 	uint32_t old_flags;
 	int is_dev = 0;
-	int use_secdata = 1;
+	int valid_secdata = 1;
 	vb2_error_t rv;
 
+	/* Check whether secdata_firmware is initialized */
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_FIRMWARE_INIT))
+		valid_secdata = 0;
+
 	/* Read secure flags */
-	rv = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS, &flags);
-	if (rv) {
-		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-			/*
-			 * Recovery mode needs to check other ways developer
-			 * mode can be enabled, so don't give up yet.  But
-			 * since we can't read secdata, assume dev mode was
-			 * disabled.
-			 */
-			use_secdata = 0;
-			flags = 0;
-		} else {
-			/* Normal mode simply fails */
-			return rv;
-		}
-	}
+	flags = vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS);
 	old_flags = flags;
 
 	/* Handle dev disable request */
-	if (use_secdata && vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST)) {
+	if (valid_secdata && vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST)) {
 		flags &= ~VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE;
 
 		/* Clear the request */
@@ -325,32 +314,28 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		 * vb2_check_tpm_clear(), because we don't want to update
 		 * last_boot_developer and then fail to clear the TPM owner.
 		 *
-		 * Note that we do this even if we couldn't read secdata, since
-		 * the TPM owner and secdata may be independent, and we want
-		 * the owner to be cleared if *this boot* is different than the
-		 * last one (perhaps due to GBB or hardware override).
+		 * Note that we do this even if secdata_firmware is having
+		 * issues, since the TPM owner and secdata_firmware may be
+		 * independent, and we want the owner to be cleared if *this
+		 * boot* is different than the last one (perhaps due to GBB or
+		 * hardware override).
 		 */
 		rv = vb2ex_tpm_clear_owner(ctx);
-		if (use_secdata) {
-			/* Check for failure to clear owner */
-			if (rv) {
-				/*
-				 * Note that this truncates rv to 8 bit.  Which
-				 * is not as useful as the full error code, but
-				 * we don't have NVRAM space to store the full
-				 * 32-bit code.
-				 */
-				vb2api_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER,
-					    rv);
-				return rv;
-			}
-
-			/* Save new flags */
-			rv = vb2_secdata_firmware_set(
-				ctx, VB2_SECDATA_FIRMWARE_FLAGS, flags);
-			if (rv)
-				return rv;
+		/* Check for failure to clear owner */
+		if (valid_secdata && rv) {
+			/*
+			 * Note that this truncates rv to 8 bit.  Which
+			 * is not as useful as the full error code, but
+			 * we don't have NVRAM space to store the full
+			 * 32-bit code.
+			 */
+			vb2api_fail(ctx, VB2_RECOVERY_TPM_CLEAR_OWNER, rv);
+			return rv;
 		}
+
+		/* Save new flags */
+		vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS,
+					 flags);
 	}
 
 	return VB2_SUCCESS;

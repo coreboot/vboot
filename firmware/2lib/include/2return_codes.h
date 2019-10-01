@@ -160,20 +160,25 @@ enum vb2_return_code {
 	/* Bad struct version in vb2api_secdata_firmware_check() */
 	VB2_ERROR_SECDATA_FIRMWARE_VERSION,
 
-	/* Invalid param in vb2_secdata_firmware_get() */
-	VB2_ERROR_SECDATA_FIRMWARE_GET_PARAM,
+	/* Invalid param in vb2_secdata_firmware_get();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_FIRMWARE_GET_PARAM,
 
-	/* Invalid param in vb2_secdata_firmware_set() */
-	VB2_ERROR_SECDATA_FIRMWARE_SET_PARAM,
+	/* Invalid param in vb2_secdata_firmware_set();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_FIRMWARE_SET_PARAM,
 
-	/* Invalid flags passed to vb2_secdata_firmware_set() */
-	VB2_ERROR_SECDATA_FIRMWARE_SET_FLAGS,
+	/* Invalid flags passed to vb2_secdata_firmware_set();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_FIRMWARE_SET_FLAGS,
 
-	/* Called vb2_secdata_firmware_get() with uninitialized secdata */
-	VB2_ERROR_SECDATA_FIRMWARE_GET_UNINITIALIZED,
+	/* Called vb2_secdata_firmware_get() with uninitialized secdata;
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_FIRMWARE_GET_UNINITIALIZED,
 
-	/* Called vb2_secdata_firmware_set() with uninitialized secdata */
-	VB2_ERROR_SECDATA_FIRMWARE_SET_UNINITIALIZED,
+	/* Called vb2_secdata_firmware_set() with uninitialized secdata;
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_FIRMWARE_SET_UNINITIALIZED,
 
 	/* Bad CRC in vb2api_secdata_kernel_check() */
 	VB2_ERROR_SECDATA_KERNEL_CRC,
@@ -184,20 +189,25 @@ enum vb2_return_code {
 	/* Bad uid in vb2_secdata_kernel_init() */
 	VB2_ERROR_SECDATA_KERNEL_UID,
 
-	/* Invalid param in vb2_secdata_kernel_get() */
-	VB2_ERROR_SECDATA_KERNEL_GET_PARAM,
+	/* Invalid param in vb2_secdata_kernel_get();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_KERNEL_GET_PARAM,
 
-	/* Invalid param in vb2_secdata_kernel_set() */
-	VB2_ERROR_SECDATA_KERNEL_SET_PARAM,
+	/* Invalid param in vb2_secdata_kernel_set();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_KERNEL_SET_PARAM,
 
-	/* Invalid flags passed to vb2_secdata_kernel_set() */
-	VB2_ERROR_SECDATA_KERNEL_SET_FLAGS,
+	/* Invalid flags passed to vb2_secdata_kernel_set();
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_KERNEL_SET_FLAGS,
 
-	/* Called vb2_secdata_kernel_get() with uninitialized secdata_kernel */
-	VB2_ERROR_SECDATA_KERNEL_GET_UNINITIALIZED,
+	/* Called vb2_secdata_kernel_get() with uninitialized secdata_kernel;
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_KERNEL_GET_UNINITIALIZED,
 
-	/* Called vb2_secdata_kernel_set() with uninitialized secdata_kernel */
-	VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED,
+	/* Called vb2_secdata_kernel_set() with uninitialized secdata_kernel;
+	   Deprecated with chromium:972956. */
+	VB2_ERROR_DEPRECATED_SECDATA_KERNEL_SET_UNINITIALIZED,
 
 	/* Bad size in vb2api_secdata_fwmp_check() */
 	VB2_ERROR_SECDATA_FWMP_SIZE,

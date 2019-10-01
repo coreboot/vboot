@@ -126,7 +126,7 @@ enum vb2_context_flags {
 	VB2_CONTEXT_NOFAIL_BOOT = (1 << 12),
 
 	/*
-	 * Secdata is not ready this boot, but should be ready next boot.  It
+	 * secdata is not ready this boot, but should be ready next boot.  It
 	 * would like to reboot.  The decision whether to reboot or not must be
 	 * deferred until vboot, because rebooting all the time before then
 	 * could cause a device with malfunctioning secdata to get stuck in an

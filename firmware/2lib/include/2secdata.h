@@ -54,12 +54,10 @@ vb2_error_t vb2_secdata_firmware_init(struct vb2_context *ctx);
  *
  * @param ctx		Context pointer
  * @param param		Parameter to read
- * @param dest		Destination for value
- * @return VB2_SUCCESS, or non-zero error code if error.
+ * @return Requested parameter value
  */
-vb2_error_t vb2_secdata_firmware_get(struct vb2_context *ctx,
-				     enum vb2_secdata_firmware_param param,
-				     uint32_t *dest);
+uint32_t vb2_secdata_firmware_get(struct vb2_context *ctx,
+				  enum vb2_secdata_firmware_param param);
 
 /**
  * Write a firmware secure storage value.
@@ -67,11 +65,10 @@ vb2_error_t vb2_secdata_firmware_get(struct vb2_context *ctx,
  * @param ctx		Context pointer
  * @param param		Parameter to write
  * @param value		New value
- * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdata_firmware_set(struct vb2_context *ctx,
-				     enum vb2_secdata_firmware_param param,
-				     uint32_t value);
+void vb2_secdata_firmware_set(struct vb2_context *ctx,
+			      enum vb2_secdata_firmware_param param,
+			      uint32_t value);
 
 /*****************************************************************************/
 /* Kernel secure storage space
@@ -101,12 +98,10 @@ vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx);
  *
  * @param ctx		Context pointer
  * @param param		Parameter to read
- * @param dest		Destination for value
- * @return VB2_SUCCESS, or non-zero error code if error.
+ * @return Requested parameter value
  */
-vb2_error_t vb2_secdata_kernel_get(struct vb2_context *ctx,
-				   enum vb2_secdata_kernel_param param,
-				   uint32_t *dest);
+uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
+				enum vb2_secdata_kernel_param param);
 
 /**
  * Write a kernel secure storage value.
@@ -114,11 +109,10 @@ vb2_error_t vb2_secdata_kernel_get(struct vb2_context *ctx,
  * @param ctx		Context pointer
  * @param param		Parameter to write
  * @param value		New value
- * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb2_secdata_kernel_set(struct vb2_context *ctx,
-				   enum vb2_secdata_kernel_param param,
-				   uint32_t value);
+void vb2_secdata_kernel_set(struct vb2_context *ctx,
+			    enum vb2_secdata_kernel_param param,
+			    uint32_t value);
 
 /*****************************************************************************/
 /* Firmware management parameters (FWMP) space */

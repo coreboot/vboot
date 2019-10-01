@@ -372,7 +372,7 @@ static void load_preamble_tests(void)
 	pre->fw_version = 3;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version roll forward");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20003, "roll forward");
 
 	/* Newer version without result success doesn't roll forward */
@@ -381,7 +381,7 @@ static void load_preamble_tests(void)
 	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version no roll forward 1");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20002, "no roll forward");
 
 	/* Newer version with success but for other slot doesn't roll forward */
@@ -390,7 +390,7 @@ static void load_preamble_tests(void)
 	sd->last_fw_slot = 1;
 	TEST_SUCC(vb21_load_fw_preamble(&ctx),
 		  "preamble version no roll forward 2");
-	vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS, &v);
+	v = vb2_secdata_firmware_get(&ctx, VB2_SECDATA_FIRMWARE_VERSIONS);
 	TEST_EQ(v, 0x20002, "no roll forward");
 }
 

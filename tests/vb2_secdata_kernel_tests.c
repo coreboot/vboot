@@ -104,39 +104,29 @@ static void secdata_kernel_test(void)
 	vb2api_secdata_kernel_create(&ctx);
 	vb2_secdata_kernel_init(&ctx);
 	ctx.flags = 0;
-	TEST_SUCC(vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v),
-		  "Get versions");
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0, "Versions created 0");
 	test_changed(&ctx, 0, "Get doesn't change data");
-	TEST_SUCC(vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS,
-					 0x123456ff),
-		  "Set versions");
+	vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x123456ff);
 	test_changed(&ctx, 1, "Set changes data");
-	TEST_SUCC(vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS,
-					 0x123456ff),
-		  "Set versions 2");
+	vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x123456ff);
 	test_changed(&ctx, 0, "Set again doesn't change data");
-	TEST_SUCC(vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v),
-		  "Get versions 2");
+	v = vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	TEST_EQ(v, 0x123456ff, "Versions changed");
 
 	/* Invalid field fails */
-	TEST_EQ(vb2_secdata_kernel_get(&ctx, -1, &v),
-		VB2_ERROR_SECDATA_KERNEL_GET_PARAM, "Get invalid");
-	TEST_EQ(vb2_secdata_kernel_set(&ctx, -1, 456),
-		VB2_ERROR_SECDATA_KERNEL_SET_PARAM, "Set invalid");
+	TEST_ABORT(vb2_secdata_kernel_get(&ctx, -1), "Get invalid");
+	TEST_ABORT(vb2_secdata_kernel_set(&ctx, -1, 456), "Set invalid");
 	test_changed(&ctx, 0, "Set invalid field doesn't change data");
 
 	/* Read/write uninitialized data fails */
 	sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
-	TEST_EQ(vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS, &v),
-		VB2_ERROR_SECDATA_KERNEL_GET_UNINITIALIZED,
-		"Get uninitialized");
+	TEST_ABORT(vb2_secdata_kernel_get(&ctx, VB2_SECDATA_KERNEL_VERSIONS),
+		   "Get uninitialized");
 	test_changed(&ctx, 0, "Get uninitialized doesn't change data");
-	TEST_EQ(vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS,
-				       0x123456ff),
-		VB2_ERROR_SECDATA_KERNEL_SET_UNINITIALIZED,
-		"Set uninitialized");
+	TEST_ABORT(vb2_secdata_kernel_set(&ctx, VB2_SECDATA_KERNEL_VERSIONS,
+					  0x123456ff),
+		   "Set uninitialized");
 	test_changed(&ctx, 0, "Set uninitialized doesn't change data");
 }
 
