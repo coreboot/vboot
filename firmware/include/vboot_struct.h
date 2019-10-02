@@ -197,8 +197,9 @@ typedef struct VbKernelPreambleHeader {
 #define VB_SHARED_DATA_REC_SIZE 16384
 
 /* Flags for VbSharedDataHeader */
-/* LoadFirmware() tried firmware B because of VbNvStorage firmware B tries */
-#define VBSD_FWB_TRIED                  0x00000001
+/* LoadFirmware() tried firmware B because of VbNvStorage firmware B tries;
+   Deprecated as part of chromium:1010389. */
+#define VBSD_DEPRECATED_FWB_TRIED        0x00000001
 /*
  * LoadKernel() verified the good kernel keyblock using the kernel subkey from
  * the firmware.  If this flag is not present, it just used the hash of the
