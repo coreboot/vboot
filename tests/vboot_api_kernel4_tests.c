@@ -219,10 +219,9 @@ static void VbSlkTest(void)
 	TEST_EQ(rkr_version, 0x20003, "  version");
 
 	ResetMocks();
+	vb2_nv_set(&ctx_nvram_backend, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
 	new_version = 0x20003;
-	shared->flags |= VBSD_FWB_TRIED;
-	shared->firmware_index = 1;
-	test_slk(0, 0, "Don't roll forward during try B");
+	test_slk(0, 0, "Don't roll forward kernel when trying new FW");
 	TEST_EQ(rkr_version, 0x10002, "  version");
 
 	ResetMocks();
@@ -236,14 +235,6 @@ static void VbSlkTest(void)
 	new_version = 0x40006;
 	test_slk(0, 0, "Max roll forward can't rollback");
 	TEST_EQ(rkr_version, 0x10002, "  version");
-
-	ResetMocks();
-	vbboot_retval = VBERROR_INVALID_KERNEL_FOUND;
-	vb2_nv_set(&ctx_nvram_backend, VB2_NV_RECOVERY_REQUEST, 123);
-	shared->flags |= VBSD_FWB_TRIED;
-	shared->firmware_index = 1;
-	test_slk(VBERROR_INVALID_KERNEL_FOUND,
-		 0, "Don't go to recovery if try b fails to find a kernel");
 
 	ResetMocks();
 	new_version = 0x20003;

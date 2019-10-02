@@ -409,7 +409,7 @@ static int GetVdatInt(VdatIntField field)
 			value = sh->struct_version;
 			break;
 		case VDAT_INT_TRIED_FIRMWARE_B:
-			value = (sh->flags & VBSD_FWB_TRIED ? 1 : 0);
+			value = (sh->flags & VBSD_DEPRECATED_FWB_TRIED ? 1 : 0);
 			break;
 		case VDAT_INT_KERNEL_KEY_VERIFIED:
 			value = (sh->flags & VBSD_KERNEL_KEY_VERIFIED ? 1 : 0);
