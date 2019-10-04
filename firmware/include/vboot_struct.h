@@ -258,14 +258,6 @@ typedef struct VbKernelPreambleHeader {
 /* NvStorage uses 64-byte record, not 16-byte */
 #define VBSD_NVDATA_V2                   0x00100000
 
-/*
- * Supported flags by header version.  It's ok to add new flags while keeping
- * struct version 2 as long as flag-NOT-present is the correct value for
- * existing hardware (Stumpy/Lumpy).
- */
-#define VBSD_FLAGS_VERSION_1            0x00000007  /* Alex, ZGB */
-#define VBSD_FLAGS_VERSION_2            0x00000F7F
-
 /* Result codes for VbSharedDataHeader.check_fw_a_result (and b_result) */
 #define VBSD_LF_CHECK_NOT_DONE          0
 #define VBSD_LF_CHECK_DEV_MISMATCH      1
@@ -333,10 +325,6 @@ typedef struct VbSharedDataKernelPart {
 
 /* Number of kernel partitions to track per call.  Must be power of 2. */
 #define VBSD_MAX_KERNEL_PARTS 8
-
-/* Flags for VbSharedDataKernelCall.flags */
-/* Error initializing TPM in recovery mode */
-#define VBSD_LK_FLAG_REC_TPM_INIT_ERROR 0x00000001
 
 /* Result codes for VbSharedDataKernelCall.check_result */
 #define VBSD_LKC_CHECK_NOT_DONE            0
@@ -489,16 +477,11 @@ typedef struct VbSharedDataHeader {
 	 */
 } __attribute__((packed)) VbSharedDataHeader;
 
-/*
- * Size of VbSharedDataheader for each version
- *
- * TODO: crossystem needs not to fail if called on a v1 system where
- * sizeof(VbSharedDataHeader) was smaller
- */
+/* Size of VbSharedDataheader for each version */
 #define VB_SHARED_DATA_HEADER_SIZE_V1 1072
 #define VB_SHARED_DATA_HEADER_SIZE_V2 1096
 
-#define VB_SHARED_DATA_VERSION 2      /* Version for struct_version */
+#define VB_SHARED_DATA_VERSION 2  /* Version for struct_version */
 
 #ifdef __cplusplus
 }
