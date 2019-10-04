@@ -27,7 +27,7 @@ int test_eq(int result, int expected,
 	} else {
 		fprintf(stderr, "%s: %s ... " COL_RED "FAILED\n" COL_STOP,
 			preamble, comment ? comment : desc);
-		fprintf(stderr, "	Expected: 0x%x (%d), got: 0x%x (%d)\n",
+		fprintf(stderr, "	Expected: %#x (%d), got: %#x (%d)\n",
 			expected, expected, result, result);
 		gTestSuccess = 0;
 		return 0;
@@ -44,7 +44,7 @@ int test_neq(int result, int not_expected,
 	} else {
 		fprintf(stderr, "%s: %s, %s ... " COL_RED "FAILED\n" COL_STOP,
 			preamble, desc, comment);
-		fprintf(stderr, "	Didn't expect 0x%x (%d), but got it.\n",
+		fprintf(stderr, "	Didn't expect %#x (%d), but got it.\n",
 			not_expected, not_expected);
 		gTestSuccess = 0;
 		return 0;
@@ -139,7 +139,7 @@ int test_succ(int result,
 	} else {
 		fprintf(stderr, "%s: %s ... " COL_RED "FAILED\n" COL_STOP,
 			preamble, comment ? comment : desc);
-		fprintf(stderr, "	Expected SUCCESS, got: 0x%x (%d)\n",
+		fprintf(stderr, "	Expected SUCCESS, got: %#x (%d)\n",
 			result, result);
 		gTestSuccess = 0;
 	}

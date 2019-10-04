@@ -87,7 +87,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 					get_info_flags != (disk_info[i].flags &
 					~VB_DISK_FLAG_EXTERNAL_GPT)) {
 			VB2_DEBUG("  skipping: bytes_per_lba=%" PRIu64
-				  " lba_count=%" PRIu64 " flags=0x%x\n",
+				  " lba_count=%" PRIu64 " flags=%#x\n",
 				  disk_info[i].bytes_per_lba,
 				  disk_info[i].lba_count,
 				  disk_info[i].flags);
@@ -207,7 +207,7 @@ vb2_error_t VbBootNormal(struct vb2_context *ctx)
 
 	if (shared->kernel_version_tpm > max_rollforward) {
 		VB2_DEBUG("Limiting TPM kernel version roll-forward "
-			  "to 0x%x < 0x%x\n",
+			  "to %#x < %#x\n",
 			  max_rollforward, shared->kernel_version_tpm);
 
 		shared->kernel_version_tpm = max_rollforward;
@@ -443,6 +443,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	vb2_kernel_cleanup(ctx);
 
 	/* Pass through return value from boot path */
-	VB2_DEBUG("Returning %d\n", (int)rv);
+	VB2_DEBUG("Returning %#x\n", rv);
 	return rv;
 }

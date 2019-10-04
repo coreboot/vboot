@@ -115,7 +115,7 @@ static uint8_t ErrorCheck(uint32_t result, const char* cmd) {
   } else {
     int i;
     int n = sizeof(tpm_error_table) / sizeof(tpm_error_table[0]);
-    fprintf(stderr, "command \"%s\" failed with code 0x%x\n", cmd, result);
+    fprintf(stderr, "command \"%s\" failed with code %#x\n", cmd, result);
     for (i = 0; i < n; i++) {
       if (tpm_error_table[i].code == result) {
         fprintf(stderr, "%s\n%s\n", tpm_error_table[i].name,
@@ -326,7 +326,7 @@ static uint32_t HandlerRead(void) {
     exit(OTHER_ERROR);
   }
   if (size > sizeof(value)) {
-    fprintf(stderr, "size of read (0x%x) is too big\n", size);
+    fprintf(stderr, "size of read (%#x) is too big\n", size);
     exit(OTHER_ERROR);
   }
   result = TlclRead(index, value, size);
@@ -351,7 +351,7 @@ static uint32_t HandlerGetPermissions(void) {
   }
   result = TlclGetPermissions(index, &permissions);
   if (result == 0) {
-    printf("space 0x%x has permissions 0x%x\n", index, permissions);
+    printf("space %#x has permissions %#x\n", index, permissions);
   }
   return result;
 }

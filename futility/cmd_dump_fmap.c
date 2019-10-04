@@ -354,9 +354,9 @@ static int human_fmap(const FmapHeader *fmh)
 			if (overlaps(i, j)) {
 				printf("ERROR: %s and %s overlap\n",
 				       all_nodes[i].name, all_nodes[j].name);
-				printf("  %s: 0x%x - 0x%x\n", all_nodes[i].name,
+				printf("  %s: %#x - %#x\n", all_nodes[i].name,
 				       all_nodes[i].start, all_nodes[i].end);
-				printf("  %s: 0x%x - 0x%x\n", all_nodes[j].name,
+				printf("  %s: %#x - %#x\n", all_nodes[j].name,
 				       all_nodes[j].start, all_nodes[j].end);
 				if (opt_overlap < 2) {
 					printf("Use more -h args to ignore"

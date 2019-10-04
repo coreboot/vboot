@@ -229,7 +229,7 @@ struct vb2_packed_key *vb2_read_packed_keyb(const char *filename,
 	}
 	if (version > VB2_MAX_KEY_VERSION) {
 		/* Currently, TPM only supports 16-bit version */
-		fprintf(stderr, "%s() - invalid version 0x%x\n", __func__,
+		fprintf(stderr, "%s() - invalid version %#x\n", __func__,
 			version);
 		return NULL;
 	}

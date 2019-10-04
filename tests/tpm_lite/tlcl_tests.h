@@ -19,8 +19,8 @@
 	uint32_t _result = (tpm_command);                                \
 	uint32_t _exp = (expected_result);                               \
 	if (_result != _exp) {                                           \
-		printf("TEST FAILED: line %d: " #tpm_command ": 0x%x"    \
-		       " (expecting 0x%x)\n", __LINE__, _result, _exp);  \
+		printf("TEST FAILED: line %d: " #tpm_command ": %#x"    \
+		       " (expecting %#x)\n", __LINE__, _result, _exp);  \
 		return _result;                                          \
 	}                                                                \
 } while (0)

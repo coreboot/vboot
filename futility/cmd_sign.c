@@ -124,7 +124,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 		fprintf(stderr, "Unable to create kernel blob\n");
 		return 1;
 	}
-	VB2_DEBUG("kblob_size = 0x%x\n", kblob_size);
+	VB2_DEBUG("kblob_size = %#x\n", kblob_size);
 
 	vblock_data = SignKernelBlob(kblob_data, kblob_size,
 				     sign_option.padding,
@@ -138,7 +138,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 		free(kblob_data);
 		return 1;
 	}
-	VB2_DEBUG("vblock_size = 0x%x\n", vblock_size);
+	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
 
 	/* We should be creating a completely new output file.
 	 * If not, something's wrong. */
@@ -385,9 +385,9 @@ static const char usage_new_kpart[] = "\n"
 	"Optional PARAMS:\n"
 	"  --kloadaddr      NUM"
 	"             RAM address to load the kernel body\n"
-	"                                     (default 0x%x)\n"
+	"                                     (default %#x)\n"
 	"  --pad            NUM             The vblock padding size in bytes\n"
-	"                                     (default 0x%x)\n"
+	"                                     (default %#x)\n"
 	" --vblockonly                      Emit just the vblock (requires a\n"
 	"                                     distinct outfile)\n"
 	"  -f|--flags       NUM             The preamble flags value\n"
@@ -412,7 +412,7 @@ static const char usage_old_kpart[] = "\n"
 	"  -v|--version     NUM             The kernel version number\n"
 	"  --config         FILE            The kernel commandline file\n"
 	"  --pad            NUM             The vblock padding size in bytes\n"
-	"                                     (default 0x%x)\n"
+	"                                     (default %#x)\n"
 	"  [--outfile]      OUTFILE         Output kernel partition or vblock\n"
 	"  --vblockonly                     Emit just the vblock (requires a\n"
 	"                                     distinct OUTFILE)\n"

@@ -63,7 +63,7 @@ static const char* DumpCgptAddParams(const CgptAddParams *params) {
     StrnAppend(buf, tmp, sizeof(buf));
   }
   if (params->set_raw) {
-    snprintf(tmp, sizeof(tmp), "-A 0x%x ", params->raw_value);
+    snprintf(tmp, sizeof(tmp), "-A %#x ", params->raw_value);
     StrnAppend(buf, tmp, sizeof(buf));
   }
 

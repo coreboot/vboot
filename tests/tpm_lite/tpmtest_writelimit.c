@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 					  "MAX_NV_WRITES_NOOWNER reached");
 				break;
 			default:
-				VB2_DEBUG("unexpected error code %d (0x%x)\n",
+				VB2_DEBUG("unexpected error code %d (%#x)\n",
 					  result, result);
 				exit(1);
 			}

@@ -49,12 +49,12 @@ static void show_sig(const char *name, const struct vb21_signature *sig)
 	       vb2_get_sig_algorithm_name(sig->sig_alg));
 	printf("  Hash Algorithm:      %d %s\n", sig->hash_alg,
 	       vb2_get_hash_algorithm_name(sig->hash_alg));
-	printf("  Total size:          0x%x (%d)\n", sig->c.total_size,
+	printf("  Total size:          %#x (%d)\n", sig->c.total_size,
 	       sig->c.total_size);
 	printf("  ID:                  ");
 	vb2_print_bytes(&sig->id, sizeof(sig->id));
 	printf("\n");
-	printf("  Data size:           0x%x (%d)\n", sig->data_size,
+	printf("  Data size:           %#x (%d)\n", sig->data_size,
 	       sig->data_size);
 }
 
@@ -112,7 +112,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 		sig_size = fmaparea->area_size;
 
-		VB2_DEBUG("Looking for signature at 0x%x (0x%x)\n",
+		VB2_DEBUG("Looking for signature at %#x (%#x)\n",
 			  (uint8_t*)sig - buf, sig_size);
 
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
@@ -137,7 +137,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		if (show_option.sig_size)
 			sig_size = show_option.sig_size;
 
-		VB2_DEBUG("Looking for signature at 0x%x\n", len - sig_size);
+		VB2_DEBUG("Looking for signature at %#x\n", len - sig_size);
 
 		if (len < sig_size) {
 			VB2_DEBUG("File is too small\n");
@@ -235,7 +235,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 			sig_size = fmaparea->area_size;
 
-			VB2_DEBUG("Looking for signature at 0x%x (0x%x)\n",
+			VB2_DEBUG("Looking for signature at %#x (%#x)\n",
 				  (uint8_t*)old_sig - buf, sig_size);
 
 			data = fmap_find_by_name(buf, len, fmap, "EC_RW",
@@ -250,7 +250,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			if (sign_option.sig_size)
 				sig_size = sign_option.sig_size;
 
-			VB2_DEBUG("Looking for old signature at 0x%x\n",
+			VB2_DEBUG("Looking for old signature at %#x\n",
 				  len - sig_size);
 
 			if (len < sig_size) {
@@ -271,7 +271,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		/* Use the same extent again */
 		data_size = old_sig->data_size;
 
-		VB2_DEBUG("Found sig: data_size is 0x%x (%d)\n", data_size,
+		VB2_DEBUG("Found sig: data_size is %#x (%d)\n", data_size,
 			  data_size);
 	}
 

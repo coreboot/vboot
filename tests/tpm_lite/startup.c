@@ -15,17 +15,17 @@ int main(int argc, char** argv) {
 	TlclLibInit();
 	result = TlclStartup();
 	if (result != 0) {
-		printf("tpm startup failed with 0x%x\n", result);
+		printf("tpm startup failed with %#x\n", result);
 	}
 	result = TlclGetFlags(NULL, NULL, NULL);
 	if (result != 0) {
-		printf("tpm getflags failed with 0x%x\n", result);
+		printf("tpm getflags failed with %#x\n", result);
 	}
 	printf("executing SelfTestFull\n");
 	TlclSelfTestFull();
 	result = TlclGetFlags(NULL, NULL, NULL);
 	if (result != 0) {
-		printf("tpm getflags failed with 0x%x\n", result);
+		printf("tpm getflags failed with %#x\n", result);
 	}
 	printf("TEST SUCCEEDED\n");
 	return 0;

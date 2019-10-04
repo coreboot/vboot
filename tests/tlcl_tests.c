@@ -88,7 +88,7 @@ uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
 	FromTpmUint32(request + 6, &c->req_cmd);
 
 	// KLUDGE - remove
-	printf("TSR [%d] 0x%x\n", ncalls-1, c->req_cmd);
+	printf("TSR [%d] %#x\n", ncalls-1, c->req_cmd);
 
 	memset(response, 0, *response_length);
 	if (c->rsp_size)

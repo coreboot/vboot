@@ -184,7 +184,7 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 	} else {
 		file_size = statbuf.st_size;
 	}
-	VB2_DEBUG("%s size is 0x%x\n", filename, file_size);
+	VB2_DEBUG("%s size is %#x\n", filename, file_size);
 	if (file_size < opt_pad)
 		FATAL("%s is too small to be a valid kernel blob\n", filename);
 
@@ -419,7 +419,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 						 &t_bootloader_data,
 						 &t_bootloader_size))
 			FATAL("Error reading bootloader file.\n");
-		VB2_DEBUG(" bootloader file size=0x%x\n", t_bootloader_size);
+		VB2_DEBUG(" bootloader file size=%#x\n", t_bootloader_size);
 
 		if (!vmlinuz_file)
 			FATAL("Missing required vmlinuz file.\n");
@@ -429,7 +429,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		    vb2_read_file(vmlinuz_file, &vmlinuz_buf, &vmlinuz_size))
 			FATAL("Error reading vmlinuz file.\n");
 
-		VB2_DEBUG(" vmlinuz file size=0x%x\n", vmlinuz_size);
+		VB2_DEBUG(" vmlinuz file size=%#x\n", vmlinuz_size);
 		if (!vmlinuz_size)
 			FATAL("Empty vmlinuz file\n");
 
@@ -442,7 +442,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!kblob_data)
 			FATAL("Unable to create kernel blob\n");
 
-		VB2_DEBUG("kblob_size = 0x%x\n", kblob_size);
+		VB2_DEBUG("kblob_size = %#x\n", kblob_size);
 
 		vblock_data = SignKernelBlob(kblob_data, kblob_size, opt_pad,
 					     version, kernel_body_load_address,
@@ -451,7 +451,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!vblock_data)
 			FATAL("Unable to sign kernel blob\n");
 
-		VB2_DEBUG("vblock_size = 0x%x\n", vblock_size);
+		VB2_DEBUG("vblock_size = %#x\n", vblock_size);
 
 		if (opt_vblockonly)
 			rv = WriteSomeParts(filename,

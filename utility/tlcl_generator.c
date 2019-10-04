@@ -553,15 +553,15 @@ int OutputBytes_(Command* cmd, Field* fld) {
     cursor = fld->offset;
     switch (fld->size) {
     case 1:
-      printf("0x%x, ", fld->value);
+      printf("%#x, ", fld->value);
       cursor += 1;
       break;
     case 2:
-      printf("0x%x, 0x%x, ", fld->value >> 8, fld->value & 0xff);
+      printf("%#x, %#x, ", fld->value >> 8, fld->value & 0xff);
       cursor += 2;
       break;
     case 4:
-      printf("0x%x, 0x%x, 0x%x, 0x%x, ", fld->value >> 24,
+      printf("%#x, %#x, %#x, %#x, ", fld->value >> 24,
              (fld->value >> 16) & 0xff,
              (fld->value >> 8) & 0xff,
              fld->value & 0xff);

@@ -24,6 +24,6 @@ int main(int argc, char** argv) {
 
 	TlclWriteLock(INDEX0);
 
-	printf("Locked 0x%x\n", INDEX0);
+	printf("Locked %#x\n", INDEX0);
 	exit(0);
 }

@@ -141,7 +141,7 @@ uint32_t TlclSetDeactivated(uint8_t flag)
 
 uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 {
-	mock_cnext += sprintf(mock_cnext, "TlclRead(0x%x, %d)\n",
+	mock_cnext += sprintf(mock_cnext, "TlclRead(%#x, %d)\n",
 			      index, length);
 
 	if (FIRMWARE_NV_INDEX == index) {
@@ -164,7 +164,7 @@ uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 
 uint32_t TlclWrite(uint32_t index, const void *data, uint32_t length)
 {
-	mock_cnext += sprintf(mock_cnext, "TlclWrite(0x%x, %d)\n",
+	mock_cnext += sprintf(mock_cnext, "TlclWrite(%#x, %d)\n",
 			      index, length);
 
 	if (FIRMWARE_NV_INDEX == index) {
@@ -180,7 +180,7 @@ uint32_t TlclWrite(uint32_t index, const void *data, uint32_t length)
 
 uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 {
-	mock_cnext += sprintf(mock_cnext, "TlclDefineSpace(0x%x, 0x%x, %d)\n",
+	mock_cnext += sprintf(mock_cnext, "TlclDefineSpace(%#x, %#x, %d)\n",
 			      index, perm, size);
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }
@@ -246,7 +246,7 @@ uint32_t TlclLockPhysicalPresence(void)
 
 uint32_t TlclGetPermissions(uint32_t index, uint32_t* permissions)
 {
-	mock_cnext += sprintf(mock_cnext, "TlclGetPermissions(0x%x)\n", index);
+	mock_cnext += sprintf(mock_cnext, "TlclGetPermissions(%#x)\n", index);
 	*permissions = mock_permissions;
 	return (++mock_count == fail_at_count) ? fail_with_error : TPM_SUCCESS;
 }

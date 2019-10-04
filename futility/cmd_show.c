@@ -62,7 +62,7 @@ static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
 		printf("Key block:\n");
 	printf("  Signature:             %s\n",
 	       sign_key ? (good_sig ? "valid" : "invalid") : "ignored");
-	printf("  Size:                  0x%x\n", keyblock->keyblock_size);
+	printf("  Size:                  %#x\n", keyblock->keyblock_size);
 	printf("  Flags:                 %d ", keyblock->keyblock_flags);
 	if (keyblock->keyblock_flags & VB2_KEY_BLOCK_FLAG_DEVELOPER_0)
 		printf(" !DEV");
@@ -320,18 +320,18 @@ int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
 	}
 
 	printf("Kernel Preamble:\n");
-	printf("  Size:                  0x%x\n", pre2->preamble_size);
+	printf("  Size:                  %#x\n", pre2->preamble_size);
 	printf("  Header version:        %u.%u\n",
 	       pre2->header_version_major,
 	       pre2->header_version_minor);
 	printf("  Kernel version:        %u\n", pre2->kernel_version);
 	printf("  Body load address:     0x%" PRIx64 "\n",
 	       pre2->body_load_address);
-	printf("  Body size:             0x%x\n",
+	printf("  Body size:             %#x\n",
 	       pre2->body_signature.data_size);
 	printf("  Bootloader address:    0x%" PRIx64 "\n",
 	       pre2->bootloader_address);
-	printf("  Bootloader size:       0x%x\n", pre2->bootloader_size);
+	printf("  Bootloader size:       %#x\n", pre2->bootloader_size);
 
 	uint64_t vmlinuz_header_address = 0;
 	uint32_t vmlinuz_header_size = 0;
@@ -341,11 +341,11 @@ int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
 	if (vmlinuz_header_size) {
 		printf("  Vmlinuz_header address:    0x%" PRIx64 "\n",
 		       vmlinuz_header_address);
-		printf("  Vmlinuz header size:       0x%x\n",
+		printf("  Vmlinuz header size:       %#x\n",
 		       vmlinuz_header_size);
 	}
 
-	printf("  Flags:                 0x%x\n", vb2_kernel_get_flags(pre2));
+	printf("  Flags:                 %#x\n", vb2_kernel_get_flags(pre2));
 
 	/* Verify kernel body */
 	uint8_t *kernel_blob = 0;

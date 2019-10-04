@@ -239,7 +239,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params) {
         printf("%d\n", GetLegacyBoot(drive, ANY_VALID, index));
         break;
       case 'A':
-        printf("0x%x\n", entry->attrs.fields.gpt_att);
+        printf("%#x\n", entry->attrs.fields.gpt_att);
         break;
       }
     } else {

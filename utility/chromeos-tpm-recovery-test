@@ -327,7 +327,7 @@ test_wrong_size_hog () {
     space_hog_size=$(( $(tpm-nvsize) - 2 ))
   fi
   echo "hogging $(( $space_hog_size )) bytes" >> log
-  $tpmc definespace 0xcafe $(printf "0x%x" $space_hog_size) 0x1 \
+  $tpmc definespace 0xcafe $(printf "%#x" $space_hog_size) 0x1 \
     || echo "hogging failed!" >> log
   takeownership
 

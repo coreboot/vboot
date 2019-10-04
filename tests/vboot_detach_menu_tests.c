@@ -220,7 +220,7 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
-	printf("VbDisplayScreen: screens_displayed[%d] = 0x%x\n",
+	printf("VbDisplayScreen: screens_displayed[%d] = %#x\n",
 	       screens_count - 1, screen);
 	return VB2_SUCCESS;
 }
@@ -232,8 +232,8 @@ vb2_error_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
 		screens_displayed[screens_count++] = screen;
 	else
 		printf("Ran out of screens_displayed entries!\n");
-	printf("VbDisplayMenu: screens_displayed[%d] = 0x%x,"
-	       " selected_index = %u, disabled_idx_mask = 0x%x\n",
+	printf("VbDisplayMenu: screens_displayed[%d] = %#x,"
+	       " selected_index = %u, disabled_idx_mask = %#x\n",
 	       screens_count - 1, screen,
 	       selected_index, disabled_idx_mask);
 

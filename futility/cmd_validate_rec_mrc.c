@@ -235,7 +235,7 @@ static int do_validate_rec_mrc(int argc, char *argv[])
 	}
 
 	if (offset > file_size) {
-		fprintf(stderr, "File size(0x%x) smaller than offset(0x%x)\n",
+		fprintf(stderr, "File size(%#x) smaller than offset(%#x)\n",
 			file_size, offset);
 		futil_unmap_file(fd, MAP_RO, buff, file_size);
 		close(fd);
@@ -256,7 +256,7 @@ static int do_validate_rec_mrc(int argc, char *argv[])
 				      data_size);
 	else
 		fprintf(stderr, "Offset or data size greater than file size: "
-			"offset=0x%x, file size=0x%x, data_size=0x%x\n",
+			"offset=%#x, file size=%#x, data_size=%#x\n",
 			offset, file_size, data_size);
 
 	if (futil_unmap_file(fd, MAP_RO, buff, file_size) != FILE_ERR_NONE) {

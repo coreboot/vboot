@@ -394,7 +394,7 @@ static vb2_error_t to_norm_action(struct vb2_context *ctx)
 /* Action that will power off the system. */
 static vb2_error_t power_off_action(struct vb2_context *ctx)
 {
-	VB2_DEBUG("Power off requested from screen 0x%x\n",
+	VB2_DEBUG("Power off requested from screen %#x\n",
 		  menus[current_menu].screen);
 	return VBERROR_SHUTDOWN_REQUESTED;
 }
@@ -434,7 +434,7 @@ static void vb2_update_selection(uint32_t key) {
 			current_menu_idx = idx;
 		break;
 	default:
-		VB2_DEBUG("ERROR: %s called with key 0x%x!\n", __func__, key);
+		VB2_DEBUG("ERROR: %s called with key %#x!\n", __func__, key);
 		break;
 	}
 
@@ -488,7 +488,7 @@ static vb2_error_t vb2_handle_menu_input(struct vb2_context *ctx,
 
 		return menus[current_menu].items[current_menu_idx].action(ctx);
 	default:
-		VB2_DEBUG("pressed key 0x%x\n", key);
+		VB2_DEBUG("pressed key %#x\n", key);
 		break;
 	}
 

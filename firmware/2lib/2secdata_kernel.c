@@ -125,7 +125,7 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 
 	switch (param) {
 	case VB2_SECDATA_KERNEL_VERSIONS:
-		VB2_DEBUG("secdata_kernel versions updated from 0x%x to 0x%x\n",
+		VB2_DEBUG("secdata_kernel versions updated from %#x to %#x\n",
 			  sec->kernel_versions, value);
 		sec->kernel_versions = value;
 		break;

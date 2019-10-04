@@ -28,7 +28,7 @@
 	gettimeofday(&before, NULL);                             \
 	__result = op;                                           \
 	if (__result != TPM_SUCCESS) {                           \
-		printf(#op ": error 0x%x\n", __result);          \
+		printf(#op ": error %#x\n", __result);          \
 		errors++;                                        \
 	}                                                        \
 	gettimeofday(&after, NULL);                              \

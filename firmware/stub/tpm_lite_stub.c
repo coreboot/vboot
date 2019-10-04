@@ -81,7 +81,7 @@ static uint32_t TpmExecute(const uint8_t *in, const uint32_t in_len,
 	uint8_t response[TPM_MAX_COMMAND_SIZE];
 	if (in_len <= 0) {
 		return DoError(TPM_E_INPUT_TOO_SMALL,
-			       "invalid command length %d for command 0x%x\n",
+			       "invalid command length %d for command %#x\n",
 			       in_len, in[9]);
 	} else if (tpm_fd < 0) {
 		return DoError(TPM_E_NO_DEVICE,

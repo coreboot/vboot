@@ -40,7 +40,7 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 {
 	uint32_t sum = ah->area_offset + ah->area_size;
 	if (sum < ah->area_size || sum > len) {
-		VB2_DEBUG("%s 0x%x + 0x%x > 0x%x\n",
+		VB2_DEBUG("%s %#x + %#x > %#x\n",
 			  ah->area_name, ah->area_offset, ah->area_size, len);
 		ah->area_offset = 0;
 		ah->area_size = 0;

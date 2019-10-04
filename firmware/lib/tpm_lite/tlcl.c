@@ -80,7 +80,7 @@ static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
 				    response, &response_length);
 	if (TPM_SUCCESS != result) {
 		/* Communication with TPM failed, so response is garbage */
-		VB2_DEBUG("TPM: command 0x%x send/receive failed: 0x%x\n",
+		VB2_DEBUG("TPM: command %#x send/receive failed: %#x\n",
 			  TpmCommandCode(request), result);
 		return result;
 	}
@@ -98,7 +98,7 @@ static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
 		  response[6], response[7], response[8], response[9]);
 #endif
 
-	VB2_DEBUG("TPM: command 0x%x returned 0x%x\n",
+	VB2_DEBUG("TPM: command %#x returned %#x\n",
 		  TpmCommandCode(request), result);
 
 	return result;
@@ -433,7 +433,7 @@ uint32_t TlclContinueSelfTest(void)
 
 uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 {
-	VB2_DEBUG("TPM: TlclDefineSpace(0x%x, 0x%x, %d)\n", index, perm, size);
+	VB2_DEBUG("TPM: TlclDefineSpace(%#x, %#x, %d)\n", index, perm, size);
 	return TlclDefineSpaceEx(NULL, 0, index, perm, size, NULL, 0);
 }
 
@@ -441,7 +441,7 @@ uint32_t TlclDefineSpace(uint32_t index, uint32_t perm, uint32_t size)
 
 uint32_t TlclUndefineSpace(uint32_t index)
 {
-	VB2_DEBUG("TPM: TlclUndefineSpace(0x%x)\n", index);
+	VB2_DEBUG("TPM: TlclUndefineSpace(%#x)\n", index);
 	return TlclUndefineSpaceEx(NULL, 0, index);
 }
 
@@ -621,7 +621,7 @@ uint32_t TlclWrite(uint32_t index, const void* data, uint32_t length)
 	const int total_length =
 			kTpmRequestHeaderLength + kWriteInfoLength + length;
 
-	VB2_DEBUG("TPM: TlclWrite(0x%x, %d)\n", index, length);
+	VB2_DEBUG("TPM: TlclWrite(%#x, %d)\n", index, length);
 	memcpy(&cmd, &tpm_nv_write_cmd, sizeof(cmd));
 	VB2_ASSERT(total_length <= TPM_LARGE_ENOUGH_COMMAND_SIZE);
 	SetTpmCommandSize(cmd.buffer, total_length);
@@ -639,7 +639,7 @@ uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 	uint8_t response[TPM_LARGE_ENOUGH_COMMAND_SIZE];
 	uint32_t result;
 
-	VB2_DEBUG("TPM: TlclRead(0x%x, %d)\n", index, length);
+	VB2_DEBUG("TPM: TlclRead(%#x, %d)\n", index, length);
 	memcpy(&cmd, &tpm_nv_read_cmd, sizeof(cmd));
 	ToTpmUint32(cmd.buffer + tpm_nv_read_cmd.index, index);
 	ToTpmUint32(cmd.buffer + tpm_nv_read_cmd.length, length);
@@ -663,7 +663,7 @@ uint32_t TlclPCRRead(uint32_t index, void* data, uint32_t length)
 	uint8_t response[TPM_LARGE_ENOUGH_COMMAND_SIZE];
 	uint32_t result;
 
-	VB2_DEBUG("TPM: TlclPCRRead(0x%x, %d)\n", index, length);
+	VB2_DEBUG("TPM: TlclPCRRead(%#x, %d)\n", index, length);
 	if (length < kPcrDigestLength) {
 		return TPM_E_IOERROR;
 	}
@@ -682,13 +682,13 @@ uint32_t TlclPCRRead(uint32_t index, void* data, uint32_t length)
 
 uint32_t TlclWriteLock(uint32_t index)
 {
-	VB2_DEBUG("TPM: Write lock 0x%x\n", index);
+	VB2_DEBUG("TPM: Write lock %#x\n", index);
 	return TlclWrite(index, NULL, 0);
 }
 
 uint32_t TlclReadLock(uint32_t index)
 {
-	VB2_DEBUG("TPM: Read lock 0x%x\n", index);
+	VB2_DEBUG("TPM: Read lock %#x\n", index);
 	return TlclRead(index, NULL, 0);
 }
 

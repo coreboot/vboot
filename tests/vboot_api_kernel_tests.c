@@ -364,7 +364,7 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 			mock_disks[num_disks].handle = (VbExDiskHandle_t)
 				t->disks_to_provide[i].diskname;
 			VB2_DEBUG("  mock_disk[%d] %" PRIu64 " %" PRIu64
-				  " 0x%x %s\n", i,
+				  " %#x %s\n", i,
 				  mock_disks[num_disks].bytes_per_lba,
 				  mock_disks[num_disks].lba_count,
 				  mock_disks[num_disks].flags,
@@ -384,7 +384,7 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo **infos_ptr, uint32_t *count,
 		*count = num_disks;
 
 	VB2_DEBUG("  *count=%" PRIu32 "\n", *count);
-	VB2_DEBUG("  return 0x%x\n", t->diskgetinfo_return_val);
+	VB2_DEBUG("  return %#x\n", t->diskgetinfo_return_val);
 
 	return t->diskgetinfo_return_val;
 }
@@ -416,7 +416,7 @@ void vb2_nv_set(struct vb2_context *c,
 {
 	if (param != VB2_NV_RECOVERY_REQUEST)
 		return;
-	VB2_DEBUG("%s(): got_recovery_request_val = %d (0x%x)\n", __FUNCTION__,
+	VB2_DEBUG("%s(): got_recovery_request_val = %d (%#x)\n", __FUNCTION__,
 		  value, value);
 	got_recovery_request_val = value;
 }

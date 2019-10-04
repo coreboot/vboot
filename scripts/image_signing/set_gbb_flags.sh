@@ -57,7 +57,7 @@ main() {
   # Keep 'local' declaration split from assignment so return code is checked.
   local old_value
   old_value="$(futility gbb -g --flags "${image_file}")"
-  printf "Setting GBB flags from %s to 0x%x.." "${old_value}" "${value}"
+  printf "Setting GBB flags from %s to %#x.." "${old_value}" "${value}"
   futility gbb -s --flags="${value}" "${image_file}"
 
   if [ -z "${FLAGS_file}" ]; then

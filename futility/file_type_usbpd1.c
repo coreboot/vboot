@@ -167,7 +167,7 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 		fprintf(stderr, "Couldn't extract the public key\n");
 		goto done;
 	}
-	VB2_DEBUG("keyb_size is 0x%x (%d):\n", keyb_size, keyb_size);
+	VB2_DEBUG("keyb_size is %#x (%d):\n", keyb_size, keyb_size);
 
 	/*
 	 * Of course the packed public key format is different. Why would you
