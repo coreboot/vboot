@@ -41,7 +41,7 @@ enum vboot_version  {
 };
 
 /* What's our preferred API & data format? */
-enum vboot_version vboot_version;
+extern enum vboot_version vboot_version;
 
 /* Here's a structure to define the commands that futility implements. */
 struct futil_cmd_t {
