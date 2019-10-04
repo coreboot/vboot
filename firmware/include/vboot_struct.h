@@ -196,7 +196,13 @@ typedef struct VbKernelPreambleHeader {
 #define VB_SHARED_DATA_MIN_SIZE 3072
 #define VB_SHARED_DATA_REC_SIZE 16384
 
-/* Flags for VbSharedDataHeader */
+/*
+ * Flags for VbSharedDataHeader
+ *
+ * TODO(b:124141368): Move these constants into crossystem once they are
+ * no longer needed in vboot2 code.
+ */
+
 /* LoadFirmware() tried firmware B because of VbNvStorage firmware B tries;
    Deprecated as part of chromium:1010389. */
 #define VBSD_DEPRECATED_FWB_TRIED        0x00000001
@@ -212,39 +218,39 @@ typedef struct VbKernelPreambleHeader {
  * LoadFirmware() is requesting the read only normal/dev code path.  This is
  * deprecated and unsupported by current firmware.
  */
-#define VBSD_LF_USE_RO_NORMAL            0x00000008
+#define VBSD_DEPRECATED_LF_USE_RO_NORMAL 0x00000008
 /* Developer switch was enabled at boot time */
 #define VBSD_BOOT_DEV_SWITCH_ON          0x00000010
 /* Recovery switch was enabled at boot time */
 #define VBSD_BOOT_REC_SWITCH_ON          0x00000020
 /* Firmware write protect was enabled at boot time */
 #define VBSD_BOOT_FIRMWARE_WP_ENABLED    0x00000040
-/* Boot is a S3->S0 resume, not a S5->S0 normal boot */
-#define VBSD_BOOT_S3_RESUME              0x00000100
-/* Read-only firmware supports the normal/developer code path */
-#define VBSD_BOOT_RO_NORMAL_SUPPORT      0x00000200
+/* Boot is a S3->S0 resume, not a S5->S0 normal boot;
+   Deprecated as part of CL:347257. */
+#define VBSD_DEPRECATED_BOOT_S3_RESUME   0x00000100
+/* Read-only firmware supports the normal/developer code path;
+   Deprecated as part of CL:347257. */
+#define VBSD_DEPRECATED_BOOT_RO_NORMAL_SUPPORT 0x00000200
 /* VbInit() was told that the system has a virtual dev-switch;
- * Deprecated as part of chromium:942901. */
+   Deprecated as part of chromium:942901. */
 #define VBSD_DEPRECATED_HONOR_VIRT_DEV_SWITCH 0x00000400
 /* VbInit() was told the system supports EC software sync */
 #define VBSD_EC_SOFTWARE_SYNC            0x00000800
 /* VbInit() was told that the EC firmware is slow to update */
 #define VBSD_EC_SLOW_UPDATE              0x00001000
-/*
- * Deprecated; was firmware software write protect was enabled at boot time.
- * Crossystem support removed https://chromium-review.googlesource.com/575389.
- */
+/* Firmware software write protect was enabled at boot time.
+   Crossystem support deprecated as part of CL:575389. */
 #define VBSD_DEPRECATED_BOOT_FIRMWARE_SW_WP_ENABLED 0x00002000
 /* VbInit() was told that the recovery button is a virtual one */
 #define VBSD_BOOT_REC_SWITCH_VIRTUAL     0x00004000
 /* Firmware used vboot2 for firmware selection */
 #define VBSD_BOOT_FIRMWARE_VBOOT2        0x00008000
-/* Firmware needs VGA Option ROM to display screens
-   Deprecated; see chromium:948529 */
-#define VBSD_OPROM_MATTERS               0x00010000
-/* Firmware has loaded the VGA Option ROM
-   Deprecated; see chromium:948529 */
-#define VBSD_OPROM_LOADED                0x00020000
+/* Firmware needs VGA Option ROM to display screens;
+   Deprecated as part of chromium:948529 */
+#define VBSD_DEPRECATED_OPROM_MATTERS    0x00010000
+/* Firmware has loaded the VGA Option ROM;
+   Deprecated as part of chromium:948529 */
+#define VBSD_DEPRECATED_OPROM_LOADED     0x00020000
 /* Don't try for boot failures */
 #define VBSD_NOFAIL_BOOT                 0x00040000
 /* VbInit() was told that the EC firmware supports EFS */
