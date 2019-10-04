@@ -809,9 +809,11 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 			 shared->recovery_reason);
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE,
 			   shared->recovery_reason);
+
 		/*
-		 * Commit NV now, because it won't get saved if the user forces
-		 * manual recovery via the three-finger salute.
+		 * Non-manual recovery mode is meant to be left via three-finger
+		 * salute (into manual recovery mode). Need to commit nvdata
+		 * changes immediately.
 		 */
 		vb2_nv_commit(ctx);
 

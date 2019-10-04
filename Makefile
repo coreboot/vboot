@@ -860,12 +860,6 @@ ${FWLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB2X_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB20_OBJS}: CFLAGS += -DUNROLL_LOOPS
 ${FWLIB21_OBJS}: CFLAGS += -DUNROLL_LOOPS
-
-# Workaround for coreboot on x86, which will power off asynchronously
-# without giving us a chance to react. This is not an example of the Right
-# Way to do things. See chrome-os-partner:7689, and the commit message
-# that made this change.
-${FWLIB_OBJS}: CFLAGS += -DSAVE_LOCALE_IMMEDIATELY
 endif
 
 ${FWLIB21_OBJS}: INCLUDES += -Ifirmware/lib21/include

@@ -308,16 +308,16 @@ static vb2_error_t debug_info_action(struct vb2_context *ctx)
 /* Action when selecting a language entry in the language menu. */
 static vb2_error_t language_action(struct vb2_context *ctx)
 {
-	VbSharedDataHeader *vbsd = vb2_get_sd(ctx)->vbsd;
-
 	/* Write selected language ID back to NVRAM. */
 	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, current_menu_idx);
 
 	/*
-	 * Non-manual recovery mode is meant to be left via hard reset (into
-	 * manual recovery mode). Need to commit NVRAM changes immediately.
+	 * Non-manual recovery mode is meant to be left via three-finger
+	 * salute (into manual recovery mode). Need to commit nvdata
+	 * changes immediately.
 	 */
-	if (vbsd->recovery_reason && !vb2_allow_recovery(ctx))
+	if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	    !vb2_allow_recovery(ctx))
 		vb2_nv_commit(ctx);
 
 	/* Return to previous menu. */

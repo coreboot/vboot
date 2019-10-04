@@ -14,6 +14,7 @@
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_display.h"
+#include "vboot_kernel.h"
 
 static uint32_t disp_current_screen = VB_SCREEN_BLANK;
 static uint32_t disp_current_index = 0;
@@ -382,18 +383,14 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 		vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, loc);
 		vb2_nv_set(ctx, VB2_NV_BACKUP_NVRAM_REQUEST, 1);
 
-#ifdef SAVE_LOCALE_IMMEDIATELY
 		/*
-		 * This is a workaround for coreboot on x86, which will power
-		 * off asynchronously without giving us a chance to react.
-		 * This is not an example of the Right Way to do things.  See
-		 * chrome-os-partner:7689.
+		 * Non-manual recovery mode is meant to be left via three-finger
+		 * salute (into manual recovery mode). Need to commit nvdata
+		 * changes immediately.
 		 */
-		if (ctx->flags & VB2_CONTEXT_NVDATA_CHANGED) {
-			VbExNvStorageWrite(ctx.nvdata);
-			ctx.flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
-		}
-#endif
+		if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+		    !vb2_allow_recovery(ctx))
+			vb2_nv_commit(ctx);
 
 		/* Force redraw of current screen */
 		return VbDisplayScreen(ctx, disp_current_screen, 1, data);
