@@ -177,4 +177,17 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
  */
 vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx);
 
+/**
+ * Check whether recovery is allowed or not.
+ *
+ * The only way to pass this check and proceed to the recovery process is to
+ * physically request a recovery (a.k.a. manual recovery).  All other recovery
+ * requests including manual recovery requested by a (compromised) host will
+ * end up with 'broken' screen.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if recovery is allowed; 0 if no or uncertain.
+ */
+int vb2_allow_recovery(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2MISC_H_ */

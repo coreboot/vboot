@@ -54,17 +54,4 @@ uint64_t VbSharedDataReserve(VbSharedDataHeader *header, uint64_t size);
 vb2_error_t VbSharedDataSetKernelKey(VbSharedDataHeader *header,
 				     const struct vb2_packed_key *src);
 
-/**
- * Check whether recovery is allowed or not.
- *
- * The only way to pass this check and proceed to the recovery process is to
- * physically request a recovery (a.k.a. manual recovery). All other recovery
- * requests including manual recovery requested by a (compromised) host will
- * end up with 'broken' screen.
- *
- * @param ctx vboot2 context pointer
- * @return 1: Yes. 0: No or not sure.
- */
-int vb2_allow_recovery(struct vb2_context *ctx);
-
 #endif  /* VBOOT_REFERENCE_VBOOT_COMMON_H_ */
