@@ -446,4 +446,196 @@ struct vb2_keyblock {
 
 #define EXPECTED_VB2_KEYBLOCK_SIZE 112
 
+/****************************************************************************/
+
+/*
+ * Rollback protection currently uses a 32-bit value comprised of the bottom 16
+ * bits of the (firmware or kernel) preamble version and the bottom 16 bits of
+ * the key version.  So each of those versions is effectively limited to 16
+ * bits even though they get stored in 32-bit fields.
+ */
+#define VB2_MAX_KEY_VERSION 0xffff
+#define VB2_MAX_PREAMBLE_VERSION 0xffff
+
+/****************************************************************************/
+
+/* Firmware preamble header */
+#define VB2_FIRMWARE_PREAMBLE_HEADER_VERSION_MAJOR 2
+#define VB2_FIRMWARE_PREAMBLE_HEADER_VERSION_MINOR 1
+
+/* Flags for vb2_fw_preamble.flags */
+/* Use RO-normal firmware (deprecated; do not use) */
+#define VB2_FIRMWARE_PREAMBLE_USE_RO_NORMAL 0x00000001
+/* Do not allow use of any hardware crypto accelerators. */
+#define VB2_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO 0x00000002
+
+/* Premable block for rewritable firmware, vboot1 version 2.1.
+ *
+ * The firmware preamble header should be followed by:
+ *   1) The kernel_subkey key data, pointed to by kernel_subkey.key_offset.
+ *   2) The signature data for the firmware body, pointed to by
+ *      body_signature.sig_offset.
+ *   3) The signature data for (header + kernel_subkey data + body signature
+ *      data), pointed to by preamble_signature.sig_offset.
+ */
+struct vb2_fw_preamble {
+	/*
+	 * Size of this preamble, including keys, signatures, and padding, in
+	 * bytes
+	 */
+	uint32_t preamble_size;
+	uint32_t reserved0;
+
+	/*
+	 * Signature for this preamble (header + kernel subkey + body
+	 * signature)
+	 */
+	struct vb2_signature preamble_signature;
+
+	/* Version of this header format */
+	uint32_t header_version_major;
+	uint32_t header_version_minor;
+
+	/* Firmware version */
+	uint32_t firmware_version;
+	uint32_t reserved1;
+
+	/* Key to verify kernel keyblock */
+	struct vb2_packed_key kernel_subkey;
+
+	/* Signature for the firmware body */
+	struct vb2_signature body_signature;
+
+	/*
+	 * Fields added in header version 2.1.  You must verify the header
+	 * version before reading these fields!
+	 */
+
+	/*
+	 * Flags; see VB2_FIRMWARE_PREAMBLE_*.  Readers should return 0 for
+	 * header version < 2.1.
+	 */
+	uint32_t flags;
+} __attribute__((packed));
+
+#define EXPECTED_VB2_FW_PREAMBLE_SIZE 108
+
+_Static_assert(EXPECTED_VB2_FW_PREAMBLE_SIZE == sizeof(struct vb2_fw_preamble),
+	       "EXPECTED_VB2_FW_PREAMBLE_SIZE incorrect");
+
+/****************************************************************************/
+
+/* Kernel preamble header */
+#define VB2_KERNEL_PREAMBLE_HEADER_VERSION_MAJOR 2
+#define VB2_KERNEL_PREAMBLE_HEADER_VERSION_MINOR 2
+
+/* Flags for vb2_kernel_preamble.flags */
+/* Kernel image type = bits 1:0 */
+#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_MASK 0x00000003
+#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_CROS      0
+#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_BOOTIMG   1
+#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_MULTIBOOT 2
+/* Kernel type 3 is reserved for future use */
+
+/*
+ * Preamble block for kernel, version 2.2
+ *
+ * This should be followed by:
+ *   1) The signature data for the kernel body, pointed to by
+ *      body_signature.sig_offset.
+ *   2) The signature data for (vb2_kernel_preamble + body signature data),
+ *       pointed to by preamble_signature.sig_offset.
+ *   3) The 16-bit vmlinuz header, which is used for reconstruction of
+ *      vmlinuz image.
+ */
+struct vb2_kernel_preamble {
+	/*
+	 * Size of this preamble, including keys, signatures, vmlinuz header,
+	 * and padding, in bytes
+	 */
+	uint32_t preamble_size;
+	uint32_t reserved0;
+
+	/* Signature for this preamble (header + body signature) */
+	struct vb2_signature preamble_signature;
+
+	/* Version of this header format */
+	uint32_t header_version_major;
+	uint32_t header_version_minor;
+
+	/* Kernel version */
+	uint32_t kernel_version;
+	uint32_t reserved1;
+
+	/* Load address for kernel body */
+	uint64_t body_load_address;
+	/* TODO (vboot 2.1): we never used that */
+
+	/* Address of bootloader, after body is loaded at body_load_address */
+	uint64_t bootloader_address;
+	/* TODO (vboot 2.1): should be a 32-bit offset */
+
+	/* Size of bootloader in bytes */
+	uint32_t bootloader_size;
+	uint32_t reserved2;
+
+	/* Signature for the kernel body */
+	struct vb2_signature body_signature;
+
+	/*
+	 * TODO (vboot 2.1): fields for kernel offset and size.  Right now the
+	 * size is implicitly the same as the size of data signed by the body
+	 * signature, and the offset is implicitly at the end of the preamble.
+	 * But that forces us to pad the preamble to 64KB rather than just
+	 * having a tiny preamble and an offset field.
+	 */
+
+	/*
+	 * Fields added in header version 2.1.  You must verify the header
+	 * version before reading these fields!
+	 */
+
+	/*
+	 * Address of 16-bit header for vmlinuz reassembly.  Readers should
+	 * return 0 for header version < 2.1.
+	 */
+	uint64_t vmlinuz_header_address;
+
+	/* Size of 16-bit header for vmlinuz in bytes.  Readers should return 0
+	   for header version < 2.1 */
+	uint32_t vmlinuz_header_size;
+	uint32_t reserved3;
+
+	/*
+	 * Fields added in header version 2.2.  You must verify the header
+	 * version before reading these fields!
+	 */
+
+	/*
+	 * Flags; see VB2_KERNEL_PREAMBLE_*.  Readers should return 0 for
+	 * header version < 2.2.  Flags field is currently defined as:
+	 * [31:2] - Reserved (for future use)
+	 * [1:0]  - Kernel image type (0b00 - CrOS,
+	 *                             0b01 - bootimg,
+	 *                             0b10 - multiboot)
+	 */
+	uint32_t flags;
+} __attribute__((packed));
+
+#define EXPECTED_VB2_KERNEL_PREAMBLE_2_0_SIZE 96
+#define EXPECTED_VB2_KERNEL_PREAMBLE_2_1_SIZE 112
+#define EXPECTED_VB2_KERNEL_PREAMBLE_2_2_SIZE 116
+
+_Static_assert(EXPECTED_VB2_KERNEL_PREAMBLE_2_0_SIZE
+	       == offsetof(struct vb2_kernel_preamble, vmlinuz_header_address),
+	       "EXPECTED_VB2_KERNEL_PREAMBLE_2_0_SIZE incorrect");
+
+_Static_assert(EXPECTED_VB2_KERNEL_PREAMBLE_2_1_SIZE
+	       == offsetof(struct vb2_kernel_preamble, flags),
+	       "EXPECTED_VB2_KERNEL_PREAMBLE_2_1_SIZE incorrect");
+
+_Static_assert(EXPECTED_VB2_KERNEL_PREAMBLE_2_2_SIZE
+	       == sizeof(struct vb2_kernel_preamble),
+	       "EXPECTED_VB2_KERNEL_PREAMBLE_2_2_SIZE incorrect");
+
 #endif  /* VBOOT_REFERENCE_2STRUCT_H_ */

@@ -21,10 +21,6 @@
  */
 static void StructPackingTest(void)
 {
-	TEST_EQ(EXPECTED_VBKERNELPREAMBLEHEADER2_2_SIZE,
-		sizeof(VbKernelPreambleHeader),
-		"sizeof(VbKernelPreambleHeader)");
-
 	TEST_EQ(VB_SHARED_DATA_HEADER_SIZE_V1,
 		(long)&((VbSharedDataHeader*)NULL)->recovery_reason,
 		"sizeof(VbSharedDataHeader) V1");

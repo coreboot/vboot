@@ -254,7 +254,7 @@ vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;
 	}
 	if (preamble->header_version_major !=
-	    KERNEL_PREAMBLE_HEADER_VERSION_MAJOR) {
+	    VB2_KERNEL_PREAMBLE_HEADER_VERSION_MAJOR) {
 		VB2_DEBUG("Incompatible kernel preamble header version.\n");
 		return VB2_ERROR_PREAMBLE_HEADER_VERSION;
 	}

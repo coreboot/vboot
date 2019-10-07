@@ -17,7 +17,6 @@
 #include "futility.h"
 #include "host_common.h"
 #include "kernel_blob.h"
-#include "vb2_struct.h"
 #include "vboot_api.h"
 #include "vboot_host.h"
 

@@ -170,7 +170,7 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;
 	}
 	if (preamble->header_version_major !=
-	    FIRMWARE_PREAMBLE_HEADER_VERSION_MAJOR) {
+	    VB2_FIRMWARE_PREAMBLE_HEADER_VERSION_MAJOR) {
 		VB2_DEBUG("Incompatible firmware preamble header version.\n");
 		return VB2_ERROR_PREAMBLE_HEADER_VERSION;
 	}

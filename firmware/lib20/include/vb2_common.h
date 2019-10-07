@@ -14,7 +14,6 @@
 #include "2sha.h"
 #include "2struct.h"
 #include "2sysincludes.h"
-#include "vb2_struct.h"
 
 struct vb2_public_key;
 
