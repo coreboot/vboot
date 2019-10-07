@@ -604,10 +604,11 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			// verify that the 16-bit header is included in the
 			// kblob (to make sure that it's included in the
 			// signature)
-			if (VerifyVmlinuzInsideKBlob(preamble->body_load_address,
-						     kblob_size,
-						     vmlinuz_header_address,
-						     vmlinuz_header_size)) {
+			if (vb2_verify_member_inside(
+					(void *)preamble->body_load_address,
+					kblob_size,
+					(void *)vmlinuz_header_address,
+					vmlinuz_header_size, 0, 0)) {
 				fclose(f);
 				unlink(vmlinuz_out_file);
 				FATAL("Vmlinuz header not signed!\n");

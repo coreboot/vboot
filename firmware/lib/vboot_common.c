@@ -37,17 +37,3 @@ int PublicKeyCopy(struct vb2_packed_key *dest, const struct vb2_packed_key *src)
 	       src->key_size);
 	return 0;
 }
-
-vb2_error_t VerifyVmlinuzInsideKBlob(uint64_t kblob, uint64_t kblob_size,
-				     uint64_t header, uint64_t header_size)
-{
-	uint64_t end = header-kblob;
-	if (end > kblob_size)
-		return VBOOT_PREAMBLE_INVALID;
-	if (UINT64_MAX - end < header_size)
-		return VBOOT_PREAMBLE_INVALID;
-	if (end + header_size > kblob_size)
-		return VBOOT_PREAMBLE_INVALID;
-
-	return VB2_SUCCESS;
-}

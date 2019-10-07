@@ -26,12 +26,4 @@ void PublicKeyInit(struct vb2_packed_key *key,
 int PublicKeyCopy(struct vb2_packed_key *dest,
 		  const struct vb2_packed_key *src);
 
-/**
- * Verify that the Vmlinuz Header is contained inside of the kernel blob.
- *
- * Returns VB2_SUCCESS or VBOOT_PREAMBLE_INVALID on error
- */
-vb2_error_t VerifyVmlinuzInsideKBlob(uint64_t kblob, uint64_t kblob_size,
-				     uint64_t header, uint64_t header_size);
-
 #endif  /* VBOOT_REFERENCE_VBOOT_COMMON_H_ */
