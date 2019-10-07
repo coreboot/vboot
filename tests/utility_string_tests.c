@@ -12,7 +12,6 @@
 
 #include "test_common.h"
 #include "utility.h"
-#include "vboot_common.h"
 
 /* Test string concatenation */
 static void StrncatTest(void) {

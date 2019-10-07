@@ -17,8 +17,8 @@
 #include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
-#include "vboot_common.h"
 #include "vboot_kernel.h"
+#include "vboot_struct.h"
 #include "vboot_test.h"
 
 /* Global variables */

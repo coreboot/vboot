@@ -26,7 +26,6 @@
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
 #include "host_common.h"
-#include "vboot_common.h"
 
 /* Base name for firmware FDT files */
 #define FDT_BASE_PATH "/proc/device-tree/firmware/chromeos"

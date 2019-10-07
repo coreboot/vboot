@@ -23,7 +23,6 @@
 #include "util_misc.h"
 #include "vb1_helper.h"
 #include "vb2_common.h"
-#include "vboot_common.h"
 
 /* Command line options */
 enum {

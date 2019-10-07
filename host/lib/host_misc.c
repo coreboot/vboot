@@ -13,7 +13,6 @@
 #include <unistd.h>
 
 #include "host_common.h"
-#include "vboot_common.h"
 
 char* StrCopy(char* dest, const char* src, int dest_size)
 {

@@ -21,6 +21,7 @@
 #include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
+#include "vboot_struct.h"
 #include "vboot_ui_common.h"
 
 /* Global variables */
