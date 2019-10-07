@@ -18,7 +18,6 @@
 #include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
