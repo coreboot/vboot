@@ -38,8 +38,8 @@ struct vb2_fw_preamble *vb2_create_fw_preamble(
 	uint8_t *body_sig_dest = kernel_subkey_dest + kernel_subkey->key_size;
 	uint8_t *block_sig_dest = body_sig_dest + body_signature->sig_size;
 
-	h->header_version_major = FIRMWARE_PREAMBLE_HEADER_VERSION_MAJOR;
-	h->header_version_minor = FIRMWARE_PREAMBLE_HEADER_VERSION_MINOR;
+	h->header_version_major = VB2_FIRMWARE_PREAMBLE_HEADER_VERSION_MAJOR;
+	h->header_version_minor = VB2_FIRMWARE_PREAMBLE_HEADER_VERSION_MINOR;
 	h->preamble_size = block_size;
 	h->firmware_version = firmware_version;
 	h->flags = flags;
@@ -106,8 +106,8 @@ struct vb2_kernel_preamble *vb2_create_kernel_preamble(
 	uint8_t *body_sig_dest = (uint8_t *)(h + 1);
 	uint8_t *block_sig_dest = body_sig_dest + body_signature->sig_size;
 
-	h->header_version_major = KERNEL_PREAMBLE_HEADER_VERSION_MAJOR;
-	h->header_version_minor = KERNEL_PREAMBLE_HEADER_VERSION_MINOR;
+	h->header_version_major = VB2_KERNEL_PREAMBLE_HEADER_VERSION_MAJOR;
+	h->header_version_minor = VB2_KERNEL_PREAMBLE_HEADER_VERSION_MINOR;
 	h->preamble_size = block_size;
 	h->kernel_version = kernel_version;
 	h->body_load_address = body_load_address;

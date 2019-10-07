@@ -22,7 +22,6 @@
 #include "secdata_tpm.h"
 #include "test_common.h"
 #include "vb2_common.h"
-#include "vb2_struct.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_kernel.h"
@@ -62,7 +61,7 @@ static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
 static struct vb2_keyblock kbh;
-static VbKernelPreambleHeader kph;
+static struct vb2_kernel_preamble kph;
 static struct vb2_secdata_fwmp *fwmp;
 static uint8_t mock_disk[MOCK_SECTOR_SIZE * MOCK_SECTOR_COUNT];
 static GptHeader *mock_gpt_primary =

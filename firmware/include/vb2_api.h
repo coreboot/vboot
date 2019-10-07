@@ -37,7 +37,6 @@
 #include "../2lib/include/2nvstorage.h"
 #include "../2lib/include/2nvstorage_fields.h"
 #include "../2lib/include/2struct.h"
-#include "../lib20/include/vb2_struct.h"
 #endif
 
 #endif  /* VBOOT_REFERENCE_VB2_API_H_ */
