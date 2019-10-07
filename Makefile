@@ -384,7 +384,6 @@ FWLIB2X_SRCS = \
 
 FWLIB20_SRCS = \
 	firmware/lib20/api_kernel.c \
-	firmware/lib20/common.c \
 	firmware/lib20/kernel.c \
 	firmware/lib20/misc.c \
 	firmware/lib20/packed_key.c
@@ -501,6 +500,7 @@ HOSTLIB_SRCS = \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2hmac.c \
 	firmware/2lib/2nvstorage.c \
+	firmware/2lib/2rsa.c \
 	firmware/2lib/2sha1.c \
 	firmware/2lib/2sha256.c \
 	firmware/2lib/2sha512.c \
@@ -725,6 +725,8 @@ TEST2X_NAMES = \
 	tests/vb2_api_tests \
 	tests/vb2_auxfw_sync_tests \
 	tests/vb2_common_tests \
+	tests/vb2_common2_tests \
+	tests/vb2_common3_tests \
 	tests/vb2_ec_sync_tests \
 	tests/vb2_gbb_tests \
 	tests/vb2_misc_tests \
@@ -738,10 +740,7 @@ TEST2X_NAMES = \
 
 TEST20_NAMES = \
 	tests/vb20_api_kernel_tests \
-	tests/vb20_common_tests \
-	tests/vb20_common2_tests \
 	tests/vb20_verify_fw.c \
-	tests/vb20_common3_tests \
 	tests/vb20_kernel_tests \
 	tests/vb20_misc_tests \
 	tests/vb20_rsa_padding_tests \
@@ -1150,8 +1149,8 @@ ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/verify_data: LDLIBS += ${CRYPTO_LIBS}
 
-${BUILD}/tests/vb20_common2_tests: LDLIBS += ${CRYPTO_LIBS}
-${BUILD}/tests/vb20_common3_tests: LDLIBS += ${CRYPTO_LIBS}
+${BUILD}/tests/vb2_common2_tests: LDLIBS += ${CRYPTO_LIBS}
+${BUILD}/tests/vb2_common3_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/hmac_test: LDLIBS += ${CRYPTO_LIBS}
 
@@ -1289,6 +1288,8 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_auxfw_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_common2_tests ${TEST_KEYS}
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_common3_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_ec_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
@@ -1299,9 +1300,6 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_common_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_common2_tests ${TEST_KEYS}
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_common3_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_api_tests
@@ -1326,8 +1324,8 @@ runfutiltests: test_setup
 # Not run by automated build.
 .PHONY: runlongtests
 runlongtests: test_setup genkeys genfuzztestcases
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_common2_tests ${TEST_KEYS} --all
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_common3_tests ${TEST_KEYS} --all
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_common2_tests ${TEST_KEYS} --all
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_common3_tests ${TEST_KEYS} --all
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_common2_tests ${TEST_KEYS} --all
 	tests/run_preamble_tests.sh --all
 	tests/run_vbutil_tests.sh --all
