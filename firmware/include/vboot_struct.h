@@ -317,6 +317,13 @@ typedef struct VbSharedDataHeader {
 #define VB_SHARED_DATA_HEADER_SIZE_V1 1072
 #define VB_SHARED_DATA_HEADER_SIZE_V2 1096
 
+_Static_assert(VB_SHARED_DATA_HEADER_SIZE_V1
+	       == offsetof(VbSharedDataHeader, recovery_reason),
+	       "VB_SHARED_DATA_HEADER_SIZE_V1 incorrect");
+
+_Static_assert(VB_SHARED_DATA_HEADER_SIZE_V2 == sizeof(VbSharedDataHeader),
+	       "VB_SHARED_DATA_HEADER_SIZE_V2 incorrect");
+
 #define VB_SHARED_DATA_VERSION 2  /* Version for struct_version */
 
 #ifdef __cplusplus

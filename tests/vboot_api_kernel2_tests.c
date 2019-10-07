@@ -16,7 +16,6 @@
 #include "test_common.h"
 #include "tss_constants.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
@@ -88,7 +87,6 @@ static void ResetMocks(void)
 	vb2_init_ui();
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 
 	memset(&lkp, 0, sizeof(lkp));
 

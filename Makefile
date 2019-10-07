@@ -347,7 +347,6 @@ FWLIB_SRCS = \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_audio.c \
 	firmware/lib/vboot_common.c \
-	firmware/lib/vboot_common_init.c \
 	firmware/lib/vboot_display.c \
 	firmware/lib/vboot_kernel.c \
 	firmware/lib/vboot_ui.c \

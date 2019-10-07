@@ -23,7 +23,6 @@
 #include "test_common.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
-#include "vboot_common.h"
 #include "vboot_kernel.h"
 
 #define LOGCALL(fmt, args...) sprintf(call_log + strlen(call_log), fmt, ##args)
@@ -140,7 +139,6 @@ static void ResetMocks(void)
 	gbb.flags = 0;
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 	shared->kernel_version_tpm = 0x20001;
 
 	memset(&lkp, 0, sizeof(lkp));

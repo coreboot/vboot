@@ -14,7 +14,6 @@
 #include "secdata_tpm.h"
 #include "test_common.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
@@ -69,7 +68,6 @@ static void ResetMocks(void)
 	memset(&gbb, 0, sizeof(gbb));
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 
 	mock_in_rw = 0;
 	ec_ro_protected = 0;

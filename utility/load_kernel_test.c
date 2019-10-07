@@ -26,6 +26,10 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 
+static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
+static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
+
 /* Global variables for stub functions */
 static LoadKernelParams lkp;
 static FILE *image_file = NULL;
@@ -90,8 +94,7 @@ int main(int argc, char* argv[])
 {
 	const char* image_name;
 	uint64_t key_size = 0;
-	uint8_t* key_blob = NULL;
-	VbSharedDataHeader* shared;
+	struct vb2_packed_key *key_blob = NULL;
 	struct vb2_gbb_header* gbb;
 	vb2_error_t rv;
 	int c, argsleft;
@@ -152,7 +155,8 @@ int main(int argc, char* argv[])
 
 	/* Read header signing key blob */
 	if (argsleft > 1) {
-		key_blob = ReadFile(argv[optind+1], &key_size);
+		key_blob = (struct vb2_packed_key *)
+			ReadFile(argv[optind+1], &key_size);
 		if (!key_blob) {
 			fprintf(stderr, "Unable to read key file %s\n",
 				argv[optind+1]);
@@ -186,24 +190,6 @@ int main(int argc, char* argv[])
 		gbb->recovery_key_size = key_size;
 	}
 
-	/* Initialize the shared data area */
-	shared = (VbSharedDataHeader*)malloc(VB_SHARED_DATA_REC_SIZE);
-	if (0 != VbSharedDataInit(shared, VB_SHARED_DATA_REC_SIZE)) {
-		fprintf(stderr, "Unable to init shared data\n");
-		return 1;
-	}
-	/* Copy in the key blob, if any */
-	if (key_blob) {
-		if (0 != VbSharedDataSetKernelKey(
-				shared, (struct vb2_packed_key *)key_blob)) {
-			fprintf(stderr, "Unable to set key in shared data\n");
-			return 1;
-		}
-	}
-
-	/* Free the key blob, now that we're done with it */
-	free(key_blob);
-
 	printf("bootflags = %d\n", boot_flags);
 	lkp.boot_flags = boot_flags;
 
@@ -233,8 +219,26 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
+	memset(&shared_data, 0, sizeof(shared_data));
 	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
+
+	/* Copy kernel subkey to VBSD, if any */
+	if (key_blob) {
+		struct vb2_packed_key *dst = (struct vb2_packed_key *)
+			(shared_data +
+			 vb2_wb_round_up(sizeof(VbSharedDataHeader)));
+		shared->kernel_subkey.key_offset =
+			(uintptr_t)dst - (uintptr_t)&shared->kernel_subkey;
+		shared->kernel_subkey.key_size = key_blob->key_size;
+		shared->kernel_subkey.algorithm = key_blob->algorithm;
+		shared->kernel_subkey.key_version = key_blob->key_version;
+		memcpy(vb2_packed_key_data_mutable(dst),
+		       vb2_packed_key_data(key_blob), key_blob->key_size);
+	}
+
+	/* Free the key blob, now that we're done with it */
+	free(key_blob);
 
 	/* No need to initialize ctx->nvdata[]; defaults are fine */
 	/* TODO(chromium:441893): support dev-mode flag and external gpt flag */

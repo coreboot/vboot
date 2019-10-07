@@ -20,7 +20,6 @@
 #include "load_kernel_fw.h"
 #include "secdata_tpm.h"
 #include "test_common.h"
-#include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
@@ -128,7 +127,6 @@ static void ResetMocks(void)
 	memset(&gbb, 0, sizeof(gbb));
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 	shared->fw_keyblock_flags = 0xABCDE0;
 
 	current_ticks = 0;

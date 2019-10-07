@@ -26,7 +26,8 @@ static struct vb2_shared_data *sd;
 
 static uint8_t *diskbuf;
 
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
+static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 
 static LoadKernelParams params;
@@ -91,11 +92,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Set up shared data blob */
-	VbSharedDataInit(shared, sizeof(shared_data));
-	VbSharedDataSetKernelKey(shared, kernkey);
-	/* TODO: optional TPM current kernel version */
-
 	/* Set up params */
 	params.disk_handle = (VbExDiskHandle_t)1;
 	params.bytes_per_lba = 512;
@@ -116,8 +112,20 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
+	memset(&shared_data, 0, sizeof(shared_data));
 	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
+
+	/* Copy kernel subkey to VBSD */
+	struct vb2_packed_key *dst = (struct vb2_packed_key *)
+		(shared_data + vb2_wb_round_up(sizeof(VbSharedDataHeader)));
+	shared->kernel_subkey.key_offset =
+		(uintptr_t)dst - (uintptr_t)&shared->kernel_subkey;
+	shared->kernel_subkey.key_size = kernkey->key_size;
+	shared->kernel_subkey.algorithm = kernkey->algorithm;
+	shared->kernel_subkey.key_version = kernkey->key_version;
+	memcpy(vb2_packed_key_data_mutable(dst), vb2_packed_key_data(kernkey),
+	       kernkey->key_size);
 
 	/*
 	 * LoadKernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and only in

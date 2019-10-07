@@ -18,7 +18,6 @@
 #include "tlcl.h"
 #include "tss_constants.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
@@ -68,7 +67,6 @@ static void ResetMocks(void)
 	commit_data_called = 0;
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 
 	memset(&fwmp_buf, 0, sizeof(fwmp_buf));
 	fwmp_read_retval = TPM_SUCCESS;

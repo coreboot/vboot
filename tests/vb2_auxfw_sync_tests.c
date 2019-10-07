@@ -59,7 +59,6 @@ static void ResetMocks(void)
 	memset(&gbb, 0, sizeof(gbb));
 
 	memset(&shared_data, 0, sizeof(shared_data));
-	VbSharedDataInit(shared, sizeof(shared_data));
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
