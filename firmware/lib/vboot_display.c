@@ -15,6 +15,7 @@
 #include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
+#include "vboot_struct.h"
 
 static uint32_t disp_current_screen = VB_SCREEN_BLANK;
 static uint32_t disp_current_index = 0;

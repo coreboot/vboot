@@ -19,7 +19,6 @@
 #include "host_key.h"
 #include "vb2_common.h"
 #include "vb2_struct.h"
-#include "vboot_common.h"
 
 struct vb2_keyblock *vb2_create_keyblock(
 		const struct vb2_packed_key *data_key,

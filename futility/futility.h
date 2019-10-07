@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "2common.h"
-#include "vboot_common.h"
 #include "host_key.h"
 
 /* This program */

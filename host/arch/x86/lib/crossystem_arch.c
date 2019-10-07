@@ -22,7 +22,6 @@
 #include "crossystem_vbnv.h"
 #include "host_common.h"
 #include "utility.h"
-#include "vboot_common.h"
 #include "vboot_struct.h"
 
 /* ACPI constants from Chrome OS Main Processor Firmware Spec */

@@ -13,7 +13,6 @@
 
 #include "2rsa.h"
 #include "file_type.h"
-#include "vboot_common.h"
 
 struct vb2_private_key;
 struct vb21_packed_key;

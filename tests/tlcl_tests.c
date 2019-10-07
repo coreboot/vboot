@@ -14,7 +14,6 @@
 #include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
-#include "vboot_common.h"
 
 /* Mock data */
 static char debug_info[4096];

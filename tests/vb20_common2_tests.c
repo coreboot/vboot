@@ -16,7 +16,6 @@
 #include "host_key2.h"
 #include "test_common.h"
 #include "vb2_common.h"
-#include "vboot_common.h"
 
 static const uint8_t test_data[] = "This is some test data to sign.";
 static const uint32_t test_size = sizeof(test_data);

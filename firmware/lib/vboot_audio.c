@@ -11,7 +11,6 @@
 #include "utility.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 
 int audio_open_count = 0;	/* Times audio has been opened */
 static int audio_use_short;	/* Use short delay? */

@@ -17,7 +17,6 @@
 #include "2nvstorage.h"
 #include "2sysincludes.h"
 #include "test_common.h"
-#include "vboot_common.h"
 
 /* Single NV storage field to test */
 struct nv_field {

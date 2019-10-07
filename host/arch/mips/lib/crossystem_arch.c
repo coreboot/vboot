@@ -8,7 +8,6 @@
 #include "crossystem_arch.h"
 #include "crossystem.h"
 #include "host_common.h"
-#include "vboot_common.h"
 
 /* TODO: Currently these are stub implementations providing reasonable defaults
  * wherever possible. They will need real implementation as part of of MIPS

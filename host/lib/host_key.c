@@ -20,7 +20,6 @@
 #include "host_common.h"
 #include "host_misc.h"
 #include "vb2_common.h"
-#include "vboot_common.h"
 
 int packed_key_looks_ok(const struct vb2_packed_key *key, uint32_t size)
 {
