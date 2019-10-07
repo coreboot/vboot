@@ -893,16 +893,12 @@ static int write_firmware(struct updater_config *cfg,
 }
 
 /*
- * Write a section from given firmware image to system firmware if possible.
- * If section_name is NULL, write whole image.  If the image has no data or if
- * the section does not exist, ignore and return success.
- * Returns 0 if success, non-zero if error.
+ * Returns True if we should start the update process for given image.
  */
-static int write_optional_firmware(struct updater_config *cfg,
-				   const struct firmware_image *image,
-				   const char *section_name,
-				   int check_programmer_wp,
-				   int is_host)
+static int has_valid_update(struct updater_config *cfg,
+			const struct firmware_image *image,
+			const char *section_name,
+			int is_host)
 {
 	if (!image->data) {
 		VB2_DEBUG("No data in <%s> image.\n", image->programmer);
@@ -921,7 +917,23 @@ static int write_optional_firmware(struct updater_config *cfg,
 		     image->file_name, image->programmer, image->size);
 		return 0;
 	}
+	return 1;
+}
 
+/*
+ * Write a section from given firmware image to system firmware if possible.
+ * If section_name is NULL, write whole image.  If the image has no data or if
+ * the section does not exist, ignore and return success.
+ * Returns 0 if success, non-zero if error.
+ */
+static int write_optional_firmware(struct updater_config *cfg,
+				   const struct firmware_image *image,
+				   const char *section_name,
+				   int check_programmer_wp,
+				   int is_host)
+{
+	if (!has_valid_update(cfg, image, section_name, is_host))
+		return 0;
 	/*
 	 * EC & PD may have different WP settings and we want to write
 	 * only if it is OK.
@@ -1395,6 +1407,23 @@ static int cbfs_file_exists(const char *image_file,
 	return !r;
 }
 
+static int cbfs_extract_file(const char *image_file,
+			     const char *section_name,
+			     const char *cbfs_entry_name,
+			     const char *output_name)
+{
+	char *cmd;
+	int r;
+
+	ASPRINTF(&cmd,
+		 "cbfstool '%s' extract -r %s -n '%s' -f '%s' "
+		 "2>/dev/null", image_file, section_name, cbfs_entry_name,
+		 output_name);
+	r = system(cmd);
+	free(cmd);
+	return r;
+}
+
 /*
  * Returns non-zero if the RW_LEGACY needs to be updated, otherwise 0.
  */
@@ -1488,44 +1517,129 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 }
 
 /*
- * Returns the name of EC section to update in recovery (whole update).
- *
- * Some EC will reset TCPC when doing sysjump, and will make rootfs unavailable
- * if the system was boot from USB. There is no solution if EC already in RO
- * (recovery). But for developers who run updater manually in developer mode
- * (Ctrl-U, EC in RW) and have software sync enabled, we may update only EC RO
- * (skip RW).
+ * Returns True if the system has EC software sync enabled.
  */
-static const char * get_ec_section_to_recover(struct updater_config *cfg)
+static int is_ec_software_sync_enabled(struct updater_config *cfg)
 {
-	const char * const ec_ro = "EC_RO";
-	char buf[VB_MAX_STRING_PROPERTY];
+	const struct vb2_gbb_header *gbb;
 
-	/* For devices without Chrome OS EC image, update all. */
-	if (!cfg->ec_image.data ||
-	    !firmware_section_exists(&cfg->ec_image, ec_ro))
-		return NULL;
-
-	/* For devices where EC is not running in RW, try to update all. */
-	if (!VbGetSystemPropertyString("ecfw_act", buf, sizeof(buf)) ||
-	    strcasecmp(buf, "RW") != 0) {
-		WARN("EC is not running in RW so updating RO may cause sysjump "
-		     "and you may see 'Input/output error' after that. "
-		     "See http://crbug.com/782427#c4 for more information.\n");
-		return NULL;
+	/* Check if current system has disabled software sync or no support. */
+	if (!(VbGetSystemPropertyInt("vdat_flags") & VBSD_EC_SOFTWARE_SYNC)) {
+		INFO("EC Software Sync is not available.\n");
+		return 0;
 	}
 
-	/* If software sync is disabled or not available, try to update all. */
-	if (!(VbGetSystemPropertyInt("vdat_flags") & VBSD_EC_SOFTWARE_SYNC))
-		return NULL;
+	/* Check if the system has been updated to disable software sync. */
+	gbb = find_gbb(&cfg->image);
+	if (!gbb) {
+		WARN("Invalid AP firmware image.\n");
+		return 0;
+	}
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC) {
+		INFO("EC Software Sync will be disabled in next boot.\n");
+		return 0;
+	}
+	return 1;
+}
 
-	/*
-	 * This is the only case that we "may" safely update EC RO without
-	 * sysjump, and have RW updated in next boot.
-	 */
-	WARN("EC Software Sync detected, will only update EC RO. "
-	     "The contents in EC RW will be updated after reboot.\n");
-	return ec_ro;
+/*
+ * Schedules an EC RO software sync (in next boot) if applicable.
+ */
+static int ec_ro_software_sync(struct updater_config *cfg)
+{
+	const char *tmp_path = updater_create_temp_file(cfg);
+	const char *ec_ro_path = updater_create_temp_file(cfg);
+	uint8_t *ec_ro_data;
+	uint32_t ec_ro_len;
+	int is_same_ec_ro;
+	struct firmware_section ec_ro_sec;
+
+	if (!tmp_path || !ec_ro_path ||
+	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
+		ERROR("Failed to create temporary file for image contents.\n");
+		return 1;
+	}
+	find_firmware_section(&ec_ro_sec, &cfg->ec_image, "EC_RO");
+	if (!ec_ro_sec.data || !ec_ro_sec.size) {
+		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
+		return 1;
+	}
+	if (cbfs_extract_file(tmp_path, FMAP_RO_SECTION, "ec_ro", ec_ro_path) ||
+	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ec_ro.hash")) {
+		INFO("No valid EC RO for software sync in AP firmware.\n");
+		return 1;
+	}
+	if (vb2_read_file(ec_ro_path, &ec_ro_data, &ec_ro_len) != VB2_SUCCESS) {
+		ERROR("Failed to read EC RO.\n");
+		return 1;
+	}
+
+	is_same_ec_ro = (ec_ro_len <= ec_ro_sec.size &&
+			 memcmp(ec_ro_sec.data, ec_ro_data, ec_ro_len) == 0);
+	free(ec_ro_data);
+
+	if (!is_same_ec_ro) {
+		/* TODO(hungte) If change AP RO is not a problem (hash will be
+		 * different, which may be a problem to factory and HWID), or if
+		 * we can be be sure this is for developers, extract EC RO and
+		 * update AP RO CBFS to trigger EC RO sync with new EC.
+		 */
+		ERROR("The EC RO contents specified from AP (--image) and EC "
+		      "(--ec_image) firmware images are different, cannot "
+		      "update by EC RO software sync.\n");
+		return 1;
+	}
+	VbSetSystemPropertyInt("try_ro_sync", 1);
+	return 0;
+}
+
+/*
+ * Returns True if EC is running in RW.
+ */
+static int is_ec_in_rw(void)
+{
+	char buf[VB_MAX_STRING_PROPERTY];
+	return (VbGetSystemPropertyString("ecfw_act", buf, sizeof(buf)) &&
+		strcasecmp(buf, "RW") == 0);
+}
+
+/*
+ * Update EC (RO+RW) in most reliable way.
+ *
+ * Some EC will reset TCPC when doing sysjump, and will make rootfs unavailable
+ * if the system was boot from USB, or other unexpected issues even if the
+ * system was boot from internal disk. To prevent that, try to partial update
+ * only RO and expect EC software sync to update RW later, or perform EC RO
+ * software sync.
+ *
+ * Returns 0 if success, non-zero if error.
+ */
+static int update_ec_firmware(struct updater_config *cfg)
+{
+	const char *ec_ro = "EC_RO";
+	struct firmware_image *ec_image = &cfg->ec_image;
+
+	/* TODO(hungte) Check if we have EC RO in AP image without --ec_image */
+	if (!has_valid_update(cfg, ec_image, NULL, 0))
+		return 0;
+
+	if (!firmware_section_exists(ec_image, ec_ro)) {
+		INFO("EC image does not have section '%s'.\n", ec_ro);
+	} else if (!is_ec_software_sync_enabled(cfg)) {
+		/* Message already printed. */
+	} else if (is_ec_in_rw()) {
+		WARN("EC Software Sync detected, will only update EC RO. "
+		     "The contents in EC RW will be updated after reboot.\n");
+		return write_optional_firmware(cfg, ec_image, ec_ro, 1, 0);
+	} else if (ec_ro_software_sync(cfg) == 0) {
+		INFO("EC RO and RW should be updated after reboot.\n");
+		return 0;
+	}
+
+	/* Do full update. */
+	WARN("Update EC RO+RW and may cause unexpected error later. "
+	     "See http://crbug.com/782427#c4 for more information.\n");
+	return write_optional_firmware(cfg, ec_image, NULL, 1, 0);
 }
 
 const char * const updater_error_messages[] = {
@@ -1712,8 +1826,7 @@ static enum updater_error_codes update_whole_firmware(
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
-	    write_optional_firmware(cfg, &cfg->ec_image,
-				    get_ec_section_to_recover(cfg), 1, 0) ||
+	    update_ec_firmware(cfg) ||
 	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1, 0))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
