@@ -87,7 +87,7 @@ int ft_show_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 {
 	struct vb2_packed_key *pubkey = (struct vb2_packed_key *)buf;
 
-	if (!packed_key_looks_ok(pubkey, len)) {
+	if (vb2_packed_key_looks_ok(pubkey, len)) {
 		printf("%s looks bogus\n", name);
 		return 1;
 	}

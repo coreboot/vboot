@@ -666,7 +666,7 @@ static const struct vb2_packed_key *get_rootkey(
 	struct vb2_packed_key *key = NULL;
 
 	key = (struct vb2_packed_key *)((uint8_t *)gbb + gbb->rootkey_offset);
-	if (!packed_key_looks_ok(key, gbb->rootkey_size)) {
+	if (vb2_packed_key_looks_ok(key, gbb->rootkey_size)) {
 		ERROR("Invalid root key.\n");
 		return NULL;
 	}

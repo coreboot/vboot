@@ -1035,8 +1035,8 @@ static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
 	if (!gbb)
 		return "<No GBB>";
 	key = (struct vb2_packed_key *)((uint8_t *)gbb + offset);
-	if (!packed_key_looks_ok(key, size))
-	    return "<Invalid key>";
+	if (vb2_packed_key_looks_ok(key, size))
+		return "<Invalid key>";
 	return packed_key_sha1_string(key);
 }
 

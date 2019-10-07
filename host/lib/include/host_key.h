@@ -117,9 +117,10 @@ struct vb2_packed_key *vb2_read_packed_key(const char *filename);
  * @param key	     	Key to check
  * @param size		Size of key buffer in bytes
  *
- * @return True if the key struct appears valid.
+ * @return VB2_SUCCESS, or non-zero if error.
  */
-int packed_key_looks_ok(const struct vb2_packed_key *key, uint32_t size);
+vb2_error_t vb2_packed_key_looks_ok(const struct vb2_packed_key *key,
+				    uint32_t size);
 
 /**
  * Read a packed key from a .keyb file.

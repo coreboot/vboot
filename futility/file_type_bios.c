@@ -95,7 +95,7 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 
 	struct vb2_packed_key *pubkey =
 		(struct vb2_packed_key *)(buf + gbb->rootkey_offset);
-	if (packed_key_looks_ok(pubkey, gbb->rootkey_size)) {
+	if (vb2_packed_key_looks_ok(pubkey, gbb->rootkey_size) == VB2_SUCCESS) {
 		if (state) {
 			state->rootkey.offset =
 				state->area[BIOS_FMAP_GBB].offset +
@@ -112,7 +112,8 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 	}
 
 	pubkey = (struct vb2_packed_key *)(buf + gbb->recovery_key_offset);
-	if (packed_key_looks_ok(pubkey, gbb->recovery_key_size)) {
+	if (vb2_packed_key_looks_ok(pubkey, gbb->recovery_key_size)
+	    == VB2_SUCCESS) {
 		if (state) {
 			state->recovery_key.offset =
 				state->area[BIOS_FMAP_GBB].offset +
@@ -264,9 +265,9 @@ static int fmap_sign_fw_preamble(const char *name, uint8_t *buf, uint32_t len,
 		goto whatever;
 	}
 
-	if (!packed_key_looks_ok(&keyblock->data_key,
-				 keyblock->data_key.key_offset +
-				 keyblock->data_key.key_size)) {
+	if (vb2_packed_key_looks_ok(&keyblock->data_key,
+				    keyblock->data_key.key_offset +
+				    keyblock->data_key.key_size)) {
 		fprintf(stderr, "Warning: %s public key is invalid. "
 			"Signing the entire FW FMAP region...\n", name);
 		goto whatever;

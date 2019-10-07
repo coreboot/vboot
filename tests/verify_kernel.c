@@ -15,7 +15,6 @@
 #include "2nvstorage.h"
 #include "host_common.h"
 #include "util_misc.h"
-#include "vboot_common.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 

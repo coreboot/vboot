@@ -16,7 +16,6 @@
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "secdata_tpm.h"
-#include "vboot_common.h"
 #include "vboot_kernel.h"
 
 #define LBA_BYTES 512

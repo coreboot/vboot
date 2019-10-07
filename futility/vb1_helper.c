@@ -797,7 +797,7 @@ enum futil_file_type ft_recognize_vb1_key(uint8_t *buf, uint32_t len)
 {
 	/* Maybe just a packed public key? */
 	const struct vb2_packed_key *pubkey = (struct vb2_packed_key *)buf;
-	if (packed_key_looks_ok(pubkey, len))
+	if (vb2_packed_key_looks_ok(pubkey, len) == VB2_SUCCESS)
 		return FILE_TYPE_PUBKEY;
 
 	/* How about a private key? */

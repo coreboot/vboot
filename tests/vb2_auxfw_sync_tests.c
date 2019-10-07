@@ -18,7 +18,6 @@
 #include "secdata_tpm.h"
 #include "test_common.h"
 #include "vboot_audio.h"
-#include "vboot_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"

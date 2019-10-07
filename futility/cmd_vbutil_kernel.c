@@ -27,7 +27,6 @@
 #include "kernel_blob.h"
 #include "vb1_helper.h"
 #include "vb2_common.h"
-#include "vboot_common.h"
 
 /* Global opts */
 static int opt_verbose;

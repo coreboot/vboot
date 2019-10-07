@@ -62,7 +62,7 @@ int ft_sign_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 	struct vb2_packed_key *data_key = (struct vb2_packed_key *)buf;
 	struct vb2_keyblock *block;
 
-	if (!packed_key_looks_ok(data_key, len)) {
+	if (vb2_packed_key_looks_ok(data_key, len)) {
 		fprintf(stderr, "Public key looks bad.\n");
 		return 1;
 	}

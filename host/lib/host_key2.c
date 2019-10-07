@@ -5,8 +5,6 @@
  * Host functions for keys.
  */
 
-/* TODO: change all 'return 0', 'return 1' into meaningful return codes */
-
 #include <openssl/pem.h>
 
 #include <stdio.h>
@@ -211,7 +209,7 @@ struct vb2_packed_key *vb2_read_packed_key(const char *filename)
 		return NULL;
 	}
 
-	if (packed_key_looks_ok(key, file_size))
+	if (vb2_packed_key_looks_ok(key, file_size) == VB2_SUCCESS)
 		return key;
 
 	/* Error */
@@ -278,4 +276,23 @@ vb2_error_t vb2_write_packed_key(const char *filename,
 				kcopy->key_offset + kcopy->key_size);
 	free(kcopy);
 	return rv;
+}
+
+vb2_error_t vb2_packed_key_looks_ok(const struct vb2_packed_key *key,
+				    uint32_t size)
+{
+	struct vb2_public_key pubkey;
+	vb2_error_t rv;
+
+	rv = vb2_unpack_key_buffer(&pubkey, (const uint8_t *)key, size);
+	if (rv)
+		return rv;
+
+	if (key->key_version > VB2_MAX_KEY_VERSION) {
+		/* Currently, TPM only supports 16-bit version */
+		VB2_DEBUG("packed key invalid version\n");
+		return VB2_ERROR_PACKED_KEY_VERSION;
+	}
+
+	return VB2_SUCCESS;
 }

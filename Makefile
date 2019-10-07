@@ -353,7 +353,6 @@ FWLIB_SRCS = \
 	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_audio.c \
-	firmware/lib/vboot_common.c \
 	firmware/lib/vboot_display.c \
 	firmware/lib/vboot_kernel.c \
 	firmware/lib/vboot_ui.c \
@@ -463,7 +462,6 @@ UTILLIB_SRCS = \
 	host/lib/file_keys.c \
 	host/lib/fmap.c \
 	host/lib/host_common.c \
-	host/lib/host_key.c \
 	host/lib/host_key2.c \
 	host/lib/host_keyblock.c \
 	host/lib/host_misc.c \
@@ -697,7 +695,6 @@ TEST_NAMES = \
 	tests/vboot_api_kernel2_tests \
 	tests/vboot_api_kernel4_tests \
 	tests/vboot_api_kernel_tests \
-	tests/vboot_common_tests \
 	tests/vboot_detach_menu_tests \
 	tests/vboot_display_tests \
 	tests/vboot_kernel_tests \
@@ -729,6 +726,7 @@ TEST2X_NAMES = \
 	tests/vb2_common3_tests \
 	tests/vb2_ec_sync_tests \
 	tests/vb2_gbb_tests \
+	tests/vb2_host_key_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
 	tests/vb2_rsa_utility_tests \
@@ -1149,6 +1147,7 @@ ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/signature_digest_utility: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/verify_data: LDLIBS += ${CRYPTO_LIBS}
 
+${BUILD}/tests/vb2_host_key_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb2_common2_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/vb2_common3_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
@@ -1278,7 +1277,6 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vboot_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_detach_menu_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel_tests
@@ -1292,6 +1290,7 @@ run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common3_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_ec_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_host_key_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_rsa_utility_tests
