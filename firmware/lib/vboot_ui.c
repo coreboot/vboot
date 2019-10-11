@@ -95,8 +95,6 @@ static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 	return retval;
 }
 
-#define CONFIRM_KEY_DELAY 20  /* Check confirm screen keys every 20ms */
-
 int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -161,14 +159,11 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			}
 			VbCheckDisplayKey(ctx, key, NULL);
 		}
-		VbExSleepMs(CONFIRM_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 	} while (!shutdown_requested);
 
 	return -1;
 }
-
-/* Delay in developer ui */
-#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
 
 /*
  * User interface for selecting alternative firmware
@@ -217,7 +212,7 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 			VbCheckDisplayKey(ctx, key, NULL);
 			break;
 		}
-		VbExSleepMs(DEV_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 	} while (active);
 
 	/* Back to developer screen */
@@ -306,7 +301,7 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 			VbCheckDisplayKey(ctx, key, &data);
 			break;
 		}
-		VbExSleepMs(DEV_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 	} while (1);
 
 	return VB2_SUCCESS;
@@ -373,7 +368,7 @@ static vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 			VbCheckDisplayKey(ctx, key, &data);
 			break;
 		}
-		VbExSleepMs(DEV_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 	} while (1);
 
 	return VB2_SUCCESS;
@@ -463,7 +458,7 @@ static vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 			break;
 		}
 		if (active) {
-			VbExSleepMs(DEV_KEY_DELAY);
+			VbExSleepMs(KEY_DELAY_MS);
 		}
 	} while (active);
 
@@ -750,7 +745,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		}
 
-		VbExSleepMs(DEV_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 	} while(vb2_audio_looping());
 
  fallout:
@@ -788,18 +783,12 @@ vb2_error_t VbBootDiagnostic(struct vb2_context *ctx)
 	return retval;
 }
 
-/* Delay in recovery mode */
-#define REC_DISK_DELAY       1000     /* Check disks every 1s */
-#define REC_KEY_DELAY        20       /* Check keys every 20ms */
-#define REC_MEDIA_INIT_DELAY 500      /* Check removable media every 500ms */
-
 static vb2_error_t recovery_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbSharedDataHeader *shared = sd->vbsd;
 	uint32_t retval;
 	uint32_t key;
-	int i;
 	const char release_button_msg[] =
 		"Release the recovery button and try again\n";
 	const char recovery_pressed_msg[] =
@@ -837,14 +826,13 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 				  vb2_check_diagnostic_key(ctx, key)) !=
 				  VB2_SUCCESS)
 				return retval;
-			VbExSleepMs(REC_KEY_DELAY);
+			VbExSleepMs(KEY_DELAY_MS);
 		}
 	}
 
 	/* Loop and wait for a recovery image */
 	VB2_DEBUG("VbBootRecovery() waiting for a recovery image\n");
 	while (1) {
-		VB2_DEBUG("VbBootRecovery() attempting to load kernel2\n");
 		retval = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
 
 		if (VB2_SUCCESS == retval)
@@ -855,80 +843,63 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 				VB_SCREEN_RECOVERY_NO_GOOD,
 				0, NULL);
 
+		key = VbExKeyboardRead();
 		/*
-		 * Scan keyboard more frequently than media, since x86
-		 * platforms don't like to scan USB too rapidly.
+		 * We might want to enter dev-mode from the Insert
+		 * screen if all of the following are true:
+		 *   - user pressed Ctrl-D
+		 *   - we can honor the virtual dev switch
+		 *   - not already in dev mode
+		 *   - user forced recovery mode
 		 */
-		for (i = 0; i < REC_DISK_DELAY; i += REC_KEY_DELAY) {
-			key = VbExKeyboardRead();
-			/*
-			 * We might want to enter dev-mode from the Insert
-			 * screen if all of the following are true:
-			 *   - user pressed Ctrl-D
-			 *   - we can honor the virtual dev switch
-			 *   - not already in dev mode
-			 *   - user forced recovery mode
-			 */
-			if (key == VB_KEY_CTRL('D') &&
-			    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
-			    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {
-				if (!(shared->flags &
-				      VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
-				    VbExGetSwitches(
-				    VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
-					/*
-					 * Is the presence button stuck?  In
-					 * any case we don't like this.  Beep
-					 * and ignore.
-					 */
-					vb2_error_notify(release_button_msg,
-							 recovery_pressed_msg,
-							 VB_BEEP_NOT_ALLOWED);
-					continue;
-				}
-
-				/* Ask the user to confirm entering dev-mode */
-				VbDisplayScreen(ctx,
-						VB_SCREEN_RECOVERY_TO_DEV,
-						0, NULL);
-				/* SPACE means no... */
-				uint32_t vbc_flags =
-					VB_CONFIRM_SPACE_MEANS_NO |
-					VB_CONFIRM_MUST_TRUST_KEYBOARD;
-				switch (VbUserConfirms(ctx, vbc_flags)) {
-				case 1:
-					VB2_DEBUG("Enabling dev-mode...\n");
-					if (VB2_SUCCESS != SetVirtualDevMode(1))
-						return VBERROR_TPM_SET_BOOT_MODE_STATE;
-					VB2_DEBUG("Reboot so it will take "
-						  "effect\n");
-					if (VbExGetSwitches
-					    (VB_SWITCH_FLAG_ALLOW_USB_BOOT))
-						VbAllowUsbBoot(ctx);
-					return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-				case -1:
-					VB2_DEBUG("Shutdown requested\n");
-					return VBERROR_SHUTDOWN_REQUESTED;
-				default: /* zero, actually */
-					VB2_DEBUG("Not enabling dev-mode\n");
-					/*
-					 * Jump out of the outer loop to
-					 * refresh the display quickly.
-					 */
-					i = 4;
-					break;
-				}
-			} else if ((retval =
-				    vb2_check_diagnostic_key(ctx, key)) !=
-				    VB2_SUCCESS) {
-				return retval;
-			} else {
-				VbCheckDisplayKey(ctx, key, NULL);
+		if (key == VB_KEY_CTRL('D') &&
+		    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
+		    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {
+			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
+			    VbExGetSwitches(
+					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
+				/*
+				 * Is the presence button stuck?  In any case
+				 * we don't like this.  Beep and ignore.
+				 */
+				vb2_error_notify(release_button_msg,
+						 recovery_pressed_msg,
+						 VB_BEEP_NOT_ALLOWED);
+				continue;
 			}
-			if (VbWantShutdown(ctx, key))
+
+			/* Ask the user to confirm entering dev-mode */
+			VbDisplayScreen(ctx, VB_SCREEN_RECOVERY_TO_DEV,
+					0, NULL);
+			/* SPACE means no... */
+			uint32_t vbc_flags = VB_CONFIRM_SPACE_MEANS_NO |
+					     VB_CONFIRM_MUST_TRUST_KEYBOARD;
+			switch (VbUserConfirms(ctx, vbc_flags)) {
+			case 1:
+				VB2_DEBUG("Enabling dev-mode...\n");
+				if (VB2_SUCCESS != SetVirtualDevMode(1))
+					return VBERROR_TPM_SET_BOOT_MODE_STATE;
+				VB2_DEBUG("Reboot so it will take effect\n");
+				if (VbExGetSwitches
+				    (VB_SWITCH_FLAG_ALLOW_USB_BOOT))
+					VbAllowUsbBoot(ctx);
+				return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+			case -1:
+				VB2_DEBUG("Shutdown requested\n");
 				return VBERROR_SHUTDOWN_REQUESTED;
-			VbExSleepMs(REC_KEY_DELAY);
+			default: /* zero, actually */
+				VB2_DEBUG("Not enabling dev-mode\n");
+				break;
+			}
+		} else if ((retval = vb2_check_diagnostic_key(ctx, key)) !=
+			   VB2_SUCCESS) {
+			return retval;
+		} else {
+			VbCheckDisplayKey(ctx, key, NULL);
 		}
+		if (VbWantShutdown(ctx, key))
+			return VBERROR_SHUTDOWN_REQUESTED;
+		VbExSleepMs(KEY_DELAY_MS);
 	}
 
 	return VB2_SUCCESS;
