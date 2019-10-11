@@ -8,6 +8,8 @@
 #ifndef VBOOT_REFERENCE_VBOOT_UI_COMMON_H_
 #define VBOOT_REFERENCE_VBOOT_UI_COMMON_H_
 
+#define KEY_DELAY_MS	20	/* Delay between key scans in UI loops */
+
 enum vb2_beep_type {
 	VB_BEEP_FAILED,		/* Permitted but the operation failed */
 	VB_BEEP_NOT_ALLOWED,	/* Operation disabled by user setting */

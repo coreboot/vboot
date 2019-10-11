@@ -500,9 +500,6 @@ static vb2_error_t vb2_handle_menu_input(struct vb2_context *ctx,
 	return VBERROR_KEEP_LOOPING;
 }
 
-/* Delay in developer menu */
-#define DEV_KEY_DELAY        20       /* Check keys every 20ms */
-
 /* Master table of all menus. Menus with size == 0 count as menuless screens. */
 static struct vb2_menu menus[VB_MENU_COUNT] = {
 	[VB_MENU_DEV_WARNING] = {
@@ -815,7 +812,7 @@ static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 		if (key != 0)
 			vb2_audio_start(ctx);
 
-		VbExSleepMs(DEV_KEY_DELAY);
+		VbExSleepMs(KEY_DELAY_MS);
 
 		/* If dev mode was disabled, loop forever (never timeout) */
 	} while (disable_dev_boot ? 1 : vb2_audio_looping());
@@ -867,11 +864,6 @@ static vb2_error_t broken_ui(struct vb2_context *ctx)
 	}
 }
 
-/* Delay in recovery mode */
-#define REC_DISK_DELAY       1000     /* Check disks every 1s */
-#define REC_KEY_DELAY        20       /* Check keys every 20ms */
-#define REC_MEDIA_INIT_DELAY 500      /* Check removable media every 500ms */
-
 /**
  * Main function that handles recovery menu functionality
  *
@@ -883,13 +875,11 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 	uint32_t key;
 	uint32_t key_flags;
 	vb2_error_t ret;
-	int i;
 
 	/* Loop and wait for a recovery image */
 	VB2_DEBUG("waiting for a recovery image\n");
 	usb_nogood = -1;
 	while (1) {
-		VB2_DEBUG("attempting to load kernel2\n");
 		ret = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
 
 		if (VB2_SUCCESS == ret)
@@ -901,25 +891,18 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 			enter_recovery_base_screen(ctx);
 		}
 
-		/*
-		 * Scan keyboard more frequently than media, since x86
-		 * platforms don't like to scan USB too rapidly.
-		 */
-		for (i = 0; i < REC_DISK_DELAY; i += REC_KEY_DELAY) {
-			key = VbExKeyboardReadWithFlags(&key_flags);
-			if (key == VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS) {
-				if (key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)
-					enter_to_dev_menu(ctx);
-				else
-					VB2_DEBUG("ERROR: untrusted combo?!\n");
-			} else {
-				ret = vb2_handle_menu_input(ctx, key,
-							    key_flags);
-				if (ret != VBERROR_KEEP_LOOPING)
-					return ret;
-			}
-			VbExSleepMs(REC_KEY_DELAY);
+		key = VbExKeyboardReadWithFlags(&key_flags);
+		if (key == VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS) {
+			if (key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)
+				enter_to_dev_menu(ctx);
+			else
+				VB2_DEBUG("ERROR: untrusted combo?!\n");
+		} else {
+			ret = vb2_handle_menu_input(ctx, key, key_flags);
+			if (ret != VBERROR_KEEP_LOOPING)
+				return ret;
 		}
+		VbExSleepMs(KEY_DELAY_MS);
 	}
 }
 

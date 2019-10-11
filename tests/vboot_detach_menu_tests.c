@@ -1808,7 +1808,10 @@ static void VbBootRecTest(void)
 	mock_keypress[2] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // language
 	mock_keypress[3] = VB_BUTTON_POWER_SHORT_PRESS;
 	vbtlk_retval[0] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
-	vbtlk_retval[1] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[1] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[2] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[3] = VBERROR_NO_DISK_FOUND - VB_DISK_FLAG_REMOVABLE;
+	vbtlk_retval[4] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootRecoveryMenu(&ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Drop back to NOGOOD from LANGUAGE when inserting invalid USB");
 	TEST_EQ(shutdown_request_calls_left, 0, "  timed out");
