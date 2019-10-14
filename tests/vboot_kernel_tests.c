@@ -335,6 +335,12 @@ vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 	return VB2_SUCCESS;
 }
 
+/* Make sure nothing tested here ever calls this directly. */
+void vb2api_fail(struct vb2_context *c, uint8_t reason, uint8_t subcode)
+{
+	TEST_TRUE(0, "  called vb2api_fail()");
+}
+
 /**
  * Test reading/writing GPT
  */
@@ -589,6 +595,10 @@ static void ReadWriteGptTest(void)
 static void TestLoadKernel(int expect_retval, const char *test_name)
 {
 	TEST_EQ(LoadKernel(&ctx, &lkp), expect_retval, test_name);
+
+	/* LoadKernel() should never request recovery directly. */
+	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
+		0, "  recovery request");
 }
 
 /**
@@ -616,8 +626,6 @@ static void LoadKernelTest(void)
 	TEST_EQ(lkp.bootloader_size, 0x1234, "  bootloader size");
 	TEST_STR_EQ((char *)lkp.partition_guid, "FakeGuid", "  guid");
 	TEST_EQ(gpt_flag_external, 0, "GPT was internal");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		0, "  recovery request");
 
 	ResetMocks();
 	mock_parts[1].start = 300;
@@ -630,15 +638,11 @@ static void LoadKernelTest(void)
 	ResetMocks();
 	mock_parts[0].size = 0;
 	TestLoadKernel(VBERROR_NO_KERNEL_FOUND, "No kernels");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_RW_NO_KERNEL, "  recovery request");
 
 	/* Skip kernels which are too small */
 	ResetMocks();
 	mock_parts[0].size = 10;
 	TestLoadKernel(VBERROR_INVALID_KERNEL_FOUND, "Too small");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_RW_INVALID_OS, "  recovery request");
 
 	ResetMocks();
 	disk_read_to_fail = 100;

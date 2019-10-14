@@ -436,7 +436,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t retval = VB2_ERROR_UNKNOWN;
-	int recovery = VB2_RECOVERY_LK_UNSPECIFIED;
 	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
@@ -647,20 +646,13 @@ gpt_done:
 		retval = VB2_SUCCESS;
 	} else if (found_partitions > 0) {
 		shcall->check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
-		recovery = VB2_RECOVERY_RW_INVALID_OS;
 		retval = VBERROR_INVALID_KERNEL_FOUND;
 	} else {
 		shcall->check_result = VBSD_LKC_CHECK_NO_PARTITIONS;
-		recovery = VB2_RECOVERY_RW_NO_KERNEL;
 		retval = VBERROR_NO_KERNEL_FOUND;
 	}
 
 load_kernel_exit:
-	/* Store recovery request, if any */
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-		   VB2_SUCCESS != retval ?
-		   recovery : VB2_RECOVERY_NOT_REQUESTED);
-
 	shcall->return_code = (uint8_t)retval;
 	return retval;
 }

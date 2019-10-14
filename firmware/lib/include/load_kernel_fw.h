@@ -62,8 +62,7 @@ typedef struct LoadKernelParams {
  * @param ctx		Vboot context
  * @param params	Params specific to loading the kernel
  *
- * Returns VB2_SUCCESS if successful.  If unsuccessful, sets a recovery
- * reason via VbNvStorage and returns an error code.
+ * Returns VB2_SUCCESS if successful.  If unsuccessful, returns an error code.
  */
 vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params);
 
