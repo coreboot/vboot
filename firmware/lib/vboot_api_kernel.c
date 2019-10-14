@@ -121,19 +121,21 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	}
 
 	/* If we drop out of the loop, we didn't find any usable kernel. */
-	switch (rv) {
-	case VBERROR_INVALID_KERNEL_FOUND:
-		vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);
-		break;
-	case VBERROR_NO_KERNEL_FOUND:
-		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
-		break;
-	case VBERROR_NO_DISK_FOUND:
-		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
-		break;
-	default:
-		vb2api_fail(ctx, VB2_RECOVERY_LK_UNSPECIFIED, rv);
-		break;
+	if (get_info_flags & VB_DISK_FLAG_FIXED) {
+		switch (rv) {
+		case VBERROR_INVALID_KERNEL_FOUND:
+			vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);
+			break;
+		case VBERROR_NO_KERNEL_FOUND:
+			vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
+			break;
+		case VBERROR_NO_DISK_FOUND:
+			vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
+			break;
+		default:
+			vb2api_fail(ctx, VB2_RECOVERY_LK_UNSPECIFIED, rv);
+			break;
+		}
 	}
 
 	/* If we didn't find any good kernels, don't return a disk handle. */

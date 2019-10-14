@@ -198,8 +198,6 @@ static vb2_error_t boot_usb_action(struct vb2_context *ctx)
 		return VB2_SUCCESS;
 	}
 
-	/* Loading kernel failed. Clear recovery request from that. */
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);
 	vb2_flash_screen(ctx);
 	vb2_error_notify(no_kernel, NULL, VB_BEEP_FAILED);
 	return VBERROR_KEEP_LOOPING;
@@ -893,15 +891,6 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 	while (1) {
 		VB2_DEBUG("attempting to load kernel2\n");
 		ret = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
-
-		/*
-		 * Clear recovery requests from failed kernel loading, since
-		 * we're already in recovery mode.  Do this now, so that
-		 * powering off after inserting an invalid disk doesn't leave
-		 * us stuck in recovery mode.
-		 */
-		vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-			   VB2_RECOVERY_NOT_REQUESTED);
 
 		if (VB2_SUCCESS == ret)
 			return ret; /* Found a recovery kernel */
