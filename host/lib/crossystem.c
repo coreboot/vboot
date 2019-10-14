@@ -35,7 +35,7 @@
 
 /* Fields that GetVdatString() can get */
 typedef enum VdatStringField {
-	VDAT_STRING_TIMERS = 0,           /* Timer values */
+	VDAT_STRING_DEPRECATED_TIMERS = 0,  /* Timer values */
 	VDAT_STRING_LOAD_FIRMWARE_DEBUG,  /* LoadFirmware() debug information */
 	VDAT_STRING_LOAD_KERNEL_DEBUG,    /* LoadKernel() debug information */
 	VDAT_STRING_MAINFW_ACT            /* Active main firmware */
@@ -346,19 +346,6 @@ static char *GetVdatString(char *dest, int size, VdatStringField field)
 		return NULL;
 
 	switch (field) {
-		case VDAT_STRING_TIMERS:
-			snprintf(dest, size,
-				 "LFS=%" PRIu64 ",%" PRIu64
-				 " LF=%" PRIu64 ",%" PRIu64
-				 " LK=%" PRIu64 ",%" PRIu64,
-				 sh->timer_vb_init_enter,
-				 sh->timer_vb_init_exit,
-				 sh->timer_vb_select_firmware_enter,
-				 sh->timer_vb_select_firmware_exit,
-				 sh->timer_vb_select_and_load_kernel_enter,
-				 sh->timer_vb_select_and_load_kernel_exit);
-			break;
-
 		case VDAT_STRING_LOAD_FIRMWARE_DEBUG:
 			value = GetVdatLoadFirmwareDebug(dest, size, sh);
 			break;
@@ -604,8 +591,6 @@ const char *VbGetSystemPropertyString(const char *name, char *dest,
 		}
 	} else if (!strcasecmp(name, "mainfw_act")) {
 		return GetVdatString(dest, size, VDAT_STRING_MAINFW_ACT);
-	} else if (!strcasecmp(name, "vdat_timers")) {
-		return GetVdatString(dest, size, VDAT_STRING_TIMERS);
 	} else if (!strcasecmp(name, "vdat_lfdebug")) {
 		return GetVdatString(dest, size,
 				     VDAT_STRING_LOAD_FIRMWARE_DEBUG);

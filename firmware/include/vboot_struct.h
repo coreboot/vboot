@@ -402,9 +402,9 @@ typedef struct VbSharedDataHeader {
 	uint64_t kernel_subkey_data_size;
 
 	/*
-	 * Timer values from VbExGetTimer().  Unused values are set to 0.  Note
-	 * that these are now the enter/exit times for the wrapper API entry
-	 * points; see crosbug.com/17018. */
+	 * These timer values are all deprecated.  coreboot tstamp_table should
+	 * be used instead.  See crosbug.com/1014102.
+	 */
 	/* VbInit() enter/exit */
 	uint64_t timer_vb_init_enter;
 	uint64_t timer_vb_init_exit;

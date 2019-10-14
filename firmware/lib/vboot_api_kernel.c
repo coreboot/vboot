@@ -240,9 +240,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 		return VBERROR_INIT_SHARED_DATA;
 	}
 
-	/* Start timer */
-	shared->timer_vb_select_and_load_kernel_enter = VbExGetTimer();
-
 	/* Translate vboot1 flags back to vboot2 */
 	if (shared->recovery_reason)
 		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
@@ -365,13 +362,6 @@ static vb2_error_t vb2_kernel_phase4(struct vb2_context *ctx,
 static void vb2_kernel_cleanup(struct vb2_context *ctx)
 {
 	vb2_nv_commit(ctx);
-
-	/* vb2_shared_data may not have been initialized, and we may not have a
-	   proper vbsd value. */
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	if (sd->vbsd)
-		/* Stop timer */
-		sd->vbsd->timer_vb_select_and_load_kernel_exit = VbExGetTimer();
 }
 
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
