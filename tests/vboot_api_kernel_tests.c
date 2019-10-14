@@ -257,6 +257,38 @@ test_case_t test[] = {
 		.expected_to_load_disk = 0,
 		.expected_return_val = VBERROR_NO_KERNEL_FOUND,
 	},
+	{
+		.name = "invalid kernel (removable)",
+		.want_flags = VB_DISK_FLAG_REMOVABLE,
+		.disks_to_provide = {
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "corrupted"},
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VBERROR_INVALID_KERNEL_FOUND,
+					  VBERROR_NO_KERNEL_FOUND},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = DONT_CARE,
+		.expected_to_load_disk = 0,
+		.expected_return_val = VBERROR_INVALID_KERNEL_FOUND,
+	},
+	{
+		.name = "no kernel (removable)",
+		.want_flags = VB_DISK_FLAG_REMOVABLE,
+		.disks_to_provide = {
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VBERROR_NO_KERNEL_FOUND},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = DONT_CARE,
+		.expected_to_load_disk = 0,
+		.expected_return_val = VBERROR_NO_KERNEL_FOUND,
+	},
 };
 
 /****************************************************************************/

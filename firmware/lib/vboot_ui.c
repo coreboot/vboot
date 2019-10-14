@@ -91,14 +91,6 @@ static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 		vb2_error_notify("Could not boot from USB\n",
 				 "VbBootDeveloper() - no kernel found on USB\n",
 				 VB_BEEP_FAILED);
-		/*
-		 * Clear recovery requests from failed
-		 * kernel loading, so that powering off
-		 * at this point doesn't put us into
-		 * recovery mode.
-		 */
-		vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-			   VB2_RECOVERY_NOT_REQUESTED);
 	}
 	return retval;
 }
@@ -854,15 +846,6 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 	while (1) {
 		VB2_DEBUG("VbBootRecovery() attempting to load kernel2\n");
 		retval = VbTryLoadKernel(ctx, VB_DISK_FLAG_REMOVABLE);
-
-		/*
-		 * Clear recovery requests from failed kernel loading, since
-		 * we're already in recovery mode.  Do this now, so that
-		 * powering off after inserting an invalid disk doesn't leave
-		 * us stuck in recovery mode.
-		 */
-		vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-			   VB2_RECOVERY_NOT_REQUESTED);
 
 		if (VB2_SUCCESS == retval)
 			break; /* Found a recovery kernel */
