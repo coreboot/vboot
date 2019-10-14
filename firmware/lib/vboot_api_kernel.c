@@ -57,7 +57,7 @@ uint32_t vb2_get_fwmp_flags(void)
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
-	vb2_error_t rv;
+	vb2_error_t rv = VBERROR_NO_DISK_FOUND;
 	VbDiskInfo* disk_info = NULL;
 	uint32_t disk_count = 0;
 	uint32_t i;
@@ -69,19 +69,15 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	lkp.disk_handle = NULL;
 
 	/* Find disks */
-	rv = VbExDiskGetInfo(&disk_info, &disk_count, get_info_flags);
-	if (VB2_SUCCESS != rv)
+	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count,
+					   get_info_flags))
 		disk_count = 0;
 
 	VB2_DEBUG("VbTryLoadKernel() found %d disks\n", (int)disk_count);
-	if (0 == disk_count) {
-		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
-		return VBERROR_NO_DISK_FOUND;
-	}
 
 	/* Loop over disks */
 	for (i = 0; i < disk_count; i++) {
-		VB2_DEBUG("VbTryLoadKernel() trying disk %d\n", (int)i);
+		VB2_DEBUG("trying disk %d\n", (int)i);
 		/*
 		 * Sanity-check what we can. FWIW, VbTryLoadKernel() is always
 		 * called with only a single bit set in get_info_flags.
@@ -109,33 +105,40 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 						?: lkp.gpt_lba_count;
 		lkp.boot_flags |= disk_info[i].flags & VB_DISK_FLAG_EXTERNAL_GPT
 				? BOOT_FLAG_EXTERNAL_GPT : 0;
-		rv = LoadKernel(ctx, &lkp);
 
-		VB2_DEBUG("VbTryLoadKernel() LoadKernel() = %d\n", rv);
+		vb2_error_t new_rv = LoadKernel(ctx, &lkp);
+		VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
 
-		/*
-		 * Stop now if we found a kernel.
-		 *
-		 * TODO: If recovery requested, should track the farthest we
-		 * get, instead of just returning the value from the last disk
-		 * attempted.
-		 */
-		if (VB2_SUCCESS == rv)
-			break;
+		/* Stop now if we found a kernel. */
+		if (VB2_SUCCESS == new_rv) {
+			VbExDiskFreeInfo(disk_info, lkp.disk_handle);
+			return VB2_SUCCESS;
+		}
+
+		/* Don't update error if we already have a more specific one. */
+		if (VBERROR_INVALID_KERNEL_FOUND != rv)
+			rv = new_rv;
+	}
+
+	/* If we drop out of the loop, we didn't find any usable kernel. */
+	switch (rv) {
+	case VBERROR_INVALID_KERNEL_FOUND:
+		vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);
+		break;
+	case VBERROR_NO_KERNEL_FOUND:
+		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
+		break;
+	case VBERROR_NO_DISK_FOUND:
+		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_DISK, rv);
+		break;
+	default:
+		vb2api_fail(ctx, VB2_RECOVERY_LK_UNSPECIFIED, rv);
+		break;
 	}
 
 	/* If we didn't find any good kernels, don't return a disk handle. */
-	if (VB2_SUCCESS != rv) {
-		vb2api_fail(ctx, VB2_RECOVERY_RW_NO_KERNEL, rv);
-		lkp.disk_handle = NULL;
-	}
+	VbExDiskFreeInfo(disk_info, NULL);
 
-	VbExDiskFreeInfo(disk_info, lkp.disk_handle);
-
-	/*
-	 * Pass through return code.  Recovery reason (if any) has already been
-	 * set by LoadKernel().
-	 */
 	return rv;
 }
 
