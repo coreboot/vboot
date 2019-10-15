@@ -585,15 +585,6 @@ static void VbBootDevTest(void)
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested by keyboard");
 
-	/* Space goes straight to recovery if no virtual dev switch */
-	ResetMocks();
-	mock_keypress[0] = ' ';
-	TEST_EQ(VbBootDeveloper(&ctx),
-		VBERROR_LOAD_KERNEL_RECOVERY,
-		"Space = recovery");
-	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_RW_DEV_SCREEN, "  recovery reason");
-
 	/* Space asks to disable virtual dev switch */
 	ResetMocks();
 	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
