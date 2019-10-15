@@ -631,7 +631,7 @@ static void LoadKernelTest(void)
 	mock_parts[0].size = 0;
 	TestLoadKernel(VBERROR_NO_KERNEL_FOUND, "No kernels");
 	TEST_EQ(vb2_nv_get(&ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_RW_NO_OS, "  recovery request");
+		VB2_RECOVERY_RW_NO_KERNEL, "  recovery request");
 
 	/* Skip kernels which are too small */
 	ResetMocks();

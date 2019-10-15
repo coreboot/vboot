@@ -118,46 +118,18 @@ const char *RecoveryReasonString(uint8_t code)
 		return "recovery button pressed";
 	case VB2_RECOVERY_RO_INVALID_RW:
 		return "RW firmware failed signature check";
-	case VB2_RECOVERY_RO_S3_RESUME:
-		return "S3 resume failed";
-	case VB2_RECOVERY_DEP_RO_TPM_ERROR:
-		return "TPM error in read-only firmware";
 	case VB2_RECOVERY_RO_SHARED_DATA:
 		return "Shared data error in read-only firmware";
-	case VB2_RECOVERY_RO_TEST_S3:
-		return "Test error from S3Resume()";
-	case VB2_RECOVERY_RO_TEST_LFS:
-		return "Test error from LoadFirmwareSetup()";
-	case VB2_RECOVERY_RO_TEST_LF:
-		return "Test error from LoadFirmware()";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_NOT_DONE:
-		return "RW firmware check not done";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_DEV_MISMATCH:
-		return "RW firmware developer flag mismatch";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_REC_MISMATCH:
-		return "RW firmware recovery flag mismatch";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
-		VBSD_LF_CHECK_VERIFY_KEYBLOCK:
+	case VB2_RECOVERY_FW_KEYBLOCK:
 		return "RW firmware unable to verify key block";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_KEY_ROLLBACK:
+	case VB2_RECOVERY_FW_KEY_ROLLBACK:
 		return "RW firmware key version rollback detected";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
-		VBSD_LF_CHECK_DATA_KEY_PARSE:
-		return "RW firmware unable to parse data key";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
-		VBSD_LF_CHECK_VERIFY_PREAMBLE:
+	case VB2_RECOVERY_FW_PREAMBLE:
 		return "RW firmware unable to verify preamble";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_FW_ROLLBACK:
+	case VB2_RECOVERY_FW_ROLLBACK:
 		return "RW firmware version rollback detected";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_GET_FW_BODY:
-		return "RW firmware unable to get firmware body";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
-		VBSD_LF_CHECK_HASH_WRONG_SIZE:
-		return "RW firmware hash is wrong size";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_VERIFY_BODY:
+	case VB2_RECOVERY_FW_BODY:
 		return "RW firmware unable to verify firmware body";
-	case VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN + VBSD_LF_CHECK_NO_RO_NORMAL:
-		return "RW firmware read-only normal path is not supported";
 	case VB2_RECOVERY_RO_FIRMWARE:
 		return "Firmware problem outside of verified boot";
 	case VB2_RECOVERY_RO_TPM_REBOOT:
@@ -166,23 +138,18 @@ const char *RecoveryReasonString(uint8_t code)
 		return "EC software sync error";
 	case VB2_RECOVERY_EC_UNKNOWN_IMAGE:
 		return "EC software sync unable to determine active EC image";
-	case VB2_RECOVERY_DEP_EC_HASH:
-		return "EC software sync error obtaining EC image hash";
 	case VB2_RECOVERY_EC_EXPECTED_IMAGE:
 		return "EC software sync error "
 			"obtaining expected EC image from BIOS";
-	case VB2_RECOVERY_EC_EXPECTED_HASH:
-		return "EC software sync error "
-			"obtaining expected EC hash from BIOS";
-	case VB2_RECOVERY_EC_HASH_MISMATCH:
-		return "EC software sync error "
-			"comparing expected EC hash and image";
 	case VB2_RECOVERY_EC_UPDATE:
 		return "EC software sync error updating EC";
 	case VB2_RECOVERY_EC_JUMP_RW:
 		return "EC software sync unable to jump to EC-RW";
 	case VB2_RECOVERY_EC_PROTECT:
 		return "EC software sync protection error";
+	case VB2_RECOVERY_EC_EXPECTED_HASH:
+		return "EC software sync error "
+			"obtaining expected EC hash from BIOS";
 	case VB2_RECOVERY_SECDATA_FIRMWARE_INIT:
 		return "Firmware secure NVRAM (TPM) initialization error";
 	case VB2_RECOVERY_GBB_HEADER:
@@ -197,22 +164,10 @@ const char *RecoveryReasonString(uint8_t code)
 		return "Error updating AUX firmware";
 	case VB2_RECOVERY_RO_UNSPECIFIED:
 		return "Unspecified/unknown error in RO firmware";
-	case VB2_RECOVERY_RW_DEV_SCREEN:
-		return "User requested recovery from dev-mode warning screen";
-	case VB2_RECOVERY_RW_NO_OS:
-		return "No OS kernel detected (or kernel rollback attempt?)";
 	case VB2_RECOVERY_RW_INVALID_OS:
-		return "OS kernel failed signature check";
-	case VB2_RECOVERY_DEP_RW_TPM_ERROR:
-		return "TPM error in rewritable firmware";
-	case VB2_RECOVERY_RW_DEV_MISMATCH:
-		return "RW firmware in dev mode, but dev switch is off";
+		return "OS kernel or rootfs failed signature check";
 	case VB2_RECOVERY_RW_SHARED_DATA:
 		return "Shared data error in rewritable firmware";
-	case VB2_RECOVERY_RW_TEST_LK:
-		return "Test error from LoadKernel()";
-	case VB2_RECOVERY_DEP_RW_NO_DISK:
-		return "No bootable disk found";
 	case VB2_RECOVERY_TPM_E_FAIL:
 		return "TPM error that was not fixed by reboot";
 	case VB2_RECOVERY_RO_TPM_S_ERROR:
@@ -239,28 +194,24 @@ const char *RecoveryReasonString(uint8_t code)
 		return "No bootable storage device in system";
 	case VB2_RECOVERY_RW_NO_KERNEL:
 		return "No bootable kernel found on disk";
-	case VB2_RECOVERY_RW_BCB_ERROR:
-		return "BCB partition error on disk";
 	case VB2_RECOVERY_SECDATA_KERNEL_INIT:
 		return "Kernel secure NVRAM (TPM) initialization error";
 	case VB2_RECOVERY_RO_TPM_REC_HASH_L_ERROR:
 		return "Recovery hash space lock error in RO firmware";
+	case VB2_RECOVERY_TPM_DISABLE_FAILED:
+		return "Failed to disable TPM before running untrusted code";
+	case VB2_RECOVERY_ALTFW_HASH_FAILED:
+		return "Verification of alternative firmware payload failed";
 	case VB2_RECOVERY_RW_UNSPECIFIED:
 		return "Unspecified/unknown error in RW firmware";
-	case VB2_RECOVERY_KE_DM_VERITY:
-		return "DM-verity error";
-	case VB2_RECOVERY_KE_UNSPECIFIED:
-		return "Unspecified/unknown error in kernel";
 	case VB2_RECOVERY_US_TEST:
 		return "Recovery mode test from user-mode";
-	case VB2_RECOVERY_BCB_USER_MODE:
-		return "User-mode requested recovery via BCB";
 	case VB2_RECOVERY_TRAIN_AND_REBOOT:
 		return "User-mode requested DRAM train and reboot";
 	case VB2_RECOVERY_US_UNSPECIFIED:
 		return "Unspecified/unknown error in user-mode";
 	}
-	return "We have no idea what this means";
+	return "Unknown or deprecated error code";
 }
 
 #define DEBUG_INFO_SIZE 512

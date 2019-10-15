@@ -655,13 +655,10 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 					vb2_audio_start(ctx);
 				}
 			} else {
-				/*
-				 * No virtual dev-mode switch, so go directly
-				 * to recovery mode.
-				 */
+				/* This should never happen. */
 				VB2_DEBUG("going to recovery\n");
 				vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST,
-					   VB2_RECOVERY_RW_DEV_SCREEN);
+					   VB2_RECOVERY_RW_UNSPECIFIED);
 				return VBERROR_LOAD_KERNEL_RECOVERY;
 			}
 			break;

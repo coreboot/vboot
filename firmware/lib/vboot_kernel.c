@@ -651,7 +651,7 @@ gpt_done:
 		retval = VBERROR_INVALID_KERNEL_FOUND;
 	} else {
 		shcall->check_result = VBSD_LKC_CHECK_NO_PARTITIONS;
-		recovery = VB2_RECOVERY_RW_NO_OS;
+		recovery = VB2_RECOVERY_RW_NO_KERNEL;
 		retval = VBERROR_NO_KERNEL_FOUND;
 	}
 
