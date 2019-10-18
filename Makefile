@@ -783,7 +783,9 @@ TEST_KEYS = ${SRC_RUN}/tests/testkeys
 # Fuzzing binaries
 
 FUZZ_TEST_NAMES = \
-	tests/cgpt_fuzzer
+	tests/cgpt_fuzzer \
+	tests/vb2_keyblock_fuzzer \
+	tests/vb2_preamble_fuzzer
 
 FUZZ_TEST_BINS = $(addprefix ${BUILD}/,${FUZZ_TEST_NAMES})
 FUZZ_TEST_OBJS += $(addsuffix .o,${FUZZ_TEST_BINS})
