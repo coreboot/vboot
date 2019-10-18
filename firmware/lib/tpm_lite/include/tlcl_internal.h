@@ -39,7 +39,7 @@ static inline void ToTpmUint32(uint8_t *buffer, uint32_t x) {
  */
 __attribute__((unused))
 static inline void FromTpmUint32(const uint8_t *buffer, uint32_t *x) {
-	*x = ((buffer[0] << 24) |
+	*x = (((uint32_t)buffer[0] << 24) |
 	      (buffer[1] << 16) |
 	      (buffer[2] << 8) |
 	      buffer[3]);

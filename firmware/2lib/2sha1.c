@@ -195,7 +195,7 @@ static void sha1_transform(struct vb2_sha1_context *ctx)
 	int t;
 
 	for(t = 0; t < 16; ++t) {
-		uint32_t tmp = *p++ << 24;
+		uint32_t tmp = (uint32_t)*p++ << 24;
 		tmp |= *p++ << 16;
 		tmp |= *p++ << 8;
 		tmp |= *p++;

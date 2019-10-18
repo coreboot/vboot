@@ -591,7 +591,7 @@ uint32_t TlclInitNvAuthPolicy(uint32_t pcr_selection_bitmap,
 	uint32_t num_pcrs = 0;
 	int i;
 	for (i = 0; i < sizeof(pcr_selection_bitmap) * 8; ++i) {
-		if ((1 << i) & pcr_selection_bitmap) {
+		if ((1U << i) & pcr_selection_bitmap) {
 			num_pcrs++;
 		}
 	}

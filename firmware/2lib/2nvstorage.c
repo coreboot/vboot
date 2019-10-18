@@ -203,7 +203,8 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 		return (p[VB2_NV_OFFS_KERNEL_MAX_ROLLFORWARD1]
 			| (p[VB2_NV_OFFS_KERNEL_MAX_ROLLFORWARD2] << 8)
 			| (p[VB2_NV_OFFS_KERNEL_MAX_ROLLFORWARD3] << 16)
-			| (p[VB2_NV_OFFS_KERNEL_MAX_ROLLFORWARD4] << 24));
+			| ((uint32_t)p[VB2_NV_OFFS_KERNEL_MAX_ROLLFORWARD4]
+			   << 24));
 
 	case VB2_NV_FW_MAX_ROLLFORWARD:
 		/* Field only present in V2 */
@@ -213,7 +214,7 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 		return (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD1]
 			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD2] << 8)
 			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD3] << 16)
-			| (p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD4] << 24));
+			| ((uint32_t)p[VB2_NV_OFFS_FW_MAX_ROLLFORWARD4] << 24));
 
 	case VB2_NV_POST_EC_SYNC_DELAY:
 		return GETBIT(VB2_NV_OFFS_MISC,
