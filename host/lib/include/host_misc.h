@@ -81,7 +81,7 @@ vb2_error_t vb21_write_object(const char *filename, const void *buf);
 /**
  * Round up a size to a multiple of 32 bits (4 bytes).
  */
-static __inline const uint32_t roundup32(uint32_t v)
+static inline const uint32_t roundup32(uint32_t v)
 {
 	return (v + 3) & ~3;
 }

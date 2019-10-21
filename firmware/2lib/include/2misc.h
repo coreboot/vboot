@@ -20,7 +20,7 @@ struct vb2_workbuf;
  * @param ctx		Vboot context
  * @return The shared data pointer.
  */
-static __inline struct vb2_shared_data *vb2_get_sd(struct vb2_context *ctx)
+static inline struct vb2_shared_data *vb2_get_sd(struct vb2_context *ctx)
 {
 	return (struct vb2_shared_data *)ctx->workbuf;
 }

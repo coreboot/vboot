@@ -98,7 +98,7 @@ struct vb2_public_key;
  * @param v		Number to round up
  * @return The number, rounded up.
  */
-static __inline uint32_t vb2_wb_round_up(uint32_t v)
+static inline uint32_t vb2_wb_round_up(uint32_t v)
 {
 	return (v + VB2_WORKBUF_ALIGN - 1) & ~(VB2_WORKBUF_ALIGN - 1);
 }
@@ -303,7 +303,7 @@ int vb2_verify_packed_key_inside(const void *parent,
 /*
  * Helper functions to get data pointed to by a public key or signature.
  */
-static __inline uint8_t *vb2_signature_data(struct vb2_signature *sig)
+static inline uint8_t *vb2_signature_data(struct vb2_signature *sig)
 {
 	return (uint8_t *)sig + sig->sig_offset;
 }
@@ -316,7 +316,7 @@ static __inline uint8_t *vb2_signature_data(struct vb2_signature *sig)
  * @param sig		Signature pointer
  * @return VB2_SUCCESS, or non-zero if error.
  */
-static __inline vb2_error_t vb2_verify_signature_inside(
+static inline vb2_error_t vb2_verify_signature_inside(
 	const void *parent,
 	uint32_t parent_size,
 	const struct vb2_signature *sig)
