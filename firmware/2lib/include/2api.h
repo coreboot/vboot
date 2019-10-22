@@ -755,6 +755,36 @@ vb2_error_t vb2api_gbb_read_hwid(struct vb2_context *ctx, char *hwid,
  */
 vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 
+/**
+ * Sync the Embedded Controller device to the expected version.
+ *
+ * This function will check if EC software sync is allowed, and if it
+ * is, it will compare the expected image hash to the actual image
+ * hash.  If they are the same, the EC will simply jump to its RW
+ * firwmare.  Otherwise, the specified flash image will be updated to
+ * the new version, and the EC will reboot into its new firmware.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or non-zero if error.
+ */
+vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
+
+/**
+ * Sync all auxiliary firmware to the expected versions
+ *
+ * This function will first check if an auxfw update is needed and
+ * what the "severity" of that update is (i.e., if any auxfw devices
+ * exist and the relative quickness of updating it.  If the update is
+ * deemed slow, it may display a screen to notify the user.  The
+ * platform is then instructed to perform the update.  Finally, an EC
+ * reboot to its RO section is performed to ensure that auxfw devices
+ * are also reset and running the new firmware.
+ *
+ * @param ctx           Vboot2 context
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 
@@ -837,6 +867,55 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
  * @returns VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
+
+/*
+ * severity levels for an auxiliary firmware update request
+ */
+enum vb2_auxfw_update_severity {
+	/* no update needed and no protection needed */
+	VB_AUX_FW_NO_DEVICE = 0,
+	/* no update needed */
+	VB_AUX_FW_NO_UPDATE = 1,
+	/* update needed, can be done quickly */
+	VB_AUX_FW_FAST_UPDATE = 2,
+	/* update needed, "this would take a while..." */
+	VB_AUX_FW_SLOW_UPDATE = 3,
+};
+
+/*
+ * Check if any auxiliary firmware needs updating.
+ *
+ * This is called after the EC has been updated and is intended to
+ * version-check additional firmware blobs such as TCPCs.
+ *
+ * @param severity	return parameter for health of auxiliary firmware
+ *			(see vb2_auxfw_update_severity above)
+ * @return VBERROR_... error, VB2_SUCCESS on success.
+ */
+vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity);
+
+/*
+ * Perform auxiliary firmware update(s).
+ *
+ * This is called after the EC has been updated and is intended to
+ * update additional firmware blobs such as TCPCs.
+ *
+ * @return VBERROR_... error, VB2_SUCCESS on success.
+ */
+vb2_error_t vb2ex_auxfw_update(void);
+
+/*
+ * Notify client that vboot is done with Aux FW.
+ *
+ * If Aux FW sync was successful, this will be called at the end so that
+ * the client may perform actions that require the Aux FW to be in its
+ * final state.  This may include protecting the communcations tunnels that
+ * allow auxiliary firmware updates from the OS.
+ *
+ * @param ctx		Vboot context
+ * @return VBERROR_... error, VB2_SUCCESS on success.
+ */
+vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *ctx);
 
 /*
  * Abort vboot flow due to a failed assertion or broken assumption.

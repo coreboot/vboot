@@ -720,46 +720,6 @@ vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx);
  */
 vb2_error_t vb2ex_ec_battery_cutoff(void);
 
-/*
- * severity levels for an auxiliary firmware update request
- */
-enum vb2_auxfw_update_severity {
-	/* no update needed and no protection needed */
-	VB_AUX_FW_NO_DEVICE = 0,
-	/* no update needed */
-	VB_AUX_FW_NO_UPDATE = 1,
-	/* update needed, can be done quickly */
-	VB_AUX_FW_FAST_UPDATE = 2,
-	/* update needed, "this would take a while..." */
-	VB_AUX_FW_SLOW_UPDATE = 3,
-};
-
-/**
- * Perform auxiliary firmware checks.
- *
- * This is called after the EC has been updated and is intended to
- * version-check additional firmware blobs such as TCPCs.
- *
- * @param severity	return parameter for health of auxiliary firmware
- *			0: no update needed
- *			1: fast update needed
- *			2: slow update needed
- * @return VB2_SUCCESS, or error code on error.
- */
-
-vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity);
-
-/**
- * Perform auxiliary firmware update(s).
- *
- * This is called after the EC has been updated and is intended to
- * update additional firmware blobs such as TCPCs.
- *
- * @return VB2_SUCCESS, or error code on error.
- */
-
-vb2_error_t vb2ex_auxfw_update(void);
-
 /*****************************************************************************/
 /* Misc */
 
