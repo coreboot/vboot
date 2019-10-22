@@ -223,7 +223,7 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VB2_SUCCESS;
 }
 
-int VbExTrustEC(int devidx)
+int vb2ex_ec_trusted(void)
 {
 	return trust_ec;
 }

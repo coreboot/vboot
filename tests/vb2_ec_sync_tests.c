@@ -59,8 +59,8 @@ static uint32_t screens_count = 0;
 
 static vb2_error_t ec_aux_fw_retval;
 static int ec_aux_fw_update_req;
-static VbAuxFwUpdateSeverity_t ec_aux_fw_mock_severity;
-static VbAuxFwUpdateSeverity_t ec_aux_fw_update_severity;
+static enum vb2_auxfw_update_severity ec_aux_fw_mock_severity;
+static enum vb2_auxfw_update_severity ec_aux_fw_update_severity;
 static int ec_aux_fw_protected;
 
 /* Reset mock data (for use before each test) */
@@ -136,18 +136,18 @@ uint32_t VbExIsShutdownRequested(void)
 	return 0;
 }
 
-int VbExTrustEC(int devidx)
+int vb2ex_ec_trusted(void)
 {
 	return !mock_in_rw;
 }
 
-vb2_error_t VbExEcRunningRW(int devidx, int *in_rw)
+vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 {
 	*in_rw = mock_in_rw;
 	return in_rw_retval;
 }
 
-vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select)
+vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
 {
 	if (select == VB_SELECT_FIRMWARE_READONLY)
 		ec_ro_protected = 1;
@@ -156,20 +156,20 @@ vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select)
 	return protect_retval;
 }
 
-vb2_error_t VbExEcDisableJump(int devidx)
+vb2_error_t vb2ex_ec_disable_jump(void)
 {
 	return run_retval;
 }
 
-vb2_error_t VbExEcJumpToRW(int devidx)
+vb2_error_t vb2ex_ec_jump_to_rw(void)
 {
 	ec_run_image = 1;
 	mock_in_rw = 1;
 	return run_retval;
 }
 
-vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
-			    const uint8_t **hash, int *hash_size)
+vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
+				const uint8_t **hash, int *hash_size)
 {
 	*hash = select == VB_SELECT_FIRMWARE_READONLY ?
 		mock_ec_ro_hash : mock_ec_rw_hash;
@@ -178,8 +178,8 @@ vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 	return *hash_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
 }
 
-vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
-				   const uint8_t **image, int *image_size)
+vb2_error_t vb2ex_ec_get_expected_image(enum vb2_firmware_selection select,
+					const uint8_t **image, int *image_size)
 {
 	static uint8_t fake_image[64] = {5, 6, 7, 8};
 	*image = fake_image;
@@ -187,9 +187,8 @@ vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
 	return get_expected_retval;
 }
 
-vb2_error_t VbExEcGetExpectedImageHash(int devidx,
-				       enum VbSelectFirmware_t select,
-				       const uint8_t **hash, int *hash_size)
+vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
+					     const uint8_t **hash, int *hash_size)
 {
 	*hash = want_ec_hash;
 	*hash_size = want_ec_hash_size;
@@ -197,8 +196,8 @@ vb2_error_t VbExEcGetExpectedImageHash(int devidx,
 	return want_ec_hash_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
 }
 
-vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
-			      const uint8_t *image, int image_size)
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select,
+				  const uint8_t *image, int image_size)
 {
 	if (select == VB_SELECT_FIRMWARE_READONLY) {
 		ec_ro_updated = 1;
@@ -219,14 +218,14 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
+vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = ec_aux_fw_mock_severity;
 	ec_aux_fw_update_severity = ec_aux_fw_mock_severity;
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExUpdateAuxFw()
+vb2_error_t vb2ex_auxfw_update()
 {
 	if (ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE &&
 	    ec_aux_fw_update_severity != VB_AUX_FW_NO_UPDATE)
@@ -234,7 +233,7 @@ vb2_error_t VbExUpdateAuxFw()
 	return ec_aux_fw_retval;
 }
 
-vb2_error_t VbExEcVbootDone(int in_recovery)
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *c)
 {
 	ec_aux_fw_protected = ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE;
 	return ec_aux_fw_retval;

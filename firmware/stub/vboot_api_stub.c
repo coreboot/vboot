@@ -64,29 +64,29 @@ uint32_t VbExIsShutdownRequested(void)
 	return 0;
 }
 
-int VbExTrustEC(int devidx)
+int vb2ex_ec_trusted(void)
 {
 	return 1;
 }
 
-vb2_error_t VbExEcRunningRW(int devidx, int *in_rw)
+vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 {
 	*in_rw = 0;
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcJumpToRW(int devidx)
+vb2_error_t vb2ex_ec_jump_to_rw(void)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcDisableJump(int devidx)
+vb2_error_t vb2ex_ec_disable_jump(void)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
-			    const uint8_t **hash, int *hash_size)
+vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
+				const uint8_t **hash, int *hash_size)
 {
 	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
 
@@ -95,8 +95,8 @@ vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
-				   const uint8_t **image, int *image_size)
+vb2_error_t vb2ex_ec_get_expected_image(enum vb2_firmware_selection select,
+					const uint8_t **image, int *image_size)
 {
 	static uint8_t fake_image[64] = {5, 6, 7, 8};
 	*image = fake_image;
@@ -104,9 +104,8 @@ vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcGetExpectedImageHash(int devidx,
-				       enum VbSelectFirmware_t select,
-				       const uint8_t **hash, int *hash_size)
+vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
+					     const uint8_t **hash, int *hash_size)
 {
 	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
 
@@ -115,34 +114,34 @@ vb2_error_t VbExEcGetExpectedImageHash(int devidx,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
-			      const uint8_t *image, int image_size)
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select,
+				  const uint8_t *image, int image_size)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select)
+vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcVbootDone(int in_recovery)
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExEcBatteryCutOff(void)
+vb2_error_t vb2ex_ec_battery_cutoff(void)
 {
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity)
+vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = VB_AUX_FW_NO_UPDATE;
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExUpdateAuxFw(void)
+vb2_error_t vb2ex_auxfw_update(void)
 {
 	return VB2_SUCCESS;
 }
