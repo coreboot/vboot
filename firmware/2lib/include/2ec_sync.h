@@ -44,7 +44,7 @@ int ec_will_update_slowly(struct vb2_context *ctx);
  * @return VB2_SUCCESS or non-zero error code.
  */
 vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
-			       VbAuxFwUpdateSeverity_t *severity);
+				 enum vb2_auxfw_update_severity *severity);
 
 /**
  * Update and protect auxiliary firmware.

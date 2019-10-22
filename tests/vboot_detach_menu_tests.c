@@ -189,7 +189,7 @@ vb2_error_t VbExLegacy(enum VbAltFwIndex_t _altfw_num)
 	return 0;
 }
 
-int VbExTrustEC(int devidx)
+int vb2ex_ec_trusted(void)
 {
 	return trust_ec;
 }

@@ -81,7 +81,7 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
  * VbSelectFirmwareParams.selected_firmware.  Note that we store these in a
  * uint32_t because enum maps to int, which isn't fixed-size.
  */
-enum VbSelectFirmware_t {
+enum vb2_firmware_selection {
 	/* Read only firmware for normal or developer path. */
 	VB_SELECT_FIRMWARE_READONLY = 3,
 	/* Rewritable EC firmware currently set active */
@@ -634,19 +634,13 @@ uint32_t VbExGetSwitches(uint32_t request_mask);
 /*****************************************************************************/
 /* Embedded controller (EC) */
 
-/*
- * All these functions take a devidx parameter, which indicates which embedded
- * processor the call applies to.  At present, only devidx=0 is valid, but
- * upcoming CLs will add support for multiple devices.
- */
-
 /**
  * This is called only if the system implements a keyboard-based (virtual)
  * developer switch. It must return true only if the system has an embedded
  * controller which is provably running in its RO firmware at the time the
  * function is called.
  */
-int VbExTrustEC(int devidx);
+int vb2ex_ec_trusted(void);
 
 /**
  * Check if the EC is currently running rewritable code.
@@ -654,60 +648,59 @@ int VbExTrustEC(int devidx);
  * If the EC is in RO code, sets *in_rw=0.
  * If the EC is in RW code, sets *in_rw non-zero.
  * If the current EC image is unknown, returns error. */
-vb2_error_t VbExEcRunningRW(int devidx, int *in_rw);
+vb2_error_t vb2ex_ec_running_rw(int *in_rw);
 
 /**
  * Request the EC jump to its rewritable code.  If successful, returns when the
  * EC has booting its RW code far enough to respond to subsequent commands.
  * Does nothing if the EC is already in its rewritable code.
  */
-vb2_error_t VbExEcJumpToRW(int devidx);
+vb2_error_t vb2ex_ec_jump_to_rw(void);
 
 /**
  * Tell the EC to refuse another jump until it reboots. Subsequent calls to
- * VbExEcJumpToRW() in this boot will fail.
+ * vb2ex_ec_jump_to_rw() in this boot will fail.
  */
-vb2_error_t VbExEcDisableJump(int devidx);
+vb2_error_t vb2ex_ec_disable_jump(void);
 
 /**
  * Read the SHA-256 hash of the selected EC image.
  *
- * @param devidx    Device index. 0: EC
  * @param select    Image to get hash of. RO or RW.
  * @param hash      Pointer to the hash.
  * @param hash_size Pointer to the hash size.
- * @return          VBERROR_... error, VB2_SUCCESS on success.
+ * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t VbExEcHashImage(int devidx, enum VbSelectFirmware_t select,
-			    const uint8_t **hash, int *hash_size);
+vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
+				const uint8_t **hash, int *hash_size);
 
 /**
  * Get the expected contents of the EC image associated with the main firmware
  * specified by the "select" argument.
  */
-vb2_error_t VbExEcGetExpectedImage(int devidx, enum VbSelectFirmware_t select,
-				   const uint8_t **image, int *image_size);
+vb2_error_t vb2ex_ec_get_expected_image(enum vb2_firmware_selection select,
+					const uint8_t **image, int *image_size);
 
 /**
  * Read the SHA-256 hash of the expected contents of the EC image associated
  * with the main firmware specified by the "select" argument.
  */
-vb2_error_t VbExEcGetExpectedImageHash(int devidx,
-				       enum VbSelectFirmware_t select,
-				       const uint8_t **hash, int *hash_size);
+vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
+					     const uint8_t **hash,
+					     int *hash_size);
 
 /**
  * Update the selected EC image.
  */
-vb2_error_t VbExEcUpdateImage(int devidx, enum VbSelectFirmware_t select,
-			      const uint8_t *image, int image_size);
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select,
+				  const uint8_t *image, int image_size);
 
 /**
- * Lock the selected EC code to prevent updates until the EC is rebooted.
- * Subsequent calls to VbExEcUpdateImage() with the same region this boot will
- * fail.
+ * Lock the EC code to prevent updates until the EC is rebooted.
+ * Subsequent calls to vb2ex_ec_update_image() with the same region this
+ * boot will fail.
  */
-vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select);
+vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select);
 
 /**
  * Perform EC post-verification / updating / jumping actions.
@@ -717,20 +710,20 @@ vb2_error_t VbExEcProtect(int devidx, enum VbSelectFirmware_t select);
  * run for the duration of boot). These actions include verifying that
  * enough power is available to continue with boot.
  *
- * @param in_recovery	1 if recovery mode is selected by the AP, 0 otherwise.
- * @return VBERROR_... error, VB2_SUCCESS on success.
+ * @param ctx		Pointer to vboot context.
+ * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t VbExEcVbootDone(int in_recovery);
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx);
 
 /**
  * Request EC to stop discharging and cut-off battery.
  */
-vb2_error_t VbExEcBatteryCutOff(void);
+vb2_error_t vb2ex_ec_battery_cutoff(void);
 
 /*
  * severity levels for an auxiliary firmware update request
  */
-typedef enum {
+enum vb2_auxfw_update_severity {
 	/* no update needed and no protection needed */
 	VB_AUX_FW_NO_DEVICE = 0,
 	/* no update needed */
@@ -739,7 +732,7 @@ typedef enum {
 	VB_AUX_FW_FAST_UPDATE = 2,
 	/* update needed, "this would take a while..." */
 	VB_AUX_FW_SLOW_UPDATE = 3,
-} VbAuxFwUpdateSeverity_t;
+};
 
 /**
  * Perform auxiliary firmware checks.
@@ -751,10 +744,10 @@ typedef enum {
  *			0: no update needed
  *			1: fast update needed
  *			2: slow update needed
- * @return VBERROR_... error, VB2_SUCCESS on success.
+ * @return VB2_SUCCESS, or error code on error.
  */
 
-vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity);
+vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity);
 
 /**
  * Perform auxiliary firmware update(s).
@@ -762,10 +755,10 @@ vb2_error_t VbExCheckAuxFw(VbAuxFwUpdateSeverity_t *severity);
  * This is called after the EC has been updated and is intended to
  * update additional firmware blobs such as TCPCs.
  *
- * @return VBERROR_... error, VB2_SUCCESS on success.
+ * @return VB2_SUCCESS, or error code on error.
  */
 
-vb2_error_t VbExUpdateAuxFw(void);
+vb2_error_t vb2ex_auxfw_update(void);
 
 /*****************************************************************************/
 /* Misc */
