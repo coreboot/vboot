@@ -5,12 +5,7 @@
  * Tests for vboot_api_kernel, part 3 - software sync
  */
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "2common.h"
-#include "2ec_sync.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
@@ -53,15 +48,17 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
+static vb2_error_t ec_vboot_done_retval;
 
 static uint32_t screens_displayed[8];
 static uint32_t screens_count = 0;
 
-static vb2_error_t ec_aux_fw_retval;
-static int ec_aux_fw_update_req;
-static enum vb2_auxfw_update_severity ec_aux_fw_mock_severity;
-static enum vb2_auxfw_update_severity ec_aux_fw_update_severity;
-static int ec_aux_fw_protected;
+static vb2_error_t auxfw_retval;
+static int auxfw_update_req;
+static enum vb2_auxfw_update_severity auxfw_mock_severity;
+static enum vb2_auxfw_update_severity auxfw_update_severity;
+static int auxfw_protected;
+static vb2_error_t auxfw_done_retval;
 
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
@@ -113,11 +110,12 @@ static void ResetMocks(void)
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
 
-	ec_aux_fw_retval = VB2_SUCCESS;
-	ec_aux_fw_mock_severity = VB_AUX_FW_NO_UPDATE;
-	ec_aux_fw_update_severity = VB_AUX_FW_NO_UPDATE;
-	ec_aux_fw_update_req = 0;
-	ec_aux_fw_protected = 0;
+	auxfw_retval = VB2_SUCCESS;
+	auxfw_mock_severity = VB_AUX_FW_NO_UPDATE;
+	auxfw_update_severity = VB_AUX_FW_NO_UPDATE;
+	auxfw_update_req = 0;
+	auxfw_protected = 0;
+	auxfw_done_retval = VB2_SUCCESS;
 }
 
 /* Mock functions */
@@ -218,31 +216,44 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	return VB2_SUCCESS;
 }
 
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *c)
+{
+	return ec_vboot_done_retval;
+}
+
 vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
-	*severity = ec_aux_fw_mock_severity;
-	ec_aux_fw_update_severity = ec_aux_fw_mock_severity;
+	*severity = auxfw_mock_severity;
+	auxfw_update_severity = auxfw_mock_severity;
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2ex_auxfw_update()
+vb2_error_t vb2ex_auxfw_update(void)
 {
-	if (ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE &&
-	    ec_aux_fw_update_severity != VB_AUX_FW_NO_UPDATE)
-		ec_aux_fw_update_req = 1;
-	return ec_aux_fw_retval;
+	if (auxfw_update_severity != VB_AUX_FW_NO_DEVICE &&
+	    auxfw_update_severity != VB_AUX_FW_NO_UPDATE)
+		auxfw_update_req = 1;
+	return auxfw_retval;
 }
 
-vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *c)
+vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *c)
 {
-	ec_aux_fw_protected = ec_aux_fw_update_severity != VB_AUX_FW_NO_DEVICE;
-	return ec_aux_fw_retval;
+	auxfw_protected = auxfw_update_severity != VB_AUX_FW_NO_DEVICE;
+	return auxfw_done_retval;
 }
 
 static void test_ssync(vb2_error_t retval, int recovery_reason,
 		       const char *desc)
 {
-	TEST_EQ(ec_sync_all(ctx), retval, desc);
+	TEST_EQ(vb2api_ec_sync(ctx), retval, desc);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		recovery_reason, "  recovery reason");
+}
+
+static void test_auxsync(vb2_error_t retval, int recovery_reason,
+			 const char *desc)
+{
+	TEST_EQ(vb2api_auxfw_sync(ctx), retval, desc);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
 }
@@ -434,69 +445,79 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
-	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
+	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
 	test_ssync(VB2_SUCCESS, 0,
 		   "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC"
 		   " disables auxiliary FW update request");
-	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
-	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+	test_auxsync(VB2_SUCCESS, 0,
+		     "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC"
+		     " disables auxiliary FW update request");
+	TEST_EQ(auxfw_update_req, 0, "  aux fw update disabled");
+	TEST_EQ(auxfw_protected, 1, "  aux fw protected");
 
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC;
-	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
+	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
 	test_ssync(VB2_SUCCESS, 0,
 		   "VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC"
 		   " disables auxiliary FW update request");
-	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
-	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+	test_auxsync(VB2_SUCCESS, 0,
+		   "VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC"
+		   " disables auxiliary FW update request");
+	TEST_EQ(auxfw_update_req, 0, "  aux fw update disabled");
+	TEST_EQ(auxfw_protected, 1, "  aux fw protected");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_NO_DEVICE;
+	auxfw_mock_severity = VB_AUX_FW_NO_DEVICE;
 	test_ssync(VB2_SUCCESS, 0,
 		   "No auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");
-	TEST_EQ(ec_aux_fw_update_req, 0, "  no aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 0, "  no aux fw protected");
+	test_auxsync(VB2_SUCCESS, 0,
+		     "No auxiliary FW update needed");
+	TEST_EQ(auxfw_update_req, 0, "  no aux fw update requested");
+	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_NO_UPDATE;
+	auxfw_mock_severity = VB_AUX_FW_NO_UPDATE;
 	test_ssync(VB2_SUCCESS, 0,
 		   "No auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");
-	TEST_EQ(ec_aux_fw_update_req, 0, "  no aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
+	test_auxsync(VB2_SUCCESS, 0,
+		"No auxiliary FW update needed");
+	TEST_EQ(auxfw_update_req, 0, "  no aux fw update requested");
+	TEST_EQ(auxfw_protected, 1, "  aux fw protected");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
-		   "Fast auxiliary FW update needed");
+	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
+	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
+		     "Fast auxiliary FW update needed");
 	TEST_EQ(screens_count, 0,
 		"  wait screen skipped");
-	TEST_EQ(ec_aux_fw_update_req, 1, "  aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 0, "  aux fw protected");
+	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
+	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
+	auxfw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
 	sd->flags &= ~VB2_SD_FLAG_DISPLAY_AVAILABLE;
-	test_ssync(VBERROR_REBOOT_REQUIRED, 0,
-		   "Slow auxiliary FW update needed - reboot for display");
+	test_auxsync(VBERROR_REBOOT_REQUIRED, 0,
+		     "Slow auxiliary FW update needed - reboot for display");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
-		   "Slow auxiliary FW update needed");
-	TEST_EQ(ec_aux_fw_update_req, 1, "  aux fw update requested");
-	TEST_EQ(ec_aux_fw_protected, 0, "  aux fw protected");
+	auxfw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
+	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
+		     "Slow auxiliary FW update needed");
+	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
+	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT,
 		"  wait screen forced");
 
 	ResetMocks();
-	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	ec_aux_fw_retval = VB2_ERROR_UNKNOWN;
-	test_ssync(VB2_ERROR_UNKNOWN, VB2_RECOVERY_AUX_FW_UPDATE,
-		   "Error updating AUX firmware");
+	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
+	auxfw_retval = VB2_ERROR_UNKNOWN;
+	test_auxsync(VB2_ERROR_UNKNOWN, VB2_RECOVERY_AUX_FW_UPDATE,
+		     "Error updating AUX firmware");
 }
 
 int main(void)

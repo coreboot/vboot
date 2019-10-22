@@ -7,7 +7,6 @@
 
 #include "2api.h"
 #include "2common.h"
-#include "2ec_sync.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"

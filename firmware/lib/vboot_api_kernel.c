@@ -5,8 +5,8 @@
  * High-level firmware wrapper API - entry points for kernel selection
  */
 
+#include "2api.h"
 #include "2common.h"
-#include "2ec_sync.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
@@ -371,7 +371,11 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	 * it's just a single non-interactive WAIT screen.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		rv = ec_sync_all(ctx);
+		rv = vb2api_ec_sync(ctx);
+		if (rv)
+			goto VbSelectAndLoadKernel_exit;
+
+		rv = vb2api_auxfw_sync(ctx);
 		if (rv)
 			goto VbSelectAndLoadKernel_exit;
 	}
