@@ -6,10 +6,10 @@
  */
 
 #include "2common.h"
+#include "2ec_sync.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
-#include "ec_sync.h"
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_display.h"

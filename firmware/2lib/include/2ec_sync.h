@@ -5,12 +5,11 @@
  * EC software sync for verified boot
  */
 
-#ifndef VBOOT_REFERENCE_EC_SYNC_H_
-#define VBOOT_REFERENCE_EC_SYNC_H_
+#ifndef VBOOT_REFERENCE_2EC_SYNC_H_
+#define VBOOT_REFERENCE_2EC_SYNC_H_
 
+#include "2api.h"
 #include "vboot_api.h"
-
-struct vb2_context;
 
 /**
  * EC sync, phase 1
@@ -91,4 +90,4 @@ vb2_error_t ec_sync_phase3(struct vb2_context *ctx);
  */
 vb2_error_t ec_sync_all(struct vb2_context *ctx);
 
-#endif  /* VBOOT_REFERENCE_EC_SYNC_H_ */
+#endif  /* VBOOT_REFERENCE_2EC_SYNC_H_ */

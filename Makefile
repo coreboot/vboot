@@ -338,7 +338,6 @@ FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/ec_sync.c \
 	firmware/lib/gpt_misc.c \
 	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
@@ -356,6 +355,7 @@ FWLIB2X_SRCS = \
 	firmware/2lib/2api.c \
 	firmware/2lib/2common.c \
 	firmware/2lib/2crc8.c \
+	firmware/2lib/2ec_sync.c \
 	firmware/2lib/2gbb.c \
 	firmware/2lib/2misc.c \
 	firmware/2lib/2nvstorage.c \
@@ -678,7 +678,6 @@ TEST_OBJS += ${TESTLIB_OBJS}
 # And some compiled tests.
 TEST_NAMES = \
 	tests/cgptlib_test \
-	tests/ec_sync_tests \
 	tests/sha_benchmark \
 	tests/utility_string_tests \
 	tests/vboot_api_devmode_tests \
@@ -709,6 +708,7 @@ TEST_NAMES += ${TEST_FUTIL_NAMES}
 TEST2X_NAMES = \
 	tests/vb2_api_tests \
 	tests/vb2_common_tests \
+	tests/vb2_ec_sync_tests \
 	tests/vb2_gbb_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
@@ -1246,7 +1246,6 @@ runtestscripts: test_setup genfuzztestcases
 
 .PHONY: runmisctests
 runmisctests: test_setup
-	${RUNTEST} ${BUILD_RUN}/tests/ec_sync_tests
 ifeq (${TPM2_MODE}${MOCK_TPM},)
 # TODO(apronin): tests for TPM2 case?
 # secdata_tpm_tests and tlcl_tests only work when MOCK_TPM is disabled
@@ -1267,6 +1266,7 @@ endif
 run2tests: test_setup
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_ec_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
