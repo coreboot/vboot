@@ -401,6 +401,9 @@ vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx)
 test_mockable
 int vb2_allow_recovery(struct vb2_context *ctx)
 {
+	if (ctx->flags & VB2_CONTEXT_NO_BOOT)
+		return 0;
+
 	/* VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY forces this to always return
 	   true. */
 	if (vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)

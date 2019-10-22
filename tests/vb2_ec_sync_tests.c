@@ -8,6 +8,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2secdata.h"
 #include "2sysincludes.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
@@ -22,7 +23,7 @@ static int ec_ro_updated;
 static int ec_rw_updated;
 static int ec_ro_protected;
 static int ec_rw_protected;
-static int ec_run_image;
+static int ec_run_image;  /* 0 = RO, 1 = RW */
 
 static vb2_error_t in_rw_retval;
 static int protect_retval;
@@ -38,11 +39,12 @@ static uint32_t screens_count = 0;
 
 static uint8_t mock_ec_ro_hash[32];
 static uint8_t mock_ec_rw_hash[32];
+static uint8_t hmir[32];
 static int mock_ec_ro_hash_size;
 static int mock_ec_rw_hash_size;
-static uint8_t want_ec_hash[32];
+static uint8_t hexp[32];
 static uint8_t update_hash;
-static int want_ec_hash_size;
+static int hexp_size;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
@@ -53,7 +55,7 @@ static struct vb2_gbb_header gbb;
 static void ResetMocks(void)
 {
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
-		  "vb2api_init failed");
+		  "vb2api_init passed");
 
 	ctx->flags = VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	vb2_nv_init(ctx);
@@ -67,7 +69,7 @@ static void ResetMocks(void)
 	ec_rw_updated = 0;
 	ec_ro_protected = 0;
 	ec_rw_protected = 0;
-	ec_run_image = 0;   /* 0 = RO, 1 = RW */
+	ec_run_image = 0;
 
 	in_rw_retval = VB2_SUCCESS;
 	protect_retval = VB2_SUCCESS;
@@ -86,14 +88,21 @@ static void ResetMocks(void)
 	mock_ec_rw_hash[0] = 42;
 	mock_ec_rw_hash_size = sizeof(mock_ec_rw_hash);
 
-	memset(want_ec_hash, 0, sizeof(want_ec_hash));
-	want_ec_hash[0] = 42;
-	want_ec_hash_size = sizeof(want_ec_hash);
+	memset(hexp, 0, sizeof(hexp));
+	hexp[0] = 42;
+	hexp_size = sizeof(hexp);
 
 	update_hash = 42;
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;
+
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+
+	memset(hmir, 0, sizeof(hmir));
+	hmir[0] = 42;
+	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
 }
 
 /* Mock functions */
@@ -162,10 +171,10 @@ vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
 vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 					     const uint8_t **hash, int *hash_size)
 {
-	*hash = want_ec_hash;
-	*hash_size = want_ec_hash_size;
+	*hash = hexp;
+	*hash_size = hexp_size;
 
-	return want_ec_hash_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
+	return hexp_size ? VB2_SUCCESS : VB2_ERROR_MOCK;
 }
 
 vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
@@ -204,6 +213,11 @@ static void test_ssync(vb2_error_t retval, int recovery_reason,
 	TEST_EQ(vb2api_ec_sync(ctx), retval, desc);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+	if (sec->struct_version >= VB2_SECDATA_KERNEL_VERSION_V10) {
+		const uint8_t *hash = vb2_secdata_kernel_get_ec_hash(ctx);
+		TEST_EQ(memcmp(hash, hexp, sizeof(hexp)), 0, "Hmir synced");
+	}
 }
 
 /* Tests */
@@ -212,7 +226,7 @@ static void VbSoftwareSyncTest(void)
 {
 	/* Check flag toggling */
 	ResetMocks();
-	test_ssync(VB2_SUCCESS, 0, "Normal sync");
+	test_ssync(VB2_SUCCESS, 0, "Normal (no) sync");
 	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
@@ -292,7 +306,7 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
 	ResetMocks();
-	want_ec_hash_size = 0;
+	hexp_size = 0;
 	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 		   VB2_RECOVERY_EC_EXPECTED_HASH, "Bad precalculated hash");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
@@ -302,7 +316,7 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
 	ResetMocks();
-	want_ec_hash_size = 16;
+	hexp_size = 16;
 	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 		   VB2_RECOVERY_EC_HASH_SIZE,
 		   "Hash size mismatch");
@@ -313,9 +327,22 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
 	ResetMocks();
-	want_ec_hash_size = 4;
+	hexp_size = 4;
 	mock_ec_rw_hash_size = 4;
-	test_ssync(0, 0, "Custom hash size");
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, VB2_RECOVERY_EC_HASH_SIZE,
+		   "Custom hash size secdata_kernel v1");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
+
+	ResetMocks();
+	vb2api_secdata_kernel_create_v0(ctx);
+	vb2_secdata_kernel_init(ctx);
+	hexp_size = 4;
+	mock_ec_rw_hash_size = 4;
+	test_ssync(0, 0, "Custom hash size secdata_kernel v0");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
@@ -333,6 +360,48 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
+
+	/* Hexp != Hmir == Heff */
+	ResetMocks();
+	hmir[0] = 43;
+	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
+	ec_run_image = 1;
+	mock_ec_rw_hash[0] = 43;
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+		   0, "Reboot after synching Hmir");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 1, "  ec run image");
+
+	/* Hexp == Hmir != Heff */
+	ResetMocks();
+	ec_run_image = 0;
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	mock_ec_rw_hash[0] = 43;
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+		   0, "Reboot after synching Heff");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
+	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
+
+	/* Hexp != Hmir != Heff */
+	ResetMocks();
+	hmir[0] = 44;
+	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
+	ec_run_image = 0;
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	mock_ec_rw_hash[0] = 43;
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+		   0, "Reboot after synching Hmir and Heff");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
+	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;

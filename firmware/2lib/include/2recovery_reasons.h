@@ -234,6 +234,12 @@ enum vb2_nv_recovery {
 	/* FWMP secure data initialization error */
 	VB2_RECOVERY_SECDATA_FWMP_INIT = 0x62,
 
+	/* Failed to get boot mode from TPM/Cr50 */
+	VB2_RECOVERY_CR50_BOOT_MODE = 0x63,
+
+	/* Attempt to escape from NO_BOOT mode was detected */
+	VB2_RECOVERY_ESCAPE_NO_BOOT = 0x64,
+
 	/* Unspecified/unknown error in rewritable firmware */
 	VB2_RECOVERY_RW_UNSPECIFIED = 0x7f,
 

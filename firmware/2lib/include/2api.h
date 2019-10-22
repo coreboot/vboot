@@ -192,6 +192,11 @@ enum vb2_context_flags {
 	 * Deprecated with CL:1975390.
 	 */
 	VB2_CONTEXT_DEPRECATED_DETACHABLE_UI = (1 << 22),
+
+	/*
+	 * NO_BOOT means the OS is not allowed to boot. Only relevant for EFS2.
+	 */
+	VB2_CONTEXT_NO_BOOT = (1 << 23),
 };
 
 /* Helper for aligning fields in vb2_context. */

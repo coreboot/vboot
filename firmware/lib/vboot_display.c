@@ -200,6 +200,10 @@ const char *RecoveryReasonString(uint8_t code)
 		return "Failed to disable TPM before running untrusted code";
 	case VB2_RECOVERY_ALTFW_HASH_FAILED:
 		return "Verification of alternative firmware payload failed";
+	case VB2_RECOVERY_CR50_BOOT_MODE:
+		return "Failed to get boot mode from Cr50";
+	case VB2_RECOVERY_ESCAPE_NO_BOOT:
+		return "Attempt to escape from NO_BOOT mode was detected";
 	case VB2_RECOVERY_RW_UNSPECIFIED:
 		return "Unspecified/unknown error in RW firmware";
 	case VB2_RECOVERY_US_TEST:

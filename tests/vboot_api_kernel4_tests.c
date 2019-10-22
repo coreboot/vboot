@@ -73,6 +73,8 @@ static void reset_common_data(void)
 
 	memset(mock_presence, 0, sizeof(mock_presence));
 	mock_presence_count = 0;
+
+	sd->status |= VB2_SD_STATUS_SECDATA_KERNEL_INIT;
 }
 
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)

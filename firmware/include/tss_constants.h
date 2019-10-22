@@ -26,6 +26,7 @@
 #define TPM_E_INTERNAL_ERROR         ((uint32_t) 0x0000500d)  /* vboot local */
 #define TPM_E_INVALID_RESPONSE       ((uint32_t) 0x0000500e)  /* vboot local */
 #define TPM_E_BUFFER_SIZE            ((uint32_t) 0x0000500f)  /* vboot local */
+#define TPM_E_NO_SUCH_COMMAND        ((uint32_t) 0x00005010)  /* vboot local */
 
 
 /*
