@@ -338,7 +338,6 @@ FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/ec_sync_all.c \
 	firmware/lib/ec_sync.c \
 	firmware/lib/gpt_misc.c \
 	firmware/lib/utility_string.c \
