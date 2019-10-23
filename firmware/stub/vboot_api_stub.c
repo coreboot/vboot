@@ -95,15 +95,6 @@ vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2ex_ec_get_expected_image(enum vb2_firmware_selection select,
-					const uint8_t **image, int *image_size)
-{
-	static uint8_t fake_image[64] = {5, 6, 7, 8};
-	*image = fake_image;
-	*image_size = sizeof(fake_image);
-	return VB2_SUCCESS;
-}
-
 vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 					     const uint8_t **hash, int *hash_size)
 {
@@ -114,8 +105,7 @@ vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select,
-				  const uint8_t *image, int image_size)
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
 {
 	return VB2_SUCCESS;
 }
