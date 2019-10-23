@@ -78,6 +78,10 @@ enum vb2_shared_data_status {
 
 	/* FWMP secure data initialized */
 	VB2_SD_STATUS_SECDATA_FWMP_INIT = (1 << 5),
+
+	/* EC Sync completed successfully */
+	VB2_SD_STATUS_EC_SYNC_COMPLETE = (1 << 6),
+
 };
 
 /* "V2SD" = vb2_shared_data.magic */

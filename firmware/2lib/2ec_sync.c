@@ -479,7 +479,17 @@ static vb2_error_t ec_sync_phase3(struct vb2_context *ctx)
 
 vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 {
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	vb2_error_t rv;
+
+	/*
+	 * If the flags indicate that the EC has already gone through
+	 * software sync this boot, then don't do it again.
+	 */
+	if (sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE) {
+		VB2_DEBUG("EC software sync already performed this boot, skipping\n");
+		return VB2_SUCCESS;
+	}
 
 	/* Phase 1; this determines if we need an update */
 	vb2_error_t phase1_rv = ec_sync_phase1(ctx);
@@ -500,5 +510,12 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 		return rv;
 
 	/* Phase 3; Completes sync and handles battery cutoff */
-	return ec_sync_phase3(ctx);
+	rv = ec_sync_phase3(ctx);
+	if (rv)
+		return rv;
+
+	/* Establish that EC software sync is complete and successful */
+	sd->flags |= VB2_SD_STATUS_EC_SYNC_COMPLETE;
+
+	return VB2_SUCCESS;
 }
