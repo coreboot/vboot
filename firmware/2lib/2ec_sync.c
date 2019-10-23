@@ -158,21 +158,11 @@ static vb2_error_t update_ec(struct vb2_context *ctx,
 			     enum vb2_firmware_selection select)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	vb2_error_t rv;
 
 	VB2_DEBUG("Updating %s...\n", image_name_to_string(select));
 
-	/* Get expected EC image */
-	const uint8_t *want = NULL;
-	int want_size;
-	vb2_error_t rv = vb2ex_ec_get_expected_image(select, &want, &want_size);
-	if (rv) {
-		VB2_DEBUG("vb2ex_ec_get_expected_image() returned %#x\n", rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_EXPECTED_IMAGE);
-		return rv;
-	}
-	VB2_DEBUG("image len = %d\n", want_size);
-
-	rv = vb2ex_ec_update_image(select, want, want_size);
+	rv = vb2ex_ec_update_image(select);
 	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("vb2ex_ec_update_image() returned %#x\n", rv);
 

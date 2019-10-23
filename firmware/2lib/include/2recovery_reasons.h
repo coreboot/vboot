@@ -102,8 +102,8 @@ enum vb2_nv_recovery {
 	/* EC software sync - error obtaining EC image hash (deprecated) */
 	VB2_RECOVERY_DEPRECATED_EC_HASH = 0x24,
 
-	/* EC software sync - error obtaining expected EC image */
-	VB2_RECOVERY_EC_EXPECTED_IMAGE = 0x25,
+	/* EC software sync - error obtaining expected EC image (deprecated) */
+	VB2_RECOVERY_DEPRECATED_EC_EXPECTED_IMAGE = 0x25,
 
 	/* EC software sync - error updating EC */
 	VB2_RECOVERY_EC_UPDATE = 0x26,

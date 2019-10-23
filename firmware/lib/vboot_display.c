@@ -139,9 +139,6 @@ const char *RecoveryReasonString(uint8_t code)
 		return "EC software sync error";
 	case VB2_RECOVERY_EC_UNKNOWN_IMAGE:
 		return "EC software sync unable to determine active EC image";
-	case VB2_RECOVERY_EC_EXPECTED_IMAGE:
-		return "EC software sync error "
-			"obtaining expected EC image from BIOS";
 	case VB2_RECOVERY_EC_UPDATE:
 		return "EC software sync error updating EC";
 	case VB2_RECOVERY_EC_JUMP_RW:

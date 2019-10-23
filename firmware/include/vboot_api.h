@@ -675,30 +675,33 @@ vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
 				const uint8_t **hash, int *hash_size);
 
 /**
- * Get the expected contents of the EC image associated with the main firmware
- * specified by the "select" argument.
- */
-vb2_error_t vb2ex_ec_get_expected_image(enum vb2_firmware_selection select,
-					const uint8_t **image, int *image_size);
-
-/**
  * Read the SHA-256 hash of the expected contents of the EC image associated
  * with the main firmware specified by the "select" argument.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @param hash		Pointer to the hash.
+ * @param hash_size	Pointer to the hash size (in bytes).
+ * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 					     const uint8_t **hash,
 					     int *hash_size);
 
 /**
- * Update the selected EC image.
+ * Update the selected EC image to the expected version.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select,
-				  const uint8_t *image, int image_size);
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select);
 
 /**
  * Lock the EC code to prevent updates until the EC is rebooted.
  * Subsequent calls to vb2ex_ec_update_image() with the same region this
  * boot will fail.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select);
 
