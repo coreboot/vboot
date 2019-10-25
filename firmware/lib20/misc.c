@@ -73,7 +73,6 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 
 	uint8_t *key_data;
 	uint32_t key_size;
-	struct vb2_packed_key *packed_key;
 	struct vb2_public_key root_key;
 
 	struct vb2_keyblock *kb;
@@ -150,34 +149,33 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 
 	sd->fw_version = kb->data_key.key_version << 16;
 
-	/*
-	 * Save the data key in the work buffer.  This overwrites the root key
-	 * we read above.  That's ok, because now that we have the data key we
-	 * no longer need the root key.
-	 */
-	packed_key = (struct vb2_packed_key *)key_data;
+	/* Preamble follows the keyblock in the vblock. */
+	sd->vblock_preamble_offset = kb->keyblock_size;
 
-	packed_key->algorithm = kb->data_key.algorithm;
-	packed_key->key_version = kb->data_key.key_version;
-	packed_key->key_size = kb->data_key.key_size;
+	/*
+	 * Save the data key in the work buffer.  We'll overwrite the root key
+	 * we read above.  That's ok, because now that we have the data key we
+	 * no longer need the root key.  First, let's double-check that it is
+	 * well-formed though (although the keyblock was signed anyway).
+	 */
+	rv = vb2_verify_packed_key_inside(kb, block_size, &kb->data_key);
+	if (rv)
+		return rv;
+
+	/* Save the future offset and size while kb->data_key is still valid.
+	   The check above made sure that key_offset and key_size are sane. */
+	sd->data_key_offset = vb2_offset_of(sd, key_data);
+	sd->data_key_size = kb->data_key.key_offset + kb->data_key.key_size;
 
 	/*
 	 * Use memmove() instead of memcpy().  In theory, the destination will
 	 * never overlap because with the source because the root key is likely
 	 * to be at least as large as the data key, but there's no harm here in
-	 * being paranoid.
+	 * being paranoid.  Make sure we immediately invalidate 'kb' after the
+	 * move to guarantee we won't try to access it anymore.
 	 */
-	memmove(key_data + packed_key->key_offset,
-		(uint8_t*)&kb->data_key + kb->data_key.key_offset,
-		packed_key->key_size);
-
-	/* Save the packed key offset and size */
-	sd->data_key_offset = vb2_offset_of(sd, key_data);
-	sd->data_key_size =
-		packed_key->key_offset + packed_key->key_size;
-
-	/* Preamble follows the keyblock in the vblock */
-	sd->vblock_preamble_offset = kb->keyblock_size;
+	memmove(key_data, &kb->data_key, sd->data_key_size);
+	kb = NULL;
 
 	/*
 	 * Data key will persist in the workbuf after we return.
