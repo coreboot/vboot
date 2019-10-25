@@ -25,39 +25,97 @@ set -u
 
 PRE_PVT_BID_FLAG=0x10
 MP_BID_FLAG=0x10000
+CR50_FACTORY_VERSION="0.3.22"
+
+# Convert unsigned 32 bit value into a signed one.
+to_int32() {
+  local inp="$1"
+  python -c \
+         "import struct; \
+          d=struct.pack('I', $inp); \
+           print (struct.unpack('i', d)[0])"
+}
+
 # This function accepts one argument, the name of the Cr50 manifest file which
 # needs to be verified.
 #
-# The function verifies that the manifest is a proper json file, and that the
-# manifest conforms to Cr50 version numbering and board ID flags convention:
-# when signing pre-pvt images (major version number is even) the 0x10 flags
-# bit must be set. When signing mp images (major version number is odd), the
-# 0x10000 flags bit must be set.
-verify_cr50_manifest() {
+# The function verifies that the input manifest is a proper json file, and
+# that the manifest conforms to Cr50 version numbering and board ID flags
+# conventions for various build images:
+#
+# - only factory version binaries can be converted to node locked images,
+#   board IDs for node locked images come from signing instructions, and the
+#   config1 manifest field value must have the 0x80000000 bit set.
+#
+# - when signing pre-pvt binaries (major version number is even) the 0x10
+#   flags bit must be set.
+#
+# - when signing mp images (major version number is odd), the 0x10000 flags
+#   bit must be set (this can be overridden by signing instructions).
+verify_and_prepare_cr50_manifest() {
   if [[ $# -ne 1 ]]; then
-    die "Usage: verify_cr50_manifest <manifest .json file>"
+    die "Usage: verify_and_prepare_cr50_manifest <manifest .json file>"
   fi
 
   local manifest_json="$1"
-  local major
-  local bid_flags
 
-  major="$(jq '.major' "${manifest_json}")"
+  local bid_flags
+  local config1
+  local epoch
+  local major
+  local minor
+  local values
+
+  values=( $(jq '.config1,.epoch,.major,.minor,.board_id_flags' \
+             "${manifest_json}") )
+
+  config1="${values[0]}"
+  epoch="${values[1]}"
+  major="${values[2]}"
+  minor="${values[3]}"
+  bid_flags="${values[4]}"
+
   if [[ ${major} == null ]]; then
     die "Major version number not found in ${manifest_json}"
   fi
 
-  bid_flags="$(jq '.board_id_flags' "${manifest_json}")"
   if [[ ${bid_flags} == null ]]; then
     die "bid_flags not found in ${manifest_json}"
   fi
 
-  if (( major & 1 )); then
+  if [[ ${INSN_TARGET:-} ==  NodeLocked  ]]; then
+    if [[ -z ${INSN_DEVICE_ID:-} ]]; then
+      die "Node locked target without Device ID value"
+    fi
+    # Case of a node locked image, it must have the fixed factory version. The
+    # manifest fields must be modified as follows:
+    #
+    # - DEV_ID values spliced in into the "fuses" section
+    # - board_id related fields removed
+    # - config1 field bit 0x80000000 set
+
+    local sub
+    local devid0
+    local devid1
+
+    if [[ $epoch.$major.$minor != $CR50_FACTORY_VERSION ]];then
+      die "Will not create node locked images for version $epoch.$major.$minor"
+    fi
+
+    devid0="$(to_int32 "0x${INSN_DEVICE_ID/-*}")"
+    devid1="$(to_int32 "0x${INSN_DEVICE_ID/*-}")"
+    cf1="$(to_int32 $(( 0x80000000 + ${config1} )))"
+    sub="$(printf "   \"DEV_ID0\": %s,\\\n  \"DEV_ID1\": %s," \
+                  "${devid0}" "${devid1}")"
+    sed -i  "/board_id/d;s/\"config1\":.*/\"config1\": ${cf1},/;/\"fuses\":/ a\
+$sub"  "${manifest_json}" || die "Failed to edit the manifest"
+    return 0
+  elif (( major & 1 )); then
     return 0
   elif (( bid_flags & PRE_PVT_BID_FLAG )); then
     return 0
   fi
-  die "Inconsistent manifest ${manifest_source}: major = '${major}'," \
+  die "Inconsistent manifest ${manifest_json}: major = '${major}'," \
       "board_id_flags = '${bid_flags}'"
 }
 
@@ -277,21 +335,19 @@ sign_cr50_firmware() {
   local rw_a="$7"
   local rw_b="$8"
   local output_file="$9"
+
+  local manifest_file="${manifest_source}.updated"
   local temp_dir="$(make_temp_dir)"
-  local manifest_file
 
   # The H1 chip where Cr50 firmware runs has 512K of flash, the generated
   # image must match the flash size.
   IMAGE_SIZE="$(( 512 * 1024 ))"
 
-  # Sanitize manifest released by the builder.
-  manifest_file="${temp_dir}/$(basename "${manifest_source}")"
-  if ! cr50-codesigner --convert-json --input "${manifest_source}" \
-       --output "${manifest_file}"; then
-    die "failed to convert ${manifest_source} into valid json"
-  fi
+    # Prepare file for inline editing.
+  jq . < "${manifest_source}" > "${manifest_file}" || \
+    die "basic validation of ${manifest_json} failed"
 
-  verify_cr50_manifest "${manifest_file}"
+  verify_and_prepare_cr50_manifest "${manifest_file}"
 
   dd if=/dev/zero bs="${IMAGE_SIZE}" count=1 status=none |
     tr '\000' '\377' > "${output_file}"
@@ -334,14 +390,9 @@ sign_cr50_firmware_dir() {
     output="${output}/cr50.bin.prod"
   fi
 
-  local manifest_file="${input}/prod.json"
-  if [[ ! -e "$manifest_file" ]]; then
-     manifest_file="${input}/ec_RW-manifest-prod.json"
-  fi
-
   sign_cr50_firmware \
           "${key_file}" \
-          "${manifest_file}" \
+          "${input}/prod.json" \
           "${input}/fuses.xml" \
           "${input}" \
           "${input}/prod.ro.A" \
@@ -362,6 +413,14 @@ main() {
   local output="$3"
 
   local key_file="${key_dir}/cr50.pem"
+  local signing_instructions="${input}/signing_instructions.sh"
+
+  if [[ -f ${signing_instructions} ]]; then
+    . "${signing_instructions}"
+  else
+    die "${signing_instructions} not found"
+  fi
+
   if [[ ! -e "${key_file}" ]]; then
     die "Missing key file: ${key_file}"
   fi
