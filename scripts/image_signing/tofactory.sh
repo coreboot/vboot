@@ -89,12 +89,6 @@ make_backups() {
   cp "$OLD_BIOS" "$FLAGS_backup_dir/$FLAGS_asset_tag.bios.bin"
   ${FLASHROM_EC} -r "$FLAGS_backup_dir/$FLAGS_asset_tag.ec.bin"
 
-  # Copy the VPD info from RAM, since we can't extract it as text
-  # from the BIOS binary.  Failure of this is only a warning, since
-  # the information is still in the old BIOS.
-  mosys vpd print all > "$FLAGS_backup_dir/$FLAGS_asset_tag.vpd.txt" ||
-    echo "WARNING: unable to save VPD as text."
-
   # Copy the first part of the drive, so we can recreate the partition
   # table.
   local gpt_backup="$FLAGS_backup_dir/$FLAGS_asset_tag.gpt.bin"
