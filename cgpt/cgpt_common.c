@@ -76,7 +76,7 @@ int CheckValid(const struct drive *drive) {
   return CGPT_OK;
 }
 
-int Load(struct drive *drive, uint8_t **buf,
+int Load(struct drive *drive, uint8_t *buf,
                 const uint64_t sector,
                 const uint64_t sector_bytes,
                 const uint64_t sector_count) {
@@ -96,26 +96,19 @@ int Load(struct drive *drive, uint8_t **buf,
     return CGPT_FAILED;
   }
   count = sector_bytes * sector_count;
-  *buf = malloc(count);
-  require(*buf);
 
   if (-1 == lseek(drive->fd, sector * sector_bytes, SEEK_SET)) {
     Error("Can't seek: %s\n", strerror(errno));
-    goto error_free;
+    return CGPT_FAILED;
   }
 
-  nread = read(drive->fd, *buf, count);
+  nread = read(drive->fd, buf, count);
   if (nread < count) {
     Error("Can't read enough: %d, not %d\n", nread, count);
-    goto error_free;
+    return CGPT_FAILED;
   }
 
   return CGPT_OK;
-
-error_free:
-  free(*buf);
-  *buf = 0;
-  return CGPT_FAILED;
 }
 
 
@@ -170,19 +163,27 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes) {
   }
   drive->gpt.streaming_drive_sectors = drive->size / drive->gpt.sector_bytes;
 
+  drive->gpt.primary_header = malloc(drive->gpt.sector_bytes);
+  drive->gpt.secondary_header = malloc(drive->gpt.sector_bytes);
+  drive->gpt.primary_entries = malloc(GPT_ENTRIES_ALLOC_SIZE);
+  drive->gpt.secondary_entries = malloc(GPT_ENTRIES_ALLOC_SIZE);
+  if (!drive->gpt.primary_header || !drive->gpt.secondary_header ||
+      !drive->gpt.primary_entries || !drive->gpt.secondary_entries)
+    return -1;
+
   /* TODO(namnguyen): Remove this and totally trust gpt_drive_sectors. */
   if (!(drive->gpt.flags & GPT_FLAG_EXTERNAL)) {
     drive->gpt.gpt_drive_sectors = drive->gpt.streaming_drive_sectors;
   } /* Else, we trust gpt.gpt_drive_sectors. */
 
   // Read the data.
-  if (CGPT_OK != Load(drive, &drive->gpt.primary_header,
+  if (CGPT_OK != Load(drive, drive->gpt.primary_header,
                       GPT_PMBR_SECTORS,
                       drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
     Error("Cannot read primary GPT header\n");
     return -1;
   }
-  if (CGPT_OK != Load(drive, &drive->gpt.secondary_header,
+  if (CGPT_OK != Load(drive, drive->gpt.secondary_header,
                       drive->gpt.gpt_drive_sectors - GPT_PMBR_SECTORS,
                       drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
     Error("Cannot read secondary GPT header\n");
@@ -193,7 +194,7 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes) {
                   drive->gpt.gpt_drive_sectors,
                   drive->gpt.flags,
                   drive->gpt.sector_bytes) == 0) {
-    if (CGPT_OK != Load(drive, &drive->gpt.primary_entries,
+    if (CGPT_OK != Load(drive, drive->gpt.primary_entries,
                         primary_header->entries_lba,
                         drive->gpt.sector_bytes,
                         CalculateEntriesSectors(primary_header,
@@ -205,15 +206,13 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes) {
     Warning("Primary GPT header is %s\n",
       memcmp(primary_header->signature, GPT_HEADER_SIGNATURE_IGNORED,
              GPT_HEADER_SIGNATURE_SIZE) ? "invalid" : "being ignored");
-    drive->gpt.primary_entries = calloc(MAX_NUMBER_OF_ENTRIES,
-                                        sizeof(GptEntry));
   }
   GptHeader* secondary_header = (GptHeader*)drive->gpt.secondary_header;
   if (CheckHeader(secondary_header, 1, drive->gpt.streaming_drive_sectors,
                   drive->gpt.gpt_drive_sectors,
                   drive->gpt.flags,
                   drive->gpt.sector_bytes) == 0) {
-    if (CGPT_OK != Load(drive, &drive->gpt.secondary_entries,
+    if (CGPT_OK != Load(drive, drive->gpt.secondary_entries,
                         secondary_header->entries_lba,
                         drive->gpt.sector_bytes,
                         CalculateEntriesSectors(secondary_header,
@@ -225,8 +224,6 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes) {
     Warning("Secondary GPT header is %s\n",
       memcmp(primary_header->signature, GPT_HEADER_SIGNATURE_IGNORED,
              GPT_HEADER_SIGNATURE_SIZE) ? "invalid" : "being ignored");
-    drive->gpt.secondary_entries = calloc(MAX_NUMBER_OF_ENTRIES,
-                                          sizeof(GptEntry));
   }
   return 0;
 }

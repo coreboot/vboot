@@ -65,18 +65,16 @@ int DriveClose(struct drive *drive, int update_as_needed);
 int CheckValid(const struct drive *drive);
 
 /* Loads sectors from 'drive'.
- * *buf is pointed to an allocated memory when returned, and should be
- * freed.
  *
  *   drive -- open drive.
- *   buf -- pointer to buffer pointer
+ *   buf -- pointer to buffer of at least (sector_bytes * sector_count) size
  *   sector -- offset of starting sector (in sectors)
  *   sector_bytes -- bytes per sector
  *   sector_count -- number of sectors to load
  *
  * Returns CGPT_OK for successful. Aborts if any error occurs.
  */
-int Load(struct drive *drive, uint8_t **buf,
+int Load(struct drive *drive, uint8_t *buf,
                 const uint64_t sector,
                 const uint64_t sector_bytes,
                 const uint64_t sector_count);

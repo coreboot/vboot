@@ -22,7 +22,6 @@
  */
 int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 {
-	uint64_t max_entries_bytes = MAX_NUMBER_OF_ENTRIES * sizeof(GptEntry);
 	int primary_valid = 0, secondary_valid = 0;
 
 	/* No data to be written yet */
@@ -34,8 +33,8 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 	gptdata->primary_header = (uint8_t *)malloc(gptdata->sector_bytes);
 	gptdata->secondary_header =
 		(uint8_t *)malloc(gptdata->sector_bytes);
-	gptdata->primary_entries = (uint8_t *)malloc(max_entries_bytes);
-	gptdata->secondary_entries = (uint8_t *)malloc(max_entries_bytes);
+	gptdata->primary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
+	gptdata->secondary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
 
 	if (gptdata->primary_header == NULL ||
 	    gptdata->secondary_header == NULL ||
@@ -60,8 +59,9 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 		uint64_t entries_bytes =
 				(uint64_t)primary_header->number_of_entries
 				* primary_header->size_of_entry;
-		uint64_t entries_sectors = entries_bytes
-					/ gptdata->sector_bytes;
+		uint64_t entries_sectors =
+				(entries_bytes + gptdata->sector_bytes - 1)
+				/ gptdata->sector_bytes;
 		if (0 != VbExDiskRead(disk_handle,
 				      primary_header->entries_lba,
 				      entries_sectors,
@@ -95,7 +95,8 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 		uint64_t entries_bytes =
 				(uint64_t)secondary_header->number_of_entries
 				* secondary_header->size_of_entry;
-		uint64_t entries_sectors = entries_bytes
+		uint64_t entries_sectors =
+				(entries_bytes + gptdata->sector_bytes - 1)
 				/ gptdata->sector_bytes;
 		if (0 != VbExDiskRead(disk_handle,
 				      secondary_header->entries_lba,

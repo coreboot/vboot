@@ -261,6 +261,8 @@ int GptSanityCheck(GptData *gpt)
 			     gpt->sector_bytes)) {
 		gpt->valid_headers |= MASK_PRIMARY;
 		goodhdr = header1;
+		if (0 == CheckEntries(entries1, goodhdr))
+			gpt->valid_entries |= MASK_PRIMARY;
 	} else if (header1 && !memcmp(header1->signature,
 		   GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE)) {
 		gpt->ignored |= MASK_PRIMARY;
@@ -271,6 +273,9 @@ int GptSanityCheck(GptData *gpt)
 		gpt->valid_headers |= MASK_SECONDARY;
 		if (!goodhdr)
 			goodhdr = header2;
+		/* Check header1+entries2 if it was good, to catch mismatch. */
+		if (0 == CheckEntries(entries2, goodhdr))
+			gpt->valid_entries |= MASK_SECONDARY;
 	} else if (header2 && !memcmp(header2->signature,
 		   GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE)) {
 		gpt->ignored |= MASK_SECONDARY;
@@ -278,18 +283,6 @@ int GptSanityCheck(GptData *gpt)
 
 	if (!gpt->valid_headers)
 		return GPT_ERROR_INVALID_HEADERS;
-
-	/*
-	 * Check if entries are valid.
-	 *
-	 * Note that we use the same header in both checks.  This way we'll
-	 * catch the case where (header1,entries1) and (header2,entries2) are
-	 * both valid, but (entries1 != entries2).
-	 */
-	if (0 == CheckEntries(entries1, goodhdr))
-		gpt->valid_entries |= MASK_PRIMARY;
-	if (0 == CheckEntries(entries2, goodhdr))
-		gpt->valid_entries |= MASK_SECONDARY;
 
 	/*
 	 * If both headers are good but neither entries were good, check the

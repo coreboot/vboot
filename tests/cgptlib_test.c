@@ -41,7 +41,7 @@
 #define DEFAULT_SECTOR_SIZE 512
 #define MAX_SECTOR_SIZE 4096
 #define DEFAULT_DRIVE_SECTORS 467
-#define TOTAL_ENTRIES_SIZE (MAX_NUMBER_OF_ENTRIES * sizeof(GptEntry)) /* 16384 */
+#define TOTAL_ENTRIES_SIZE GPT_ENTRIES_ALLOC_SIZE /* 16384 */
 #define PARTITION_ENTRIES_SIZE TOTAL_ENTRIES_SIZE /* 16384 */
 
 static const Guid guid_zero = {{{0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0}}}};
@@ -911,27 +911,27 @@ static int SanityCheckTest(void)
 	gpt->primary_header[0]++;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_SECONDARY == gpt->valid_headers);
-	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(MASK_SECONDARY == gpt->valid_entries);
 	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
 	EXPECT(0 == gpt->ignored);
-	EXPECT(GPT_MODIFIED_HEADER1 == gpt->modified);
+	EXPECT((GPT_MODIFIED_HEADER1 | GPT_MODIFIED_ENTRIES1) == gpt->modified);
 
 	BuildTestGptData(gpt);
 	gpt->secondary_header[0]++;
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_PRIMARY == gpt->valid_headers);
-	EXPECT(MASK_BOTH == gpt->valid_entries);
+	EXPECT(MASK_PRIMARY == gpt->valid_entries);
 	EXPECT(0 == gpt->ignored);
 	GptRepair(gpt);
 	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);
 	EXPECT(MASK_BOTH == gpt->valid_entries);
 	EXPECT(0 == gpt->ignored);
-	EXPECT(GPT_MODIFIED_HEADER2 == gpt->modified);
+	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
 
 	/*
 	 * Modify header1 and update its CRC.  Since header2 is now different
@@ -1038,35 +1038,6 @@ static int SanityCheckTest(void)
 	EXPECT(MASK_BOTH == gpt->valid_entries);
 	EXPECT(0 == gpt->ignored);
 	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
-
-	/* Test cross-correction (h1+e2, h2+e1) */
-	BuildTestGptData(gpt);
-	gpt->primary_header[0]++;
-	gpt->secondary_entries[0]++;
-	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
-	EXPECT(MASK_SECONDARY == gpt->valid_headers);
-	EXPECT(MASK_PRIMARY == gpt->valid_entries);
-	EXPECT(0 == gpt->ignored);
-	GptRepair(gpt);
-	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
-	EXPECT(MASK_BOTH == gpt->valid_headers);
-	EXPECT(MASK_BOTH == gpt->valid_entries);
-	EXPECT(0 == gpt->ignored);
-	EXPECT((GPT_MODIFIED_HEADER1 | GPT_MODIFIED_ENTRIES2) == gpt->modified);
-
-	BuildTestGptData(gpt);
-	gpt->secondary_header[0]++;
-	gpt->primary_entries[0]++;
-	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
-	EXPECT(MASK_PRIMARY == gpt->valid_headers);
-	EXPECT(MASK_SECONDARY == gpt->valid_entries);
-	EXPECT(0 == gpt->ignored);
-	GptRepair(gpt);
-	EXPECT(GPT_SUCCESS == GptSanityCheck(gpt));
-	EXPECT(MASK_BOTH == gpt->valid_headers);
-	EXPECT(MASK_BOTH == gpt->valid_entries);
-	EXPECT(0 == gpt->ignored);
-	EXPECT((GPT_MODIFIED_HEADER2 | GPT_MODIFIED_ENTRIES1) == gpt->modified);
 
 	/*
 	 * Test mismatched pairs (h1+e1 valid, h2+e2 valid but different.  This

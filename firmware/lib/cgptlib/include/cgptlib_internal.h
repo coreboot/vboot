@@ -60,6 +60,9 @@
 #define MIN_NUMBER_OF_ENTRIES 16
 #define MAX_NUMBER_OF_ENTRIES 128
 
+/* All GptData.(primary|secondary)_entries must be allocated to this size! */
+#define GPT_ENTRIES_ALLOC_SIZE (MAX_NUMBER_OF_ENTRIES * sizeof(GptEntry))
+
 /* Defines GPT sizes */
 #define GPT_PMBR_SECTORS 1  /* size (in sectors) of PMBR */
 #define GPT_HEADER_SECTORS 1
