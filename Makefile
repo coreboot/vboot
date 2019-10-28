@@ -135,7 +135,7 @@ endif
 # permit a calling script or Makefile to set these.
 #
 # Flag ordering: arch, then -f, then -m, then -W
-DEBUG_FLAGS := $(if ${DEBUG},-g -O0,-Os)
+DEBUG_FLAGS := $(if ${DEBUG},-g -O0,-g -Os)
 WERROR := -Werror
 FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
