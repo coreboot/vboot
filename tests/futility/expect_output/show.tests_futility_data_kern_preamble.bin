@@ -14,7 +14,7 @@ Kernel Preamble:
   Body size:             0x12000
   Bootloader address:    0x10a000
   Bootloader size:       0x8000
-  Flags:                 0x0
+  Flags:                 0
 Body verification succeeded.
 Config:
 hi there 
