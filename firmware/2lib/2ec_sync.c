@@ -448,35 +448,6 @@ static vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 	return sync_ec(ctx);
 }
 
-/**
- * EC sync, phase 3
- *
- * This completes EC sync and handles battery cutoff if needed.
- *
- * @param ctx		Vboot2 context
- * @return VB2_SUCCESS or non-zero error code.
- */
-static vb2_error_t ec_sync_phase3(struct vb2_context *ctx)
-{
-	/* EC verification (and possibly updating / jumping) is done */
-	vb2_error_t rv = vb2ex_ec_vboot_done(ctx);
-	if (rv)
-		return rv;
-
-	/* Check if we need to cut-off battery. This must be done after EC
-	 * firmware updating and before kernel started. */
-	if (vb2_nv_get(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST)) {
-		VB2_DEBUG("Request to cut-off battery\n");
-		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);
-		/* May lose power immediately, so commit our update now. */
-		vb2_nv_commit(ctx);
-		vb2ex_ec_battery_cutoff();
-		return VBERROR_SHUTDOWN_REQUESTED;
-	}
-
-	return VB2_SUCCESS;
-}
-
 vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -509,8 +480,8 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 	if (rv)
 		return rv;
 
-	/* Phase 3; Completes sync and handles battery cutoff */
-	rv = ec_sync_phase3(ctx);
+	/* Phase 3; Let the platform know that EC software sync is now done */
+	rv = vb2ex_ec_vboot_done(ctx);
 	if (rv)
 		return rv;
 
