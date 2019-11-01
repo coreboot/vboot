@@ -179,10 +179,6 @@ ifneq (${FORCE_LOGGING_ON},)
 CFLAGS += -DFORCE_LOGGING_ON=${FORCE_LOGGING_ON}
 endif
 
-ifneq (${PD_SYNC},)
-CFLAGS += -DPD_SYNC
-endif
-
 ifneq (${TPM2_MODE},)
 CFLAGS += -DTPM2_MODE
 endif

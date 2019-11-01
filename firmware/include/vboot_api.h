@@ -672,7 +672,7 @@ vb2_error_t VbExEcDisableJump(int devidx);
 /**
  * Read the SHA-256 hash of the selected EC image.
  *
- * @param devidx    Device index. 0: EC, 1: PD.
+ * @param devidx    Device index. 0: EC
  * @param select    Image to get hash of. RO or RW.
  * @param hash      Pointer to the hash.
  * @param hash_size Pointer to the hash size.

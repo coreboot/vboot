@@ -62,8 +62,8 @@ enum vb2_gbb_flag {
 	/* Default to booting legacy OS when dev screen times out */
 	VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY = 1 << 10,
 
-	/* Disable PD software sync */
-	VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC = 1 << 11,
+	/* Disable auxiliary firmware (auxfw) software sync */
+	VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC = 1 << 11,
 
 	/* Disable shutdown on lid closed */
 	VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN = 1 << 12,

@@ -15,21 +15,18 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 
-#define VB2_SD_FLAG_ECSYNC_RW					\
-	(VB2_SD_FLAG_ECSYNC_EC_RW | VB2_SD_FLAG_ECSYNC_PD_RW)
+#define VB2_SD_FLAG_ECSYNC_RW VB2_SD_FLAG_ECSYNC_EC_RW
 #define VB2_SD_FLAG_ECSYNC_ANY					\
 	(VB2_SD_FLAG_ECSYNC_EC_RO | VB2_SD_FLAG_ECSYNC_RW)
-#define VB2_SD_FLAG_ECSYNC_IN_RW					\
-	(VB2_SD_FLAG_ECSYNC_EC_IN_RW | VB2_SD_FLAG_ECSYNC_PD_IN_RW)
+#define VB2_SD_FLAG_ECSYNC_IN_RW VB2_SD_FLAG_ECSYNC_EC_IN_RW
 
 #define IN_RW(devidx)							\
-	((devidx) ? VB2_SD_FLAG_ECSYNC_PD_IN_RW : VB2_SD_FLAG_ECSYNC_EC_IN_RW)
+	((devidx) ? 0 : VB2_SD_FLAG_ECSYNC_EC_IN_RW)
 
 #define WHICH_EC(devidx, select) \
 	((select) == VB_SELECT_FIRMWARE_READONLY ? VB2_SD_FLAG_ECSYNC_EC_RO : \
-	 ((devidx) ? VB2_SD_FLAG_ECSYNC_PD_RW : VB2_SD_FLAG_ECSYNC_EC_RW))
+	 ((devidx) ? 0 : VB2_SD_FLAG_ECSYNC_EC_RW))
 
-/* PD doesn't support RW A/B */
 #define RW_AB(devidx) ((devidx) ? 0 : VB2_CONTEXT_EC_EFS)
 
 static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
@@ -200,7 +197,7 @@ static vb2_error_t update_ec(struct vb2_context *ctx, int devidx,
  * Set IN_RW flag for a EC
  *
  * @param ctx		Vboot2 context
- * @param devidx	Which device (EC=0, PD=1)
+ * @param devidx	Which device (EC=0)
  */
 static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
 {
@@ -233,7 +230,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx, int devidx)
  * Sync, jump, and protect one EC device
  *
  * @param ctx		Vboot2 context
- * @param devidx	Which device (EC=0, PD=1)
+ * @param devidx	Which device (EC=0)
  * @return VB2_SUCCESS, or non-zero if error.
  */
 static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
@@ -280,7 +277,7 @@ static vb2_error_t sync_one_ec(struct vb2_context *ctx, int devidx)
 		}
 	}
 
-	/* Might need to update EC-RO (but not PD-RO) */
+	/* Might need to update EC-RO */
 	if (sd->flags & VB2_SD_FLAG_ECSYNC_EC_RO) {
 		VB2_DEBUG("RO Software Sync\n");
 
@@ -347,30 +344,16 @@ vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
 		return VB2_SUCCESS;
 
-#ifdef PD_SYNC
-	const int do_pd_sync = !(gbb->flags &
-				 VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC);
-#else
-	const int do_pd_sync = 0;
-#endif
-
 	/* Set IN_RW flags */
 	if (check_ec_active(ctx, 0))
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-	if (do_pd_sync && check_ec_active(ctx, 1))
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 
 	/* Check if we need to update RW.  Failures trigger recovery mode. */
 	if (check_ec_hash(ctx, 0, VB_SELECT_FIRMWARE_EC_ACTIVE))
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-	if (do_pd_sync && check_ec_hash(ctx, 1, VB_SELECT_FIRMWARE_EC_ACTIVE))
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+
 	/*
 	 * See if we need to update EC-RO (devidx=0).
-	 *
-	 * If we want to extend this in the future to update PD-RO, we'll use a
-	 * different NV flag so we can track EC-RO and PD-RO updates
-	 * separately.
 	 */
 	if (vb2_nv_get(ctx, VB2_NV_TRY_RO_SYNC) &&
 	    check_ec_hash(ctx, 0, VB_SELECT_FIRMWARE_READONLY)) {
@@ -430,10 +413,11 @@ vb2_error_t ec_sync_check_aux_fw(struct vb2_context *ctx,
 
 	/* If we're not updating the EC, skip aux fw syncs as well */
 	if (!ec_sync_allowed(ctx) ||
-	    (gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
+		(gbb->flags & VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC)) {
 		*severity = VB_AUX_FW_NO_UPDATE;
 		return VB2_SUCCESS;
 	}
+
 	return VbExCheckAuxFw(severity);
 }
 
@@ -460,16 +444,6 @@ vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 	vb2_error_t retval = sync_one_ec(ctx, 0);
 	if (retval != VB2_SUCCESS)
 		return retval;
-
-#ifdef PD_SYNC
-	/* Handle updates and jumps for PD */
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	if (!(gbb->flags & VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC)) {
-		retval = sync_one_ec(ctx, 1);
-		if (retval != VB2_SUCCESS)
-			return retval;
-	}
-#endif
 
 	return VB2_SUCCESS;
 }
