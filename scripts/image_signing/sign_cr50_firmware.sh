@@ -37,7 +37,7 @@ to_int32() {
 }
 
 # This function accepts one argument, the name of the Cr50 manifest file which
-# needs to be verified.
+# needs to be verified and in certain cases altered.
 #
 # The function verifies that the input manifest is a proper json file, and
 # that the manifest conforms to Cr50 version numbering and board ID flags
@@ -83,40 +83,66 @@ verify_and_prepare_cr50_manifest() {
     die "bid_flags not found in ${manifest_json}"
   fi
 
-  if [[ ${INSN_TARGET:-} ==  NodeLocked  ]]; then
-    if [[ -z ${INSN_DEVICE_ID:-} ]]; then
-      die "Node locked target without Device ID value"
-    fi
-    # Case of a node locked image, it must have the fixed factory version. The
-    # manifest fields must be modified as follows:
-    #
-    # - DEV_ID values spliced in into the "fuses" section
-    # - board_id related fields removed
-    # - config1 field bit 0x80000000 set
+  case "${INSN_TARGET:-}" in
 
-    local sub
-    local devid0
-    local devid1
+    (NodeLocked)
+      if [[ -z ${INSN_DEVICE_ID:-} ]]; then
+        die "Node locked target without Device ID value"
+      fi
+      # Case of a node locked image, it must have the fixed factory version.
+      if [[ $epoch.$major.$minor != $CR50_FACTORY_VERSION ]];then
+        die "Won't create node locked images for version $epoch.$major.$minor"
+      fi
 
-    if [[ $epoch.$major.$minor != $CR50_FACTORY_VERSION ]];then
-      die "Will not create node locked images for version $epoch.$major.$minor"
-    fi
+      local sub
+      local devid0
+      local devid1
 
-    devid0="$(to_int32 "0x${INSN_DEVICE_ID/-*}")"
-    devid1="$(to_int32 "0x${INSN_DEVICE_ID/*-}")"
-    cf1="$(to_int32 $(( 0x80000000 + ${config1} )))"
-    sub="$(printf "   \"DEV_ID0\": %s,\\\n  \"DEV_ID1\": %s," \
-                  "${devid0}" "${devid1}")"
-    sed -i  "/board_id/d;s/\"config1\":.*/\"config1\": ${cf1},/;/\"fuses\":/ a\
-$sub"  "${manifest_json}" || die "Failed to edit the manifest"
-    return 0
-  elif (( major & 1 )); then
-    return 0
-  elif (( bid_flags & PRE_PVT_BID_FLAG )); then
-    return 0
-  fi
+      devid0="$(to_int32 "0x${INSN_DEVICE_ID/-*}")"
+      devid1="$(to_int32 "0x${INSN_DEVICE_ID/*-}")"
+      cf1="$(to_int32 $(( 0x80000000 + ${config1} )))"
+      sub="$(printf "   \"DEV_ID0\": %s,\\\n  \"DEV_ID1\": %s," \
+                              "${devid0}" "${devid1}")"
+
+      # Manifest fields must be modified as follows:
+      #
+      # - board_id related fields removed
+      # - 'config1' field bit 0x80000000 set
+      # - least significant bit of the 'tag' field originally set to all zeros
+      #   changed from zero to one
+      # - DEV_ID values spliced in into the 'fuses' section
+      sed -i  "/board_id/d;\
+        s/\"config1\":.*/\"config1\": ${cf1},/;\
+        s/\(tag.*0\+\)0/\11/;\
+        /\"fuses\":/ a\
+            $sub"  "${manifest_json}" || die "Failed to edit the manifest"
+      return 0
+      ;;
+
+    (PrePVT)
+      # All we care about for pre pvt images is that major version number is
+      # even and the 0x10 Board ID flag is set.
+      if (( !(major & 1 ) && (bid_flags & PRE_PVT_BID_FLAG) )); then
+        return 0
+      fi
+      ;;
+
+    (ReleaseCandidate|GeneralRelease)
+      if (( (bid_flags & MP_BID_FLAG) && (major & 1) )); then
+        if [[ ${INSN_TARGET} == GeneralRelease ]]; then
+          # Strip Board ID information for approved for release MP images.
+          sed -i  "/board_id/d" "${manifest_json}"
+        fi
+        return 0
+      fi
+      ;;
+
+    (*)
+      die "Unsupported target '${INSN_TARGET:-}'"
+  esac
+
   die "Inconsistent manifest ${manifest_json}: major = '${major}'," \
-      "board_id_flags = '${bid_flags}'"
+      "board_id_flags = '${bid_flags}' target = '${INSN_TARGET}'"
 }
 
 # This function accepts two arguments, names of two binary files.
