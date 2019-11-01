@@ -442,10 +442,10 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
 
 	ResetMocks();
-	gbb.flags |= VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC;
 	ec_aux_fw_mock_severity = VB_AUX_FW_FAST_UPDATE;
 	test_ssync(VB2_SUCCESS, 0,
-		   "VB2_GBB_FLAG_DISABLE_PD_SOFTWARE_SYNC"
+		   "VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC"
 		   " disables auxiliary FW update request");
 	TEST_EQ(ec_aux_fw_update_req, 0, "  aux fw update disabled");
 	TEST_EQ(ec_aux_fw_protected, 1, "  aux fw protected");
