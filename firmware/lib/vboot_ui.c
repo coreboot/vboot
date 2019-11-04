@@ -128,7 +128,6 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			}
 			VB2_DEBUG("Yes (1)\n");
 			return 1;
-			break;
 		case ' ':
 			VB2_DEBUG("Space (%d)\n",
 				  confirm_flags & VB_CONFIRM_SPACE_MEANS_NO);
@@ -138,7 +137,6 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 		case VB_KEY_ESC:
 			VB2_DEBUG("No (0)\n");
 			return 0;
-			break;
 		default:
 			/* If the physical presence button is physical, and is
 			 * pressed, this is also a YES, but must wait for
@@ -655,7 +653,6 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 				  "user pressed Ctrl+D; skip delay\n");
 			ctrl_d_pressed = 1;
 			goto fallout;
-			break;
 		case VB_KEY_CTRL('L'):
 			VB2_DEBUG("VbBootDeveloper() - "
 				  "user pressed Ctrl+L; Try alt firmware\n");
