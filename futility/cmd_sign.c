@@ -721,7 +721,7 @@ static int do_sign(int argc, char *argv[])
 			break;
 		case OPT_FV:
 			sign_option.fv_specified = 1;
-			VBOOT_FALLTHROUGH;
+			__attribute__ ((fallthrough));
 		case OPT_INFILE:
 			sign_option.inout_file_count++;
 			infile = optarg;

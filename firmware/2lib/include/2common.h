@@ -71,27 +71,6 @@ struct vb2_public_key;
 #endif
 #endif
 
-// Have a generic fall-through for different versions of C/C++.
-// Taken from boringssl.
-#if defined(__cplusplus) && __cplusplus >= 201703L
-#define VBOOT_FALLTHROUGH [[fallthrough]]
-#elif defined(__cplusplus) && __cplusplus >= 201103L && defined(__clang__)
-#define VBOOT_FALLTHROUGH [[clang::fallthrough]]
-#elif defined(__cplusplus) && __cplusplus >= 201103L && defined(__GNUC__) && \
-    __GNUC__ >= 7
-#define VBOOT_FALLTHROUGH [[gnu::fallthrough]]
-#elif defined(__GNUC__) && __GNUC__ >= 7 // gcc 7
-#define VBOOT_FALLTHROUGH __attribute__ ((fallthrough))
-#elif defined(__clang__)
-#if __has_attribute(fallthrough)
-#define VBOOT_FALLTHROUGH __attribute__ ((fallthrough))
-#else // clang versions that do not support fallthrough.
-#define VBOOT_FALLTHROUGH
-#endif
-#else // C++11 on gcc 6, and all other cases
-#define VBOOT_FALLTHROUGH
-#endif
-
 /**
  * Round up a number to a multiple of VB2_WORKBUF_ALIGN
  *
