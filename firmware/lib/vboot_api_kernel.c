@@ -353,7 +353,7 @@ vb2_error_t vb2_commit_data(struct vb2_context *ctx)
 
 	default:
 		VB2_DEBUG("unknown commit error: %#x\n", rv);
-		VBOOT_FALLTHROUGH;
+		__attribute__ ((fallthrough));
 
 	case VB2_ERROR_NV_WRITE:
 		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
