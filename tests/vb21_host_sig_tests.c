@@ -47,7 +47,7 @@ static void sig_tests(const struct alg_combo *combo,
 	uint32_t size;
 
 	uint8_t workbuf[VB2_VERIFY_DATA_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 
 	uint8_t *buf;

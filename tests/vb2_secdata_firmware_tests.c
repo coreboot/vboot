@@ -16,7 +16,7 @@
 #include "vboot_common.h"
 
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
-	__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_secdata_firmware *sec;

@@ -61,7 +61,7 @@
  *    int foo(void)
  *    {
  *        struct vb2_workbuf wb;
- *        uint8_t buf[NUM] __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+ *        uint8_t buf[NUM] __attribute__((aligned(VB2_WORKBUF_ALIGN)));
  *        wb.buf = buf;
  *        wb.size = sizeof(buf);
  */

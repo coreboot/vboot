@@ -145,7 +145,7 @@ static void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-	uint8_t workbuf[16384] __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+	uint8_t workbuf[16384] __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_context *ctx;
 	struct vb2_shared_data *sd;
 	vb2_error_t rv;

@@ -508,7 +508,8 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 	uint32_t vmlinuz_header_size = 0;
 	uint64_t vmlinuz_header_address = 0;
 
-	uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+	uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
@@ -740,7 +741,8 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 
 enum futil_file_type ft_recognize_vblock1(uint8_t *buf, uint32_t len)
 {
-	uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+	uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 

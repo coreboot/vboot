@@ -21,7 +21,7 @@
 static void test_signatures(const struct vb2_public_key *key)
 {
 	uint8_t workbuf[VB2_VERIFY_DIGEST_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	uint8_t sig[RSA1024NUMBYTES];
 	struct vb2_workbuf wb;
 	int unexpected_success;
@@ -54,7 +54,7 @@ static void test_signatures(const struct vb2_public_key *key)
  */
 static void test_verify_digest(struct vb2_public_key *key) {
 	uint8_t workbuf[VB2_VERIFY_DIGEST_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	uint8_t sig[RSA1024NUMBYTES];
 	struct vb2_workbuf wb;
 	enum vb2_signature_algorithm orig_key_alg = key->sig_alg;

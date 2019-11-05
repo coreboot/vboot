@@ -81,10 +81,10 @@ struct vb2_public_key;
     __GNUC__ >= 7
 #define VBOOT_FALLTHROUGH [[gnu::fallthrough]]
 #elif defined(__GNUC__) && __GNUC__ >= 7 // gcc 7
-#define VBOOT_FALLTHROUGH __attribute__ ((fallthrough))
+#define VBOOT_FALLTHROUGH __attribute__((fallthrough))
 #elif defined(__clang__)
 #if __has_attribute(fallthrough)
-#define VBOOT_FALLTHROUGH __attribute__ ((fallthrough))
+#define VBOOT_FALLTHROUGH __attribute__((fallthrough))
 #else // clang versions that do not support fallthrough.
 #define VBOOT_FALLTHROUGH
 #endif

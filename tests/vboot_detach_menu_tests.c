@@ -27,7 +27,8 @@
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
 static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
-static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;

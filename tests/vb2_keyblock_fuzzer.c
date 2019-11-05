@@ -11,8 +11,8 @@
 #include "vboot_test.h"
 
 static struct vb2_context *ctx;
-__attribute__((aligned(VB2_WORKBUF_ALIGN)))
-static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
+static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct {
 	struct vb2_gbb_header h;
 	uint8_t rootkey[4096];

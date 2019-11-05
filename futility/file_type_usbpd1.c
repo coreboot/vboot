@@ -372,7 +372,7 @@ static vb2_error_t try_our_own(enum vb2_signature_algorithm sig_alg,
 	struct vb2_public_key pubkey;
 	struct vb21_signature *sig;
 	uint8_t buf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
-		__attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb = {
 		.buf = buf,
 		.size = sizeof(buf),

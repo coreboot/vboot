@@ -64,7 +64,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	const struct vb21_packed_key *pkey = show_option.pkey;
 	struct vb2_public_key key;
 	uint8_t workbuf[VB2_VERIFY_DATA_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	uint32_t data_size, sig_size = SIGNATURE_RSVD_SIZE;
 	uint32_t total_data_size = 0;

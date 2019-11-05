@@ -1259,7 +1259,8 @@ static struct vb2_keyblock *dupe_keyblock(const struct vb2_keyblock *block)
 static int verify_keyblock(const struct vb2_keyblock *block,
 			   const struct vb2_packed_key *sign_key) {
 	int r;
-	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
+	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	struct vb2_public_key key;
 	struct vb2_keyblock *new_block;

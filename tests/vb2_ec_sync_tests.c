@@ -48,7 +48,8 @@ static int mock_ec_rw_hash_size;
 static uint8_t want_ec_hash[32];
 static uint8_t update_hash;
 static int want_ec_hash_size;
-static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
+static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;

@@ -37,7 +37,7 @@ static void preamble_tests(const char *keys_dir)
 	int i;
 
 	uint8_t workbuf[VB2_VERIFY_FIRMWARE_PREAMBLE_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
