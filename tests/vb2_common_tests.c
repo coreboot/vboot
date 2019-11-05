@@ -148,7 +148,7 @@ static void test_align(void)
  */
 static void test_workbuf(void)
 {
-	uint64_t buf[8] __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+	uint64_t buf[8] __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	uint8_t *p0 = (uint8_t *)buf, *ptr;
 	struct vb2_workbuf wb;
 

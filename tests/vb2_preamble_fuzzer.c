@@ -12,8 +12,8 @@
 #include "vboot_test.h"
 
 static struct vb2_context *ctx;
-__attribute__((aligned(VB2_WORKBUF_ALIGN)))
-static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
+static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 
 static const uint8_t *mock_preamble;
 static size_t mock_preamble_size;

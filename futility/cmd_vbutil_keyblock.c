@@ -178,7 +178,8 @@ static int Unpack(const char *infile, const char *datapubkey,
 	/* If the signing public key is provided, then verify the block
 	 * signature, since vb2_read_keyblock() only verified the hash. */
 	if (signpubkey) {
-		static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
+		static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+			__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 		static struct vb2_workbuf wb;
 
 		if (block->keyblock_signature.sig_size == 0) {

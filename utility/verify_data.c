@@ -31,7 +31,7 @@
 int main(int argc, char* argv[])
 {
 	uint8_t workbuf[VB2_VERIFY_DIGEST_WORKBUF_BYTES]
-		 __attribute__ ((aligned (VB2_WORKBUF_ALIGN)));
+		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 

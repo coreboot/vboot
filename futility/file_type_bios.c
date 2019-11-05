@@ -245,7 +245,8 @@ static int fmap_sign_fw_main(const char *name, uint8_t *buf, uint32_t len,
 static int fmap_sign_fw_preamble(const char *name, uint8_t *buf, uint32_t len,
 				 void *data)
 {
-	static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE];
+	static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	static struct vb2_workbuf wb;
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
