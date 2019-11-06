@@ -290,7 +290,7 @@ export BUILD_RUN
 
 # Default target.
 .PHONY: all
-all: $(if ${NO_BUILD_TOOLS},,fwlib fwlib2x fwlib20 fwlib21) \
+all: $(if ${NO_BUILD_TOOLS},,fwlib fwlib2x fwlib20 fwlib21 tlcl) \
 	$(if ${FIRMWARE_ARCH},,host_stuff) \
 	$(if ${COV},coverage)
 
@@ -328,6 +328,9 @@ FWLIB2X = ${BUILD}/vboot_fw2x.a
 FWLIB20 = ${BUILD}/vboot_fw20.a
 # Vboot 2.1 (not yet ready - see firmware/README)
 FWLIB21 = ${BUILD}/vboot_fw21.a
+
+# Separate TPM lightweight command library (TLCL)
+TLCL = ${BUILD}/tlcl.a
 
 # Additional firmware library sources needed by VbSelectAndLoadKernel() call
 FWLIB_SRCS = \
@@ -395,11 +398,10 @@ endif
 # Support real TPM unless BIOS sets MOCK_TPM
 ifeq (${MOCK_TPM},)
 FWLIB_SRCS += \
-	firmware/lib/secdata_tpm.c \
-	${TLCL_SRCS}
+	firmware/lib/secdata_tpm.c
 else
 FWLIB_SRCS += \
-	firmware/lib/mocked_secdata_tpm.c \
+	firmware/lib/mocked_secdata_tpm.c
 	firmware/lib/tpm_lite/mocked_tlcl.c
 endif
 
@@ -429,7 +431,9 @@ FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 FWLIB2X_OBJS = ${FWLIB2X_SRCS:%.c=${BUILD}/%.o}
 FWLIB20_OBJS = ${FWLIB20_SRCS:%.c=${BUILD}/%.o}
 FWLIB21_OBJS = ${FWLIB21_SRCS:%.c=${BUILD}/%.o}
-ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS}
+TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
+ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS} \
+	${TLCL_OBJS}
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
@@ -839,7 +843,7 @@ install_for_test: install
 # TPM_BLOCKING_CONTINUESELFTEST is defined if TPM_ContinueSelfTest blocks until
 # the self test has completed.
 
-${FWLIB_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
+${TLCL_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 # TPM_MANUAL_SELFTEST is defined if the self test must be started manually
 # (with a call to TPM_ContinueSelfTest) instead of starting automatically at
@@ -896,6 +900,15 @@ ${FWLIB21}: ${FWLIB2X_OBJS} ${FWLIB21_OBJS}
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
 	${Q}ar qc $@ $^
 
+.PHONY: tlcl
+tlcl: ${TLCL}
+
+${TLCL}: ${TLCL_OBJS}
+	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
+	${Q}rm -f $@
+	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
+	${Q}ar qc $@ $^
+
 # ----------------------------------------------------------------------------
 # Host library(s)
 
@@ -904,7 +917,7 @@ utillib: ${UTILLIB}
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} \
-		${FWLIB21_OBJS}
+		${FWLIB21_OBJS} ${TLCL_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
