@@ -1088,24 +1088,12 @@ static int preserve_known_sections(struct firmware_image *from,
 {
 	int errcnt = 0, i;
 	const char * const names[] = {
-		"RO_PRESERVE",
-		"RW_PRESERVE",
+		"RW_PRESERVE",  /* Only octopus fw branch is using this. */
 		"RO_VPD",
 		"RW_VPD",
 		"SMMSTORE",
 		"RW_NVRAM",
 		"RW_ELOG",
-		/*
-		 * TODO(hungte): b/116326638: Remove RO_FSG after the migration
-		 * is finished.
-		 */
-		"RO_FSG",
-		 /*
-		  * TODO(hungte): crbug.com/936768: Remove SI_GBE, SI_PDR after
-		  * both migrated to the new FMAP based preserve method.
-		  */
-		"SI_GBE",
-		"SI_PDR",
 	};
 
 	for (i = 0; i < ARRAY_SIZE(names); i++) {
