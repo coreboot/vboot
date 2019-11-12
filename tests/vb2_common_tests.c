@@ -152,46 +152,50 @@ static void test_workbuf(void)
 	uint8_t *p0 = (uint8_t *)buf, *ptr;
 	struct vb2_workbuf wb;
 
-	/* NOTE: There are several magic numbers below which assume that
-	 * VB2_WORKBUF_ALIGN == 16 */
-
 	/* Init */
-	vb2_workbuf_init(&wb, p0, 64);
+	vb2_workbuf_init(&wb, p0, VB2_WORKBUF_ALIGN * 2);
 	TEST_EQ(vb2_offset_of(p0, wb.buf), 0, "Workbuf init aligned");
-	TEST_EQ(wb.size, 64, "  size");
+	TEST_EQ(wb.size, VB2_WORKBUF_ALIGN * 2, "  size");
 
-	vb2_workbuf_init(&wb, p0 + 4, 64);
+	/* Unaligned init */
+	vb2_workbuf_init(&wb, p0 + 1, VB2_WORKBUF_ALIGN * 2);
 	TEST_EQ(vb2_offset_of(p0, wb.buf), VB2_WORKBUF_ALIGN,
 		"Workbuf init unaligned");
-	TEST_EQ(wb.size, 64 - VB2_WORKBUF_ALIGN + 4, "  size");
+	TEST_EQ(wb.size, VB2_WORKBUF_ALIGN + 1, "  size");
 
-	vb2_workbuf_init(&wb, p0 + 2, 5);
-	TEST_EQ(wb.size, 0, "Workbuf init tiny unaligned size");
+	/* No size left after align */
+	vb2_workbuf_init(&wb, p0 + 1, VB2_WORKBUF_ALIGN - 1);
+	TEST_EQ(wb.size, 0, "Workbuf init size=0 after align");
+	vb2_workbuf_init(&wb, p0 + 1, VB2_WORKBUF_ALIGN - 2);
+	TEST_EQ(wb.size, 0, "Workbuf init size=-1 after align");
 
 	/* Alloc rounds up */
-	vb2_workbuf_init(&wb, p0, 64);
-	ptr = vb2_workbuf_alloc(&wb, 22);
+	vb2_workbuf_init(&wb, p0, VB2_WORKBUF_ALIGN * 2);
+	ptr = vb2_workbuf_alloc(&wb, VB2_WORKBUF_ALIGN - 1);
 	TEST_EQ(vb2_offset_of(p0, ptr), 0, "Workbuf alloc");
-	TEST_EQ(vb2_offset_of(p0, wb.buf), 32, "  buf");
-	TEST_EQ(wb.size, 32, "  size");
+	TEST_EQ(vb2_offset_of(p0, wb.buf), VB2_WORKBUF_ALIGN, "  buf");
+	TEST_EQ(wb.size, VB2_WORKBUF_ALIGN, "  size");
 
-	vb2_workbuf_init(&wb, p0, 32);
-	TEST_PTR_EQ(vb2_workbuf_alloc(&wb, 33), NULL, "Workbuf alloc too big");
+	/* Alloc doesn't fit */
+	vb2_workbuf_init(&wb, p0, VB2_WORKBUF_ALIGN);
+	TEST_PTR_EQ(vb2_workbuf_alloc(&wb, VB2_WORKBUF_ALIGN + 1), NULL,
+		    "Workbuf alloc too big");
 
 	/* Free reverses alloc */
-	vb2_workbuf_init(&wb, p0, 32);
-	vb2_workbuf_alloc(&wb, 22);
-	vb2_workbuf_free(&wb, 22);
+	vb2_workbuf_init(&wb, p0, VB2_WORKBUF_ALIGN * 2);
+	vb2_workbuf_alloc(&wb, VB2_WORKBUF_ALIGN + 1);
+	vb2_workbuf_free(&wb, VB2_WORKBUF_ALIGN + 1);
 	TEST_EQ(vb2_offset_of(p0, wb.buf), 0, "Workbuf free buf");
-	TEST_EQ(wb.size, 32, "  size");
+	TEST_EQ(wb.size, VB2_WORKBUF_ALIGN * 2, "  size");
 
 	/* Realloc keeps same pointer as alloc */
-	vb2_workbuf_init(&wb, p0, 64);
-	vb2_workbuf_alloc(&wb, 6);
-	ptr = vb2_workbuf_realloc(&wb, 6, 21);
+	vb2_workbuf_init(&wb, p0, VB2_WORKBUF_ALIGN * 3);
+	vb2_workbuf_alloc(&wb, VB2_WORKBUF_ALIGN - 1);
+	ptr = vb2_workbuf_realloc(&wb, VB2_WORKBUF_ALIGN - 1,
+				  VB2_WORKBUF_ALIGN + 1);
 	TEST_EQ(vb2_offset_of(p0, ptr), 0, "Workbuf realloc");
-	TEST_EQ(vb2_offset_of(p0, wb.buf), 32, "  buf");
-	TEST_EQ(wb.size, 32, "  size");
+	TEST_EQ(vb2_offset_of(p0, wb.buf), VB2_WORKBUF_ALIGN * 2, "  buf");
+	TEST_EQ(wb.size, VB2_WORKBUF_ALIGN, "  size");
 }
 
 /**

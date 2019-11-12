@@ -66,9 +66,9 @@
  *        wb.size = sizeof(buf);
  */
 
-/* We might get away with using __alignof__(void *), but since GCC defines a
- * macro for us we'll be safe and use that. */
-#define VB2_WORKBUF_ALIGN __BIGGEST_ALIGNMENT__
+/* We want consistent alignment across all architectures.
+   8-byte should work for all of them. */
+#define VB2_WORKBUF_ALIGN 8
 
 /* Maximum length of a HWID in bytes, counting terminating null. */
 #define VB2_GBB_HWID_MAX_SIZE 256
