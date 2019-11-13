@@ -292,7 +292,7 @@ int archive_has_entry(struct archive *ar, const char *name);
  * otherwise non-zero as failure.
  */
 int archive_read_file(struct archive *ar, const char *fname,
-		      uint8_t **data, uint32_t *size);
+		      uint8_t **data, uint32_t *size, int64_t *mtime);
 
 /*
  * Writes a file into archive.
@@ -301,7 +301,7 @@ int archive_read_file(struct archive *ar, const char *fname,
  * Returns 0 on success, otherwise non-zero as failure.
  */
 int archive_write_file(struct archive *ar, const char *fname,
-		       uint8_t *data, uint32_t size);
+		       uint8_t *data, uint32_t size, int64_t mtime);
 
 /*
  * Copies all entries from one archive to another.

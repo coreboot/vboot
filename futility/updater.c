@@ -639,8 +639,8 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 		ERROR("Does not exist: %s\n", file_name);
 		return -1;
 	}
-	if (archive_read_file(archive, file_name, &image->data, &image->size) !=
-	    VB2_SUCCESS) {
+	if (archive_read_file(archive, file_name, &image->data, &image->size, NULL)
+	    != VB2_SUCCESS) {
 		ERROR("Failed to load %s\n", file_name);
 		return -1;
 	}
