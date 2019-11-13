@@ -7,11 +7,13 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fts.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #ifdef HAVE_LIBZIP
@@ -80,9 +82,9 @@ struct archive {
 		    int (*callback)(const char *path, void *arg));
 	int (*has_entry)(void *handle, const char *name);
 	int (*read_file)(void *handle, const char *fname,
-			 uint8_t **data, uint32_t *size);
+			 uint8_t **data, uint32_t *size, int64_t *mtime);
 	int (*write_file)(void *handle, const char *fname,
-			  uint8_t *data, uint32_t size);
+			  uint8_t *data, uint32_t size, int64_t mtime);
 };
 
 /*
@@ -164,23 +166,30 @@ static int archive_fallback_has_entry(void *handle, const char *fname)
 
 /* Callback for archive_read_file on a general file system. */
 static int archive_fallback_read_file(void *handle, const char *fname,
-				      uint8_t **data, uint32_t *size)
+				      uint8_t **data, uint32_t *size, int64_t *mtime)
 {
 	int r;
 	char *temp_path = NULL;
 	const char *path = archive_fallback_get_path(handle, fname, &temp_path);
+	struct stat st;
 
 	VB2_DEBUG("Reading %s\n", path);
 	*data = NULL;
 	*size = 0;
 	r = vb2_read_file(path, data, size) != VB2_SUCCESS;
+	if (mtime) {
+		if (stat(path, &st) == 0)
+			*mtime = st.st_mtime;
+		else
+			WARN("Unable to stat %s: %s\n", path, strerror(errno));
+	}
 	free(temp_path);
 	return r;
 }
 
 /* Callback for archive_write_file on a general file system. */
 static int archive_fallback_write_file(void *handle, const char *fname,
-				       uint8_t *data, uint32_t size)
+				       uint8_t *data, uint32_t size, int64_t mtime)
 {
 	int r;
 	char *temp_path = NULL;
@@ -200,6 +209,14 @@ static int archive_fallback_write_file(void *handle, const char *fname,
 		free(dirname);
 	}
 	r = vb2_write_file(path, data, size) != VB2_SUCCESS;
+	if (mtime) {
+		struct timeval times[2] = {
+			{.tv_sec = mtime, .tv_usec = 0},
+			{.tv_sec = mtime, .tv_usec = 0},
+		};
+		if (utimes(path, times) != 0)
+			WARN("Unable to set times on %s: %s\n", path, strerror(errno));
+	}
 	free(temp_path);
 	return r;
 }
@@ -254,7 +271,7 @@ static int archive_zip_walk(
 
 /* Callback for archive_zip_read_file on a ZIP file. */
 static int archive_zip_read_file(void *handle, const char *fname,
-			     uint8_t **data, uint32_t *size)
+			     uint8_t **data, uint32_t *size, int64_t *mtime)
 {
 	struct zip *zip = (struct zip *)handle;
 	struct zip_file *fp;
@@ -276,6 +293,8 @@ static int archive_zip_read_file(void *handle, const char *fname,
 	*data = (uint8_t *)malloc(stat.size);
 	if (*data) {
 		if (zip_fread(fp, *data, stat.size) == stat.size) {
+			if (mtime)
+				*mtime = stat.mtime;
 			*size = stat.size;
 		} else {
 			ERROR("Failed to read entry in zip: %s\n", fname);
@@ -289,7 +308,7 @@ static int archive_zip_read_file(void *handle, const char *fname,
 
 /* Callback for archive_zip_write_file on a ZIP file. */
 static int archive_zip_write_file(void *handle, const char *fname,
-				  uint8_t *data, uint32_t size)
+				  uint8_t *data, uint32_t size, int64_t mtime)
 {
 	struct zip *zip = (struct zip *)handle;
 	struct zip_source *src;
@@ -309,7 +328,7 @@ static int archive_zip_write_file(void *handle, const char *fname,
 	}
 	/* zip_source_free is not needed if zip_file_add success. */
 #if LIBZIP_VERSION_MAJOR >= 1
-	zip_file_set_mtime(zip, zip_name_locate(zip, fname, 0), 0, 0);
+	zip_file_set_mtime(zip, zip_name_locate(zip, fname, 0), mtime, 0);
 #endif
 	return 0;
 }
@@ -418,11 +437,11 @@ static int archive_walk(struct archive *ar, void *arg,
  * otherwise non-zero as failure.
  */
 int archive_read_file(struct archive *ar, const char *fname,
-		      uint8_t **data, uint32_t *size)
+		      uint8_t **data, uint32_t *size, int64_t *mtime)
 {
 	if (!ar || *fname == '/')
-		return archive_fallback_read_file(NULL, fname, data, size);
-	return ar->read_file(ar->handle, fname, data, size);
+		return archive_fallback_read_file(NULL, fname, data, size, mtime);
+	return ar->read_file(ar->handle, fname, data, size, mtime);
 }
 
 /*
@@ -432,11 +451,11 @@ int archive_read_file(struct archive *ar, const char *fname,
  * Returns 0 on success, otherwise non-zero as failure.
  */
 int archive_write_file(struct archive *ar, const char *fname,
-		       uint8_t *data, uint32_t size)
+		       uint8_t *data, uint32_t size, int64_t mtime)
 {
 	if (!ar || *fname == '/')
-		return archive_fallback_write_file(NULL, fname, data, size);
-	return ar->write_file(ar->handle, fname, data, size);
+		return archive_fallback_write_file(NULL, fname, data, size, mtime);
+	return ar->write_file(ar->handle, fname, data, size, mtime);
 }
 
 struct _copy_arg {
@@ -449,14 +468,15 @@ static int archive_copy_callback(const char *path, void *_arg)
 	const struct _copy_arg *arg = (const struct _copy_arg*)_arg;
 	uint32_t size;
 	uint8_t *data;
+	int64_t mtime;
 	int r;
 
 	INFO("Copying: %s\n", path);
-	if (archive_read_file(arg->from, path, &data, &size)) {
+	if (archive_read_file(arg->from, path, &data, &size, &mtime)) {
 		ERROR("Failed reading: %s\n", path);
 		return 1;
 	}
-	r = archive_write_file(arg->to, path, data, size);
+	r = archive_write_file(arg->to, path, data, size, mtime);
 	VB2_DEBUG("result=%d\n", r);
 	free(data);
 	return r;
@@ -536,7 +556,7 @@ static int model_config_parse_setvars_file(
 	char *line, *k, *v;
 	int valid = 0;
 
-	if (archive_read_file(archive, fpath, &data, &len) != 0) {
+	if (archive_read_file(archive, fpath, &data, &len, NULL) != 0) {
 		ERROR("Failed reading: %s\n", fpath);
 		return -1;
 	}
@@ -648,7 +668,7 @@ static int apply_key_file(
 	uint8_t *data = NULL;
 	uint32_t len;
 
-	r = archive_read_file(archive, path, &data, &len);
+	r = archive_read_file(archive, path, &data, &len, NULL);
 	if (r == 0) {
 		VB2_DEBUG("Loaded file: %s\n", path);
 		r = apply(image, section_name, data, len);
