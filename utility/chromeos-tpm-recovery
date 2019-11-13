@@ -106,7 +106,7 @@ fi
 # Did the firmware keep the TPM unlocked?
 
 if ! $($crossystem mainfw_type?recovery); then
-  quit "You must put a test image on a USB stick and boot it in recovery mode to run this"
+  quit "You must put a test image on a USB stick and boot it in recovery mode (this means Esc+Refresh+Power, *not* Ctrl-U!) to run this"
 fi
 
 if tpm2_target; then
