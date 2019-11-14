@@ -94,26 +94,39 @@ int FwidStartsWith(const char *start)
 	return 0 == strncmp(fwid, start, strlen(start));
 }
 
+static struct vb2_context *get_fake_context(void)
+{
+	static uint8_t fake_workbuf[sizeof(struct vb2_shared_data) + 16]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
+	static struct vb2_context *fake_ctx;
+
+	if (fake_ctx)
+		return fake_ctx;
+
+	vb2api_init(fake_workbuf, sizeof(fake_workbuf), &fake_ctx);
+
+	return fake_ctx;
+}
+
 static int vnc_read;
 
 int vb2_get_nv_storage(enum vb2_nv_param param)
 {
 	VbSharedDataHeader* sh = VbSharedDataRead();
-	static struct vb2_context cached_ctx;
+	struct vb2_context *ctx = get_fake_context();
 
 	if (!sh)
 		return -1;
 
 	/* TODO: locking around NV access */
 	if (!vnc_read) {
-		memset(&cached_ctx, 0, sizeof(cached_ctx));
 		if (sh && sh->flags & VBSD_NVDATA_V2)
-			cached_ctx.flags |= VB2_CONTEXT_NVDATA_V2;
-		if (0 != vb2_read_nv_storage(&cached_ctx)) {
+			ctx->flags |= VB2_CONTEXT_NVDATA_V2;
+		if (0 != vb2_read_nv_storage(ctx)) {
 			free(sh);
 			return -1;
 		}
-		vb2_nv_init(&cached_ctx);
+		vb2_nv_init(ctx);
 
 		/* TODO: If vnc.raw_changed, attempt to reopen NVRAM for write
 		 * and save the new defaults.  If we're able to, log. */
@@ -122,31 +135,30 @@ int vb2_get_nv_storage(enum vb2_nv_param param)
 	}
 
 	free(sh);
-	return (int)vb2_nv_get(&cached_ctx, param);
+	return (int)vb2_nv_get(ctx, param);
 }
 
 int vb2_set_nv_storage(enum vb2_nv_param param, int value)
 {
 	VbSharedDataHeader* sh = VbSharedDataRead();
-	struct vb2_context ctx;
+	struct vb2_context *ctx = get_fake_context();
 
 	if (!sh)
 		return -1;
 
 	/* TODO: locking around NV access */
-	memset(&ctx, 0, sizeof(ctx));
 	if (sh && sh->flags & VBSD_NVDATA_V2)
-		ctx.flags |= VB2_CONTEXT_NVDATA_V2;
-	if (0 != vb2_read_nv_storage(&ctx)) {
+		ctx->flags |= VB2_CONTEXT_NVDATA_V2;
+	if (0 != vb2_read_nv_storage(ctx)) {
 		free(sh);
 		return -1;
 	}
-	vb2_nv_init(&ctx);
-	vb2_nv_set(&ctx, param, (uint32_t)value);
+	vb2_nv_init(ctx);
+	vb2_nv_set(ctx, param, (uint32_t)value);
 
-	if (ctx.flags & VB2_CONTEXT_NVDATA_CHANGED) {
+	if (ctx->flags & VB2_CONTEXT_NVDATA_CHANGED) {
 		vnc_read = 0;
-		if (0 != vb2_write_nv_storage(&ctx)) {
+		if (0 != vb2_write_nv_storage(ctx)) {
 			free(sh);
 			return -1;
 		}
