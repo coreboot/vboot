@@ -33,19 +33,6 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx)
 	return (struct vb2_gbb_header *)((void *)sd + sd->gbb_offset);
 }
 
-void vb2_workbuf_from_ctx(struct vb2_context *ctx, struct vb2_workbuf *wb)
-{
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_workbuf_init(wb, (void *)sd + sd->workbuf_used,
-			 sd->workbuf_size - sd->workbuf_used);
-}
-
-void vb2_set_workbuf_used(struct vb2_context *ctx, uint32_t used)
-{
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	sd->workbuf_used = vb2_wb_round_up(used);
-}
-
 vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 				struct vb2_gbb_header *gbb)
 {
@@ -126,82 +113,6 @@ void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, reason);
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, subcode);
 	}
-}
-
-vb2_error_t vb2api_init(void *workbuf, uint32_t size,
-			struct vb2_context **ctxptr)
-{
-	struct vb2_shared_data *sd = workbuf;
-	*ctxptr = NULL;
-
-	if (!vb2_aligned(workbuf, VB2_WORKBUF_ALIGN))
-		return VB2_ERROR_WORKBUF_ALIGN;
-
-	if (size < vb2_wb_round_up(sizeof(*sd)))
-		return VB2_ERROR_WORKBUF_SMALL;
-
-	/* Zero out vb2_shared_data (which includes vb2_context). */
-	memset(sd, 0, sizeof(*sd));
-
-	/* Initialize shared data. */
-	sd->magic = VB2_SHARED_DATA_MAGIC;
-	sd->struct_version_major = VB2_SHARED_DATA_VERSION_MAJOR;
-	sd->struct_version_minor = VB2_SHARED_DATA_VERSION_MINOR;
-	sd->workbuf_size = size;
-	sd->workbuf_used = vb2_wb_round_up(sizeof(*sd));
-
-	*ctxptr = &sd->ctx;
-	return VB2_SUCCESS;
-}
-
-#pragma GCC diagnostic push
-/* Don't warn for the version_minor check even if the checked version is 0. */
-#pragma GCC diagnostic ignored "-Wtype-limits"
-vb2_error_t vb2api_relocate(void *new_workbuf, void *cur_workbuf, uint32_t size,
-			    struct vb2_context **ctxptr)
-{
-	struct vb2_shared_data *sd = cur_workbuf;
-
-	if (!vb2_aligned(new_workbuf, VB2_WORKBUF_ALIGN))
-		return VB2_ERROR_WORKBUF_ALIGN;
-
-	/* Check magic and version. */
-	if (sd->magic != VB2_SHARED_DATA_MAGIC)
-		return VB2_ERROR_SHARED_DATA_MAGIC;
-
-	if (sd->struct_version_major != VB2_SHARED_DATA_VERSION_MAJOR ||
-	    sd->struct_version_minor < VB2_SHARED_DATA_VERSION_MINOR)
-		return VB2_ERROR_SHARED_DATA_VERSION;
-
-	/* Check workbuf integrity. */
-	if (sd->workbuf_used < vb2_wb_round_up(sizeof(*sd)))
-		return VB2_ERROR_WORKBUF_INVALID;
-
-	if (sd->workbuf_size < sd->workbuf_used)
-		return VB2_ERROR_WORKBUF_INVALID;
-
-	if (sd->workbuf_used > size)
-		return VB2_ERROR_WORKBUF_SMALL;
-
-	/* Relocate if necessary. */
-	if (cur_workbuf != new_workbuf)
-		memmove(new_workbuf, cur_workbuf, sd->workbuf_used);
-
-	/* Set the new size, and return the context pointer. */
-	sd = new_workbuf;
-	sd->workbuf_size = size;
-	*ctxptr = &sd->ctx;
-
-	return VB2_SUCCESS;
-}
-#pragma GCC diagnostic pop
-
-vb2_error_t vb2api_reinit(void *workbuf, struct vb2_context **ctxptr)
-{
-	/* Blindly retrieve workbuf_size.  vb2api_relocate() will
-	   perform workbuf validation checks. */
-	struct vb2_shared_data *sd = workbuf;
-	return vb2api_relocate(workbuf, workbuf, sd->workbuf_size, ctxptr);
 }
 
 void vb2_check_recovery(struct vb2_context *ctx)
