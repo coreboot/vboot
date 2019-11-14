@@ -351,6 +351,7 @@ FWLIB2X_SRCS = \
 	firmware/2lib/2api.c \
 	firmware/2lib/2auxfw_sync.c \
 	firmware/2lib/2common.c \
+	firmware/2lib/2context.c \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2ec_sync.c \
 	firmware/2lib/2gbb.c \
