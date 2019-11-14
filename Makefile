@@ -481,6 +481,7 @@ HOSTLIB_SRCS = \
 	cgpt/cgpt_prioritize.c \
 	cgpt/cgpt_show.c \
 	firmware/2lib/2common.c \
+	firmware/2lib/2context.c \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2hmac.c \
 	firmware/2lib/2nvstorage.c \
