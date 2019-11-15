@@ -1487,47 +1487,6 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 	return 0;
 }
 
-/*
- * Returns the name of EC section to update in recovery (whole update).
- *
- * Some EC will reset TCPC when doing sysjump, and will make rootfs unavailable
- * if the system was boot from USB. There is no solution if EC already in RO
- * (recovery). But for developers who run updater manually in developer mode
- * (Ctrl-U, EC in RW) and have software sync enabled, we may update only EC RO
- * (skip RW).
- */
-static const char * get_ec_section_to_recover(struct updater_config *cfg)
-{
-	const char * const ec_ro = "EC_RO";
-	char buf[VB_MAX_STRING_PROPERTY];
-
-	/* For devices without Chrome OS EC image, update all. */
-	if (!cfg->ec_image.data ||
-	    !firmware_section_exists(&cfg->ec_image, ec_ro))
-		return NULL;
-
-	/* For devices where EC is not running in RW, try to update all. */
-	if (!VbGetSystemPropertyString("ecfw_act", buf, sizeof(buf)) ||
-	    strcasecmp(buf, "RW") != 0) {
-		WARN("EC is not running in RW so updating RO may cause sysjump "
-		     "and you may see 'Input/output error' after that. "
-		     "See http://crbug.com/782427#c4 for more information.\n");
-		return NULL;
-	}
-
-	/* If software sync is disabled or not available, try to update all. */
-	if (!(VbGetSystemPropertyInt("vdat_flags") & VBSD_EC_SOFTWARE_SYNC))
-		return NULL;
-
-	/*
-	 * This is the only case that we "may" safely update EC RO without
-	 * sysjump, and have RW updated in next boot.
-	 */
-	WARN("EC Software Sync detected, will only update EC RO. "
-	     "The contents in EC RW will be updated after reboot.\n");
-	return ec_ro;
-}
-
 const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
 	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
@@ -1712,8 +1671,7 @@ static enum updater_error_codes update_whole_firmware(
 
 	/* FMAP may be different so we should just update all. */
 	if (write_firmware(cfg, image_to, NULL) ||
-	    write_optional_firmware(cfg, &cfg->ec_image,
-				    get_ec_section_to_recover(cfg), 1, 0) ||
+	    write_optional_firmware(cfg, &cfg->ec_image, NULL, 1, 0) ||
 	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1, 0))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
