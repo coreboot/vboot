@@ -1553,6 +1553,11 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
 		return 1;
 	}
+	if (ec_ro_sec.data != cfg->ec_image.data) {
+		/* http://crbug.com/1024401: EC_RO is not enough. */
+		ERROR("EC may need to update data outside EC RO Sync.");
+		return 1;
+	}
 	if (cbfs_extract_file(tmp_path, FMAP_RO_SECTION, "ecro", ec_ro_path) ||
 	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ecro.hash")) {
 		INFO("No valid EC RO for software sync in AP firmware.\n");
@@ -1605,7 +1610,11 @@ static int is_ec_in_rw(void)
  */
 static int update_ec_firmware(struct updater_config *cfg)
 {
-	const char *ec_ro = "EC_RO";
+	/*
+	 * http://crbug.com/1024401: Some EC needs extra header outside EC_RO so
+	 * we have to update whole WP_RO, not just EC_RO.
+	 */
+	const char *ec_ro = "WP_RO";
 	struct firmware_image *ec_image = &cfg->ec_image;
 
 	/* TODO(hungte) Check if we have EC RO in AP image without --ec_image */
