@@ -401,7 +401,7 @@ FWLIB_SRCS += \
 	firmware/lib/secdata_tpm.c
 else
 FWLIB_SRCS += \
-	firmware/lib/mocked_secdata_tpm.c
+	firmware/lib/mocked_secdata_tpm.c \
 	firmware/lib/tpm_lite/mocked_tlcl.c
 endif
 
