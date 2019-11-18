@@ -407,7 +407,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	/* Select boot path */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 		/* Recovery boot.  This has UI. */
-		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
+		if (ctx->flags & VB2_CONTEXT_DETACHABLE_UI)
 			rv = VbBootRecoveryMenu(ctx);
 		else
 			rv = VbBootRecovery(ctx);
@@ -433,7 +433,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
 
 		/* Developer boot.  This has UI. */
-		if (kparams->inflags & VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI)
+		if (ctx->flags & VB2_CONTEXT_DETACHABLE_UI)
 			rv = VbBootDeveloperMenu(ctx);
 		else
 			rv = VbBootDeveloper(ctx);

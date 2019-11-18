@@ -194,6 +194,9 @@ enum vb2_context_flags {
 	 * Caller should *not* set this when FWMP is available but invalid.
 	 */
 	VB2_CONTEXT_NO_SECDATA_FWMP = (1 << 21),
+
+	/* Enable detachable menu ui (volume up/down + power). */
+	VB2_CONTEXT_DETACHABLE_UI = (1 << 22),
 };
 
 /* Helper for aligning fields in vb2_context. */
