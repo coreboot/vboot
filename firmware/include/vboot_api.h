@@ -132,11 +132,6 @@ typedef struct VbSelectAndLoadKernelParams {
 	 */
 } VbSelectAndLoadKernelParams;
 
-/* Flag to indicate using detachable menu ui (arrow up/down+power)
- * instead of traditional FW screens with ctrl+D, ctrl+U, etc.
- */
-#define VB_SALK_INFLAGS_ENABLE_DETACHABLE_UI (1 << 0)
-
 /* Flag to indicate that the vendor data is not set and the vendor data
  * UI should be enabled.
  */
