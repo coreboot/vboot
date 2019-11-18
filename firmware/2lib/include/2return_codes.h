@@ -162,6 +162,12 @@ enum vb2_return_code {
 	/* Bad CRC in vb2_nv_check_crc() */
 	VB2_ERROR_NV_CRC,
 
+	/* Read error in nvdata backend */
+	VB2_ERROR_NV_READ,
+
+	/* Write error in nvdata backend */
+	VB2_ERROR_NV_WRITE,
+
 	/**********************************************************************
 	 * Secure data storage errors
 	 */
