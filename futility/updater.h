@@ -107,9 +107,9 @@ struct updater_config {
 struct updater_config_arguments {
 	char *image, *ec_image, *pd_image;
 	char *archive, *quirks, *mode;
-	const char *programmer;
+	const char *programmer, *write_protection;
 	char *model, *signature_id;
-	char *emulation, *sys_props, *write_protection;
+	char *emulation, *sys_props;
 	char *output_dir;
 	char *repack, *unpack;
 	int is_factory, try_update, force_update, do_manifest, host_only;

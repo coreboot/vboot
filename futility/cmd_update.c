@@ -213,8 +213,8 @@ static int do_update(int argc, char *argv[])
 		case OPT_CCD:
 			args.fast_update = 1;
 			args.force_update = 1;
-			args.write_protection = 0;
-			args.programmer = "raiden_debug_spi";
+			args.write_protection = "0";
+			args.programmer = "raiden_debug_spi:target=AP";
 			break;
 
 		case OPT_DUMMY:
