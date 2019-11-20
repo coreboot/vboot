@@ -652,6 +652,7 @@ FUTIL_SRCS = \
 	futility/updater.c \
 	futility/updater_archive.c \
 	futility/updater_quirks.c \
+	futility/updater_utils.c \
 	futility/vb1_helper.c \
 	futility/vb2_helper.c
 

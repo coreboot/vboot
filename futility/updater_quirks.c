@@ -275,32 +275,6 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 }
 
 /*
- * Extracts files from a CBFS on given region (section) of image_file.
- * Returns the path to a temporary file on success, otherwise NULL.
- */
-static const char *extract_cbfs_file(struct updater_config *cfg,
-				     const char *image_file,
-				     const char *cbfs_region,
-				     const char *cbfs_name)
-{
-	const char *output = updater_create_temp_file(cfg);
-	char *command, *result;
-
-	ASPRINTF(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
-		 "-f \"%s\" 2>&1", image_file, cbfs_region,
-		 cbfs_name, output);
-
-	result = host_shell(command);
-	free(command);
-
-	if (!*result)
-		output = NULL;
-
-	free(result);
-	return output;
-}
-
-/*
  * Quirk to help preserving SMM store on devices without a dedicated "SMMSTORE"
  * FMAP section. These devices will store "smm_store" file in same CBFS where
  * the legacy boot loader lives (i.e, FMAP RW_LEGACY).
@@ -319,7 +293,7 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	if (write_image(temp_image, &cfg->image_current) != VB2_SUCCESS)
 		return -1;
 
-	old_store = extract_cbfs_file(cfg, temp_image, FMAP_RW_LEGACY,
+	old_store = cbfs_extract_file(cfg, temp_image, FMAP_RW_LEGACY,
 				      smm_store_name);
 	if (!old_store) {
 		VB2_DEBUG("cbfstool failure or SMM store not available. "
