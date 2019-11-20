@@ -42,7 +42,15 @@ enum quirk_types {
 	QUIRK_DAISY_SNOW_DUAL_MODEL,
 	QUIRK_EVE_SMM_STORE,
 	QUIRK_ALLOW_EMPTY_WLTAG,
+	QUIRK_EC_PARTIAL_RECOVERY,
 	QUIRK_MAX,
+};
+
+/* Return values from QUIRK_EC_PARTIAL_RECOVERY. */
+enum {
+	EC_RECOVERY_FULL = 0,  /* Must be 0 as default value of quirks. */
+	EC_RECOVERY_RO,
+	EC_RECOVERY_DONE
 };
 
 struct updater_config {

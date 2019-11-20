@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "crossystem.h"
 #include "futility.h"
 #include "host_misc.h"
 #include "updater.h"
@@ -73,6 +74,94 @@ static int reload_firmware_image(const char *file_path,
 {
 	free_firmware_image(image);
 	return load_firmware_image(image, file_path, NULL);
+}
+
+/*
+ * Returns True if the system has EC software sync enabled.
+ */
+static int is_ec_software_sync_enabled(struct updater_config *cfg)
+{
+	const struct vb2_gbb_header *gbb;
+
+	/* Check if current system has disabled software sync or no support. */
+	if (!(VbGetSystemPropertyInt("vdat_flags") & VBSD_EC_SOFTWARE_SYNC)) {
+		INFO("EC Software Sync is not available.\n");
+		return 0;
+	}
+
+	/* Check if the system has been updated to disable software sync. */
+	gbb = find_gbb(&cfg->image);
+	if (!gbb) {
+		WARN("Invalid AP firmware image.\n");
+		return 0;
+	}
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC) {
+		INFO("EC Software Sync will be disabled in next boot.\n");
+		return 0;
+	}
+	return 1;
+}
+
+/*
+ * Schedules an EC RO software sync (in next boot) if applicable.
+ */
+static int ec_ro_software_sync(struct updater_config *cfg)
+{
+	const char *tmp_path = updater_create_temp_file(cfg);
+	const char *ec_ro_path;
+	uint8_t *ec_ro_data;
+	uint32_t ec_ro_len;
+	int is_same_ec_ro;
+	struct firmware_section ec_ro_sec;
+
+	if (!tmp_path ||
+	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
+		ERROR("Failed to create temporary file for image contents.\n");
+		return 1;
+	}
+	find_firmware_section(&ec_ro_sec, &cfg->ec_image, "EC_RO");
+	if (!ec_ro_sec.data || !ec_ro_sec.size) {
+		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
+		return 1;
+	}
+	ec_ro_path = cbfs_extract_file(cfg, tmp_path, FMAP_RO_SECTION, "ecro");
+	if (!ec_ro_path ||
+	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ecro.hash")) {
+		INFO("No valid EC RO for software sync in AP firmware.\n");
+		return 1;
+	}
+	if (vb2_read_file(ec_ro_path, &ec_ro_data, &ec_ro_len) != VB2_SUCCESS) {
+		ERROR("Failed to read EC RO.\n");
+		return 1;
+	}
+
+	is_same_ec_ro = (ec_ro_len <= ec_ro_sec.size &&
+			 memcmp(ec_ro_sec.data, ec_ro_data, ec_ro_len) == 0);
+	free(ec_ro_data);
+
+	if (!is_same_ec_ro) {
+		/* TODO(hungte) If change AP RO is not a problem (hash will be
+		 * different, which may be a problem to factory and HWID), or if
+		 * we can be be sure this is for developers, extract EC RO and
+		 * update AP RO CBFS to trigger EC RO sync with new EC.
+		 */
+		ERROR("The EC RO contents specified from AP (--image) and EC "
+		      "(--ec_image) firmware images are different, cannot "
+		      "update by EC RO software sync.\n");
+		return 1;
+	}
+	VbSetSystemPropertyInt("try_ro_sync", 1);
+	return 0;
+}
+
+/*
+ * Returns True if EC is running in RW.
+ */
+static int is_ec_in_rw(void)
+{
+	char buf[VB_MAX_STRING_PROPERTY];
+	return (VbGetSystemPropertyString("ecfw_act", buf, sizeof(buf)) &&
+		strcasecmp(buf, "RW") == 0);
 }
 
 /*
@@ -319,6 +408,65 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 }
 
 /*
+ * Update EC (RO+RW) in most reliable way.
+ *
+ * Some EC will reset TCPC when doing sysjump, and will make rootfs unavailable
+ * if the system was boot from USB, or other unexpected issues even if the
+ * system was boot from internal disk. To prevent that, try to partial update
+ * only RO and expect EC software sync to update RW later, or perform EC RO
+ * software sync.
+ *
+ * Returns:
+ *  EC_RECOVERY_FULL to indicate a full recovery is needed.
+ *  EC_RECOVERY_RO to indicate partial update (WP_RO) is needed.
+ *  EC_RECOVERY_DONE to indicate EC RO software sync is applied.
+ *  Other values to report failure.
+ */
+static int quirk_ec_partial_recovery(struct updater_config *cfg)
+{
+	/*
+	 * http://crbug.com/1024401: Some EC needs extra header outside EC_RO so
+	 * we have to update whole WP_RO, not just EC_RO.
+	 */
+	const char *ec_ro = "WP_RO";
+	struct firmware_image *ec_image = &cfg->ec_image;
+
+	int do_partial = get_config_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg);
+	if (do_partial == -1) {
+		char arch[VB_MAX_STRING_PROPERTY];
+		/*
+		 * Don't do partial update if can't decide arch (usually implies
+		 * running outside DUT).
+		 */
+		do_partial = 0;
+		if (VbGetSystemPropertyString("arch", arch, sizeof(arch)) > 0) {
+			/* By default disabled for x86, otherwise enabled. */
+			do_partial = !!strcmp(arch, "x86");
+		}
+	}
+
+	if (!do_partial) {
+		return EC_RECOVERY_FULL;
+	} else if (!firmware_section_exists(ec_image, ec_ro)) {
+		INFO("EC image does not have section '%s'.\n", ec_ro);
+		/* Need full update. */
+	} else if (!is_ec_software_sync_enabled(cfg)) {
+		/* Message already printed, need full update. */
+	} else if (is_ec_in_rw()) {
+		WARN("EC Software Sync detected, will only update EC RO. "
+		     "The contents in EC RW will be updated after reboot.\n");
+		return EC_RECOVERY_RO;
+	} else if (ec_ro_software_sync(cfg) == 0) {
+		INFO("EC RO and RW should be updated after reboot.\n");
+		return EC_RECOVERY_DONE;
+	}
+
+	WARN("Update EC RO+RW and may cause unexpected error later. "
+	     "See http://crbug.com/782427#c4 for more information.\n");
+	return EC_RECOVERY_FULL;
+}
+
+/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -364,6 +512,12 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "chromium/906962; allow devices without white label "
 		       "tags set to use default keys.";
 	quirks->apply = NULL;  /* Simple config. */
+
+	quirks = &cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY];
+	quirks->name = "ec_partial_recovery";
+	quirks->help = "chromium/1024401; recover EC by partial RO update.";
+	quirks->apply = quirk_ec_partial_recovery;
+	quirks->value = -1;  /* Decide at runtime. */
 }
 
 /*
