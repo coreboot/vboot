@@ -7,66 +7,23 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
-#include "2common.h"
 #include "2rsa.h"
 #include "crossystem.h"
-#include "fmap.h"
 #include "futility.h"
 #include "host_misc.h"
 #include "updater.h"
-#include "utility.h"
 #include "util_misc.h"
 #include "vb2_common.h"
-#include "vb2_struct.h"
 
-#define COMMAND_BUFFER_SIZE 256
-#define RETURN_ON_FAILURE(x) do {int r = (x); if (r) return r;} while (0);
-#define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
 #define REMOVE_WP_URL "https://goo.gl/ces83U"
-
-/* System environment values. */
-static const char * const FWACT_A = "A",
-		  * const FWACT_B = "B",
-		  * const STR_REV = "rev",
-		  * const FLASHROM_OUTPUT_WP_ENABLED =
-			  FLASHROM_OUTPUT_WP_PATTERN "enabled",
-		  * const FLASHROM_OUTPUT_WP_DISABLED =
-			  FLASHROM_OUTPUT_WP_PATTERN "disabled";
-
-/* flashrom programmers. */
-static const char * const PROG_HOST = "host",
-		  * const PROG_EC = "ec",
-		  * const PROG_PD = "ec:dev=1";
 
 static const char ROOTKEY_HASH_DEV[] =
 		"b11d74edd286c144e1135b49e7f0bc20cf041f10";
 
-enum wp_state {
-	WP_DISABLED,
-	WP_ENABLED,
-};
-
 enum target_type {
 	TARGET_SELF,
 	TARGET_UPDATE,
-};
-
-enum active_slot {
-	SLOT_UNKNOWN = -1,
-	SLOT_A = 0,
-	SLOT_B,
-};
-
-enum flashrom_ops {
-	FLASHROM_READ,
-	FLASHROM_WRITE,
-	FLASHROM_WP_STATUS,
 };
 
 enum rootkey_compat_result {
@@ -75,286 +32,6 @@ enum rootkey_compat_result {
 	ROOTKEY_COMPAT_REKEY,
 	ROOTKEY_COMPAT_REKEY_TO_DEV,
 };
-
-/*
- * Helper function to create a new temporary file.
- * All files created will be removed by updater_remove_all_temp_files().
- * Returns the path of new file, or NULL on failure.
- */
-const char *updater_create_temp_file(struct updater_config *cfg)
-{
-	struct tempfile *new_temp;
-	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
-	int fd;
-
-	fd = mkstemp(new_path);
-	if (fd < 0) {
-		ERROR("Failed to create new temp file in %s\n", new_path);
-		return NULL;
-	}
-	close(fd);
-	new_temp = (struct tempfile *)malloc(sizeof(*new_temp));
-	if (new_temp)
-		new_temp->filepath = strdup(new_path);
-	if (!new_temp || !new_temp->filepath) {
-		remove(new_path);
-		free(new_temp);
-		ERROR("Failed to allocate buffer for new temp file.\n");
-		return NULL;
-	}
-	VB2_DEBUG("Created new temporary file: %s.\n", new_path);
-	new_temp->next = cfg->tempfiles;
-	cfg->tempfiles = new_temp;
-	return new_temp->filepath;
-}
-
-/*
- * Helper function to remove all files created by create_temp_file().
- * This is intended to be called only once at end of program execution.
- */
-static void updater_remove_all_temp_files(struct updater_config *cfg)
-{
-	struct tempfile *tempfiles = cfg->tempfiles;
-	while (tempfiles != NULL) {
-		struct tempfile *target = tempfiles;
-		VB2_DEBUG("Remove temporary file: %s.\n", target->filepath);
-		remove(target->filepath);
-		free(target->filepath);
-		tempfiles = target->next;
-		free(target);
-	}
-	cfg->tempfiles = NULL;
-}
-
-/*
- * Strip a string (usually from shell execution output) by removing all the
- * trailing characters in pattern. If pattern is NULL, match by space type
- * characters (space, new line, tab, ... etc).
- */
-static void strip(char *s, const char *pattern)
-{
-	int len;
-	assert(s);
-
-	len = strlen(s);
-	while (len-- > 0) {
-		if (pattern) {
-			if (!strchr(pattern, s[len]))
-				break;
-		} else {
-			if (!isascii(s[len]) || !isspace(s[len]))
-				break;
-		}
-		s[len] = '\0';
-	}
-}
-
-/*
- * Executes a command on current host and returns stripped command output.
- * If the command has failed (exit code is not zero), returns an empty string.
- * The caller is responsible for releasing the returned string.
- */
-char *host_shell(const char *command)
-{
-	/* Currently all commands we use do not have large output. */
-	char buf[COMMAND_BUFFER_SIZE];
-
-	int result;
-	FILE *fp = popen(command, "r");
-
-	VB2_DEBUG("%s\n", command);
-	buf[0] = '\0';
-	if (!fp) {
-		VB2_DEBUG("Execution error for %s.\n", command);
-		return strdup(buf);
-	}
-
-	if (fgets(buf, sizeof(buf), fp))
-		strip(buf, NULL);
-	result = pclose(fp);
-	if (!WIFEXITED(result) || WEXITSTATUS(result) != 0) {
-		VB2_DEBUG("Execution failure with exit code %d: %s\n",
-			  WEXITSTATUS(result), command);
-		/*
-		 * Discard all output if command failed, for example command
-		 * syntax failure may lead to garbage in stdout.
-		 */
-		buf[0] = '\0';
-	}
-	return strdup(buf);
-}
-
-
-/* An helper function to return "mainfw_act" system property.  */
-static int host_get_mainfw_act(void)
-{
-	char buf[VB_MAX_STRING_PROPERTY];
-
-	if (!VbGetSystemPropertyString("mainfw_act", buf, sizeof(buf)))
-		return SLOT_UNKNOWN;
-
-	if (strcmp(buf, FWACT_A) == 0)
-		return SLOT_A;
-	else if (strcmp(buf, FWACT_B) == 0)
-		return SLOT_B;
-
-	return SLOT_UNKNOWN;
-}
-
-/* A helper function to return the "tpm_fwver" system property. */
-static int host_get_tpm_fwver(void)
-{
-	return VbGetSystemPropertyInt("tpm_fwver");
-}
-
-/* A helper function to return the "hardware write protection" status. */
-static int host_get_wp_hw(void)
-{
-	/* wpsw refers to write protection 'switch', not 'software'. */
-	int v = VbGetSystemPropertyInt("wpsw_cur");
-
-	/* wpsw_cur may be not available, especially in recovery mode. */
-	if (v < 0)
-		v = VbGetSystemPropertyInt("wpsw_boot");
-
-	return v;
-}
-
-/* A helper function to return "fw_vboot2" system property. */
-static int host_get_fw_vboot2(void)
-{
-	return VbGetSystemPropertyInt("fw_vboot2");
-}
-
-/* A help function to get $(mosys platform version). */
-static int host_get_platform_version(void)
-{
-	char *result = host_shell("mosys platform version");
-	long rev = -1;
-
-	/* Result should be 'revN' */
-	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
-		rev = strtol(result + strlen(STR_REV), NULL, 0);
-
-	/* we should never have negative or extremely large versions,
-	 * but clamp just to be sure
-	 */
-	if (rev < 0)
-		rev = 0;
-	if (rev > INT_MAX)
-		rev = INT_MAX;
-
-	VB2_DEBUG("Raw data = [%s], parsed version is %ld\n", result, rev);
-
-	free(result);
-	return rev;
-}
-
-/*
- * A helper function to invoke flashrom(8) command.
- * Returns 0 if success, non-zero if error.
- */
-static int host_flashrom(enum flashrom_ops op, const char *image_path,
-			 const char *programmer, int verbose,
-			 const char *section_name, const char *extra)
-{
-	char *command, *result;
-	const char *op_cmd, *dash_i = "-i", *postfix = "";
-	int r;
-
-	switch (verbose) {
-	case 0:
-		postfix = " >/dev/null 2>&1";
-		break;
-	case 1:
-		break;
-	case 2:
-		postfix = "-V";
-		break;
-	case 3:
-		postfix = "-V -V";
-		break;
-	default:
-		postfix = "-V -V -V";
-		break;
-	}
-
-	if (!section_name || !*section_name) {
-		dash_i = "";
-		section_name = "";
-	}
-
-	switch (op) {
-	case FLASHROM_READ:
-		op_cmd = "-r";
-		assert(image_path);
-		break;
-
-	case FLASHROM_WRITE:
-		op_cmd = "-w";
-		assert(image_path);
-		break;
-
-	case FLASHROM_WP_STATUS:
-		op_cmd = "--wp-status";
-		assert(image_path == NULL);
-		image_path = "";
-		/* grep is needed because host_shell only returns 1 line. */
-		postfix = " 2>/dev/null | grep \"" \
-			   FLASHROM_OUTPUT_WP_PATTERN "\"";
-		break;
-
-	default:
-		assert(0);
-		return -1;
-	}
-
-	if (!extra)
-		extra = "";
-
-	/* TODO(hungte) In future we should link with flashrom directly. */
-	ASPRINTF(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
-		 image_path, programmer, dash_i, section_name, extra,
-		 postfix);
-
-	if (verbose)
-		INFO("Executing: %s\n", command);
-
-	if (op != FLASHROM_WP_STATUS) {
-		r = system(command);
-		free(command);
-		if (r)
-			ERROR("Error code: %d\n", r);
-		return r;
-	}
-
-	result = host_shell(command);
-	strip(result, NULL);
-	free(command);
-	VB2_DEBUG("wp-status: %s\n", result);
-
-	if (strstr(result, FLASHROM_OUTPUT_WP_ENABLED))
-		r = WP_ENABLED;
-	else if (strstr(result, FLASHROM_OUTPUT_WP_DISABLED))
-		r = WP_DISABLED;
-	else
-		r = -1;
-	free(result);
-	return r;
-}
-
-/* Helper function to return write protection status via given programmer. */
-static int host_get_wp(const char *programmer)
-{
-	return host_flashrom(FLASHROM_WP_STATUS, NULL, programmer, 0, NULL,
-			     NULL);
-}
-
-/* Helper function to return host software write protection status. */
-static int host_get_wp_sw(void)
-{
-	return host_get_wp(PROG_HOST);
-}
 
 /*
  * Gets the system property by given type.
@@ -542,41 +219,6 @@ static int setup_config_quirks(const char *quirks, struct updater_config *cfg)
 }
 
 /*
- * Finds a firmware section by given name in the firmware image.
- * If successful, return zero and *section argument contains the address and
- * size of the section; otherwise failure.
- */
-int find_firmware_section(struct firmware_section *section,
-			  const struct firmware_image *image,
-			  const char *section_name)
-{
-	FmapAreaHeader *fah = NULL;
-	uint8_t *ptr;
-
-	section->data = NULL;
-	section->size = 0;
-	ptr = fmap_find_by_name(
-			image->data, image->size, image->fmap_header,
-			section_name, &fah);
-	if (!ptr)
-		return -1;
-	section->data = (uint8_t *)ptr;
-	section->size = fah->area_size;
-	return 0;
-}
-
-/*
- * Returns true if the given FMAP section exists in the firmware image.
- */
-static int firmware_section_exists(const struct firmware_image *image,
-				   const char *section_name)
-{
-	struct firmware_section section;
-	find_firmware_section(&section, image, section_name);
-	return section.data != NULL;
-}
-
-/*
  * Checks if the section is filled with given character.
  * If section size is 0, return 0. If section is not empty, return non-zero if
  * the section is filled with same character c, otherwise 0.
@@ -591,126 +233,6 @@ static int section_is_filled_with(const struct firmware_section *section,
 		if (section->data[i] != c)
 			return 0;
 	return 1;
-}
-
-/*
- * Loads the firmware information from an FMAP section in loaded firmware image.
- * The section should only contain ASCIIZ string as firmware version.
- * If successful, the return value is zero and *version points to a newly
- * allocated string as firmware version (caller must free it); otherwise
- * failure.
- */
-static int load_firmware_version(struct firmware_image *image,
-				 const char *section_name,
-				 char **version)
-{
-	struct firmware_section fwid;
-	find_firmware_section(&fwid, image, section_name);
-	if (fwid.size) {
-		*version = strndup((const char*)fwid.data, fwid.size);
-		/*
-		 * For 'system current' images, the version string may contain
-		 * invalid characters that we do want to strip.
-		 */
-		strip(*version, "\xff");
-		return 0;
-	}
-	*version = strdup("");
-	return -1;
-}
-
-/*
- * Loads a firmware image from file.
- * If archive is provided and file_name is a relative path, read the file from
- * archive.
- * Returns 0 on success, otherwise failure.
- */
-int load_firmware_image(struct firmware_image *image, const char *file_name,
-			struct archive *archive)
-{
-	if (!file_name) {
-		ERROR("No file name given\n");
-		return -1;
-	}
-
-	VB2_DEBUG("Load image file from %s...\n", file_name);
-
-	if (!archive_has_entry(archive, file_name)) {
-		ERROR("Does not exist: %s\n", file_name);
-		return -1;
-	}
-	if (archive_read_file(archive, file_name, &image->data, &image->size, NULL)
-	    != VB2_SUCCESS) {
-		ERROR("Failed to load %s\n", file_name);
-		return -1;
-	}
-
-	VB2_DEBUG("Image size: %d\n", image->size);
-	assert(image->data);
-	image->file_name = strdup(file_name);
-
-	image->fmap_header = fmap_find(image->data, image->size);
-	if (!image->fmap_header) {
-		ERROR("Invalid image file (missing FMAP): %s\n", file_name);
-		return -1;
-	}
-
-	if (!firmware_section_exists(image, FMAP_RO_FRID)) {
-		ERROR("Does not look like VBoot firmware image: %s\n",
-		      file_name);
-		return -1;
-	}
-
-	load_firmware_version(image, FMAP_RO_FRID, &image->ro_version);
-	if (firmware_section_exists(image, FMAP_RW_FWID_A)) {
-		char **a = &image->rw_version_a, **b = &image->rw_version_b;
-		load_firmware_version(image, FMAP_RW_FWID_A, a);
-		load_firmware_version(image, FMAP_RW_FWID_B, b);
-	} else if (firmware_section_exists(image, FMAP_RW_FWID)) {
-		char **a = &image->rw_version_a, **b = &image->rw_version_b;
-		load_firmware_version(image, FMAP_RW_FWID, a);
-		load_firmware_version(image, FMAP_RW_FWID, b);
-	} else {
-		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", file_name);
-	}
-	return 0;
-}
-
-/*
- * Loads the active system firmware image (usually from SPI flash chip).
- * Returns 0 if success, non-zero if error.
- */
-int load_system_firmware(struct updater_config *cfg,
-			 struct firmware_image *image)
-{
-	const char *tmp_file = updater_create_temp_file(cfg);
-
-	if (!tmp_file)
-		return -1;
-	RETURN_ON_FAILURE(host_flashrom(
-			FLASHROM_READ, tmp_file, image->programmer,
-			cfg->verbosity, NULL, NULL));
-	return load_firmware_image(image, tmp_file, NULL);
-}
-
-/*
- * Frees the allocated resource from a firmware image object.
- */
-void free_firmware_image(struct firmware_image *image)
-{
-	/*
-	 * The programmer is not allocated by load_firmware_image and must be
-	 * preserved explicitly.
-	 */
-	const char *programmer = image->programmer;
-
-	free(image->data);
-	free(image->file_name);
-	free(image->ro_version);
-	free(image->rw_version_a);
-	free(image->rw_version_b);
-	memset(image, 0, sizeof(*image));
-	image->programmer = programmer;
 }
 
 /*
@@ -854,42 +376,17 @@ static int write_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char *section_name)
 {
-	const char *tmp_file = updater_create_temp_file(cfg);
-	const char *tmp_diff_file = NULL;
-	const char *programmer = image->programmer;
-	char *extra = NULL;
-	int r;
-
-	if (!tmp_file)
-		return -1;
-
 	if (cfg->emulation) {
 		INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
 		     section_name ? section_name : "whole image",
-		     image->file_name, programmer, cfg->emulation);
+		     image->file_name, image->programmer, cfg->emulation);
 
 		return emulate_write_firmware(
 				cfg->emulation, image, section_name);
 
 	}
-	if (vb2_write_file(tmp_file, image->data, image->size) != VB2_SUCCESS) {
-		ERROR("Cannot write temporary file for output: %s\n", tmp_file);
-		return -1;
-	}
-	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
-	{
-		tmp_diff_file = updater_create_temp_file(cfg);
-		if (vb2_write_file(tmp_diff_file, cfg->image_current.data,
-				   cfg->image_current.size) != VB2_SUCCESS) {
-			ERROR("Cannot write temporary file for diff image\n");
-			return -1;
-		}
-		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff_file);
-	}
-	r = host_flashrom(FLASHROM_WRITE, tmp_file, programmer,
-			  cfg->verbosity + 1, section_name, extra);
-	free(extra);
-	return r;
+
+	return write_system_firmware(cfg, image, section_name);
 }
 
 /*
@@ -947,54 +444,6 @@ static int write_optional_firmware(struct updater_config *cfg,
 	}
 
 	return write_firmware(cfg, image, section_name);
-}
-
-/*
- * Preserves (copies) the given section (by name) from image_from to image_to.
- * The offset may be different, and the section data will be directly copied.
- * If the section does not exist on either images, return as failure.
- * If the source section is larger, contents on destination be truncated.
- * If the source section is smaller, the remaining area is not modified.
- * Returns 0 if success, non-zero if error.
- */
-int preserve_firmware_section(const struct firmware_image *image_from,
-			      struct firmware_image *image_to,
-			      const char *section_name)
-{
-	struct firmware_section from, to;
-
-	find_firmware_section(&from, image_from, section_name);
-	find_firmware_section(&to, image_to, section_name);
-	if (!from.data || !to.data) {
-		VB2_DEBUG("Cannot find section %.*s: from=%p, to=%p\n",
-			  FMAP_NAMELEN, section_name, from.data, to.data);
-		return -1;
-	}
-	if (from.size > to.size) {
-		WARN("Section %.*s is truncated after updated.\n",
-		     FMAP_NAMELEN, section_name);
-	}
-	/* Use memmove in case if we need to deal with sections that overlap. */
-	memmove(to.data, from.data, VB2_MIN(from.size, to.size));
-	return 0;
-}
-
-/*
- * Finds the GBB (Google Binary Block) header on a given firmware image.
- * Returns a pointer to valid GBB header, or NULL on not found.
- */
-const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
-{
-	struct firmware_section section;
-	struct vb2_gbb_header *gbb_header;
-
-	find_firmware_section(&section, image, FMAP_RO_GBB);
-	gbb_header = (struct vb2_gbb_header *)section.data;
-	if (!futil_valid_gbb_header(gbb_header, section.size, NULL)) {
-		ERROR("Cannot find GBB in image: %s.\n", image->file_name);
-		return NULL;
-	}
-	return gbb_header;
 }
 
 /*
@@ -1378,42 +827,6 @@ static enum rootkey_compat_result check_compatible_root_key(
 }
 
 /*
- * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
- * section of an image file, otherwise 0.
- */
-static int cbfs_file_exists(const char *image_file,
-			    const char *section_name,
-			    const char *cbfs_entry_name)
-{
-	char *cmd;
-	int r;
-
-	ASPRINTF(&cmd,
-		 "cbfstool '%s' print -r %s 2>/dev/null | grep -q '^%s '",
-		 image_file, section_name, cbfs_entry_name);
-	r = system(cmd);
-	free(cmd);
-	return !r;
-}
-
-static int cbfs_extract_file(const char *image_file,
-			     const char *section_name,
-			     const char *cbfs_entry_name,
-			     const char *output_name)
-{
-	char *cmd;
-	int r;
-
-	ASPRINTF(&cmd,
-		 "cbfstool '%s' extract -r %s -n '%s' -f '%s' "
-		 "2>/dev/null", image_file, section_name, cbfs_entry_name,
-		 output_name);
-	r = system(cmd);
-	free(cmd);
-	return r;
-}
-
-/*
  * Returns non-zero if the RW_LEGACY needs to be updated, otherwise 0.
  */
 static int legacy_needs_update(struct updater_config *cfg)
@@ -1537,13 +950,13 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
 static int ec_ro_software_sync(struct updater_config *cfg)
 {
 	const char *tmp_path = updater_create_temp_file(cfg);
-	const char *ec_ro_path = updater_create_temp_file(cfg);
+	const char *ec_ro_path;
 	uint8_t *ec_ro_data;
 	uint32_t ec_ro_len;
 	int is_same_ec_ro;
 	struct firmware_section ec_ro_sec;
 
-	if (!tmp_path || !ec_ro_path ||
+	if (!tmp_path ||
 	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
 		ERROR("Failed to create temporary file for image contents.\n");
 		return 1;
@@ -1558,7 +971,8 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		ERROR("EC may need to update data outside EC RO Sync.");
 		return 1;
 	}
-	if (cbfs_extract_file(tmp_path, FMAP_RO_SECTION, "ecro", ec_ro_path) ||
+	ec_ro_path = cbfs_extract_file(cfg, tmp_path, FMAP_RO_SECTION, "ecro");
+	if (!ec_ro_path ||
 	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ecro.hash")) {
 		INFO("No valid EC RO for software sync in AP firmware.\n");
 		return 1;
@@ -1917,7 +1331,6 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
  */
 struct updater_config *updater_new_config()
 {
-	struct system_property *props;
 	struct updater_config *cfg = (struct updater_config *)calloc(
 			1, sizeof(struct updater_config));
 	if (!cfg)
@@ -1929,41 +1342,10 @@ struct updater_config *updater_new_config()
 
 	cfg->check_platform = 1;
 
-	props = cfg->system_properties;
-	props[SYS_PROP_MAINFW_ACT].getter = host_get_mainfw_act;
-	props[SYS_PROP_TPM_FWVER].getter = host_get_tpm_fwver;
-	props[SYS_PROP_FW_VBOOT2].getter = host_get_fw_vboot2;
-	props[SYS_PROP_PLATFORM_VER].getter = host_get_platform_version;
-	props[SYS_PROP_WP_HW].getter = host_get_wp_hw;
-	props[SYS_PROP_WP_SW].getter = host_get_wp_sw;
-
+	init_system_properties(&cfg->system_properties[0],
+			       ARRAY_SIZE(cfg->system_properties));
 	updater_register_quirks(cfg);
 	return cfg;
-}
-
-/*
- * Saves everything from stdin to given output file.
- * Returns 0 on success, otherwise failure.
- */
-static int save_from_stdin(const char *output)
-{
-	FILE *in = stdin, *out = fopen(output, "wb");
-	char buffer[4096];
-	size_t sz;
-
-	assert(in);
-	if (!out)
-		return -1;
-
-	while (!feof(in)) {
-		sz = fread(buffer, 1, sizeof(buffer), in);
-		if (fwrite(buffer, 1, sz, out) != sz) {
-			fclose(out);
-			return -1;
-		}
-	}
-	fclose(out);
-	return 0;
 }
 
 /*
@@ -2006,7 +1388,7 @@ static int updater_load_images(struct updater_config *cfg,
 			INFO("Reading image from stdin...\n");
 			image = updater_create_temp_file(cfg);
 			if (image)
-				errorcnt += !!save_from_stdin(image);
+				errorcnt += !!save_file_from_stdin(image);
 		}
 		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
 		if (!errorcnt)
