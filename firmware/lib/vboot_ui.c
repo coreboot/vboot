@@ -112,21 +112,31 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 		shutdown_requested = VbWantShutdown(ctx, key);
 		switch (key) {
 		case VB_KEY_ENTER:
-			/* If we require a trusted keyboard for confirmation,
-			 * but the keyboard may be faked (for instance, a USB
-			 * device), beep and keep waiting.
+			/* If we are using a trusted keyboard or a trusted
+			 * keyboard is not required then return yes, otherwise
+			 * keep waiting (for instance if the user is using a
+			 * USB keyboard).
 			 */
-			if (confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD &&
-			    !(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
+			if (!(confirm_flags & VB_CONFIRM_MUST_TRUST_KEYBOARD) ||
+			     (key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD)) {
+				VB2_DEBUG("Yes (1)\n");
+				return 1;
+			}
+
+			/* Beep and notify the user if the recovery switch is
+			 * not physical. If it is physical then the prompt will
+			 * tell the user to press the switch and will not say
+			 * anything about the ENTER key so we can silenty ingore
+			 * ENTER in this case.
+			 */
+			if (shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL)
 				vb2_error_notify("Please use internal keyboard "
 					"to confirm\n",
 					"VbUserConfirms() - "
-					"Trusted keyboard is requierd\n",
+					"Trusted keyboard is required\n",
 					VB_BEEP_NOT_ALLOWED);
-				break;
-			}
-			VB2_DEBUG("Yes (1)\n");
-			return 1;
+
+			break;
 		case ' ':
 			VB2_DEBUG("Space (%d)\n",
 				  confirm_flags & VB_CONFIRM_SPACE_MEANS_NO);
