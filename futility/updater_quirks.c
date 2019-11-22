@@ -59,15 +59,6 @@ static const struct quirks_record quirks_records[] = {
         { .match = "Google_Wizpig.", .quirks = "allow_empty_wltag" },
 };
 
-/*
- * Helper function to write a firmware image into file on disk.
- * Returns the result from vb2_write_file.
- */
-static int write_image(const char *file_path, struct firmware_image *image)
-{
-	return vb2_write_file(file_path, image->data, image->size);
-}
-
 /* Preserves meta data and reload image contents from given file path. */
 static int reload_firmware_image(const char *file_path,
 				 struct firmware_image *image)
@@ -107,18 +98,16 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
  */
 static int ec_ro_software_sync(struct updater_config *cfg)
 {
-	const char *tmp_path = create_temp_file(&cfg->tempfiles);
 	const char *ec_ro_path;
 	uint8_t *ec_ro_data;
 	uint32_t ec_ro_len;
 	int is_same_ec_ro;
 	struct firmware_section ec_ro_sec;
+	const char *tmp_path = get_firmware_image_temp_file(
+			&cfg->image, &cfg->tempfiles);
 
-	if (!tmp_path ||
-	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
-		ERROR("Failed to create temporary file for image contents.\n");
+	if (!tmp_path)
 		return 1;
-	}
 	find_firmware_section(&ec_ro_sec, &cfg->ec_image, "EC_RO");
 	if (!ec_ro_sec.data || !ec_ro_sec.size) {
 		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
@@ -182,14 +171,13 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	if (image_from->size <= image_to->size)
 		return 0;
 
-	tmp_path = create_temp_file(&cfg->tempfiles);
+	tmp_path = get_firmware_image_temp_file(image_to, &cfg->tempfiles);
 	if (!tmp_path)
 		return -1;
 
 	VB2_DEBUG("Resize image from %u to %u.\n",
 		  image_to->size, image_from->size);
 	to_write = image_from->size - image_to->size;
-	write_image(tmp_path, image_to);
 	fp = fopen(tmp_path, "ab");
 	if (!fp) {
 		ERROR("Cannot open temporary file %s.\n", tmp_path);
@@ -377,11 +365,12 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 static int quirk_eve_smm_store(struct updater_config *cfg)
 {
 	const char *smm_store_name = "smm_store";
-	const char *temp_image = create_temp_file(&cfg->tempfiles);
 	const char *old_store;
 	char *command;
+	const char *temp_image = get_firmware_image_temp_file(
+			&cfg->image_current, &cfg->tempfiles);
 
-	if (write_image(temp_image, &cfg->image_current) != VB2_SUCCESS)
+	if (!temp_image)
 		return -1;
 
 	old_store = cbfs_extract_file(temp_image, FMAP_RW_LEGACY,
@@ -392,8 +381,9 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 		return 0;
 	}
 
-	/* Reuse temp_image. */
-	if (write_image(temp_image, &cfg->image) != VB2_SUCCESS)
+	/* Reuse temp_image */
+	temp_image = get_firmware_image_temp_file(&cfg->image, &cfg->tempfiles);
+	if (!temp_image)
 		return -1;
 
 	/* crosreview.com/1165109: The offset is fixed at 0x1bf000. */

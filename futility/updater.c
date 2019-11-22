@@ -839,14 +839,13 @@ static int legacy_needs_update(struct updater_config *cfg)
 	int has_from, has_to;
 	const char * const tag = "cros_allow_auto_update";
 	const char *section = FMAP_RW_LEGACY;
-	const char *tmp_path = create_temp_file(&cfg->tempfiles);
+	const char *tmp_path;
 
 	VB2_DEBUG("Checking %s contents...\n", FMAP_RW_LEGACY);
-	if (!tmp_path ||
-	    vb2_write_file(tmp_path, cfg->image.data, cfg->image.size)) {
-		ERROR("Failed to create temporary file for image contents.\n");
+
+	tmp_path = get_firmware_image_temp_file(&cfg->image, &cfg->tempfiles);
+	if (!tmp_path)
 		return 0;
-	}
 
 	has_to = cbfs_file_exists(tmp_path, section, tag);
 	has_from = cbfs_file_exists(tmp_path, section, tag);
@@ -1342,14 +1341,10 @@ static int updater_apply_white_label(struct updater_config *cfg,
 	assert(model->is_white_label);
 	if (!signature_id) {
 		if (cfg->image_current.data) {
-			tmp_image = create_temp_file(&cfg->tempfiles);
+			tmp_image = get_firmware_image_temp_file(
+					&cfg->image_current, &cfg->tempfiles);
 			if (!tmp_image)
 				return 1;
-			if (vb2_write_file(tmp_image, cfg->image_current.data,
-					    cfg->image_current.size)) {
-				ERROR("Failed writing temporary image file.\n");
-				return 1;
-			}
 		} else {
 			INFO("Loading system firmware for white label...\n");
 			load_system_firmware(&cfg->image_current,

@@ -222,7 +222,9 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 		return NULL;
 
 	if (vb2_write_file(tmp_path, image->data, image->size) != VB2_SUCCESS) {
-		ERROR("Cannot write temporary file for output: %s\n", tmp_path);
+		ERROR("Failed writing %s firmware image (%u bytes) to %s.\n",
+		      image->programmer ? image->programmer : "temp",
+		      image->size, tmp_path);
 		return NULL;
 	}
 	return tmp_path;
