@@ -14,9 +14,6 @@
 #define ASPRINTF(strp, ...) do { if (asprintf(strp, __VA_ARGS__) >= 0) break; \
 	ERROR("Failed to allocate memory, abort.\n"); exit(1); } while (0)
 
-/* Structure(s) declared in updater.h */
-struct updater_config;
-
 /* Structure(s) declared in updater_archive */
 struct archive;
 
@@ -34,6 +31,28 @@ enum active_slot {
 	SLOT_A = 0,
 	SLOT_B,
 };
+
+/* Utilities for managing temporary files. */
+struct tempfile {
+	char *filepath;
+	struct tempfile *next;
+};
+
+/*
+ * Create a new temporary file.
+ *
+ * The parameter head refers to a linked list dummy head.
+ * Returns the path of new file, or NULL on failure.
+ */
+const char *create_temp_file(struct tempfile *head);
+
+/*
+ * Remove all files created by create_temp_file().
+ *
+ * The parameter head refers to the dummy head of linked list.
+ * This is intended to be called only once at end of program execution.
+ */
+void remove_all_temp_files(struct tempfile *head);
 
 /* Utilities for firmware images and (FMAP) sections */
 struct firmware_image {
@@ -58,20 +77,30 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-int load_system_firmware(struct updater_config *cfg,
-			 struct firmware_image *image);
+int load_system_firmware(struct firmware_image *image,
+			 struct tempfile *tempfiles, int verbosity);
+
+/* Frees the allocated resource from a firmware image object. */
+void free_firmware_image(struct firmware_image *image);
+
+/*
+ * Generates a temporary file for snapshot of firmware image contents.
+ *
+ * Returns a file path if success, otherwise NULL.
+ */
+const char *get_firmware_image_temp_file(const struct firmware_image *image,
+					 struct tempfile *tempfiles);
 
 /*
  * Writes a section from given firmware image to system firmware.
  * If section_name is NULL, write whole image.
  * Returns 0 if success, non-zero if error.
  */
-int write_system_firmware(struct updater_config *cfg,
-			  const struct firmware_image *image,
-			  const char *section_name);
-
-/* Frees the allocated resource from a firmware image object. */
-void free_firmware_image(struct firmware_image *image);
+int write_system_firmware(const struct firmware_image *image,
+			  const struct firmware_image *diff_image,
+			  const char *section_name,
+			  struct tempfile *tempfiles,
+			  int verbosity);
 
 struct firmware_section {
 	uint8_t *data;
@@ -153,10 +182,10 @@ int cbfs_file_exists(const char *image_file,
  * Extracts files from a CBFS on given region (section) of image_file.
  * Returns the path to a temporary file on success, otherwise NULL.
  */
-const char *cbfs_extract_file(struct updater_config *cfg,
-			      const char *image_file,
+const char *cbfs_extract_file(const char *image_file,
 			      const char *cbfs_region,
-			      const char *cbfs_name);
+			      const char *cbfs_name,
+			      struct tempfile *tempfiles);
 
 /* Utilities for accessing system properties */
 struct system_property {
@@ -177,24 +206,5 @@ enum system_property_type {
 
 /* Helper function to initialize system properties. */
 void init_system_properties(struct system_property *props, int num);
-
-/* Utilities for managing temporary files. */
-/* TODO(hungte) Change the functions below to take only tempfile as param. */
-struct tempfile {
-	char *filepath;
-	struct tempfile *next;
-};
-
-/*
- * Helper function to create a new temporary file within updater's life cycle.
- * Returns the path of new file, or NULL on failure.
- */
-const char *updater_create_temp_file(struct updater_config *cfg);
-
-/*
- * Helper function to remove all files created by create_temp_file().
- * This is intended to be called only once at end of program execution.
- */
-void updater_remove_all_temp_files(struct updater_config *cfg);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */

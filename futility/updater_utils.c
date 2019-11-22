@@ -101,12 +101,12 @@ int cbfs_file_exists(const char *image_file,
  * Extracts files from a CBFS on given region (section) of image_file.
  * Returns the path to a temporary file on success, otherwise NULL.
  */
-const char *cbfs_extract_file(struct updater_config *cfg,
-			      const char *image_file,
+const char *cbfs_extract_file(const char *image_file,
 			      const char *cbfs_region,
-			      const char *cbfs_name)
+			      const char *cbfs_name,
+			      struct tempfile *tempfiles)
 {
-	const char *output = updater_create_temp_file(cfg);
+	const char *output = create_temp_file(tempfiles);
 	char *command, *result;
 
 	if (!output)
@@ -207,6 +207,25 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", file_name);
 	}
 	return 0;
+}
+
+/*
+ * Generates a temporary file for snapshot of firmware image contents.
+ *
+ * Returns a file path if success, otherwise NULL.
+ */
+const char *get_firmware_image_temp_file(const struct firmware_image *image,
+					 struct tempfile *tempfiles)
+{
+	const char *tmp_path = create_temp_file(tempfiles);
+	if (!tmp_path)
+		return NULL;
+
+	if (vb2_write_file(tmp_path, image->data, image->size) != VB2_SUCCESS) {
+		ERROR("Cannot write temporary file for output: %s\n", tmp_path);
+		return NULL;
+	}
+	return tmp_path;
 }
 
 /*
@@ -523,19 +542,19 @@ static int host_get_wp_sw(void)
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-int load_system_firmware(struct updater_config *cfg,
-			 struct firmware_image *image)
+int load_system_firmware(struct firmware_image *image,
+			 struct tempfile *tempfiles, int verbosity)
 {
 	int r;
-	const char *tmp_file = updater_create_temp_file(cfg);
+	const char *tmp_path = create_temp_file(tempfiles);
 
-	if (!tmp_file)
+	if (!tmp_path)
 		return -1;
 
-	r = host_flashrom(FLASHROM_READ, tmp_file, image->programmer,
-			  cfg->verbosity, NULL, NULL);
+	r = host_flashrom(FLASHROM_READ, tmp_path, image->programmer,
+			  verbosity, NULL, NULL);
 	if (!r)
-		r = load_firmware_image(image, tmp_file, NULL);
+		r = load_firmware_image(image, tmp_path, NULL);
 	return r;
 }
 
@@ -544,35 +563,32 @@ int load_system_firmware(struct updater_config *cfg,
  * If section_name is NULL, write whole image.
  * Returns 0 if success, non-zero if error.
  */
-int write_system_firmware(struct updater_config *cfg,
-			  const struct firmware_image *image,
-			  const char *section_name)
+int write_system_firmware(const struct firmware_image *image,
+			  const struct firmware_image *diff_image,
+			  const char *section_name,
+			  struct tempfile *tempfiles,
+			  int verbosity)
 {
-	const char *tmp_file = updater_create_temp_file(cfg);
-	const char *tmp_diff_file = NULL;
+	const char *tmp_path = get_firmware_image_temp_file(image, tempfiles);
+	const char *tmp_diff = NULL;
+
 	const char *programmer = image->programmer;
 	char *extra = NULL;
 	int r;
 
-	if (!tmp_file)
+	if (!tmp_path)
 		return -1;
 
-	if (vb2_write_file(tmp_file, image->data, image->size) != VB2_SUCCESS) {
-		ERROR("Cannot write temporary file for output: %s\n", tmp_file);
-		return -1;
-	}
-	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
-	{
-		tmp_diff_file = updater_create_temp_file(cfg);
-		if (vb2_write_file(tmp_diff_file, cfg->image_current.data,
-				   cfg->image_current.size) != VB2_SUCCESS) {
-			ERROR("Cannot write temporary file for diff image\n");
+	if (diff_image) {
+		tmp_diff = get_firmware_image_temp_file(
+				diff_image, tempfiles);
+		if (!tmp_diff)
 			return -1;
-		}
-		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff_file);
+		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff);
 	}
-	r = host_flashrom(FLASHROM_WRITE, tmp_file, programmer,
-			  cfg->verbosity + 1, section_name, extra);
+
+	r = host_flashrom(FLASHROM_WRITE, tmp_path, programmer, verbosity,
+			  section_name, extra);
 	free(extra);
 	return r;
 }
@@ -592,10 +608,10 @@ void init_system_properties(struct system_property *props, int num)
 
 /*
  * Helper function to create a new temporary file.
- * All files created will be removed by updater_remove_all_temp_files().
+ * All files created will be removed remove_all_temp_files().
  * Returns the path of new file, or NULL on failure.
  */
-const char *updater_create_temp_file(struct updater_config *cfg)
+const char *create_temp_file(struct tempfile *head)
 {
 	struct tempfile *new_temp;
 	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
@@ -617,8 +633,10 @@ const char *updater_create_temp_file(struct updater_config *cfg)
 		return NULL;
 	}
 	VB2_DEBUG("Created new temporary file: %s.\n", new_path);
-	new_temp->next = cfg->tempfiles;
-	cfg->tempfiles = new_temp;
+	new_temp->next = NULL;
+	while (head->next)
+		head = head->next;
+	head->next = new_temp;
 	return new_temp->filepath;
 }
 
@@ -626,16 +644,19 @@ const char *updater_create_temp_file(struct updater_config *cfg)
  * Helper function to remove all files created by create_temp_file().
  * This is intended to be called only once at end of program execution.
  */
-void updater_remove_all_temp_files(struct updater_config *cfg)
+void remove_all_temp_files(struct tempfile *head)
 {
-	struct tempfile *tempfiles = cfg->tempfiles;
-	while (tempfiles != NULL) {
-		struct tempfile *target = tempfiles;
-		VB2_DEBUG("Remove temporary file: %s.\n", target->filepath);
-		remove(target->filepath);
-		free(target->filepath);
-		tempfiles = target->next;
-		free(target);
+	/* head itself is dummy and should not be removed. */
+	assert(!head->filepath);
+	struct tempfile *next = head->next;
+	while (next) {
+		head->next = NULL;
+		head = next;
+		next = head->next;
+		assert(head->filepath);
+		VB2_DEBUG("Remove temporary file: %s.\n", head->filepath);
+		remove(head->filepath);
+		free(head->filepath);
+		free(head);
 	}
-	cfg->tempfiles = NULL;
 }

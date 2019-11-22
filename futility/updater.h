@@ -27,6 +27,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_SI_DESC = "SI_DESC",
 		  * const FMAP_SI_ME = "SI_ME";
 
+struct updater_config;
 struct quirk_entry {
 	const char *name;
 	const char *help;
@@ -59,7 +60,7 @@ struct updater_config {
 	struct system_property system_properties[SYS_PROP_MAX];
 	struct quirk_entry quirks[QUIRK_MAX];
 	struct archive *archive;
-	struct tempfile *tempfiles;
+	struct tempfile tempfiles;
 	int try_update;
 	int force_update;
 	int legacy_update;

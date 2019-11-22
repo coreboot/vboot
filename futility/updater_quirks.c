@@ -107,7 +107,7 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
  */
 static int ec_ro_software_sync(struct updater_config *cfg)
 {
-	const char *tmp_path = updater_create_temp_file(cfg);
+	const char *tmp_path = create_temp_file(&cfg->tempfiles);
 	const char *ec_ro_path;
 	uint8_t *ec_ro_data;
 	uint32_t ec_ro_len;
@@ -124,7 +124,8 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
 		return 1;
 	}
-	ec_ro_path = cbfs_extract_file(cfg, tmp_path, FMAP_RO_SECTION, "ecro");
+	ec_ro_path = cbfs_extract_file(tmp_path, FMAP_RO_SECTION, "ecro",
+				       &cfg->tempfiles);
 	if (!ec_ro_path ||
 	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ecro.hash")) {
 		INFO("No valid EC RO for software sync in AP firmware.\n");
@@ -181,7 +182,7 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 	if (image_from->size <= image_to->size)
 		return 0;
 
-	tmp_path = updater_create_temp_file(cfg);
+	tmp_path = create_temp_file(&cfg->tempfiles);
 	if (!tmp_path)
 		return -1;
 
@@ -348,7 +349,8 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 		cfg->image.rw_version_a = strdup(cfg->image.rw_version_b);
 		/* Need to use RO from current system. */
 		if (!cfg->image_current.data &&
-		    load_system_firmware(cfg, &cfg->image_current) != 0) {
+		    load_system_firmware(&cfg->image_current, &cfg->tempfiles,
+					 cfg->verbosity) != 0) {
 			ERROR("Cannot get system RO contents\n");
 			return -1;
 		}
@@ -375,15 +377,15 @@ static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
 static int quirk_eve_smm_store(struct updater_config *cfg)
 {
 	const char *smm_store_name = "smm_store";
-	const char *temp_image = updater_create_temp_file(cfg);
+	const char *temp_image = create_temp_file(&cfg->tempfiles);
 	const char *old_store;
 	char *command;
 
 	if (write_image(temp_image, &cfg->image_current) != VB2_SUCCESS)
 		return -1;
 
-	old_store = cbfs_extract_file(cfg, temp_image, FMAP_RW_LEGACY,
-				      smm_store_name);
+	old_store = cbfs_extract_file(temp_image, FMAP_RW_LEGACY,
+				      smm_store_name, &cfg->tempfiles);
 	if (!old_store) {
 		VB2_DEBUG("cbfstool failure or SMM store not available. "
 			  "Don't preserve.\n");

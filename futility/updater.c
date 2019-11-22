@@ -376,6 +376,8 @@ static int write_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char *section_name)
 {
+	struct firmware_image *diff_image = NULL;
+
 	if (cfg->emulation) {
 		INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
 		     section_name ? section_name : "whole image",
@@ -383,10 +385,13 @@ static int write_firmware(struct updater_config *cfg,
 
 		return emulate_write_firmware(
 				cfg->emulation, image, section_name);
-
 	}
 
-	return write_system_firmware(cfg, image, section_name);
+	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
+		diff_image = &cfg->image_current;
+
+	return write_system_firmware(image, diff_image, section_name,
+				     &cfg->tempfiles, cfg->verbosity + 1);
 }
 
 /*
@@ -834,7 +839,7 @@ static int legacy_needs_update(struct updater_config *cfg)
 	int has_from, has_to;
 	const char * const tag = "cros_allow_auto_update";
 	const char *section = FMAP_RW_LEGACY;
-	const char *tmp_path = updater_create_temp_file(cfg);
+	const char *tmp_path = create_temp_file(&cfg->tempfiles);
 
 	VB2_DEBUG("Checking %s contents...\n", FMAP_RW_LEGACY);
 	if (!tmp_path ||
@@ -1170,7 +1175,8 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		 * RO_VPD, RW_VPD, RW_NVRAM, RW_LEGACY.
 		 */
 		INFO("Loading current system firmware...\n");
-		if (load_system_firmware(cfg, image_from) != 0)
+		if (load_system_firmware(image_from, &cfg->tempfiles,
+					 cfg->verbosity) != 0)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
 	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
@@ -1281,7 +1287,7 @@ static int updater_load_images(struct updater_config *cfg,
 	if (!cfg->image.data && image) {
 		if (image && strcmp(image, "-") == 0) {
 			INFO("Reading image from stdin...\n");
-			image = updater_create_temp_file(cfg);
+			image = create_temp_file(&cfg->tempfiles);
 			if (image)
 				errorcnt += !!save_file_from_stdin(image);
 		}
@@ -1336,7 +1342,7 @@ static int updater_apply_white_label(struct updater_config *cfg,
 	assert(model->is_white_label);
 	if (!signature_id) {
 		if (cfg->image_current.data) {
-			tmp_image = updater_create_temp_file(cfg);
+			tmp_image = create_temp_file(&cfg->tempfiles);
 			if (!tmp_image)
 				return 1;
 			if (vb2_write_file(tmp_image, cfg->image_current.data,
@@ -1346,7 +1352,8 @@ static int updater_apply_white_label(struct updater_config *cfg,
 			}
 		} else {
 			INFO("Loading system firmware for white label...\n");
-			load_system_firmware(cfg, &cfg->image_current);
+			load_system_firmware(&cfg->image_current,
+					     &cfg->tempfiles, cfg->verbosity);
 			tmp_image = cfg->image_current.file_name;
 		}
 		if (!tmp_image) {
@@ -1615,7 +1622,7 @@ void updater_delete_config(struct updater_config *cfg)
 	free_firmware_image(&cfg->image_current);
 	free_firmware_image(&cfg->ec_image);
 	free_firmware_image(&cfg->pd_image);
-	updater_remove_all_temp_files(cfg);
+	remove_all_temp_files(&cfg->tempfiles);
 	if (cfg->archive)
 		archive_close(cfg->archive);
 	free(cfg);
