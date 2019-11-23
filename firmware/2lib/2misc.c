@@ -178,7 +178,7 @@ vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 
 	/* Keep on the work buffer permanently */
 	sd->gbb_offset = vb2_offset_of(sd, gbb);
-	vb2_set_workbuf_used(ctx, vb2_offset_of(ctx, wb.buf));
+	vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
 
 	/* Set any context flags based on GBB flags */
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_FWMP)
