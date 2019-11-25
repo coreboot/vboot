@@ -429,9 +429,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		if (!rv)
 			rv = VBERROR_REBOOT_REQUIRED;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
-		if (kparams->inflags & VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE)
-			ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-
 		/* Developer boot.  This has UI. */
 		if (ctx->flags & VB2_CONTEXT_DETACHABLE_UI)
 			rv = VbBootDeveloperMenu(ctx);

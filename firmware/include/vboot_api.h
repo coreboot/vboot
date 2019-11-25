@@ -105,8 +105,6 @@ typedef struct VbSelectAndLoadKernelParams {
 	void *kernel_buffer;
 	/* Size of kernel buffer in bytes */
 	uint32_t kernel_buffer_size;
-	/* input flags. */
-	uint32_t inflags;
 
 	/*
 	 * Outputs from VbSelectAndLoadKernel(); valid only if it returns
@@ -131,11 +129,6 @@ typedef struct VbSelectAndLoadKernelParams {
 	 * that we're passing partition_guid?
 	 */
 } VbSelectAndLoadKernelParams;
-
-/* Flag to indicate that the vendor data is not set and the vendor data
- * UI should be enabled.
- */
-#define VB_SALK_INFLAGS_VENDOR_DATA_SETTABLE (1 << 1)
 
 /**
  * Select and loads the kernel.
