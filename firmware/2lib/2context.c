@@ -52,40 +52,41 @@ vb2_error_t vb2api_init(void *workbuf, uint32_t size,
 #pragma GCC diagnostic push
 /* Don't warn for the version_minor check even if the checked version is 0. */
 #pragma GCC diagnostic ignored "-Wtype-limits"
-vb2_error_t vb2api_relocate(void *new_workbuf, void *cur_workbuf, uint32_t size,
-			    struct vb2_context **ctxptr)
+vb2_error_t vb2api_relocate(void *new_workbuf, const void *cur_workbuf,
+			    uint32_t size, struct vb2_context **ctxptr)
 {
-	struct vb2_shared_data *sd = cur_workbuf;
+	const struct vb2_shared_data *cur_sd = cur_workbuf;
+	struct vb2_shared_data *new_sd;
 
 	if (!vb2_aligned(new_workbuf, VB2_WORKBUF_ALIGN))
 		return VB2_ERROR_WORKBUF_ALIGN;
 
 	/* Check magic and version. */
-	if (sd->magic != VB2_SHARED_DATA_MAGIC)
+	if (cur_sd->magic != VB2_SHARED_DATA_MAGIC)
 		return VB2_ERROR_SHARED_DATA_MAGIC;
 
-	if (sd->struct_version_major != VB2_SHARED_DATA_VERSION_MAJOR ||
-	    sd->struct_version_minor < VB2_SHARED_DATA_VERSION_MINOR)
+	if (cur_sd->struct_version_major != VB2_SHARED_DATA_VERSION_MAJOR ||
+	    cur_sd->struct_version_minor < VB2_SHARED_DATA_VERSION_MINOR)
 		return VB2_ERROR_SHARED_DATA_VERSION;
 
 	/* Check workbuf integrity. */
-	if (sd->workbuf_used < vb2_wb_round_up(sizeof(*sd)))
+	if (cur_sd->workbuf_used < vb2_wb_round_up(sizeof(*cur_sd)))
 		return VB2_ERROR_WORKBUF_INVALID;
 
-	if (sd->workbuf_size < sd->workbuf_used)
+	if (cur_sd->workbuf_size < cur_sd->workbuf_used)
 		return VB2_ERROR_WORKBUF_INVALID;
 
-	if (sd->workbuf_used > size)
+	if (cur_sd->workbuf_used > size)
 		return VB2_ERROR_WORKBUF_SMALL;
 
 	/* Relocate if necessary. */
 	if (cur_workbuf != new_workbuf)
-		memmove(new_workbuf, cur_workbuf, sd->workbuf_used);
+		memmove(new_workbuf, cur_workbuf, cur_sd->workbuf_used);
 
 	/* Set the new size, and return the context pointer. */
-	sd = new_workbuf;
-	sd->workbuf_size = size;
-	*ctxptr = &sd->ctx;
+	new_sd = new_workbuf;
+	new_sd->workbuf_size = size;
+	*ctxptr = &new_sd->ctx;
 
 	return VB2_SUCCESS;
 }

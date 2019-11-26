@@ -472,8 +472,8 @@ vb2_error_t vb2api_reinit(void *workbuf, struct vb2_context **ctxptr);
  * @param ctxptr	Pointer to a context pointer to be filled in
  * @return VB2_SUCCESS, or non-zero error code.
  */
-vb2_error_t vb2api_relocate(void *new_workbuf, void *cur_workbuf, uint32_t size,
-			    struct vb2_context **ctxptr);
+vb2_error_t vb2api_relocate(void *new_workbuf, const void *cur_workbuf,
+			    uint32_t size, struct vb2_context **ctxptr);
 
 /**
  * Check the validity of firmware secure storage context.
