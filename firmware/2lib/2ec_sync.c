@@ -462,6 +462,15 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 		return VB2_SUCCESS;
 	}
 
+	/*
+	 * If the device is in recovery mode, then EC sync should
+	 * not be performed.
+	 */
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
+		VB2_DEBUG("In recovery mode, skipping EC sync\n");
+		return VB2_SUCCESS;
+	}
+
 	/* Phase 1; this determines if we need an update */
 	vb2_error_t phase1_rv = ec_sync_phase1(ctx);
 	int need_wait_screen = ec_will_update_slowly(ctx);

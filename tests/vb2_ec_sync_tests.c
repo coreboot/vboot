@@ -389,6 +389,16 @@ static void VbSoftwareSyncTest(void)
 	mock_in_rw = 1;
 	shutdown_request_calls_left = 0;
 	test_ssync(0, 0, "AP-RW shutdown requested");
+
+	/* EC sync not allowed in recovery mode */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	test_ssync(0, 0, "No sync in recovery mode");
+	TEST_EQ(ec_ro_protected, 0, "ec ro not protected");
+	TEST_EQ(ec_rw_protected, 0, "ec rw not protected");
+	TEST_EQ(ec_run_image, 0, "ec in ro");
+	TEST_EQ(ec_ro_updated, 0, "ec ro not updated");
+	TEST_EQ(ec_rw_updated, 0, "ec rw not updated");
 }
 
 int main(void)
