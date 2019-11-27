@@ -24,7 +24,7 @@
 #include "vboot_ui_common.h"
 
 /* Global variables */
-enum {
+static enum {
 	POWER_BUTTON_HELD_SINCE_BOOT = 0,
 	POWER_BUTTON_RELEASED,
 	POWER_BUTTON_PRESSED, /* must have been previously released */
