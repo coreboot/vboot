@@ -45,8 +45,6 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
 
-	{ .match = "Google_Snow.", .quirks = "daisy_snow_dual_model" },
-
         /* Legacy white label units. */
         { .match = "Google_Enguarde.", .quirks = "allow_empty_wltag" },
         { .match = "Google_Expresso.", .quirks = "allow_empty_wltag" },
@@ -274,86 +272,6 @@ static int quirk_min_platform_version(struct updater_config *cfg)
 }
 
 /*
- * Adjust firmware image according to running platform version.
- * Returns 0 if success, non-zero if error.
- */
-static int quirk_daisy_snow_dual_model(struct updater_config *cfg)
-{
-	/*
-	 * The daisy-snow firmware should be packed as RO, RW_A=x16, RW_B=x8.
-	 * RO update for x8 and RO EC update for all are no longer supported.
-	 */
-	struct firmware_section a, b;
-	int i, is_x8 = 0, is_x16 = 0;
-	const char * const x8_versions[] = {
-		"DVT",
-		"PVT",
-		"PVT2",
-		"MP",
-	};
-	const char * const x16_versions[] = {
-		"MPx16",  /* Rev 4 */
-		"MP2",  /* Rev 5 */
-	};
-	char *platform_version = host_shell("mosys platform version");
-
-	for (i = 0; i < ARRAY_SIZE(x8_versions) && !is_x8; i++) {
-		if (strcmp(x8_versions[i], platform_version) == 0)
-			is_x8 = 1;
-	}
-	for (i = 0; i < ARRAY_SIZE(x16_versions) && !is_x8 && !is_x16; i++) {
-		if (strcmp(x16_versions[i], platform_version) == 0)
-			is_x16 = 1;
-	}
-	INFO("Platform version: %s (original value: %s)\n",
-	     is_x8 ? "x8" : is_x16 ? "x16": "unknown", platform_version);
-	free(platform_version);
-
-	find_firmware_section(&a, &cfg->image, FMAP_RW_SECTION_A);
-	find_firmware_section(&b, &cfg->image, FMAP_RW_SECTION_B);
-
-	if (cfg->ec_image.data) {
-		ERROR("EC RO update is not supported with this quirk.\n");
-		return -1;
-	}
-	if (!a.data || !b.data || a.size != b.size) {
-		ERROR("Invalid firmware image: %s\n", cfg->image.file_name);
-		return -1;
-	}
-	if (memcmp(a.data, b.data, a.size) == 0) {
-		ERROR("Input image must have both x8 and x16 firmware.\n");
-		return -1;
-	}
-
-	if (is_x16) {
-		memmove(b.data, a.data, a.size);
-		free(cfg->image.rw_version_b);
-		cfg->image.rw_version_b = strdup(cfg->image.rw_version_a);
-		/* chromium:917581 Some x16 come with weird RO. */
-		cfg->check_platform = 0;
-	} else if (is_x8) {
-		memmove(a.data, b.data, b.size);
-		free(cfg->image.rw_version_a);
-		cfg->image.rw_version_a = strdup(cfg->image.rw_version_b);
-		/* Need to use RO from current system. */
-		if (!cfg->image_current.data &&
-		    load_system_firmware(&cfg->image_current, &cfg->tempfiles,
-					 cfg->verbosity) != 0) {
-			ERROR("Cannot get system RO contents\n");
-			return -1;
-		}
-		preserve_firmware_section(&cfg->image_current, &cfg->image,
-					  FMAP_RO_SECTION);
-		free(cfg->image.ro_version);
-		cfg->image.ro_version = strdup(cfg->image_current.ro_version);
-	} else {
-		ERROR("Unknown platform, cannot update.\n");
-		return -1;
-	}
-	return 0;
-}
-
-/*
  * Quirk to help preserving SMM store on devices without a dedicated "SMMSTORE"
  * FMAP section. These devices will store "smm_store" file in same CBFS where
  * the legacy boot loader lives (i.e, FMAP RW_LEGACY).
@@ -487,11 +405,6 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "b/35568719; only lock management engine in "
 			"board-postinst.";
 	quirks->apply = quirk_unlock_me_for_update;
-
-	quirks = &cfg->quirks[QUIRK_DAISY_SNOW_DUAL_MODEL];
-	quirks->name = "daisy_snow_dual_model";
-	quirks->help = "b/35525858; needs an image RW A=[model x16], B=x8.";
-	quirks->apply = quirk_daisy_snow_dual_model;
 
 	quirks = &cfg->quirks[QUIRK_EVE_SMM_STORE];
 	quirks->name = "eve_smm_store";

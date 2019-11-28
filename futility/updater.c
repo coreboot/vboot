@@ -1158,9 +1158,6 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (!image_to->data)
 		return UPDATE_ERR_NO_IMAGE;
 
-	if (try_apply_quirk(QUIRK_DAISY_SNOW_DUAL_MODEL, cfg))
-		return UPDATE_ERR_PLATFORM;
-
 	STATUS("Target image: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
 	     image_to->file_name, image_to->ro_version,
 	     image_to->rw_version_a, image_to->rw_version_b);
