@@ -414,7 +414,7 @@ static void recovery_tests(void)
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 3);
 	vb2_check_recovery(ctx);
 	TEST_EQ(sd->recovery_reason, 3, "Recovery reason from request");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "NV cleared");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 3, "NV not cleared");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		0, "Not manual recovery");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE,
@@ -427,7 +427,7 @@ static void recovery_tests(void)
 	vb2_check_recovery(ctx);
 	TEST_EQ(sd->recovery_reason, 5, "Recovery reason already failed");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		0, "NV still cleared");
+		4, "NV not cleared");
 
 	/* Override */
 	reset_common_data();

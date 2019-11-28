@@ -146,10 +146,6 @@ void vb2_check_recovery(struct vb2_context *ctx)
 	if (!sd->recovery_reason)
 		sd->recovery_reason = reason;
 
-	/* Clear request and subcode so we don't get stuck in recovery mode */
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, VB2_RECOVERY_NOT_REQUESTED);
-
 	if (ctx->flags & VB2_CONTEXT_FORCE_RECOVERY_MODE) {
 		VB2_DEBUG("Recovery was requested manually\n");
 		if (subcode && !sd->recovery_reason)

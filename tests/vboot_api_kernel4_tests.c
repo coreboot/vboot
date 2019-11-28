@@ -301,6 +301,16 @@ static void VbSlkTest(void)
 	commit_data_retval = VB2_ERROR_UNKNOWN;
 	test_slk(0, 0, "Recovery return unknown write error");
 
+	/* Boot recovery - nvstorage cleared */
+	ResetMocks();
+	sd->recovery_reason = 123;
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
+	test_slk(0, 0, "Recovery with nvstorage");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		0, "  recovery subcode cleared");
+
+	/* Boot recovery - memory retraining */
 	ResetMocks();
 	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
 	test_slk(VBERROR_REBOOT_REQUIRED, 0, "Recovery train and reboot");
