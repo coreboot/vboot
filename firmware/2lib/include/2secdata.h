@@ -127,6 +127,7 @@ enum vb2_secdata_fwmp_flags {
 	VB2_SECDATA_FWMP_DEV_USE_KEY_HASH = (1 << 5),
 	/* CCD = case-closed debugging on cr50; flag implemented on cr50 */
 	VB2_SECDATA_FWMP_DEV_DISABLE_CCD_UNLOCK = (1 << 6),
+	VB2_SECDATA_FWMP_DEV_FIPS_MODE = (1 << 7),
 };
 
 /**
