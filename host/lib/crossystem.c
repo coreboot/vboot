@@ -30,8 +30,7 @@
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"
 
-#define MOSYS_CROS_PATH "/usr/sbin/mosys"
-#define MOSYS_ANDROID_PATH "/system/bin/mosys"
+#define MOSYS_PATH "/usr/sbin/mosys"
 
 /* Fields that GetVdatString() can get */
 typedef enum VdatStringField {
@@ -773,26 +772,6 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 	return -1;
 }
 
-static int InAndroid(void)
-{
-	int fd;
-	struct stat s;
-	int retval = 0;
-
-	/*
-	 * In Android, mosys utility located in /system/bin check if file
-	 * exists.  Using fstat because for some reason, stat() was seg
-	 * faulting in Android
-	 */
-	fd = open(MOSYS_ANDROID_PATH, O_RDONLY);
-	if (fd != -1) {
-		if (fstat(fd, &s) == 0)
-			retval = 1;
-		close(fd);
-	}
-	return retval;
-}
-
 static int ExecuteMosys(const char * const argv[], char *buf, size_t bufsize)
 {
 	int status, mosys_to_crossystem[2];
@@ -821,8 +800,7 @@ static int ExecuteMosys(const char * const argv[], char *buf, size_t bufsize)
 			}
 		}
 		/* Execute mosys (needs cast because POSIX is stupid) */
-		execv(InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
-		      (char * const *)argv);
+		execv(MOSYS_PATH, (char * const *)argv);
 		/* We shouldn't be here; exit now! */
 		fprintf(stderr, "execv() of mosys failed\n");
 		close(mosys_to_crossystem[1]);
@@ -867,8 +845,7 @@ int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 	 * to crossystem to read the VBSD flag.
 	 */
 	const char * const argv[] = {
-		InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
-		"nvram", "vboot", "read", NULL
+		MOSYS_PATH, "nvram", "vboot", "read", NULL
 	};
 	char hexdigit[3];
 	const int nvsize = vb2_nv_get_size(ctx);
@@ -894,8 +871,7 @@ int vb2_write_nv_storage_mosys(struct vb2_context *ctx)
 {
 	char hexstring[VB2_NVDATA_SIZE_V2 * 2 + 1];
 	const char * const argv[] = {
-		InAndroid() ? MOSYS_ANDROID_PATH : MOSYS_CROS_PATH,
-		"nvram", "vboot", "write", hexstring, NULL
+		MOSYS_PATH, "nvram", "vboot", "write", hexstring, NULL
 	};
 	const int nvsize = vb2_nv_get_size(ctx);
 	int i;
