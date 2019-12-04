@@ -110,6 +110,14 @@ make_pair() {
   rm -f "${base}_${len}.pem" "${base}_${len}.crt" "${base}_${len}.keyb"
 }
 
+# Used to generate keys for signing update payloads.
+make_au_payload_key() {
+  local dir=$1
+  local priv="${dir}/update_key.pem"
+  local pub="${dir}/update-payload-key-pub.pem"
+  openssl genrsa -out "${priv}" 2048
+  openssl rsa -pubout -in "${priv}" -out "${pub}"
+}
 
 # Emit a .keyblock containing flags and a public key, signed by a private key
 # flags are the bitwise OR of these (passed in decimal, though)
