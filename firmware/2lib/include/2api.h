@@ -27,14 +27,6 @@
 #include "2recovery_reasons.h"
 #include "2return_codes.h"
 
-/* TODO(chromium:972956): Remove once coreboot is using updated names */
-#define secdata secdata_firmware
-#define secdatak secdata_kernel
-#define vb2api_secdata_check vb2api_secdata_firmware_check
-#define vb2api_secdata_create vb2api_secdata_firmware_create
-#define vb2api_secdatak_check vb2api_secdata_kernel_check
-#define vb2api_secdatak_create vb2api_secdata_kernel_create
-
 /* Modes for vb2ex_tpm_set_mode. */
 enum vb2_tpm_mode {
 	/*
@@ -69,8 +61,6 @@ enum vb2_context_flags {
 	 * this flag.
 	 */
 	VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED = (1 << 1),
-	/* TODO: Remove once coreboot has switched over */
-	VB2_CONTEXT_SECDATA_CHANGED = (1 << 1),
 
 	/* Recovery mode is requested this boot */
 	VB2_CONTEXT_RECOVERY_MODE = (1 << 2),
