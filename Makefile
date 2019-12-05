@@ -575,9 +575,6 @@ UTIL_SCRIPTS += \
 	utility/vbutil_what_keys
 endif
 
-# These utilities should also provide static linked version (*_s).
-UTIL_NAMES_STATIC =
-
 UTIL_NAMES = \
 	utility/crossystem \
 	utility/dumpRSAPublicKey \
@@ -594,8 +591,7 @@ LZMA_LIBS = $(shell ${PKG_CONFIG} --libs liblzma)
 YAML_LIBS = $(shell ${PKG_CONFIG} --libs yaml-0.1)
 endif
 
-UTIL_BINS_STATIC := $(addsuffix _s,$(addprefix ${BUILD}/,${UTIL_NAMES_STATIC}))
-UTIL_BINS = $(addprefix ${BUILD}/,${UTIL_NAMES}) ${UTIL_BINS_STATIC}
+UTIL_BINS = $(addprefix ${BUILD}/,${UTIL_NAMES})
 ALL_OBJS += $(addsuffix .o,${UTIL_BINS})
 
 
@@ -1008,12 +1004,8 @@ cgpt_wrapper_install: cgpt_install ${CGPT_WRAPPER}
 # These have their own headers too.
 ${BUILD}/utility/%: INCLUDES += -Iutility/include
 
-${UTIL_BINS} ${UTIL_BINS_STATIC}: ${UTILLIB}
-${UTIL_BINS} ${UTIL_BINS_STATIC}: LIBS = ${UTILLIB}
-
-# Utilities for auto-update toolkits must be statically linked.
-${UTIL_BINS_STATIC}: LDFLAGS += -static
-
+${UTIL_BINS}: ${UTILLIB}
+${UTIL_BINS}: LIBS = ${UTILLIB}
 
 .PHONY: utils
 utils: ${UTIL_BINS} ${UTIL_SCRIPTS}
@@ -1149,7 +1141,6 @@ ${UTIL_DEFAULTS}:
 
 # Some utilities need external crypto functions
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
-CRYPTO_STATIC_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto --static)
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}
