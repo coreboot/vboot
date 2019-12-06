@@ -514,6 +514,7 @@ HOSTLIB_SRCS = \
 	host/lib/extract_vmlinuz.c \
 	host/lib/fmap.c \
 	host/lib/host_misc.c \
+	host/lib/subprocess.c \
 	${TLCL_SRCS}
 
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}

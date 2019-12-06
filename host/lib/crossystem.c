@@ -6,15 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <ctype.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <unistd.h>
 
 #include "2api.h"
 #include "2common.h"
@@ -24,6 +16,7 @@
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
 #include "host_common.h"
+#include "subprocess.h"
 #include "utility.h"
 #include "vboot_struct.h"
 
@@ -772,65 +765,6 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 	return -1;
 }
 
-static int ExecuteMosys(const char * const argv[], char *buf, size_t bufsize)
-{
-	int status, mosys_to_crossystem[2];
-	pid_t pid;
-	ssize_t n;
-
-	if (pipe(mosys_to_crossystem) < 0) {
-		fprintf(stderr, "pipe() error\n");
-		return -1;
-	}
-
-	if ((pid = fork()) < 0) {
-		fprintf(stderr, "fork() error\n");
-		close(mosys_to_crossystem[0]);
-		close(mosys_to_crossystem[1]);
-		return -1;
-	} else if (!pid) {  /* Child */
-		close(mosys_to_crossystem[0]);
-		/* Redirect pipe's write-end to mosys' stdout */
-		if (STDOUT_FILENO != mosys_to_crossystem[1]) {
-			if (dup2(mosys_to_crossystem[1], STDOUT_FILENO)
-			    != STDOUT_FILENO) {
-				fprintf(stderr, "stdout dup2() failed (mosys)\n");
-				close(mosys_to_crossystem[1]);
-				exit(1);
-			}
-		}
-		/* Execute mosys (needs cast because POSIX is stupid) */
-		execv(MOSYS_PATH, (char * const *)argv);
-		/* We shouldn't be here; exit now! */
-		fprintf(stderr, "execv() of mosys failed\n");
-		close(mosys_to_crossystem[1]);
-		exit(1);
-	} else {  /* Parent */
-		close(mosys_to_crossystem[1]);
-		if (bufsize) {
-			bufsize--;  /* Reserve 1 byte for '\0' */
-			while ((n = read(mosys_to_crossystem[0],
-					 buf, bufsize)) > 0) {
-				buf += n;
-				bufsize -= n;
-			}
-			*buf = '\0';
-		} else {
-			n = 0;
-		}
-		close(mosys_to_crossystem[0]);
-		if (n < 0)
-			fprintf(stderr, "read() error on output from mosys\n");
-		if (waitpid(pid, &status, 0) < 0 || status) {
-			fprintf(stderr, "waitpid() or mosys error\n");
-			return -1;
-		}
-		if (n < 0)
-			return -1;
-	}
-	return 0;
-}
-
 int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 {
 	/* Reserve extra 32 bytes */
@@ -851,9 +785,20 @@ int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 	const int nvsize = vb2_nv_get_size(ctx);
 	int i;
 
-	if (ExecuteMosys(argv, hexstring, sizeof(hexstring)))
+	struct subprocess_target output = {
+		.type = TARGET_BUFFER,
+		.buffer = {
+			.buf = hexstring,
+			.size = sizeof(hexstring),
+		},
+	};
+
+	if (subprocess_run(argv, &subprocess_null, &output, NULL)) {
+		fprintf(stderr, "Error running mosys to read nvram data\n");
 		return -1;
-	if (strlen(hexstring) < 2 * nvsize) {
+	}
+
+	if (output.buffer.bytes_consumed < 2 * nvsize) {
 		fprintf(stderr, "mosys returned hex nvdata size %d"
 			" (need %d)\n", (int)strlen(hexstring), 2 * nvsize);
 		return -1;
@@ -879,7 +824,9 @@ int vb2_write_nv_storage_mosys(struct vb2_context *ctx)
 	for (i = 0; i < nvsize; i++)
 		snprintf(hexstring + i * 2, 3, "%02x", ctx->nvdata[i]);
 	hexstring[sizeof(hexstring) - 1] = '\0';
-	if (ExecuteMosys(argv, NULL, 0))
+	if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL)) {
+		fprintf(stderr, "Error running mosys to write nvram data\n");
 		return -1;
+	}
 	return 0;
 }
