@@ -465,6 +465,7 @@ UTILLIB_SRCS = \
 	host/lib/host_signature.c \
 	host/lib/host_signature2.c \
 	host/lib/signature_digest.c \
+	host/lib/subprocess.c \
 	host/lib/util_misc.c \
 	host/lib21/host_fw_preamble.c \
 	host/lib21/host_key.c \
@@ -687,6 +688,7 @@ TEST_OBJS += ${TESTLIB_OBJS}
 TEST_NAMES = \
 	tests/cgptlib_test \
 	tests/sha_benchmark \
+	tests/subprocess_tests \
 	tests/utility_string_tests \
 	tests/vboot_api_devmode_tests \
 	tests/vboot_api_kernel2_tests \
@@ -1277,6 +1279,7 @@ ifeq (${TPM2_MODE},)
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 endif
 endif
+	${RUNTEST} ${BUILD_RUN}/tests/subprocess_tests
 	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_devmode_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel2_tests
