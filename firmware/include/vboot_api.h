@@ -766,19 +766,6 @@ enum vb_firmware_region {
 };
 
 /**
- * Check if the firmware wants to override GPT entry priority.
- *
- * In case of kernel entry, check if there is an override of priority
- * available. This is used to select a particular partition to boot in the
- * current boot cycle. Rollback protection, image verification and all other
- * checks in LoadKernel still remain the same.
- *
- * @param e	Gpt Entry to check for priority override.
- * @return 0 if no override, 1-15 for override priority.
- */
-uint8_t VbExOverrideGptEntryPriority(const GptEntry *e);
-
-/**
  * Return number of locales supported
  *
  * @param count		Pointer to the number of locales.

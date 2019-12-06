@@ -141,11 +141,6 @@ vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
 	return 1;
 }
 
-uint8_t VbExOverrideGptEntryPriority(const GptEntry *e)
-{
-	return 0;
-}
-
 vb2_error_t VbExSetVendorData(const char *vendor_data_value)
 {
 	return 0;
