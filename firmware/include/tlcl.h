@@ -10,6 +10,7 @@
 #ifndef VBOOT_REFERENCE_TLCL_H_
 #define VBOOT_REFERENCE_TLCL_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "tss_constants.h"
