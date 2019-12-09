@@ -1,9 +1,9 @@
 /* Copyright 2019 The Chromium OS Authors. All rights reserved.
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
+ *
+ * Library for creating subprocesses in a high level manner.
  */
-
-/* Library for creating subprocesses in a high level manner. */
 
 #ifndef VBOOT_REFERENCE_SUBPROCESS_H_
 #define VBOOT_REFERENCE_SUBPROCESS_H_
@@ -52,12 +52,14 @@ struct subprocess_target {
 			char *buf;
 			size_t size;
 
-			/* This variable is used internally by "run" and
-			 * shouldn't be operated on by the caller.
+			/*
+			 * This variable is used internally by subprocess_run
+			 * and shouldn't be operated on by the caller.
 			 */
 			int _pipefd[2];
 
-			/* This variable is the output of the number of bytes
+			/*
+			 * This variable is the output of the number of bytes
 			 * read or written. It should be read by the caller, not
 			 * set.
 			 */
@@ -72,33 +74,34 @@ struct subprocess_target {
 struct subprocess_target subprocess_null;
 
 /**
- * A convenience subprocess target which uses TARGET_FD to
- * STDIN_FILENO.
+ * A convenience subprocess target which uses TARGET_FD to STDIN_FILENO.
  */
 struct subprocess_target subprocess_stdin;
 
 /**
- * A convenience subprocess target which uses TARGET_FD to
- * STDOUT_FILENO.
+ * A convenience subprocess target which uses TARGET_FD to STDOUT_FILENO.
  */
 struct subprocess_target subprocess_stdout;
 
 /**
- * A convenience subprocess target which uses TARGET_FD to
- * STDERR_FILENO.
+ * A convenience subprocess target which uses TARGET_FD to STDERR_FILENO.
  */
 struct subprocess_target subprocess_stderr;
 
 /**
- * Call a process described by argv and run until completion. Provide
- * input from the subprocess target input, output to the subprocess
- * target output, and error to the subprocess target error.
+ * Call a process and run until completion.
  *
- * If either input, output, or error are set to NULL, the will be
+ * @param argv          A NULL-terminated list of arguments describing
+ *                      the program to run.
+ * @param input         The subprocess_target connected to stdin.
+ * @param output        The subprocess_target connected to stdout.
+ * @param error         The subprocess_target connected to stderr.
+ *
+ * If either input, output, or error are set to NULL, they will be
  * &subprocess_stdin, &subprocess_stdout, or &subprocess_stderr
  * respectively.
  *
- * Returns the exit status on success, or negative values on error.
+ * @return The exit status on success, or negative values on error.
  */
 int subprocess_run(const char *const argv[],
 		   struct subprocess_target *input,

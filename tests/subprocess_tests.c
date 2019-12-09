@@ -179,7 +179,5 @@ int main(int argc, char *argv[])
 	test_subprocess_small_output_buffer();
 	test_subprocess_return_code_failure();
 
-	if (!gTestSuccess)
-		return 255;
-	return 0;
+	return gTestSuccess ? 0 : 255;
 }

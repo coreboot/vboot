@@ -74,6 +74,8 @@ static int connect_process_target(struct subprocess_target *target, int fd)
 			return -1;
 		}
 		break;
+	default:
+		return -1;
 	}
 
 	return dup2(target_fd, fd);
@@ -110,7 +112,7 @@ static int process_target_input(struct subprocess_target *target)
 		bytes_to_write -= write_rv;
 	}
 
-cleanup:
+ cleanup:
 	close(target->buffer._pipefd[1]);
 	return rv;
 }
@@ -154,7 +156,7 @@ static int process_target_output(struct subprocess_target *target)
 	if (target->type == TARGET_BUFFER_NULL_TERMINATED)
 		target->buffer.buf[target->buffer.bytes_consumed] = '\0';
 
-cleanup:
+ cleanup:
 	close(target->buffer._pipefd[0]);
 	return rv;
 }
@@ -228,7 +230,7 @@ int subprocess_run(const char *const argv[],
 	if (WIFEXITED(status))
 		return WEXITSTATUS(status);
 
-fail:
+ fail:
 	if (program_name)
 		perror(program_name);
 	else
