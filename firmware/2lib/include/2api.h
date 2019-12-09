@@ -773,7 +773,7 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
 
 /**
- * Sync all auxiliary firmware to the expected versions
+ * Sync all auxiliary firmware to the expected versions.
  *
  * This function will first check if an auxfw update is needed and
  * what the "severity" of that update is (i.e., if any auxfw devices
@@ -814,7 +814,7 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
 				void *buf, uint32_t size);
 
 /**
- * Print debug output
+ * Print debug output.
  *
  * This should work like printf().  If func!=NULL, it will be a string with
  * the current function name; that can be used to generate prettier debug
