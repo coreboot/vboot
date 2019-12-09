@@ -53,29 +53,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 /* Allow USB boot on transition to dev */
 #define VB_SWITCH_FLAG_ALLOW_USB_BOOT		0x00004000
 
-
-/*
- * Output flags for vboot_handoff.out_flags.  Used to indicate potential boot
- * paths and configuration to the calling firmware early in the boot process,
- * so that it can properly configure itself for the capabilities subsequently
- * required by VbSelectFirmware() and VbSelectAndLoadKernel().
- */
-/*
- * Enable recovery path.  Do not rely on any rewritable data (cached RAM
- * timings, etc.).  Reliable operation is more important than boot speed.
- */
-#define VB_INIT_OUT_ENABLE_RECOVERY      0x00000001
-/* RAM must be cleared before calling VbSelectFirmware(). */
-#define VB_INIT_OUT_CLEAR_RAM            0x00000002
-/*
- * Load display drivers; VbExDisplay*() functions may be called.  If this flag
- * is not present, VbExDisplay*() functions will not be called this boot.
- */
-#define VB_INIT_OUT_ENABLE_DISPLAY       0x00000004
-/* Enable developer path. */
-#define VB_INIT_OUT_ENABLE_DEVELOPER     0x00000080
-
-
 /*
  * Firmware types for VbHashFirmwareBody() and
  * VbSelectFirmwareParams.selected_firmware.  Note that we store these in a
