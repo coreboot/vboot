@@ -19,19 +19,6 @@
 	 VB2_SD_FLAG_ECSYNC_EC_RO : VB2_SD_FLAG_ECSYNC_EC_RW)
 
 /**
- * If no display is available, set DISPLAY_REQUEST in NV space
- */
-static int check_reboot_for_display(struct vb2_context *ctx)
-{
-	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
-		VB2_DEBUG("Reboot to initialize display\n");
-		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-		return 1;
-	}
-	return 0;
-}
-
-/**
  * Display the WAIT screen
  */
 static void display_wait_screen(struct vb2_context *ctx)
@@ -474,7 +461,7 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 	vb2_error_t phase1_rv = ec_sync_phase1(ctx);
 	int need_wait_screen = ec_will_update_slowly(ctx);
 
-	if (need_wait_screen && check_reboot_for_display(ctx))
+	if (need_wait_screen && vb2api_need_reboot_for_display(ctx))
 		return VBERROR_REBOOT_REQUIRED;
 
 	if (phase1_rv)

@@ -5,6 +5,7 @@
  * Auxiliary firmware sync routines for vboot
  */
 
+#include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
@@ -12,19 +13,6 @@
 #include "vboot_api.h"
 #include "vboot_common.h"
 #include "vboot_display.h"
-
-/**
- * If no display is available, set DISPLAY_REQUEST in NV space
- */
-static int check_reboot_for_display(struct vb2_context *ctx)
-{
-	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
-		VB2_DEBUG("Reboot to initialize display\n");
-		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-		return 1;
-	}
-	return 0;
-}
 
 /**
  * Display the WAIT screen
@@ -126,7 +114,7 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 	/* If AUX FW update is slow display the wait screen */
 	if (fw_update == VB_AUX_FW_SLOW_UPDATE) {
 		/* Display should be available, but better check again */
-		if (check_reboot_for_display(ctx))
+		if (vb2api_need_reboot_for_display(ctx))
 			return VBERROR_REBOOT_REQUIRED;
 		display_wait_screen(ctx);
 	}

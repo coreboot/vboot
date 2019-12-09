@@ -788,6 +788,14 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
  */
 vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx);
 
+/**
+ * If no display is available, set DISPLAY_REQUEST in nvdata.
+ *
+ * @param ctx           Vboot2 context
+ * @return 1 if DISPLAY_REQUEST is set and a reboot is required, or 0 otherwise.
+ */
+int vb2api_need_reboot_for_display(struct vb2_context *ctx);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 

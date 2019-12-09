@@ -724,6 +724,24 @@ static void select_slot_tests(void)
 		"prev failure");
 }
 
+static void need_reboot_for_display_tests(void)
+{
+	/* Display not available, reboot required */
+	reset_common_data();
+	TEST_EQ(vb2api_need_reboot_for_display(ctx), 1,
+		"need_reboot_for_display: need reboot");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 1,
+		"  set display request");
+
+	/* Display available, don't need reboot */
+	reset_common_data();
+	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
+	TEST_EQ(vb2api_need_reboot_for_display(ctx), 0,
+		"need_reboot_for_display: don't need reboot");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
+		"  not set display request");
+}
+
 int main(int argc, char* argv[])
 {
 	init_workbuf_tests();
@@ -734,6 +752,7 @@ int main(int argc, char* argv[])
 	dev_switch_tests();
 	tpm_clear_tests();
 	select_slot_tests();
+	need_reboot_for_display_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
