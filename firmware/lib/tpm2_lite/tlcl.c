@@ -8,10 +8,18 @@
 
 #include "2common.h"
 #include "2sysincludes.h"
-#include "secdata_tpm.h"
 #include "tlcl.h"
 #include "tpm2_marshaling.h"
 #include "utility.h"
+
+/*
+ * TODO(chromium:1032930): Originally accessed by including secdata_tpm.h.
+ * This file moved to depthcharge, and vboot shouldn't need to know the indices
+ * of different TPM spaces anyways.  But since the vboot TPM 2.0 implementation
+ * uses TPM 1.2 primitives as its API, TlclSetGlobalLock (TPM 1.2) needs to use
+ * the firmware space index to emulate a TlclWriteLock call (TPM 2.0).
+ */
+#define FIRMWARE_NV_INDEX 0x1007
 
 /* Global buffer for deserialized responses. */
 struct tpm2_response tpm2_resp;
