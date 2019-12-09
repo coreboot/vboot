@@ -12,7 +12,6 @@
 #include "2secdata_struct.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
-#include "secdata_tpm.h"
 #include "test_common.h"
 #include "tss_constants.h"
 #include "vboot_api.h"
@@ -125,11 +124,6 @@ static void ResetMocksForManualRecovery(void)
 }
 
 /* Mock functions */
-
-uint32_t secdata_kernel_lock(struct vb2_context *c)
-{
-	return TPM_SUCCESS;
-}
 
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {

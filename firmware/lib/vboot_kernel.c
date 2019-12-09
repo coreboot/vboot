@@ -17,7 +17,6 @@
 #include "cgptlib_internal.h"
 #include "gpt_misc.h"
 #include "load_kernel_fw.h"
-#include "secdata_tpm.h"
 #include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"

@@ -7,7 +7,6 @@
 
 #include "2common.h"
 #include "2sysincludes.h"
-#include "secdata_tpm.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 #include "vboot_ui_common.h"
@@ -70,12 +69,6 @@ void vb2_try_altfw(struct vb2_context *ctx, int allowed,
 	if (vb2_commit_data(ctx)) {
 		vb2_error_notify("Error committing data on legacy boot.\n",
 				 NULL, VB_BEEP_FAILED);
-		return;
-	}
-
-	if (secdata_kernel_lock(ctx)) {
-		vb2_error_notify("Error locking kernel versions on legacy "
-				 "boot.\n", NULL, VB_BEEP_FAILED);
 		return;
 	}
 

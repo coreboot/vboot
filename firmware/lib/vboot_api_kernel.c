@@ -13,7 +13,6 @@
 #include "2secdata.h"
 #include "2sysincludes.h"
 #include "load_kernel_fw.h"
-#include "secdata_tpm.h"
 #include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
@@ -228,7 +227,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 				    VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	uint32_t tpm_rv;
 	vb2_error_t rv;
 
 	/* Set selected boot mode in context object.
@@ -291,24 +289,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	memset(kparams->partition_guid, 0, sizeof(kparams->partition_guid));
 
 	/*
-	 * Read secdata_kernel and secdata_fwmp spaces.  No need to read
-	 * secdata_firmware, since it was already read during firmware
-	 * verification.  Ignore errors in recovery mode.
-	 */
-	tpm_rv = secdata_kernel_read(ctx);
-	if (tpm_rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: read secdata_kernel returned %#x\n", tpm_rv);
-		vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_R_ERROR, tpm_rv);
-		return VB2_ERROR_SECDATA_KERNEL_READ;
-	}
-	tpm_rv = secdata_fwmp_read(ctx);
-	if (tpm_rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: read secdata_fwmp returned %#x\n", tpm_rv);
-		vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_R_ERROR, tpm_rv);
-		return VB2_ERROR_SECDATA_FWMP_READ;
-	}
-
-	/*
 	 * Init secdata_kernel and secdata_fwmp spaces.  No need to init
 	 * secdata_firmware, since it was already read during firmware
 	 * verification.  Ignore errors in recovery mode.
@@ -349,78 +329,48 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	       sizeof(kparams->partition_guid));
 }
 
-vb2_error_t vb2_secdata_kernel_lock(struct vb2_context *ctx)
-{
-	uint32_t tpm_rv;
-
-	/* Skip if in recovery mode. */
-	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
-		return VB2_SUCCESS;
-
-	tpm_rv = secdata_kernel_lock(ctx);
-	if (tpm_rv) {
-		VB2_DEBUG("TPM: lock secdata_kernel returned %#x\n", tpm_rv);
-		vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_L_ERROR, tpm_rv);
-		return VB2_ERROR_SECDATA_KERNEL_LOCK;
-	}
-
-	return VB2_SUCCESS;
-}
-
 vb2_error_t vb2_commit_data(struct vb2_context *ctx)
 {
-	vb2_error_t call_rv;
-	vb2_error_t rv = VB2_SUCCESS;
-	uint32_t tpm_rv;
+	vb2_error_t rv = vb2ex_commit_data(ctx);
 
-	/* Write secdata spaces.  vboot never writes back to secdata_fwmp. */
-	tpm_rv = secdata_firmware_write(ctx);
-	if (tpm_rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: write secdata_firmware returned %#x\n", tpm_rv);
-		vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, tpm_rv);
-		rv = VB2_ERROR_SECDATA_FIRMWARE_WRITE;
-	}
-
-	tpm_rv = secdata_kernel_write(ctx);
-	if (tpm_rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: write secdata_kernel returned %#x\n", tpm_rv);
-		vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, tpm_rv);
-		if (rv == VB2_SUCCESS)
-			rv = VB2_ERROR_SECDATA_KERNEL_WRITE;
-	}
-
-	/* Always try to write nvdata, since it may have been changed by
-	   setting a recovery reason above. */
-
-	/* TODO(chromium:972956, chromium:1006689): Currently only commits
-	   nvdata, but should eventually also commit secdata. */
-	call_rv = vb2ex_commit_data(ctx);
-	switch (call_rv) {
-	case VB2_ERROR_NV_WRITE:
-		/* Don't bother with vb2api_fail since we can't write
-		   nvdata anyways. */
-		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-			VB2_DEBUG("write nvdata failed\n");
-			if (rv == VB2_SUCCESS)
-				rv = call_rv;
-		} else {
-			/* Impossible to enter recovery mode */
-			VB2_DIE("write nvdata failed\n");
-		}
-		break;
-
+	switch (rv) {
 	case VB2_SUCCESS:
 		break;
 
+	case VB2_ERROR_SECDATA_FIRMWARE_WRITE:
+		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, rv);
+			/* Run again to set recovery reason in nvdata. */
+			vb2ex_commit_data(ctx);
+			return rv;
+		}
+		break;
+
+	case VB2_ERROR_SECDATA_KERNEL_WRITE:
+		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, rv);
+			/* Run again to set recovery reason in nvdata. */
+			vb2ex_commit_data(ctx);
+			return rv;
+		}
+		break;
+
 	default:
-		VB2_DEBUG("unknown commit error: %#x\n", call_rv);
-		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
-		    rv == VB2_SUCCESS)
-			rv = call_rv;
+		VB2_DEBUG("unknown commit error: %#x\n", rv);
+		VBOOT_FALLTHROUGH;
+
+	case VB2_ERROR_NV_WRITE:
+		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
+			/*
+			 * We can't write to nvdata, so it's impossible to
+			 * trigger recovery mode.  Skip calling vb2api_fail
+			 * and just die.
+			 */
+			VB2_DIE("write nvdata failed\n");
 		break;
 	}
 
-	return rv;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
@@ -495,11 +445,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 
 	/* Commit data, but retain any previous errors */
 	call_rv = vb2_commit_data(ctx);
-	if (rv == VB2_SUCCESS)
-		rv = call_rv;
-
-	/* Lock secdata_kernel, but retain any previous errors */
-	call_rv = vb2_secdata_kernel_lock(ctx);
 	if (rv == VB2_SUCCESS)
 		rv = call_rv;
 

@@ -84,17 +84,6 @@ vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx);
 void vb2_init_ui(void);
 
 /**
- * Locks secdata_kernel.
- *
- * Should be used right before attempting to leave vboot (by booting
- * an OS or chainloading to another firmware).
- *
- * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2_secdata_kernel_lock(struct vb2_context *ctx);
-
-/**
  * Writes modified secdata spaces and nvdata.
  *
  * This is a temporary wrapper around vb2ex_commit_data, until secdata-writing

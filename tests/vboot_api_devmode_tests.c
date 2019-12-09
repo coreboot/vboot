@@ -18,7 +18,6 @@
 #include "crc32.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
-#include "secdata_tpm.h"
 #include "test_common.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"

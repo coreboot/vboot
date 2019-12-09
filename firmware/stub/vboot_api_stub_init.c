@@ -5,12 +5,9 @@
  * Stub implementations of firmware-provided API functions.
  */
 
-
 #include <stdarg.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/time.h>
 
 #include "2common.h"
@@ -25,6 +22,8 @@ uint64_t VbExGetTimer(void)
 
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
 {
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	return VB2_SUCCESS;
 }

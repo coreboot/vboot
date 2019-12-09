@@ -29,11 +29,4 @@ vb2_error_t vb2_check_padding(const uint8_t *sig,
 struct LoadKernelParams;
 struct LoadKernelParams *VbApiKernelGetParams(void);
 
-/****************************************************************************
- * secdata_tpm.c */
-
-extern int secdata_kernel_locked;
-uint32_t tlcl_clear_and_reenable(void);
-uint32_t tlcl_safe_write(uint32_t index, const void *data, uint32_t length);
-
 #endif  /* VBOOT_REFERENCE_TEST_API_H_ */

@@ -10,7 +10,6 @@
 #include "2nvstorage.h"
 #include "2sysincludes.h"
 #include "load_kernel_fw.h"
-#include "secdata_tpm.h"
 #include "test_common.h"
 #include "utility.h"
 #include "vboot_api.h"
