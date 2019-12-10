@@ -1111,10 +1111,6 @@ ${FUZZ_TEST_BINS}: LDFLAGS += -fsanitize=fuzzer
 # Generic build rules. LIBS and OBJS can be overridden to tweak the generic
 # rules for specific targets.
 
-${BUILD}/%_s: ${BUILD}/%.o ${OBJS} ${LIBS}
-	@${PRINTF} "    LD (static)   $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $< ${OBJS} ${LIBS} ${LDLIBS}
-
 ${BUILD}/%: ${BUILD}/%.o ${OBJS} ${LIBS}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $< ${OBJS} ${LIBS} ${LDLIBS}
