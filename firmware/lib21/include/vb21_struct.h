@@ -11,9 +11,8 @@
 #ifndef VBOOT_REFERENCE_VB21_STRUCT_H_
 #define VBOOT_REFERENCE_VB21_STRUCT_H_
 
-#include <stdint.h>
-
 #include "2id.h"
+#include "2sysincludes.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,17 +27,8 @@ extern "C" {
  * structs as invalid.
  */
 enum vb21_struct_common_magic {
-	/* "Vb2B" = vb21_keyblock.c.magic */
-	VB21_MAGIC_KEYBLOCK		= 0x42326256,
-
-	/* "Vb2F" = vb21_fw_preamble.c.magic */
-	VB21_MAGIC_FW_PREAMBLE		= 0x46326256,
-
 	/* "Vb2I" = vb21_packed_private_key.c.magic */
 	VB21_MAGIC_PACKED_PRIVATE_KEY	= 0x49326256,
-
-	/* "Vb2K" = vb2_kernel_preamble.c.magic */
-	VB21_MAGIC_KERNEL_PREAMBLE	= 0x4b326256,
 
 	/* "Vb2P" = vb21_packed_key.c.magic */
 	VB21_MAGIC_PACKED_KEY		= 0x50326256,
@@ -235,114 +225,6 @@ struct vb21_signature {
 
 #define EXPECTED_VB21_SIGNATURE_SIZE					\
 	(EXPECTED_VB21_STRUCT_COMMON_SIZE + 16 + EXPECTED_ID_SIZE)
-
-
-/* Current version of vb21_keyblock struct */
-#define VB21_KEYBLOCK_VERSION_MAJOR 3
-#define VB21_KEYBLOCK_VERSION_MINOR 0
-
-/*
- * Keyblock.  This contains a signed, versioned key for use in the next stage
- * of verified boot.
- *
- * The keyblock data must be arranged like this:
- *     1) vb21_keyblock header struct h
- *     2) Keyblock description (pointed to by h.c.fixed_size)
- *     3) Data key (pointed to by h.data_key_offset)
- *     4) Signatures (first signature pointed to by h.sig_offset)
- *
- * The signatures from 4) must cover all the data from 1), 2), 3).  That is,
- * signatures must sign all data up to sig_offset.
- */
-struct vb21_keyblock {
-	/* Common header fields */
-	struct vb21_struct_common c;
-
-	/* Flags (VB2_KEYBLOCK_FLAG_*) */
-	uint32_t flags;
-
-	/*
-	 * Offset of key (struct vb21_packed_key) to use in next stage of
-	 * verification, from start of the keyblock.
-	 */
-	uint32_t key_offset;
-
-	/* Number of keyblock signatures which follow */
-	uint32_t sig_count;
-
-	/*
-	 * Offset of the first signature (struct vb21_signature) from the start
-	 * of the keyblock.
-	 *
-	 * Signatures sign the contents of this struct and the data pointed to
-	 * by data_key_offset, but not themselves or other signatures.
-	 *
-	 * For the firmware, there may be only one signature.
-	 *
-	 * Kernels often have at least two signatures - one using the kernel
-	 * subkey from the RW firmware (for signed kernels) and one which is
-	 * simply a SHA-512 hash (for unsigned developer kernels).
-	 *
-	 * The ID for each signature indicates which key was used to generate
-	 * the signature.
-	 */
-	uint32_t sig_offset;
-} __attribute__((packed));
-
-#define EXPECTED_VB21_KEYBLOCK_SIZE (EXPECTED_VB21_STRUCT_COMMON_SIZE + 16)
-
-
-/* Current version of vb21_fw_preamble struct */
-#define VB21_FW_PREAMBLE_VERSION_MAJOR 3
-#define VB21_FW_PREAMBLE_VERSION_MINOR 0
-
-/* Flags for vb21_fw_preamble.flags */
-/* Reserved; do not use */
-#define VB21_FIRMWARE_PREAMBLE_RESERVED0 0x00000001
-/* Do not allow use of any hardware crypto accelerators. */
-#define VB21_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO 0x00000002
-
-/*
- * Firmware preamble
- *
- * The preamble data must be arranged like this:
- *     1) vb21_fw_preamble header struct h
- *     2) Preamble description (pointed to by h.c.fixed_size)
- *     3) Hashes (pointed to by h.hash_offset)
- *     4) Signature (pointed to by h.sig_offset)
- *
- * The signature 4) must cover all the data from 1), 2), 3).
- */
-struct vb21_fw_preamble {
-	/* Common header fields */
-	struct vb21_struct_common c;
-
-	/* Flags; see VB21_FIRMWARE_PREAMBLE_* */
-	uint32_t flags;
-
-	/* Firmware version */
-	uint32_t fw_version;
-
-	/* Offset of signature (struct vb21_signature) for this preamble */
-	uint32_t sig_offset;
-
-	/*
-	 * The preamble contains a list of hashes (struct vb21_signature) for
-	 * the various firmware components.  These have sig_alg=VB2_SIG_NONE,
-	 * and the ID for each hash identifies the component being hashed.
-	 * The calling firmware is responsible for knowing where to find those
-	 * components, which may be on a different storage device than this
-	 * preamble.
-	 */
-
-	/* Number of hash entries */
-	uint32_t hash_count;
-
-	/* Offset of first hash entry from start of preamble */
-	uint32_t hash_offset;
-} __attribute__((packed));
-
-#define EXPECTED_VB21_FW_PREAMBLE_SIZE (EXPECTED_VB21_STRUCT_COMMON_SIZE + 20)
 
 #ifdef __cplusplus
 }

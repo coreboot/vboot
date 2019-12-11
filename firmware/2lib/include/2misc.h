@@ -130,7 +130,6 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx);
  * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx);
-vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx);
 
 /**
  * Verify the firmware preamble using the data subkey from the keyblock.
@@ -141,7 +140,6 @@ vb2_error_t vb21_load_fw_keyblock(struct vb2_context *ctx);
  * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx);
-vb2_error_t vb21_load_fw_preamble(struct vb2_context *ctx);
 
 /**
  * Verify the kernel keyblock using the previously-loaded kernel key.
