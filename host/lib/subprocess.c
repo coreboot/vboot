@@ -11,6 +11,8 @@
 
 #include "subprocess.h"
 
+#define MAX_CB_BUF_SIZE 2048
+
 static char *program_name;
 
 __attribute__((constructor, used))
@@ -25,7 +27,8 @@ static int init_target_private(struct subprocess_target *target)
 	switch (target->type) {
 	case TARGET_BUFFER:
 	case TARGET_BUFFER_NULL_TERMINATED:
-		return pipe(target->buffer._pipefd);
+	case TARGET_CALLBACK:
+		return pipe(target->priv.pipefd);
 	default:
 		return 0;
 	}
@@ -60,15 +63,16 @@ static int connect_process_target(struct subprocess_target *target, int fd)
 		break;
 	case TARGET_BUFFER:
 	case TARGET_BUFFER_NULL_TERMINATED:
+	case TARGET_CALLBACK:
 		switch (fd) {
 		case STDIN_FILENO:
-			target_fd = target->buffer._pipefd[0];
-			close(target->buffer._pipefd[1]);
+			target_fd = target->priv.pipefd[0];
+			close(target->priv.pipefd[1]);
 			break;
 		case STDOUT_FILENO:
 		case STDERR_FILENO:
-			target_fd = target->buffer._pipefd[1];
-			close(target->buffer._pipefd[0]);
+			target_fd = target->priv.pipefd[1];
+			close(target->priv.pipefd[0]);
 			break;
 		default:
 			return -1;
@@ -81,9 +85,8 @@ static int connect_process_target(struct subprocess_target *target, int fd)
 	return dup2(target_fd, fd);
 }
 
-static int process_target_input(struct subprocess_target *target)
+static int process_target_input_buffer(struct subprocess_target *target)
 {
-	int rv = 0;
 	ssize_t write_rv;
 	size_t bytes_to_write;
 	char *buf;
@@ -96,30 +99,79 @@ static int process_target_input(struct subprocess_target *target)
 		bytes_to_write = strlen(target->buffer.buf);
 		break;
 	default:
-		return 0;
+		return -1;
 	}
 
-	close(target->buffer._pipefd[0]);
 	buf = target->buffer.buf;
 	while (bytes_to_write) {
-		write_rv =
-			write(target->buffer._pipefd[1], buf, bytes_to_write);
-		if (write_rv <= 0) {
-			rv = -1;
-			goto cleanup;
-		}
+		write_rv = write(target->priv.pipefd[1], buf, bytes_to_write);
+		if (write_rv <= 0)
+			return -1;
 		buf += write_rv;
 		bytes_to_write -= write_rv;
 	}
 
- cleanup:
-	close(target->buffer._pipefd[1]);
+	return 0;
+}
+
+static int process_target_input_cb(struct subprocess_target *target)
+{
+	ssize_t write_rv, bytes_to_write;
+	char buf[MAX_CB_BUF_SIZE];
+	char *bufptr;
+
+	for (;;) {
+		bytes_to_write = target->callback.cb(buf, MAX_CB_BUF_SIZE,
+						     target->callback.data);
+		if (bytes_to_write < 0 || bytes_to_write > MAX_CB_BUF_SIZE)
+			return -1;
+		if (bytes_to_write == 0)
+			return 0;
+
+		bufptr = buf;
+		while (bytes_to_write) {
+			write_rv = write(target->priv.pipefd[1], bufptr,
+					 bytes_to_write);
+			if (write_rv <= 0)
+				return -1;
+			bufptr += write_rv;
+			bytes_to_write -= write_rv;
+		}
+	}
+}
+
+static int process_target_input(struct subprocess_target *target)
+{
+	int rv;
+
+	switch (target->type) {
+	case TARGET_BUFFER:
+	case TARGET_BUFFER_NULL_TERMINATED:
+	case TARGET_CALLBACK:
+		break;
+	default:
+		return 0;
+	}
+
+	close(target->priv.pipefd[0]);
+	switch (target->type) {
+	case TARGET_BUFFER:
+	case TARGET_BUFFER_NULL_TERMINATED:
+		rv = process_target_input_buffer(target);
+		break;
+	case TARGET_CALLBACK:
+		rv = process_target_input_cb(target);
+		break;
+	default:
+		return -1;
+	}
+
+	close(target->priv.pipefd[1]);
 	return rv;
 }
 
-static int process_target_output(struct subprocess_target *target)
+static int process_target_output_buffer(struct subprocess_target *target)
 {
-	int rv = 0;
 	ssize_t read_rv;
 	size_t bytes_remaining;
 
@@ -136,17 +188,14 @@ static int process_target_output(struct subprocess_target *target)
 		return 0;
 	}
 
-	close(target->buffer._pipefd[1]);
 	target->buffer.bytes_consumed = 0;
 	while (bytes_remaining) {
 		read_rv = read(
-			target->buffer._pipefd[0],
+			target->priv.pipefd[0],
 			target->buffer.buf + target->buffer.bytes_consumed,
 			bytes_remaining);
-		if (read_rv < 0) {
-			rv = -1;
-			goto cleanup;
-		}
+		if (read_rv < 0)
+			return -1;
 		if (read_rv == 0)
 			break;
 		target->buffer.bytes_consumed += read_rv;
@@ -155,9 +204,54 @@ static int process_target_output(struct subprocess_target *target)
 
 	if (target->type == TARGET_BUFFER_NULL_TERMINATED)
 		target->buffer.buf[target->buffer.bytes_consumed] = '\0';
+	return 0;
+}
 
- cleanup:
-	close(target->buffer._pipefd[0]);
+static int process_target_output_cb(struct subprocess_target *target)
+{
+	char buf[MAX_CB_BUF_SIZE];
+	ssize_t rv;
+
+	for (;;) {
+		rv = read(target->priv.pipefd[0], buf, MAX_CB_BUF_SIZE);
+		if (rv < 0)
+			return -1;
+		if (rv == 0)
+			break;
+		if (target->callback.cb(buf, rv, target->callback.data) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+static int process_target_output(struct subprocess_target *target)
+{
+	int rv;
+
+	switch (target->type) {
+	case TARGET_BUFFER:
+	case TARGET_BUFFER_NULL_TERMINATED:
+	case TARGET_CALLBACK:
+		break;
+	default:
+		return 0;
+	}
+
+	close(target->priv.pipefd[1]);
+	switch (target->type) {
+	case TARGET_BUFFER:
+	case TARGET_BUFFER_NULL_TERMINATED:
+		rv = process_target_output_buffer(target);
+		break;
+	case TARGET_CALLBACK:
+		rv = process_target_output_cb(target);
+		break;
+	default:
+		return -1;
+	}
+
+	close(target->priv.pipefd[0]);
 	return rv;
 }
 

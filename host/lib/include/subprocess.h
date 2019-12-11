@@ -36,6 +36,18 @@
  *   When writing to a buffer, subprocess_run will reserve one byte of
  *   the size for a null terminator and guarantee that the output is
  *   always NULL terminated.
+ *
+ * - TARGET_CALLBACK: when the target is provided as an input to a
+ *   process, the callback will be called occasionally to provide
+ *   input to the process. The callback should fill buf with up to
+ *   buf_sz bytes of data, and return the number of bytes
+ *   written, or negative values on error. When the target is provided
+ *   as an output to a process, the callback will be called
+ *   occasionally with buf_sz bytes of data from the output put into
+ *   buf. In this case, the return value from the callback is
+ *   ignored except for errors. The data field is for application use
+ *   and will always be passed to the data parameter of the callback
+ *   function.
  */
 struct subprocess_target {
 	enum {
@@ -44,6 +56,7 @@ struct subprocess_target {
 		TARGET_FILE,
 		TARGET_BUFFER,
 		TARGET_BUFFER_NULL_TERMINATED,
+		TARGET_CALLBACK,
 	} type;
 	union {
 		int fd;
@@ -53,19 +66,20 @@ struct subprocess_target {
 			size_t size;
 
 			/*
-			 * This variable is used internally by subprocess_run
-			 * and shouldn't be operated on by the caller.
-			 */
-			int _pipefd[2];
-
-			/*
 			 * This variable is the output of the number of bytes
 			 * read or written. It should be read by the caller, not
 			 * set.
 			 */
 			size_t bytes_consumed;
 		} buffer;
+		struct {
+			ssize_t (*cb)(char *buf, size_t buf_sz, void *data);
+			void *data;
+		} callback;
 	};
+	struct {
+		int pipefd[2];
+	} priv;
 };
 
 /**
