@@ -315,7 +315,7 @@ export BUILD_RUN
 
 # Default target.
 .PHONY: all
-all: fwlib fwlib2x fwlib20 fwlib21 futil utillib hostlib cgpt tlcl \
+all: fwlib futil utillib hostlib cgpt tlcl \
 	$(if ${SDK_BUILD},utils_sdk,utils_board) \
 	$(if $(filter x86_64,${ARCH}),fuzzers) \
 	$(if ${COV},coverage)
@@ -344,16 +344,6 @@ endif
 # coreboot, etc.). It doesn't need exporting to some other place; they'll build
 # this source tree locally and link to it directly.
 FWLIB = ${BUILD}/vboot_fw.a
-
-# Smaller firmware library common to all vboot 2.x, used only for
-# 1) compile-time tests of the public API or
-# 2) linking with an actual 2.0 or 2.1 implementation
-FWLIB2X = ${BUILD}/vboot_fw2x.a
-
-# Vboot 2.0 (deprecated - see firmware/README)
-FWLIB20 = ${BUILD}/vboot_fw20.a
-# Vboot 2.1 (not yet ready - see firmware/README)
-FWLIB21 = ${BUILD}/vboot_fw21.a
 
 # Separate TPM lightweight command library (TLCL)
 TLCL = ${BUILD}/tlcl.a
@@ -858,39 +848,10 @@ else
 $(info vboot hash algos built with tight loops (slower, smaller code size))
 endif
 
-${FWLIB21_OBJS}: INCLUDES += -Ifirmware/lib21/include
-
 .PHONY: fwlib
 fwlib: $(if ${FIRMWARE_ARCH},${FWLIB},)
 
 ${FWLIB}: ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-.PHONY: fwlib2x
-fwlib2x: ${FWLIB2X}
-
-${FWLIB2X}: ${FWLIB2X_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-.PHONY: fwlib20
-fwlib20: ${FWLIB20}
-
-${FWLIB20}: ${FWLIB2X_OBJS} ${FWLIB20_OBJS}
-	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
-	${Q}rm -f $@
-	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
-	${Q}ar qc $@ $^
-
-.PHONY: fwlib21
-fwlib21: ${FWLIB21}
-
-${FWLIB21}: ${FWLIB2X_OBJS} ${FWLIB21_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
@@ -1038,7 +999,7 @@ futil: ${FUTIL_BIN}
 FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
-${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB20}
+${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
 
@@ -1082,11 +1043,11 @@ ${TEST_FUTIL_BINS}: INCLUDES += -Ifutility
 ${TEST_FUTIL_BINS}: OBJS += ${FUTIL_OBJS} ${UTILLIB}
 ${TEST_FUTIL_BINS}: LDLIBS += ${FUTIL_LIBS}
 
-${TEST2X_BINS}: ${FWLIB2X}
-${TEST2X_BINS}: LIBS += ${FWLIB2X}
+${TEST2X_BINS}: ${FWLIB}
+${TEST2X_BINS}: LIBS += ${FWLIB}
 
-${TEST20_BINS}: ${FWLIB20}
-${TEST20_BINS}: LIBS += ${FWLIB20}
+${TEST20_BINS}: ${FWLIB}
+${TEST20_BINS}: LIBS += ${FWLIB}
 ${TEST20_BINS}: LDLIBS += ${CRYPTO_LIBS}
 
 ${TESTLIB}: ${TESTLIB_OBJS}
