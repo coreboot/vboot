@@ -891,56 +891,93 @@ static void VbBootDevTest(void)
 
 static void VbBootDevVendorDataTest(void)
 {
-	/* Ctrl+S set vendor data and reboot */
+	/* Enter set vendor data and reboot */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
 	mock_keypress[4] = '1';
 	mock_keypress[5] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[6] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[6] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S set vendor data and reboot");
+		"Enter set vendor data, don't confirm, esc");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
 
-	/* Ctrl+S extra keys ignored */
+	/* Enter set vendor data; don't confirm and esc */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = VB_KEY_ENTER;  /* Set vendor data */
+	mock_keypress[6] = VB_KEY_RIGHT;  /* Select NO */
+	mock_keypress[7] = VB_KEY_ENTER;  /* Do not confirm vendor data */
+	mock_keypress[8] = VB_KEY_ESC;  /* Escape to boot */
+	vbtlk_expect_fixed = 1;
+	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
+		"Enter set vendor data, don't confirm, esc");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
+
+	/* Enter set vendor data; esc, don't confirm, and change last character */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
+	mock_keypress[1] = '4';
+	mock_keypress[2] = '3';
+	mock_keypress[3] = '2';
+	mock_keypress[4] = '1';
+	mock_keypress[5] = VB_KEY_ENTER;
+	mock_keypress[6] = VB_KEY_RIGHT;  /* Select NO */
+	mock_keypress[7] = VB_KEY_ENTER;  /* Do not confirm vendor data */
+	mock_keypress[8] = VB_KEY_BACKSPACE;  /* Remove last character */
+	mock_keypress[9] = 'B';
+	mock_keypress[10] = VB_KEY_ENTER;  /* Set vendor data */
+	mock_keypress[11] = VB_KEY_ENTER;  /* Confirm vendor data */
+	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
+		"Enter set vendor data esc, don't confirm, change last character");
+	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
+	TEST_STR_EQ(set_vendor_data, "432B", "  Vendor data correct");
+
+	/* Enter set vendor data; extra keys ignored */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
 	mock_keypress[4] = '1';
 	mock_keypress[5] = '5';
 	mock_keypress[6] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[7] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[7] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S extra keys ignored");
+		"Enter set vendor data extra keys ignored");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
 
-	/* Ctrl+S converts case */
+	/* Enter set vendor data; converts case */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'a';
 	mock_keypress[2] = 'B';
 	mock_keypress[3] = 'Y';
 	mock_keypress[4] = 'z';
 	mock_keypress[5] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[6] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[6] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S converts case");
+		"Enter set vendor data converts case");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "ABYZ", "  Vendor data correct");
 
-	/* Ctrl+S backspace works */
+	/* Enter set vendor data; backspace works */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = 'B';
 	mock_keypress[3] = 'C';
@@ -950,16 +987,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[7] = '2';
 	mock_keypress[8] = '1';
 	mock_keypress[9] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[10] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[10] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S backspace works");
+		"Enter set vendor data backspace works");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "A321", "  Vendor data correct");
 
-	/* Ctrl+S invalid chars don't print */
+	/* Enter set vendor data; invalid chars don't print */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '-';
 	mock_keypress[3] = '^';
@@ -970,16 +1007,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[8] = '2';
 	mock_keypress[9] = '1';
 	mock_keypress[10] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[11] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[11] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S invalid chars don't print");
+		"Enter set vendor data invalid chars don't print");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
 
-	/* Ctrl+S invalid chars don't print with backspace */
+	/* Enter set vendor data; invalid chars don't print with backspace */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '-';
 	mock_keypress[3] = VB_KEY_BACKSPACE;  /* Should delete 4 */
@@ -988,16 +1025,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[6] = '1';
 	mock_keypress[7] = '0';
 	mock_keypress[8] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[9] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[9] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S invalid chars don't print with backspace");
+		"Enter set vendor data invalid chars don't print with backspace");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "3210", "  Vendor data correct");
 
-	/* Ctrl+S backspace only doesn't underrun */
+	/* Enter set vendor data; backspace only doesn't underrun */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = VB_KEY_BACKSPACE;
 	mock_keypress[3] = VB_KEY_BACKSPACE;
@@ -1006,16 +1043,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[6] = '2';
 	mock_keypress[7] = '1';
 	mock_keypress[8] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[9] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[9] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S backspace only doesn't underrun");
+		"Enter set vendor data backspace only doesn't underrun");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "4321", "  Vendor data correct");
 
-	/* Ctrl+S vowels not allowed after first char */
+	/* Enter set vendor data; vowels not allowed after first char */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = 'A';
 	mock_keypress[3] = 'B';
@@ -1026,16 +1063,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[8] = 'u';
 	mock_keypress[9] = 'D';
 	mock_keypress[10] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[11] = VB_KEY_ENTER;  /* Confirm vendor data */
+	mock_keypress[11] = VB_KEY_ENTER;  /* Confirm vendor data (Default YES) */
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"Ctrl+S vowels not allowed after first char");
+		"Enter set vendor data vowels not allowed after first char");
 	TEST_EQ(set_vendor_data_called, 1, "  VbExSetVendorData() called");
 	TEST_STR_EQ(set_vendor_data, "ABCD", "  Vendor data correct");
 
-	/* Ctrl+S too short */
+	/* Enter set vendor data; too short */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '1';
 	mock_keypress[2] = '2';
 	mock_keypress[3] = '3';
@@ -1045,23 +1082,24 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[5] = VB_KEY_ENTER;
 	mock_keypress[6] = VB_KEY_ESC;
 	vbtlk_expect_fixed = 1;
-	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK, "Ctrl+S too short");
+	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
+		"Enter set vendor data too short");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
-	/* Ctrl+S esc from set screen */
+	/* Enter set vendor data; esc from set screen */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = VB_KEY_ESC;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
-		"Ctrl+S esc from set screen");
+		"Enter set vendor data esc from set screen");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
-	/* Ctrl+S esc from set screen with tag */
+	/* Enter set vendor data; esc from set screen with tag */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -1069,13 +1107,13 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[5] = VB_KEY_ESC;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
-		"Ctrl+S esc from set screen with tag");
+		"Enter set vendor data esc from set screen with tag");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
-	/* Ctrl+S esc from confirm screen */
+	/* Enter set vendor data; esc from confirm screen */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_CTRL('S');
+	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -1084,7 +1122,16 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[6] = VB_KEY_ESC;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
-		"Ctrl+S esc from set screen");
+		"Enter set vendor data esc from set screen");
+	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
+
+	/* Escape from vendor data warning screen */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
+	mock_keypress[0] = VB_KEY_ESC;  /* Enter vendor data setting */
+	vbtlk_expect_fixed = 1;
+	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
+		"Enter set vendor data esc, don't confirm, change last character");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
 	VB2_DEBUG("...done.\n");

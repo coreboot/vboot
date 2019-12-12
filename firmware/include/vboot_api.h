@@ -402,12 +402,6 @@ enum VbScreenType_t {
 	VB_SCREEN_ALT_FW_PICK = 0x212,
 	/* Alt firmware menu screen (for detachable UI ) */
 	VB_SCREEN_ALT_FW_MENU = 0x213,
-	/* Set vendor data menu screen */
-	VB_SCREEN_SET_VENDOR_DATA = 0x214,
-	/* Confirm vendor data menu screen */
-	VB_SCREEN_CONFIRM_VENDOR_DATA = 0x215,
-	/* Confirm reboot for running diagnostics rom */
-	VB_SCREEN_CONFIRM_DIAG = 0x216,
 	/* Confirm after VB_SCREEN_RECOVERY_TO_DEV_MENU */
 	VB_SCREEN_TO_DEV_CONFIRMED = 0x217,
 	/* Hardware failure */
@@ -430,6 +424,15 @@ enum VbScreenType_t {
 	VB_SCREEN_DEBUG_INFO = 0x252,
 	/* BIOS log screen */
 	VB_SCREEN_BIOS_LOG = 0x253,
+	/* 0x300-0x350 reserved for device-specific screens */
+	/* Vendor data not set warning screen */
+	VB_COMPLETE_VENDOR_DATA = 0x300,
+	/* Set vendor data menu screen */
+	VB_SCREEN_SET_VENDOR_DATA = 0x301,
+	/* Confirm vendor data menu screen */
+	VB_SCREEN_CONFIRM_VENDOR_DATA = 0x302,
+	/* Confirm reboot for running diagnostics rom */
+	VB_SCREEN_CONFIRM_DIAG = 0x303,
 };
 
 /**
@@ -439,6 +442,8 @@ typedef struct VbVendorData
 {
 	/* Current state of the the vendor data input */
 	const char *input_text;
+	/* Current confirmation selection for new vendor data */
+	uint32_t selected_index;
 } VbVendorData;
 
 /**

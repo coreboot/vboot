@@ -251,8 +251,17 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 		}
 	}
 
-	/* Show the dev mode warning screen */
-	VbDisplayScreen(ctx, VB_SCREEN_DEVELOPER_WARNING, 0, NULL);
+	if ((ctx->flags & VB2_CONTEXT_VENDOR_DATA_SETTABLE) &&
+		VENDOR_DATA_LENGTH > 0) {
+		vb2_error_t ret;
+		VB2_DEBUG("VbBootDeveloper() - Vendor data not set\n");
+		ret = vb2_vendor_data_ui(ctx);
+		if (ret)
+			return ret;
+        }
+
+        /* Show the dev mode warning screen */
+        VbDisplayScreen(ctx, VB_SCREEN_DEVELOPER_WARNING, 0, NULL);
 
 	/* Initialize audio/delay context */
 	vb2_audio_start(ctx);
@@ -333,35 +342,6 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 					return ret;
 			} else {
 				vb2_error_no_altfw();
-			}
-			break;
-		case VB_KEY_CTRL('S'):
-			if (VENDOR_DATA_LENGTH == 0)
-				break;
-			/*
-			 * Only show the vendor data ui if it is tag is settable
-			 */
-			if (ctx->flags & VB2_CONTEXT_VENDOR_DATA_SETTABLE) {
-				vb2_error_t ret;
-
-				VB2_DEBUG("VbBootDeveloper() - user pressed "
-					  "Ctrl+S; Try set vendor data\n");
-
-				ret = vb2_vendor_data_ui(ctx);
-				if (ret) {
-					return ret;
-				} else {
-					/* Show dev mode warning screen again */
-					VbDisplayScreen(ctx,
-						VB_SCREEN_DEVELOPER_WARNING,
-						0, NULL);
-				}
-			} else {
-				vb2_error_notify(
-					"WARNING: Vendor data cannot be "
-					"changed because it is already set.\n",
-					NULL,
-					VB_BEEP_NOT_ALLOWED);
 			}
 			break;
 		case VB_KEY_CTRL_ENTER:
