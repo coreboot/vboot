@@ -11,6 +11,7 @@
 #include "2crypto.h"
 #include "2return_codes.h"
 
+struct vb2_public_key;
 struct vb2_packed_key;
 struct vb2_private_key;
 
@@ -145,5 +146,18 @@ struct vb2_packed_key *vb2_read_packed_keyb(const char *filename,
  */
 vb2_error_t vb2_write_packed_key(const char *filename,
 				 const struct vb2_packed_key *key);
+
+/**
+ * Unpack the RSA data fields for a public key
+ *
+ * This is called by vb21_unpack_key() to extract the arrays from a packed key.
+ * These elements of *key will point inside the key_data buffer.
+ *
+ * @param key		Destination key for RSA data fields
+ * @param key_data	Packed key data (from inside a packed key buffer)
+ * @param key_size	Size of packed key data in bytes
+ */
+vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,
+				const uint8_t *key_data, uint32_t key_size);
 
 #endif  /* VBOOT_REFERENCE_HOST_KEY_H_ */

@@ -14,7 +14,7 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_signature2.h"
+#include "host_signature21.h"
 #include "signature_digest.h"
 
 uint8_t* PrependDigestInfo(enum vb2_hash_algorithm hash_alg, uint8_t* digest)

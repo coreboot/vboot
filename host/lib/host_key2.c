@@ -16,7 +16,7 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_key21.h"
 #include "host_key.h"
 #include "host_misc.h"
 #include "vb2_common.h"
@@ -293,6 +293,37 @@ vb2_error_t vb2_packed_key_looks_ok(const struct vb2_packed_key *key,
 		VB2_DEBUG("packed key invalid version\n");
 		return VB2_ERROR_PACKED_KEY_VERSION;
 	}
+
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,
+				const uint8_t *key_data, uint32_t key_size)
+{
+	const uint32_t *buf32 = (const uint32_t *)key_data;
+	uint32_t expected_key_size = vb2_packed_key_size(key->sig_alg);
+
+	/* Make sure buffer is the correct length */
+	if (!expected_key_size || expected_key_size != key_size) {
+		VB2_DEBUG("Wrong key size for algorithm\n");
+		return VB2_ERROR_UNPACK_KEY_SIZE;
+	}
+
+	/* Check for alignment */
+	if (!vb2_aligned(buf32, sizeof(uint32_t)))
+		return VB2_ERROR_UNPACK_KEY_ALIGN;
+
+	key->arrsize = buf32[0];
+
+	/* Sanity check key array size */
+	if (key->arrsize * sizeof(uint32_t) != vb2_rsa_sig_size(key->sig_alg))
+		return VB2_ERROR_UNPACK_KEY_ARRAY_SIZE;
+
+	key->n0inv = buf32[1];
+
+	/* Arrays point inside the key data */
+	key->n = buf32 + 2;
+	key->rr = buf32 + 2 + key->arrsize;
 
 	return VB2_SUCCESS;
 }

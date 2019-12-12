@@ -18,7 +18,7 @@
 #include "2sysincludes.h"
 #include "futility.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_key21.h"
 #include "kernel_blob.h"
 #include "util_misc.h"
 #include "vb1_helper.h"

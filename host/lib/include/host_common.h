@@ -9,7 +9,7 @@
 #define VBOOT_REFERENCE_HOST_COMMON_H_
 
 #include "host_key.h"
-#include "host_key2.h"
+#include "host_key21.h"
 #include "host_keyblock.h"
 #include "host_misc.h"
 #include "host_signature.h"

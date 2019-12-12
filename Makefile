@@ -337,7 +337,7 @@ INCLUDES += \
 # TPM commands and various external functions that are provided by the BIOS.
 ifeq (${FIRMWARE_ARCH},)
 INCLUDES += -Ihost/include -Ihost/lib/include
-INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include
+INCLUDES += -Ihost/lib21/include
 endif
 
 # Firmware library, used by the other firmware components (depthcharge,
@@ -348,7 +348,6 @@ FWLIB = ${BUILD}/vboot_fw.a
 # Separate TPM lightweight command library (TLCL)
 TLCL = ${BUILD}/tlcl.a
 
-# Additional firmware library sources needed by VbSelectAndLoadKernel() call
 FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
@@ -364,7 +363,6 @@ FWLIB_SRCS = \
 	firmware/lib/vboot_ui_menu.c \
 	firmware/lib/vboot_ui_wilco.c
 
-# Code common to both vboot 2.0 (old structs) and 2.1 (new structs)
 FWLIB2X_SRCS = \
 	firmware/2lib/2api.c \
 	firmware/2lib/2auxfw_sync.c \
@@ -391,10 +389,6 @@ FWLIB20_SRCS = \
 	firmware/lib20/kernel.c \
 	firmware/lib20/misc.c \
 	firmware/lib20/packed_key.c
-
-FWLIB21_SRCS = \
-	firmware/lib21/common.c \
-	firmware/lib21/packed_key.c
 
 # TPM lightweight command library
 ifeq (${TPM2_MODE},)
@@ -438,10 +432,8 @@ endif
 FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 FWLIB2X_OBJS = ${FWLIB2X_SRCS:%.c=${BUILD}/%.o}
 FWLIB20_OBJS = ${FWLIB20_SRCS:%.c=${BUILD}/%.o}
-FWLIB21_OBJS = ${FWLIB21_SRCS:%.c=${BUILD}/%.o}
 TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
-ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${FWLIB21_OBJS} \
-	${TLCL_OBJS}
+ALL_OBJS += ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} ${TLCL_OBJS}
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
@@ -469,6 +461,7 @@ UTILLIB_SRCS = \
 	host/lib/signature_digest.c \
 	host/lib/subprocess.c \
 	host/lib/util_misc.c \
+	host/lib21/host_common.c \
 	host/lib21/host_key.c \
 	host/lib21/host_misc.c \
 	host/lib21/host_signature.c
@@ -655,7 +648,7 @@ FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c
 
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
-${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include -Ifirmware/lib21/include
+${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include
 
 ALL_OBJS += ${FUTIL_OBJS}
 
@@ -729,8 +722,8 @@ TEST20_NAMES = \
 	tests/vb20_verify_fw
 
 TEST21_NAMES = \
-	tests/vb21_common_tests \
-	tests/vb21_common2_tests \
+	tests/vb21_host_common2_tests \
+	tests/vb21_host_common_tests \
 	tests/vb21_host_key_tests \
 	tests/vb21_host_misc_tests \
 	tests/vb21_host_sig_tests
@@ -866,7 +859,7 @@ utillib: ${UTILLIB}
 
 # TODO: better way to make .a than duplicating this recipe each time?
 ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${FWLIB2X_OBJS} ${FWLIB20_OBJS} \
-		${FWLIB21_OBJS} ${TLCL_OBJS}
+		${TLCL_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
@@ -1231,8 +1224,8 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_misc_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb21_common_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb21_common2_tests ${TEST_KEYS}
+	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_key_tests ${TEST_KEYS} ${BUILD}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_misc_tests ${BUILD}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_sig_tests ${TEST_KEYS}
@@ -1250,7 +1243,7 @@ runfutiltests: install_for_test
 runlongtests: install_for_test genkeys genfuzztestcases
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common2_tests ${TEST_KEYS} --all
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common3_tests ${TEST_KEYS} --all
-	${RUNTEST} ${BUILD_RUN}/tests/vb21_common2_tests ${TEST_KEYS} --all
+	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS} --all
 	tests/run_preamble_tests.sh --all
 	tests/run_vbutil_tests.sh --all
 

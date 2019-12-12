@@ -9,7 +9,7 @@
 #include "2rsa.h"
 #include "2sha.h"
 #include "2sysincludes.h"
-#include "vb21_common.h"
+#include "host_common21.h"
 
 const char *vb21_common_desc(const void *buf)
 {

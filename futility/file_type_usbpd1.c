@@ -24,10 +24,10 @@
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"
-#include "host_key2.h"
-#include "host_signature2.h"
+#include "host_common21.h"
+#include "host_key21.h"
+#include "host_signature21.h"
 #include "util_misc.h"
-#include "vb21_common.h"
 
 /* Return 1 if okay, 0 if not */
 static int parse_size_opts(uint32_t len,

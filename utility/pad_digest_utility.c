@@ -12,7 +12,7 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_signature2.h"
+#include "host_signature21.h"
 #include "signature_digest.h"
 
 static void usage(char* argv[]) {

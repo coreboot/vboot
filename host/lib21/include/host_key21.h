@@ -267,4 +267,18 @@ enum vb2_signature_algorithm vb2_rsa_sig_alg(struct rsa_st *rsa);
 vb2_error_t vb21_public_key_write(const struct vb2_public_key *key,
 				  const char *filename);
 
+/**
+ * Unpack a key for use in verification
+ *
+ * The elements of the unpacked key will point into the source buffer, so don't
+ * free the source buffer until you're done with the key.
+ *
+ * @param key		Destintion for unpacked key
+ * @param buf		Source buffer containing packed key
+ * @param size		Size of buffer in bytes
+ * @return VB2_SUCCESS, or non-zero error code if error.
+ */
+vb2_error_t vb21_unpack_key(struct vb2_public_key *key, const uint8_t *buf,
+			    uint32_t size);
+
 #endif  /* VBOOT_REFERENCE_HOST_KEY2_H_ */

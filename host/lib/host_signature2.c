@@ -20,8 +20,8 @@
 #include "2sha.h"
 #include "file_keys.h"
 #include "host_common.h"
-#include "host_key2.h"
-#include "host_signature2.h"
+#include "host_key21.h"
+#include "host_signature21.h"
 #include "vb2_common.h"
 
 struct vb2_signature *vb2_alloc_signature(uint32_t sig_size,

@@ -14,11 +14,11 @@
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"
-#include "host_key2.h"
-#include "host_misc2.h"
+#include "host_common21.h"
+#include "host_key21.h"
+#include "host_misc21.h"
 #include "openssl_compat.h"
 #include "util_misc.h"
-#include "vb21_common.h"
 
 int vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *alg)
 {

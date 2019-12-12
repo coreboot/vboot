@@ -34,10 +34,3 @@ lib20/
   This was deployed slightly before it was ready. That's not a problem,
   thanks to the binary compatibility, but this directory will be abandoned
   Real Soon Now, except for the product support branches.
-
-lib21/
-
-  This is where the current development of the second-generation vboot API
-  is taking place. It uses the public (2lib/) API, but will NOT be binary
-  compatible with vboot1 structs. Because of the early release of the lib20
-  stuff, we're actually calling this lib21.

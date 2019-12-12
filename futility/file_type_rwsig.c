@@ -23,11 +23,11 @@
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_common21.h"
+#include "host_key21.h"
 #include "host_misc.h"
-#include "host_signature2.h"
+#include "host_signature21.h"
 #include "util_misc.h"
-#include "vb21_common.h"
 
 #define SIGNATURE_RSVD_SIZE 1024
 #define EC_RW_FILENAME "EC_RW.bin"

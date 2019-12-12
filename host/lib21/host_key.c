@@ -14,10 +14,10 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_common21.h"
+#include "host_key21.h"
 #include "host_misc.h"
 #include "openssl_compat.h"
-#include "vb21_common.h"
 
 const struct vb2_text_vs_enum vb2_text_vs_sig[] = {
 	{"RSA1024", VB2_SIG_RSA1024},
@@ -650,4 +650,61 @@ vb2_error_t vb21_public_key_write(const struct vb2_public_key *key,
 
 	free(pkey);
 	return ret;
+}
+
+vb2_error_t vb21_unpack_key(struct vb2_public_key *key, const uint8_t *buf,
+			    uint32_t size)
+{
+	const struct vb21_packed_key *pkey =
+		(const struct vb21_packed_key *)buf;
+	uint32_t sig_size;
+	uint32_t min_offset = 0;
+	vb2_error_t rv;
+
+	/* Check magic number */
+	if (pkey->c.magic != VB21_MAGIC_PACKED_KEY)
+		return VB2_ERROR_UNPACK_KEY_MAGIC;
+
+	rv = vb21_verify_common_header(buf, size);
+	if (rv)
+		return rv;
+
+	/* Make sure key data is inside */
+	rv = vb21_verify_common_member(pkey, &min_offset,
+				       pkey->key_offset, pkey->key_size);
+	if (rv)
+		return rv;
+
+	/*
+	 * Check for compatible version.  No need to check minor version, since
+	 * that's compatible across readers matching the major version, and we
+	 * haven't added any new fields.
+	 */
+	if (pkey->c.struct_version_major != VB21_PACKED_KEY_VERSION_MAJOR)
+		return VB2_ERROR_UNPACK_KEY_STRUCT_VERSION;
+
+	/* Copy key algorithms */
+	key->hash_alg = pkey->hash_alg;
+	if (!vb2_digest_size(key->hash_alg))
+		return VB2_ERROR_UNPACK_KEY_HASH_ALGORITHM;
+
+	key->sig_alg = pkey->sig_alg;
+	if (key->sig_alg != VB2_SIG_NONE) {
+		sig_size = vb2_rsa_sig_size(key->sig_alg);
+		if (!sig_size)
+			return VB2_ERROR_UNPACK_KEY_SIG_ALGORITHM;
+		rv = vb2_unpack_key_data(
+				key,
+				(const uint8_t *)pkey + pkey->key_offset,
+				pkey->key_size);
+		if (rv)
+			return rv;
+	}
+
+	/* Key description */
+	key->desc = vb21_common_desc(pkey);
+	key->version = pkey->key_version;
+	key->id = &pkey->id;
+
+	return VB2_SUCCESS;
 }

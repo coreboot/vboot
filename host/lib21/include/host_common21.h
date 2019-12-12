@@ -11,7 +11,7 @@
 #include "2common.h"
 #include "2return_codes.h"
 #include "2struct.h"
-#include "vb21_struct.h"
+#include "host_struct21.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,33 +77,6 @@ vb2_error_t vb21_verify_common_member(const void *parent, uint32_t *min_offset,
 vb2_error_t vb21_verify_common_subobject(const void *parent,
 					 uint32_t *min_offset,
 					 uint32_t member_offset);
-
-/**
- * Unpack a key for use in verification
- *
- * The elements of the unpacked key will point into the source buffer, so don't
- * free the source buffer until you're done with the key.
- *
- * @param key		Destintion for unpacked key
- * @param buf		Source buffer containing packed key
- * @param size		Size of buffer in bytes
- * @return VB2_SUCCESS, or non-zero error code if error.
- */
-vb2_error_t vb21_unpack_key(struct vb2_public_key *key, const uint8_t *buf,
-			    uint32_t size);
-
-/**
- * Unpack the RSA data fields for a public key
- *
- * This is called by vb21_unpack_key() to extract the arrays from a packed key.
- * These elements of *key will point inside the key_data buffer.
- *
- * @param key		Destination key for RSA data fields
- * @param key_data	Packed key data (from inside a packed key buffer)
- * @param key_size	Size of packed key data in bytes
- */
-vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,
-				const uint8_t *key_data, uint32_t key_size);
 
 /**
  * Verify the integrity of a signature struct

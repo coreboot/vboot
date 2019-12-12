@@ -18,17 +18,17 @@
 #include <unistd.h>
 
 #include "2common.h"
-#include "file_type_bios.h"
 #include "file_type.h"
+#include "file_type_bios.h"
 #include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_common21.h"
+#include "host_key21.h"
 #include "kernel_blob.h"
 #include "util_misc.h"
 #include "vb1_helper.h"
-#include "vb21_common.h"
 #include "vb2_common.h"
 
 /* Options */

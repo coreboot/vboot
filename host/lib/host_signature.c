@@ -20,7 +20,7 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_signature2.h"
+#include "host_signature21.h"
 #include "vb2_common.h"
 
 /* Invoke [external_signer] command with [pem_file] as an argument, contents of

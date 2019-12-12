@@ -17,7 +17,7 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
-#include "host_key2.h"
+#include "host_key21.h"
 #include "openssl_compat.h"
 #include "util_misc.h"
 #include "vb2_common.h"
