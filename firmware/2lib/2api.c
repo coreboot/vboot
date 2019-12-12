@@ -226,8 +226,7 @@ vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag,
-			     uint32_t *size)
+vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	const struct vb2_fw_preamble *pre;
@@ -295,9 +294,6 @@ vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag,
 
 	sd->hash_tag = tag;
 	sd->hash_remaining_size = pre->body_signature.data_size;
-
-	if (size)
-		*size = pre->body_signature.data_size;
 
 	if (!(pre->flags & VB2_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO)) {
 		rv = vb2ex_hwcrypto_digest_init(key.hash_alg,

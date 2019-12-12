@@ -13,6 +13,7 @@
 #include "2secdata.h"
 #include "2sha.h"
 #include "2sysincludes.h"
+#include "vb2_common.h"
 
 vb2_error_t vb2_validate_gbb_signature(uint8_t *sig)
 {
@@ -31,6 +32,17 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	return (struct vb2_gbb_header *)((void *)sd + sd->gbb_offset);
+}
+
+uint32_t vb2api_get_firmware_size(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	if (!sd->preamble_size)
+		return 0;
+
+	const struct vb2_fw_preamble *pre = (const struct vb2_fw_preamble *)
+		vb2_member_of(sd, sd->preamble_offset);
+	return pre->body_signature.data_size;
 }
 
 vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,

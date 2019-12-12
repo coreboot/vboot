@@ -113,7 +113,7 @@ static void reset_common_data(enum reset_type t)
 	k->algorithm = mock_algorithm;
 
 	if (t == FOR_EXTEND_HASH || t == FOR_CHECK_HASH)
-		vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, NULL);
+		vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY);
 
 	if (t == FOR_CHECK_HASH)
 		vb2api_extend_hash(ctx, mock_body, mock_body_size);
@@ -290,6 +290,14 @@ static void misc_tests(void)
 		12, "vb2api_fail request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
 		34, "vb2api_fail subcode");
+
+	/* Test get_firmware_size() */
+	reset_common_data(FOR_MISC);
+	TEST_EQ(vb2api_get_firmware_size(ctx), mock_body_size, "firmware_size");
+
+	reset_common_data(FOR_MISC);
+	sd->preamble_size = 0;
+	TEST_EQ(vb2api_get_firmware_size(ctx), 0, "firmware_size too early");
 }
 
 static void phase1_tests(void)
@@ -551,12 +559,11 @@ static void init_hash_tests(void)
 {
 	struct vb2_packed_key *k;
 	int wb_used_before;
-	uint32_t size;
 
 	/* For now, all we support is body signature hash */
 	reset_common_data(FOR_MISC);
 	wb_used_before = sd->workbuf_used;
-	TEST_SUCC(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_SUCC(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		  "init hash good");
 	TEST_EQ(sd->hash_offset, wb_used_before, "hash context offset");
 	TEST_EQ(sd->hash_size, sizeof(struct vb2_digest_context),
@@ -568,43 +575,43 @@ static void init_hash_tests(void)
 	TEST_EQ(sd->hash_remaining_size, mock_body_size, "hash remaining");
 
 	wb_used_before = sd->workbuf_used;
-	TEST_SUCC(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, NULL),
+	TEST_SUCC(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		  "init hash again");
 	TEST_EQ(sd->workbuf_used, wb_used_before, "init hash reuses context");
 
 	reset_common_data(FOR_MISC);
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_INVALID, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_INVALID),
 		VB2_ERROR_API_INIT_HASH_TAG, "init hash invalid tag");
 
 	reset_common_data(FOR_MISC);
 	sd->preamble_size = 0;
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_API_INIT_HASH_PREAMBLE, "init hash preamble");
 
 	reset_common_data(FOR_MISC);
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY + 1, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY + 1),
 		VB2_ERROR_API_INIT_HASH_TAG, "init hash unknown tag");
 
 	reset_common_data(FOR_MISC);
 	sd->workbuf_used = sd->workbuf_size + VB2_WORKBUF_ALIGN -
 			vb2_wb_round_up(sizeof(struct vb2_digest_context));
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_API_INIT_HASH_WORKBUF, "init hash workbuf");
 
 	reset_common_data(FOR_MISC);
 	sd->data_key_size = 0;
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_API_INIT_HASH_DATA_KEY, "init hash data key");
 
 	reset_common_data(FOR_MISC);
 	sd->data_key_size--;
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_UNPACK_KEY_SIZE, "init hash data key size");
 
 	reset_common_data(FOR_MISC);
 	k = vb2_member_of(sd, sd->data_key_offset);
 	k->algorithm--;
-	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY, &size),
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_SHA_INIT_ALGORITHM, "init hash algorithm");
 }
 

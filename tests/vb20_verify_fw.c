@@ -87,7 +87,7 @@ static void save_if_needed(struct vb2_context *c)
  */
 static vb2_error_t hash_body(struct vb2_context *c)
 {
-	uint32_t expect_size;
+	uint32_t remaining;
 	uint8_t block[8192];
 	uint32_t size;
 	FILE *f;
@@ -99,19 +99,20 @@ static vb2_error_t hash_body(struct vb2_context *c)
 		return VB2_ERROR_TEST_INPUT_FILE;
 
 	/* Start the body hash */
-	rv = vb2api_init_hash(c, VB2_HASH_TAG_FW_BODY, &expect_size);
+	rv = vb2api_init_hash(c, VB2_HASH_TAG_FW_BODY);
 	if (rv) {
 		fclose(f);
 		return rv;
 	}
 
-	printf("Expect %d bytes of body...\n", expect_size);
+	remaining = vb2api_get_firmware_size(c);
+	printf("Expect %d bytes of body...\n", remaining);
 
 	/* Extend over the body */
-	while (expect_size) {
+	while (remaining) {
 		size = sizeof(block);
-		if (size > expect_size)
-			size = expect_size;
+		if (size > remaining)
+			size = remaining;
 
 		/* Read next body block */
 		size = fread(block, 1, size, f);
@@ -125,7 +126,7 @@ static vb2_error_t hash_body(struct vb2_context *c)
 			return rv;
 		}
 
-		expect_size -= size;
+		remaining -= size;
 	}
 
 	fclose(f);

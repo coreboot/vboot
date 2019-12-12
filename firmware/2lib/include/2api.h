@@ -602,12 +602,9 @@ vb2_error_t vb21api_fw_phase3(struct vb2_context *ctx);
  *
  * @param ctx		Vboot context
  * @param tag		Tag to start hashing (enum vb2_hash_tag)
- * @param size		If non-null, expected size of data for tag will be
- *			stored here on output.
  * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag,
-			     uint32_t *size);
+vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag);
 
 /**
  * Same, but for new-style structs.
@@ -757,6 +754,16 @@ vb2_error_t vb2api_gbb_read_hwid(struct vb2_context *ctx, char *hwid,
  * @return vb2_gbb_flags_t representing current GBB flags.
  */
 vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
+
+/**
+ * Get the size of the signed firmware body. This is only legal to call after
+ * vb2api_fw_phase3() has returned successfully, and will return 0 otherwise.
+ *
+ * @param ctx		Vboot context
+ *
+ * @return The firmware body size in bytes (or 0 if called too early).
+ */
+uint32_t vb2api_get_firmware_size(struct vb2_context *ctx);
 
 /**
  * Sync the Embedded Controller device to the expected version.
