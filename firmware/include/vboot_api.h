@@ -54,22 +54,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 #define VB_SWITCH_FLAG_ALLOW_USB_BOOT		0x00004000
 
 /*
- * Firmware types for VbHashFirmwareBody() and
- * VbSelectFirmwareParams.selected_firmware.  Note that we store these in a
- * uint32_t because enum maps to int, which isn't fixed-size.
- */
-enum vb2_firmware_selection {
-	/* Read only firmware for normal or developer path. */
-	VB_SELECT_FIRMWARE_READONLY = 3,
-	/* Rewritable EC firmware currently set active */
-	VB_SELECT_FIRMWARE_EC_ACTIVE = 4,
-	/* Rewritable EC firmware currently not set active thus updatable */
-	VB_SELECT_FIRMWARE_EC_UPDATE = 5,
-	/* Keep this at the end */
-	VB_SELECT_FIRMWARE_COUNT,
-};
-
-/*
  * We use disk handles rather than indices.  Using indices causes problems if
  * a disk is removed/inserted in the middle of processing.
  */
@@ -580,98 +564,6 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr);
  * Return the current state of the switches specified in request_mask
  */
 uint32_t VbExGetSwitches(uint32_t request_mask);
-
-/*****************************************************************************/
-/* Embedded controller (EC) */
-
-/**
- * This is called only if the system implements a keyboard-based (virtual)
- * developer switch. It must return true only if the system has an embedded
- * controller which is provably running in its RO firmware at the time the
- * function is called.
- */
-int vb2ex_ec_trusted(void);
-
-/**
- * Check if the EC is currently running rewritable code.
- *
- * If the EC is in RO code, sets *in_rw=0.
- * If the EC is in RW code, sets *in_rw non-zero.
- * If the current EC image is unknown, returns error. */
-vb2_error_t vb2ex_ec_running_rw(int *in_rw);
-
-/**
- * Request the EC jump to its rewritable code.  If successful, returns when the
- * EC has booting its RW code far enough to respond to subsequent commands.
- * Does nothing if the EC is already in its rewritable code.
- */
-vb2_error_t vb2ex_ec_jump_to_rw(void);
-
-/**
- * Tell the EC to refuse another jump until it reboots. Subsequent calls to
- * vb2ex_ec_jump_to_rw() in this boot will fail.
- */
-vb2_error_t vb2ex_ec_disable_jump(void);
-
-/**
- * Read the SHA-256 hash of the selected EC image.
- *
- * @param select    Image to get hash of. RO or RW.
- * @param hash      Pointer to the hash.
- * @param hash_size Pointer to the hash size.
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
-				const uint8_t **hash, int *hash_size);
-
-/**
- * Read the SHA-256 hash of the expected contents of the EC image associated
- * with the main firmware specified by the "select" argument.
- *
- * @param select	Image to get expected hash for (RO or RW).
- * @param hash		Pointer to the hash.
- * @param hash_size	Pointer to the hash size (in bytes).
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
-					     const uint8_t **hash,
-					     int *hash_size);
-
-/**
- * Update the selected EC image to the expected version.
- *
- * @param select	Image to get expected hash for (RO or RW).
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select);
-
-/**
- * Lock the EC code to prevent updates until the EC is rebooted.
- * Subsequent calls to vb2ex_ec_update_image() with the same region this
- * boot will fail.
- *
- * @param select	Image to get expected hash for (RO or RW).
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select);
-
-/**
- * Perform EC post-verification / updating / jumping actions.
- *
- * This routine is called to perform certain actions that must wait until
- * after the EC resides in its `final` image (the image the EC will
- * run for the duration of boot). These actions include verifying that
- * enough power is available to continue with boot.
- *
- * @param ctx		Pointer to vboot context.
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx);
-
-/**
- * Request EC to stop discharging and cut-off battery.
- */
-vb2_error_t vb2ex_ec_battery_cutoff(void);
 
 /*****************************************************************************/
 /* Misc */

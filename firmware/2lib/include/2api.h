@@ -756,36 +756,6 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 uint32_t vb2api_get_firmware_size(struct vb2_context *ctx);
 
 /**
- * Sync the Embedded Controller device to the expected version.
- *
- * This function will check if EC software sync is allowed, and if it
- * is, it will compare the expected image hash to the actual image
- * hash.  If they are the same, the EC will simply jump to its RW
- * firwmare.  Otherwise, the specified flash image will be updated to
- * the new version, and the EC will reboot into its new firmware.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero if error.
- */
-vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
-
-/**
- * Sync all auxiliary firmware to the expected versions.
- *
- * This function will first check if an auxfw update is needed and
- * what the "severity" of that update is (i.e., if any auxfw devices
- * exist and the relative quickness of updating it.  If the update is
- * deemed slow, it may display a screen to notify the user.  The
- * platform is then instructed to perform the update.  Finally, an EC
- * reboot to its RO section is performed to ensure that auxfw devices
- * are also reset and running the new firmware.
- *
- * @param ctx           Vboot2 context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx);
-
-/**
  * If no display is available, set DISPLAY_REQUEST in nvdata.
  *
  * @param ctx           Vboot2 context
@@ -877,6 +847,50 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
 
 /*
+ * Abort vboot flow due to a failed assertion or broken assumption.
+ *
+ * Likely due to caller misusing vboot (e.g. calling API functions
+ * out-of-order, filling in vb2_context fields inappropriately).
+ * Implementation should reboot or halt the machine, or fall back to some
+ * alternative boot flow.  Retrying vboot is unlikely to succeed.
+ */
+void vb2ex_abort(void);
+
+/**
+ * Commit any pending data to disk.
+ *
+ * Commit nvdata and secdata spaces if modified.  Normally this should be
+ * performed after vboot has completed executing and control has been passed
+ * back to the caller.  However, in certain kernel verification cases (e.g.
+ * right before attempting to boot an OS; from a UI screen which requires
+ * user-initiated shutdown; just prior to triggering battery cut-off), the
+ * caller may not get a chance to commit this data.
+ *
+ * @param ctx		Vboot context
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
+
+/*****************************************************************************/
+/* Auxiliary firmware (auxfw) */
+
+/**
+ * Sync all auxiliary firmware to the expected versions.
+ *
+ * This function will first check if an auxfw update is needed and
+ * what the "severity" of that update is (i.e., if any auxfw devices
+ * exist and the relative quickness of updating it.  If the update is
+ * deemed slow, it may display a screen to notify the user.  The
+ * platform is then instructed to perform the update.  Finally, an EC
+ * reboot to its RO section is performed to ensure that auxfw devices
+ * are also reset and running the new firmware.
+ *
+ * @param ctx           Vboot2 context
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx);
+
+/*
  * severity levels for an auxiliary firmware update request
  */
 enum vb2_auxfw_update_severity {
@@ -925,29 +939,125 @@ vb2_error_t vb2ex_auxfw_update(void);
  */
 vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *ctx);
 
+/*****************************************************************************/
+/* Embedded controller (EC) */
+
 /*
- * Abort vboot flow due to a failed assertion or broken assumption.
- *
- * Likely due to caller misusing vboot (e.g. calling API functions
- * out-of-order, filling in vb2_context fields inappropriately).
- * Implementation should reboot or halt the machine, or fall back to some
- * alternative boot flow.  Retrying vboot is unlikely to succeed.
+ * Firmware selection type for EC software sync logic.  Note that we store
+ * these in a uint32_t because enum maps to int, which isn't fixed-size.
  */
-void vb2ex_abort(void);
+enum vb2_firmware_selection {
+	/* Read only firmware for normal or developer path. */
+	VB_SELECT_FIRMWARE_READONLY = 3,
+	/* Rewritable EC firmware currently set active */
+	VB_SELECT_FIRMWARE_EC_ACTIVE = 4,
+	/* Rewritable EC firmware currently not set active thus updatable */
+	VB_SELECT_FIRMWARE_EC_UPDATE = 5,
+	/* Keep this at the end */
+	VB_SELECT_FIRMWARE_COUNT,
+};
 
 /**
- * Commit any pending data to disk.
+ * Sync the Embedded Controller device to the expected version.
  *
- * Commit nvdata and secdata spaces if modified.  Normally this should be
- * performed after vboot has completed executing and control has been passed
- * back to the caller.  However, in certain kernel verification cases (e.g.
- * right before attempting to boot an OS; from a UI screen which requires
- * user-initiated shutdown; just prior to triggering battery cut-off), the
- * caller may not get a chance to commit this data.
+ * This function will check if EC software sync is allowed, and if it
+ * is, it will compare the expected image hash to the actual image
+ * hash.  If they are the same, the EC will simply jump to its RW
+ * firwmare.  Otherwise, the specified flash image will be updated to
+ * the new version, and the EC will reboot into its new firmware.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero if error.
  */
-vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
+vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
+
+/**
+ * This is called only if the system implements a keyboard-based (virtual)
+ * developer switch. It must return true only if the system has an embedded
+ * controller which is provably running in its RO firmware at the time the
+ * function is called.
+ */
+int vb2ex_ec_trusted(void);
+
+/**
+ * Check if the EC is currently running rewritable code.
+ *
+ * If the EC is in RO code, sets *in_rw=0.
+ * If the EC is in RW code, sets *in_rw non-zero.
+ * If the current EC image is unknown, returns error. */
+vb2_error_t vb2ex_ec_running_rw(int *in_rw);
+
+/**
+ * Request the EC jump to its rewritable code.  If successful, returns when the
+ * EC has booting its RW code far enough to respond to subsequent commands.
+ * Does nothing if the EC is already in its rewritable code.
+ */
+vb2_error_t vb2ex_ec_jump_to_rw(void);
+
+/**
+ * Tell the EC to refuse another jump until it reboots. Subsequent calls to
+ * vb2ex_ec_jump_to_rw() in this boot will fail.
+ */
+vb2_error_t vb2ex_ec_disable_jump(void);
+
+/**
+ * Read the SHA-256 hash of the selected EC image.
+ *
+ * @param select    Image to get hash of. RO or RW.
+ * @param hash      Pointer to the hash.
+ * @param hash_size Pointer to the hash size.
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
+				const uint8_t **hash, int *hash_size);
+
+/**
+ * Read the SHA-256 hash of the expected contents of the EC image associated
+ * with the main firmware specified by the "select" argument.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @param hash		Pointer to the hash.
+ * @param hash_size	Pointer to the hash size (in bytes).
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
+					     const uint8_t **hash,
+					     int *hash_size);
+
+/**
+ * Update the selected EC image to the expected version.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select);
+
+/**
+ * Lock the EC code to prevent updates until the EC is rebooted.
+ * Subsequent calls to vb2ex_ec_update_image() with the same region this
+ * boot will fail.
+ *
+ * @param select	Image to get expected hash for (RO or RW).
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select);
+
+/**
+ * Perform EC post-verification / updating / jumping actions.
+ *
+ * This routine is called to perform certain actions that must wait until
+ * after the EC resides in its `final` image (the image the EC will
+ * run for the duration of boot). These actions include verifying that
+ * enough power is available to continue with boot.
+ *
+ * @param ctx		Pointer to vboot context.
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx);
+
+/**
+ * Request EC to stop discharging and cut-off battery.
+ */
+vb2_error_t vb2ex_ec_battery_cutoff(void);
 
 #endif  /* VBOOT_REFERENCE_2API_H_ */
