@@ -171,6 +171,13 @@ enum wp_state {
 enum wp_state host_get_wp(const char *programmer);
 
 /*
+ * Helper function to detect type of Servo board attached to host,
+ * and store the right programmer / prepare settings to arguments.
+ * Returns 0 if success, non-zero if error.
+ */
+int host_detect_servo(const char **programmer_ptr, int *need_prepare_ptr);
+
+/*
  * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
  * section of an image file, otherwise 0.
  */

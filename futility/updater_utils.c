@@ -436,6 +436,42 @@ static int host_get_platform_version(void)
 }
 
 /*
+ * Helper function to detect type of Servo board attached to host,
+ * and store the right programmer / prepare settings to arguments.
+ * Returns 0 if success, non-zero if error.
+ */
+int host_detect_servo(const char **programmer_ptr, int *need_prepare_ptr)
+{
+	int ret = 0;
+	char *servo_type = host_shell("dut-control -o servo_type 2>/dev/null");
+	const char *programmer = NULL;
+	int need_prepare = 0;  /* To prepare by dut-control cpu_fw_spi:on */
+
+	if (!*servo_type) {
+		ERROR("Failed to get servo type. Check servod.\n");
+		ret = 1;
+	} else if (strstr(servo_type, "servo_micro")) {
+		VB2_DEBUG("Selected Servo Micro.\n");
+		programmer = "raiden_debug_spi";
+		need_prepare = 1;
+	} else if (strstr(servo_type, "ccd_cr50")) {
+		VB2_DEBUG("Selected CCD CR50.\n");
+		programmer = "raiden_debug_spi:target=AP";
+	} else {
+		VB2_DEBUG("Selected Servo V2.\n");
+		programmer = "ft2232_spi:type=servo-v2";
+		need_prepare = 1;
+	}
+
+	free(servo_type);
+	if (programmer && !*programmer_ptr)
+		*programmer_ptr = programmer;
+	*need_prepare_ptr = need_prepare;
+
+	return ret;
+}
+
+/*
  * A helper function to invoke flashrom(8) command.
  * Returns 0 if success, non-zero if error.
  */

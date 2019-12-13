@@ -29,6 +29,7 @@ enum {
 	OPT_QUIRKS,
 	OPT_QUIRKS_LIST,
 	OPT_REPACK,
+	OPT_SERVO,
 	OPT_SIGNATURE,
 	OPT_SYS_PROPS,
 	OPT_UNPACK,
@@ -50,6 +51,7 @@ static struct option const long_opts[] = {
 	{"mode", 1, NULL, 'm'},
 
 	{"ccd", 0, NULL, OPT_CCD},
+	{"servo", 0, NULL, OPT_SERVO},
 	{"emulate", 1, NULL, OPT_EMULATE},
 	{"factory", 0, NULL, OPT_FACTORY},
 	{"fast", 0, NULL, OPT_FAST},
@@ -111,6 +113,7 @@ static void print_help(int argc, char *argv[])
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"    --model=MODEL   \tOverride system model for images\n"
 		"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"
+		"    --servo         \tFlash using Servo (v2, v4, micro, ...)\n"
 		"    --signature_id=S\tOverride signature ID for key files\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
 		"-d, --debug         \tPrint debugging messages\n"
@@ -124,6 +127,7 @@ static int do_update(int argc, char *argv[])
 	struct updater_config *cfg;
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0, do_update = 1;
+	int detect_servo = 0, do_servo_cpu_fw_spi = 0;
 
 	cfg = updater_new_config();
 	assert(cfg);
@@ -216,6 +220,13 @@ static int do_update(int argc, char *argv[])
 			args.write_protection = "0";
 			args.programmer = "raiden_debug_spi:target=AP";
 			break;
+		case OPT_SERVO:
+			args.fast_update = 1;
+			args.force_update = 1;
+			args.write_protection = "0";
+			args.host_only = 1;
+			detect_servo = 1;
+			break;
 
 		case OPT_DUMMY:
 			break;
@@ -239,6 +250,18 @@ static int do_update(int argc, char *argv[])
 		errorcnt++;
 		ERROR("Unexpected arguments.\n");
 	}
+
+	if (!errorcnt && detect_servo)
+		errorcnt += host_detect_servo(&args.programmer,
+					      &do_servo_cpu_fw_spi);
+	/*
+	 * Some boards may need to fetch firmware before starting to
+	 * update (i.e., in updater_setup_config) so we want to turn on
+	 * cpu_fw_spi mode now.
+	 */
+	if (do_servo_cpu_fw_spi)
+		free(host_shell("dut-control cpu_fw_spi:on"));
+
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &do_update);
 	if (!errorcnt && do_update) {
@@ -255,6 +278,9 @@ static int do_update(int argc, char *argv[])
 			errorcnt ? "FAILED": "DONE",
 			errorcnt ? "aborted" : "exits successfully");
 	}
+
+	if (do_servo_cpu_fw_spi)
+		free(host_shell("dut-control cpu_fw_spi:off"));
 
 	updater_delete_config(cfg);
 	return !!errorcnt;
