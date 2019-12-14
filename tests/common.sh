@@ -6,8 +6,11 @@
 
 # Determine script directory.
 SCRIPT_DIR=$(dirname $(readlink -f "$0"))
-
 ROOT_DIR="$(dirname ${SCRIPT_DIR})"
+SRCDIR="${SRCDIR:-${ROOT_DIR}}"
+BUILD="${BUILD:-${ROOT_DIR}/build}"
+BUILD_RUN="${BUILD_RUN:-${BUILD}}"
+SRC_RUN="${SRC_RUN:-${SRCDIR}}"
 BUILD_DIR="${BUILD}"
 BIN_DIR=${BUILD_DIR}/install_for_test/bin
 FUTILITY=${BIN_DIR}/futility

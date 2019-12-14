@@ -146,7 +146,8 @@ static void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-	uint8_t workbuf[16384] __attribute__((aligned(VB2_WORKBUF_ALIGN)));
+	uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	struct vb2_context *ctx;
 	struct vb2_shared_data *sd;
 	vb2_error_t rv;
@@ -160,6 +161,11 @@ int main(int argc, char *argv[])
 	gbb_fname = argv[1];
 	vblock_fname = argv[2];
 	body_fname = argv[3];
+
+	/* Intialize workbuf with sentinel value to see how much we'll use. */
+	uint32_t *ptr = (uint32_t *)workbuf;
+	while ((uint8_t *)ptr + sizeof(*ptr) <= workbuf + sizeof(workbuf))
+		*ptr++ = 0xbeefdead;
 
 	/* Set up context */
 	if (vb2api_init(workbuf, sizeof(workbuf), &ctx)) {
@@ -211,7 +217,10 @@ int main(int argc, char *argv[])
 
 	printf("Yaay!\n");
 
-	printf("Workbuf used = %d bytes\n", sd->workbuf_used);
+	while ((uint8_t *)ptr > workbuf && *--ptr == 0xbeefdead)
+		/* find last used workbuf offset */;
+	printf("Workbuf used = %d bytes, high watermark = %zu bytes\n",
+		sd->workbuf_used, (uint8_t *)ptr + sizeof(*ptr) - workbuf);
 
 	return 0;
 }
