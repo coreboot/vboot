@@ -410,6 +410,28 @@ enum VbScreenType_t {
 	VB_SCREEN_CONFIRM_VENDOR_DATA = 0x215,
 	/* Confirm reboot for running diagnostics rom */
 	VB_SCREEN_CONFIRM_DIAG = 0x216,
+	/* Confirm after VB_SCREEN_RECOVERY_TO_DEV_MENU */
+	VB_SCREEN_TO_DEV_CONFIRMED = 0x217,
+	/* Hardware failure */
+	VB_SCREEN_HARDWARE_FAILURE = 0x218,
+	/* First recovery screen to select recovering from phone or disk */
+	VB_SCREEN_RECOVERY_SELECT = 0x220,
+	/* Recovery using phone */
+	VB_SCREEN_RECOVERY_PHONE_STEP1 = 0x230,
+	VB_SCREEN_RECOVERY_PHONE_STEP2 = 0x231,
+	VB_SCREEN_RECOVERY_PHONE_STEP3 = 0x232,
+	/* Recovery using external disk */
+	VB_SCREEN_RECOVERY_DISK_STEP1 = 0x240,
+	VB_SCREEN_RECOVERY_DISK_STEP2 = 0x241,
+	VB_SCREEN_RECOVERY_DISK_STEP3 = 0x242,
+	/* Boot from internal disk */
+	VB_SCREEN_BOOT_FROM_INTERNAL = 0x250,
+	/* Boot from external disk */
+	VB_SCREEN_BOOT_FROM_EXTERNAL = 0x251,
+	/* Debug info screen */
+	VB_SCREEN_DEBUG_INFO = 0x252,
+	/* BIOS log screen */
+	VB_SCREEN_BIOS_LOG = 0x253,
 };
 
 /**
