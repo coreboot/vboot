@@ -890,10 +890,7 @@ ${TLCL_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 ifneq ($(filter-out 0,$(UNROLL_LOOPS)),)
 $(info vboot hash algos built with unrolled loops (faster, larger code size))
-${FWLIB_OBJS}: CFLAGS += -DUNROLL_LOOPS
-${FWLIB2X_OBJS}: CFLAGS += -DUNROLL_LOOPS
-${FWLIB20_OBJS}: CFLAGS += -DUNROLL_LOOPS
-${FWLIB21_OBJS}: CFLAGS += -DUNROLL_LOOPS
+CFLAGS += -DUNROLL_LOOPS
 else
 $(info vboot hash algos built with tight loops (slower, smaller code size))
 endif
