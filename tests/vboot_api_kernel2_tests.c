@@ -1120,6 +1120,8 @@ static void VbBootRecTestGpio(uint32_t first, uint32_t second, uint32_t third,
 		TEST_EQ(VbBootRecovery(ctx), VBERROR_EC_REBOOT_TO_RO_REQUIRED,
 			msg);
 		TEST_EQ(virtdev_set, 1, "  virtual dev mode on");
+		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB), !!USB_BOOT_ON_DEV,
+			"  NV_DEV_BOOT_USB enabled");
 	} else {
 		TEST_EQ(VbBootRecovery(ctx), VBERROR_SHUTDOWN_REQUESTED, msg);
 		TEST_EQ(virtdev_set, 0, "  virtual dev mode off");

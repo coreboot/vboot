@@ -50,8 +50,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 /* Flags for VbExGetSwitches() */
 /* Report if user is currently present (typically via power button) */
 #define VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED	0x00000004
-/* Allow USB boot on transition to dev */
-#define VB_SWITCH_FLAG_ALLOW_USB_BOOT		0x00004000
 
 /*
  * We use disk handles rather than indices.  Using indices causes problems if

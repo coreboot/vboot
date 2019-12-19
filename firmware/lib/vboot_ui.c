@@ -35,12 +35,6 @@ void vb2_init_ui(void)
 	power_button_state = POWER_BUTTON_HELD_SINCE_BOOT;
 }
 
-static void VbAllowUsbBoot(struct vb2_context *ctx)
-{
-	VB2_DEBUG(".");
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
-}
-
 /**
  * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
  * determine if a shutdown is required.
@@ -877,9 +871,8 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 				if (VB2_SUCCESS != vb2_enable_developer_mode(ctx))
 					return VBERROR_TPM_SET_BOOT_MODE_STATE;
 				VB2_DEBUG("Reboot so it will take effect\n");
-				if (VbExGetSwitches
-				    (VB_SWITCH_FLAG_ALLOW_USB_BOOT))
-					VbAllowUsbBoot(ctx);
+				if (USB_BOOT_ON_DEV)
+					vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 				return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 			case -1:
 				VB2_DEBUG("Shutdown requested\n");
