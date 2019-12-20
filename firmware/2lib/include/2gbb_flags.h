@@ -53,8 +53,14 @@ enum vb2_gbb_flag {
 	/* Allow booting Legacy OSes in dev mode even if dev_boot_legacy=0. */
 	VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY = 1 << 7,
 
-	/* Allow booting using alternate keys for FAFT servo testing */
-	VB2_GBB_FLAG_FAFT_KEY_OVERIDE = 1 << 8,
+	/*
+	 * Currently running FAFT tests.  May be used as a hint to disable
+	 * other debug features which may interfere with tests.  However, this
+	 * should never be used to modify Chrome OS behaviour on specific
+	 * devices with the goal of passing a test.  See chromium:965914 for
+	 * more information.
+	 */
+	VB2_GBB_FLAG_RUNNING_FAFT = 1 << 8,
 
 	/* Disable EC software sync */
 	VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC = 1 << 9,
