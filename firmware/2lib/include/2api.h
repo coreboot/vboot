@@ -185,8 +185,12 @@ enum vb2_context_flags {
 	 */
 	VB2_CONTEXT_NO_SECDATA_FWMP = (1 << 21),
 
-	/* Enable detachable menu ui (volume up/down + power). */
-	VB2_CONTEXT_DETACHABLE_UI = (1 << 22),
+	/*
+	 * Enable detachable menu ui (volume up/down + power).
+	 *
+	 * Deprecated with CL:1975390.
+	 */
+	VB2_CONTEXT_DEPRECATED_DETACHABLE_UI = (1 << 22),
 };
 
 /* Helper for aligning fields in vb2_context. */
