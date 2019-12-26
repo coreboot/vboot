@@ -146,25 +146,33 @@ static const Param* FindParam(const char* name) {
   return NULL;
 }
 
+/* Return code of SetParam() below. */
+enum {
+  PARAM_SUCCESS = 0,
+  PARAM_ERROR_UNKNOWN,
+  PARAM_ERROR_READ_ONLY,
+  PARAM_ERROR_INVALID_INT,
+};
 
 /* Set the specified parameter.
  *
- * Returns 0 if success, non-zero if error. */
+ * Returns PARAM_SUCCESS if success, PARAM_ERROR_* if error. */
 static int SetParam(const Param* p, const char* value) {
   if (!(p->flags & CAN_WRITE))
-    return 1;  /* Parameter is read-only */
+    return PARAM_ERROR_READ_ONLY;
 
   if (p->flags & IS_STRING) {
-    return (0 == VbSetSystemPropertyString(p->name, value) ? 0 : 1);
+    return (0 == VbSetSystemPropertyString(p->name, value) ?
+            0 : PARAM_ERROR_UNKNOWN);
   } else {
     char* e;
     int i = (int)strtol(value, &e, 0);
     if (!*value || (e && *e))
-      return 1;
-    return (0 == VbSetSystemPropertyInt(p->name, i) ? 0 : 1);
+      return PARAM_ERROR_INVALID_INT;
+    return (0 == VbSetSystemPropertyInt(p->name, i) ?
+            0 : PARAM_ERROR_UNKNOWN);
   }
 }
-
 
 /* Compares the parameter with the expected value.
  *
@@ -300,8 +308,18 @@ int main(int argc, char* argv[]) {
       printf(" ");  /* Output params space-delimited */
     if (has_set) {
       retval = SetParam(p, value);
-      if (retval) {
+      switch (retval) {
+      case PARAM_SUCCESS:
+        break;
+      case PARAM_ERROR_READ_ONLY:
         fprintf(stderr, "Parameter %s is read-only\n", name);
+        break;
+      case PARAM_ERROR_INVALID_INT:
+        fprintf(stderr, "Value %s is not a valid integer\n", value);
+        break;
+      default:
+        fprintf(stderr, "Failed to set parameter %s\n", name);
+        break;
       }
     } else if (has_expect)
       retval = CheckParam(p, value);
