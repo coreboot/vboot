@@ -197,6 +197,13 @@ else
 CFLAGS += -DEC_SLOW_UPDATE=0
 endif
 
+# Enable EC early firmware selection.
+ifneq ($(filter-out 0,${EC_EFS}),)
+CFLAGS += -DEC_EFS=1
+else
+CFLAGS += -DEC_EFS=0
+endif
+
 # Some tests need to be disabled when using mocked_secdata_tpm.
 ifneq (${MOCK_TPM},)
 CFLAGS += -DMOCK_TPM

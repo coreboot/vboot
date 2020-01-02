@@ -90,8 +90,9 @@ extern "C" {
 #define VBSD_DEPRECATED_OPROM_LOADED     0x00020000
 /* Don't try for boot failures */
 #define VBSD_NOFAIL_BOOT                 0x00040000
-/* VbInit() was told that the EC firmware supports EFS */
-#define VBSD_EC_EFS                      0x00080000
+/* VbInit() was told that the EC firmware supports EFS
+   Deprecated as part of chromium:1038259 */
+#define VBSD_DEPRECATED_EC_EFS                      0x00080000
 /* NvStorage uses 64-byte record, not 16-byte */
 #define VBSD_NVDATA_V2                   0x00100000
 
