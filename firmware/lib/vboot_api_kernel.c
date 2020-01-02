@@ -245,7 +245,7 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	 */
 	if (shared->flags & VBSD_EC_SOFTWARE_SYNC)
 		ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
-	if (shared->flags & VBSD_EC_SLOW_UPDATE)
+	if (EC_SLOW_UPDATE)
 		ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	if (shared->flags & VBSD_EC_EFS)
 		ctx->flags |= VB2_CONTEXT_EC_EFS;

@@ -72,8 +72,9 @@ extern "C" {
 #define VBSD_DEPRECATED_HONOR_VIRT_DEV_SWITCH 0x00000400
 /* VbInit() was told the system supports EC software sync */
 #define VBSD_EC_SOFTWARE_SYNC            0x00000800
-/* VbInit() was told that the EC firmware is slow to update */
-#define VBSD_EC_SLOW_UPDATE              0x00001000
+/* VbInit() was told that the EC firmware is slow to update
+   Deprecated as part of chromium:1038259 */
+#define VBSD_DEPRECATED_EC_SLOW_UPDATE              0x00001000
 /* Firmware software write protect was enabled at boot time.
    Crossystem support deprecated as part of CL:575389. */
 #define VBSD_DEPRECATED_BOOT_FIRMWARE_SW_WP_ENABLED 0x00002000
