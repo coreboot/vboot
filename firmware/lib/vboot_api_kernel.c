@@ -243,8 +243,8 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	 * instead of flags.  That would save on firmware image size because
 	 * features that won't be used in an image could be compiled out.
 	 */
-	if (shared->flags & VBSD_EC_SOFTWARE_SYNC)
-		ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	if (ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED)
+		shared->flags |= VBSD_EC_SOFTWARE_SYNC;
 	if (shared->flags & VBSD_NVDATA_V2)
 		ctx->flags |= VB2_CONTEXT_NVDATA_V2;
 

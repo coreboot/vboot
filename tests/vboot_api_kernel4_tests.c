@@ -210,15 +210,15 @@ static void VbSlkTest(void)
 	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	/*
-	 * If shared->flags doesn't ask for software sync, we won't notice
-	 * that error.
+	 * If ctx->flags doesn't ask for software sync, we won't notice that
+	 * error.
 	 */
 	ResetMocks();
 	test_slk(0, 0, "EC sync not done");
 
-	/* Same if shared->flags asks for sync, but it's overridden by GBB */
+	/* Same if ctx->flags asks for sync, but it's overridden by GBB */
 	ResetMocks();
-	shared->flags |= VBSD_EC_SOFTWARE_SYNC;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	test_slk(0, 0, "EC sync disabled by GBB");
 
