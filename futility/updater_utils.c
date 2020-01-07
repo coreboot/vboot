@@ -12,6 +12,7 @@
 #include "2common.h"
 #include "crossystem.h"
 #include "host_misc.h"
+#include "util_misc.h"
 #include "updater.h"
 
 #define COMMAND_BUFFER_SIZE 256
@@ -661,4 +662,29 @@ void remove_all_temp_files(struct tempfile *head)
 		free(head->filepath);
 		free(head);
 	}
+}
+
+/*
+ * Returns rootkey hash of firmware image, or NULL on failure.
+ */
+const char *get_firmware_rootkey_hash(const struct firmware_image *image)
+{
+	const struct vb2_gbb_header *gbb = NULL;
+	const struct vb2_packed_key *rootkey = NULL;
+
+	assert(image->data);
+
+	gbb = find_gbb(image);
+	if (!gbb) {
+		WARN("No GBB found in image.\n");
+		return NULL;
+	}
+
+	rootkey = get_rootkey(gbb);
+	if (!rootkey) {
+		WARN("No rootkey found in image.\n");
+		return NULL;
+	}
+
+	return packed_key_sha1_string(rootkey);
 }

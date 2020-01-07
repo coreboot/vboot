@@ -43,6 +43,7 @@ enum quirk_types {
 	QUIRK_EVE_SMM_STORE,
 	QUIRK_ALLOW_EMPTY_WLTAG,
 	QUIRK_EC_PARTIAL_RECOVERY,
+	QUIRK_OVERRIDE_SIGNATURE_ID,
 	QUIRK_MAX,
 };
 
@@ -124,6 +125,12 @@ enum updater_error_codes {
 extern const char * const updater_error_messages[];
 
 /*
+ * Returns a valid root key from GBB header, or NULL on failure.
+ */
+const struct vb2_packed_key *get_rootkey(
+		const struct vb2_gbb_header *gbb);
+
+/*
  * The main updater to update system firmware using the configuration parameter.
  * Returns UPDATE_ERR_DONE if success, otherwise failure.
  */
@@ -167,6 +174,14 @@ int get_system_property(enum system_property_type property_type,
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
  */
 const char * const updater_get_default_quirks(struct updater_config *cfg);
+
+/*
+ * Overrides signature id if the device was shipped with known
+ * special rootkey.
+ */
+int quirk_override_signature_id(struct updater_config *cfg,
+				struct model_config *model,
+				const char **signature_id);
 
 /* Functions from updater_archive.c */
 
