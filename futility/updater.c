@@ -660,7 +660,7 @@ static int check_compatible_platform(struct updater_config *cfg)
 /*
  * Returns a valid root key from GBB header, or NULL on failure.
  */
-static const struct vb2_packed_key *get_rootkey(
+const struct vb2_packed_key *get_rootkey(
 		const struct vb2_gbb_header *gbb)
 {
 	struct vb2_packed_key *key = NULL;
@@ -1352,6 +1352,10 @@ static int updater_apply_white_label(struct updater_config *cfg,
 			ERROR("Failed to get system current firmware\n");
 			return 1;
 		}
+		if (get_config_quirk(QUIRK_OVERRIDE_SIGNATURE_ID, cfg) &&
+		    is_write_protection_enabled(cfg))
+			quirk_override_signature_id(
+					cfg, model, &signature_id);
 	}
 	return !!model_apply_white_label(
 			model, cfg->archive, signature_id, tmp_image);

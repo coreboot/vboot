@@ -55,6 +55,8 @@ static const struct quirks_record quirks_records[] = {
         { .match = "Google_Reks.", .quirks = "allow_empty_wltag" },
         { .match = "Google_Relm.", .quirks = "allow_empty_wltag" },
         { .match = "Google_Wizpig.", .quirks = "allow_empty_wltag" },
+
+        { .match = "Google_Phaser.", .quirks = "override_signature_id" },
 };
 
 /* Preserves meta data and reload image contents from given file path. */
@@ -423,6 +425,12 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "chromium/1024401; recover EC by partial RO update.";
 	quirks->apply = quirk_ec_partial_recovery;
 	quirks->value = -1;  /* Decide at runtime. */
+
+	quirks = &cfg->quirks[QUIRK_OVERRIDE_SIGNATURE_ID];
+	quirks->name = "override_signature_id";
+	quirks->help = "chromium/146876241; override signature id for "
+			"devices shipped with different root key.";
+	quirks->apply = NULL; /* Simple config. */
 }
 
 /*
@@ -447,4 +455,31 @@ const char * const updater_get_default_quirks(struct updater_config *cfg)
 		return r->quirks;
 	}
 	return NULL;
+}
+
+/*
+ * Overrides signature id if the device was shipped with known
+ * special rootkey.
+ */
+int quirk_override_signature_id(struct updater_config *cfg,
+				struct model_config *model,
+				const char **signature_id)
+{
+	const char * const DOPEFISH_KEY_HASH =
+				"9a1f2cc319e2f2e61237dc51125e35ddd4d20984";
+
+	/* b/146876241 */
+	assert(model);
+	if (strcmp(model->name, "phaser360") == 0) {
+		struct firmware_image *image = &cfg->image_current;
+		const char *key_hash = get_firmware_rootkey_hash(image);
+		if (key_hash && strcmp(key_hash, DOPEFISH_KEY_HASH) == 0) {
+			const char * const sig_dopefish = "phaser360-dopefish";
+			WARN("A Phaser360 with Dopefish rootkey - "
+			     "override signature_id to '%s'.\n", sig_dopefish);
+			*signature_id = sig_dopefish;
+		}
+	}
+
+	return 0;
 }
