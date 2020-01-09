@@ -504,7 +504,6 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 
 	uint32_t disable_dev_boot = 0;
 	uint32_t use_usb = 0;
@@ -599,10 +598,10 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			VBOOT_FALLTHROUGH;
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
-			VB2_DEBUG("shared->flags=%#x\n", shared->flags);
+			VB2_DEBUG("sd->flags=%#x\n", sd->flags);
 
 			/* Sanity check, should never fail. */
-			VB2_ASSERT(shared->flags & VBSD_BOOT_DEV_SWITCH_ON);
+			VB2_ASSERT(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED);
 
 			/* Stop the countdown while we go ask... */
 			if (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
@@ -844,8 +843,8 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		 *   - user forced recovery mode
 		 */
 		if (key == VB_KEY_CTRL('D') &&
-		    !(shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
-		    (shared->flags & VBSD_BOOT_REC_SWITCH_ON)) {
+		    !(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) &&
+		    (sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY)) {
 			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
 			    VbExGetSwitches(
 					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {

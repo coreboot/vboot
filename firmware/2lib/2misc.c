@@ -417,7 +417,7 @@ int vb2_allow_recovery(struct vb2_context *ctx)
 		return 0;
 
 	/* Now we confidently check the recovery switch state at boot */
-	return !!(vb2_get_sd(ctx)->vbsd->flags & VBSD_BOOT_REC_SWITCH_ON);
+	return !!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_MANUAL_RECOVERY);
 }
 
 int vb2api_need_reboot_for_display(struct vb2_context *ctx)

@@ -284,12 +284,12 @@ static void VbSlkTest(void)
 
 	/* Boot dev */
 	ResetMocks();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	vbboot_retval = -2;
 	test_slk(VB2_ERROR_MOCK, 0, "Dev boot bad");
 
 	ResetMocks();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	new_version = 0x20003;
 	test_slk(0, 0, "Dev doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");

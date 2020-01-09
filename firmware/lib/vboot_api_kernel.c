@@ -233,7 +233,7 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 	/* Translate vboot1 flags back to vboot2 */
 	if (shared->recovery_reason)
 		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	if (shared->flags & VBSD_BOOT_DEV_SWITCH_ON)
+	if (vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED)
 		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 	/*

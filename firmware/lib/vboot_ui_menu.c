@@ -260,7 +260,7 @@ static vb2_error_t enter_to_dev_menu(struct vb2_context *ctx)
 {
 	const char dev_already_on[] =
 		"WARNING: TODEV rejected, developer mode is already on.\n";
-	if (vb2_get_sd(ctx)->vbsd->flags & VBSD_BOOT_DEV_SWITCH_ON) {
+	if (vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
 		vb2_flash_screen(ctx);
 		vb2_error_notify(dev_already_on, NULL, VB_BEEP_NOT_ALLOWED);
 		return VBERROR_KEEP_LOOPING;
@@ -352,10 +352,8 @@ static vb2_error_t altfw_action(struct vb2_context *ctx)
 /* Action that enables developer mode and reboots. */
 static vb2_error_t to_dev_action(struct vb2_context *ctx)
 {
-	uint32_t vbsd_flags = vb2_get_sd(ctx)->vbsd->flags;
-
 	/* Sanity check, should never happen. */
-	if ((vbsd_flags & VBSD_BOOT_DEV_SWITCH_ON) ||
+	if ((vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ctx))
 		return VBERROR_KEEP_LOOPING;
 

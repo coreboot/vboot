@@ -114,14 +114,14 @@ static void ResetMocks(void)
 static void ResetMocksForDeveloper(void)
 {
 	ResetMocks();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	shutdown_request_calls_left = -1;
 }
 
 static void ResetMocksForManualRecovery(void)
 {
 	ResetMocks();
-	shared->flags |= VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_MANUAL_RECOVERY;
 	trust_ec = 1;
 }
 
@@ -503,7 +503,7 @@ static void VbBootDevTest(void)
 
 	/* Disable developer mode */
 	ResetMocksForDeveloper();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
@@ -528,7 +528,7 @@ static void VbBootDevTest(void)
 
 	/* Tonorm ignored if GBB forces dev switch on */
 	ResetMocksForDeveloper();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
@@ -555,7 +555,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested at tonorm screen */
 	ResetMocksForDeveloper();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	shutdown_request_calls_left = 2;
@@ -1343,7 +1343,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[1] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[2] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	TEST_EQ(VbBootRecoveryMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Shutdown requested in BROKEN with dev switch");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1387,7 +1387,7 @@ static void VbBootRecTest(void)
 	ResetMocksForManualRecovery();
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	shared->flags &= ~VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags &= ~VB2_SD_FLAG_MANUAL_RECOVERY;
 	TEST_EQ(VbBootRecoveryMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
 		"Go to BROKEN if recovery not manually requested");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -1763,7 +1763,7 @@ static void VbBootRecTest(void)
 
 	/* Cannot enable dev mode if already enabled. */
 	ResetMocksForManualRecovery();
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	i = 0;

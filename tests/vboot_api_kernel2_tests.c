@@ -621,7 +621,7 @@ static void VbBootDevTest(void)
 
 	/* Space asks to disable virtual dev switch */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = VB_KEY_ENTER;
 	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
@@ -637,7 +637,7 @@ static void VbBootDevTest(void)
 
 	/* Space-space doesn't disable it */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = ' ';
 	mock_keypress[2] = VB_KEY_ESC;
@@ -652,7 +652,7 @@ static void VbBootDevTest(void)
 
 	/* Enter doesn't by default */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = VB_KEY_ENTER;
 	mock_keypress[1] = VB_KEY_ENTER;
 	vbtlk_expect_fixed = 1;
@@ -660,7 +660,7 @@ static void VbBootDevTest(void)
 
 	/* Enter does if GBB flag set */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	gbb.flags |= VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM;
 	mock_keypress[0] = VB_KEY_ENTER;
 	mock_keypress[1] = VB_KEY_ENTER;
@@ -669,7 +669,7 @@ static void VbBootDevTest(void)
 
 	/* Tonorm ignored if GBB forces dev switch on */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = VB_KEY_ENTER;
@@ -679,7 +679,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested at tonorm screen */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = ' ';
 	MockGpioAfter(3, GPIO_SHUTDOWN);
 	TEST_EQ(VbBootDeveloper(ctx),
@@ -692,7 +692,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested by keyboard at tonorm screen */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloper(ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
@@ -1069,7 +1069,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested when dev disabled */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
 	MockGpioAfter(1, GPIO_SHUTDOWN);
 	TEST_EQ(VbBootDeveloper(ctx),
@@ -1080,7 +1080,7 @@ static void VbBootDevTest(void)
 
 	/* Shutdown requested by keyboard when dev disabled */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
 	TEST_EQ(VbBootDeveloper(ctx),
@@ -1102,7 +1102,7 @@ static void VbBootRecTestGpio(uint32_t first, uint32_t second, uint32_t third,
 			      uint32_t confirm, const char *msg)
 {
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	trust_ec = 1;
 	mock_keypress[0] = VB_KEY_CTRL('D');
@@ -1161,7 +1161,7 @@ static void VbBootRecTest(void)
 	mock_gpio[2].count = 10;
 	mock_gpio[3].gpio_flags = 0;
 	mock_gpio[3].count = 100;
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	trust_ec = 1;
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	vbtlk_expect_removable = 1;
@@ -1189,7 +1189,7 @@ static void VbBootRecTest(void)
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	mock_num_disks[0] = 1;
 	mock_num_disks[1] = 1;
-	shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	TEST_EQ(VbBootRecovery(ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
 		"Broken (dev)");
@@ -1213,7 +1213,7 @@ static void VbBootRecTest(void)
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	mock_num_disks[0] = 1;
 	mock_num_disks[1] = 1;
-	shared->flags |= VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags |= VB2_SD_FLAG_MANUAL_RECOVERY;
 	TEST_EQ(VbBootRecovery(ctx),
 		VBERROR_SHUTDOWN_REQUESTED,
 		"No remove in rec");
@@ -1243,7 +1243,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D ignored for many reasons... */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	trust_ec = 0;
@@ -1255,7 +1255,7 @@ static void VbBootRecTest(void)
 		 "  todev screen");
 
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON | VBSD_BOOT_DEV_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY | VB2_SD_FLAG_DEV_MODE_ENABLED;
 	trust_ec = 1;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	mock_keypress[0] = VB_KEY_CTRL('D');
@@ -1282,7 +1282,7 @@ static void VbBootRecTest(void)
 	/* Ctrl+D ignored because the physical presence switch is still pressed
 	   and we don't like that. */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	trust_ec = 1;
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	mock_gpio[0].gpio_flags = GPIO_PRESENCE;
@@ -1298,7 +1298,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D then space means don't enable */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	MockGpioAfter(2, GPIO_SHUTDOWN);
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	trust_ec = 1;
@@ -1318,7 +1318,7 @@ static void VbBootRecTest(void)
 
 	/* Ctrl+D then enter means enable */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	trust_ec = 1;
@@ -1414,7 +1414,7 @@ static void VbBootRecTest(void)
 
 	/* Handle TPM error in enabling dev mode */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	trust_ec = 1;
@@ -1429,7 +1429,7 @@ static void VbBootRecTest(void)
 
 	/* Test Diagnostic Mode via Ctrl-C - display available */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	trust_ec = 1;
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
@@ -1452,7 +1452,7 @@ static void VbBootRecTest(void)
 
 	/* Test Diagnostic Mode via F12 - display disabled */
 	ResetMocks();
-	shared->flags = VBSD_BOOT_REC_SWITCH_ON;
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	sd->flags &= ~VB2_SD_FLAG_DISPLAY_AVAILABLE;
 	trust_ec = 1;
 	vbtlk_retval = VB2_ERROR_LK_NO_DISK_FOUND;
