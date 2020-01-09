@@ -219,7 +219,6 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	struct vb2_workbuf wb;
-	VbSharedDataHeader *shared = sd->vbsd;
 	char buf[DEBUG_INFO_SIZE] = "";
 	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
 	uint32_t used = 0;
@@ -253,10 +252,13 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 			RecoveryReasonString(sd->recovery_reason),
 			DEBUG_INFO_SIZE - used);
 
-	/* Add VbSharedDataHeader flags */
-	used += StrnAppend(buf + used, "\nVbSD.flags: 0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       shared->flags, 16, 8);
+	/* Add VbSharedDataHeader flags if available */
+	if (sd->vbsd) {
+		used += StrnAppend(buf + used, "\nVbSD.flags: 0x",
+				   DEBUG_INFO_SIZE - used);
+		used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
+				       sd->vbsd->flags, 16, 8);
+	}
 
 	/* Add raw contents of VbNvStorage */
 	used += StrnAppend(buf + used, "\nVbNv.raw:", DEBUG_INFO_SIZE - used);
@@ -332,8 +334,8 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	}
 
 	/* If we're in dev-mode, show the kernel subkey that we expect, too. */
-	if (0 == sd->recovery_reason) {
-		FillInSha1Sum(sha1sum, &shared->kernel_subkey);
+	if (0 == sd->recovery_reason && sd->vbsd) {
+		FillInSha1Sum(sha1sum, &sd->vbsd->kernel_subkey);
 		used += StrnAppend(buf + used,
 				"\nkernel_subkey: ", DEBUG_INFO_SIZE - used);
 		used += StrnAppend(buf + used, sha1sum, DEBUG_INFO_SIZE - used);

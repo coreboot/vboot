@@ -23,9 +23,6 @@
 #include "vboot_struct.h"
 
 /* Mock data */
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-
 static struct vb2_context *ctx;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -52,12 +49,9 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
 	memset(&gbb, 0, sizeof(gbb));
-
-	memset(&shared_data, 0, sizeof(shared_data));
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
 	screens_count = 0;

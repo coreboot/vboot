@@ -96,8 +96,6 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader* shared = (VbSharedDataHeader*)shared_data;
 static int current_time;
 static uint64_t current_ticks;
 static int current_event;
@@ -119,15 +117,11 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 
 	ctx->flags |= VB2_CONTEXT_NO_SECDATA_FWMP;
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
 
 	memset(&gbb, 0, sizeof(gbb));
-
-	memset(&shared_data, 0, sizeof(shared_data));
-	shared->fw_keyblock_flags = 0xABCDE0;
 
 	current_ticks = 0;
 	current_time = 0;

@@ -22,8 +22,6 @@
 #include "vboot_kernel.h"
 
 /* Mock data */
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static char debug_info[4096];
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
@@ -43,9 +41,6 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
-
-	memset(&shared_data, 0, sizeof(shared_data));
 
 	*debug_info = 0;
 }

@@ -1476,7 +1476,6 @@ static void VbBootRecTest(void)
 
 	/* Test Diagnostic Mode via Ctrl-C OS broken - display available */
 	ResetMocks();
-	shared->flags = 0;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
 	mock_keypress[0] = VB_KEY_CTRL('C');
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,

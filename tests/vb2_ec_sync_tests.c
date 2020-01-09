@@ -19,9 +19,6 @@
 #include "vboot_struct.h"
 
 /* Mock data */
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-
 static int mock_in_rw;
 static vb2_error_t in_rw_retval;
 static int protect_retval;
@@ -62,12 +59,9 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
 	memset(&gbb, 0, sizeof(gbb));
-
-	memset(&shared_data, 0, sizeof(shared_data));
 
 	mock_in_rw = 0;
 	ec_ro_protected = 0;
