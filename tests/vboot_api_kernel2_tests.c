@@ -841,6 +841,61 @@ static void VbBootDevTest(void)
 	vbtlk_expect_removable = 1;
 	TEST_EQ(VbBootDeveloper(ctx), 0, "Ctrl+U force USB");
 
+	/* If no USB, eventually times out and tries fixed disk */
+	ResetMocks();
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	mock_keypress[0] = VB_KEY_CTRL('U');
+	/* TODO: Currently the test suite has no way of specifying the order in
+	   which the expected VbTryLoadKernel calls occur. */
+	vbtlk_expect_fixed = 1;
+	vbtlk_expect_removable = 1;
+	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK, "Ctrl+U enabled");
+	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0,
+		"  recovery reason");
+	TEST_EQ(audio_looping_calls_left, 0, "  used up audio");
+
+	/* If dev mode is disabled, goes to TONORM screen repeatedly */
+	ResetMocks();
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
+	mock_keypress[0] = VB_KEY_ESC;  /* Just causes TONORM again */
+	mock_keypress[1] = VB_KEY_ENTER;
+	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
+		"FWMP dev disabled");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_TO_NORM,
+		"  tonorm screen");
+	TEST_EQ(screens_displayed[1], VB_SCREEN_DEVELOPER_TO_NORM,
+		"  tonorm screen");
+	TEST_EQ(screens_displayed[2], VB_SCREEN_TO_NORM_CONFIRMED,
+		"  confirm screen");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
+		"  disable dev request");
+
+	/* Shutdown requested when dev disabled */
+	ResetMocks();
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
+	MockGpioAfter(1, GPIO_SHUTDOWN);
+	TEST_EQ(VbBootDeveloper(ctx),
+		VBERROR_SHUTDOWN_REQUESTED,
+		"Shutdown requested when dev disabled");
+	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_TO_NORM,
+		"  tonorm screen");
+
+	/* Shutdown requested by keyboard when dev disabled */
+	ResetMocks();
+	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
+	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
+	TEST_EQ(VbBootDeveloper(ctx),
+		VBERROR_SHUTDOWN_REQUESTED,
+		"Shutdown requested by keyboard when dev disabled");
+
+	VB2_DEBUG("...done.\n");
+}
+
+static void VbBootDevVendorDataTest(void)
+{
 	/* Ctrl+S set vendor data and reboot */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
@@ -1036,56 +1091,6 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK,
 		"Ctrl+S esc from set screen");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
-
-	/* If no USB, eventually times out and tries fixed disk */
-	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
-	mock_keypress[0] = VB_KEY_CTRL('U');
-	/* TODO: Currently the test suite has no way of specifying the order in
-	   which the expected VbTryLoadKernel calls occur. */
-	vbtlk_expect_fixed = 1;
-	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootDeveloper(ctx), VB2_ERROR_MOCK, "Ctrl+U enabled");
-	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0,
-		"  recovery reason");
-	TEST_EQ(audio_looping_calls_left, 0, "  used up audio");
-
-	/* If dev mode is disabled, goes to TONORM screen repeatedly */
-	ResetMocks();
-	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
-	mock_keypress[0] = VB_KEY_ESC;  /* Just causes TONORM again */
-	mock_keypress[1] = VB_KEY_ENTER;
-	TEST_EQ(VbBootDeveloper(ctx), VBERROR_REBOOT_REQUIRED,
-		"FWMP dev disabled");
-	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_TO_NORM,
-		"  tonorm screen");
-	TEST_EQ(screens_displayed[1], VB_SCREEN_DEVELOPER_TO_NORM,
-		"  tonorm screen");
-	TEST_EQ(screens_displayed[2], VB_SCREEN_TO_NORM_CONFIRMED,
-		"  confirm screen");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
-		"  disable dev request");
-
-	/* Shutdown requested when dev disabled */
-	ResetMocks();
-	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
-	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
-	MockGpioAfter(1, GPIO_SHUTDOWN);
-	TEST_EQ(VbBootDeveloper(ctx),
-		VBERROR_SHUTDOWN_REQUESTED,
-		"Shutdown requested when dev disabled");
-	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_TO_NORM,
-		"  tonorm screen");
-
-	/* Shutdown requested by keyboard when dev disabled */
-	ResetMocks();
-	sd->flags = VB2_SD_FLAG_DEV_MODE_ENABLED;
-	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
-	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloper(ctx),
-		VBERROR_SHUTDOWN_REQUESTED,
-		"Shutdown requested by keyboard when dev disabled");
 
 	VB2_DEBUG("...done.\n");
 }
@@ -1597,6 +1602,7 @@ int main(void)
 	VbUserConfirmsTest();
 	VbBootTest();
 	VbBootDevTest();
+	VbBootDevVendorDataTest();
 	VbBootRecTest();
 	if (DIAGNOSTIC_UI)
 		VbBootDiagTest();
