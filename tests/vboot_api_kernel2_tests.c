@@ -19,6 +19,7 @@
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
+#include "vboot_ui_common.h"
 
 /* Mock data */
 static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
@@ -83,7 +84,7 @@ static void MockGpioAfter(uint32_t ticks, uint32_t gpio_flags)
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	vb2_init_ui();
+	vb2_reset_power_button();
 
 	memset(&shared_data, 0, sizeof(shared_data));
 

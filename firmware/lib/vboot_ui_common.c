@@ -6,12 +6,23 @@
  */
 
 #include "2common.h"
+#include "2misc.h"
 #include "2sysincludes.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
+#include "vboot_test.h"
 #include "vboot_ui_common.h"
 
-/* One or two beeps to notify that attempted action was disallowed. */
+static enum {
+	POWER_BUTTON_HELD_SINCE_BOOT = 0,
+	POWER_BUTTON_RELEASED,
+	POWER_BUTTON_PRESSED,  /* Must have been previously released */
+} power_button_state;
+
+void vb2_reset_power_button(void) {
+	power_button_state = POWER_BUTTON_HELD_SINCE_BOOT;
+}
+
 void vb2_error_beep(enum vb2_beep_type beep)
 {
 	switch (beep) {
@@ -49,15 +60,6 @@ void vb2_error_no_altfw(void)
 	vb2_error_beep(VB_BEEP_NOT_ALLOWED);
 }
 
-/**
- * Run alternative firmware
- *
- * This will only return if vboot data fails to commit, secdata_kernel fails to
- * lock, or the bootloader cannot be found / fails to start.
- *
- * @param ctx		Context pointer
- * @param altfw_num	Number of bootloader to start (0=any, 1=first, etc.)
- */
 void vb2_try_altfw(struct vb2_context *ctx, int allowed,
 		   enum VbAltFwIndex_t altfw_num)
 {
@@ -77,4 +79,35 @@ void vb2_try_altfw(struct vb2_context *ctx, int allowed,
 
 	vb2_error_notify("Legacy boot failed. Missing BIOS?\n", NULL,
 			 VB_BEEP_FAILED);
+}
+
+int vb2_want_shutdown(struct vb2_context *ctx, uint32_t key)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	uint32_t shutdown_request = VbExIsShutdownRequested();
+
+	/*
+	 * Ignore power button push until after we have seen it released.
+	 * This avoids shutting down immediately if the power button is still
+	 * being held on startup. After we've recognized a valid power button
+	 * push then don't report the event until after the button is released.
+	 */
+	if (shutdown_request & VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
+		shutdown_request &= ~VB_SHUTDOWN_REQUEST_POWER_BUTTON;
+		if (power_button_state == POWER_BUTTON_RELEASED)
+			power_button_state = POWER_BUTTON_PRESSED;
+	} else {
+		if (power_button_state == POWER_BUTTON_PRESSED)
+			shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
+		power_button_state = POWER_BUTTON_RELEASED;
+	}
+
+	if (key == VB_BUTTON_POWER_SHORT_PRESS)
+		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
+
+	/* If desired, ignore shutdown request due to lid closure. */
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
+		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
+
+	return shutdown_request;
 }

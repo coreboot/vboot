@@ -20,59 +20,9 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
+#include "vboot_test.h"
 #include "vboot_ui_common.h"
-
-/* Global variables */
-static enum {
-	POWER_BUTTON_HELD_SINCE_BOOT = 0,
-	POWER_BUTTON_RELEASED,
-	POWER_BUTTON_PRESSED, /* must have been previously released */
-} power_button_state;
-
-void vb2_init_ui(void)
-{
-	power_button_state = POWER_BUTTON_HELD_SINCE_BOOT;
-}
-
-/**
- * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
- * determine if a shutdown is required.
- *
- * Returns zero or more of the following flags (if any are set then typically
- * shutdown is required):
- * VB_SHUTDOWN_REQUEST_LID_CLOSED
- * VB_SHUTDOWN_REQUEST_POWER_BUTTON
- */
-static int VbWantShutdown(struct vb2_context *ctx, uint32_t key)
-{
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	uint32_t shutdown_request = VbExIsShutdownRequested();
-
-	/*
-	 * Ignore power button push until after we have seen it released.
-	 * This avoids shutting down immediately if the power button is still
-	 * being held on startup. After we've recognized a valid power button
-	 * push then don't report the event until after the button is released.
-	 */
-	if (shutdown_request & VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
-		shutdown_request &= ~VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		if (power_button_state == POWER_BUTTON_RELEASED)
-			power_button_state = POWER_BUTTON_PRESSED;
-	} else {
-		if (power_button_state == POWER_BUTTON_PRESSED)
-			shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		power_button_state = POWER_BUTTON_RELEASED;
-	}
-
-	if (key == VB_BUTTON_POWER_SHORT_PRESS)
-		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-
-	/* If desired, ignore shutdown request due to lid closure. */
-	if (gbb->flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
-		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
-
-	return shutdown_request;
-}
+#include "vboot_ui_wilco.h"
 
 static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 {
@@ -102,7 +52,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 	/* Await further instructions */
 	do {
 		key = VbExKeyboardReadWithFlags(&key_flags);
-		shutdown_requested = VbWantShutdown(ctx, key);
+		shutdown_requested = vb2_want_shutdown(ctx, key);
 		switch (key) {
 		case VB_KEY_ENTER:
 			/* If we are using a trusted keyboard or a trusted
@@ -181,7 +131,7 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 	do {
 		uint32_t key = VbExKeyboardRead();
 
-		if (VbWantShutdown(ctx, key)) {
+		if (vb2_want_shutdown(ctx, key)) {
 			VB2_DEBUG("VbBootDeveloper() - shutdown requested!\n");
 			return VBERROR_SHUTDOWN_REQUESTED;
 		}
@@ -219,270 +169,6 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 	VbDisplayScreen(ctx, VB_SCREEN_DEVELOPER_WARNING, 0, NULL);
 
 	return 0;
-}
-
-static inline int is_vowel(uint32_t key) {
-	return key == 'A' || key == 'E' || key == 'I' ||
-	       key == 'O' || key == 'U';
-}
-
-/*
- * Prompt the user to enter the vendor data
- */
-static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
-					    char *data_value)
-{
-	int len = 0;
-	VbScreenData data = {
-		.vendor_data = { data_value }
-	};
-
-	data_value[0] = '\0';
-	VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA, 1, &data);
-
-	/* We'll loop until the user decides what to do */
-	do {
-		uint32_t key = VbExKeyboardRead();
-
-		if (VbWantShutdown(ctx, key)) {
-			VB2_DEBUG("Vendor Data UI - shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
-		}
-		switch (key) {
-		case 0:
-			/* nothing pressed */
-			break;
-		case VB_KEY_ESC:
-			/* Escape pressed - return to developer screen */
-			VB2_DEBUG("Vendor Data UI - user pressed Esc: "
-				  "exit to Developer screen\n");
-			data_value[0] = '\0';
-			return VB2_SUCCESS;
-		case 'a'...'z':
-			key = toupper(key);
-			__attribute__ ((fallthrough));
-		case '0'...'9':
-		case 'A'...'Z':
-			if ((len > 0 && is_vowel(key)) ||
-			     len >= VENDOR_DATA_LENGTH) {
-				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
-			} else {
-				data_value[len++] = key;
-				data_value[len] = '\0';
-				VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA,
-						1, &data);
-			}
-
-			VB2_DEBUG("Vendor Data UI - vendor_data: %s\n",
-				  data_value);
-			break;
-		case VB_KEY_BACKSPACE:
-			if (len > 0) {
-				data_value[--len] = '\0';
-				VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA,
-						1, &data);
-			}
-
-			VB2_DEBUG("Vendor Data UI - vendor_data: %s\n",
-				  data_value);
-			break;
-		case VB_KEY_ENTER:
-			if (len == VENDOR_DATA_LENGTH) {
-				/* Enter pressed - confirm input */
-				VB2_DEBUG("Vendor Data UI - user pressed "
-					  "Enter: confirm vendor data\n");
-				return VB2_SUCCESS;
-			} else {
-				vb2_error_beep(VB_BEEP_NOT_ALLOWED);
-			}
-			break;
-		default:
-			VB2_DEBUG("Vendor Data UI - pressed key %#x\n", key);
-			VbCheckDisplayKey(ctx, key, &data);
-			break;
-		}
-		VbExSleepMs(KEY_DELAY_MS);
-	} while (1);
-
-	return VB2_SUCCESS;
-}
-
-/*
- * User interface for setting the vendor data in VPD
- */
-static vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
-{
-	char data_value[VENDOR_DATA_LENGTH + 1];
-	VbScreenData data = {
-		.vendor_data = { data_value }
-	};
-
-	vb2_error_t ret = vb2_enter_vendor_data_ui(ctx, data_value);
-
-	if (ret)
-		return ret;
-
-	/* Vendor data was not entered just return */
-	if (data_value[0] == '\0')
-		return VB2_SUCCESS;
-
-	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_VENDOR_DATA, 1, &data);
-	/* We'll loop until the user decides what to do */
-	do {
-		uint32_t key = VbExKeyboardRead();
-
-		if (VbWantShutdown(ctx, key)) {
-			VB2_DEBUG("Vendor Data UI - shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
-		}
-		switch (key) {
-		case 0:
-			/* nothing pressed */
-			break;
-		case VB_KEY_ESC:
-			/* Escape pressed - return to developer screen */
-			VB2_DEBUG("Vendor Data UI - user pressed Esc: "
-				  "exit to Developer screen\n");
-			return VB2_SUCCESS;
-		case VB_KEY_ENTER:
-			/* Enter pressed - write vendor data */
-			VB2_DEBUG("Vendor Data UI - user pressed Enter: "
-				  "write vendor data (%s) to VPD\n",
-				  data_value);
-			ret = VbExSetVendorData(data_value);
-
-			if (ret == VB2_SUCCESS) {
-				vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
-				return VBERROR_REBOOT_REQUIRED;
-			} else {
-				vb2_error_notify(
-					"ERROR: Vendor data was not set.\n"
-					"System will now shutdown\n",
-					NULL,
-					VB_BEEP_FAILED);
-				VbExSleepMs(5000);
-				return VBERROR_SHUTDOWN_REQUESTED;
-			}
-		default:
-			VB2_DEBUG("Vendor Data UI - pressed key %#x\n", key);
-			VbCheckDisplayKey(ctx, key, &data);
-			break;
-		}
-		VbExSleepMs(KEY_DELAY_MS);
-	} while (1);
-
-	return VB2_SUCCESS;
-}
-
-static vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,
-					    uint32_t key) {
-	if (DIAGNOSTIC_UI && (key == VB_KEY_CTRL('C') || key == VB_KEY_F(12))) {
-		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
-		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-
-		return VBERROR_REBOOT_REQUIRED;
-	}
-
-	return VB2_SUCCESS;
-}
-
-/*
- * User interface for confirming launch of diagnostics rom
- *
- * This asks the user to confirm the launch of the diagnostics rom. The user
- * can press the power button to confirm or press escape. There is a 30-second
- * timeout which acts the same as escape.
- */
-static vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
-{
-	int active = 1;
-	int power_button_was_released = 0;
-	int power_button_was_pressed = 0;
-	vb2_error_t result = VBERROR_REBOOT_REQUIRED;
-	int action_confirmed = 0;
-	uint64_t start_time_us;
-
-	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_DIAG, 0, NULL);
-
-	start_time_us = VbExGetTimer();
-
-	/* We'll loop until the user decides what to do */
-	do {
-		uint32_t key = VbExKeyboardRead();
-		/*
-		 * VbExIsShutdownRequested() is almost an adequate substitute
-		 * for adding a new flag to VbExGetSwitches().  The main
-		 * issue is that the former doesn't consult the power button
-		 * on detachables, and this function wants to see for itself
-		 * that the power button isn't currently pressed.
-		 */
-		if (VbExGetSwitches(VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
-			/* Wait for a release before registering a press. */
-			if (power_button_was_released)
-				power_button_was_pressed = 1;
-		} else {
-			power_button_was_released = 1;
-			if (power_button_was_pressed) {
-				VB2_DEBUG("vb2_diagnostics_ui() - power released\n");
-				action_confirmed = 1;
-				active = 0;
-				break;
-			}
-		}
-
-		/* Check the lid and ignore the power button. */
-		if (VbWantShutdown(ctx, 0) & ~VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
-			VB2_DEBUG("vb2_diagnostics_ui() - shutdown request\n");
-			result = VBERROR_SHUTDOWN_REQUESTED;
-			active = 0;
-			break;
-		}
-
-		switch (key) {
-		case 0:
-			/* nothing pressed */
-			break;
-		case VB_KEY_ESC:
-			/* Escape pressed - reboot */
-			VB2_DEBUG("vb2_diagnostics_ui() - user pressed Esc\n");
-			active = 0;
-			break;
-		default:
-			VB2_DEBUG("vb2_diagnostics_ui() - pressed key %#x\n",
-				  key);
-			VbCheckDisplayKey(ctx, key, NULL);
-			break;
-		}
-		if (VbExGetTimer() - start_time_us >= 30 * VB_USEC_PER_SEC) {
-			VB2_DEBUG("vb2_diagnostics_ui() - timeout\n");
-			break;
-		}
-		if (active) {
-			VbExSleepMs(KEY_DELAY_MS);
-		}
-	} while (active);
-
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
-
-	if (action_confirmed) {
-		VB2_DEBUG("Diagnostic requested, running\n");
-
-		if (vb2ex_tpm_set_mode(VB2_TPM_MODE_DISABLED) !=
-			   VB2_SUCCESS) {
-			VB2_DEBUG("Failed to disable TPM\n");
-			vb2api_fail(ctx, VB2_RECOVERY_TPM_DISABLE_FAILED, 0);
-		} else {
-			vb2_try_altfw(ctx, 1, VB_ALTFW_DIAGNOSTIC);
-			VB2_DEBUG("Diagnostic failed to run\n");
-			/*
-			 * Assuming failure was due to bad hash, though
-			 * the rom could just be missing or invalid.
-			 */
-			vb2api_fail(ctx, VB2_RECOVERY_ALTFW_HASH_FAILED, 0);
-		}
-	}
-
-	return result;
 }
 
 static const char dev_disable_msg[] =
@@ -572,7 +258,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 	/* We'll loop until we finish the delay or are interrupted */
 	do {
 		uint32_t key = VbExKeyboardRead();
-		if (VbWantShutdown(ctx, key)) {
+		if (vb2_want_shutdown(ctx, key)) {
 			VB2_DEBUG("VbBootDeveloper() - shutdown requested!\n");
 			return VBERROR_SHUTDOWN_REQUESTED;
 		}
@@ -747,7 +433,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 
 vb2_error_t VbBootDeveloper(struct vb2_context *ctx)
 {
-	vb2_init_ui();
+	vb2_reset_power_button();
 	vb2_error_t retval = vb2_developer_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
@@ -755,7 +441,7 @@ vb2_error_t VbBootDeveloper(struct vb2_context *ctx)
 
 vb2_error_t VbBootDiagnostic(struct vb2_context *ctx)
 {
-	vb2_init_ui();
+	vb2_reset_power_button();
 	vb2_error_t retval = vb2_diagnostics_ui(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
@@ -799,7 +485,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		while (1) {
 			key = VbExKeyboardRead();
 			VbCheckDisplayKey(ctx, key, NULL);
-			if (VbWantShutdown(ctx, key))
+			if (vb2_want_shutdown(ctx, key))
 				return VBERROR_SHUTDOWN_REQUESTED;
 			else if ((retval =
 				  vb2_check_diagnostic_key(ctx, key)) !=
@@ -875,7 +561,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		} else {
 			VbCheckDisplayKey(ctx, key, NULL);
 		}
-		if (VbWantShutdown(ctx, key))
+		if (vb2_want_shutdown(ctx, key))
 			return VBERROR_SHUTDOWN_REQUESTED;
 		VbExSleepMs(KEY_DELAY_MS);
 	}

@@ -79,11 +79,6 @@ vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx);
 vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx);
 
 /**
- * Reinitialize global state. This should only need to be called by init tests.
- */
-void vb2_init_ui(void);
-
-/**
  * Writes modified secdata spaces and nvdata.
  *
  * This is a temporary wrapper around vb2ex_commit_data, until secdata-writing
