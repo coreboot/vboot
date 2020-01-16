@@ -81,6 +81,11 @@ static void ResetMocks(void)
 
 /* Mock functions */
 
+struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
+{
+	return &gbb;
+}
+
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *c)
 {
 	sd->kernel_version_secdata = kernel_version;
@@ -178,22 +183,26 @@ vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 
 static void VbSlkTest(void)
 {
+	/* Normal boot */
 	ResetMocks();
 	test_slk(0, 0, "Normal");
 	TEST_EQ(kernel_version, 0x10002, "  version");
+	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+		 "  EC sync complete");
 
-	/*
-	 * If ctx->flags doesn't ask for software sync, we won't notice that
-	 * error.
-	 */
-	ResetMocks();
-	test_slk(0, 0, "EC sync not done");
-
-	/* Same if ctx->flags asks for sync, but it's overridden by GBB */
+	/* Check EC sync toggling */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	test_slk(0, 0, "EC sync disabled by GBB");
+	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+		 "  EC sync complete");
+
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	test_slk(0, 0, "Normal with EC sync");
+	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+		 "  EC sync complete");
 
 	ResetMocks();
 	new_version = 0x20003;
