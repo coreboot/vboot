@@ -34,10 +34,6 @@ static int auxfw_sync_allowed(struct vb2_context *ctx)
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
-	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
-		return 0;
-	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
-		return 0;
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC)
 		return 0;
 	if (sd->recovery_reason)

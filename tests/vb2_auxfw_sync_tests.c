@@ -115,11 +115,11 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_auxsync(VB2_SUCCESS, 0,
+	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
 		     "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC"
-		     " disables auxiliary FW update request");
-	TEST_EQ(auxfw_update_req, 0, "  aux fw update disabled");
-	TEST_EQ(auxfw_protected, 1, "  aux fw protected");
+		     " does not disable auxiliary FW update request");
+	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
+	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
 
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC;
