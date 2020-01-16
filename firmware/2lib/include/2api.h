@@ -139,16 +139,16 @@ enum vb2_context_flags {
 	/*
 	 * EC software sync is slow to update; warning screen should be
 	 * displayed.  Caller may set this flag at any time before calling
-	 * VbSelectAndLoadKernel().
+	 * VbSelectAndLoadKernel().  Deprecated as part of chromium:1038259.
 	 */
-	VB2_CONTEXT_EC_SYNC_SLOW = (1 << 16),
+	VB2_CONTEXT_DEPRECATED_EC_SYNC_SLOW = (1 << 16),
 
 	/*
 	 * EC firmware supports early firmware selection; two EC images exist,
 	 * and EC may have already verified and jumped to EC-RW prior to EC
-	 * software sync.
+	 * software sync.  Deprecated as part of chromium:1038259.
 	 */
-	VB2_CONTEXT_EC_EFS = (1 << 17),
+	VB2_CONTEXT_DEPRECATED_EC_EFS = (1 << 17),
 
 	/*
 	 * NV storage uses data format V2.  Data is size VB2_NVDATA_SIZE_V2,

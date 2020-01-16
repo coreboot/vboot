@@ -221,10 +221,9 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 static vb2_error_t sync_ec(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	int is_rw_ab = ctx->flags & VB2_CONTEXT_EC_EFS;
 	vb2_error_t rv;
 
-	const enum vb2_firmware_selection select_rw = is_rw_ab ?
+	const enum vb2_firmware_selection select_rw = EC_EFS ?
 		VB_SELECT_FIRMWARE_EC_UPDATE :
 		VB_SELECT_FIRMWARE_EC_ACTIVE;
 	VB2_DEBUG("select_rw=%d\n", select_rw);
@@ -235,7 +234,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 		/* Updated successfully. Cold reboot to switch to the new RW.
 		 * TODO: Switch slot and proceed if EC is still in RO. */
-		if (is_rw_ab) {
+		if (EC_EFS) {
 			VB2_DEBUG("Rebooting to jump to new EC-RW\n");
 			return VBERROR_EC_REBOOT_TO_SWITCH_RW;
 		}
@@ -362,8 +361,7 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	 * to jump to the new RW version later.
 	 */
 	if ((sd->flags & VB2_SD_FLAG_ECSYNC_EC_RW) &&
-	    (sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW) &&
-	    !(ctx->flags & VB2_CONTEXT_EC_EFS)) {
+	    (sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW) && !EC_EFS) {
 		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 	}
 
@@ -385,8 +383,7 @@ static int ec_will_update_slowly(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	return (((sd->flags & VB2_SD_FLAG_ECSYNC_EC_RO) ||
-		 (sd->flags & VB2_SD_FLAG_ECSYNC_EC_RW)) &&
-		(ctx->flags & VB2_CONTEXT_EC_SYNC_SLOW));
+		 (sd->flags & VB2_SD_FLAG_ECSYNC_EC_RW)) && EC_SLOW_UPDATE);
 }
 
 /**
