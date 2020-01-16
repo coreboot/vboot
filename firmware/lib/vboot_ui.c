@@ -39,8 +39,6 @@ static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 
 int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 	uint32_t key;
 	uint32_t key_flags;
 	uint32_t btn;
@@ -66,13 +64,17 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 				return 1;
 			}
 
-			/* Beep and notify the user if the recovery switch is
-			 * not physical. If it is physical then the prompt will
-			 * tell the user to press the switch and will not say
-			 * anything about the ENTER key so we can silenty ingore
-			 * ENTER in this case.
+			/*
+			 * If physical presence is confirmed using the keyboard,
+			 * beep and notify the user when the ENTER key comes
+			 * from an untrusted keyboard.
+			 *
+			 * If physical presence is confirmed using a physical
+			 * button, the existing message on the screen will
+			 * instruct the user which button to push.  Silently
+			 * ignore any ENTER presses.
 			 */
-			if (shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL)
+			if (PHYSICAL_PRESENCE_KEYBOARD)
 				vb2_error_notify("Please use internal keyboard "
 					"to confirm\n",
 					"VbUserConfirms() - "
@@ -94,9 +96,9 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			 * pressed, this is also a YES, but must wait for
 			 * release.
 			 */
-			btn = VbExGetSwitches(
-				VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED);
-			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL)) {
+			if (!PHYSICAL_PRESENCE_KEYBOARD) {
+				btn = VbExGetSwitches(
+					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED);
 				if (btn) {
 					VB2_DEBUG("Presence button pressed, "
 						  "awaiting release\n");
@@ -450,7 +452,6 @@ vb2_error_t VbBootDiagnostic(struct vb2_context *ctx)
 static vb2_error_t recovery_ui(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 	uint32_t retval;
 	uint32_t key;
 	const char release_button_msg[] =
@@ -520,7 +521,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		if (key == VB_KEY_CTRL('D') &&
 		    !(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) &&
 		    (sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY)) {
-			if (!(shared->flags & VBSD_BOOT_REC_SWITCH_VIRTUAL) &&
+			if (!PHYSICAL_PRESENCE_KEYBOARD &&
 			    VbExGetSwitches(
 					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
 				/*

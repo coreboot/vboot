@@ -213,6 +213,13 @@ else
 CFLAGS += -DDIAGNOSTIC_UI=0
 endif
 
+# Confirm physical presence using keyboard
+ifneq ($(filter-out 0,${PHYSICAL_PRESENCE_KEYBOARD}),)
+CFLAGS += -DPHYSICAL_PRESENCE_KEYBOARD=1
+else
+CFLAGS += -DPHYSICAL_PRESENCE_KEYBOARD=0
+endif
+
 # NOTE: We don't use these files but they are useful for other packages to
 # query about required compiling/linking flags.
 PC_IN_FILES = vboot_host.pc.in

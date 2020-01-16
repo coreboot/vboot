@@ -79,8 +79,9 @@ extern "C" {
 /* Firmware software write protect was enabled at boot time.
    Crossystem support deprecated as part of CL:575389. */
 #define VBSD_DEPRECATED_BOOT_FIRMWARE_SW_WP_ENABLED 0x00002000
-/* VbInit() was told that the recovery button is a virtual one */
-#define VBSD_BOOT_REC_SWITCH_VIRTUAL     0x00004000
+/* VbInit() was told that the recovery button is a virtual one;
+   Deprecated as part of chromium:943150 */
+#define VBSD_DEPRECATED_BOOT_REC_SWITCH_VIRTUAL 0x00004000
 /* Firmware used vboot2 for firmware selection */
 #define VBSD_BOOT_FIRMWARE_VBOOT2        0x00008000
 /* Firmware needs VGA Option ROM to display screens;
