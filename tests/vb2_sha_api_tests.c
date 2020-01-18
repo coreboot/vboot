@@ -99,7 +99,7 @@ static void vb2_hash_verify_tests(void)
 		"hash_verify wrong algo");
 
 	memcpy(mock_hash.bytes.sha1, mock_sha1, sizeof(mock_sha1));
-	mock_hash.bytes.raw[5] = 0xfe;
+	mock_hash.bytes.sha1[5] = 0xfe;
 	mock_hash.algo = VB2_HASH_SHA1;
 	TEST_EQ(vb2_hash_verify(mock_buffer, sizeof(mock_buffer),
 				&mock_hash), VB2_ERROR_SHA_MISMATCH,
@@ -108,6 +108,9 @@ static void vb2_hash_verify_tests(void)
 
 int main(int argc, char *argv[])
 {
+	TEST_EQ(sizeof(mock_hash.bytes), VB2_SHA512_DIGEST_SIZE,
+		"tests run with all SHA algorithms enabled");
+
 	vb2_hash_calculate_tests();
 	vb2_hash_verify_tests();
 
