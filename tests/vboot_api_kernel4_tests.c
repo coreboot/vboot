@@ -296,25 +296,25 @@ static void VbSlkTest(void)
 
 	/* Boot recovery */
 	ResetMocks();
-	shared->recovery_reason = 123;
+	sd->recovery_reason = 123;
 	vbboot_retval = -3;
 	test_slk(VB2_ERROR_MOCK, 0, "Recovery boot bad");
 
 	ResetMocks();
-	shared->recovery_reason = 123;
+	sd->recovery_reason = 123;
 	new_version = 0x20003;
 	test_slk(0, 0, "Recovery doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	ResetMocks();
-	shared->recovery_reason = 123;
+	sd->recovery_reason = 123;
 	kernel_read_retval = TPM_E_IOERROR;
 	kernel_write_retval = TPM_E_IOERROR;
 	kernel_lock_retval = TPM_E_IOERROR;
 	test_slk(0, 0, "Recovery ignore TPM errors");
 
 	ResetMocks();
-	shared->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
+	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
 	test_slk(VBERROR_REBOOT_REQUIRED, 0, "Recovery train and reboot");
 
 	// todo: rkr/w/l fail ignored if recovery

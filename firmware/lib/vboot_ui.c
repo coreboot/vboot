@@ -794,9 +794,8 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		 * reboot to workaround a boot hiccup.
 		 */
 		VB2_DEBUG("VbBootRecovery() saving recovery reason (%#x)\n",
-			 shared->recovery_reason);
-		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE,
-			   shared->recovery_reason);
+			  sd->recovery_reason);
+		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, sd->recovery_reason);
 
 		/*
 		 * Non-manual recovery mode is meant to be left via three-finger
