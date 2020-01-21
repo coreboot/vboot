@@ -48,8 +48,9 @@ extern "C" {
  * kernel keyblock.
  */
 #define VBSD_KERNEL_KEY_VERIFIED         0x00000002
-/* LoadFirmware() was told the developer switch was on */
-#define VBSD_LF_DEV_SWITCH_ON            0x00000004
+/* LoadFirmware() was told the developer switch was on;
+   Deprecated as part of chromium:1038260 */
+#define VBSD_DEPRECATED_LF_DEV_SWITCH_ON 0x00000004
 /*
  * LoadFirmware() is requesting the read only normal/dev code path.  This is
  * deprecated and unsupported by current firmware.
@@ -74,7 +75,7 @@ extern "C" {
 #define VBSD_EC_SOFTWARE_SYNC            0x00000800
 /* VbInit() was told that the EC firmware is slow to update
    Deprecated as part of chromium:1038259 */
-#define VBSD_DEPRECATED_EC_SLOW_UPDATE              0x00001000
+#define VBSD_DEPRECATED_EC_SLOW_UPDATE   0x00001000
 /* Firmware software write protect was enabled at boot time.
    Crossystem support deprecated as part of CL:575389. */
 #define VBSD_DEPRECATED_BOOT_FIRMWARE_SW_WP_ENABLED 0x00002000
@@ -88,11 +89,12 @@ extern "C" {
 /* Firmware has loaded the VGA Option ROM;
    Deprecated as part of chromium:948529 */
 #define VBSD_DEPRECATED_OPROM_LOADED     0x00020000
-/* Don't try for boot failures */
-#define VBSD_NOFAIL_BOOT                 0x00040000
+/* Don't try for boot failures;
+ * Deprecated as part of chromium:1038260 */
+#define VBSD_DEPRECATED_NOFAIL_BOOT      0x00040000
 /* VbInit() was told that the EC firmware supports EFS
    Deprecated as part of chromium:1038259 */
-#define VBSD_DEPRECATED_EC_EFS                      0x00080000
+#define VBSD_DEPRECATED_EC_EFS           0x00080000
 /* NvStorage uses 64-byte record, not 16-byte */
 #define VBSD_NVDATA_V2                   0x00100000
 

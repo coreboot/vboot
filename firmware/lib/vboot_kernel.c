@@ -603,7 +603,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * But not when we assume that the boot process may
 		 * not complete for valid reasons (eg. early shutdown).
 		 */
-		if (!(shared->flags & VBSD_NOFAIL_BOOT))
+		if (!(ctx->flags & VB2_CONTEXT_NOFAIL_BOOT))
 			GptUpdateKernelEntry(&gpt, GPT_UPDATE_ENTRY_TRY);
 
 		/*
