@@ -11,8 +11,8 @@
 #include "2sysincludes.h"
 #include "vboot_api.h"
 #include "vboot_display.h"
-#include "vboot_ui_common.h"
-#include "vboot_ui_wilco.h"
+#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy_wilco.h"
 
 static inline int is_vowel(uint32_t key)
 {

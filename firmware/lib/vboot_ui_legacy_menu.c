@@ -19,8 +19,8 @@
 #include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
-#include "vboot_ui_common.h"
-#include "vboot_ui_menu_private.h"
+#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy_menu_private.h"
 
 static const char dev_disable_msg[] =
 	"Developer mode is disabled on this device by system policy.\n"
@@ -732,7 +732,7 @@ static vb2_error_t vb2_init_menus(struct vb2_context *ctx)
  * @param ctx		Vboot2 context
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
+static vb2_error_t vb2_developer_legacy_menu(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	vb2_error_t ret;
@@ -789,7 +789,7 @@ static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 			break;
 		/* We allow selection of the default '0' bootloader here */
 		case '0'...'9':
-			VB2_DEBUG("VbBootDeveloper() - "
+			VB2_DEBUG("developer UI - "
 				  "user pressed key '%c': Boot alternative "
 				  "firmware\n", key);
 			vb2_try_altfw(ctx, altfw_allowed, key - '0');
@@ -824,12 +824,12 @@ static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 }
 
 /* Developer mode entry point. */
-vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx)
+vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx)
 {
 	vb2_error_t retval = vb2_init_menus(ctx);
 	if (VB2_SUCCESS != retval)
 		return retval;
-	retval = vb2_developer_menu(ctx);
+	retval = vb2_developer_legacy_menu(ctx);
 	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
 	return retval;
 }
@@ -905,7 +905,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 }
 
 /* Recovery mode entry point. */
-vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx)
+vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *ctx)
 {
 	vb2_error_t retval = vb2_init_menus(ctx);
 	if (VB2_SUCCESS != retval)

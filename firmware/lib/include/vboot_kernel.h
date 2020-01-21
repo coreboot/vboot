@@ -54,29 +54,29 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags);
 vb2_error_t VbBootNormal(struct vb2_context *ctx);
 
 /**
- * Handle a developer-mode boot.
+ * Handle a developer-mode boot using legacy clamshell UI.
  */
-vb2_error_t VbBootDeveloper(struct vb2_context *ctx);
+vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *ctx);
 
 /**
- * Handle a diagnostic-mode boot.
+ * Handle a diagnostic-mode boot using legacy clamshell UI.
  */
-vb2_error_t VbBootDiagnostic(struct vb2_context *ctx);
+vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *ctx);
 
 /**
- * Handle a recovery-mode boot.
+ * Handle a recovery-mode boot using legacy clamshell UI.
  */
-vb2_error_t VbBootRecovery(struct vb2_context *ctx);
+vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *ctx);
 
 /**
- * Handle a developer-mode boot using detachable menu ui
+ * Handle a developer-mode boot using legacy menu UI.
  */
-vb2_error_t VbBootDeveloperMenu(struct vb2_context *ctx);
+vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx);
 
 /**
- * Handle a recovery-mode boot using detachable menu ui
+ * Handle a recovery-mode boot using legacy menu UI.
  */
-vb2_error_t VbBootRecoveryMenu(struct vb2_context *ctx);
+vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *ctx);
 
 /**
  * Writes modified secdata spaces and nvdata.

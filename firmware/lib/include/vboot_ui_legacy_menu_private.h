@@ -2,11 +2,12 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Private declarations for vboot_ui_menu.c. Defined here for easier testing.
+ * Private declarations for vboot_ui_legacy_menu.c. Defined here for easier
+ * testing.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_UI_MENU_PRIVATE_H_
-#define VBOOT_REFERENCE_VBOOT_UI_MENU_PRIVATE_H_
+#ifndef VBOOT_REFERENCE_VBOOT_UI_LEGACY_MENU_PRIVATE_H_
+#define VBOOT_REFERENCE_VBOOT_UI_LEGACY_MENU_PRIVATE_H_
 
 #include "2api.h"
 #include "vboot_api.h"
@@ -90,4 +91,4 @@ typedef enum _VB_OPTIONS_MENU {
 	VB_OPTIONS_COUNT,
 } VB_OPTIONS_MENU;
 
-#endif  /* VBOOT_REFERENCE_VBOOT_UI_MENU_PRIVATE_H_ */
+#endif  /* VBOOT_REFERENCE_VBOOT_UI_LEGACY_MENU_PRIVATE_H_ */

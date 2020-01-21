@@ -2,7 +2,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Common code used by both vboot_ui and vboot_ui_menu.
+ * Common code used by both legacy_clamshell_ui and legacy_menu_ui.
  */
 
 #ifndef VBOOT_REFERENCE_VBOOT_UI_COMMON_H_

@@ -272,7 +272,7 @@ static void VbBootDeveloperSoundTest(void)
 		kbd_fire_at = test[i].keypress_at_count;
 		max_events = test[i].num_events;
 		expected_event = test[i].notes;
-		(void) VbBootDeveloper(ctx);
+		(void) VbBootDeveloperLegacyClamshell(ctx);
 		VbExBeep(0, 0); /* Dummy call to determine end time */
 		VB2_DEBUG("INFO: matched %d total %d expected %d\n",
 			  matched_events, current_event, test[i].num_events);
