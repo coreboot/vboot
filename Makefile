@@ -142,7 +142,7 @@ COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls -Wshadow \
 	-Wwrite-strings -Wstrict-aliasing -Wdate-time -Wno-unknown-warning \
 	-Wno-address-of-packed-member -ffunction-sections -fdata-sections \
-	-Wimplicit-fallthrough ${DEBUG_FLAGS}
+	-Wimplicit-fallthrough -Wformat -Wno-format-security ${DEBUG_FLAGS}
 
 # Note: FIRMWARE_ARCH is defined by the Chromium OS ebuild.
 ifeq (${FIRMWARE_ARCH},arm)

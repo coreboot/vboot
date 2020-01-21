@@ -467,7 +467,7 @@ int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 			state.area[c].buf = buf + ah->area_offset;
 			state.area[c].len = ah->area_size;
 
-			VB2_DEBUG("%s() examining FMAP area %d (%s),"
+			VB2_DEBUG("examining FMAP area %d (%s),"
 				  " offset=0x%08x len=0x%08x\n",
 				  c, ah_name, ah->area_offset, ah->area_size);
 

@@ -112,7 +112,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 		sig_size = fmaparea->area_size;
 
-		VB2_DEBUG("Looking for signature at %#x (%#x)\n",
+		VB2_DEBUG("Looking for signature at %#tx (%#x)\n",
 			  (uint8_t*)sig - buf, sig_size);
 
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
@@ -235,7 +235,7 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 			sig_size = fmaparea->area_size;
 
-			VB2_DEBUG("Looking for signature at %#x (%#x)\n",
+			VB2_DEBUG("Looking for signature at %#tx (%#x)\n",
 				  (uint8_t*)old_sig - buf, sig_size);
 
 			data = fmap_find_by_name(buf, len, fmap, "EC_RW",

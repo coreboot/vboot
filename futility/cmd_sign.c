@@ -223,7 +223,7 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 		fprintf(stderr, "Unable to sign kernel blob\n");
 		return 1;
 	}
-	VB2_DEBUG("vblock_size = 0x%" PRIx64 "\n", vblock_size);
+	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
 
 	if (sign_option.create_new_outfile) {
 		/* Write out what we've been asked for */

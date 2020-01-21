@@ -95,7 +95,7 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t rw_offset;
 	uint32_t r;
 
-	VB2_DEBUG("%s(): name %s len  0x%08x (%d)\n", name, len, len);
+	VB2_DEBUG("name %s len  %#.8x (%d)\n", name, len, len);
 
 	/* Get image locations */
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))

@@ -804,6 +804,7 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
  * @param func		Function name generating output, or NULL.
  * @param fmt		Printf format string
  */
+__attribute__((format(printf, 2, 3)))
 void vb2ex_printf(const char *func, const char *fmt, ...);
 
 /**

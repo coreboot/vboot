@@ -185,8 +185,8 @@ static int PickApartVmlinuz(uint8_t *kernel_buf,
 		}
 		kernel32_size = kernel_size - kernel32_start;
 
-		VB2_DEBUG(" kernel16_start=0x%" PRIx64 "\n", 0);
-		VB2_DEBUG(" kernel16_size=0x%" PRIx64 "\n", kernel32_start);
+		VB2_DEBUG(" kernel16_start=%#x\n", 0);
+		VB2_DEBUG(" kernel16_size=%#x\n", kernel32_start);
 
 		/* Copy the original zeropage data from kernel_buf into
 		 * g_param_data, then tweak a few fields for our purposes */
@@ -221,8 +221,8 @@ static int PickApartVmlinuz(uint8_t *kernel_buf,
 		break;
 	}
 
-	VB2_DEBUG(" kernel32_start=0x%" PRIx64 "\n", kernel32_start);
-	VB2_DEBUG(" kernel32_size=0x%" PRIx64 "\n", kernel32_size);
+	VB2_DEBUG(" kernel32_start=%#x\n", kernel32_start);
+	VB2_DEBUG(" kernel32_size=%#x\n", kernel32_size);
 
 	/* Keep just the 32-bit kernel. */
 	if (kernel32_size) {
@@ -461,7 +461,7 @@ int WriteSomeParts(const char *outfile,
 	FILE *f;
 
 	/* Write the output file */
-	VB2_DEBUG("writing %s with 0x%" PRIx64 ", 0x%" PRIx64 "\n",
+	VB2_DEBUG("writing %s with %#x, %#x\n",
 		  outfile, part1_size, part2_size);
 
 	f = fopen(outfile, "wb");
@@ -674,7 +674,7 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 	 * devices.
 	 */
 	g_kernel_blob_size = roundup(g_kernel_blob_size, CROS_ALIGN);
-	VB2_DEBUG("g_kernel_blob_size  0x%" PRIx64 "\n", g_kernel_blob_size);
+	VB2_DEBUG("g_kernel_blob_size  %#x\n", g_kernel_blob_size);
 
 	/* Allocate space for the blob. */
 	g_kernel_blob_data = malloc(g_kernel_blob_size);
@@ -682,22 +682,22 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 
 	/* Assign the sub-pointers */
 	g_kernel_data = g_kernel_blob_data + now;
-	VB2_DEBUG("g_kernel_size       0x%" PRIx64 " ofs 0x%" PRIx64 "\n",
+	VB2_DEBUG("g_kernel_size       %#x ofs %#x\n",
 		  g_kernel_size, now);
 	now += roundup(g_kernel_size, CROS_ALIGN);
 
 	g_config_data = g_kernel_blob_data + now;
-	VB2_DEBUG("g_config_size       0x%" PRIx64 " ofs 0x%" PRIx64 "\n",
+	VB2_DEBUG("g_config_size       %#x ofs %#x\n",
 		  g_config_size, now);
 	now += g_config_size;
 
 	g_param_data = g_kernel_blob_data + now;
-	VB2_DEBUG("g_param_size        0x%" PRIx64 " ofs 0x%" PRIx64 "\n",
+	VB2_DEBUG("g_param_size        %#x ofs %#x\n",
 		  g_param_size, now);
 	now += g_param_size;
 
 	g_bootloader_data = g_kernel_blob_data + now;
-	VB2_DEBUG("g_bootloader_size   0x%" PRIx64 " ofs 0x%" PRIx64 "\n",
+	VB2_DEBUG("g_bootloader_size   %#x ofs %#x\n",
 		  g_bootloader_size, now);
 	g_ondisk_bootloader_addr = kernel_body_load_address + now;
 	VB2_DEBUG("g_ondisk_bootloader_addr   0x%" PRIx64 "\n",
@@ -706,14 +706,14 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 
 	if (g_vmlinuz_header_size) {
 		g_vmlinuz_header_data = g_kernel_blob_data + now;
-		VB2_DEBUG("g_vmlinuz_header_size 0x%" PRIx64 " ofs 0x%" PRIx64 "\n",
+		VB2_DEBUG("g_vmlinuz_header_size %#x ofs %#x\n",
 			  g_vmlinuz_header_size, now);
 		g_ondisk_vmlinuz_header_addr = kernel_body_load_address + now;
 		VB2_DEBUG("g_ondisk_vmlinuz_header_addr   0x%" PRIx64 "\n",
 			  g_ondisk_vmlinuz_header_addr);
 	}
 
-	VB2_DEBUG("end of kern_blob at kern_blob+0x%" PRIx64 "\n", now);
+	VB2_DEBUG("end of kern_blob at kern_blob+%#x\n", now);
 
 	/* Copy the kernel and params bits into the correct places */
 	if (0 != PickApartVmlinuz(vmlinuz_buf, vmlinuz_size,
