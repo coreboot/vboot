@@ -10,7 +10,7 @@ TMP="$me.tmp"
 cd "$OUTDIR"
 
 
-IN=${SCRIPTDIR}/data/bios_link_mp.bin
+IN=${SCRIPT_DIR}/futility/data/bios_link_mp.bin
 BIOS=${TMP}.bios.bin
 
 cp ${IN} ${BIOS}

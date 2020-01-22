@@ -31,9 +31,9 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 	"enlarge_image,1 enlarge_image,2 "
 
 # Test data files
-LINK_BIOS="${SCRIPTDIR}/data/bios_link_mp.bin"
-PEPPY_BIOS="${SCRIPTDIR}/data/bios_peppy_mp.bin"
-RO_VPD_BLOB="${SCRIPTDIR}/data/ro_vpd.bin"
+LINK_BIOS="${SCRIPT_DIR}/futility/data/bios_link_mp.bin"
+PEPPY_BIOS="${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin"
+RO_VPD_BLOB="${SCRIPT_DIR}/futility/data/ro_vpd.bin"
 
 # Work in scratch directory
 cd "$OUTDIR"
@@ -314,7 +314,8 @@ test_update "Legacy update" \
 # Test quirks
 test_update "Full update (wrong size)" \
 	"${FROM_IMAGE}.large" "!Image size is different" \
-	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
+	--quirks unlock_me_for_update,eve_smm_store
 
 test_update "Full update (--quirks enlarge_image)" \
 	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
@@ -344,12 +345,12 @@ chmod +x "${A}/bin/vpd"
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
 echo "TEST: Manifest (--manifest, bios.bin)"
 ${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
-cmp "${TMP}.json.out" "${SCRIPTDIR}/link_bios.manifest.json"
+cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_bios.manifest.json"
 
 mv -f "${A}/bios.bin" "${A}/image.bin"
 echo "TEST: Manifest (--manifest, image.bin)"
 ${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
-cmp "${TMP}.json.out" "${SCRIPTDIR}/link_image.manifest.json"
+cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_image.manifest.json"
 
 
 cp -f "${TO_IMAGE}" "${A}/image.bin"
@@ -401,7 +402,7 @@ WL_TAG="WL" PATH="${A}/bin:${PATH}" \
 cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
 
 # Test archive with Unified Build contents.
-cp -r "${SCRIPTDIR}/models" "${A}/"
+cp -r "${SCRIPT_DIR}/futility/models" "${A}/"
 mkdir -p "${A}/images"
 mv "${A}/image.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"

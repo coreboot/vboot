@@ -15,15 +15,15 @@ KEYDIR=${SRCDIR}/tests/devkeys
 # keys, which means we can precalculate the expected results. Note that the
 # script does not change the root or recovery keys in the GBB.
 INFILES="
-${SCRIPTDIR}/data/bios_link_mp.bin
-${SCRIPTDIR}/data/bios_mario_mp.bin
-${SCRIPTDIR}/data/bios_peppy_mp.bin
+${SCRIPT_DIR}/futility/data/bios_link_mp.bin
+${SCRIPT_DIR}/futility/data/bios_mario_mp.bin
+${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin
 "
 
 # We also want to test that we can sign an image without any valid firmware
 # preambles. That one won't be able to tell how much of the FW_MAIN region is
 # the valid firmware, so it'll have to sign the entire region.
-GOOD_VBLOCKS=${SCRIPTDIR}/data/bios_peppy_mp.bin
+GOOD_VBLOCKS=${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin
 ONEMORE=bios_peppy_mp_no_vblock.bin
 cp ${GOOD_VBLOCKS} ${ONEMORE}
 ${FUTILITY} load_fmap ${ONEMORE} VBLOCK_A:/dev/urandom VBLOCK_B:/dev/zero
@@ -39,7 +39,7 @@ if [ -f "${KEYDIR}/dev_firmware.keyblock" ]; then
   DEV_FIRMWARE_PARAMS="
     -S ${KEYDIR}/dev_firmware_data_key.vbprivk
     -B ${KEYDIR}/dev_firmware.keyblock"
-  INFILES="${INFILES} ${SCRIPTDIR}/data/bios_zgb_mp.bin"
+  INFILES="${INFILES} ${SCRIPT_DIR}/futility/data/bios_zgb_mp.bin"
 fi
 
 count=0
@@ -70,7 +70,7 @@ for infile in $INFILES; do
   #   loem_output_dir        (optional: dir for copy of new vblocks)
   #   loemid                 (optional: copy new vblocks using this name)
   #
-  #OLD  ${BINDIR}/resign_firmwarefd.sh \
+  #OLD  ${BIN_DIR}/resign_firmwarefd.sh \
   #OLD    ${infile} \
   #OLD    ${outfile} \
   #OLD    ${KEYDIR}/firmware_data_key.vbprivk \
@@ -103,7 +103,7 @@ for infile in $INFILES; do
   ${FUTILITY} verify --publickey ${KEYDIR}/root_key.vbpubk ${outfile} \
     | grep sha1sum \
     | sed -e 's/.*: \+//' > ${TMP}.${base}.sha.new
-  cmp ${SCRIPTDIR}/data_${base}_expect.txt ${TMP}.${base}.sha.new
+  cmp ${SCRIPT_DIR}/futility/data_${base}_expect.txt ${TMP}.${base}.sha.new
 
    # and the LOEM stuff
    ${FUTILITY} dump_fmap -x ${outfile} \
@@ -122,7 +122,7 @@ for infile in $INFILES; do
      | sed -e 's/.*: \+//' >> ${loemdir}/loem.sha.new
 
   # the vblocks don't have root or recovery keys
-  tail -4 ${SCRIPTDIR}/data_${base}_expect.txt > ${loemdir}/sha.expect
+  tail -4 ${SCRIPT_DIR}/futility/data_${base}_expect.txt > ${loemdir}/sha.expect
   cmp ${loemdir}/sha.expect ${loemdir}/loem.sha.new
 
 done

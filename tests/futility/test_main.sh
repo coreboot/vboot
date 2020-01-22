@@ -38,7 +38,7 @@ ln -sf ${FUTILITY} vbutil_key
 ln -sf ${FUTILITY} vbutil_keyblock
 ./vbutil_keyblock --unpack ${DEVKEYS}/installer_kernel.keyblock | grep ${SHA}
 cp ${FUTILITY} show
-./show ${SCRIPTDIR}/data/rec_kernel_part.bin | grep ${SHA}
+./show ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin | grep ${SHA}
 
 # If it's invoked by any other name, expect the command to be the first arg.
 ln -sf ${FUTILITY} muggle
@@ -48,7 +48,7 @@ ln -sf ${FUTILITY} buggle
 ./buggle vbutil_keyblock --unpack ${DEVKEYS}/installer_kernel.keyblock \
   | grep ${SHA}
 cp ${FUTILITY} boo
-./boo show ${SCRIPTDIR}/data/rec_kernel_part.bin | grep ${SHA}
+./boo show ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin | grep ${SHA}
 
 
 # we expect the first command fail, but the output to match anyway

@@ -28,7 +28,7 @@ ${FUTILITY} verify ${DEVKEYS}/firmware.keyblock \
 #### firmware vblock
 
 # Get some bits to look at
-${FUTILITY} dump_fmap -x ${SCRIPTDIR}/data/bios_peppy_mp.bin \
+${FUTILITY} dump_fmap -x ${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin \
   GBB:${TMP}.gbb VBLOCK_A:${TMP}.vblock_a FW_MAIN_A:${TMP}.fw_main_a
 ${FUTILITY} gbb -g -k ${TMP}.rootkey ${TMP}.gbb
 
@@ -53,20 +53,21 @@ ${FUTILITY} verify ${TMP}.vblock_a \
 
 #### kernel partition
 
-${FUTILITY} show ${SCRIPTDIR}/data/rec_kernel_part.bin
+${FUTILITY} show ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin
 
-${FUTILITY} show ${SCRIPTDIR}/data/rec_kernel_part.bin \
+${FUTILITY} show ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin \
   --publickey ${DEVKEYS}/kernel_subkey.vbpubk
 
-${FUTILITY} show ${SCRIPTDIR}/data/rec_kernel_part.bin \
+${FUTILITY} show ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin \
   --publickey ${DEVKEYS}/recovery_key.vbpubk
 
-if ${FUTILITY} verify ${SCRIPTDIR}/data/rec_kernel_part.bin ; then false ; fi
+if ${FUTILITY} verify ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin ; \
+  then false ; fi
 
-if ${FUTILITY} verify ${SCRIPTDIR}/data/rec_kernel_part.bin \
+if ${FUTILITY} verify ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin \
   --publickey ${DEVKEYS}/kernel_subkey.vbpubk ; then false ; fi
 
-${FUTILITY} verify ${SCRIPTDIR}/data/rec_kernel_part.bin \
+${FUTILITY} verify ${SCRIPT_DIR}/futility/data/rec_kernel_part.bin \
   --publickey ${DEVKEYS}/recovery_key.vbpubk
 
 

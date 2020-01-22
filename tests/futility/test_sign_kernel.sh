@@ -33,7 +33,7 @@ try_arch () {
     --version 1 \
     --config ${TMP}.config.txt \
     --bootloader ${TMP}.bootloader.bin \
-    --vmlinuz ${SCRIPTDIR}/data/vmlinuz-${arch}.bin \
+    --vmlinuz ${SCRIPT_DIR}/futility/data/vmlinuz-${arch}.bin \
     --arch ${arch} \
     --pad ${padding} \
     --kloadaddr 0x11000
@@ -50,7 +50,7 @@ try_arch () {
     --version 1 \
     --config ${TMP}.config.txt \
     --bootloader ${TMP}.bootloader.bin \
-    --vmlinuz ${SCRIPTDIR}/data/vmlinuz-${arch}.bin \
+    --vmlinuz ${SCRIPT_DIR}/futility/data/vmlinuz-${arch}.bin \
     --arch ${arch} \
     --pad ${padding} \
     --kloadaddr 0x11000 \
@@ -134,7 +134,7 @@ try_arch () {
     --version 1 \
     --config ${TMP}.config.txt \
     --bootloader ${TMP}.bootloader.bin \
-    --vmlinuz ${SCRIPTDIR}/data/vmlinuz-${arch}.bin \
+    --vmlinuz ${SCRIPT_DIR}/futility/data/vmlinuz-${arch}.bin \
     --arch ${arch} \
     --pad ${padding} \
     --kloadaddr 0x11000
@@ -150,7 +150,7 @@ try_arch () {
     --version 1 \
     --config ${TMP}.config.txt \
     --bootloader ${TMP}.bootloader.bin \
-    --vmlinuz ${SCRIPTDIR}/data/vmlinuz-${arch}.bin \
+    --vmlinuz ${SCRIPT_DIR}/futility/data/vmlinuz-${arch}.bin \
     --arch ${arch} \
     --pad ${padding} \
     --kloadaddr 0x11000 \

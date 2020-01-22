@@ -4,59 +4,38 @@
 # found in the LICENSE file.
 
 # Load common constants and variables.
-SCRIPTDIR=$(dirname $(readlink -f "$0"))
-. "$SCRIPTDIR/common.sh"
+. "$(dirname "$0")/../common.sh"
 
-# Mandatory arg is the directory where futility is installed.
-[ -z "${1:-}" ] && error "Directory argument is required"
-BINDIR="$1"
-shift
-
-FUTILITY="$BINDIR/futility"
-
-
-# The Makefile should export the $BUILD directory, but if it's not just warn
-# and guess (mostly so we can run the script manually).
-if [ -z "${BUILD:-}" ]; then
-  BUILD=$(dirname "${BINDIR}")
-  yellow "Assuming BUILD=$BUILD"
-fi
-# Same for $SRCDIR
-if [ -z "${SRCDIR:-}" ]; then
-  SRCDIR=$(readlink -f "${SCRIPTDIR}/../..")
-  yellow "Assuming SRCDIR=$SRCDIR"
-fi
 OUTDIR="${BUILD}/tests/futility_test_results"
 [ -d "$OUTDIR" ] || mkdir -p "$OUTDIR"
 
-
 # Let each test know where to find things...
 export BUILD
+export BUILD_RUN
 export SRCDIR
 export FUTILITY
-export SCRIPTDIR
-export BINDIR
+export SCRIPT_DIR
 export OUTDIR
 
 # These are the scripts to run. Binaries are invoked directly by the Makefile.
 TESTS="
-${SCRIPTDIR}/test_create.sh
-${SCRIPTDIR}/test_dump_fmap.sh
-${SCRIPTDIR}/test_gbb_utility.sh
-${SCRIPTDIR}/test_load_fmap.sh
-${SCRIPTDIR}/test_main.sh
-${SCRIPTDIR}/test_rwsig.sh
-${SCRIPTDIR}/test_show_contents.sh
-${SCRIPTDIR}/test_show_kernel.sh
-${SCRIPTDIR}/test_show_vs_verify.sh
-${SCRIPTDIR}/test_show_usbpd1.sh
-${SCRIPTDIR}/test_sign_firmware.sh
-${SCRIPTDIR}/test_sign_fw_main.sh
-${SCRIPTDIR}/test_sign_kernel.sh
-${SCRIPTDIR}/test_sign_keyblocks.sh
-${SCRIPTDIR}/test_sign_usbpd1.sh
-${SCRIPTDIR}/test_update.sh
-${SCRIPTDIR}/test_file_types.sh
+${SCRIPT_DIR}/futility/test_create.sh
+${SCRIPT_DIR}/futility/test_dump_fmap.sh
+${SCRIPT_DIR}/futility/test_gbb_utility.sh
+${SCRIPT_DIR}/futility/test_load_fmap.sh
+${SCRIPT_DIR}/futility/test_main.sh
+${SCRIPT_DIR}/futility/test_rwsig.sh
+${SCRIPT_DIR}/futility/test_show_contents.sh
+${SCRIPT_DIR}/futility/test_show_kernel.sh
+${SCRIPT_DIR}/futility/test_show_vs_verify.sh
+${SCRIPT_DIR}/futility/test_show_usbpd1.sh
+${SCRIPT_DIR}/futility/test_sign_firmware.sh
+${SCRIPT_DIR}/futility/test_sign_fw_main.sh
+${SCRIPT_DIR}/futility/test_sign_kernel.sh
+${SCRIPT_DIR}/futility/test_sign_keyblocks.sh
+${SCRIPT_DIR}/futility/test_sign_usbpd1.sh
+${SCRIPT_DIR}/futility/test_update.sh
+${SCRIPT_DIR}/futility/test_file_types.sh
 "
 
 # Get ready...
@@ -71,32 +50,33 @@ exec 3>&1
 
 echo "-- builtin --"
 for i in $TESTS; do
-	j=${i##*/}
+  j=${i##*/}
 
-	: $(( progs++ ))
+  : $(( progs++ ))
 
-	echo -n "$j ... "
-	rm -rf "${OUTDIR}/$j."*
-	rc=$("$i" "$FUTILITY" 1>"${OUTDIR}/$j.stdout" \
-		2>"${OUTDIR}/$j.stderr" || echo "$?")
-	echo "${rc:-0}" > "${OUTDIR}/$j.return"
-	if [ ! "$rc" ]; then
-		green "PASSED"
-		: $(( pass++ ))
-		rm -f ${OUTDIR}/$j.{stdout,stderr,return}
-	else
-		red "FAILED. Stdout is recorded in ${OUTDIR}/$j.stdout"
-		cat ${OUTDIR}/$j.stderr
-	fi
+  echo -n "$j ... "
+  rm -rf "${OUTDIR}/$j."*
+  rc=$("$i" "$FUTILITY" 1>"${OUTDIR}/$j.stdout" \
+    2>"${OUTDIR}/$j.stderr" || echo "$?")
+  echo "${rc:-0}" > "${OUTDIR}/$j.return"
+  if [ ! "$rc" ]; then
+    echo -e "${COL_GREEN}PASSED${COL_STOP}"
+    : $(( pass++ ))
+    rm -f ${OUTDIR}/$j.{stdout,stderr,return}
+  else
+    echo -e "${COL_RED}FAILED. Stdout is recorded in" \
+      "${OUTDIR}/$j.stdout${COL_STOP}"
+    cat ${OUTDIR}/$j.stderr
+  fi
 done
 
 ##############################################################################
 # How'd we do?
 
 if [ "$pass" -eq "$progs" ]; then
-  green "Success: $pass / $progs passed"
+  echo -e "${COL_GREEN}Success: $pass / $progs passed${COL_STOP}"
   exit 0
 fi
 
-red "FAIL: $pass / $progs passed"
+echo -e "${COL_RED}FAIL: $pass / $progs passed${COL_STOP}"
 exit 1

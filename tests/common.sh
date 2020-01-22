@@ -5,22 +5,22 @@
 # found in the LICENSE file.
 
 # Determine script directory.
-SCRIPT_DIR=$(dirname $(readlink -f "$0"))
-ROOT_DIR="$(dirname ${SCRIPT_DIR})"
+SCRIPT_DIR="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
+ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
 SRCDIR="${SRCDIR:-${ROOT_DIR}}"
 BUILD="${BUILD:-${ROOT_DIR}/build}"
 BUILD_RUN="${BUILD_RUN:-${BUILD}}"
 SRC_RUN="${SRC_RUN:-${SRCDIR}}"
 BUILD_DIR="${BUILD}"
-BIN_DIR=${BUILD_DIR}/install_for_test/usr/bin
-FUTILITY=${BIN_DIR}/futility
+BIN_DIR="${BUILD_DIR}/install_for_test/usr/bin"
+FUTILITY="${BIN_DIR}/futility"
 TEST_DIR="${BUILD_DIR}/tests"
-TESTKEY_DIR=${SCRIPT_DIR}/testkeys
-TESTCASE_DIR=${SCRIPT_DIR}/testcases
-TESTKEY_SCRATCH_DIR=${TEST_DIR}/testkeys
+TESTKEY_DIR="${SCRIPT_DIR}/testkeys"
+TESTCASE_DIR="${SCRIPT_DIR}/testcases"
+TESTKEY_SCRATCH_DIR="${TEST_DIR}/testkeys"
 
 if [ ! -d ${TESTKEY_SCRATCH_DIR} ]; then
-    mkdir -p ${TESTKEY_SCRATCH_DIR}
+  mkdir -p ${TESTKEY_SCRATCH_DIR}
 fi
 
 # Color output encodings.

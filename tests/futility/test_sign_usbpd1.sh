@@ -13,7 +13,7 @@ cd "$OUTDIR"
 # images with the same keypair, to make sure that we're producing identical
 # binaries.
 
-DATADIR="${SCRIPTDIR}/data"
+DATADIR="${SCRIPT_DIR}/futility/data"
 TESTS="dingdong hoho minimuffin zinger"
 
 set -o pipefail

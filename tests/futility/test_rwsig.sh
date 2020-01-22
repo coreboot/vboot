@@ -9,7 +9,7 @@ TMP="$me.tmp"
 # Work in scratch directory
 cd "$OUTDIR"
 
-DATADIR="${SCRIPTDIR}/data"
+DATADIR="${SCRIPT_DIR}/futility/data"
 TESTKEYS=${SRCDIR}/tests/testkeys
 
 SIGS="1024 2048 2048_exp3 3072_exp3 4096 8192"
