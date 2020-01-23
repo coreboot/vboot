@@ -100,15 +100,17 @@ struct vb2_digest_context {
 /*
  * Serializable data structure that can store any vboot hash. Layout used in
  * CBFS attributes that need to be backwards-compatible -- do not change!
- * When serializing/deserizaling this, you should store/load (offsetof(bytes) +
- * vb2_digest_size(algo)), not the full size of this structure.
+ * When serializing/deserizaling this, you should store/load (offsetof(raw) +
+ * vb2_digest_size(algo)), not the full size of this structure. vboot functions
+ * taking a pointer to this should only access the |raw| array up to
+ * vb2_digest_size(algo) and not assume that the whole structure is accessible.
  */
 struct vb2_hash {
-	/* enum vb2_hash_algorithm. Fixed width for serialization.
-	   Single byte to avoid endianness issues. */
-	uint8_t algo;
-	/* Padding to align and to match existing CBFS attribute. */
+	/* Padding to match existing 4-byte big-endian from CBFS.
+	   Could be reused for other stuff later (e.g. flags or something). */
 	uint8_t reserved[3];
+	/* enum vb2_hash_algorithm. Single byte to avoid endianness issues. */
+	uint8_t algo;
 	/* The actual digest. Can add new types here as required. */
 	union {
 		uint8_t raw[0];
@@ -121,10 +123,10 @@ struct vb2_hash {
 #if VB2_SUPPORT_SHA512
 		uint8_t sha512[VB2_SHA512_DIGEST_SIZE];
 #endif
-	} bytes;  /* This has a name so that it's easy to sizeof(). */
+	};
 };
-_Static_assert(sizeof(((struct vb2_hash *)0)->bytes) <= VB2_MAX_DIGEST_SIZE,
-	       "Must update VB2_MAX_DIGEST_SIZE for new digests!");
+_Static_assert(sizeof(struct vb2_hash) - offsetof(struct vb2_hash, raw)
+	<= VB2_MAX_DIGEST_SIZE, "Update VB2_MAX_DIGEST_SIZE for new digests!");
 _Static_assert(VB2_HASH_ALG_COUNT <= UINT8_MAX, "vb2_hash.algo overflow!");
 
 /**
@@ -270,7 +272,7 @@ static inline vb2_error_t vb2_hash_calculate(const void *buf, uint32_t size,
 					     struct vb2_hash *hash)
 {
 	hash->algo = algo;
-	return vb2_digest_buffer(buf, size, algo, hash->bytes.raw,
+	return vb2_digest_buffer(buf, size, algo, hash->raw,
 				 vb2_digest_size(algo));
 }
 

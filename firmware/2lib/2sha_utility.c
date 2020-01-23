@@ -221,7 +221,7 @@ vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
 					   hash_buf, hash_size);
 	if (rv)
 		return rv;
-	if (memcmp(hash_buf, hash->bytes.raw, hash_size))
+	if (memcmp(hash_buf, hash->raw, hash_size))
 		return VB2_ERROR_SHA_MISMATCH;
 	else
 		return VB2_SUCCESS;

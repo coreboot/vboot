@@ -54,13 +54,30 @@ vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 	return mock_finalize_rv;
 }
 
+static void vb2_hash_cbfs_compatibility_test(void)
+{
+	/* 'algo' used to be represented as a 4-byte big-endian in CBFS. Confirm
+	   that the new representation is binary compatible for small values. */
+	union {
+		struct vb2_hash hash;
+		struct {
+			uint32_t be32;
+			uint8_t bytes[0];
+		};
+	} test = {0};
+
+	test.be32 = htobe32(0xa5);
+	TEST_EQ(test.hash.algo, 0xa5, "vb2_hash algo compatible to CBFS attr");
+	TEST_PTR_EQ(&test.hash.raw, &test.bytes, "  digest offset matches");
+}
+
 static void vb2_hash_calculate_tests(void)
 {
 	reset_common_data();
 	TEST_SUCC(vb2_hash_calculate(&mock_buffer, sizeof(mock_buffer),
 				     VB2_HASH_SHA1, &mock_hash),
 		  "hash_calculate success");
-	TEST_SUCC(memcmp(mock_hash.bytes.sha1, mock_sha1, sizeof(mock_sha1)),
+	TEST_SUCC(memcmp(mock_hash.sha1, mock_sha1, sizeof(mock_sha1)),
 		  "  got the right hash");
 	TEST_EQ(mock_hash.algo, VB2_HASH_SHA1, "  set algo correctly");
 
@@ -87,19 +104,19 @@ static void vb2_hash_verify_tests(void)
 {
 	reset_common_data();
 
-	memcpy(mock_hash.bytes.sha1, mock_sha1, sizeof(mock_sha1));
+	memcpy(mock_hash.sha1, mock_sha1, sizeof(mock_sha1));
 	mock_hash.algo = VB2_HASH_SHA1;
 	TEST_SUCC(vb2_hash_verify(mock_buffer, sizeof(mock_buffer),
 				  &mock_hash), "hash_verify success");
 
-	memcpy(mock_hash.bytes.sha1, mock_sha1, sizeof(mock_sha1));
+	memcpy(mock_hash.sha1, mock_sha1, sizeof(mock_sha1));
 	mock_hash.algo = VB2_HASH_SHA256;
 	TEST_EQ(vb2_hash_verify(mock_buffer, sizeof(mock_buffer),
 				&mock_hash), VB2_ERROR_MOCK,
 		"hash_verify wrong algo");
 
-	memcpy(mock_hash.bytes.sha1, mock_sha1, sizeof(mock_sha1));
-	mock_hash.bytes.sha1[5] = 0xfe;
+	memcpy(mock_hash.sha1, mock_sha1, sizeof(mock_sha1));
+	mock_hash.sha1[5] = 0xfe;
 	mock_hash.algo = VB2_HASH_SHA1;
 	TEST_EQ(vb2_hash_verify(mock_buffer, sizeof(mock_buffer),
 				&mock_hash), VB2_ERROR_SHA_MISMATCH,
@@ -108,9 +125,11 @@ static void vb2_hash_verify_tests(void)
 
 int main(int argc, char *argv[])
 {
-	TEST_EQ(sizeof(mock_hash.bytes), VB2_SHA512_DIGEST_SIZE,
+	TEST_EQ(sizeof(mock_hash),
+		offsetof(struct vb2_hash, raw) + VB2_SHA512_DIGEST_SIZE,
 		"tests run with all SHA algorithms enabled");
 
+	vb2_hash_cbfs_compatibility_test();
 	vb2_hash_calculate_tests();
 	vb2_hash_verify_tests();
 
