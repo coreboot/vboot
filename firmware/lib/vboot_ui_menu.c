@@ -275,6 +275,9 @@ static vb2_error_t enter_to_norm_menu(struct vb2_context *ctx)
 {
 	vb2_change_menu(VB_MENU_TO_NORM, VB_TO_NORM_CONFIRM);
 	vb2_draw_current_screen(ctx);
+	/* Make sure user knows dev mode disabled */
+	if (disable_dev_boot)
+		VbExDisplayDebugInfo(dev_disable_msg, 0);
 	return VBERROR_KEEP_LOOPING;
 }
 
@@ -771,10 +774,6 @@ static vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 	/* We'll loop until we finish the delay or are interrupted */
 	do {
 		uint32_t key = VbExKeyboardRead();
-
-		/* Make sure user knows dev mode disabled */
-		if (disable_dev_boot)
-			VbExDisplayDebugInfo(dev_disable_msg, 0);
 
 		switch (key) {
 		case VB_BUTTON_VOL_DOWN_LONG_PRESS:
