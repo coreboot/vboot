@@ -295,10 +295,10 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	used += StrnAppend(buf + used,
 			   "\nTPM: fwver=0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->fw_version_secdata, 16, 8);
+			       shared->fw_version_tpm, 16, 8);
 	used += StrnAppend(buf + used, " kernver=0x", DEBUG_INFO_SIZE - used);
 	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->kernel_version_secdata, 16, 8);
+			       shared->kernel_version_tpm, 16, 8);
 
 	/* Add GBB flags */
 	used += StrnAppend(buf + used,
