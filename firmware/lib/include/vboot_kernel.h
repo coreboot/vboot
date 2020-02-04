@@ -78,17 +78,4 @@ vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx);
  */
 vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *ctx);
 
-/**
- * Writes modified secdata spaces and nvdata.
- *
- * This is a temporary wrapper around vb2ex_commit_data, until secdata-writing
- * functions are relocated into depthcharge.
- *
- * (See chromium:972956, chromium:1006689.)
- *
- * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2_commit_data(struct vb2_context *ctx);
-
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */

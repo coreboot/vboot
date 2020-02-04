@@ -406,7 +406,7 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 		 */
 		if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 		    !vb2_allow_recovery(ctx))
-			 vb2_commit_data(ctx);
+			 vb2ex_commit_data(ctx);
 
 		/* Force redraw of current screen */
 		return VbDisplayScreen(ctx, disp_current_screen, 1, data);

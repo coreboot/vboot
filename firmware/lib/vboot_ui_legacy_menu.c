@@ -319,7 +319,7 @@ static vb2_error_t language_action(struct vb2_context *ctx)
 	 */
 	if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 	    !vb2_allow_recovery(ctx))
-		vb2_commit_data(ctx);
+		vb2ex_commit_data(ctx);
 
 	/* Return to previous menu. */
 	switch (prev_menu) {

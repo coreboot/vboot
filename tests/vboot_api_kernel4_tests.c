@@ -35,7 +35,6 @@ static struct vb2_gbb_header gbb;
 static uint32_t kernel_version;
 static uint32_t new_version;
 static vb2_error_t vbboot_retval;
-static vb2_error_t commit_data_retval;
 static int commit_data_called;
 static vb2_error_t secdata_kernel_init_retval;
 static vb2_error_t secdata_fwmp_init_retval;
@@ -70,7 +69,6 @@ static void reset_common_data(void)
 	memset(&shared_data, 0, sizeof(shared_data));
 
 	kernel_version = new_version = 0x10002;
-	commit_data_retval = VB2_SUCCESS;
 	vbboot_retval = VB2_SUCCESS;
 	secdata_kernel_init_retval = VB2_SUCCESS;
 	secdata_fwmp_init_retval = VB2_SUCCESS;
@@ -90,9 +88,8 @@ static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 
 	expected_recovery_reason = recovery_reason;
 	TEST_EQ(VbSelectAndLoadKernel(ctx, shared, &kparams), retval, desc);
-	TEST_EQ(current_recovery_reason, expected_recovery_reason,
-		"  recovery reason");
-	TEST_TRUE(commit_data_called, "  commit nvdata");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		recovery_reason, "  recovery reason");
 }
 
 /* Mock functions */
@@ -114,7 +111,7 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 {
 	current_recovery_reason = vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST);
 	commit_data_called = 1;
-	return commit_data_retval;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2_secdata_kernel_init(struct vb2_context *c)
@@ -158,7 +155,7 @@ vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
 {
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
 		"  recovery reason");
-	TEST_TRUE(commit_data_called, "  commit nvdata");
+	TEST_TRUE(commit_data_called, "  commit data");
 
 	shared->kernel_version_tpm = new_version;
 
@@ -201,6 +198,7 @@ static void select_and_load_kernel_tests(void)
 	TEST_EQ(kernel_version, 0x10002, "  version");
 	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
+	TEST_FALSE(commit_data_called, "  no commit data");
 
 	/* Check EC sync toggling */
 	reset_common_data();
@@ -239,13 +237,6 @@ static void select_and_load_kernel_tests(void)
 	test_slk(0, 0, "Max roll forward can't rollback");
 	TEST_EQ(kernel_version, 0x10002, "  version");
 
-
-	reset_common_data();
-	new_version = 0x20003;
-	commit_data_retval = VB2_ERROR_SECDATA_KERNEL_WRITE;
-	test_slk(VB2_ERROR_SECDATA_KERNEL_WRITE,
-		 VB2_RECOVERY_RW_TPM_W_ERROR, "Write kernel rollback");
-
 	/* Boot normal */
 	reset_common_data();
 	vbboot_retval = -1;
@@ -261,8 +252,6 @@ static void select_and_load_kernel_tests(void)
 			 "Normal boot with diag");
 		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST),
 			0, "  diag not requested");
-		TEST_TRUE(commit_data_called,
-			  "  didn't commit nvdata");
 	}
 
 	/* Boot normal - phase1 failure */
@@ -270,26 +259,12 @@ static void select_and_load_kernel_tests(void)
 	kernel_phase1_retval = VB2_ERROR_MOCK;
 	test_slk(VB2_ERROR_MOCK, 0, "Normal phase1 failure");
 
-	/* Boot normal - commit data failures */
-	reset_common_data();
-	commit_data_retval = VB2_ERROR_SECDATA_FIRMWARE_WRITE;
-	test_slk(commit_data_retval, VB2_RECOVERY_RW_TPM_W_ERROR,
-		 "Normal secdata_firmware write error triggers recovery");
-	commit_data_retval = VB2_ERROR_SECDATA_KERNEL_WRITE;
-	test_slk(commit_data_retval, VB2_RECOVERY_RW_TPM_W_ERROR,
-		 "Normal secdata_kernel write error triggers recovery");
-	commit_data_retval = VB2_ERROR_NV_WRITE;
-	TEST_ABORT(VbSelectAndLoadKernel(ctx, shared, &kparams),
-		   "Normal nvdata write error aborts");
-	commit_data_retval = VB2_ERROR_UNKNOWN;
-	TEST_ABORT(VbSelectAndLoadKernel(ctx, shared, &kparams),
-		   "Normal unknown commit error aborts");
-
 	/* Boot dev */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	vbboot_retval = -2;
 	test_slk(VB2_ERROR_MOCK, 0, "Dev boot bad");
+	TEST_FALSE(commit_data_called, "  no commit data");
 
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
@@ -308,50 +283,34 @@ static void select_and_load_kernel_tests(void)
 	sd->recovery_reason = 123;
 	vbboot_retval = -3;
 	test_slk(VB2_ERROR_MOCK, 0, "Recovery boot bad");
+	TEST_TRUE(commit_data_called, "  commit data");
 
 	reset_common_data();
 	sd->recovery_reason = 123;
 	new_version = 0x20003;
 	test_slk(0, 0, "Recovery doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");
+	TEST_TRUE(commit_data_called, "  commit data");
 
 	/* Boot recovery - phase1 failure */
 	reset_common_data();
 	sd->recovery_reason = 123;
 	kernel_phase1_retval = VB2_ERROR_MOCK;
 	test_slk(VB2_ERROR_MOCK, 0, "Recovery phase1 failure");
-
-	/* Boot recovery - commit data failures */
-	reset_common_data();
-	sd->recovery_reason = 123;
-	commit_data_retval = VB2_ERROR_SECDATA_FIRMWARE_WRITE;
-	test_slk(0, 0, "Recovery ignore secdata_firmware write error");
-
-	reset_common_data();
-	sd->recovery_reason = 123;
-	commit_data_retval = VB2_ERROR_SECDATA_KERNEL_WRITE;
-	test_slk(0, 0, "Recovery ignore secdata_kernel write error");
-
-	reset_common_data();
-	sd->recovery_reason = 123;
-	commit_data_retval = VB2_ERROR_NV_WRITE;
-	test_slk(0, 0, "Recovery return nvdata write error");
-
-	reset_common_data();
-	sd->recovery_reason = 123;
-	commit_data_retval = VB2_ERROR_UNKNOWN;
-	test_slk(0, 0, "Recovery return unknown write error");
+	TEST_FALSE(commit_data_called, "  no commit data");
 
 	/* Boot recovery - memory retraining */
 	reset_common_data();
 	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
 	test_slk(VBERROR_REBOOT_REQUIRED, 0, "Recovery train and reboot");
+	TEST_FALSE(commit_data_called, "  no commit data");
 
 	/* Boot BROKEN recovery */
 	reset_common_data();
 	sd->recovery_reason = 123;
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	test_slk(0, 0, "BROKEN recovery");
+	TEST_TRUE(commit_data_called, "  commit data");
 
 	/* Boot manual recovery */
 	reset_common_data();
@@ -359,6 +318,7 @@ static void select_and_load_kernel_tests(void)
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	sd->flags |= VB2_SD_FLAG_MANUAL_RECOVERY;
 	test_slk(0, 0, "Manual recovery");
+	TEST_TRUE(commit_data_called, "  commit data");
 }
 
 int main(void)

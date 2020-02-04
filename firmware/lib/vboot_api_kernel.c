@@ -46,7 +46,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);
 
 		/* May lose power immediately, so commit our update now. */
-		rv = vb2_commit_data(ctx);
+		rv = vb2ex_commit_data(ctx);
 		if (rv)
 			return rv;
 
@@ -283,55 +283,12 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	       sizeof(kparams->partition_guid));
 }
 
-vb2_error_t vb2_commit_data(struct vb2_context *ctx)
-{
-	vb2_error_t rv = vb2ex_commit_data(ctx);
-
-	switch (rv) {
-	case VB2_SUCCESS:
-		break;
-
-	case VB2_ERROR_SECDATA_FIRMWARE_WRITE:
-		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, rv);
-			/* Run again to set recovery reason in nvdata. */
-			vb2ex_commit_data(ctx);
-			return rv;
-		}
-		break;
-
-	case VB2_ERROR_SECDATA_KERNEL_WRITE:
-		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-			vb2api_fail(ctx, VB2_RECOVERY_RW_TPM_W_ERROR, rv);
-			/* Run again to set recovery reason in nvdata. */
-			vb2ex_commit_data(ctx);
-			return rv;
-		}
-		break;
-
-	default:
-		VB2_DEBUG("unknown commit error: %#x\n", rv);
-		__attribute__ ((fallthrough));
-
-	case VB2_ERROR_NV_WRITE:
-		/*
-		 * We can't write to nvdata, so it's impossible to
-		 * trigger recovery mode.  Skip calling vb2api_fail
-		 * and just die (unless already in recovery).
-		 */
-		VB2_REC_OR_DIE(ctx, "write nvdata failed\n");
-		break;
-	}
-
-	return VB2_SUCCESS;
-}
-
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv, call_rv;
+	vb2_error_t rv;
 
 	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
 	   to vb2_nv_get and vb2_nv_set. */
@@ -339,11 +296,11 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 
 	rv = vb2_kernel_setup(ctx, shared, kparams);
 	if (rv)
-		goto VbSelectAndLoadKernel_exit;
+		return rv;
 
 	rv = vb2api_kernel_phase1(ctx);
 	if (rv)
-		goto VbSelectAndLoadKernel_exit;
+		return rv;
 
 	VB2_DEBUG("GBB flags are %#x\n", vb2_get_gbb(ctx)->flags);
 
@@ -354,34 +311,33 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
 		rv = vb2api_ec_sync(ctx);
 		if (rv)
-			goto VbSelectAndLoadKernel_exit;
+			return rv;
 
 		rv = vb2api_auxfw_sync(ctx);
 		if (rv)
-			goto VbSelectAndLoadKernel_exit;
+			return rv;
 
 		rv = handle_battery_cutoff(ctx);
 		if (rv)
-			goto VbSelectAndLoadKernel_exit;
+			return rv;
 	}
 
 	/* Select boot path */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 		vb2_clear_recovery(ctx);
 
-		/*
-		 * Need to commit nvdata changes immediately, since we will be
-		 * entering either manual recovery UI or BROKEN screen shortly.
-		 */
-		vb2_commit_data(ctx);
-
 		/* If we're in recovery mode just to do memory retraining, all
 		   we need to do is reboot. */
 		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
 			VB2_DEBUG("Reboot after retraining in recovery\n");
-			rv = VBERROR_REBOOT_REQUIRED;
-			goto VbSelectAndLoadKernel_exit;
+			return VBERROR_REBOOT_REQUIRED;
 		}
+
+		/*
+		 * Need to commit nvdata changes immediately, since we will be
+		 * entering either manual recovery UI or BROKEN screen shortly.
+		 */
+		vb2ex_commit_data(ctx);
 
 		/* Recovery boot.  This has UI. */
 		if (LEGACY_MENU_UI)
@@ -416,21 +372,15 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		rv = VbBootNormal(ctx);
 	}
 
- VbSelectAndLoadKernel_exit:
+	/* No need to fill kparams or convert vboot1 flags on failure. */
+	if (rv)
+		return rv;
 
-	if (rv == VB2_SUCCESS)
-		vb2_kernel_fill_kparams(ctx, kparams);
+	vb2_kernel_fill_kparams(ctx, kparams);
 
 	/* Translate vboot2 flags and fields into vboot1. */
 	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
 		sd->vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
 
-	/* Commit data, but retain any previous errors */
-	call_rv = vb2_commit_data(ctx);
-	if (rv == VB2_SUCCESS)
-		rv = call_rv;
-
-	/* Pass through return value from boot path */
-	VB2_DEBUG("Returning %#x\n", rv);
 	return rv;
 }

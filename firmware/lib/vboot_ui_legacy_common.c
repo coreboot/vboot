@@ -68,7 +68,7 @@ void vb2_try_altfw(struct vb2_context *ctx, int allowed,
 		return;
 	}
 
-	if (vb2_commit_data(ctx)) {
+	if (vb2ex_commit_data(ctx)) {
 		vb2_error_notify("Error committing data on legacy boot.\n",
 				 NULL, VB_BEEP_FAILED);
 		return;
