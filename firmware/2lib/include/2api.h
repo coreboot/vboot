@@ -744,6 +744,20 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 uint32_t vb2api_get_firmware_size(struct vb2_context *ctx);
 
 /**
+ * Check if this firmware was bundled with the well-known public developer key
+ * set (more specifically, checks the recovery key in recovery mode and the
+ * kernel subkey from the firmware preamble in other modes). This is a best
+ * effort check that could be misled by a specifically crafted key.
+ *
+ * May only be called after vb2api_kernel_phase1() has run.
+ *
+ * @param ctx		Vboot context
+ *
+ * @return 1 for developer keys, 0 for any others.
+ */
+int vb2api_is_developer_signed(struct vb2_context *ctx);
+
+/**
  * If no display is available, set DISPLAY_REQUEST in nvdata.
  *
  * @param ctx           Vboot2 context

@@ -14,57 +14,6 @@
 #include "2sysincludes.h"
 #include "vb2_common.h"
 
-/*
- * The blob below is the sha1 digest calculated over the packed developer
- * root public key structure.
- */
-
-static const uint8_t dev_key_digest[] = {
-	0xb1, 0x1d, 0x74, 0xed, 0xd2, 0x86, 0xc1, 0x44,
-	0xe1, 0x13, 0x5b, 0x49, 0xe7, 0xf0, 0xbc, 0x20,
-	0xcf, 0x04, 0x1f, 0x10,
-};
-
-/**
- * Determine if the root key is the developer key checked into the
- * vboot_reference repository.  Has no effect on boot; just logs this to the
- * debug console.
- *
- * @param root		Root key
- */
-static void vb2_report_dev_firmware(struct vb2_public_key *root)
-{
-	struct vb2_digest_context dc;
-	uint8_t digest[sizeof(dev_key_digest)];
-	int size = root->arrsize * 4;
-
-	if (!root->arrsize)
-		return; /* Must be a test run. */
-
-	if (vb2_digest_init(&dc, VB2_HASH_SHA1) != VB2_SUCCESS)
-		return;
-
-	if (vb2_digest_extend(&dc, (uint8_t *)&root->arrsize,
-			      sizeof(root->arrsize)) != VB2_SUCCESS)
-		return;
-
-	if (vb2_digest_extend(&dc, (uint8_t *)&root->n0inv,
-			      sizeof(root->n0inv)) != VB2_SUCCESS)
-		return;
-
-	if (vb2_digest_extend(&dc, (uint8_t *)root->n, size) != VB2_SUCCESS)
-		return;
-
-	if (vb2_digest_extend(&dc, (uint8_t *)root->rr, size) != VB2_SUCCESS)
-		return;
-
-	if (vb2_digest_finalize(&dc, digest, sizeof(digest)) != VB2_SUCCESS)
-		return;
-
-	if (!memcmp(digest, dev_key_digest, sizeof(dev_key_digest)))
-		VB2_DEBUG("This is developer signed firmware\n");
-}
-
 vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -97,9 +46,6 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	rv = vb2_unpack_key_buffer(&root_key, key_data, key_size);
 	if (rv)
 		return rv;
-
-	/* If that's the checked-in root key, this is dev-signed firmware */
-	vb2_report_dev_firmware(&root_key);
 
 	/* Load the firmware keyblock header after the root key */
 	kb = vb2_workbuf_alloc(&wb, sizeof(*kb));

@@ -16,6 +16,32 @@
 #include "vb2_common.h"
 #include "vboot_struct.h"
 
+int vb2api_is_developer_signed(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	if (!sd->kernel_key_offset || !sd->kernel_key_size) {
+		VB2_REC_OR_DIE(ctx, "Cannot call this before kernel_phase1!\n");
+		return 0;
+	}
+
+	struct vb2_public_key key;
+	if (vb2_unpack_key(&key, vb2_member_of(sd, sd->kernel_key_offset)))
+		return 0;
+
+	/* This is a debugging aid, not a security-relevant feature. There's no
+	   reason to hardcode the whole key or waste time computing a hash. Just
+	   spot check the starting bytes of the pseudorandom part of the key. */
+	uint32_t devkey_n0inv = ctx->flags & VB2_CONTEXT_RECOVERY_MODE ?
+		0x18cebcf5 :	/*  recovery_key.vbpubk @0x24 */
+		0xe0cd87d9;	/* kernel_subkey.vbpubk @0x24 */
+
+	if (key.n0inv == devkey_n0inv)
+		return 1;
+
+	return 0;
+}
+
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -81,6 +107,9 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	sd->kernel_key_size = packed_key->key_offset + packed_key->key_size;
 
 	vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
+
+	if (vb2api_is_developer_signed(ctx))
+		VB2_DEBUG("This is developer-signed firmware.\n");
 
 	return VB2_SUCCESS;
 }
