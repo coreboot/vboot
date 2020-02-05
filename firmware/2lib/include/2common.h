@@ -59,6 +59,15 @@ struct vb2_public_key;
 	for (;;); \
 } while (0)
 
+#define VB2_REC_OR_DIE(ctx, format, args...) do { \
+	VB2_DEBUG(format, ## args); \
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) { \
+		vb2ex_abort(); \
+		for (;;); \
+	} \
+	VB2_DEBUG("IGNORING ABORT IN RECOVERY MODE!!!\n"); \
+} while (0)
+
 /*
  * Define test_mockable and for mocking functions when compiled for Chrome OS
  * environment (that is, not for firmware).

@@ -87,12 +87,8 @@ int vb2_secdata_fwmp_get_flag(struct vb2_context *ctx,
 		(struct vb2_secdata_fwmp *)&ctx->secdata_fwmp;
 
 	if (!(sd->status & VB2_SD_STATUS_SECDATA_FWMP_INIT)) {
-		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-			VB2_DEBUG("Assuming broken FWMP flag %d as 0\n", flag);
-			return 0;
-		} else {
-			VB2_DIE("Must init FWMP before retrieving flag\n");
-		}
+		VB2_REC_OR_DIE(ctx, "Must init FWMP before retrieving flag\n");
+		return 0;
 	}
 
 	if (ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP)
@@ -108,13 +104,8 @@ uint8_t *vb2_secdata_fwmp_get_dev_key_hash(struct vb2_context *ctx)
 		(struct vb2_secdata_fwmp *)&ctx->secdata_fwmp;
 
 	if (!(sd->status & VB2_SD_STATUS_SECDATA_FWMP_INIT)) {
-		if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-			VB2_DEBUG("Assuming broken FWMP dev_key_hash "
-				  "as empty\n");
-			return NULL;
-		} else {
-			VB2_DIE("Must init FWMP before getting dev key hash\n");
-		}
+		VB2_REC_OR_DIE(ctx, "Must init FWMP before get dev key hash\n");
+		return NULL;
 	}
 
 	if (ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP)

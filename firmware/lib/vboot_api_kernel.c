@@ -321,13 +321,12 @@ vb2_error_t vb2_commit_data(struct vb2_context *ctx)
 		__attribute__ ((fallthrough));
 
 	case VB2_ERROR_NV_WRITE:
-		if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
-			/*
-			 * We can't write to nvdata, so it's impossible to
-			 * trigger recovery mode.  Skip calling vb2api_fail
-			 * and just die.
-			 */
-			VB2_DIE("write nvdata failed\n");
+		/*
+		 * We can't write to nvdata, so it's impossible to
+		 * trigger recovery mode.  Skip calling vb2api_fail
+		 * and just die (unless already in recovery).
+		 */
+		VB2_REC_OR_DIE(ctx, "write nvdata failed\n");
 		break;
 	}
 

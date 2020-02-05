@@ -255,6 +255,14 @@ static void misc_tests(void)
 		    "vb_workbuf_from_ctx() buf");
 	TEST_EQ(wb.size, sd->workbuf_size - VB2_WORKBUF_ALIGN,
 		"vb_workbuf_from_ctx() size");
+
+	reset_common_data();
+	TEST_ABORT(VB2_REC_OR_DIE(ctx, "die\n"), "REC_OR_DIE in normal mode");
+
+	reset_common_data();
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	VB2_REC_OR_DIE(ctx, "VB2_REC_OR_DIE() test in recovery mode\n");
+	/* Would exit here if it didn't work as intended. */
 }
 
 static void gbb_tests(void)

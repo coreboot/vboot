@@ -97,9 +97,7 @@ uint32_t vb2_secdata_firmware_get(struct vb2_context *ctx,
 	}
 
  fail:
-	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
-		VB2_DIE("%s\n", msg);
-	VB2_DEBUG("ERROR [%s] ignored in recovery mode\n", msg);
+	VB2_REC_OR_DIE(ctx, "%s\n", msg);
 	return 0;
 }
 
@@ -152,7 +150,5 @@ void vb2_secdata_firmware_set(struct vb2_context *ctx,
 	return;
 
  fail:
-	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
-		VB2_DIE("%s\n", msg);
-	VB2_DEBUG("ERROR [%s] ignored in recovery mode\n", msg);
+	VB2_REC_OR_DIE(ctx, "%s\n", msg);
 }
