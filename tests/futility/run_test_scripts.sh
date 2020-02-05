@@ -64,7 +64,7 @@ for i in $TESTS; do
     : $(( pass++ ))
     rm -f ${OUTDIR}/$j.{stdout,stderr,return}
   else
-    echo -e "${COL_RED}FAILED. Stdout is recorded in" \
+    echo -e "${COL_RED}FAILED (${rc:-0}). Stdout is recorded in" \
       "${OUTDIR}/$j.stdout${COL_STOP}"
     cat ${OUTDIR}/$j.stderr
   fi

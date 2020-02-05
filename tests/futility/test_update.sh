@@ -161,7 +161,7 @@ test_update() {
 	echo "*** Test Item: ${test_name}"
 	if [ "${error_msg}" != "${expected}" ] && [ -n "${error_msg}" ]; then
 		msg="$(! "${FUTILITY}" update --emulate "${TMP}.emu" "$@" 2>&1)"
-		echo "${msg}" | grep -qF -- "${error_msg}"
+		grep -qF -- "${error_msg}" <<<"${msg}"
 	else
 		"${FUTILITY}" update --emulate "${TMP}.emu" "$@"
 		cmp "${TMP}.emu" "${expected}"
