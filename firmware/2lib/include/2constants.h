@@ -23,9 +23,15 @@
 
 /* Size of secure data spaces used by vboot */
 #define VB2_SECDATA_FIRMWARE_SIZE 10
-#define VB2_SECDATA_KERNEL_SIZE 13
+#define VB2_SECDATA_KERNEL_SIZE_V02 13
+#define VB2_SECDATA_KERNEL_SIZE_V10 40
+#define VB2_SECDATA_KERNEL_MIN_SIZE 13
+#define VB2_SECDATA_KERNEL_MAX_SIZE 64
 #define VB2_SECDATA_FWMP_MIN_SIZE 40
 #define VB2_SECDATA_FWMP_MAX_SIZE 64
+
+/* Size of current secdata_kernel revision. Referenced by external projects. */
+#define VB2_SECDATA_KERNEL_SIZE VB2_SECDATA_KERNEL_SIZE_V10
 
 /*
  * Recommended size of work buffer for firmware verification stage.

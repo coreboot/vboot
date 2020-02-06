@@ -277,7 +277,7 @@ static void phase1_tests(void)
 
 	/* Bad secdata_kernel causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
-	ctx->secdata_kernel[0] ^= 0x33;
+	ctx->secdata_kernel[2] ^= 0x33;  /* 3rd byte is CRC */
 	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
 		"phase1 bad secdata_kernel");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),

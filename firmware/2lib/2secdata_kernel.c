@@ -11,23 +11,52 @@
 #include "2secdata.h"
 #include "2secdata_struct.h"
 #include "2sysincludes.h"
+#include "vboot_test.h"
 
-vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx)
+#define MAJOR_VER(x) (((x) & 0xf0) >> 4)
+#define MINOR_VER(x) ((x) & 0x0f)
+
+static inline int is_v0(struct vb2_context *ctx)
 {
-	struct vb2_secdata_kernel *sec =
-		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+	return MAJOR_VER(sec->struct_version) == 0;
+}
 
-	/* Verify CRC */
-	if (sec->crc8 != vb2_crc8(sec, offsetof(struct vb2_secdata_kernel,
-						crc8))) {
-		VB2_DEBUG("secdata_kernel: bad CRC\n");
-		return VB2_ERROR_SECDATA_KERNEL_CRC;
+uint8_t vb2_secdata_kernel_crc(struct vb2_context *ctx)
+{
+	size_t offset, size;
+
+	if (is_v0(ctx)) {
+		offset = 0;
+		size = offsetof(struct vb2_secdata_kernel_v0, crc8);
+	} else {
+		struct vb2_secdata_kernel_v1 *sec
+			= (void *)ctx->secdata_kernel;
+		offset = offsetof(struct vb2_secdata_kernel_v1, reserved0);
+		size = sec->struct_size - offset;
 	}
 
-	/* Verify version */
-	if (sec->struct_version < VB2_SECDATA_KERNEL_VERSION) {
-		VB2_DEBUG("secdata_firmware: version incompatible\n");
+	return vb2_crc8(ctx->secdata_kernel + offset, size);
+}
+
+static vb2_error_t secdata_kernel_check_v0(struct vb2_context *ctx,
+					   uint8_t *size)
+{
+	struct vb2_secdata_kernel_v0 *sec = (void *)ctx->secdata_kernel;
+	uint8_t ver = sec->struct_version;
+
+	if (MINOR_VER(ver) != MINOR_VER(VB2_SECDATA_KERNEL_VERSION_V02)) {
+		VB2_DEBUG("secdata_kernel: bad struct_version (%d.%d)\n",
+			  MAJOR_VER(ver), MINOR_VER(ver));
 		return VB2_ERROR_SECDATA_KERNEL_VERSION;
+	}
+
+	*size = VB2_SECDATA_KERNEL_SIZE_V02;
+
+	/* Verify CRC */
+	if (sec->crc8 != vb2_secdata_kernel_crc(ctx)) {
+		VB2_DEBUG("secdata_kernel: bad CRC\n");
+		return VB2_ERROR_SECDATA_KERNEL_CRC;
 	}
 
 	/* Verify UID */
@@ -39,22 +68,93 @@ vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+static vb2_error_t secdata_kernel_check_v1(struct vb2_context *ctx,
+					   uint8_t *size)
+{
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+	uint8_t ver = sec->struct_version;
+
+	if (MAJOR_VER(ver) != MAJOR_VER(VB2_SECDATA_KERNEL_VERSION_V10)) {
+		VB2_DEBUG("secdata_kernel: bad struct_version (%d.%d)\n",
+			  MAJOR_VER(ver), MINOR_VER(ver));
+		return VB2_ERROR_SECDATA_KERNEL_VERSION;
+	}
+
+	if (sec->struct_size < VB2_SECDATA_KERNEL_SIZE_V10 ||
+			VB2_SECDATA_KERNEL_MAX_SIZE < sec->struct_size) {
+		VB2_DEBUG("secdata_kernel: bad struct_size (%d)\n",
+			  sec->struct_size);
+		return VB2_ERROR_SECDATA_KERNEL_STRUCT_SIZE;
+	}
+
+	if (*size < sec->struct_size) {
+		*size = sec->struct_size;
+		VB2_DEBUG("secdata_kernel: incomplete data (missing %d bytes)",
+			  sec->struct_size - *size);
+		return VB2_ERROR_SECDATA_KERNEL_INCOMPLETE;
+	}
+
+	/*
+	 * In case larger data should be passed, kindly let the caller know
+	 * the right size.
+	 */
+	*size = sec->struct_size;
+
+	/* Verify CRC */
+	if (sec->crc8 != vb2_secdata_kernel_crc(ctx)) {
+		VB2_DEBUG("secdata_kernel: bad CRC\n");
+		return VB2_ERROR_SECDATA_KERNEL_CRC;
+	}
+
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx, uint8_t *size)
+{
+	if (*size < VB2_SECDATA_KERNEL_MIN_SIZE) {
+		VB2_DEBUG("secdata_kernel: data size too small!");
+		*size = VB2_SECDATA_KERNEL_MIN_SIZE;
+		return VB2_ERROR_SECDATA_KERNEL_INCOMPLETE;
+	}
+
+	if (is_v0(ctx))
+		return secdata_kernel_check_v0(ctx, size);
+	else
+		return secdata_kernel_check_v1(ctx, size);
+}
+
 uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
 {
-	struct vb2_secdata_kernel *sec =
-		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+
+	/* Populate the struct */
+	memset(sec, 0, sizeof(*sec));
+	sec->struct_version = VB2_SECDATA_KERNEL_VERSION_LATEST;
+	sec->struct_size = sizeof(*sec);
+	sec->crc8 = vb2_secdata_kernel_crc(ctx);
+
+	/* Mark as changed */
+	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+
+	return sizeof(*sec);
+}
+
+/* For TPM 1.2 */
+uint32_t vb2api_secdata_kernel_create_v0(struct vb2_context *ctx)
+{
+	struct vb2_secdata_kernel_v0 *sec = (void *)ctx->secdata_kernel;
 
 	/* Clear the entire struct */
 	memset(sec, 0, sizeof(*sec));
 
 	/* Set to current version */
-	sec->struct_version = VB2_SECDATA_KERNEL_VERSION;
+	sec->struct_version = VB2_SECDATA_KERNEL_VERSION_V02;
 
 	/* Set UID */
 	sec->uid = VB2_SECDATA_KERNEL_UID;
 
 	/* Calculate initial CRC */
-	sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdata_kernel, crc8));
+	sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdata_kernel_v0, crc8));
 
 	/* Mark as changed */
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
@@ -65,9 +165,10 @@ uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
 vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	uint8_t size = VB2_SECDATA_KERNEL_MAX_SIZE;
 	vb2_error_t rv;
 
-	rv = vb2api_secdata_kernel_check(ctx);
+	rv = vb2api_secdata_kernel_check(ctx, &size);
 	if (rv)
 		return rv;
 
@@ -81,8 +182,6 @@ uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
 				enum vb2_secdata_kernel_param param)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_secdata_kernel *sec =
-		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
 	const char *msg;
 
 	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
@@ -92,8 +191,15 @@ uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
 
 	switch (param) {
 	case VB2_SECDATA_KERNEL_VERSIONS:
-		return sec->kernel_versions;
-
+		if (is_v0(ctx)) {
+			struct vb2_secdata_kernel_v0 *sec =
+					(void *)ctx->secdata_kernel;
+			return sec->kernel_versions;
+		} else {
+			struct vb2_secdata_kernel_v1 *sec =
+					(void *)ctx->secdata_kernel;
+			return sec->kernel_versions;
+		}
 	default:
 		msg = "invalid param";
 	}
@@ -108,9 +214,10 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 			    uint32_t value)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_secdata_kernel *sec =
-		(struct vb2_secdata_kernel *)ctx->secdata_kernel;
 	const char *msg;
+	struct vb2_secdata_kernel_v0 *v0 = (void *)ctx->secdata_kernel;
+	struct vb2_secdata_kernel_v1 *v1 = (void *)ctx->secdata_kernel;
+	uint32_t *ptr;
 
 	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
 		msg = "set before init";
@@ -123,9 +230,9 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 
 	switch (param) {
 	case VB2_SECDATA_KERNEL_VERSIONS:
+		ptr = is_v0(ctx) ? &v0->kernel_versions : &v1->kernel_versions;
 		VB2_DEBUG("secdata_kernel versions updated from %#x to %#x\n",
-			  sec->kernel_versions, value);
-		sec->kernel_versions = value;
+			  *ptr, value);
 		break;
 
 	default:
@@ -133,11 +240,56 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 		goto fail;
 	}
 
-	/* Regenerate CRC */
-	sec->crc8 = vb2_crc8(sec, offsetof(struct vb2_secdata_kernel, crc8));
+	*ptr = value;
+
+	if (is_v0(ctx))
+		v0->crc8 = vb2_secdata_kernel_crc(ctx);
+	else
+		v1->crc8 = vb2_secdata_kernel_crc(ctx);
+
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 	return;
 
  fail:
 	VB2_REC_OR_DIE(ctx, "%s\n", msg);
+}
+
+const uint8_t *vb2_secdata_kernel_get_ec_hash(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
+		VB2_REC_OR_DIE(ctx, "Get kernel secdata before init\n");
+		return NULL;
+	}
+	if (is_v0(ctx)) {
+		VB2_DEBUG("kernel secdata v.0* doesn't support EC hash\n");
+		return NULL;
+	}
+
+	return sec->ec_hash;
+}
+
+void vb2_secdata_kernel_set_ec_hash(struct vb2_context *ctx,
+				    const uint8_t *sha256)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
+
+	if (!(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT)) {
+		VB2_REC_OR_DIE(ctx, "Get kernel secdata before init\n");
+		return;
+	}
+	if (is_v0(ctx)) {
+		VB2_REC_OR_DIE(ctx, "Invalid version of kernel secdata\n");
+		return;
+	}
+
+	memcpy(sec->ec_hash, sha256, sizeof(sec->ec_hash));
+	sec->crc8 = vb2_secdata_kernel_crc(ctx);
+
+	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+
+	return;
 }

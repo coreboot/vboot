@@ -26,6 +26,7 @@
 #include "2id.h"
 #include "2recovery_reasons.h"
 #include "2return_codes.h"
+#include "2secdata_struct.h"
 
 /* Modes for vb2ex_tpm_set_mode. */
 enum vb2_tpm_mode {
@@ -252,8 +253,8 @@ struct vb2_context {
 	 * flag is set when a function returns, caller must save the data back
 	 * to the secure non-volatile location and then clear the flag.
 	 */
-	uint8_t secdata_kernel[VB2_SECDATA_KERNEL_SIZE];
-	VB2_PAD_STRUCT(VB2_SECDATA_KERNEL_SIZE, 8);
+	uint8_t secdata_kernel[VB2_SECDATA_KERNEL_MAX_SIZE];
+	VB2_PAD_STRUCT(VB2_SECDATA_KERNEL_MAX_SIZE, 8);
 
 	/*
 	 * Firmware management parameters (FWMP) secure data.  Caller must fill
@@ -506,14 +507,18 @@ vb2_error_t vb2api_secdata_firmware_check(struct vb2_context *ctx);
 uint32_t vb2api_secdata_firmware_create(struct vb2_context *ctx);
 
 /**
- * Check the validity of kernel secure storage context.
+ * Check the validity of kernel secure storage context (ctx->secdata_kernel).
  *
  * Checks version, UID, and CRC.
  *
  * @param ctx		Context pointer
- * @return VB2_SUCCESS, or non-zero error code if error.
+ * @param size		(IN) Size of data to be checked
+ * 			(OUT) Expected size of data
+ * @return VB2_SUCCESS, or non-zero error code if error. If data is missing,
+ * 	   it returns VB2_ERROR_SECDATA_KERNEL_INCOMPLETE and informs the caller
+ * 	   of the expected size.
  */
-vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx);
+vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx, uint8_t *size);
 
 /**
  * Create fresh data in kernel secure storage context.
@@ -523,10 +528,14 @@ vb2_error_t vb2api_secdata_kernel_check(struct vb2_context *ctx);
  * vb2api_secdata_kernel_check() (or any other API in this library) fails; that
  * could allow the secure data to be rolled back to an insecure state.
  *
+ * vb2api_secdata_kernel_create always creates secdata kernel using the latest
+ * revision.
+ *
  * @param ctx		Context pointer
  * @return size of created kernel secure storage data in bytes
  */
 uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx);
+uint32_t vb2api_secdata_kernel_create_v0(struct vb2_context *ctx);
 
 /**
  * Check the validity of firmware management parameters (FWMP) space.
