@@ -88,10 +88,11 @@ enum vb2_shared_data_status {
 #define VB2_SHARED_DATA_MAGIC 0x44533256
 
 /* Current version of vb2_shared_data struct */
-#define VB2_SHARED_DATA_VERSION_MAJOR 2
+#define VB2_SHARED_DATA_VERSION_MAJOR 3
 #define VB2_SHARED_DATA_VERSION_MINOR 0
 
-#define VB2_CONTEXT_MAX_SIZE 192
+/* MAX_SIZE should not be changed without bumping up DATA_VERSION_MAJOR. */
+#define VB2_CONTEXT_MAX_SIZE 384
 
 /*
  * Data shared between vboot API calls.  Stored at the start of the work
