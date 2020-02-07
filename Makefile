@@ -1308,10 +1308,8 @@ runlongtests: install_for_test genkeys genfuzztestcases
 .PHONY: rununittests
 rununittests: runcgpttests runmisctests run2tests
 
-# chromium(1048048): Not including runfutiltests due to flakiness.
-# Add back when this issue has been resolved.
 .PHONY: runtests
-runtests: rununittests runtestscripts
+runtests: rununittests runtestscripts runfutiltests
 
 # Code coverage
 .PHONY: coverage_init
