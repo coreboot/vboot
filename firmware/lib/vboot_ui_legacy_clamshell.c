@@ -440,25 +440,6 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 	VB2_DEBUG("recovery UI - start\n");
 
 	if (!vb2_allow_recovery(ctx)) {
-		/*
-		 * We have to save the reason here so that it will survive
-		 * coming up three-finger-salute. We're saving it in
-		 * VB2_RECOVERY_SUBCODE to avoid a recovery loop.
-		 * If we save the reason in VB2_RECOVERY_REQUEST, we will come
-		 * back here, thus, we won't be able to give a user a chance to
-		 * reboot to workaround a boot hiccup.
-		 */
-		VB2_DEBUG("recovery UI - saving recovery reason (%#x)\n",
-			  sd->recovery_reason);
-		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, sd->recovery_reason);
-
-		/*
-		 * Non-manual recovery mode is meant to be left via three-finger
-		 * salute (into manual recovery mode). Need to commit nvdata
-		 * changes immediately.  Ignore commit errors in recovery mode.
-		 */
-		vb2_commit_data(ctx);
-
 		VbDisplayScreen(ctx, VB_SCREEN_OS_BROKEN, 0, NULL);
 		VB2_DEBUG("recovery UI - waiting for manual recovery\n");
 		while (1) {

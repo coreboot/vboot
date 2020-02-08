@@ -416,6 +416,24 @@ int vb2_allow_recovery(struct vb2_context *ctx)
 	return !!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_MANUAL_RECOVERY);
 }
 
+void vb2_clear_recovery(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	VB2_DEBUG("Clearing recovery request: %#x / %#x\n",
+		  vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		  vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE));
+
+	/* Clear recovery request for both cases. */
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);
+
+	if (!vb2_allow_recovery(ctx)) {
+		VB2_DEBUG("Stow recovery reason as subcode (%#x)\n",
+			  sd->recovery_reason);
+		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, sd->recovery_reason);
+	}
+}
+
 int vb2api_need_reboot_for_display(struct vb2_context *ctx)
 {
 	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {

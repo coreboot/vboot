@@ -23,12 +23,12 @@ static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
 /* Mocked function data */
-enum vb2_resource_index mock_resource_index;
-void *mock_resource_ptr;
-uint32_t mock_resource_size;
-int mock_tpm_clear_called;
-int mock_tpm_clear_retval;
-
+static enum vb2_resource_index mock_resource_index;
+static void *mock_resource_ptr;
+static uint32_t mock_resource_size;
+static int mock_tpm_clear_called;
+static int mock_tpm_clear_retval;
+static int allow_recovery_retval;
 
 static void reset_common_data(void)
 {
@@ -49,9 +49,16 @@ static void reset_common_data(void)
 
 	mock_tpm_clear_called = 0;
 	mock_tpm_clear_retval = VB2_SUCCESS;
+	allow_recovery_retval = 0;
 };
 
 /* Mocked functions */
+
+int vb2_allow_recovery(struct vb2_context *c)
+{
+	return allow_recovery_retval;
+}
+
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;
@@ -750,6 +757,34 @@ static void need_reboot_for_display_tests(void)
 		"  not set display request");
 }
 
+static void clear_recovery_tests(void)
+{
+
+	/* Manual recovery */
+	reset_common_data();
+	allow_recovery_retval = 1;
+	sd->recovery_reason = 4;
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
+	vb2_clear_recovery(ctx);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		0, "  request cleared");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		13, "  subcode retained");
+
+	/* BROKEN recovery */
+	reset_common_data();
+	allow_recovery_retval = 0;
+	sd->recovery_reason = 4;
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
+	vb2_clear_recovery(ctx);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		0, "  request cleared");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		4, "  subcode shifted");
+}
+
 int main(int argc, char* argv[])
 {
 	init_workbuf_tests();
@@ -761,6 +796,7 @@ int main(int argc, char* argv[])
 	tpm_clear_tests();
 	select_slot_tests();
 	need_reboot_for_display_tests();
+	clear_recovery_tests();
 
 	return gTestSuccess ? 0 : 255;
 }

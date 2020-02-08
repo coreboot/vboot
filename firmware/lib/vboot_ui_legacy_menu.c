@@ -837,19 +837,6 @@ vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx)
 /* Main function that handles non-manual recovery (BROKEN) menu functionality */
 static vb2_error_t broken_ui(struct vb2_context *ctx)
 {
-	VbSharedDataHeader *vbsd = vb2_get_sd(ctx)->vbsd;
-
-	/*
-	 * Temporarily stash recovery reason in subcode so we'll still know what
-	 * to display if the user reboots into manual recovery from here. Commit
-	 * immediately since the user may hard-reset out of here.
-	 */
-	VB2_DEBUG("saving recovery reason (%#x)\n", vbsd->recovery_reason);
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, vbsd->recovery_reason);
-
-	/* Ignore commit errors in recovery mode. */
-	vb2_commit_data(ctx);
-
 	enter_recovery_base_screen(ctx);
 
 	/* Loop and wait for the user to reset or shut down. */
