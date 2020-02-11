@@ -562,13 +562,13 @@ UTIL_SCRIPTS_BOARD = \
 	utility/tpm-nvsize
 
 UTIL_NAMES_SDK = \
-	utility/dumpRSAPublicKey \
 	utility/load_kernel_test \
 	utility/pad_digest_utility \
 	utility/signature_digest_utility \
 	utility/verify_data
 UTIL_NAMES_BOARD = \
 	utility/crossystem \
+	utility/dumpRSAPublicKey \
 	utility/tpmc
 
 UTIL_BINS_SDK = $(addprefix ${BUILD}/,${UTIL_NAMES_SDK})
