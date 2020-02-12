@@ -334,8 +334,11 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	}
 
 	/* If we're in dev-mode, show the kernel subkey that we expect, too. */
-	if (0 == sd->recovery_reason && sd->vbsd) {
-		FillInSha1Sum(sha1sum, &sd->vbsd->kernel_subkey);
+	if (sd->recovery_reason == VB2_RECOVERY_NOT_REQUESTED &&
+	    sd->kernel_key_offset) {
+		struct vb2_packed_key *key =
+			vb2_member_of(sd, sd->kernel_key_offset);
+		FillInSha1Sum(sha1sum, key);
 		used += StrnAppend(buf + used,
 				"\nkernel_subkey: ", DEBUG_INFO_SIZE - used);
 		used += StrnAppend(buf + used, sha1sum, DEBUG_INFO_SIZE - used);
