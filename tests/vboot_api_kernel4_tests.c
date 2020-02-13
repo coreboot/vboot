@@ -85,6 +85,9 @@ static void reset_common_data(void)
 
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 {
+	if (sd->recovery_reason)
+		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+
 	expected_recovery_reason = recovery_reason;
 	TEST_EQ(VbSelectAndLoadKernel(ctx, shared, &kparams), retval, desc);
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
@@ -284,19 +287,19 @@ static void select_and_load_kernel_tests(void)
 
 	/* Boot dev */
 	reset_common_data();
-	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	vbboot_retval = -2;
 	test_slk(VB2_ERROR_MOCK, 0, "Dev boot bad");
 
 	reset_common_data();
-	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	new_version = 0x20003;
 	test_slk(0, 0, "Dev doesn't roll forward");
 	TEST_EQ(kernel_version, 0x10002, "  version");
 
 	/* Boot dev - phase1 failure */
 	reset_common_data();
-	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	kernel_phase1_retval = VB2_ERROR_MOCK;
 	test_slk(VB2_ERROR_MOCK, 0, "Dev phase1 failure");
 

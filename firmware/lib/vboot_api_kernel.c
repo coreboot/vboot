@@ -228,13 +228,6 @@ static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
-	/* Set selected boot mode in context object.
-	   TODO: Confirm that this can be removed with persistent context. */
-	if (sd->recovery_reason)
-		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	if (sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED)
-		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-
 	/* Translate vboot2 flags and fields into vboot1. */
 	if (ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED)
 		shared->flags |= VBSD_EC_SOFTWARE_SYNC;
