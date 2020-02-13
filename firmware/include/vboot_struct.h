@@ -11,14 +11,6 @@
 
 #include <stdint.h>
 
-/*
- * Needed for vb2_packed_key.  Use relative path to place nicely with
- * depthcharge and coreboot.
- * TODO(kitching): This include should disappear once everything in
- * this file has either been deprecated or has found a better home.
- */
-#include "../2lib/include/2struct.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif  /* __cplusplus */
@@ -235,8 +227,9 @@ typedef struct VbSharedDataHeader {
 	uint32_t flags;
 	/* Reserved for padding */
 	uint32_t reserved0;
-	/* Kernel subkey, from firmware */
-	struct vb2_packed_key kernel_subkey;
+	/* Previously, kernel subkey, from firmware (struct vb2_packed_key).
+	   Now we use vboot2 workbuf for storage. */
+	uint8_t reserved1[32];
 	/* Offset of kernel subkey data from start of this struct */
 	uint64_t kernel_subkey_data_offset;
 	/* Size of kernel subkey data */
@@ -269,7 +262,7 @@ typedef struct VbSharedDataHeader {
 	/* Firmware index returned by LoadFirmware() or 0xFF if failure */
 	uint8_t firmware_index;
 	/* Reserved for padding */
-	uint8_t reserved1;
+	uint8_t reserved2;
 	/* Firmware TPM version at start of VbSelectFirmware() */
 	uint32_t fw_version_tpm_start;
 	/* Firmware lowest version found */
@@ -298,7 +291,7 @@ typedef struct VbSharedDataHeader {
 	/* Recovery reason for current boot */
 	uint8_t recovery_reason;
 	/* Reserved for padding */
-	uint8_t reserved2[7];
+	uint8_t reserved3[7];
 	/* Flags from firmware keyblock */
 	uint64_t fw_keyblock_flags;
 	/* Kernel TPM version at start of VbSelectAndLoadKernel() */
