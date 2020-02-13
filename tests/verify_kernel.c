@@ -25,10 +25,6 @@ static struct vb2_shared_data *sd;
 
 static uint8_t *diskbuf;
 
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE]
-	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-
 static LoadKernelParams params;
 
 vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
@@ -111,9 +107,7 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
-	memset(&shared_data, 0, sizeof(shared_data));
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 
 	/* Copy kernel subkey to workbuf */
 	{

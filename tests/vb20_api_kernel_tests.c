@@ -23,8 +23,6 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static struct vb2_fw_preamble *fwpre;
 static struct vb2_kernel_preamble *kpre;
 static struct vb2_packed_key *kdkey;
@@ -62,9 +60,6 @@ static void reset_common_data(enum reset_type t)
 		  "vb2api_init failed");
 
 	sd = vb2_get_sd(ctx);
-	memset(&shared_data, 0, sizeof(shared_data));
-	sd->vbsd = shared;
-
 	vb2_nv_init(ctx);
 
 	vb2api_secdata_kernel_create(ctx);
@@ -253,10 +248,6 @@ static void phase1_tests(void)
 		       k->key_size), 0, "  key data");
 	TEST_EQ(sd->kernel_version_secdata, 0x20002,
 		"  secdata_kernel version");
-	TEST_EQ(sd->vbsd->kernel_version_tpm, 0x20002,
-		"  secdata_kernel version (vboot1)");
-	TEST_EQ(sd->vbsd->kernel_version_tpm_start, 0x20002,
-		"  secdata_kernel version (vboot1)");
 
 	/* Test successful call in recovery mode */
 	reset_common_data(FOR_PHASE1);
@@ -283,10 +274,6 @@ static void phase1_tests(void)
 		"  key data");
 	TEST_EQ(sd->kernel_version_secdata, 0x20002,
 		"  secdata_kernel version");
-	TEST_EQ(sd->vbsd->kernel_version_tpm, 0x20002,
-		"  secdata_kernel version (vboot1)");
-	TEST_EQ(sd->vbsd->kernel_version_tpm_start, 0x20002,
-		"  secdata_kernel version (vboot1)");
 
 	/* Bad secdata_kernel causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
@@ -301,10 +288,6 @@ static void phase1_tests(void)
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata_kernel rec");
 	TEST_EQ(sd->kernel_version_secdata, 0, "  secdata_kernel version");
-	TEST_EQ(sd->vbsd->kernel_version_tpm, 0,
-		"  secdata_kernel version (vboot1)");
-	TEST_EQ(sd->vbsd->kernel_version_tpm_start, 0,
-		"  secdata_kernel version (vboot1)");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_NOT_REQUESTED, "  no recovery");
 

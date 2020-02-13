@@ -24,10 +24,6 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE];
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE]
-	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
-
 /* Global variables for stub functions */
 static LoadKernelParams lkp;
 static FILE *image_file = NULL;
@@ -217,9 +213,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
-	memset(&shared_data, 0, sizeof(shared_data));
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 
 	/* Copy kernel subkey to workbuf, if any */
 	if (key_blob) {

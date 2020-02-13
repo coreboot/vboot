@@ -22,8 +22,6 @@
 #include "vboot_ui_legacy_common.h"
 
 /* Mock data */
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -86,8 +84,6 @@ static void ResetMocks(void)
 {
 	vb2_reset_power_button();
 
-	memset(&shared_data, 0, sizeof(shared_data));
-
 	memset(&lkp, 0, sizeof(lkp));
 
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
@@ -95,7 +91,6 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
 	/* CRC will be invalid after here, but nobody's checking */

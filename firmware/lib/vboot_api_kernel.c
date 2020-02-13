@@ -168,7 +168,6 @@ static int vb2_reset_nv_requests(struct vb2_context *ctx)
 vb2_error_t VbBootNormal(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	VbSharedDataHeader *shared = sd->vbsd;
 	uint32_t max_rollforward = vb2_nv_get(ctx,
 					      VB2_NV_KERNEL_MAX_ROLLFORWARD);
 
@@ -203,20 +202,20 @@ vb2_error_t VbBootNormal(struct vb2_context *ctx)
 	 * version to less than the version currently in the TPM.  That is,
 	 * we're limiting rollforward, not allowing rollback.
 	 */
-	if (max_rollforward < shared->kernel_version_tpm_start)
-		max_rollforward = shared->kernel_version_tpm_start;
+	if (max_rollforward < sd->kernel_version_secdata)
+		max_rollforward = sd->kernel_version_secdata;
 
-	if (shared->kernel_version_tpm > max_rollforward) {
+	if (sd->kernel_version > max_rollforward) {
 		VB2_DEBUG("Limiting TPM kernel version roll-forward "
 			  "to %#x < %#x\n",
-			  max_rollforward, shared->kernel_version_tpm);
+			  max_rollforward, sd->kernel_version);
 
-		shared->kernel_version_tpm = max_rollforward;
+		sd->kernel_version = max_rollforward;
 	}
 
-	if (shared->kernel_version_tpm > shared->kernel_version_tpm_start) {
+	if (sd->kernel_version > sd->kernel_version_secdata) {
 		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
-				       shared->kernel_version_tpm);
+				       sd->kernel_version);
 	}
 
 	return rv;
@@ -381,6 +380,8 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	/* Translate vboot2 flags and fields into vboot1. */
 	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
 		sd->vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
+	sd->vbsd->kernel_version_tpm_start = sd->kernel_version_secdata;
+	sd->vbsd->kernel_version_tpm = sd->kernel_version;
 
 	return rv;
 }

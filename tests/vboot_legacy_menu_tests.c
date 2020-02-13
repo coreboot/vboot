@@ -23,8 +23,6 @@
 #include "vboot_ui_legacy_menu_private.h"
 
 /* Mock data */
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -61,8 +59,6 @@ static int vbexaltfwmask_called;
 /* Reset mock data (for use before each test) */
 static void ResetMocks(void)
 {
-	memset(&shared_data, 0, sizeof(shared_data));
-
 	memset(&lkp, 0, sizeof(lkp));
 
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
@@ -70,7 +66,6 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
 
 	/* CRC will be invalid after here, but nobody's checking */
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;

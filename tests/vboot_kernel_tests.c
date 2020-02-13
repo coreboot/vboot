@@ -55,8 +55,6 @@ static int gpt_flag_external;
 
 static struct vb2_gbb_header gbb;
 static VbExDiskHandle_t handle;
-static uint8_t shared_data[VB_SHARED_DATA_MIN_SIZE];
-static VbSharedDataHeader *shared = (VbSharedDataHeader *)shared_data;
 static LoadKernelParams lkp;
 static struct vb2_keyblock kbh;
 static struct vb2_kernel_preamble kph;
@@ -138,9 +136,6 @@ static void ResetMocks(void)
 	gbb.minor_version = VB2_GBB_MINOR_VER;
 	gbb.flags = 0;
 
-	memset(&shared_data, 0, sizeof(shared_data));
-	shared->kernel_version_tpm = 0x20001;
-
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.bytes_per_lba = 512;
 	lkp.streaming_lba_count = 1024;
@@ -166,14 +161,14 @@ static void ResetMocks(void)
 	mock_parts[0].size = 150;  /* 75 KB */
 	mock_part_next = 0;
 
+	memset(&mock_key, 0, sizeof(mock_key));
+
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
 	vb2_nv_init(ctx);
 
-	memset(&mock_key, 0, sizeof(mock_key));
-
 	sd = vb2_get_sd(ctx);
-	sd->vbsd = shared;
+	sd->kernel_version = 0x20001;
 
 	/* CRC will be invalid after here, but nobody's checking */
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
@@ -718,7 +713,7 @@ static void LoadKernelTest(void)
 	ResetMocks();
 	kbh.data_key.key_version = 3;
 	TestLoadKernel(0, "Keyblock version roll forward");
-	TEST_EQ(shared->kernel_version_tpm, 0x30001, "  shared version");
+	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
 
 	ResetMocks();
 	kbh.data_key.key_version = 3;
@@ -726,7 +721,7 @@ static void LoadKernelTest(void)
 	mock_parts[1].size = 150;
 	TestLoadKernel(0, "Two kernels roll forward");
 	TEST_EQ(mock_part_next, 2, "  read both");
-	TEST_EQ(shared->kernel_version_tpm, 0x30001, "  shared version");
+	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;

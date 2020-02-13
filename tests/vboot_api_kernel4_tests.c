@@ -102,8 +102,7 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *c)
 {
 	sd->kernel_version_secdata = kernel_version;
-	shared->kernel_version_tpm_start = kernel_version;
-	shared->kernel_version_tpm = kernel_version;
+	sd->kernel_version = kernel_version;
 	return kernel_phase1_retval;
 }
 
@@ -133,7 +132,7 @@ void vb2_secdata_kernel_set(struct vb2_context *c,
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 {
-	shared->kernel_version_tpm = new_version;
+	sd->kernel_version = new_version;
 
 	if (vbboot_retval == -1)
 		return VB2_ERROR_MOCK;
@@ -143,8 +142,6 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 
 vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
 {
-	shared->kernel_version_tpm = new_version;
-
 	if (vbboot_retval == -2)
 		return VB2_ERROR_MOCK;
 
@@ -156,8 +153,6 @@ vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
 		"  recovery reason");
 	TEST_TRUE(commit_data_called, "  commit data");
-
-	shared->kernel_version_tpm = new_version;
 
 	if (vbboot_retval == -3)
 		return VB2_ERROR_MOCK;
