@@ -221,18 +221,18 @@ int main(int argc, char* argv[])
 	sd = vb2_get_sd(ctx);
 	sd->vbsd = shared;
 
-	/* Copy kernel subkey to VBSD, if any */
+	/* Copy kernel subkey to workbuf, if any */
 	if (key_blob) {
-		struct vb2_packed_key *dst = (struct vb2_packed_key *)
-			(shared_data +
-			 vb2_wb_round_up(sizeof(VbSharedDataHeader)));
-		shared->kernel_subkey.key_offset =
-			(uintptr_t)dst - (uintptr_t)&shared->kernel_subkey;
-		shared->kernel_subkey.key_size = key_blob->key_size;
-		shared->kernel_subkey.algorithm = key_blob->algorithm;
-		shared->kernel_subkey.key_version = key_blob->key_version;
-		memcpy(vb2_packed_key_data_mutable(dst),
-		       vb2_packed_key_data(key_blob), key_blob->key_size);
+		struct vb2_workbuf wb;
+		struct vb2_packed_key *dst;
+		uint32_t kernkey_size =
+			key_blob->key_offset + key_blob->key_size;
+		vb2_workbuf_from_ctx(ctx, &wb);
+		dst = vb2_workbuf_alloc(&wb, kernkey_size);
+		memcpy(dst, key_blob, kernkey_size);
+		vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
+		sd->kernel_key_offset = vb2_offset_of(sd, dst);
+		sd->kernel_key_size = kernkey_size;
 	}
 
 	/* Free the key blob, now that we're done with it */
