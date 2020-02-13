@@ -440,7 +440,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
 	VbSharedDataHeader *shared = sd->vbsd;
-	VbSharedDataKernelCall *shcall = NULL;
+	VbSharedDataKernelCall shcall;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t rv;
@@ -457,14 +457,11 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	 * Set up tracking for this call.  This wraps around if called many
 	 * times, so we need to initialize the call entry each time.
 	 */
-	shcall = shared->lk_calls +
-			(shared->lk_call_count & (VBSD_MAX_KERNEL_CALLS - 1));
-	memset(shcall, 0, sizeof(*shcall));
-	shcall->boot_flags = (uint32_t)params->boot_flags;
-	shcall->boot_mode = get_kernel_boot_mode(ctx);
-	shcall->sector_size = (uint32_t)params->bytes_per_lba;
-	shcall->sector_count = params->streaming_lba_count;
-	shared->lk_call_count++;
+	memset(&shcall, 0, sizeof(shcall));
+	shcall.boot_flags = (uint32_t)params->boot_flags;
+	shcall.boot_mode = get_kernel_boot_mode(ctx);
+	shcall.sector_size = (uint32_t)params->bytes_per_lba;
+	shcall.sector_count = params->streaming_lba_count;
 
 	/* Locate key to verify kernel.  This will either be a recovery key, or
 	   a kernel subkey passed from firmware verification. */
@@ -480,14 +477,14 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			? GPT_FLAG_EXTERNAL : 0;
 	if (0 != AllocAndReadGptData(params->disk_handle, &gpt)) {
 		VB2_DEBUG("Unable to read GPT data\n");
-		shcall->check_result = VBSD_LKC_CHECK_GPT_READ_ERROR;
+		shcall.check_result = VBSD_LKC_CHECK_GPT_READ_ERROR;
 		goto gpt_done;
 	}
 
 	/* Initialize GPT library */
 	if (GPT_SUCCESS != GptInit(&gpt)) {
 		VB2_DEBUG("Error parsing GPT\n");
-		shcall->check_result = VBSD_LKC_CHECK_GPT_PARSE_ERROR;
+		shcall.check_result = VBSD_LKC_CHECK_GPT_PARSE_ERROR;
 		goto gpt_done;
 	}
 
@@ -506,7 +503,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * time.
 		 */
 		VbSharedDataKernelPart *shpart =
-				shcall->parts + (shcall->kernel_parts_found
+				shcall.parts + (shcall.kernel_parts_found
 				& (VBSD_MAX_KERNEL_PARTS - 1));
 		memset(shpart, 0, sizeof(VbSharedDataKernelPart));
 		shpart->sector_start = part_start;
@@ -516,7 +513,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * 0.  Adjust here, until cgptlib is fixed.
 		 */
 		shpart->gpt_index = (uint8_t)(gpt.current_kernel + 1);
-		shcall->kernel_parts_found++;
+		shcall.kernel_parts_found++;
 
 		/* Found at least one kernel partition. */
 		found_partitions++;
@@ -602,7 +599,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * non-officially-signed kernel, there's no rollback
 		 * protection, so we can stop at the first valid kernel.
 		 */
-		if (kBootRecovery == shcall->boot_mode || !keyblock_valid) {
+		if (kBootRecovery == shcall.boot_mode || !keyblock_valid) {
 			VB2_DEBUG("In recovery mode or dev-signed kernel\n");
 			break;
 		}
@@ -627,7 +624,7 @@ gpt_done:
 	/* Handle finding a good partition */
 	if (params->partition_number > 0) {
 		VB2_DEBUG("Good partition %d\n", params->partition_number);
-		shcall->check_result = VBSD_LKC_CHECK_GOOD_PARTITION;
+		shcall.check_result = VBSD_LKC_CHECK_GOOD_PARTITION;
 		shared->kernel_version_lowest = lowest_version;
 		/*
 		 * Sanity check - only store a new TPM version if we found one.
@@ -642,13 +639,13 @@ gpt_done:
 		/* Success! */
 		rv = VB2_SUCCESS;
 	} else if (found_partitions > 0) {
-		shcall->check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
+		shcall.check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
 		rv = VB2_ERROR_LK_INVALID_KERNEL_FOUND;
 	} else {
-		shcall->check_result = VBSD_LKC_CHECK_NO_PARTITIONS;
+		shcall.check_result = VBSD_LKC_CHECK_NO_PARTITIONS;
 		rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 	}
 
-	shcall->return_code = (uint8_t)rv;
+	shcall.return_code = (uint8_t)rv;
 	return rv;
 }

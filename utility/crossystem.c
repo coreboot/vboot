@@ -92,8 +92,6 @@ const Param sys_param_list[] = {
   {"vdat_flags", 0, "Flags from VbSharedData", "0x%08x"},
   {"vdat_lfdebug", IS_STRING|NO_PRINT_ALL,
    "LoadFirmware() debug data (not in print-all)"},
-  {"vdat_lkdebug", IS_STRING|NO_PRINT_ALL,
-   "LoadKernel() debug data (not in print-all)"},
   {"wipeout_request", CAN_WRITE, "Firmware requested factory reset (wipeout)"},
   {"wpsw_boot", 0, "Firmware write protect hardware switch position at boot"},
   {"wpsw_cur", 0, "Firmware write protect hardware switch current position"},
