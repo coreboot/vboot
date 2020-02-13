@@ -76,4 +76,8 @@
 typedef uint32_t vb2_gbb_flags_t;
 #endif
 
+/* Size of legacy VbSharedDataHeader struct.  Defined here to avoid including
+   the struct definition as part of a vb2_api.h include. */
+#define VB2_VBSD_SIZE 1096
+
 #endif  /* VBOOT_REFERENCE_2CONSTANTS_H_ */

@@ -452,3 +452,45 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx)
 {
 	return vb2_get_sd(ctx)->recovery_reason;
 }
+
+void vb2api_export_vbsd(struct vb2_context *ctx, int wp_enabled, void *dest)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	VbSharedDataHeader *vbsd = (void *)dest;
+
+	/* Initialize with boilerplate fields. */
+	memset(vbsd, 0, VB2_VBSD_SIZE);
+	vbsd->magic = VB_SHARED_DATA_MAGIC;
+	vbsd->struct_version = VB_SHARED_DATA_VERSION;
+	vbsd->struct_size = VB2_VBSD_SIZE;
+	vbsd->data_size = VB2_VBSD_SIZE;
+	vbsd->data_used = VB2_VBSD_SIZE;
+	vbsd->flags |= VBSD_BOOT_FIRMWARE_VBOOT2;
+
+	/* Translate vboot2 flags and fields into vboot1. */
+	if (ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED)
+		vbsd->flags |= VBSD_EC_SOFTWARE_SYNC;
+	if (ctx->flags & VB2_CONTEXT_NVDATA_V2)
+		vbsd->flags |= VBSD_NVDATA_V2;
+	if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE)
+		vbsd->flags |= VBSD_BOOT_DEV_SWITCH_ON;
+	if (ctx->flags & VB2_CONTEXT_FORCE_RECOVERY_MODE)
+		vbsd->flags |= VBSD_BOOT_REC_SWITCH_ON;
+	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
+		vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
+	if (wp_enabled)
+		vbsd->flags |= VBSD_BOOT_FIRMWARE_WP_ENABLED;
+
+	vbsd->fw_version_tpm_start = sd->fw_version_secdata;
+	vbsd->fw_version_tpm = sd->fw_version;
+	vbsd->kernel_version_tpm_start = sd->kernel_version_secdata;
+	vbsd->kernel_version_tpm = sd->kernel_version;
+
+	vbsd->recovery_reason = sd->recovery_reason;
+	if (sd->recovery_reason)
+		vbsd->firmware_index = 0xff;
+	else
+		vbsd->firmware_index = sd->fw_slot;
+}
+_Static_assert(VB2_VBSD_SIZE == sizeof(VbSharedDataHeader),
+	       "VB2_VBSD_SIZE incorrect");

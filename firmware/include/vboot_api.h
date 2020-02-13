@@ -39,15 +39,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 /* Main entry points from firmware into vboot_reference */
 
 /*
- * Minimum and recommended size of shared_data_blob in bytes.  Shared data blob
- * is used to communicate data between calls to VbInit(), VbSelectFirmware(),
- * the OS.  Minimum size is enough to hold all required data for verified boot
- * but may not be able to hold debug output.
- */
-#define VB_SHARED_DATA_MIN_SIZE 3072
-#define VB_SHARED_DATA_REC_SIZE 16384
-
-/*
  * We use disk handles rather than indices.  Using indices causes problems if
  * a disk is removed/inserted in the middle of processing.
  */
@@ -91,7 +82,6 @@ typedef struct VbSelectAndLoadKernelParams {
  * Returns VB2_SUCCESS if success, non-zero if error; on error, caller
  * should reboot. */
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
-				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams);
 
 /*****************************************************************************/

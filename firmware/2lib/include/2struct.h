@@ -232,10 +232,11 @@ struct vb2_shared_data {
 	 */
 
 	/*
-	 * Vboot1 shared data header.  This data should eventually get folded
-	 * directly into the kernel portion of this struct.
+	 * Formerly a pointer to vboot1 shared data header ("VBSD").  Caller
+	 * may now export a copy of VBSD via vb2api_export_vbsd().
+	 * TODO: Remove this field and bump struct_version_major.
 	 */
-	struct VbSharedDataHeader *vbsd;
+	uintptr_t reserved0;
 
 	/*
 	 * Offset and size of packed kernel key in work buffer.  Size is 0 if

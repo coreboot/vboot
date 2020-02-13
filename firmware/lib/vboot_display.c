@@ -252,14 +252,6 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 			RecoveryReasonString(sd->recovery_reason),
 			DEBUG_INFO_SIZE - used);
 
-	/* Add VbSharedDataHeader flags if available */
-	if (sd->vbsd) {
-		used += StrnAppend(buf + used, "\nVbSD.flags: 0x",
-				   DEBUG_INFO_SIZE - used);
-		used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-				       sd->vbsd->flags, 16, 8);
-	}
-
 	/* Add vb2_context and vb2_shared_data flags */
 	used += StrnAppend(buf + used, "\ncontext.flags: 0x",
 			   DEBUG_INFO_SIZE - used);

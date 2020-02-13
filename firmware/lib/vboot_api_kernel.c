@@ -222,36 +222,9 @@ vb2_error_t VbBootNormal(struct vb2_context *ctx)
 	return rv;
 }
 
-static vb2_error_t vb2_kernel_setup(struct vb2_context *ctx,
-				    VbSharedDataHeader *shared,
-				    VbSelectAndLoadKernelParams *kparams)
+static vb2_error_t vb2_kernel_init_kparams(struct vb2_context *ctx,
+					   VbSelectAndLoadKernelParams *kparams)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-
-	/* Translate vboot2 flags and fields into vboot1. */
-	if (ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED)
-		shared->flags |= VBSD_EC_SOFTWARE_SYNC;
-	if (ctx->flags & VB2_CONTEXT_NVDATA_V2)
-		shared->flags |= VBSD_NVDATA_V2;
-	if (sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED)
-		shared->flags |= VBSD_BOOT_DEV_SWITCH_ON;
-
-	/* Translate recovery reason-related fields into vboot1 */
-	shared->recovery_reason = sd->recovery_reason;
-	if (sd->recovery_reason)
-		shared->firmware_index = 0xff;
-	if (sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY)
-		shared->flags |= VBSD_BOOT_REC_SWITCH_ON;
-
-	/*
-	 * Save a pointer to the old vboot1 shared data, since we haven't
-	 * finished porting the library to use the new vb2 context and shared
-	 * data.
-	 *
-	 * TODO: replace this with fields directly in vb2 shared data.
-	 */
-	sd->vbsd = shared;
-
 	/* Fill in params for calls to LoadKernel() */
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.kernel_buffer = kparams->kernel_buffer;
@@ -284,7 +257,6 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 }
 
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
-				  VbSharedDataHeader *shared,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -294,7 +266,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	   to vb2_nv_get and vb2_nv_set. */
 	vb2_nv_init(ctx);
 
-	rv = vb2_kernel_setup(ctx, shared, kparams);
+	rv = vb2_kernel_init_kparams(ctx, kparams);
 	if (rv)
 		return rv;
 
@@ -372,17 +344,8 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		rv = VbBootNormal(ctx);
 	}
 
-	/* No need to fill kparams or convert vboot1 flags on failure. */
-	if (rv)
-		return rv;
-
-	vb2_kernel_fill_kparams(ctx, kparams);
-
-	/* Translate vboot2 flags and fields into vboot1. */
-	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
-		sd->vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
-	sd->vbsd->kernel_version_tpm_start = sd->kernel_version_secdata;
-	sd->vbsd->kernel_version_tpm = sd->kernel_version;
+	if (rv == VB2_SUCCESS)
+		vb2_kernel_fill_kparams(ctx, kparams);
 
 	return rv;
 }

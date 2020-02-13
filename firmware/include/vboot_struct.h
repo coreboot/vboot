@@ -20,10 +20,6 @@ extern "C" {
 /* Magic number for recognizing VbSharedDataHeader ("VbSD") */
 #define VB_SHARED_DATA_MAGIC 0x44536256
 
-/* Minimum and recommended size of shared_data_blob in bytes. */
-#define VB_SHARED_DATA_MIN_SIZE 3072
-#define VB_SHARED_DATA_REC_SIZE 16384
-
 /*
  * Flags for VbSharedDataHeader
  *

@@ -470,6 +470,19 @@ vb2_error_t vb2api_relocate(void *new_workbuf, const void *cur_workbuf,
 			    uint32_t size, struct vb2_context **ctxptr);
 
 /**
+ * Export "VBSD" vboot1 data structure.
+ *
+ * Copy relevant fields from vboot2 data structures to VbSharedDataHeader
+ * format.  Takes a pointer to the memory space to be filled in.  Expects
+ * the memory available to be of size VB2_VBSD_SIZE.
+ *
+ * @param ctx		Context pointer
+ * @param wp_enabled	Whether or not write-protect is enabled at boot time
+ * @param dest		Target memory to store VbSharedDataHeader
+ */
+void vb2api_export_vbsd(struct vb2_context *ctx, int wp_enabled, void *dest);
+
+/**
  * Check the validity of firmware secure storage context.
  *
  * Checks version and CRC.
