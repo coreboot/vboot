@@ -30,13 +30,12 @@ static void display_wait_screen(struct vb2_context *ctx)
  */
 static int auxfw_sync_allowed(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC)
 		return 0;
-	if (sd->recovery_reason)
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
 		return 0;
 	return 1;
 }

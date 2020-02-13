@@ -334,7 +334,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	}
 
 	/* If we're in dev-mode, show the kernel subkey that we expect, too. */
-	if (sd->recovery_reason == VB2_RECOVERY_NOT_REQUESTED &&
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
 	    sd->kernel_key_offset) {
 		struct vb2_packed_key *key =
 			vb2_member_of(sd, sd->kernel_key_offset);

@@ -395,7 +395,6 @@ static int ec_will_update_slowly(struct vb2_context *ctx)
 
 static int ec_sync_allowed(struct vb2_context *ctx)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
@@ -403,7 +402,7 @@ static int ec_sync_allowed(struct vb2_context *ctx)
 		return 0;
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
 		return 0;
-	if (sd->recovery_reason)
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
 		return 0;
 	return 1;
 }
