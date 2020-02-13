@@ -560,7 +560,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		int keyblock_valid = (shpart->flags &
 				      VBSD_LKP_FLAG_KEYBLOCK_VALID);
 		if (keyblock_valid) {
-			shared->flags |= VBSD_KERNEL_KEY_VERIFIED;
+			sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
 			/* Track lowest version from a valid header. */
 			if (lowest_version > shpart->combined_version)
 				lowest_version = shpart->combined_version;

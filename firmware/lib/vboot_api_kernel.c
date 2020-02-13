@@ -428,6 +428,10 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	if (rv == VB2_SUCCESS)
 		vb2_kernel_fill_kparams(ctx, kparams);
 
+	/* Translate vboot2 flags and fields into vboot1. */
+	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
+		sd->vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
+
 	/* Commit data, but retain any previous errors */
 	call_rv = vb2_commit_data(ctx);
 	if (rv == VB2_SUCCESS)
