@@ -9,12 +9,6 @@
  * Using vb2_api.h as the single point of contact between calling firmware and
  * vboot allows subsequent refactoring of vboot (renaming of headers, etc.)
  * without churning other projects' source code.
- *
- * #define NEED_VB20_INTERNALS
- *   Allows the caller to peek into vboot2 data structures, by including a
- *   specific set of extra header files listed in vb2_api.h.  Including this
- *   switch means the caller is broken and should be fixed.  The existence of
- *   this switch is a bug, and it should be removed when it is no longer used.
  */
 
 #ifndef VBOOT_REFERENCE_VB2_API_H_
@@ -22,19 +16,5 @@
 
 /* Standard APIs */
 #include "../2lib/include/2api.h"
-
-/*
- * Coreboot should not need access to vboot2 internals.  But right now it does.
- * At least this forces it to do so through a relatively narrow hole so vboot2
- * refactoring can continue.
- *
- * Please do not rip this into a wider hole, or expect this hole to continue.
- *
- * TODO: Make cleaner APIs to this stuff.
- */
-#ifdef NEED_VB20_INTERNALS
-#include "../2lib/include/2misc.h"  /* for vb2_get_sd() */
-#include "../2lib/include/2struct.h"  /* for vb2_shared_data struct */
-#endif
 
 #endif  /* VBOOT_REFERENCE_VB2_API_H_ */
