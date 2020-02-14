@@ -260,6 +260,20 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 				       sd->vbsd->flags, 16, 8);
 	}
 
+	/* Add vb2_context and vb2_shared_data flags */
+	used += StrnAppend(buf + used, "\ncontext.flags: 0x",
+			   DEBUG_INFO_SIZE - used);
+	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
+			       ctx->flags, 16, 16);
+	used += StrnAppend(buf + used, "\nshared_data.flags: 0x",
+			   DEBUG_INFO_SIZE - used);
+	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
+			       sd->flags, 16, 8);
+	used += StrnAppend(buf + used, "\nshared_data.status: 0x",
+			   DEBUG_INFO_SIZE - used);
+	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
+			       sd->status, 16, 8);
+
 	/* Add raw contents of VbNvStorage */
 	used += StrnAppend(buf + used, "\nVbNv.raw:", DEBUG_INFO_SIZE - used);
 	for (i = 0; i < vb2_nv_get_size(ctx); i++) {
