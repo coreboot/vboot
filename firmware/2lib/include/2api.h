@@ -765,6 +765,16 @@ int vb2api_is_developer_signed(struct vb2_context *ctx);
  */
 int vb2api_need_reboot_for_display(struct vb2_context *ctx);
 
+/**
+ * Get the current recovery reason.
+ *
+ * See enum vb2_nv_recovery in 2recovery_reasons.h.
+ *
+ * @param ctx		Vboot context
+ * @return Current recovery reason.
+ */
+uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 

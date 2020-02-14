@@ -785,6 +785,13 @@ static void clear_recovery_tests(void)
 		4, "  subcode shifted");
 }
 
+static void get_recovery_reason_tests(void)
+{
+	reset_common_data();
+	sd->recovery_reason = 4;
+	TEST_EQ(vb2api_get_recovery_reason(ctx), 4, "correct recovery reason");
+}
+
 int main(int argc, char* argv[])
 {
 	init_workbuf_tests();
@@ -797,6 +804,7 @@ int main(int argc, char* argv[])
 	select_slot_tests();
 	need_reboot_for_display_tests();
 	clear_recovery_tests();
+	get_recovery_reason_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
