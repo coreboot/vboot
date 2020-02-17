@@ -70,9 +70,6 @@ enum vb2_nv_param {
 	/* Set and cleared by vboot to request that display be initialized
 	   at boot time, so that BIOS screens can be displayed. 0=no, 1=yes. */
 	VB2_NV_DISPLAY_REQUEST,
-	/* TODO(chromium:948529): Remove VB2_NV_OPROM_NEEDED when unused.
-	   Renamed to VB2_NV_DISPLAY_REQUEST (above). */
-	VB2_NV_OPROM_NEEDED = VB2_NV_DISPLAY_REQUEST,
 	/* Request that the firmware clear the TPM owner on the next boot. */
 	VB2_NV_CLEAR_TPM_OWNER_REQUEST,
 	/* Flag that TPM owner was cleared on request. */
