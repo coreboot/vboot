@@ -1166,13 +1166,14 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		return UPDATE_ERR_PLATFORM;
 
 	if (!image_from->data) {
-		/*
-		 * TODO(hungte) Read only RO_SECTION, VBLOCK_A, VBLOCK_B,
-		 * RO_VPD, RW_VPD, RW_NVRAM, RW_LEGACY.
-		 */
+		int ret;
 		INFO("Loading current system firmware...\n");
-		if (load_system_firmware(image_from, &cfg->tempfiles,
-					 cfg->verbosity) != 0)
+		ret = load_system_firmware(image_from, &cfg->tempfiles,
+					   cfg->verbosity);
+		if (ret == IMAGE_PARSE_FAILURE && cfg->force_update) {
+			WARN("No compatible firmware in system.\n");
+			cfg->check_platform = 0;
+		} else if (ret)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
 	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",

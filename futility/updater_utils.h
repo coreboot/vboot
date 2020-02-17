@@ -64,11 +64,18 @@ struct firmware_image {
 	FmapHeader *fmap_header;
 };
 
+enum {
+	IMAGE_LOAD_SUCCESS = 0,
+	IMAGE_READ_FAILURE = -1,
+	IMAGE_PARSE_FAILURE = -2,
+};
+
 /*
  * Loads a firmware image from file.
  * If archive is provided and file_name is a relative path, read the file from
  * archive.
- * Returns 0 on success, otherwise failure.
+ * Returns IMAGE_LOAD_SUCCESS on success, IMAGE_READ_FAILURE on file I/O
+ * failure, or IMAGE_PARSE_FAILURE for non-vboot images.
  */
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive);

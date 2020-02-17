@@ -130,84 +130,105 @@ const char *cbfs_extract_file(const char *image_file,
 /*
  * Loads the firmware information from an FMAP section in loaded firmware image.
  * The section should only contain ASCIIZ string as firmware version.
- * If successful, the return value is zero and *version points to a newly
- * allocated string as firmware version (caller must free it); otherwise
- * failure.
+ * Returns 0 if a non-empty version string is stored in *version, otherwise -1.
  */
 static int load_firmware_version(struct firmware_image *image,
 				 const char *section_name,
 				 char **version)
 {
 	struct firmware_section fwid;
-	find_firmware_section(&fwid, image, section_name);
-	if (fwid.size) {
-		*version = strndup((const char*)fwid.data, fwid.size);
-		/*
-		 * For 'system current' images, the version string may contain
-		 * invalid characters that we do want to strip.
-		 */
-		strip_string(*version, "\xff");
-		return 0;
+	int len = 0;
+
+	/*
+	 * section_name is NULL when parsing the RW versions on a non-vboot
+	 * image (and already warned in load_firmware_image). We still need to
+	 * initialize *version with empty string.
+	 */
+	if (section_name) {
+		find_firmware_section(&fwid, image, section_name);
+		if (fwid.size)
+			len = fwid.size;
+		else
+			WARN("No valid section '%s', missing version info.\n",
+			     section_name);
 	}
-	*version = strdup("");
-	return -1;
+
+	if (!len) {
+		*version = strdup("");
+		return -1;
+	}
+
+	/*
+	 * For 'system current' images, the version string may contain
+	 * invalid characters that we do want to strip.
+	 */
+	*version = strndup((const char *)fwid.data, len);
+	strip_string(*version, "\xff");
+	return 0;
 }
 
 /*
  * Loads a firmware image from file.
  * If archive is provided and file_name is a relative path, read the file from
  * archive.
- * Returns 0 on success, otherwise failure.
+ * Returns IMAGE_LOAD_SUCCESS on success, IMAGE_READ_FAILURE on file I/O
+ * failure, or IMAGE_PARSE_FAILURE for non-vboot images.
  */
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive)
 {
+	int ret = IMAGE_LOAD_SUCCESS;
+	const char *section_a = NULL, *section_b = NULL;
+
 	if (!file_name) {
 		ERROR("No file name given\n");
-		return -1;
+		return IMAGE_READ_FAILURE;
 	}
 
 	VB2_DEBUG("Load image file from %s...\n", file_name);
 
 	if (!archive_has_entry(archive, file_name)) {
 		ERROR("Does not exist: %s\n", file_name);
-		return -1;
+		return IMAGE_READ_FAILURE;
 	}
 	if (archive_read_file(archive, file_name, &image->data, &image->size,
 			      NULL) != VB2_SUCCESS) {
 		ERROR("Failed to load %s\n", file_name);
-		return -1;
+		return IMAGE_READ_FAILURE;
 	}
 
 	VB2_DEBUG("Image size: %d\n", image->size);
 	assert(image->data);
 	image->file_name = strdup(file_name);
-
 	image->fmap_header = fmap_find(image->data, image->size);
+
 	if (!image->fmap_header) {
 		ERROR("Invalid image file (missing FMAP): %s\n", file_name);
-		return -1;
+		ret = IMAGE_PARSE_FAILURE;
 	}
 
-	if (!firmware_section_exists(image, FMAP_RO_FRID)) {
-		ERROR("Does not look like VBoot firmware image: %s\n",
-		      file_name);
-		return -1;
-	}
+	if (load_firmware_version(image, FMAP_RO_FRID, &image->ro_version))
+		ret = IMAGE_PARSE_FAILURE;
 
-	load_firmware_version(image, FMAP_RO_FRID, &image->ro_version);
 	if (firmware_section_exists(image, FMAP_RW_FWID_A)) {
-		char **a = &image->rw_version_a, **b = &image->rw_version_b;
-		load_firmware_version(image, FMAP_RW_FWID_A, a);
-		load_firmware_version(image, FMAP_RW_FWID_B, b);
+		section_a = FMAP_RW_FWID_A;
+		section_b = FMAP_RW_FWID_B;
 	} else if (firmware_section_exists(image, FMAP_RW_FWID)) {
-		char **a = &image->rw_version_a, **b = &image->rw_version_b;
-		load_firmware_version(image, FMAP_RW_FWID, a);
-		load_firmware_version(image, FMAP_RW_FWID, b);
-	} else {
+		section_a = FMAP_RW_FWID;
+		section_b = FMAP_RW_FWID;
+	} else if (!ret) {
 		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", file_name);
+		ret = IMAGE_PARSE_FAILURE;
 	}
-	return 0;
+
+	/*
+	 * Load and initialize both RW A and B sections.
+	 * Note some unit tests will create only RW A.
+	 */
+	load_firmware_version(image, section_a, &image->rw_version_a);
+	load_firmware_version(image, section_b, &image->rw_version_b);
+
+	return ret;
 }
 
 /*
