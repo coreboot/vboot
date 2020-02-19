@@ -770,7 +770,7 @@ static void clear_recovery_tests(void)
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  request cleared");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
-		13, "  subcode retained");
+		0, "  subcode cleared");
 
 	/* BROKEN recovery */
 	reset_common_data();
