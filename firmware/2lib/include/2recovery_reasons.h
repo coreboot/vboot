@@ -58,9 +58,9 @@ enum vb2_nv_recovery {
 	 * RW firmware failed signature check (neither RW firmware slot was
 	 * valid).  Recovery reason is VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
 	 * the check value for the slot which came closest to validating; see
-	 * VBSD_LF_CHECK_* in vboot_struct.h.
+	 * VBSD_LF_CHECK_* in vboot_struct.h (deprecated).
 	 */
-	VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN = 0x10,
+	VB2_RECOVERY_DEPRECATED_RO_INVALID_RW_CHECK_MIN = 0x10,
 
 	/* Latest tried RW firmware keyblock verification failed */
 	VB2_RECOVERY_FW_KEYBLOCK = 0x13,
