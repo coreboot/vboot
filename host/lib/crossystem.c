@@ -431,8 +431,6 @@ int VbGetSystemPropertyInt(const char *name)
 	} else if (!strcasecmp(name, "wpsw_cur")) {
 		/* Use "write-protect at boot" as a fallback value. */
 		value = GetVdatInt(VDAT_INT_HW_WPSW_BOOT);
-	} else if (!strcasecmp(name, "wpsw_boot")) {
-		value = GetVdatInt(VDAT_INT_HW_WPSW_BOOT);
 	} else if (!strcasecmp(name,"vdat_flags")) {
 		value = GetVdatInt(VDAT_INT_FLAGS);
 	} else if (!strcasecmp(name,"tpm_fwver")) {

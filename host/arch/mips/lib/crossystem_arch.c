@@ -42,8 +42,6 @@ int VbGetArchPropertyInt(const char* name)
 		return 0;
 	} else if (!strcasecmp(name,"recoverysw_ec_boot")) {
 		return 0;
-	} else if (!strcasecmp(name,"wpsw_boot")) {
-		return 1;
 	}
 	return -1;
 }

@@ -417,13 +417,7 @@ static int host_get_tpm_fwver(void)
 static int host_get_wp_hw(void)
 {
 	/* wpsw refers to write protection 'switch', not 'software'. */
-	int v = VbGetSystemPropertyInt("wpsw_cur");
-
-	/* wpsw_cur may be not available, especially in recovery mode. */
-	if (v < 0)
-		v = VbGetSystemPropertyInt("wpsw_boot");
-
-	return v;
+	return VbGetSystemPropertyInt("wpsw_cur");
 }
 
 /* A helper function to return "fw_vboot2" system property. */

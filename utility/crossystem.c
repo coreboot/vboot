@@ -93,7 +93,6 @@ const Param sys_param_list[] = {
   {"vdat_lfdebug", IS_STRING|NO_PRINT_ALL,
    "LoadFirmware() debug data (not in print-all)"},
   {"wipeout_request", CAN_WRITE, "Firmware requested factory reset (wipeout)"},
-  {"wpsw_boot", 0, "Firmware write protect hardware switch position at boot"},
   {"wpsw_cur", 0, "Firmware write protect hardware switch current position"},
   /* Terminate with null name */
   {NULL, 0, NULL}

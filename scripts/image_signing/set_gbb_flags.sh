@@ -20,7 +20,7 @@ set -e
 # ----------------------------------------------------------------------------
 check_write_protection() {
   local hw_wp="" sw_wp=""
-  if ! crossystem "wpsw_boot?0"; then
+  if ! crossystem "wpsw_cur?0"; then
     hw_wp="on"
   fi
   # Keep 'local' declaration split from assignment so return code is checked.
