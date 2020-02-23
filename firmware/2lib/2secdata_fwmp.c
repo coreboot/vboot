@@ -11,6 +11,7 @@
 #include "2secdata.h"
 #include "2secdata_struct.h"
 
+test_mockable
 vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size)
 {
 	struct vb2_secdata_fwmp *sec =

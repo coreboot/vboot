@@ -116,6 +116,7 @@ const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg)
 	}
 }
 
+test_mockable
 vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
 			    enum vb2_hash_algorithm hash_alg)
 {
@@ -143,6 +144,7 @@ vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
 	}
 }
 
+test_mockable
 vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
 			      uint32_t size)
 {
@@ -167,6 +169,7 @@ vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
 	}
 }
 
+test_mockable
 vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 				uint32_t digest_size)
 {
@@ -194,6 +197,7 @@ vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 	}
 }
 
+test_mockable
 vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
 			      uint32_t digest_size)

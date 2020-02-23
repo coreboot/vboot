@@ -10,6 +10,7 @@
 #include "2sysincludes.h"
 #include "vb2_common.h"
 
+test_mockable
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 				  const uint8_t *buf, uint32_t size)
 {

@@ -57,6 +57,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 {
 	vb2_error_t rv = VB2_ERROR_LK_NO_DISK_FOUND;

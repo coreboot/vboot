@@ -48,6 +48,7 @@ uint32_t vb2api_get_firmware_size(struct vb2_context *ctx)
 	return pre->body_signature.data_size;
 }
 
+test_mockable
 vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 				struct vb2_gbb_header *gbb)
 {
@@ -81,6 +82,7 @@ vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
+test_mockable
 void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -396,6 +398,7 @@ vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 int vb2_allow_recovery(struct vb2_context *ctx)
 {
 	/* VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY forces this to always return

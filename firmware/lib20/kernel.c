@@ -35,6 +35,7 @@ static int vb2_need_signed_kernel(struct vb2_context *ctx)
 	return 0;
 }
 
+test_mockable
 vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 				     uint32_t size,
 				     const struct vb2_workbuf *wb)
@@ -238,6 +239,7 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 				       uint32_t size,
 				       const struct vb2_public_key *key,
