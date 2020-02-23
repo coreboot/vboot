@@ -884,6 +884,13 @@ void vb2ex_abort(void);
  */
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 
+/**
+ * Check that physical presence button is currently pressed by the user.
+ *
+ * @returns 1 for pressed, 0 for not.
+ */
+int vb2ex_physical_presence_pressed(void);
+
 /*****************************************************************************/
 /* Auxiliary firmware (auxfw) */
 

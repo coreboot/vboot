@@ -46,9 +46,6 @@ static uint32_t virtdev_retval;
 static uint32_t mock_keypress[64];
 static uint32_t mock_keyflags[64];
 static uint32_t mock_keypress_count;
-static uint32_t mock_switches[8];
-static uint32_t mock_switches_count;
-static int mock_switches_are_stuck;
 static uint32_t screens_displayed[64];
 static uint32_t screens_count = 0;
 static uint32_t beeps_played[64];
@@ -95,10 +92,6 @@ static void ResetMocks(void)
 	memset(mock_keypress, 0, sizeof(mock_keypress));
 	memset(mock_keyflags, 0, sizeof(mock_keyflags));
 	mock_keypress_count = 0;
-
-	memset(mock_switches, 0, sizeof(mock_switches));
-	mock_switches_count = 0;
-	mock_switches_are_stuck = 0;
 
 	mock_altfw_mask = 3 << 1;	/* This mask selects 1 and 2 */
 	vbexaltfwmask_called = 0;
@@ -159,16 +152,6 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 			*key_flags = mock_keyflags[mock_keypress_count];
 		return mock_keypress[mock_keypress_count++];
 	} else
-		return 0;
-}
-
-uint32_t VbExGetSwitches(uint32_t request_mask)
-{
-	if (mock_switches_are_stuck)
-		return mock_switches[0] & request_mask;
-	if (mock_switches_count < ARRAY_SIZE(mock_switches))
-		return mock_switches[mock_switches_count++] & request_mask;
-	else
 		return 0;
 }
 

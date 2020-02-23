@@ -54,7 +54,7 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr)
 	return 0;
 }
 
-uint32_t VbExGetSwitches(uint32_t mask)
+int vb2ex_physical_presence_pressed(void)
 {
 	return 0;
 }

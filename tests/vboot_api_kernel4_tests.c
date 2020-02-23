@@ -42,9 +42,8 @@ static vb2_error_t kernel_phase1_retval;
 static uint32_t current_recovery_reason;
 static uint32_t expected_recovery_reason;
 
-static uint32_t mock_switches[8];
-static uint32_t mock_switches_count;
-static int mock_switches_are_stuck;
+static uint32_t mock_presence[8];
+static uint32_t mock_presence_count;
 
 static void reset_common_data(void)
 {
@@ -76,9 +75,8 @@ static void reset_common_data(void)
 	current_recovery_reason = 0;
 	expected_recovery_reason = 0;
 
-	memset(mock_switches, 0, sizeof(mock_switches));
-	mock_switches_count = 0;
-	mock_switches_are_stuck = 0;
+	memset(mock_presence, 0, sizeof(mock_presence));
+	mock_presence_count = 0;
 }
 
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
@@ -168,12 +166,10 @@ vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-uint32_t VbExGetSwitches(uint32_t request_mask)
+int vb2ex_physical_presence_pressed(void)
 {
-	if (mock_switches_are_stuck)
-		return mock_switches[0] & request_mask;
-	if (mock_switches_count < ARRAY_SIZE(mock_switches))
-		return mock_switches[mock_switches_count++] & request_mask;
+	if (mock_presence_count < ARRAY_SIZE(mock_presence))
+		return mock_presence[mock_presence_count++];
 	else
 		return 0;
 }
@@ -240,7 +236,7 @@ static void select_and_load_kernel_tests(void)
 	/* Check that NV_DIAG_REQUEST triggers diagnostic UI */
 	if (DIAGNOSTIC_UI) {
 		reset_common_data();
-		mock_switches[1] = VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
+		mock_presence[1] = 1;
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 		vbboot_retval = -4;
 		test_slk(VB2_ERROR_MOCK, 0,

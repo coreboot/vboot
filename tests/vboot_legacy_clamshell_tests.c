@@ -166,19 +166,21 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 		return 0;
 }
 
-uint32_t VbExGetSwitches(uint32_t request_mask)
+int vb2ex_physical_presence_pressed(void)
 {
 	uint32_t result = 0;
+
 	if (mock_gpio_count >= ARRAY_SIZE(mock_gpio))
 		return 0;
-	if ((request_mask & VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED) &&
-	    (mock_gpio[mock_gpio_count].gpio_flags & GPIO_PRESENCE))
-		result |= VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED;
-	if (mock_gpio[mock_gpio_count].count > 0) {
+
+	if ((mock_gpio[mock_gpio_count].gpio_flags & GPIO_PRESENCE))
+		result = 1;
+
+	if (mock_gpio[mock_gpio_count].count > 0)
 		--mock_gpio[mock_gpio_count].count;
-	} else {
+	else
 		++mock_gpio_count;
-	}
+
 	return result;
 }
 

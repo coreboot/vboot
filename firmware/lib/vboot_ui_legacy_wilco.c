@@ -260,8 +260,8 @@ vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,
 vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 {
 	int active = 1;
-	int power_button_was_released = 0;
-	int power_button_was_pressed = 0;
+	int button_released = 0;
+	int button_pressed = 0;
 	vb2_error_t result = VBERROR_REBOOT_REQUIRED;
 	int action_confirmed = 0;
 	uint64_t start_time_us;
@@ -273,20 +273,15 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 	/* We'll loop until the user decides what to do */
 	do {
 		uint32_t key = VbExKeyboardRead();
-		/*
-		 * VbExIsShutdownRequested() is almost an adequate substitute
-		 * for adding a new flag to VbExGetSwitches().  The main
-		 * issue is that the former doesn't consult the power button
-		 * on detachables, and this function wants to see for itself
-		 * that the power button isn't currently pressed.
-		 */
-		if (VbExGetSwitches(VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
+		/* Note that we need to check that the physical presence button
+		   was pressed *and then* released. */
+		if (vb2ex_physical_presence_pressed()) {
 			/* Wait for a release before registering a press. */
-			if (power_button_was_released)
-				power_button_was_pressed = 1;
+			if (button_released)
+				button_pressed = 1;
 		} else {
-			power_button_was_released = 1;
-			if (power_button_was_pressed) {
+			button_released = 1;
+			if (button_pressed) {
 				VB2_DEBUG("vb2_diagnostics_ui() - power released\n");
 				action_confirmed = 1;
 				active = 0;

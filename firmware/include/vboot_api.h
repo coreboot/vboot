@@ -47,10 +47,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 #define VB_SHARED_DATA_MIN_SIZE 3072
 #define VB_SHARED_DATA_REC_SIZE 16384
 
-/* Flags for VbExGetSwitches() */
-/* Report if user is currently present (typically via power button) */
-#define VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED	0x00000004
-
 /*
  * We use disk handles rather than indices.  Using indices causes problems if
  * a disk is removed/inserted in the middle of processing.
@@ -584,11 +580,6 @@ uint32_t VbExKeyboardRead(void);
  * Same as VbExKeyboardRead(), but return extra information.
  */
 uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr);
-
-/**
- * Return the current state of the switches specified in request_mask
- */
-uint32_t VbExGetSwitches(uint32_t request_mask);
 
 /*****************************************************************************/
 /* Misc */

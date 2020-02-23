@@ -42,7 +42,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 	uint32_t key;
 	uint32_t key_flags;
 	uint32_t btn;
-	int phys_presence_button_was_pressed = 0;
+	int button_pressed = 0;
 	int shutdown_requested = 0;
 
 	VB2_DEBUG("Entering(%x)\n", confirm_flags);
@@ -92,18 +92,18 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			VB2_DEBUG("No (0)\n");
 			return 0;
 		default:
-			/* If the physical presence button is physical, and is
-			 * pressed, this is also a YES, but must wait for
-			 * release.
+			/*
+			 * If the physical presence button is separate from the
+			 * keyboard, and is pressed, this is also a YES, but
+			 * must wait for release.
 			 */
 			if (!PHYSICAL_PRESENCE_KEYBOARD) {
-				btn = VbExGetSwitches(
-					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED);
+				btn = vb2ex_physical_presence_pressed();
 				if (btn) {
 					VB2_DEBUG("Presence button pressed, "
 						  "awaiting release\n");
-					phys_presence_button_was_pressed = 1;
-				} else if (phys_presence_button_was_pressed) {
+					button_pressed = 1;
+				} else if (button_pressed) {
 					VB2_DEBUG("Presence button released "
 						  "(1)\n");
 					return 1;
@@ -481,8 +481,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		    !(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) &&
 		    (sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY)) {
 			if (!PHYSICAL_PRESENCE_KEYBOARD &&
-			    VbExGetSwitches(
-					VB_SWITCH_FLAG_PHYS_PRESENCE_PRESSED)) {
+			    vb2ex_physical_presence_pressed()) {
 				/*
 				 * Is the presence button stuck?  In any case
 				 * we don't like this.  Beep and ignore.
