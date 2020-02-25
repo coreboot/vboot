@@ -803,6 +803,9 @@ int VbGetArchPropertyInt(const char* name)
 		value = ReadGpio(GPIO_SIGNAL_TYPE_RECOVERY);
 	} else if (!strcasecmp(name,"wpsw_cur")) {
 		value = ReadGpio(GPIO_SIGNAL_TYPE_WP);
+		/* Use "write-protect at boot" as a fallback value. */
+		if (-1 == value)
+			value = ReadFileBit(ACPI_CHSW_PATH, CHSW_WP_BOOT);
 		if (-1 != value && FwidStartsWith("Mario."))
 			value = 1 - value;  /* Mario reports this backwards */
 	} else if (!strcasecmp(name,"recoverysw_ec_boot")) {
