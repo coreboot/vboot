@@ -709,8 +709,8 @@ void remove_all_temp_files(struct tempfile *head)
 	/* head itself is dummy and should not be removed. */
 	assert(!head->filepath);
 	struct tempfile *next = head->next;
+	head->next = NULL;
 	while (next) {
-		head->next = NULL;
 		head = next;
 		next = head->next;
 		assert(head->filepath);
