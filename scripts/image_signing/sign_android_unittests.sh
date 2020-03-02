@@ -165,6 +165,8 @@ test_android_choose_signing_keyset() {
   choose_signing_keyset_test_helper "aosp_cheets_x86-userdebug" "aosp"
   echo "TEST: Keyset for sdk_google_cheets build."
   choose_signing_keyset_test_helper "sdk_google_cheets_x86-userdebug" "cheets"
+  echo "TEST: Keyset for sdk_cheets build."
+  choose_signing_keyset_test_helper "sdk_cheets_x86-userdebug" "cheets"
   echo "TEST: Keyset for cheets_x86 build."
   choose_signing_keyset_test_helper "cheets_x86-user" "cheets"
   echo "TEST: Keyset for cheets_arm build."

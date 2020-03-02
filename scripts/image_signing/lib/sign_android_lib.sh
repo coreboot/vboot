@@ -115,7 +115,8 @@ android_choose_signing_keyset() {
   # - cheets builds:
   #   ro.build.flavor=cheets_${arch}-user(debug)
   # - SDK builds:
-  #   ro.build.flavor=sdk_google_cheets_${arch}-user(debug)
+  #   ro.build.flavor=sdk_google_cheets_${arch}-user(debug) # For N
+  #   ro.build.flavor=sdk_cheets_${arch}-user(debug) # For P
   # - AOSP builds:
   #   ro.build.flavor=aosp_cheets_${arch}-user(debug)
   # "cheets" and "SDK" builds both use the same signing keys, cheetskeys. "AOSP"
@@ -123,6 +124,7 @@ android_choose_signing_keyset() {
   if [[ "${flavor_prop}" == aosp_cheets_* ]]; then
     keyset="aosp"
   elif [[ "${flavor_prop}" == cheets_* ||
+    "${flavor_prop}" == sdk_cheets_* ||
     "${flavor_prop}" == sdk_google_cheets_* ]]; then
     keyset="cheets"
   else
