@@ -183,7 +183,7 @@ static void select_and_load_kernel_tests(void)
 	reset_common_data();
 	test_slk(0, 0, "Normal");
 	TEST_EQ(kernel_version, 0x10002, "  version");
-	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 	TEST_FALSE(commit_data_called, "  no commit data");
 
@@ -192,13 +192,13 @@ static void select_and_load_kernel_tests(void)
 	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	test_slk(0, 0, "EC sync disabled by GBB");
-	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	test_slk(0, 0, "Normal with EC sync");
-	TEST_NEQ(sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 
 	reset_common_data();

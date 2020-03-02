@@ -436,10 +436,10 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 	vb2_error_t rv;
 
 	/*
-	 * If the flags indicate that the EC has already gone through
+	 * If the status indicates that the EC has already gone through
 	 * software sync this boot, then don't do it again.
 	 */
-	if (sd->flags & VB2_SD_STATUS_EC_SYNC_COMPLETE) {
+	if (sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE) {
 		VB2_DEBUG("EC software sync already performed this boot, skipping\n");
 		return VB2_SUCCESS;
 	}
@@ -477,7 +477,7 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 		return rv;
 
 	/* Establish that EC software sync is complete and successful */
-	sd->flags |= VB2_SD_STATUS_EC_SYNC_COMPLETE;
+	sd->status |= VB2_SD_STATUS_EC_SYNC_COMPLETE;
 
 	return VB2_SUCCESS;
 }
