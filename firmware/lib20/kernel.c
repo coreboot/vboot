@@ -45,12 +45,9 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	struct vb2_digest_context *dc;
 	uint8_t *digest;
 	uint32_t digest_size;
-	vb2_error_t rv;
 
 	/* Sanity check keyblock before attempting hash check of data */
-	rv = vb2_check_keyblock(block, size, sig);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_check_keyblock(block, size, sig));
 
 	VB2_DEBUG("Checking keyblock hash...\n");
 
@@ -65,17 +62,11 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	if (!dc)
 		return VB2_ERROR_VDATA_WORKBUF_HASHING;
 
-	rv = vb2_digest_init(dc, VB2_HASH_SHA512);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_init(dc, VB2_HASH_SHA512));
 
-	rv = vb2_digest_extend(dc, (const uint8_t *)block, sig->data_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_extend(dc, (const uint8_t *)block, sig->data_size));
 
-	rv = vb2_digest_finalize(dc, digest, digest_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
 
 	if (vb2_safe_memcmp(vb2_signature_data(sig), digest,
 			    digest_size) != 0) {
@@ -119,19 +110,15 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	/* Unpack the kernel key */
 	key_data = vb2_member_of(sd, sd->kernel_key_offset);
 	key_size = sd->kernel_key_size;
-	rv = vb2_unpack_key_buffer(&kernel_key, key_data, key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_unpack_key_buffer(&kernel_key, key_data, key_size));
 
 	/* Load the kernel keyblock header after the root key */
 	kb = vb2_workbuf_alloc(&wb, sizeof(*kb));
 	if (!kb)
 		return VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF_HEADER;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK, 0, kb,
-				 sizeof(*kb));
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK, 0, kb,
+				    sizeof(*kb)));
 
 	block_size = kb->keyblock_size;
 
@@ -145,9 +132,8 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 	if (!kb)
 		return VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK, 0, kb, block_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK, 0, kb,
+				    block_size));
 
 	/* Verify the keyblock */
 	rv = vb2_verify_keyblock(kb, block_size, &kernel_key, &wb);
@@ -157,9 +143,7 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx)
 			return rv;
 
 		/* Signature is invalid, but hash may be fine */
-		rv = vb2_verify_keyblock_hash(kb, block_size, &wb);
-		if (rv)
-			return rv;
+		VB2_TRY(vb2_verify_keyblock_hash(kb, block_size, &wb));
 	}
 
 	/* Check the keyblock flags against the current boot mode */
@@ -363,28 +347,22 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx)
 	struct vb2_kernel_preamble *pre;
 	uint32_t pre_size;
 
-	vb2_error_t rv;
-
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Unpack the kernel data key */
 	if (!sd->data_key_size)
 		return VB2_ERROR_KERNEL_PREAMBLE2_DATA_KEY;
 
-	rv = vb2_unpack_key_buffer(&data_key, key_data, key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_unpack_key_buffer(&data_key, key_data, key_size));
 
 	/* Load the kernel preamble header */
 	pre = vb2_workbuf_alloc(&wb, sizeof(*pre));
 	if (!pre)
 		return VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF_HEADER;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK,
-				 sd->vblock_preamble_offset,
-				 pre, sizeof(*pre));
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK,
+				    sd->vblock_preamble_offset,
+				    pre, sizeof(*pre)));
 
 	pre_size = pre->preamble_size;
 
@@ -393,11 +371,9 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx)
 	if (!pre)
 		return VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK,
-				 sd->vblock_preamble_offset,
-				 pre, pre_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_KERNEL_VBLOCK,
+				    sd->vblock_preamble_offset,
+				    pre, pre_size));
 
 	/*
 	 * Work buffer now contains:
@@ -408,9 +384,7 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx)
 	 */
 
 	/* Verify the preamble */
-	rv = vb2_verify_kernel_preamble(pre, pre_size, &data_key, &wb);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_verify_kernel_preamble(pre, pre_size, &data_key, &wb));
 
 	/*
 	 * Kernel preamble version is the lower 16 bits of the composite kernel

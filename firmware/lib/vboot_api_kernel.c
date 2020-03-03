@@ -35,8 +35,6 @@ struct LoadKernelParams *VbApiKernelGetParams(void)
 
 static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 {
-	vb2_error_t rv;
-
 	/*
 	 * Check if we need to cut-off battery. This should be done after EC
 	 * FW and Aux FW are updated, and before the kernel is started.  This
@@ -48,9 +46,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);
 
 		/* May lose power immediately, so commit our update now. */
-		rv = vb2ex_commit_data(ctx);
-		if (rv)
-			return rv;
+		VB2_TRY(vb2ex_commit_data(ctx));
 
 		vb2ex_ec_battery_cutoff();
 		return VBERROR_SHUTDOWN_REQUESTED;
@@ -181,19 +177,14 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
 	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
 	   to vb2_nv_get and vb2_nv_set. */
 	vb2_nv_init(ctx);
 
-	rv = vb2_kernel_init_kparams(ctx, kparams);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_kernel_init_kparams(ctx, kparams));
 
-	rv = vb2api_kernel_phase1(ctx);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2api_kernel_phase1(ctx));
 
 	VB2_DEBUG("GBB flags are %#x\n", vb2_get_gbb(ctx)->flags);
 
@@ -202,17 +193,9 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	 * has UI but it's just a single non-interactive WAIT screen.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		rv = vb2api_ec_sync(ctx);
-		if (rv)
-			return rv;
-
-		rv = vb2api_auxfw_sync(ctx);
-		if (rv)
-			return rv;
-
-		rv = handle_battery_cutoff(ctx);
-		if (rv)
-			return rv;
+		VB2_TRY(vb2api_ec_sync(ctx));
+		VB2_TRY(vb2api_auxfw_sync(ctx));
+		VB2_TRY(handle_battery_cutoff(ctx));
 	}
 
 	/* Select boot path */
@@ -244,13 +227,13 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		/* Recovery boot.  This has UI. */
 		if (MENU_UI) {
 			if (vb2_allow_recovery(ctx))
-				rv = vb2_manual_recovery_menu(ctx);
+				VB2_TRY(vb2_manual_recovery_menu(ctx));
 			else
-				rv = vb2_broken_recovery_menu(ctx);
+				VB2_TRY(vb2_broken_recovery_menu(ctx));
 		} else if (LEGACY_MENU_UI) {
-			rv = VbBootRecoveryLegacyMenu(ctx);
+			VB2_TRY(VbBootRecoveryLegacyMenu(ctx));
 		} else {
-			rv = VbBootRecoveryLegacyClamshell(ctx);
+			VB2_TRY(VbBootRecoveryLegacyClamshell(ctx));
 		}
 	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
@@ -261,36 +244,32 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * needed.  This mode is also 1-shot so it's placed
 		 * before developer mode.
 		 */
-		rv = VbBootDiagnosticLegacyClamshell(ctx);
+		VB2_TRY(VbBootDiagnosticLegacyClamshell(ctx));
 		/*
 		 * The diagnostic menu should either boot a rom, or
-		 * return either of reboot or shutdown.  The following
-		 * check is a safety precaution.
+		 * return either of reboot or shutdown.
 		 */
-		if (!rv)
-			rv = VBERROR_REBOOT_REQUIRED;
+		return VBERROR_REBOOT_REQUIRED;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		/* Developer boot.  This has UI. */
 		if (MENU_UI)
-			rv = vb2_developer_menu(ctx);
+			VB2_TRY(vb2_developer_menu(ctx));
 		else if (LEGACY_MENU_UI)
-			rv = VbBootDeveloperLegacyMenu(ctx);
+			VB2_TRY(VbBootDeveloperLegacyMenu(ctx));
 		else
-			rv = VbBootDeveloperLegacyClamshell(ctx);
+			VB2_TRY(VbBootDeveloperLegacyClamshell(ctx));
 	} else {
 		/* Normal boot */
-		rv = vb2_normal_boot(ctx);
+		VB2_TRY(vb2_normal_boot(ctx));
 	}
 
-	if (VB2_SUCCESS == rv && (ctx->flags & VB2_CONTEXT_NO_BOOT)) {
+	if (ctx->flags & VB2_CONTEXT_NO_BOOT) {
 		/* Stop all cases returning SUCCESS against NO_BOOT flag. */
 		VB2_DEBUG("Blocking boot in NO_BOOT mode.\n");
-		vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);
-		rv = VB2_ERROR_ESCAPE_NO_BOOT;
+		vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, 0);
+		return VB2_ERROR_ESCAPE_NO_BOOT;
 	}
 
-	if (rv == VB2_SUCCESS)
-		vb2_kernel_fill_kparams(ctx, kparams);
-
-	return rv;
+	vb2_kernel_fill_kparams(ctx, kparams);
+	return VB2_SUCCESS;
 }

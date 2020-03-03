@@ -98,12 +98,9 @@ static vb2_error_t auxfw_sync_check_update(struct vb2_context *ctx,
 vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 {
 	enum vb2_auxfw_update_severity fw_update = VB_AUX_FW_NO_UPDATE;
-	vb2_error_t rv;
 
 	/* Check for update severity */
-	rv = auxfw_sync_check_update(ctx, &fw_update);
-	if (rv)
-		return rv;
+	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update));
 
 	/* If AUX FW update is slow display the wait screen */
 	if (fw_update == VB_AUX_FW_SLOW_UPDATE) {
@@ -114,9 +111,7 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 	}
 
 	if (fw_update > VB_AUX_FW_NO_UPDATE) {
-		rv = update_auxfw(ctx);
-		if (rv)
-			return rv;
+		VB2_TRY(update_auxfw(ctx));
 		/*
 		 * AUX FW Update is applied successfully. Request EC reboot to
 		 * RO, so that the chips that had FW update get reset to a

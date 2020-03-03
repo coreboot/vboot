@@ -18,17 +18,11 @@
 
 vb2_error_t vb2api_load_kernel_vblock(struct vb2_context *ctx)
 {
-	vb2_error_t rv;
-
 	/* Verify kernel keyblock */
-	rv = vb2_load_kernel_keyblock(ctx);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_load_kernel_keyblock(ctx));
 
 	/* Verify kernel preamble */
-	rv = vb2_load_kernel_preamble(ctx);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_load_kernel_preamble(ctx));
 
 	return VB2_SUCCESS;
 }
@@ -72,8 +66,6 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 	uint8_t *digest;
 	uint32_t digest_size;
 
-	vb2_error_t rv;
-
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Get preamble pointer */
@@ -104,28 +96,20 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 	if (!sd->data_key_size)
 		return VB2_ERROR_API_VERIFY_KDATA_KEY;
 
-	rv = vb2_unpack_key_buffer(&key,
-				   vb2_member_of(sd, sd->data_key_offset),
-				   sd->data_key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_unpack_key_buffer(&key,
+				      vb2_member_of(sd, sd->data_key_offset),
+				      sd->data_key_size));
 
-	rv = vb2_digest_init(dc, key.hash_alg);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_init(dc, key.hash_alg));
 
-	rv = vb2_digest_extend(dc, buf, size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_extend(dc, buf, size));
 
 	digest_size = vb2_digest_size(key.hash_alg);
 	digest = vb2_workbuf_alloc(&wb, digest_size);
 	if (!digest)
 		return VB2_ERROR_API_CHECK_HASH_WORKBUF_DIGEST;
 
-	rv = vb2_digest_finalize(dc, digest, digest_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
 
 	/*
 	 * The body signature is currently a *signature* of the body data, not

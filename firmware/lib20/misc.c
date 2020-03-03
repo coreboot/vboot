@@ -27,7 +27,7 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	struct vb2_keyblock *kb;
 	uint32_t block_size;
 
-	vb2_error_t rv;
+	vb2_error_t rv = VB2_SUCCESS;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -37,24 +37,19 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	if (!key_data)
 		return VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_GBB, gbb->rootkey_offset,
-				 key_data, key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_GBB, gbb->rootkey_offset,
+				    key_data, key_size));
 
 	/* Unpack the root key */
-	rv = vb2_unpack_key_buffer(&root_key, key_data, key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_unpack_key_buffer(&root_key, key_data, key_size));
 
 	/* Load the firmware keyblock header after the root key */
 	kb = vb2_workbuf_alloc(&wb, sizeof(*kb));
 	if (!kb)
 		return VB2_ERROR_FW_KEYBLOCK_WORKBUF_HEADER;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK, 0, kb, sizeof(*kb));
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK, 0,
+				    kb, sizeof(*kb)));
 
 	block_size = kb->keyblock_size;
 
@@ -68,16 +63,11 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	if (!kb)
 		return VB2_ERROR_FW_KEYBLOCK_WORKBUF;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK, 0, kb, block_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK, 0, kb, block_size));
 
 	/* Verify the keyblock */
-	rv = vb2_verify_keyblock(kb, block_size, &root_key, &wb);
-	if (rv) {
-		vb2api_fail(ctx, VB2_RECOVERY_FW_KEYBLOCK, rv);
-		return rv;
-	}
+	VB2_TRY(vb2_verify_keyblock(kb, block_size, &root_key, &wb),
+		ctx, VB2_RECOVERY_FW_KEYBLOCK);
 
 	/* Key version is the upper 16 bits of the composite firmware version */
 	if (kb->data_key.key_version > VB2_MAX_KEY_VERSION)
@@ -104,9 +94,7 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	 * no longer need the root key.  First, let's double-check that it is
 	 * well-formed though (although the keyblock was signed anyway).
 	 */
-	rv = vb2_verify_packed_key_inside(kb, block_size, &kb->data_key);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_verify_packed_key_inside(kb, block_size, &kb->data_key));
 
 	/* Save the future offset and size while kb->data_key is still valid.
 	   The check above made sure that key_offset and key_size are sane. */
@@ -149,7 +137,7 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 	struct vb2_fw_preamble *pre;
 	uint32_t pre_size;
 
-	vb2_error_t rv;
+	vb2_error_t rv = VB2_SUCCESS;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -157,20 +145,16 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 	if (!sd->data_key_size)
 		return VB2_ERROR_FW_PREAMBLE2_DATA_KEY;
 
-	rv = vb2_unpack_key_buffer(&data_key, key_data, key_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_unpack_key_buffer(&data_key, key_data, key_size));
 
 	/* Load the firmware preamble header */
 	pre = vb2_workbuf_alloc(&wb, sizeof(*pre));
 	if (!pre)
 		return VB2_ERROR_FW_PREAMBLE2_WORKBUF_HEADER;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK,
-				 sd->vblock_preamble_offset,
-				 pre, sizeof(*pre));
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK,
+				    sd->vblock_preamble_offset,
+				    pre, sizeof(*pre)));
 
 	pre_size = pre->preamble_size;
 
@@ -179,20 +163,15 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 	if (!pre)
 		return VB2_ERROR_FW_PREAMBLE2_WORKBUF;
 
-	rv = vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK,
-				 sd->vblock_preamble_offset,
-				 pre, pre_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_FW_VBLOCK,
+				    sd->vblock_preamble_offset,
+				    pre, pre_size));
 
 	/* Work buffer now contains the data subkey data and the preamble */
 
 	/* Verify the preamble */
-	rv = vb2_verify_fw_preamble(pre, pre_size, &data_key, &wb);
-	if (rv) {
-		vb2api_fail(ctx, VB2_RECOVERY_FW_PREAMBLE, rv);
-		return rv;
-	}
+	VB2_TRY(vb2_verify_fw_preamble(pre, pre_size, &data_key, &wb),
+		ctx, VB2_RECOVERY_FW_PREAMBLE);
 
 	/*
 	 * Firmware version is the lower 16 bits of the composite firmware

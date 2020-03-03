@@ -65,14 +65,10 @@ vb2_error_t vb2_secdata_fwmp_init(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_secdata_fwmp *sec =
 		(struct vb2_secdata_fwmp *)&ctx->secdata_fwmp;
-	vb2_error_t rv;
 
 	/* Skip checking if NO_SECDATA_FWMP is set. */
-	if (!(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP)) {
-		rv = vb2api_secdata_fwmp_check(ctx, &sec->struct_size);
-		if (rv)
-			return rv;
-	}
+	if (!(ctx->flags & VB2_CONTEXT_NO_SECDATA_FWMP))
+		VB2_TRY(vb2api_secdata_fwmp_check(ctx, &sec->struct_size));
 
 	/* Mark as initialized */
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;

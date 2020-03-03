@@ -18,12 +18,9 @@ vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 		(const struct vb2_packed_key *)buf;
 	const uint32_t *buf32;
 	uint32_t expected_key_size;
-	vb2_error_t rv;
 
 	/* Make sure passed buffer is big enough for the packed key */
-	rv = vb2_verify_packed_key_inside(buf, size, packed_key);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_verify_packed_key_inside(buf, size, packed_key));
 
 	/* Unpack key algorithm */
 	key->sig_alg = vb2_crypto_to_signature(packed_key->algorithm);

@@ -267,6 +267,19 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 }
 
 /* Tests */
+static int vb2_try_returned;
+
+static vb2_error_t call_vb2_try(vb2_error_t expr, uint8_t recovery_reason,
+				int one_arg)
+{
+	vb2_try_returned = 1;
+	if (one_arg)
+		VB2_TRY(expr);
+	else
+		VB2_TRY(expr, ctx, recovery_reason);
+	vb2_try_returned = 0;
+	return VB2_SUCCESS;
+}
 
 static void misc_tests(void)
 {
@@ -297,6 +310,35 @@ static void misc_tests(void)
 	reset_common_data(FOR_MISC);
 	sd->preamble_size = 0;
 	TEST_EQ(vb2api_get_firmware_size(ctx), 0, "firmware_size too early");
+
+	/* Test VB2_TRY() */
+	reset_common_data(FOR_MISC);
+	call_vb2_try(VB2_SUCCESS, VB2_RECOVERY_NOT_REQUESTED, 1);
+	TEST_EQ(vb2_try_returned, 0, "VB2_TRY(expr) success");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
+
+	reset_common_data(FOR_MISC);
+	call_vb2_try(VB2_ERROR_MOCK, VB2_RECOVERY_NOT_REQUESTED, 1);
+	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr) error");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
+
+	reset_common_data(FOR_MISC);
+	call_vb2_try(VB2_SUCCESS, 123, 0);
+	TEST_EQ(vb2_try_returned, 0, "VB2_TRY(expr, ...) success");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		0, "  vb2api_fail no subcode");
+
+	reset_common_data(FOR_MISC);
+	call_vb2_try(456, 123, 0);
+	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr, ...) error");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		123, "  vb2api_fail request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		456 & 0xff, "  vb2api_fail subcode");
 }
 
 static void phase1_tests(void)

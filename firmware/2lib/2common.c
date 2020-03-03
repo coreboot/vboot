@@ -176,7 +176,6 @@ vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 	struct vb2_digest_context *dc;
 	uint8_t *digest;
 	uint32_t digest_size;
-	vb2_error_t rv;
 
 	if (sig->data_size > size) {
 		VB2_DEBUG("Data buffer smaller than length of signed data.\n");
@@ -197,17 +196,9 @@ vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 	if (!dc)
 		return VB2_ERROR_VDATA_WORKBUF_HASHING;
 
-	rv = vb2_digest_init(dc, key->hash_alg);
-	if (rv)
-		return rv;
-
-	rv = vb2_digest_extend(dc, data, sig->data_size);
-	if (rv)
-		return rv;
-
-	rv = vb2_digest_finalize(dc, digest, digest_size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_init(dc, key->hash_alg));
+	VB2_TRY(vb2_digest_extend(dc, data, sig->data_size));
+	VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
 
 	vb2_workbuf_free(&wblocal, sizeof(*dc));
 
@@ -277,9 +268,7 @@ vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 	vb2_error_t rv;
 
 	/* Sanity check keyblock before attempting signature check of data */
-	rv = vb2_check_keyblock(block, size, sig);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_check_keyblock(block, size, sig));
 
 	VB2_DEBUG("Checking keyblock signature...\n");
 	rv = vb2_verify_data((const uint8_t *)block, size, sig, key, wb);

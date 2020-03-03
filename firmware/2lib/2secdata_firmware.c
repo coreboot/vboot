@@ -56,11 +56,8 @@ uint32_t vb2api_secdata_firmware_create(struct vb2_context *ctx)
 vb2_error_t vb2_secdata_firmware_init(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
-	rv = vb2api_secdata_firmware_check(ctx);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2api_secdata_firmware_check(ctx));
 
 	/* Set status flag */
 	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;

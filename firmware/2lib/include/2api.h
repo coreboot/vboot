@@ -28,6 +28,39 @@
 #include "2return_codes.h"
 #include "2secdata_struct.h"
 
+#define _VB2_TRY_IMPL(expr, ctx, recovery_reason, ...) do { \
+	vb2_error_t _vb2_try_rv = (expr); \
+	struct vb2_context *_vb2_try_ctx = (ctx); \
+	uint8_t _vb2_try_reason = (recovery_reason); \
+	if (_vb2_try_rv != VB2_SUCCESS) { \
+		vb2ex_printf(__func__, \
+			     "%s returned %#x\n", #expr, _vb2_try_rv); \
+		if ((_vb2_try_ctx) && \
+		    (_vb2_try_reason) != VB2_RECOVERY_NOT_REQUESTED) \
+			vb2api_fail(_vb2_try_ctx, _vb2_try_reason, \
+				    _vb2_try_rv); \
+		return _vb2_try_rv; \
+	} \
+} while (0)
+
+/*
+ * Evaluate an expression and return *from the caller* on failure.
+ *
+ * This macro supports two forms of usage:
+ * 1. VB2_TRY(expr)
+ * 2. VB2_TRY(expr, ctx, recovery_reason)
+ *
+ * When the second form is used, vb2api_fail() will be called on failure before
+ * return. Note that nvdata only holds one byte for recovery subcode, so any
+ * other more significant bytes will be truncated.
+ *
+ * @param expr			An expression (such as a function call) of type
+ *				vb2_error_t.
+ * @param ctx			Vboot context.
+ * @param recovery_reason	Recovery reason passed to vb2api_fail().
+ */
+#define VB2_TRY(expr, ...) _VB2_TRY_IMPL(expr, ##__VA_ARGS__, NULL, 0)
+
 /* Modes for vb2ex_tpm_set_mode. */
 enum vb2_tpm_mode {
 	/*

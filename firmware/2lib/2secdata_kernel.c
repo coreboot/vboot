@@ -166,11 +166,8 @@ vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint8_t size = VB2_SECDATA_KERNEL_MAX_SIZE;
-	vb2_error_t rv;
 
-	rv = vb2api_secdata_kernel_check(ctx, &size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2api_secdata_kernel_check(ctx, &size));
 
 	/* Set status flag */
 	sd->status |= VB2_SD_STATUS_SECDATA_KERNEL_INIT;

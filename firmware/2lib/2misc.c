@@ -52,17 +52,11 @@ test_mockable
 vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 				struct vb2_gbb_header *gbb)
 {
-	vb2_error_t rv;
-
 	/* Read the entire header */
-	rv = vb2ex_read_resource(ctx, VB2_RES_GBB, 0, gbb, sizeof(*gbb));
-	if (rv)
-		return rv;
+	VB2_TRY(vb2ex_read_resource(ctx, VB2_RES_GBB, 0, gbb, sizeof(*gbb)));
 
 	/* Make sure it's really a GBB */
-	rv = vb2_validate_gbb_signature(gbb->signature);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_validate_gbb_signature(gbb->signature));
 
 	/* Check for compatible version */
 	if (gbb->major_version != VB2_GBB_MAJOR_VER)
@@ -176,7 +170,6 @@ vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_gbb_header *gbb;
 	struct vb2_workbuf wb;
-	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
@@ -185,9 +178,7 @@ vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 	if (!gbb)
 		return VB2_ERROR_GBB_WORKBUF;
 
-	rv = vb2_read_gbb_header(ctx, gbb);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_read_gbb_header(ctx, gbb));
 
 	/* Keep on the work buffer permanently */
 	sd->gbb_offset = vb2_offset_of(sd, gbb);

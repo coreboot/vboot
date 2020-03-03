@@ -203,15 +203,9 @@ vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 			      uint32_t digest_size)
 {
 	struct vb2_digest_context dc;
-	vb2_error_t rv;
 
-	rv = vb2_digest_init(&dc, hash_alg);
-	if (rv)
-		return rv;
-
-	rv = vb2_digest_extend(&dc, buf, size);
-	if (rv)
-		return rv;
+	VB2_TRY(vb2_digest_init(&dc, hash_alg));
+	VB2_TRY(vb2_digest_extend(&dc, buf, size));
 
 	return vb2_digest_finalize(&dc, digest, digest_size);
 }
@@ -221,10 +215,8 @@ vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
 {
 	uint8_t hash_buf[VB2_MAX_DIGEST_SIZE];
 	size_t hash_size = vb2_digest_size(hash->algo);
-	vb2_error_t rv = vb2_digest_buffer(buf, size, hash->algo,
-					   hash_buf, hash_size);
-	if (rv)
-		return rv;
+
+	VB2_TRY(vb2_digest_buffer(buf, size, hash->algo, hash_buf, hash_size));
 	if (memcmp(hash_buf, hash->raw, hash_size))
 		return VB2_ERROR_SHA_MISMATCH;
 	else
