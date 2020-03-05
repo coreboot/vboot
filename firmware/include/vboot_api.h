@@ -388,28 +388,6 @@ enum VbScreenType_t {
 	VB_SCREEN_ALT_FW_PICK = 0x212,
 	/* Alt firmware menu screen (for detachable UI ) */
 	VB_SCREEN_ALT_FW_MENU = 0x213,
-	/* Confirm after VB_SCREEN_RECOVERY_TO_DEV_MENU */
-	VB_SCREEN_TO_DEV_CONFIRMED = 0x217,
-	/* Hardware failure */
-	VB_SCREEN_HARDWARE_FAILURE = 0x218,
-	/* First recovery screen to select recovering from phone or disk */
-	VB_SCREEN_RECOVERY_SELECT = 0x220,
-	/* Recovery using phone */
-	VB_SCREEN_RECOVERY_PHONE_STEP1 = 0x230,
-	VB_SCREEN_RECOVERY_PHONE_STEP2 = 0x231,
-	VB_SCREEN_RECOVERY_PHONE_STEP3 = 0x232,
-	/* Recovery using external disk */
-	VB_SCREEN_RECOVERY_DISK_STEP1 = 0x240,
-	VB_SCREEN_RECOVERY_DISK_STEP2 = 0x241,
-	VB_SCREEN_RECOVERY_DISK_STEP3 = 0x242,
-	/* Boot from internal disk */
-	VB_SCREEN_BOOT_FROM_INTERNAL = 0x250,
-	/* Boot from external disk */
-	VB_SCREEN_BOOT_FROM_EXTERNAL = 0x251,
-	/* Debug info screen */
-	VB_SCREEN_DEBUG_INFO = 0x252,
-	/* BIOS log screen */
-	VB_SCREEN_BIOS_LOG = 0x253,
 	/* 0x300-0x350 reserved for device-specific screens */
 	/* Vendor data not set warning screen */
 	VB_COMPLETE_VENDOR_DATA = 0x300,
