@@ -13,6 +13,7 @@
 #include "2rsa.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
+#include "2ui.h"
 #include "load_kernel_fw.h"
 #include "utility.h"
 #include "vb2_common.h"
@@ -241,10 +242,16 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			VB2_DEBUG("NO_BOOT in RECOVERY mode\n");
 
 		/* Recovery boot.  This has UI. */
-		if (LEGACY_MENU_UI)
+		if (MENU_UI) {
+			if (vb2_allow_recovery(ctx))
+				rv = vb2_manual_recovery_menu(ctx);
+			else
+				rv = vb2_broken_recovery_menu(ctx);
+		} else if (LEGACY_MENU_UI) {
 			rv = VbBootRecoveryLegacyMenu(ctx);
-		else
+		} else {
 			rv = VbBootRecoveryLegacyClamshell(ctx);
+		}
 	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
 
@@ -264,7 +271,9 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			rv = VBERROR_REBOOT_REQUIRED;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		/* Developer boot.  This has UI. */
-		if (LEGACY_MENU_UI)
+		if (MENU_UI)
+			rv = vb2_developer_menu(ctx);
+		else if (LEGACY_MENU_UI)
 			rv = VbBootDeveloperLegacyMenu(ctx);
 		else
 			rv = VbBootDeveloperLegacyClamshell(ctx);
