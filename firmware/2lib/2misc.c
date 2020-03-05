@@ -456,7 +456,7 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx)
 	return vb2_get_sd(ctx)->recovery_reason;
 }
 
-void vb2api_export_vbsd(struct vb2_context *ctx, int wp_enabled, void *dest)
+void vb2api_export_vbsd(struct vb2_context *ctx, void *dest)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbSharedDataHeader *vbsd = (void *)dest;
@@ -481,8 +481,6 @@ void vb2api_export_vbsd(struct vb2_context *ctx, int wp_enabled, void *dest)
 		vbsd->flags |= VBSD_BOOT_REC_SWITCH_ON;
 	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
 		vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
-	if (wp_enabled)
-		vbsd->flags |= VBSD_BOOT_FIRMWARE_WP_ENABLED;
 
 	vbsd->fw_version_tpm_start = sd->fw_version_secdata;
 	vbsd->fw_version_tpm = sd->fw_version;

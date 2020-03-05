@@ -483,10 +483,9 @@ vb2_error_t vb2api_relocate(void *new_workbuf, const void *cur_workbuf,
  * the memory available to be of size VB2_VBSD_SIZE.
  *
  * @param ctx		Context pointer
- * @param wp_enabled	Whether or not write-protect is enabled at boot time
  * @param dest		Target memory to store VbSharedDataHeader
  */
-void vb2api_export_vbsd(struct vb2_context *ctx, int wp_enabled, void *dest);
+void vb2api_export_vbsd(struct vb2_context *ctx, void *dest);
 
 /**
  * Check the validity of firmware secure storage context.
