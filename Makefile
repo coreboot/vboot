@@ -357,6 +357,7 @@ FWLIB_SRCS = \
 	firmware/2lib/2ec_sync.c \
 	firmware/2lib/2gbb.c \
 	firmware/2lib/2hmac.c \
+	firmware/2lib/2kernel.c \
 	firmware/2lib/2misc.c \
 	firmware/2lib/2nvstorage.c \
 	firmware/2lib/2rsa.c \
@@ -479,6 +480,7 @@ HOSTLIB_SRCS = \
 	firmware/2lib/2context.c \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2hmac.c \
+	firmware/2lib/2kernel.c \
 	firmware/2lib/2nvstorage.c \
 	firmware/2lib/2rsa.c \
 	firmware/2lib/2sha1.c \
@@ -695,6 +697,7 @@ TEST2X_NAMES = \
 	tests/vb2_ec_sync_tests \
 	tests/vb2_gbb_tests \
 	tests/vb2_host_key_tests \
+	tests/vb2_kernel_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
 	tests/vb2_rsa_utility_tests \
@@ -1204,6 +1207,7 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_ec_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_host_key_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_rsa_utility_tests

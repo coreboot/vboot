@@ -6,6 +6,7 @@
  */
 
 #include "2common.h"
+#include "2kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"
@@ -484,25 +485,25 @@ static void VbBootTest(void)
 	ResetMocks();
 	vbtlk_expect_fixed = 1;
 	vbtlk_retval = VB2_SUCCESS;
-	TEST_EQ(VbBootNormal(ctx), VB2_SUCCESS,
-		"VbBootNormal() returns VB2_SUCCESS");
+	TEST_EQ(vb2_normal_boot(ctx), VB2_SUCCESS,
+		"vb2_normal_boot() returns VB2_SUCCESS");
 
 	ResetMocks();
 	vbtlk_expect_fixed = 1;
-	TEST_EQ(VbBootNormal(ctx), VB2_ERROR_MOCK,
-		"VbBootNormal() returns VB2_ERROR_MOCK");
+	TEST_EQ(vb2_normal_boot(ctx), VB2_ERROR_MOCK,
+		"vb2_normal_boot() returns VB2_ERROR_MOCK");
 
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-	TEST_EQ(VbBootNormal(ctx), VBERROR_REBOOT_REQUIRED,
-		"VbBootNormal() reboot to reset NVRAM display request");
+	TEST_EQ(vb2_normal_boot(ctx), VBERROR_REBOOT_REQUIRED,
+		"vb2_normal_boot() reboot to reset NVRAM display request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
 		"  display request reset");
 
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-	TEST_EQ(VbBootNormal(ctx), VBERROR_REBOOT_REQUIRED,
-		"VbBootNormal() reboot to reset NVRAM diag request");
+	TEST_EQ(vb2_normal_boot(ctx), VBERROR_REBOOT_REQUIRED,
+		"vb2_normal_boot() reboot to reset NVRAM diag request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
 		"  diag request reset");
 }

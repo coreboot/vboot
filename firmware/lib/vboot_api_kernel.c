@@ -7,6 +7,7 @@
 
 #include "2api.h"
 #include "2common.h"
+#include "2kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
@@ -141,87 +142,6 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	return rv;
 }
 
-/**
- * Reset any NVRAM requests.
- *
- * @param ctx		Vboot context
- * @return 1 if a reboot is required, 0 otherwise.
- */
-static int vb2_reset_nv_requests(struct vb2_context *ctx)
-{
-	int need_reboot = 0;
-
-	if (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST)) {
-		VB2_DEBUG("Unset display request (undo display init)\n");
-		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
-		need_reboot = 1;
-	}
-
-	if (vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
-		VB2_DEBUG("Unset diagnostic request (undo display init)\n");
-		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
-		need_reboot = 1;
-	}
-
-	return need_reboot;
-}
-
-vb2_error_t VbBootNormal(struct vb2_context *ctx)
-{
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	uint32_t max_rollforward = vb2_nv_get(ctx,
-					      VB2_NV_KERNEL_MAX_ROLLFORWARD);
-
-	/* Boot from fixed disk only */
-	VB2_DEBUG("Entering\n");
-
-	if (vb2_reset_nv_requests(ctx)) {
-		VB2_DEBUG("Normal mode: reboot to reset NVRAM requests\n");
-		return VBERROR_REBOOT_REQUIRED;
-	}
-
-	vb2_error_t rv = VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED);
-
-	VB2_DEBUG("Checking if TPM kernel version needs advancing\n");
-
-	/*
-	 * Special case for when we're trying a slot with new firmware.
-	 * Firmware updates also usually change the kernel key, which means
-	 * that the new firmware can only boot a new kernel, and the old
-	 * firmware in the previous slot can only boot the previous kernel.
-	 *
-	 * Don't roll-forward the kernel version, because we don't yet know if
-	 * the new kernel will successfully boot.
-	 */
-	if (vb2_nv_get(ctx, VB2_NV_FW_RESULT) == VB2_FW_RESULT_TRYING) {
-		VB2_DEBUG("Trying new FW; skip kernel version roll-forward.\n");
-		return rv;
-	}
-
-	/*
-	 * Limit kernel version rollforward if needed.  Can't limit kernel
-	 * version to less than the version currently in the TPM.  That is,
-	 * we're limiting rollforward, not allowing rollback.
-	 */
-	if (max_rollforward < sd->kernel_version_secdata)
-		max_rollforward = sd->kernel_version_secdata;
-
-	if (sd->kernel_version > max_rollforward) {
-		VB2_DEBUG("Limiting TPM kernel version roll-forward "
-			  "to %#x < %#x\n",
-			  max_rollforward, sd->kernel_version);
-
-		sd->kernel_version = max_rollforward;
-	}
-
-	if (sd->kernel_version > sd->kernel_version_secdata) {
-		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
-				       sd->kernel_version);
-	}
-
-	return rv;
-}
-
 static vb2_error_t vb2_kernel_init_kparams(struct vb2_context *ctx,
 					   VbSelectAndLoadKernelParams *kparams)
 {
@@ -350,7 +270,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			rv = VbBootDeveloperLegacyClamshell(ctx);
 	} else {
 		/* Normal boot */
-		rv = VbBootNormal(ctx);
+		rv = vb2_normal_boot(ctx);
 	}
 
 	if (VB2_SUCCESS == rv && (ctx->flags & VB2_CONTEXT_NO_BOOT)) {

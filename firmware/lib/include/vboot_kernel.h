@@ -127,11 +127,6 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags);
 int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags);
 
 /**
- * Handle a normal boot.
- */
-vb2_error_t VbBootNormal(struct vb2_context *ctx);
-
-/**
  * Handle a developer-mode boot using legacy clamshell UI.
  */
 vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *ctx);

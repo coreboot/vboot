@@ -223,120 +223,6 @@ vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 
 /* Tests */
 
-static void phase1_tests(void)
-{
-	struct vb2_packed_key *k;
-	uint32_t wb_used_before;
-
-	/* Test successful call */
-	reset_common_data(FOR_PHASE1);
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 good");
-	/* Make sure normal key was loaded */
-	TEST_EQ(sd->kernel_key_offset, sd->preamble_offset +
-		offsetof(struct vb2_fw_preamble, kernel_subkey),
-		"  workbuf key offset");
-	k = vb2_member_of(sd, sd->kernel_key_offset);
-	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
-		"  workbuf key size");
-	TEST_EQ(sd->workbuf_used,
-		vb2_wb_round_up(sd->kernel_key_offset +
-				sd->kernel_key_size),
-		"  workbuf used");
-	TEST_EQ(k->algorithm, 7, "  key algorithm");
-	TEST_EQ(k->key_size, sizeof(fw_kernel_key_data), "  key_size");
-	TEST_EQ(memcmp((uint8_t *)k + k->key_offset, fw_kernel_key_data,
-		       k->key_size), 0, "  key data");
-	TEST_EQ(sd->kernel_version_secdata, 0x20002,
-		"  secdata_kernel version");
-
-	/* Test successful call in recovery mode */
-	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	/* No preamble needed in recovery mode */
-	sd->workbuf_used = sd->preamble_offset;
-	sd->preamble_offset = sd->preamble_size = 0;
-	wb_used_before = sd->workbuf_used;
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
-	/* Make sure recovery key was loaded */
-	TEST_EQ(sd->kernel_key_offset, wb_used_before,
-		"  workbuf key offset");
-	k = vb2_member_of(sd, sd->kernel_key_offset);
-	TEST_EQ(sd->kernel_key_size, k->key_offset + k->key_size,
-		"  workbuf key size");
-	TEST_EQ(sd->workbuf_used,
-		vb2_wb_round_up(sd->kernel_key_offset +
-				sd->kernel_key_size),
-		"  workbuf used");
-	TEST_EQ(k->algorithm, 11, "  key algorithm");
-	TEST_EQ(k->key_size, sizeof(mock_gbb.recovery_key_data), "  key_size");
-	TEST_EQ(memcmp((uint8_t *)k + k->key_offset,
-		       mock_gbb.recovery_key_data, k->key_size), 0,
-		"  key data");
-	TEST_EQ(sd->kernel_version_secdata, 0x20002,
-		"  secdata_kernel version");
-
-	/* Bad secdata_kernel causes failure in normal mode only */
-	reset_common_data(FOR_PHASE1);
-	ctx->secdata_kernel[2] ^= 0x33;  /* 3rd byte is CRC */
-	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
-		"phase1 bad secdata_kernel");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_SECDATA_KERNEL_INIT, "  recovery reason");
-
-	reset_common_data(FOR_PHASE1);
-	ctx->secdata_kernel[0] ^= 0x33;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata_kernel rec");
-	TEST_EQ(sd->kernel_version_secdata, 0, "  secdata_kernel version");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_NOT_REQUESTED, "  no recovery");
-
-	/* Bad secdata_fwmp causes failure in normal mode only */
-	reset_common_data(FOR_PHASE1);
-	mock_secdata_fwmp_check_retval = VB2_ERROR_SECDATA_FWMP_CRC;
-	TEST_EQ(vb2api_kernel_phase1(ctx), mock_secdata_fwmp_check_retval,
-		"phase1 bad secdata_fwmp");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_SECDATA_FWMP_INIT, "  recovery reason");
-
-	reset_common_data(FOR_PHASE1);
-	mock_secdata_fwmp_check_retval = VB2_ERROR_SECDATA_FWMP_CRC;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata_fwmp rec");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_NOT_REQUESTED, "  no recovery");
-
-	/* Failures while reading recovery key */
-	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	mock_gbb.h.recovery_key_size = sd->workbuf_size - 1;
-	mock_gbb.recovery_key.key_size =
-		mock_gbb.h.recovery_key_size - sizeof(mock_gbb.recovery_key);
-	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_SUCCESS,
-		"phase1 rec workbuf key");
-	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
-	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
-	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
-	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
-
-	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	mock_read_res_fail_on_call = 1;
-	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_SUCCESS,
-		"phase1 rec gbb read key");
-	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
-	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
-	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
-	mock_read_res_fail_on_call = 1;
-	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
-
-	/* Failures while parsing subkey from firmware preamble */
-	reset_common_data(FOR_PHASE1);
-	sd->preamble_size = 0;
-	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_API_KPHASE1_PREAMBLE,
-		"phase1 fw preamble");
-}
-
 static void load_kernel_vblock_tests(void)
 {
 	reset_common_data(FOR_PHASE1);
@@ -472,7 +358,6 @@ static void phase3_tests(void)
 
 int main(int argc, char* argv[])
 {
-	phase1_tests();
 	load_kernel_vblock_tests();
 	get_kernel_size_tests();
 	verify_kernel_data_tests();
