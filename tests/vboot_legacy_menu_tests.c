@@ -234,11 +234,6 @@ vb2_error_t vb2_enable_developer_mode(struct vb2_context *c)
 
 /* Tests */
 
-/*
- * vb2_normal_boot tests: Please see VbBootTest in
- * vboot_legacy_clamshell_tests.c.
- */
-
 static void VbBootDevTest(void)
 {
 	int i;

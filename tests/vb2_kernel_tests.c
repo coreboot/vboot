@@ -7,6 +7,7 @@
 
 #include "2api.h"
 #include "2common.h"
+#include "2kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
@@ -34,10 +35,14 @@ static struct {
 
 static int mock_read_res_fail_on_call;
 static int mock_secdata_fwmp_check_retval;
+static int mock_vbtlk_expect_fixed;
+static int mock_vbtlk_expect_removable;
+static vb2_error_t mock_vbtlk_retval;
 
 /* Type of test to reset for */
 enum reset_type {
 	FOR_PHASE1,
+	FOR_NORMAL_BOOT,
 };
 
 static void reset_common_data(enum reset_type t)
@@ -58,6 +63,10 @@ static void reset_common_data(enum reset_type t)
 
 	mock_read_res_fail_on_call = 0;
 	mock_secdata_fwmp_check_retval = VB2_SUCCESS;
+	mock_vbtlk_expect_fixed = 0;
+	mock_vbtlk_expect_removable = 0;
+	mock_vbtlk_retval = VB2_SUCCESS;
+
 
 	/* Recovery key in mock GBB */
 	memset(&mock_gbb, 0, sizeof(mock_gbb));
@@ -134,6 +143,26 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *c,
 
 	memcpy(buf, rptr + offset, size);
 	return VB2_SUCCESS;
+}
+
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+{
+	/*
+	 * TODO: Currently we don't have a good way of testing for an ordered
+	 * sequence of VB_DISK_FLAG_FIXED and then VB_DISK_FLAG_REMOVABLE.  If
+	 * both are set, then just assume success.
+	 */
+	if (mock_vbtlk_expect_fixed && mock_vbtlk_expect_removable)
+		return mock_vbtlk_retval;
+
+	TEST_EQ(!!mock_vbtlk_expect_fixed,
+		!!(get_info_flags & VB_DISK_FLAG_FIXED),
+		"  VbTryLoadKernel unexpected fixed disk call");
+	TEST_EQ(!!mock_vbtlk_expect_removable,
+		!!(get_info_flags & VB_DISK_FLAG_REMOVABLE),
+		"  VbTryLoadKernel unexpected removable disk call");
+
+	return mock_vbtlk_retval;
 }
 
 /* Tests */
@@ -254,12 +283,30 @@ static void phase1_tests(void)
 
 static void normal_boot_tests(void)
 {
-	/*
-	 * TODO: vb2_normal_boot() tests go here.  Relocate from
-	 * vboot_legacy_clamshell_tests.c, and remove comment in
-	 * vboot_legacy_menu_tests.c.
-	 */
-}
+	reset_common_data(FOR_NORMAL_BOOT);
+	mock_vbtlk_expect_fixed = 1;
+	TEST_EQ(vb2_normal_boot(ctx), VB2_SUCCESS,
+		"vb2_normal_boot() returns VB2_SUCCESS");
+
+	reset_common_data(FOR_NORMAL_BOOT);
+	mock_vbtlk_expect_fixed = 1;
+	mock_vbtlk_retval = VB2_ERROR_MOCK;
+	TEST_EQ(vb2_normal_boot(ctx), VB2_ERROR_MOCK,
+		"vb2_normal_boot() returns VB2_ERROR_MOCK");
+
+	reset_common_data(FOR_NORMAL_BOOT);
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	TEST_EQ(vb2_normal_boot(ctx), VBERROR_REBOOT_REQUIRED,
+		"vb2_normal_boot() reboot to reset NVRAM display request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
+		"  display request reset");
+
+	reset_common_data(FOR_NORMAL_BOOT);
+	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
+	TEST_EQ(vb2_normal_boot(ctx), VBERROR_REBOOT_REQUIRED,
+		"vb2_normal_boot() reboot to reset NVRAM diag request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
+		"  diag request reset");}
 
 int main(int argc, char* argv[])
 {
