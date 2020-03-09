@@ -56,7 +56,6 @@
 #define CHSW_RECOVERY_BOOT     0x00000002
 #define CHSW_RECOVERY_EC_BOOT  0x00000004
 #define CHSW_DEV_BOOT          0x00000020
-#define CHSW_WP_BOOT           0x00000200
 /* CMOS reboot field bitflags */
 #define CMOSRF_RECOVERY        0x80
 #define CMOSRF_DEBUG_RESET     0x40
@@ -803,9 +802,6 @@ int VbGetArchPropertyInt(const char* name)
 		value = ReadGpio(GPIO_SIGNAL_TYPE_RECOVERY);
 	} else if (!strcasecmp(name,"wpsw_cur")) {
 		value = ReadGpio(GPIO_SIGNAL_TYPE_WP);
-		/* Use "write-protect at boot" as a fallback value. */
-		if (value == -1)
-			value = ReadFileBit(ACPI_CHSW_PATH, CHSW_WP_BOOT);
 	} else if (!strcasecmp(name,"recoverysw_ec_boot")) {
 		value = ReadFileBit(ACPI_CHSW_PATH, CHSW_RECOVERY_EC_BOOT);
 	} else if (!strcasecmp(name,"phase_enforcement")) {
