@@ -495,3 +495,43 @@ void vb2api_export_vbsd(struct vb2_context *ctx, void *dest)
 }
 _Static_assert(VB2_VBSD_SIZE == sizeof(VbSharedDataHeader),
 	       "VB2_VBSD_SIZE incorrect");
+
+enum vb2_dev_default_boot vb2_get_dev_boot_target(
+	struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+
+	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
+		return VB2_DEV_DEFAULT_BOOT_LEGACY;
+
+	return vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
+}
+
+int vb2_dev_boot_allowed(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+
+	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_DISABLE_BOOT))
+		return !!(gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON);
+
+	return 1;
+}
+
+int vb2_dev_boot_legacy_allowed(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+
+	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY) ||
+	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY) ||
+	       vb2_secdata_fwmp_get_flag(ctx,
+					 VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY);
+}
+
+int vb2_dev_boot_usb_allowed(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+
+	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB) ||
+	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) ||
+	       vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_USB);
+}

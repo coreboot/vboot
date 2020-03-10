@@ -210,4 +210,48 @@ int vb2_allow_recovery(struct vb2_context *ctx);
  */
 void vb2_clear_recovery(struct vb2_context *ctx);
 
+/**
+ * Return the developer mode default boot option; see vb2_dev_default_boot.
+ *
+ * @param ctx		Vboot context
+ * @return The developer mode default boot option, or
+ *  VB2_DEV_DEFAULT_BOOT_DISK if not specified.
+ */
+enum vb2_dev_default_boot vb2_get_dev_boot_target(struct vb2_context *ctx);
+
+/**
+ * Determine if developer mode is allowed.
+ *
+ * Developer boot is not allowed if and only if FWMP_DEV_DISABLE_BOOT is set and
+ * GBB_FORCE_DEV_SWITCH_ON is not set.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if allowed, or 0 otherwise.
+ */
+int vb2_dev_boot_allowed(struct vb2_context *ctx);
+
+/**
+ * Determine if booting from legacy BIOS is allowed.
+ *
+ * Legacy BIOS is allowed if one of the legacy-related flags is set:
+ * VB2_NV_DEV_BOOT_LEGACY, VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY, and
+ * VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if allowed, or 0 otherwise.
+ */
+int vb2_dev_boot_legacy_allowed(struct vb2_context *ctx);
+
+/**
+ * Determine if booting from USB or SD card is allowed.
+ *
+ * Booting from USB is allowed if one of the USB-related flags is set:
+ * VB2_NV_DEV_BOOT_USB, VB2_GBB_FLAG_FORCE_DEV_BOOT_USB, and
+ * VB2_SECDATA_FWMP_DEV_ENABLE_USB.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if allowed, or 0 otherwise.
+ */
+int vb2_dev_boot_usb_allowed(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2MISC_H_ */
