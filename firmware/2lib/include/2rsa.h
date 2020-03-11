@@ -26,17 +26,6 @@ struct vb2_public_key {
 };
 
 /**
- * Convert vb2_crypto_algorithm to vb2_signature_algorithm.
- *
- * @param algorithm	Crypto algorithm (vb2_crypto_algorithm)
- *
- * @return The signature algorithm for that crypto algorithm, or
- * VB2_SIG_INVALID if the crypto algorithm or its corresponding signature
- * algorithm is invalid or not supported.
- */
-enum vb2_signature_algorithm vb2_crypto_to_signature(uint32_t algorithm);
-
-/**
  * Return the size of a RSA signature
  *
  * @param sig_alg	Signature algorithm

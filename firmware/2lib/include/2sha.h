@@ -175,17 +175,6 @@ void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest);
 void vb2_sha256_extend(const uint8_t *from, const uint8_t *by, uint8_t *to);
 
 /**
- * Convert vb2_crypto_algorithm to vb2_hash_algorithm.
- *
- * @param algorithm	Crypto algorithm (vb2_crypto_algorithm)
- *
- * @return The hash algorithm for that crypto algorithm, or VB2_HASH_INVALID if
- * the crypto algorithm or its corresponding hash algorithm is invalid or not
- * supported.
- */
-enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm);
-
-/**
  * Return the size of the digest for a hash algorithm.
  *
  * @param hash_alg	Hash algorithm
@@ -200,15 +189,6 @@ size_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
  * @return The block size of the algorithm, or 0 if error.
  */
 size_t vb2_hash_block_size(enum vb2_hash_algorithm alg);
-
-/**
- * Return the name of a hash algorithm
- *
- * @param alg	Hash algorithm ID
- * @return	String containing a hash name or VB2_INVALID_ALG_NAME
- * 		if <alg> is invalid.
- */
-const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg);
 
 /**
  * Initialize a digest context for doing block-style digesting.

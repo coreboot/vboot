@@ -23,6 +23,7 @@
 #include "openssl_compat.h"
 #include "util_misc.h"
 #include "vb2_common.h"
+#include "vboot_host.h"
 
 /* Command line options */
 enum {
@@ -55,7 +56,7 @@ static const struct option long_opts[] = {
 
 static void print_help(int argc, char *argv[])
 {
-	const struct vb2_text_vs_enum *entry;
+	enum vb2_hash_algorithm alg;
 
 	printf("\n"
 "Usage:  " MYNAME " %s [options] <INFILE> [<BASENAME>]\n", argv[0]);
@@ -67,10 +68,13 @@ static void print_help(int argc, char *argv[])
 "  --version <number>          Key version (default %d)\n"
 "  --hash_alg <number>         Hashing algorithm to use:\n",
 		DEFAULT_VERSION);
-	for (entry = vb2_text_vs_hash; entry->name; entry++)
-		printf("                                %d / %s%s\n",
-		       entry->num, entry->name,
-		       entry->num == VB2_HASH_SHA256 ? " (default)" : "");
+	for (alg = 0; alg < VB2_HASH_ALG_COUNT; alg++) {
+		const char *name = vb2_get_hash_algorithm_name(alg);
+		if (strcmp(name, VB2_INVALID_ALG_NAME) != 0)
+			printf("                                %d / %s%s\n",
+			       alg, name,
+			       alg == VB2_HASH_SHA256 ? " (default)" : "");
+	}
 	printf(
 "  --id <id>                   Identifier for this keypair (vb21 only)\n"
 "  --desc <text>               Human-readable description (vb21 only)\n"

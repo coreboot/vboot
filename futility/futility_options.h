@@ -67,7 +67,4 @@ struct sign_option_s {
 };
 extern struct sign_option_s sign_option;
 
-/* Return true if hash_alg was identified, either by name or number */
-int vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *alg);
-
 #endif  /* VBOOT_REFERENCE_FUTILITY_OPTIONS_H_ */

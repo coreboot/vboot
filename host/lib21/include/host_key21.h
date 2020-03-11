@@ -32,57 +32,6 @@ struct vb2_packed_private_key {
 	uint8_t key_data[0];
 };
 
-/* Convert between enums and human-readable form. Terminated with {0, 0}. */
-struct vb2_text_vs_enum {
-	const char *name;
-	unsigned int num;
-};
-
-/**
- * @param table         Table to search
- * @param num           Enum value to search for
- * @return pointer to table entry or NULL if no match
- */
-const struct vb2_text_vs_enum *vb2_lookup_by_num(
-	const struct vb2_text_vs_enum *table,
-	const unsigned int num);
-
-/**
- * @param table         Table to search
- * @param name          String value to search for
- * @return pointer to table entry or NULL if no match
- */
-const struct vb2_text_vs_enum *vb2_lookup_by_name(
-	const struct vb2_text_vs_enum *table,
-	const char *name);
-
-extern const struct vb2_text_vs_enum vb2_text_vs_sig[];
-extern const struct vb2_text_vs_enum vb2_text_vs_hash[];
-
-/**
- * Return the name of a signature algorithm.
- *
- * @param sig_alg	Signature algorithm to look up
- * @return The corresponding name, or VB2_INVALID_ALG_NAME if no match.
- */
-const char *vb2_get_sig_algorithm_name(enum vb2_signature_algorithm sig_alg);
-
-/**
- * Return the name of a crypto algorithm.
- *
- * @param alg		Crypto algorithm to look up
- * @return The corresponding name, or VB2_INVALID_ALG_NAME if no match.
- */
-const char *vb2_get_crypto_algorithm_name(enum vb2_crypto_algorithm alg);
-
-/**
- * Return the name of a crypto algorithm.
- *
- * @param alg		Crypto algorithm to look up
- * @return The corresponding stem filename, or VB2_INVALID_ALG_NAME if no match.
- */
-const char *vb2_get_crypto_algorithm_file(enum vb2_crypto_algorithm alg);
-
 /**
  * Free a private key.
  *

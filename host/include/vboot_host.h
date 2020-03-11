@@ -9,13 +9,15 @@
 #define VBOOT_REFERENCE_VBOOT_HOST_H_
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "2crypto.h"
+#include "cgpt_params.h"
+
 /****************************************************************************/
 /* EFI GPT manipulation */
-
-#include "cgpt_params.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +74,24 @@ char *FindKernelConfig(const char *filename,
  */
 int ExtractVmlinuz(void *kpart_data, size_t kpart_size,
 		   void **vmlinuz_out, size_t *vmlinuz_size);
+
+/**
+ * Look up a signature algorithm by its string representation.
+ *
+ * @param str		String representation of algo (e.g. "rsa2048" or "1")
+ * @param alg		Output parameter that will be filled with found enum
+ * @return		True if algorithm was found, false otherwise.
+ */
+bool vb2_lookup_sig_alg(const char *str, enum vb2_signature_algorithm *sig_alg);
+
+/**
+ * Look up a hash algorithm by its string representation.
+ *
+ * @param str		String representation of algorithm (e.g. "sha1" or "1")
+ * @param alg		Output parameter that will be filled with found enum
+ * @return		True if algorithm was found, false otherwise.
+ */
+bool vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *hash_alg);
 
 #ifdef __cplusplus
 }

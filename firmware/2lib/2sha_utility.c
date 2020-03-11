@@ -9,53 +9,6 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 
-#if VB2_SUPPORT_SHA1
-#define CTH_SHA1 VB2_HASH_SHA1
-#else
-#define CTH_SHA1 VB2_HASH_INVALID
-#endif
-
-#if VB2_SUPPORT_SHA256
-#define CTH_SHA256 VB2_HASH_SHA256
-#else
-#define CTH_SHA256 VB2_HASH_INVALID
-#endif
-
-#if VB2_SUPPORT_SHA512
-#define CTH_SHA512 VB2_HASH_SHA512
-#else
-#define CTH_SHA512 VB2_HASH_INVALID
-#endif
-
-static const uint8_t crypto_to_hash[] = {
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-	CTH_SHA1,
-	CTH_SHA256,
-	CTH_SHA512,
-};
-
-enum vb2_hash_algorithm vb2_crypto_to_hash(uint32_t algorithm)
-{
-	if (algorithm < ARRAY_SIZE(crypto_to_hash))
-		return crypto_to_hash[algorithm];
-	else
-		return VB2_HASH_INVALID;
-}
-
 size_t vb2_digest_size(enum vb2_hash_algorithm hash_alg)
 {
 	switch (hash_alg) {
@@ -93,26 +46,6 @@ size_t vb2_hash_block_size(enum vb2_hash_algorithm alg)
 #endif
 	default:
 		return 0;
-	}
-}
-
-const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg)
-{
-	switch (alg) {
-#if VB2_SUPPORT_SHA1
-	case VB2_HASH_SHA1:
-		return VB2_SHA1_ALG_NAME;
-#endif
-#if VB2_SUPPORT_SHA256
-	case VB2_HASH_SHA256:
-		return VB2_SHA256_ALG_NAME;
-#endif
-#if VB2_SUPPORT_SHA512
-	case VB2_HASH_SHA512:
-		return VB2_SHA512_ALG_NAME;
-#endif
-	default:
-		return VB2_INVALID_ALG_NAME;
 	}
 }
 

@@ -182,45 +182,6 @@ static void modpow(const struct vb2_public_key *key, uint8_t *inout,
 	}
 }
 
-
-static const uint8_t crypto_to_sig[] = {
-	VB2_SIG_RSA1024,
-	VB2_SIG_RSA1024,
-	VB2_SIG_RSA1024,
-	VB2_SIG_RSA2048,
-	VB2_SIG_RSA2048,
-	VB2_SIG_RSA2048,
-	VB2_SIG_RSA4096,
-	VB2_SIG_RSA4096,
-	VB2_SIG_RSA4096,
-	VB2_SIG_RSA8192,
-	VB2_SIG_RSA8192,
-	VB2_SIG_RSA8192,
-	VB2_SIG_RSA2048_EXP3,
-	VB2_SIG_RSA2048_EXP3,
-	VB2_SIG_RSA2048_EXP3,
-	VB2_SIG_RSA3072_EXP3,
-	VB2_SIG_RSA3072_EXP3,
-	VB2_SIG_RSA3072_EXP3,
-};
-
-/**
- * Convert vb2_crypto_algorithm to vb2_signature_algorithm.
- *
- * @param algorithm	Crypto algorithm (vb2_crypto_algorithm)
- *
- * @return The signature algorithm for that crypto algorithm, or
- * VB2_SIG_INVALID if the crypto algorithm or its corresponding signature
- * algorithm is invalid or not supported.
- */
-enum vb2_signature_algorithm vb2_crypto_to_signature(uint32_t algorithm)
-{
-	if (algorithm < ARRAY_SIZE(crypto_to_sig))
-		return crypto_to_sig[algorithm];
-	else
-		return VB2_SIG_INVALID;
-}
-
 uint32_t vb2_rsa_sig_size(enum vb2_signature_algorithm sig_alg)
 {
 	switch (sig_alg) {

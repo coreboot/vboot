@@ -169,22 +169,6 @@ static void misc_tests(void)
 		"vb2_digest_finalize() invalid alg");
 }
 
-static void hash_algorithm_name_tests(void)
-{
-	enum vb2_hash_algorithm alg;
-	char test_name[256];
-
-	for (alg = 1; alg < VB2_HASH_ALG_COUNT; alg++) {
-		sprintf(test_name, "%s: %s (alg=%d)",
-			__func__, vb2_get_hash_algorithm_name(alg), alg);
-		TEST_STR_NEQ(vb2_get_hash_algorithm_name(alg),
-			     VB2_INVALID_ALG_NAME, test_name);
-	}
-
-	TEST_STR_EQ(vb2_get_hash_algorithm_name(VB2_HASH_INVALID),
-		    VB2_INVALID_ALG_NAME, "hash alg name invalid");
-}
-
 int main(int argc, char *argv[])
 {
 	/* Initialize long_msg with 'a' x 1,000,000 */
@@ -196,7 +180,6 @@ int main(int argc, char *argv[])
 	sha256_tests();
 	sha512_tests();
 	misc_tests();
-	hash_algorithm_name_tests();
 
 	free(long_msg);
 

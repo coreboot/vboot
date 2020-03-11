@@ -8,7 +8,7 @@
 #ifndef VBOOT_REFERENCE_2CRYPTO_H_
 #define VBOOT_REFERENCE_2CRYPTO_H_
 
-#include <stdint.h>
+#include "2sysincludes.h"
 
 /* Verified boot crypto algorithms */
 enum vb2_crypto_algorithm {
@@ -61,6 +61,8 @@ enum vb2_signature_algorithm {
 enum vb2_hash_algorithm {
 	/* Invalid or unsupported digest type */
 	VB2_HASH_INVALID = 0,
+	/* For some applications, it's more useful that 0 means "no hash". */
+	VB2_HASH_NONE = VB2_HASH_INVALID,
 
 	/* SHA-1.  Warning: This is likely to be deprecated soon! */
 	VB2_HASH_SHA1 = 1,
@@ -72,5 +74,64 @@ enum vb2_hash_algorithm {
 	/* Last index. Don't add anything below. */
 	VB2_HASH_ALG_COUNT,
 };
+
+/* Arrays mapping signature/hash types to their string representations. */
+extern const char *vb2_sig_names[VB2_SIG_ALG_COUNT];
+extern const char *vb2_hash_names[VB2_HASH_ALG_COUNT];
+
+/**
+ * Convert vb2_crypto_algorithm to vb2_signature_algorithm.
+ *
+ * @param algorithm	Crypto algorithm (vb2_crypto_algorithm)
+ *
+ * @return The signature algorithm for that crypto algorithm, or
+ * VB2_SIG_INVALID if the crypto algorithm or its corresponding signature
+ * algorithm is invalid or not supported.
+ */
+enum vb2_signature_algorithm vb2_crypto_to_signature(
+					enum vb2_crypto_algorithm algorithm);
+
+/**
+ * Convert vb2_crypto_algorithm to vb2_hash_algorithm.
+ *
+ * @param algorithm	Crypto algorithm (vb2_crypto_algorithm)
+ *
+ * @return The hash algorithm for that crypto algorithm, or VB2_HASH_INVALID if
+ * the crypto algorithm or its corresponding hash algorithm is invalid or not
+ * supported.
+ */
+enum vb2_hash_algorithm vb2_crypto_to_hash(enum vb2_crypto_algorithm algorithm);
+
+/**
+ * Return the name of a signature algorithm.
+ *
+ * @param sig_alg	Signature algorithm to look up
+ * @return The corresponding name, or VB2_INVALID_ALG_NAME if no match.
+ */
+const char *vb2_get_sig_algorithm_name(enum vb2_signature_algorithm sig_alg);
+
+/**
+ * Return the name of a hash algorithm
+ *
+ * @param alg	Hash algorithm ID
+ * @return The corresponding name, or VB2_INVALID_ALG_NAME if no match.
+ */
+const char *vb2_get_hash_algorithm_name(enum vb2_hash_algorithm alg);
+
+/**
+ * Return the name of a crypto algorithm.
+ *
+ * @param alg		Crypto algorithm to look up
+ * @return The corresponding name, or VB2_INVALID_ALG_NAME if no match.
+ */
+const char *vb2_get_crypto_algorithm_name(enum vb2_crypto_algorithm alg);
+
+/**
+ * Return the name of a crypto algorithm.
+ *
+ * @param alg		Crypto algorithm to look up
+ * @return The corresponding stem filename, or VB2_INVALID_ALG_NAME if no match.
+ */
+const char *vb2_get_crypto_algorithm_file(enum vb2_crypto_algorithm alg);
 
 #endif  /* VBOOT_REFERENCE_2CRYPTO_H_ */

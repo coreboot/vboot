@@ -423,7 +423,7 @@ static void print_help_kern_preamble(int argc, char *argv[])
 
 static void print_help_usbpd1(int argc, char *argv[])
 {
-	const struct vb2_text_vs_enum *entry;
+	enum vb2_hash_algorithm algo;
 
 	printf("\n"
 	       "Usage:  " MYNAME " %s --type %s [options] INFILE [OUTFILE]\n"
@@ -450,10 +450,13 @@ static void print_help_usbpd1(int argc, char *argv[])
 	       argv[0],
 	       futil_file_type_name(FILE_TYPE_USBPD1),
 	       futil_file_type_desc(FILE_TYPE_USBPD1));
-	for (entry = vb2_text_vs_hash; entry->name; entry++)
-		printf("                                   %d / %s%s\n",
-		       entry->num, entry->name,
-		       entry->num == VB2_HASH_SHA256 ? " (default)" : "");
+	for (algo = 0; algo < VB2_HASH_ALG_COUNT; algo++) {
+		const char *name = vb2_get_hash_algorithm_name(algo);
+		if (strcmp(name, VB2_INVALID_ALG_NAME) != 0)
+			printf("                                   %d / %s%s\n",
+			       algo, name,
+			       algo == VB2_HASH_SHA256 ? " (default)" : "");
+	}
 	printf("\n"
 	       "The size and offset assumptions can be overridden. "
 	       "All numbers are in bytes.\n"
