@@ -36,7 +36,8 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 	char buf[80];		/* DWR: magic number */
 	const FmapAreaHeader *ah;
 	ah = (const FmapAreaHeader *) (fmh + 1);
-	char *extract_names[argc];
+        /* Size must greater than 0, else behavior is undefined. */
+	char *extract_names[argc >= 1 ? argc : 1];
 	char *outname = 0;
 
 	memset(extract_names, 0, sizeof(extract_names));
