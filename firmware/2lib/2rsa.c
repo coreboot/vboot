@@ -321,6 +321,7 @@ static const uint8_t sha512_tail[] = {
  * @param key		Key to take signature and hash algorithms from
  * @return VB2_SUCCESS, or non-zero if error.
  */
+test_mockable
 vb2_error_t vb2_check_padding(const uint8_t *sig,
 			      const struct vb2_public_key *key)
 {
