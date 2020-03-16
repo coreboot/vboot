@@ -3,72 +3,46 @@
  * found in the LICENSE file.
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "cgpt.h"
 #include "cgptlib_internal.h"
 #include "cgpt_params.h"
-#include "utility.h"
 #include "vboot_host.h"
 
-static const char* DumpCgptAddParams(const CgptAddParams *params) {
-  static char buf[256];
+static void PrintCgptAddParams(const CgptAddParams *params) {
   char tmp[64];
 
-  buf[0] = 0;
-  snprintf(tmp, sizeof(tmp), "-i %d ", params->partition);
-  StrnAppend(buf, tmp, sizeof(buf));
-  if (params->label) {
-    snprintf(tmp, sizeof(tmp), "-l %s ", params->label);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_begin) {
-    snprintf(tmp, sizeof(tmp), "-b %llu ", (unsigned long long)params->begin);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_size) {
-    snprintf(tmp, sizeof(tmp), "-s %llu ", (unsigned long long)params->size);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
+  fprintf(stderr, "-i %d ", params->partition);
+  if (params->label)
+    fprintf(stderr, "-l %s ", params->label);
+  if (params->set_begin)
+    fprintf(stderr, "-b %llu ", (unsigned long long)params->begin);
+  if (params->set_size)
+    fprintf(stderr, "-s %llu ", (unsigned long long)params->size);
   if (params->set_type) {
     GuidToStr(&params->type_guid, tmp, sizeof(tmp));
-    StrnAppend(buf, "-t ", sizeof(buf));
-    StrnAppend(buf, tmp, sizeof(buf));
-    StrnAppend(buf, " ", sizeof(buf));
+    fprintf(stderr, "-t %s ", tmp);
   }
   if (params->set_unique) {
     GuidToStr(&params->unique_guid, tmp, sizeof(tmp));
-    StrnAppend(buf, "-u ", sizeof(buf));
-    StrnAppend(buf, tmp, sizeof(buf));
-    StrnAppend(buf, " ", sizeof(buf));
+    fprintf(stderr, "-u %s ", tmp);
   }
-  if (params->set_successful) {
-    snprintf(tmp, sizeof(tmp), "-S %d ", params->successful);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_tries) {
-    snprintf(tmp, sizeof(tmp), "-T %d ", params->tries);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_priority) {
-    snprintf(tmp, sizeof(tmp), "-P %d ", params->priority);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_required) {
-    snprintf(tmp, sizeof(tmp), "-R %d ", params->required);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_legacy_boot) {
-    snprintf(tmp, sizeof(tmp), "-B %d ", params->legacy_boot);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
-  if (params->set_raw) {
-    snprintf(tmp, sizeof(tmp), "-A %#x ", params->raw_value);
-    StrnAppend(buf, tmp, sizeof(buf));
-  }
+  if (params->set_successful)
+    fprintf(stderr, "-S %d ", params->successful);
+  if (params->set_tries)
+    fprintf(stderr, "-T %d ", params->tries);
+  if (params->set_priority)
+    fprintf(stderr, "-P %d ", params->priority);
+  if (params->set_required)
+    fprintf(stderr, "-R %d ", params->required);
+  if (params->set_legacy_boot)
+    fprintf(stderr, "-B %d ", params->legacy_boot);
+  if (params->set_raw)
+    fprintf(stderr, "-A %#x ", params->raw_value);
 
-  StrnAppend(buf, "\n", sizeof(buf));
-  return buf;
+  fprintf(stderr, "\n");
 }
 
 // This is the implementation-specific helper function.
@@ -295,7 +269,8 @@ static int GptAdd(struct drive *drive, CgptAddParams *params, uint32_t index) {
     // If the modified entry is illegal, recover it and return error.
     memcpy(entry, &backup, sizeof(*entry));
     Error("%s\n", GptErrorText(rv));
-    Error(DumpCgptAddParams(params));
+    Error("");
+    PrintCgptAddParams(params);
     return -1;
   }
 

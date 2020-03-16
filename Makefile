@@ -381,7 +381,6 @@ FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
 	firmware/lib/gpt_misc.c \
-	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_audio.c \
 	firmware/lib/vboot_display.c \
@@ -500,7 +499,6 @@ HOSTLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
 	firmware/lib/gpt_misc.c \
-	firmware/lib/utility_string.c \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
@@ -675,7 +673,6 @@ TEST_NAMES = \
 	tests/cgptlib_test \
 	tests/sha_benchmark \
 	tests/subprocess_tests \
-	tests/utility_string_tests \
 	tests/vboot_api_kernel4_tests \
 	tests/vboot_api_kernel_tests \
 	tests/vboot_display_tests \
@@ -1203,7 +1200,6 @@ ifeq (${MOCK_TPM}${TPM2_MODE},)
 # tlcl_tests only works when MOCK_TPM is disabled
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 endif
-	${RUNTEST} ${BUILD_RUN}/tests/utility_string_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_display_tests

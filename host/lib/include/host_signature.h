@@ -9,7 +9,6 @@
 #define VBOOT_REFERENCE_HOST_SIGNATURE_H_
 
 #include "host_key.h"
-#include "utility.h"
 #include "vboot_struct.h"
 
 struct vb2_private_key;

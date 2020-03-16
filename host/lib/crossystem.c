@@ -17,7 +17,6 @@
 #include "crossystem_vbnv.h"
 #include "host_common.h"
 #include "subprocess.h"
-#include "utility.h"
 #include "vboot_struct.h"
 
 /* Filename for kernel command line */

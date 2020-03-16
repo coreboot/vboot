@@ -12,7 +12,6 @@
 
 #include "tlcl.h"
 #include "tlcl_tests.h"
-#include "utility.h"
 
 #define INDEX0 0xcafe
 

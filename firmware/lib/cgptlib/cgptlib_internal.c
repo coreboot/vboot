@@ -9,7 +9,6 @@
 #include "crc32.h"
 #include "gpt.h"
 #include "gpt_misc.h"
-#include "utility.h"
 
 const static int MIN_SECTOR_SIZE = 512;
 

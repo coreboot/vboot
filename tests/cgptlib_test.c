@@ -13,7 +13,6 @@
 #include "crc32_test.h"
 #include "gpt.h"
 #include "test_common.h"
-#include "utility.h"
 
 /*
  * Testing partition layout (sector_bytes=512)

@@ -7,7 +7,6 @@
 #include "crc32.h"
 #include "crc32_test.h"
 #include "test_common.h"
-#include "utility.h"
 
 #define MAX_VECTOR_LEN 256
 

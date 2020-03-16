@@ -11,7 +11,6 @@
 #include "2sysincludes.h"
 #include "load_kernel_fw.h"
 #include "test_common.h"
-#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 #include "vboot_test.h"

@@ -11,7 +11,6 @@
 
 #include "futility.h"
 #include "updater.h"
-#include "utility.h"
 
 enum {
 	OPT_DUMMY = 0x100,

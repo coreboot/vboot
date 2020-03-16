@@ -12,7 +12,6 @@
 #include "2secdata.h"
 #include "2sysincludes.h"
 #include "load_kernel_fw.h"
-#include "utility.h"
 #include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"

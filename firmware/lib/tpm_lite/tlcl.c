@@ -21,7 +21,6 @@
 #include "tlcl.h"
 #include "tlcl_internal.h"
 #include "tlcl_structures.h"
-#include "utility.h"
 #include "vboot_api.h"
 
 /* Sets the size field of a TPM command. */

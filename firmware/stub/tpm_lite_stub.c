@@ -23,7 +23,6 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
-#include "utility.h"
 #include "vboot_api.h"
 
 #define TPM_DEVICE_PATH "/dev/tpm0"

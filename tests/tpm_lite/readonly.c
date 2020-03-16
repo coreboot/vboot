@@ -14,7 +14,6 @@
 #include <stdlib.h>
 
 #include "tlcl.h"
-#include "utility.h"
 
 /* These index values are used to create NVRAM spaces.  They only need to be
  * unique.

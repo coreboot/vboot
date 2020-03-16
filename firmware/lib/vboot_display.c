@@ -10,7 +10,6 @@
 #include "2nvstorage.h"
 #include "2sha.h"
 #include "2sysincludes.h"
-#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_display.h"
 #include "vboot_kernel.h"
@@ -216,7 +215,12 @@ const char *RecoveryReasonString(uint8_t code)
 	return "Unknown or deprecated error code";
 }
 
-#define DEBUG_INFO_SIZE 512
+#define DEBUG_INFO_SIZE 1024
+#define DEBUG_INFO_APPEND(format, args...) do { \
+	if (used < DEBUG_INFO_SIZE) \
+		used += snprintf(buf + used, DEBUG_INFO_SIZE - used, format, \
+				 ## args); \
+} while (0)
 
 vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 {
@@ -225,7 +229,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	struct vb2_workbuf wb;
 	char buf[DEBUG_INFO_SIZE] = "";
 	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
-	uint32_t used = 0;
+	int32_t used = 0;
 	vb2_error_t ret;
 	uint32_t i;
 
@@ -238,83 +242,53 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		ret = vb2api_gbb_read_hwid(ctx, hwid, &size);
 		if (ret)
 			strcpy(hwid, "{INVALID}");
-		used += StrnAppend(buf + used, "HWID: ",
-				   DEBUG_INFO_SIZE - used);
-		used += StrnAppend(buf + used, hwid, DEBUG_INFO_SIZE - used);
+		DEBUG_INFO_APPEND("HWID: %s", hwid);
 	}
 
 	/* Add recovery reason and subcode */
 	i = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
-	used += StrnAppend(buf + used,
-			"\nrecovery_reason: 0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->recovery_reason, 16, 2);
-	used += StrnAppend(buf + used, " / 0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 16, 2);
-	used += StrnAppend(buf + used, "  ", DEBUG_INFO_SIZE - used);
-	used += StrnAppend(buf + used,
-			RecoveryReasonString(sd->recovery_reason),
-			DEBUG_INFO_SIZE - used);
+	DEBUG_INFO_APPEND("\nrecovery_reason: %#.2x / %#.2x  %s",
+			  sd->recovery_reason, i,
+			  RecoveryReasonString(sd->recovery_reason));
 
 	/* Add vb2_context and vb2_shared_data flags */
-	used += StrnAppend(buf + used, "\ncontext.flags: 0x",
-			   DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       ctx->flags, 16, 16);
-	used += StrnAppend(buf + used, "\nshared_data.flags: 0x",
-			   DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->flags, 16, 8);
-	used += StrnAppend(buf + used, "\nshared_data.status: 0x",
-			   DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->status, 16, 8);
+	DEBUG_INFO_APPEND("\ncontext.flags: %#.16" PRIx64, ctx->flags);
+	DEBUG_INFO_APPEND("\nshared_data.flags: %#.8x", sd->flags);
+	DEBUG_INFO_APPEND("\nshared_data.status: %#.8x", sd->status);
 
-	/* Add raw contents of VbNvStorage */
-	used += StrnAppend(buf + used, "\nVbNv.raw:", DEBUG_INFO_SIZE - used);
+	/* Add raw contents of nvdata */
+	DEBUG_INFO_APPEND("\nnvdata:");
+	if (vb2_nv_get_size(ctx) > 16)  /* Multi-line starts on next line */
+		DEBUG_INFO_APPEND("\n  ");
 	for (i = 0; i < vb2_nv_get_size(ctx); i++) {
-		used += StrnAppend(buf + used, " ", DEBUG_INFO_SIZE - used);
-		used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-				       ctx->nvdata[i], 16, 2);
+		/* Split into 16-byte blocks */
+		if (i > 0 && i % 16 == 0)
+			DEBUG_INFO_APPEND("\n  ");
+		DEBUG_INFO_APPEND(" %02x", ctx->nvdata[i]);
 	}
 
 	/* Add dev_boot_usb flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB);
-	used += StrnAppend(buf + used, "\ndev_boot_usb: ", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
+	DEBUG_INFO_APPEND("\ndev_boot_usb: %d", i);
 
 	/* Add dev_boot_legacy flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY);
-	used += StrnAppend(buf + used,
-			"\ndev_boot_legacy: ", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
+	DEBUG_INFO_APPEND("\ndev_boot_legacy: %d", i);
 
 	/* Add dev_default_boot flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
-	used += StrnAppend(buf + used,
-			"\ndev_default_boot: ", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
+	DEBUG_INFO_APPEND("\ndev_default_boot: %d", i);
 
 	/* Add dev_boot_signed_only flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY);
-	used += StrnAppend(buf + used, "\ndev_boot_signed_only: ",
-			DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used, i, 10, 0);
+	DEBUG_INFO_APPEND("\ndev_boot_signed_only: %d", i);
 
 	/* Add TPM versions */
-	used += StrnAppend(buf + used,
-			   "\nTPM: fwver=0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->fw_version_secdata, 16, 8);
-	used += StrnAppend(buf + used, " kernver=0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       sd->kernel_version_secdata, 16, 8);
+	DEBUG_INFO_APPEND("\nTPM: fwver=%#.8x kernver=%#.8x",
+			  sd->fw_version_secdata, sd->kernel_version_secdata);
 
 	/* Add GBB flags */
-	used += StrnAppend(buf + used,
-			   "\ngbb.flags: 0x", DEBUG_INFO_SIZE - used);
-	used += Uint64ToString(buf + used, DEBUG_INFO_SIZE - used,
-			       gbb->flags, 16, 8);
+	DEBUG_INFO_APPEND("\ngbb.flags: %#.8x", gbb->flags);
 
 	/* Add sha1sum for Root & Recovery keys */
 	{
@@ -323,10 +297,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		ret = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
 		if (!ret) {
 			FillInSha1Sum(sha1sum, key);
-			used += StrnAppend(buf + used, "\ngbb.rootkey: ",
-					   DEBUG_INFO_SIZE - used);
-			used += StrnAppend(buf + used, sha1sum,
-					   DEBUG_INFO_SIZE - used);
+			DEBUG_INFO_APPEND("\ngbb.rootkey: %s", sha1sum);
 		}
 	}
 
@@ -336,10 +307,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		ret = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
 		if (!ret) {
 			FillInSha1Sum(sha1sum, key);
-			used += StrnAppend(buf + used, "\ngbb.recovery_key: ",
-					   DEBUG_INFO_SIZE - used);
-			used += StrnAppend(buf + used, sha1sum,
-					   DEBUG_INFO_SIZE - used);
+			DEBUG_INFO_APPEND("\ngbb.recovery_key: %s", sha1sum);
 		}
 	}
 
@@ -349,13 +317,11 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 		struct vb2_packed_key *key =
 			vb2_member_of(sd, sd->kernel_key_offset);
 		FillInSha1Sum(sha1sum, key);
-		used += StrnAppend(buf + used,
-				"\nkernel_subkey: ", DEBUG_INFO_SIZE - used);
-		used += StrnAppend(buf + used, sha1sum, DEBUG_INFO_SIZE - used);
+		DEBUG_INFO_APPEND("\nkernel_subkey: %s", sha1sum);
 	}
 
 	/* Make sure we finish with a newline */
-	used += StrnAppend(buf + used, "\n", DEBUG_INFO_SIZE - used);
+	DEBUG_INFO_APPEND("\n");
 
 	/* TODO: add more interesting data:
 	 * - Information on current disks */

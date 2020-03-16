@@ -10,7 +10,7 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tpm2_marshaling.h"
-#include "utility.h"
+#include "vboot_api.h"
 
 /*
  * TODO(chromium:1032930): Originally accessed by including secdata_tpm.h.

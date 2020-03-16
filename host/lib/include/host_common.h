@@ -13,7 +13,6 @@
 #include "host_keyblock.h"
 #include "host_misc.h"
 #include "host_signature.h"
-#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_struct.h"
 

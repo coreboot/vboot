@@ -6,7 +6,6 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
-#include "utility.h"
 #include "vboot_api.h"
 
 uint32_t TlclLibInit(void)

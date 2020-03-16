@@ -8,7 +8,6 @@
 #ifndef VBOOT_REFERENCE_HOST_MISC_H_
 #define VBOOT_REFERENCE_HOST_MISC_H_
 
-#include "utility.h"
 #include "vboot_struct.h"
 
 /* Copy up to dest_size-1 characters from src to dest, ensuring null

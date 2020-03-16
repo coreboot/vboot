@@ -12,7 +12,6 @@
 #include "file_keys.h"
 #include "rsa_padding_test.h"
 #include "test_common.h"
-#include "utility.h"
 #include "vboot_api.h"
 #include "vboot_test.h"
 

@@ -16,7 +16,6 @@
 
 #include "tlcl.h"
 #include "tlcl_tests.h"
-#include "utility.h"
 
 /* Runs [op] and ensures it returns success and doesn't run longer than
  * [time_limit] in milliseconds.

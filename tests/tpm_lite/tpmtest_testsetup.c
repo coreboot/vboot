@@ -12,7 +12,6 @@
 
 #include "tlcl.h"
 #include "tlcl_tests.h"
-#include "utility.h"
 
 int main(int argc, char** argv) {
 	uint32_t perm;

@@ -85,7 +85,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams);
 
 /*****************************************************************************/
-/* Timer and delay (first two from utility.h) */
+/* Timer and delay */
 
 #define VB_USEC_PER_MSEC	1000ULL
 #define VB_MSEC_PER_SEC		VB_USEC_PER_MSEC

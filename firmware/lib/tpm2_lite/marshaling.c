@@ -6,7 +6,6 @@
 #include "2common.h"
 #include "2sysincludes.h"
 #include "tpm2_marshaling.h"
-#include "utility.h"
 
 static uint16_t tpm_tag;  /* Depends on the command type. */
 static int ph_disabled;   /* Platform hierarchy disabled. */
