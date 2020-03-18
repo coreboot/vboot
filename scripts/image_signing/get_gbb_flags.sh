@@ -34,7 +34,7 @@ main() {
   # Keep 'local' declaration split from assignment so return code is checked.
   local gbb_flags
   gbb_flags="$(futility gbb -g --flags "${image_file}")"
-  local raw_gbb_flags="$(echo "${gbb_flags}" | egrep -o "0x[0-9]+")"
+  local raw_gbb_flags="$(echo "${gbb_flags}" | egrep -o "0x[0-9a-fA-F]+")"
   printf "Chrome OS GBB set ${gbb_flags}\n"
 
   if [ "${FLAGS_explicit}" = "${FLAGS_TRUE}" ]; then
