@@ -611,13 +611,6 @@ enum VbAltFwIndex_t {
  */
 vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num);
 
-/* Regions for VbExRegionRead() */
-enum vb_firmware_region {
-	VB_REGION_GBB,	/* Google Binary Block - see gbbheader.h */
-
-	VB_REGION_COUNT,
-};
-
 /**
  * Return number of locales supported
  *
