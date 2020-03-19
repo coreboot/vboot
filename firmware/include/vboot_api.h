@@ -576,14 +576,6 @@ uint32_t VbExIsShutdownRequested(void);
 /* Shutdown requested due to a power button being pressed. */
 #define VB_SHUTDOWN_REQUEST_POWER_BUTTON	0x00000004
 
-/* Constants for compression_type */
-enum {
-	COMPRESS_NONE = 0,
-	COMPRESS_EFIv1,           /* The x86 BIOS only supports this */
-	COMPRESS_LZMA1,           /* The ARM BIOS supports LZMA1 */
-	MAX_COMPRESS,
-};
-
 enum VbAltFwIndex_t {
 	VB_ALTFW_DIAGNOSTIC = -1,
 	VB_ALTFW_DEFAULT = 0,
