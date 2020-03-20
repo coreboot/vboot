@@ -14,9 +14,9 @@
 #include "load_kernel_fw.h"
 #include "test_common.h"
 #include "vboot_audio.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
+#include "vboot_ui_legacy.h"
 
 /* Mock data */
 static int ec_ro_updated;

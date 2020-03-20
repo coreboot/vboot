@@ -17,8 +17,8 @@
 #include "2sysincludes.h"
 #include "host_common.h"
 #include "test_common.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
+#include "vboot_ui_legacy.h"
 
 /* Mock data */
 static char debug_info[4096];
@@ -80,28 +80,28 @@ static void DebugInfoTest(void)
 static void DisplayKeyTest(void)
 {
 	ResetMocks();
-	VbCheckDisplayKey(ctx, 'q', NULL);
+	VbCheckDisplayKey(ctx, 'q', 0, NULL);
 	TEST_EQ(*debug_info, '\0', "DisplayKey q = does nothing");
 
 	ResetMocks();
-	VbCheckDisplayKey(ctx, '\t', NULL);
+	VbCheckDisplayKey(ctx, '\t', 0, NULL);
 	TEST_NEQ(*debug_info, '\0', "DisplayKey tab = display");
 
 	/* Toggle localization */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 0);
-	VbCheckDisplayKey(ctx, VB_KEY_DOWN, NULL);
+	VbCheckDisplayKey(ctx, VB_KEY_DOWN, 0, NULL);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 2,
 		"DisplayKey up");
-	VbCheckDisplayKey(ctx, VB_KEY_LEFT, NULL);
+	VbCheckDisplayKey(ctx, VB_KEY_LEFT, 0, NULL);
 	vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 1,
 		"DisplayKey left");
-	VbCheckDisplayKey(ctx, VB_KEY_RIGHT, NULL);
+	VbCheckDisplayKey(ctx, VB_KEY_RIGHT, 0, NULL);
 	vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 2,
 		"DisplayKey right");
-	VbCheckDisplayKey(ctx, VB_KEY_UP, NULL);
+	VbCheckDisplayKey(ctx, VB_KEY_UP, 0, NULL);
 	vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 0,
 		"DisplayKey up");
@@ -110,7 +110,7 @@ static void DisplayKeyTest(void)
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 1);
 	mock_localization_count = 0;
-	VbCheckDisplayKey(ctx, VB_KEY_UP, NULL);
+	VbCheckDisplayKey(ctx, VB_KEY_UP, 0, NULL);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 0,
 		"DisplayKey invalid");
 }

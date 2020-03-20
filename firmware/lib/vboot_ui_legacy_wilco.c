@@ -2,16 +2,14 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Common code used by both vboot_ui and Wilco-specific
- * feature support for vboot_ui
+ * Code used by vboot_ui_legacy_clamshell for Wilco-specific features.
  */
 
 #include "2common.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
 #include "vboot_api.h"
-#include "vboot_display.h"
-#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy.h"
 #include "vboot_ui_legacy_wilco.h"
 
 static inline int is_vowel(uint32_t key)
@@ -107,7 +105,8 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 			break;
 		default:
 			VB2_DEBUG("Vendor Data UI - pressed key %#x\n", key);
-			VbCheckDisplayKey(ctx, key, &data);
+			VbCheckDisplayKey(ctx, key, VB_SCREEN_SET_VENDOR_DATA,
+					  &data);
 			break;
 		}
 		VbExSleepMs(KEY_DELAY_MS);
@@ -195,7 +194,8 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 		default:
 			VB2_DEBUG("Confirm Vendor Data UI - pressed "
 				  "key %#x\n", key_confirm);
-			VbCheckDisplayKey(ctx, key_confirm, data);
+			VbCheckDisplayKey(ctx, key_confirm,
+					  VB_SCREEN_CONFIRM_VENDOR_DATA, data);
 			break;
 		}
 		VbExSleepMs(KEY_DELAY_MS);
@@ -261,13 +261,13 @@ vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 			break;
 		default:
 			break;
-        }
+		}
 	} while (1);
-    return VB2_SUCCESS;
+	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,
-				     uint32_t key) {
+vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx, uint32_t key)
+{
 	if (DIAGNOSTIC_UI && (key == VB_KEY_CTRL('C') || key == VB_KEY_F(12))) {
 		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
@@ -330,7 +330,8 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 		default:
 			VB2_DEBUG("vb2_diagnostics_ui() - pressed key %#x\n",
 				  key);
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, VB_SCREEN_CONFIRM_DIAG,
+					  NULL);
 			break;
 		}
 		if (VbExGetTimer() - start_time_us >= 30 * VB_USEC_PER_SEC) {

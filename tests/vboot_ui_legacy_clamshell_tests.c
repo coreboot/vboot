@@ -15,11 +15,10 @@
 #include "test_common.h"
 #include "tss_constants.h"
 #include "vboot_audio.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
-#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy.h"
 
 /* Mock data */
 static LoadKernelParams lkp;
@@ -565,7 +564,7 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_KEY_UP;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
-                "Up arrow");
+		"Up arrow");
 
 	/* Shutdown requested in loop */
 	ResetMocks();
@@ -624,7 +623,7 @@ static void VbBootDevTest(void)
 	mock_keypress[1] = VB_KEY_ENTER;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
-                "Enter ignored");
+		"Enter ignored");
 
 	/* Enter does if GBB flag set */
 	ResetMocks();
@@ -786,7 +785,7 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
-                "Ctrl+U normal");
+		"Ctrl+U normal");
 
 	/* Ctrl+U enabled, with good USB boot */
 	ResetMocks();

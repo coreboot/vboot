@@ -16,12 +16,32 @@
 #include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
-#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy.h"
 #include "vboot_ui_legacy_wilco.h"
+
+static uint32_t disp_current_screen = VB_SCREEN_BLANK;
+
+test_mockable
+vb2_error_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+			    const VbScreenData *data)
+{
+	uint32_t locale;
+
+	/* If requested screen is the same as the current one, we're done. */
+	if (disp_current_screen == screen && !force)
+		return VB2_SUCCESS;
+
+	/* Keep track of the currently displayed screen */
+	disp_current_screen = screen;
+
+	/* Read the locale last saved */
+	locale = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
+
+	return VbExDisplayScreen(screen, locale, data);
+}
 
 static vb2_error_t VbTryUsb(struct vb2_context *ctx)
 {
@@ -108,7 +128,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 					return 1;
 				}
 			}
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 		}
 		VbExSleepMs(KEY_DELAY_MS);
 	} while (!shutdown_requested);
@@ -159,7 +179,7 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 			break;
 		default:
 			VB2_DEBUG("developer UI - pressed key %#x\n", key);
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 			break;
 		}
 		VbExSleepMs(KEY_DELAY_MS);
@@ -170,11 +190,6 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 
 	return 0;
 }
-
-static const char dev_disable_msg[] =
-	"Developer mode is disabled on this device by system policy.\n"
-	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
-	"\n";
 
 static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 {
@@ -384,7 +399,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		default:
 			VB2_DEBUG("developer UI - pressed key %#x\n", key);
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 			break;
 		}
 
@@ -443,7 +458,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		VB2_DEBUG("recovery UI - waiting for manual recovery\n");
 		while (1) {
 			key = VbExKeyboardRead();
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 			if (vb2_want_shutdown(ctx, key))
 				return VB2_REQUEST_SHUTDOWN;
 			else if ((retval =
@@ -512,7 +527,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 			   VB2_SUCCESS) {
 			return retval;
 		} else {
-			VbCheckDisplayKey(ctx, key, NULL);
+			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 		}
 		if (vb2_want_shutdown(ctx, key))
 			return VB2_REQUEST_SHUTDOWN;

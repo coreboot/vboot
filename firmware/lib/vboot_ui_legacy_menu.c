@@ -15,24 +15,60 @@
 #include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
-#include "vboot_ui_legacy_common.h"
+#include "vboot_ui_legacy.h"
 #include "vboot_ui_legacy_menu_private.h"
 
-static const char dev_disable_msg[] =
-	"Developer mode is disabled on this device by system policy.\n"
-	"For more information, see http://dev.chromium.org/chromium-os/fwmp\n"
-	"\n";
-
 static VB_MENU current_menu, prev_menu;
-static int current_menu_idx, disabled_idx_mask, usb_nogood, force_redraw;
+static int current_menu_idx, cur_disabled_idx_mask, usb_nogood, force_redraw;
 static uint32_t default_boot;
 static uint32_t disable_dev_boot;
 static uint32_t altfw_allowed;
 static struct vb2_menu menus[];
 static const char no_legacy[] = "Legacy boot failed. Missing BIOS?\n";
+
+static uint32_t disp_current_screen = VB_SCREEN_BLANK;
+static uint32_t disp_current_index = 0;
+static uint32_t disp_disabled_idx_mask = 0;
+
+test_mockable
+vb2_error_t VbDisplayMenu(struct vb2_context *ctx, uint32_t screen, int force,
+			  uint32_t selected_index, uint32_t disabled_idx_mask)
+{
+	uint32_t locale;
+	uint32_t redraw_base_screen = 0;
+
+	/*
+	 * If requested screen/selected_index is the same as the current one,
+	 * we're done.
+	 */
+	if (disp_current_screen == screen &&
+	    disp_current_index == selected_index &&
+	    !force)
+		return VB2_SUCCESS;
+
+	/*
+	 * If current screen is not the same, make sure we redraw the base
+	 * screen as well to avoid having artifacts from the menu.
+	 */
+	if (disp_current_screen != screen || force)
+		redraw_base_screen = 1;
+
+	/*
+	 * Keep track of the currently displayed screen and
+	 * selected_index
+	 */
+	disp_current_screen = screen;
+	disp_current_index = selected_index;
+	disp_disabled_idx_mask = disabled_idx_mask;
+
+	/* Read the locale last saved */
+	locale = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
+
+	return VbExDisplayMenu(screen, locale, selected_index,
+			       disabled_idx_mask, redraw_base_screen);
+}
 
 /**
  * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
@@ -61,7 +97,7 @@ static int VbWantShutdownMenu(struct vb2_context *ctx)
 /* (Re-)Draw the menu identified by current_menu[_idx] to the screen. */
 static vb2_error_t vb2_draw_current_screen(struct vb2_context *ctx) {
 	vb2_error_t ret = VbDisplayMenu(ctx, menus[current_menu].screen,
-			force_redraw, current_menu_idx, disabled_idx_mask);
+			force_redraw, current_menu_idx, cur_disabled_idx_mask);
 	force_redraw = 0;
 	return ret;
 }
@@ -69,7 +105,7 @@ static vb2_error_t vb2_draw_current_screen(struct vb2_context *ctx) {
 /* Flash the screen to black to catch user awareness, then redraw menu. */
 static void vb2_flash_screen(struct vb2_context *ctx)
 {
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
+	VbDisplayMenu(ctx, VB_SCREEN_BLANK, 0, 0, 0);
 	VbExSleepMs(50);
 	vb2_draw_current_screen(ctx);
 }
@@ -97,25 +133,25 @@ static void vb2_change_menu(VB_MENU new_current_menu,
 	prev_menu = current_menu;
 	current_menu = new_current_menu;
 
-	/* Reconfigure disabled_idx_mask for the new menu */
-	disabled_idx_mask = 0;
+	/* Reconfigure cur_disabled_idx_mask for the new menu */
+	cur_disabled_idx_mask = 0;
 	/* Disable Network Boot Option */
 	if (current_menu == VB_MENU_DEV)
-		disabled_idx_mask |= 1 << VB_DEV_NETWORK;
+		cur_disabled_idx_mask |= 1 << VB_DEV_NETWORK;
 	/* Disable cancel option if enterprise disabled dev mode */
 	if (current_menu == VB_MENU_TO_NORM &&
 	    disable_dev_boot == 1)
-		disabled_idx_mask |= 1 << VB_TO_NORM_CANCEL;
+		cur_disabled_idx_mask |= 1 << VB_TO_NORM_CANCEL;
 
 	/* Enable menu items for the selected bootloaders */
 	if (current_menu == VB_MENU_ALT_FW) {
-		disabled_idx_mask = ~(VbExGetAltFwIdxMask() >> 1);
+		cur_disabled_idx_mask = ~(VbExGetAltFwIdxMask() >> 1);
 
 		/* Make sure 'cancel' is shown even with an invalid mask */
-		disabled_idx_mask &= (1 << VB_ALTFW_COUNT) - 1;
+		cur_disabled_idx_mask &= (1 << VB_ALTFW_COUNT) - 1;
 	}
 	/* We assume that there is at least one enabled item */
-	while ((1 << new_current_menu_idx) & disabled_idx_mask)
+	while ((1 << new_current_menu_idx) & cur_disabled_idx_mask)
 		new_current_menu_idx++;
 	if (new_current_menu_idx < menus[current_menu].size)
 		current_menu_idx = new_current_menu_idx;
@@ -392,7 +428,7 @@ static vb2_error_t power_off_action(struct vb2_context *ctx)
 
 /**
  * Updates current_menu_idx upon an up/down key press, taking into
- * account disabled indices (from disabled_idx_mask).  The cursor
+ * account disabled indices (from cur_disabled_idx_mask).  The cursor
  * will not wrap, meaning that we block on the 0 or max index when
  * we hit the ends of the menu.
  *
@@ -408,7 +444,7 @@ static void vb2_update_selection(uint32_t key) {
 	case VB_KEY_UP:
 		idx = current_menu_idx - 1;
 		while (idx >= 0 &&
-		       ((1 << idx) & disabled_idx_mask))
+		       ((1 << idx) & cur_disabled_idx_mask))
 		  idx--;
 		/* Only update if idx is valid */
 		if (idx >= 0)
@@ -418,7 +454,7 @@ static void vb2_update_selection(uint32_t key) {
 	case VB_KEY_DOWN:
 		idx = current_menu_idx + 1;
 		while (idx < menus[current_menu].size &&
-		       ((1 << idx) & disabled_idx_mask))
+		       ((1 << idx) & cur_disabled_idx_mask))
 		  idx++;
 		/* Only update if idx is valid */
 		if (idx < menus[current_menu].size)
@@ -823,7 +859,7 @@ vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx)
 	if (VB2_SUCCESS != retval)
 		return retval;
 	retval = vb2_developer_legacy_menu(ctx);
-	VbDisplayScreen(ctx, VB_SCREEN_BLANK, 0, NULL);
+	VbDisplayMenu(ctx, VB_SCREEN_BLANK, 0, 0, 0);
 	return retval;
 }
 

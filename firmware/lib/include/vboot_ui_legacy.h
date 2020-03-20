@@ -5,8 +5,19 @@
  * Common code used by both legacy_clamshell_ui and legacy_menu_ui.
  */
 
-#ifndef VBOOT_REFERENCE_VBOOT_UI_COMMON_H_
-#define VBOOT_REFERENCE_VBOOT_UI_COMMON_H_
+#ifndef VBOOT_REFERENCE_VBOOT_UI_LEGACY_H_
+#define VBOOT_REFERENCE_VBOOT_UI_LEGACY_H_
+
+extern const char dev_disable_msg[];
+
+vb2_error_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
+			    const VbScreenData *data);
+vb2_error_t VbDisplayMenu(struct vb2_context *ctx,
+			uint32_t screen, int force, uint32_t selected_index,
+			uint32_t disabled_idx_mask);
+vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx);
+vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
+			      uint32_t screen, const VbScreenData *data);
 
 #define KEY_DELAY_MS	20	/* Delay between key scans in UI loops */
 
@@ -72,4 +83,4 @@ void vb2_try_altfw(struct vb2_context *ctx, int allowed,
  */
 int vb2_want_shutdown(struct vb2_context *ctx, uint32_t key);
 
-#endif  /* VBOOT_REFERENCE_VBOOT_UI_COMMON_H_ */
+#endif  /* VBOOT_REFERENCE_VBOOT_UI_LEGACY_H_ */

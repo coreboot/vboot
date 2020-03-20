@@ -16,10 +16,10 @@
 #include "tss_constants.h"
 #include "vboot_api.h"
 #include "vboot_audio.h"
-#include "vboot_display.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
+#include "vboot_ui_legacy.h"
 #include "vboot_ui_legacy_menu_private.h"
 
 /* Mock data */

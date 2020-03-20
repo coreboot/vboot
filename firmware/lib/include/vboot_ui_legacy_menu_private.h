@@ -10,7 +10,6 @@
 #define VBOOT_REFERENCE_VBOOT_UI_LEGACY_MENU_PRIVATE_H_
 
 #include "2api.h"
-#include "vboot_api.h"
 
 struct vb2_menu_item {
 	const char *text;
