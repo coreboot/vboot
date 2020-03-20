@@ -75,6 +75,7 @@ static void reset_common_data(void)
 	mock_presence_count = 0;
 
 	sd->status |= VB2_SD_STATUS_SECDATA_KERNEL_INIT;
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
 }
 
 static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
@@ -131,7 +132,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	return vbboot_retval;
 }
 
-vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
+static vb2_error_t boot_dev(struct vb2_context *c)
 {
 	if (vbboot_retval == -2)
 		return VB2_ERROR_MOCK;
@@ -139,7 +140,17 @@ vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
+vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
+{
+	return boot_dev(c);
+}
+
+vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *c)
+{
+	return boot_dev(c);
+}
+
+static vb2_error_t boot_legacy(struct vb2_context *c)
 {
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
 		"  recovery reason");
@@ -149,6 +160,16 @@ vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
 		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
+}
+
+vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
+{
+	return boot_legacy(c);
+}
+
+vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *c)
+{
+	return boot_legacy(c);
 }
 
 vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *c)
