@@ -73,12 +73,6 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 /* Test displaying debug info */
 static void DebugInfoTest(void)
 {
-	int i;
-
-	/* Recovery string should be non-null for any code */
-	for (i = 0; i < 0x100; i++)
-		TEST_PTR_NEQ(RecoveryReasonString(i), NULL, "Non-null reason");
-
 	/* Display debug info */
 	ResetMocks();
 	TEST_SUCC(VbDisplayDebugInfo(ctx),

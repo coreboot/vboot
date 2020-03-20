@@ -361,6 +361,7 @@ FWLIB_SRCS = \
 	firmware/2lib/2kernel.c \
 	firmware/2lib/2misc.c \
 	firmware/2lib/2nvstorage.c \
+	firmware/2lib/2recovery_reasons.c \
 	firmware/2lib/2rsa.c \
 	firmware/2lib/2secdata_firmware.c \
 	firmware/2lib/2secdata_fwmp.c \
@@ -486,6 +487,7 @@ HOSTLIB_SRCS = \
 	firmware/2lib/2hmac.c \
 	firmware/2lib/2kernel.c \
 	firmware/2lib/2nvstorage.c \
+	firmware/2lib/2recovery_reasons.c \
 	firmware/2lib/2rsa.c \
 	firmware/2lib/2sha1.c \
 	firmware/2lib/2sha256.c \
@@ -707,6 +709,7 @@ TEST2X_NAMES = \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \
 	tests/vb2_rsa_utility_tests \
+	tests/vb2_recovery_reasons_tests \
 	tests/vb2_secdata_firmware_tests \
 	tests/vb2_secdata_fwmp_tests \
 	tests/vb2_secdata_kernel_tests \
@@ -883,6 +886,7 @@ headers_install:
 	${Q}${INSTALL} -t ${UI_DIR} -m644 \
 		host/include/* \
 		firmware/2lib/include/2crypto.h \
+		firmware/2lib/include/2recovery_reasons.h \
 		firmware/2lib/include/2sysincludes.h \
 		firmware/include/gpt.h \
 		firmware/include/tlcl.h \

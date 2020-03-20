@@ -9,6 +9,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2recovery_reasons.h"
 #include "2rsa.h"
 #include "2secdata.h"
 #include "2sha.h"
@@ -160,7 +161,7 @@ void vb2_check_recovery(struct vb2_context *ctx)
 	/* If recovery reason is non-zero, tell caller we need recovery mode */
 	if (sd->recovery_reason) {
 		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-		VB2_DEBUG("We have a recovery request: %#x / %#x\n",
+		VB2_DEBUG("We have a recovery request: %#x / %#xn",
 			  sd->recovery_reason,
 			  vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE));
 	}
@@ -422,8 +423,9 @@ void vb2_clear_recovery(struct vb2_context *ctx)
 	uint32_t subcode = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
 
 	if (reason || subcode)
-		VB2_DEBUG("Clearing recovery request: %#x / %#x\n",
-			  reason, subcode);
+		VB2_DEBUG("Clearing recovery request: %#x / %#x  %s\n",
+			  reason, subcode,
+			  vb2_get_recovery_reason_string(reason));
 
 	/* Clear recovery request for both manual and non-manual. */
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);

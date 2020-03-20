@@ -17,9 +17,4 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx);
 vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 			    const VbScreenData *data);
 
-/**
- * Return a description of the recovery reason code.
- */
-const char *RecoveryReasonString(uint8_t code);
-
 #endif  /* VBOOT_REFERENCE_VBOOT_DISPLAY_H_ */

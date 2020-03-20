@@ -2,11 +2,21 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Recovery reasons
+ * Recovery reasons.
  */
 
 #ifndef VBOOT_REFERENCE_2RECOVERY_REASONS_H_
 #define VBOOT_REFERENCE_2RECOVERY_REASONS_H_
+
+#include "2sysincludes.h"
+
+/**
+ * Return a description of the recovery reason code.
+ *
+ * @param		recovery reason code
+ * @returns A string literal with English description of the recovery reason
+ */
+const char *vb2_get_recovery_reason_string(uint8_t code);
 
 /* Recovery reason codes */
 enum vb2_nv_recovery {
@@ -56,11 +66,17 @@ enum vb2_nv_recovery {
 
 	/*
 	 * RW firmware failed signature check (neither RW firmware slot was
-	 * valid).  Recovery reason is VB2_RECOVERY_RO_INVALID_RW_CHECK_MIN +
+	 * valid).  Recovery reason is VB2_RECOVERY_DEPRECATED_RW_NOT_DONE +
 	 * the check value for the slot which came closest to validating; see
 	 * VBSD_LF_CHECK_* in vboot_struct.h (deprecated).
 	 */
-	VB2_RECOVERY_DEPRECATED_RO_INVALID_RW_CHECK_MIN = 0x10,
+	VB2_RECOVERY_DEPRECATED_RW_NOT_DONE = 0x10,
+
+	/* Latest tried RW firmware developer flag mismatch */
+	VB2_RECOVERY_DEPRECATED_RW_DEV_FLAG_MISMATCH = 0x11,
+
+	/* Latest tried RW firmware recovery flag mismatch */
+	VB2_RECOVERY_DEPRECATED_RW_REC_FLAG_MISMATCH = 0x12,
 
 	/* Latest tried RW firmware keyblock verification failed */
 	VB2_RECOVERY_FW_KEYBLOCK = 0x13,
@@ -68,17 +84,32 @@ enum vb2_nv_recovery {
 	/* Latest tried RW firmware key version too old */
 	VB2_RECOVERY_FW_KEY_ROLLBACK = 0x14,
 
+	/* Latest tried RW firmware unable to parse data key */
+	VB2_RECOVERY_DEPRECATED_RW_DATA_KEY_PARSE = 0x15,
+
 	/* Latest tried RW firmware preamble verification failed */
 	VB2_RECOVERY_FW_PREAMBLE = 0x16,
 
 	/* Latest tried RW firmware version too old */
 	VB2_RECOVERY_FW_ROLLBACK = 0x17,
 
+	/* Latest tried RW firmware header valid */
+	VB2_RECOVERY_DEPRECATED_FW_HEADER_VALID = 0x18,
+
+	/* Latest tried RW firmware unable to get firmware body */
+	VB2_RECOVERY_DEPRECATED_FW_GET_FW_BODY = 0x19,
+
+	/* Latest tried RW firmware hash wrong size */
+	VB2_RECOVERY_DEPRECATED_FW_HASH_WRONG_SIZE = 0x1a,
+
 	/* Latest tried RW firmware body verification failed */
 	VB2_RECOVERY_FW_BODY = 0x1b,
 
-	/* Highest reason for failed RW firmware signature check */
-	VB2_RECOVERY_RO_INVALID_RW_CHECK_MAX = 0x1f,
+	/* Latest tried RW firmware valid */
+	VB2_RECOVERY_DEPRECATED_FW_VALID = 0x1c,
+
+	/* Latest tried RW firmware RO normal path not supported */
+	VB2_RECOVERY_DEPRECATED_FW_NO_RO_NORMAL = 0x1d,
 
 	/*
 	 * Firmware boot failure outside of verified boot (RAM init, missing
