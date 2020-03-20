@@ -589,18 +589,18 @@ ALL_OBJS += $(addsuffix .o,${UTIL_BINS_SDK})
 ALL_OBJS += $(addsuffix .o,${UTIL_BINS_BOARD})
 
 
-# Scripts for signing stuff.
-SIGNING_SCRIPTS_DEV = \
+# Signing scripts that are also useful on DUTs.
+SIGNING_SCRIPTS_BOARD = \
 	scripts/image_signing/resign_firmwarefd.sh \
 	scripts/image_signing/make_dev_firmware.sh \
 	scripts/image_signing/make_dev_ssd.sh \
 	scripts/image_signing/gbb_flags_common.sh \
 	scripts/image_signing/set_gbb_flags.sh \
-	scripts/image_signing/get_gbb_flags.sh
+	scripts/image_signing/get_gbb_flags.sh \
+	scripts/image_signing/common_minimal.sh
 
-# Installed, but not made executable.
-SIGNING_COMMON = scripts/image_signing/common_minimal.sh
-
+# SDK installations just want everything.
+SIGNING_SCRIPTS_SDK = $(wildcard scripts/image_signing/*.sh)
 
 # Unified firmware utility.
 FUTIL_BIN = ${BUILD}/futility/futility
@@ -796,10 +796,10 @@ clean:
 
 .PHONY: install
 install: cgpt_install signing_install futil_install pc_files_install \
-	$(if ${SDK_BUILD},utils_install_sdk,utils_install_board)
+	lib_install $(if ${SDK_BUILD},utils_install_sdk,utils_install_board)
 
 .PHONY: install_dev
-install_dev: headers_install lib_install
+install_dev: devkeys_install headers_install
 
 .PHONY: install_mtd
 install_mtd: install cgpt_wrapper_install
@@ -889,7 +889,9 @@ headers_install:
 		host/include/* \
 		firmware/include/gpt.h \
 		firmware/include/tlcl.h \
-		firmware/include/tss_constants.h
+		firmware/include/tss_constants.h \
+		firmware/include/tpm1_tss_constants.h \
+		firmware/include/tpm2_tss_constants.h
 
 .PHONY: lib_install
 lib_install: ${HOSTLIB}
@@ -901,7 +903,8 @@ lib_install: ${HOSTLIB}
 devkeys_install:
 	@${PRINTF} "    INSTALL       DEVKEYS\n"
 	${Q}mkdir -p ${US_DIR}/devkeys
-	${Q}${INSTALL} -t ${US_DIR}/devkeys -m644 tests/devkeys/*
+	${Q}${INSTALL} -t ${US_DIR}/devkeys -m644 \
+		`find tests/devkeys -type f -maxdepth 1`
 
 # ----------------------------------------------------------------------------
 # CGPT library and utility
@@ -974,11 +977,11 @@ utils_install_board: utils_board ${UTIL_DEFAULTS}
 
 # And some signing stuff for the target
 .PHONY: signing_install
-signing_install: ${SIGNING_SCRIPTS_DEV} ${SIGNING_COMMON}
+signing_install: $(if ${SDK_BUILD},\
+		   ${SIGNING_SCRIPTS_SDK},${SIGNING_SCRIPTS_BOARD})
 	@${PRINTF} "    INSTALL       SIGNING\n"
-	${Q}mkdir -p ${UB_DIR} ${VB_DIR}
-	${Q}${INSTALL} -t ${VB_DIR} ${SIGNING_SCRIPTS_DEV}
-	${Q}${INSTALL} -t ${VB_DIR} -m 'u=rw,go=r,a-s' ${SIGNING_COMMON}
+	${Q}mkdir -p ${VB_DIR}
+	${Q}${INSTALL} -t ${VB_DIR} $^
 
 # ----------------------------------------------------------------------------
 # Firmware Utility
