@@ -1261,8 +1261,11 @@ runlongtests: install_for_test genkeys genfuzztestcases
 .PHONY: rununittests
 rununittests: runcgpttests runmisctests run2tests
 
+# Print a big green success message at the end of all tests. If you don't see
+# that, you know there was an error somewhere further up.
 .PHONY: runtests
 runtests: rununittests runtestscripts runfutiltests
+	${Q}echo -e "\nruntests: \E[32;1mALL TESTS PASSED SUCCESSFULLY!\E[0;m\n"
 
 # Code coverage
 .PHONY: coverage_init
