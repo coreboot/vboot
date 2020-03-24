@@ -173,13 +173,6 @@ else
 CFLAGS += -DUSB_BOOT_ON_DEV=0
 endif
 
-# EC software sync is slow to update. Enable warning screen display.
-ifneq ($(filter-out 0,${EC_SLOW_UPDATE}),)
-CFLAGS += -DEC_SLOW_UPDATE=1
-else
-CFLAGS += -DEC_SLOW_UPDATE=0
-endif
-
 # Enable EC early firmware selection.
 ifneq ($(filter-out 0,${EC_EFS}),)
 CFLAGS += -DEC_EFS=1

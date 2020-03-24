@@ -28,13 +28,11 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
-static uint32_t screens_displayed[8];
-static uint32_t screens_count = 0;
-
 static vb2_error_t auxfw_retval;
 static int auxfw_update_req;
 static enum vb2_auxfw_update_severity auxfw_mock_severity;
 static enum vb2_auxfw_update_severity auxfw_update_severity;
+static int auxfw_mock_display_available;
 static int auxfw_protected;
 static vb2_error_t auxfw_done_retval;
 
@@ -48,16 +46,13 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
 
 	memset(&gbb, 0, sizeof(gbb));
-
-	memset(screens_displayed, 0, sizeof(screens_displayed));
-	screens_count = 0;
 
 	auxfw_retval = VB2_SUCCESS;
 	auxfw_mock_severity = VB_AUX_FW_NO_UPDATE;
 	auxfw_update_severity = VB_AUX_FW_NO_UPDATE;
+	auxfw_mock_display_available = 1;
 	auxfw_update_req = 0;
 	auxfw_protected = 0;
 	auxfw_done_retval = VB2_SUCCESS;
@@ -69,19 +64,13 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
-			    const VbScreenData *data)
-{
-	if (screens_count < ARRAY_SIZE(screens_displayed))
-		screens_displayed[screens_count++] = screen;
-
-	return VB2_SUCCESS;
-}
-
 vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = auxfw_mock_severity;
 	auxfw_update_severity = auxfw_mock_severity;
+	if (*severity == VB_AUX_FW_SLOW_UPDATE)
+		if (!auxfw_mock_display_available)
+			return VBERROR_REBOOT_REQUIRED;
 	return VB2_SUCCESS;
 }
 
@@ -133,8 +122,6 @@ static void VbSoftwareSyncTest(void)
 	auxfw_mock_severity = VB_AUX_FW_NO_DEVICE;
 	test_auxsync(VB2_SUCCESS, 0,
 		     "No auxiliary FW update needed");
-	TEST_EQ(screens_count, 0,
-		"  wait screen skipped");
 	TEST_EQ(auxfw_update_req, 0, "  no aux fw update requested");
 	TEST_EQ(auxfw_protected, 0, "  no aux fw protected");
 
@@ -142,8 +129,6 @@ static void VbSoftwareSyncTest(void)
 	auxfw_mock_severity = VB_AUX_FW_NO_UPDATE;
 	test_auxsync(VB2_SUCCESS, 0,
 		"No auxiliary FW update needed");
-	TEST_EQ(screens_count, 0,
-		"  wait screen skipped");
 	TEST_EQ(auxfw_update_req, 0, "  no aux fw update requested");
 	TEST_EQ(auxfw_protected, 1, "  aux fw protected");
 
@@ -151,14 +136,12 @@ static void VbSoftwareSyncTest(void)
 	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
 	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
 		     "Fast auxiliary FW update needed");
-	TEST_EQ(screens_count, 0,
-		"  wait screen skipped");
 	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
 	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
 
 	ResetMocks();
 	auxfw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
-	sd->flags &= ~VB2_SD_FLAG_DISPLAY_AVAILABLE;
+	auxfw_mock_display_available = 0;
 	test_auxsync(VBERROR_REBOOT_REQUIRED, 0,
 		     "Slow auxiliary FW update needed - reboot for display");
 
@@ -168,8 +151,6 @@ static void VbSoftwareSyncTest(void)
 		     "Slow auxiliary FW update needed");
 	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
 	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
-	TEST_EQ(screens_displayed[0], VB_SCREEN_WAIT,
-		"  wait screen forced");
 
 	ResetMocks();
 	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;

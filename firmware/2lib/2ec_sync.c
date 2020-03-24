@@ -21,15 +21,6 @@
 	 VB2_SD_FLAG_ECSYNC_EC_RO : VB2_SD_FLAG_ECSYNC_EC_RW)
 
 /**
- * Display the WAIT screen
- */
-static void display_wait_screen(struct vb2_context *ctx)
-{
-	VB2_DEBUG("EC FW update is slow. Show WAIT screen.\n");
-	VbDisplayScreen(ctx, VB_SCREEN_WAIT, 0, NULL);
-}
-
-/**
  * Set the RECOVERY_REQUEST flag in NV space
  */
 static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
@@ -40,6 +31,26 @@ static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
 }
 
 /**
+ * Whether a reboot is requested.
+ *
+ * When this function returns 1, rv isn't considered an error and hence
+ * recovery mode shouldn't be triggered.  This includes the following
+ * situations:
+ *
+ * VBERROR_REBOOT_REQUIRED: When we need to display firmware sync screen, but
+ * the display hasn't been initialized, a reboot will be required.
+ *
+ * VBERROR_EC_REBOOT_TO_RO_REQUIRED: The EC may know it needs a reboot.  It may
+ * need to reboot to unprotect the region before updating, or may need to reboot
+ * after updating.  When EC update fails, it also needs to reboot.
+ */
+static inline int reboot_requested(vb2_error_t rv)
+{
+	return rv == VBERROR_REBOOT_REQUIRED ||
+	       rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+}
+
+/**
  * Wrapper around vb2ex_ec_protect() which sets recovery reason on error.
  */
 static vb2_error_t protect_ec(struct vb2_context *ctx,
@@ -47,8 +58,8 @@ static vb2_error_t protect_ec(struct vb2_context *ctx,
 {
 	vb2_error_t rv = vb2ex_ec_protect(select);
 
-	if (rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED) {
-		VB2_DEBUG("vb2ex_ec_protect() needs reboot\n");
+	if (reboot_requested(rv)) {
+		VB2_DEBUG("vb2ex_ec_protect() needs reboot: %#x\n", rv);
 	} else if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("vb2ex_ec_protect() returned %#x\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_PROTECT);
@@ -185,19 +196,8 @@ static vb2_error_t update_ec(struct vb2_context *ctx,
 	rv = vb2ex_ec_update_image(select);
 	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("vb2ex_ec_update_image() returned %#x\n", rv);
-
-		/*
-		 * The EC may know it needs a reboot.  It may need to
-		 * unprotect the region before updating, or may need to
-		 * reboot after updating.  Either way, it's not an error
-		 * requiring recovery mode.
-		 *
-		 * If we fail for any other reason, trigger recovery
-		 * mode.
-		 */
-		if (rv != VBERROR_EC_REBOOT_TO_RO_REQUIRED)
+		if (!reboot_requested(rv))
 			request_recovery(ctx, VB2_RECOVERY_EC_UPDATE);
-
 		return rv;
 	}
 
@@ -266,7 +266,10 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 
 	/* Update the RW Image */
 	if (sd->flags & SYNC_FLAG(select_rw)) {
-		if (VB2_SUCCESS != update_ec(ctx, select_rw))
+		rv = update_ec(ctx, select_rw);
+		if (reboot_requested(rv))
+			return rv;
+		else if (rv)
 			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 		/* Updated successfully. Cold reboot to switch to the new RW. */
 		if (ctx->flags & VB2_CONTEXT_NO_BOOT) {
@@ -328,9 +331,11 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		/* Update the RO Image. */
 		int num_tries;
 		for (num_tries = 0; num_tries < RO_RETRIES; num_tries++) {
-			if (VB2_SUCCESS ==
-			    update_ec(ctx, VB_SELECT_FIRMWARE_READONLY))
+			rv = update_ec(ctx, VB_SELECT_FIRMWARE_READONLY);
+			if (rv == VB2_SUCCESS)
 				break;
+			if (reboot_requested(rv))
+				return rv;
 		}
 		if (num_tries == RO_RETRIES) {
 			/* Ran out of tries */
@@ -417,25 +422,6 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 }
 
 /**
- * Returns non-zero if the EC will perform a slow update.
- *
- * This is only valid after calling ec_sync_phase1(), before calling
- * sync_ec().
- *
- * @param ctx		Vboot2 context
- * @return non-zero if a slow update will be done; zero if no update or a
- * fast update.
- */
-static int ec_will_update_slowly(struct vb2_context *ctx)
-{
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-
-	return (((sd->flags & SYNC_FLAG(VB_SELECT_FIRMWARE_READONLY)) ||
-		 (sd->flags & SYNC_FLAG(VB_SELECT_FIRMWARE_EC_ACTIVE)))
-			&& EC_SLOW_UPDATE);
-}
-
-/**
  * determine if we can update the EC
  *
  * @param ctx		Vboot2 context
@@ -461,9 +447,6 @@ static int ec_sync_allowed(struct vb2_context *ctx)
  *
  * This updates the EC if necessary, makes sure it has protected its image(s),
  * and makes sure it has jumped to the correct image.
- *
- * If ec_will_update_slowly(), it is suggested that the caller display a
- * warning screen before calling phase 2.
  *
  * @param ctx		Vboot2 context
  * @return VB2_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
@@ -502,17 +485,7 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 	}
 
 	/* Phase 1; this determines if we need an update */
-	vb2_error_t phase1_rv = ec_sync_phase1(ctx);
-	int need_wait_screen = ec_will_update_slowly(ctx);
-
-	if (need_wait_screen && vb2api_need_reboot_for_display(ctx))
-		return VBERROR_REBOOT_REQUIRED;
-
-	if (phase1_rv)
-		return phase1_rv;
-
-	if (need_wait_screen)
-		display_wait_screen(ctx);
+	VB2_TRY(ec_sync_phase1(ctx));
 
 	/* Phase 2; Applies update and/or jumps to the correct EC image */
 	VB2_TRY(ec_sync_phase2(ctx));
