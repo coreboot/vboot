@@ -8,6 +8,8 @@
 #ifndef VBOOT_REFERENCE_VBOOT_UI_WILCO_H_
 #define VBOOT_REFERENCE_VBOOT_UI_WILCO_H_
 
+#define CURSOR_BLINK_MS 400	/* Speed that the vendor data cursor blinks */
+
 /*
  * User interface for setting the vendor data in VPD
  */

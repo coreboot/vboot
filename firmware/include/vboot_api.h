@@ -435,6 +435,14 @@ enum VbScreenType_t {
 	VB_SCREEN_CONFIRM_DIAG = 0x303,
 };
 
+/* Flags to control behavior of device-specific screens. */
+enum VbVendorDataFlags_t {
+	/* When set display a cursor after the prompt */
+	VB_VENDOR_DATA_SHOW_CURSOR = 1 << 0,
+	/* When set only redraw the cursor */
+	VB_VENDOR_DATA_ONLY_DRAW_CURSOR = 1 << 1,
+};
+
 /**
  * Extra data needed when displaying vendor data screens
  */
@@ -442,6 +450,8 @@ typedef struct VbVendorData
 {
 	/* Current state of the the vendor data input */
 	const char *input_text;
+	/* Flags (See VbVendorDataFlags_t) */
+	uint32_t flags;
 	/* Current confirmation selection for new vendor data */
 	uint32_t selected_index;
 } VbVendorData;

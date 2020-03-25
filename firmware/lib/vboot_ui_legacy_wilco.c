@@ -37,7 +37,15 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 					    char *data_value)
 {
 	int len = vendor_data_length(data_value);
-	VbScreenData data = {.vendor_data = {data_value, 1}};
+	int blinks = CURSOR_BLINK_MS / KEY_DELAY_MS;
+	int blink_count = 0;
+	VbScreenData data = {
+		.vendor_data = {
+			.input_text = data_value,
+			.flags = VB_VENDOR_DATA_SHOW_CURSOR,
+			.selected_index = 1,
+		}
+	};
 
 	VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA, 1, &data);
 
@@ -103,6 +111,19 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 			break;
 		}
 		VbExSleepMs(KEY_DELAY_MS);
+
+		if (++blink_count == blinks) {
+			blink_count = 0;
+			data.vendor_data.flags ^= VB_VENDOR_DATA_SHOW_CURSOR;
+			data.vendor_data.flags |=
+				VB_VENDOR_DATA_ONLY_DRAW_CURSOR;
+
+			VbDisplayScreen(ctx, VB_SCREEN_SET_VENDOR_DATA,
+					1, &data);
+
+			data.vendor_data.flags &=
+				~(VB_VENDOR_DATA_ONLY_DRAW_CURSOR);
+		}
 	} while (1);
 
 	return VB2_SUCCESS;
@@ -186,7 +207,7 @@ vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 {
 	char data_value[VENDOR_DATA_LENGTH + 1];
 
-	VbScreenData data = {.vendor_data = {data_value, 0}};
+	VbScreenData data = {.vendor_data = {data_value, 0, 0}};
 	VbDisplayScreen(ctx, VB_COMPLETE_VENDOR_DATA, 0, NULL);
 
 	do {
