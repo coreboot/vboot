@@ -135,6 +135,7 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 		if (vb2_safe_memcmp(hmir, hexp, hexp_len)) {
 			VB2_DEBUG("Hmir != Hexp. Update Hmir.\n");
 			vb2_secdata_kernel_set_ec_hash(ctx, hexp);
+			sd->flags |= VB2_SD_FLAG_ECSYNC_HMIR_UPDATED;
 		}
 	}
 
@@ -275,6 +276,15 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 			VB2_DEBUG("Rebooting to switch to new EC-RW\n");
 			return VBERROR_EC_REBOOT_TO_SWITCH_RW;
 		}
+	}
+
+	if (sd->flags & VB2_SD_FLAG_ECSYNC_HMIR_UPDATED) {
+		/*
+		 * After Hmir is updated, EFS needs to be retried since the
+		 * verification result is revoked.
+		 */
+		VB2_DEBUG("Reset EC after Hmir update\n");
+		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 	}
 
 	/* Tell EC to jump to RW. It should already be in RW for EFS2. */

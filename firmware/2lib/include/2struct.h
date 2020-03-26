@@ -57,6 +57,9 @@ enum vb2_shared_data_flags {
 
 	/* Display is available on this boot */
 	VB2_SD_FLAG_DISPLAY_AVAILABLE = (1 << 8),
+
+	/* Mirrored hash (Hmir) is updated. */
+	VB2_SD_FLAG_ECSYNC_HMIR_UPDATED = (1 << 9),
 };
 
 /* Flags for vb2_shared_data.status */

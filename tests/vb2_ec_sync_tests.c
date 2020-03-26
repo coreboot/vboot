@@ -403,6 +403,20 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
+	/* Hexp == Heff != Hmir */
+	ResetMocks();
+	hmir[0] = 44;
+	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
+	ec_run_image = 0;
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+		   0, "Reboot after synching Hmir");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
+
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
