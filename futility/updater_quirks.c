@@ -41,6 +41,8 @@ static const struct quirks_record quirks_records[] = {
 	  .quirks = "unlock_wilco_me_for_update" },
 	{ .match = "Google_Arcada.",
 	  .quirks = "unlock_wilco_me_for_update" },
+	{ .match = "Google_Drallion.",
+	  .quirks = "unlock_wilco_me_for_update" },
 
 	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
