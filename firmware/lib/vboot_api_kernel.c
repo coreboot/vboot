@@ -159,10 +159,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
 
-	/* TODO: Send this argument through subsequent function calls, rather
-	   than relying on a global to pass it to VbTryLoadKernel. */
-	kparams_ptr = kparams;
-
 	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
 	   to vb2_nv_get and vb2_nv_set. */
 	vb2_nv_init(ctx);
