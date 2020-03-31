@@ -248,6 +248,18 @@ static void select_and_load_kernel_tests(void)
 	kernel_phase1_retval = VB2_ERROR_MOCK;
 	test_slk(VB2_ERROR_MOCK, 0, "Normal phase1 failure");
 
+	/* Recovery - VB2_ERROR_ESCAPE_NO_BOOT */
+	reset_common_data();
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	test_slk(VB2_ERROR_ESCAPE_NO_BOOT,
+		 VB2_RECOVERY_ESCAPE_NO_BOOT, "Recovery for NO_BOOT escape");
+
+	/* Boot normal - VB2_ERROR_ESCAPE_NO_BOOT */
+	reset_common_data();
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+	test_slk(VB2_SUCCESS, 0, "DISABLE_EC_SOFTWARE_SYNC ignores NO_BOOT");
+
 	/* Boot dev */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
