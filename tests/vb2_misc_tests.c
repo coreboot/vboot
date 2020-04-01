@@ -831,6 +831,25 @@ static void get_recovery_reason_tests(void)
 	TEST_EQ(vb2api_get_recovery_reason(ctx), 4, "correct recovery reason");
 }
 
+static void phone_recovery_enabled_tests(void)
+{
+	/* Phone recovery enabled */
+	reset_common_data();
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
+		"phone recovery enabled");
+
+	/* Phone recovery disabled */
+	reset_common_data();
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			       VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED);
+	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 0,
+		"phone recovery disabled");
+}
+
 static void dev_default_boot_tests(void)
 {
 	/* No default boot */
@@ -958,6 +977,7 @@ int main(int argc, char* argv[])
 	need_reboot_for_display_tests();
 	clear_recovery_tests();
 	get_recovery_reason_tests();
+	phone_recovery_enabled_tests();
 	dev_default_boot_tests();
 	dev_boot_allowed_tests();
 

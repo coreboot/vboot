@@ -89,8 +89,8 @@ struct vb2_secdata_kernel_v1 {
 	/* 8-bit CRC for everything below */
 	uint8_t crc8;
 
-	/* Reserved for future expansion */
-	uint8_t reserved0;
+	/* Flags; see vb2_secdata_kernel_flags */
+	uint8_t flags;
 
 	/* Kernel versions */
 	uint32_t kernel_versions;

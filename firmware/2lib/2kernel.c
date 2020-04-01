@@ -126,6 +126,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
 	struct vb2_packed_key *packed_key;
+	uint32_t secdata_flags;
 	vb2_error_t rv;
 
 	vb2_workbuf_from_ctx(ctx, &wb);
@@ -141,6 +142,11 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_FWMP_INIT, rv);
 		return rv;
 	}
+
+	/* Disable phone recovery */
+	secdata_flags = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS);
+	secdata_flags |= VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED;
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, secdata_flags);
 
 	/* Read kernel version from secdata. */
 	sd->kernel_version_secdata =
