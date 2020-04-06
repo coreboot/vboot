@@ -1145,7 +1145,11 @@ vb2_error_t vb2ex_ec_battery_cutoff(void);
 /* Screens. */
 enum vb2_screen {
 	/* Blank screen */
-	VB2_SCREEN_BLANK = 0,
+	VB2_SCREEN_BLANK			= 0x0,
+	/* Wait screen for EC sync and AUXFW sync */
+	VB2_SCREEN_FIRMWARE_SYNC		= 0x10,
+	/* Wait screen for touchpad sync */
+	VB2_SCREEN_TOUCHPAD_SYNC		= 0x11,
 };
 
 /**
