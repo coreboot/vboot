@@ -116,10 +116,13 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	return mock_vbtlk_retval[mock_vbtlk_count++];
 }
 
-vb2_error_t vb2ex_display_ui(enum vb2_screen screen, uint32_t locale)
+vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
+			     uint32_t locale_id,
+			     uint32_t selected_item,
+			     uint32_t disabled_item_mask)
 {
-	VB2_DEBUG("screens %d: screen = %#x, locale = %u\n",
-		  mock_screens_count, screen, locale);
+	VB2_DEBUG("screens %d: screen = %#x, locale_id = %u\n",
+		  mock_screens_count, screen, locale_id);
 
 	if (mock_screens_count >= ARRAY_SIZE(mock_screens_displayed) ||
 	    mock_screens_count >= ARRAY_SIZE(mock_locales_displayed)) {
@@ -129,7 +132,8 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen, uint32_t locale)
 	}
 
 	mock_screens_displayed[mock_screens_count] = screen;
-	mock_locales_displayed[mock_screens_count] = locale;
+	mock_locales_displayed[mock_screens_count] = locale_id;
+	/* TODO(roccochen): handle the rest of two arguments */
 	mock_screens_count++;
 
 	return VB2_SUCCESS;

@@ -22,7 +22,7 @@ vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 	enum vb2_dev_default_boot default_boot;
 
 	/* TODO(roccochen): Init, wait for user, and boot. */
-	vb2ex_display_ui(VB2_SCREEN_BLANK, 0);
+	vb2ex_display_ui(VB2_SCREEN_BLANK, 0, 0, 0);
 
 	/* If dev mode was disabled, loop forever. */
 	if (!vb2_dev_boot_allowed(ctx))
@@ -48,7 +48,7 @@ vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx)
 {
 	/* TODO(roccochen): Init and wait for user to reset or shutdown. */
-	vb2ex_display_ui(VB2_SCREEN_BLANK, 0);
+	vb2ex_display_ui(VB2_SCREEN_BLANK, 0, 0, 0);
 
 	while (1);
 
@@ -58,7 +58,7 @@ vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx)
 vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)
 {
 	/* TODO(roccochen): Init and wait for user. */
-	vb2ex_display_ui(VB2_SCREEN_BLANK, 0);
+	vb2ex_display_ui(VB2_SCREEN_BLANK, 0 ,0, 0);
 
 	while (1);
 

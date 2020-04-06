@@ -1172,16 +1172,25 @@ enum vb2_screen {
 	/* Blank screen */
 	VB2_SCREEN_BLANK			= 0x0,
 	/* Wait screen for EC sync and AUXFW sync */
-	VB2_SCREEN_FIRMWARE_SYNC		= 0x10,
+	VB2_SCREEN_FIRMWARE_SYNC		= 0x100,
+	/* First recovery screen to select recovering from disk or phone */
+	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
 };
 
 /**
  * Display UI screen.
  *
  * @param screen		Screen to display.
- * @param locale		Locale.
+ * @param selected_item		Index of the selected menu item. If the screen
+ *				doesn't have a menu, this value will be ignored.
+ * @param disabled_item_mask	Mask for disabled menu items. Bit (1 << idx)
+ *				indicates whether item 'idx' is disabled.
+ * @param locale_id		Id of current locale.
  * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2ex_display_ui(enum vb2_screen screen, uint32_t locale);
+vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
+			     uint32_t locale_id,
+			     uint32_t selected_item,
+			     uint32_t disabled_item_mask);
 
 #endif  /* VBOOT_REFERENCE_2API_H_ */
