@@ -144,7 +144,8 @@ void vb2_check_recovery(struct vb2_context *ctx)
 
 	if (ctx->flags & VB2_CONTEXT_FORCE_RECOVERY_MODE) {
 		VB2_DEBUG("Recovery was requested manually\n");
-		if (subcode && !sd->recovery_reason)
+		if (subcode && !sd->recovery_reason &&
+		    subcode != VB2_RECOVERY_TRAIN_AND_REBOOT)
 			/*
 			 * Recovery was requested at 'broken' screen.
 			 * Promote subcode to reason.
@@ -416,16 +417,20 @@ int vb2_allow_recovery(struct vb2_context *ctx)
 void vb2_clear_recovery(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	uint32_t reason = vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST);
+	uint32_t subcode = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
 
-	VB2_DEBUG("Clearing recovery request: %#x / %#x\n",
-		  vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		  vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE));
+	if (reason || subcode)
+		VB2_DEBUG("Clearing recovery request: %#x / %#x\n",
+			  reason, subcode);
 
-	/* Clear recovery request for both cases. */
+	/* Clear recovery request for both manual and non-manual. */
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, VB2_RECOVERY_NOT_REQUESTED);
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 0);
 
-	if (!vb2_allow_recovery(ctx)) {
+	/* But stow recovery reason as subcode for non-manual recovery. */
+	if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	    !vb2_allow_recovery(ctx)) {
 		VB2_DEBUG("Stow recovery reason as subcode (%#x)\n",
 			  sd->recovery_reason);
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, sd->recovery_reason);

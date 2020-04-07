@@ -458,13 +458,23 @@ static void recovery_tests(void)
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		 0, "SD flag set");
 
-	/* Override at broken screen */
+	/* Override subcode TRAIN_AND_REBOOT */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, VB2_RECOVERY_TRAIN_AND_REBOOT);
+	ctx->flags |= VB2_CONTEXT_FORCE_RECOVERY_MODE;
+	vb2_check_recovery(ctx);
+	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_MANUAL,
+		"Recovery reason forced");
+	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
+		 0, "SD flag set");
+
+	/* Promote subcode from BROKEN screen*/
 	reset_common_data();
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, VB2_RECOVERY_US_TEST);
 	ctx->flags |= VB2_CONTEXT_FORCE_RECOVERY_MODE;
 	vb2_check_recovery(ctx);
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_US_TEST,
-		"Recovery reason forced from broken");
+		"Recovery reason forced from BROKEN");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		 0, "SD flag set");
 }
@@ -768,6 +778,7 @@ static void clear_recovery_tests(void)
 	reset_common_data();
 	allow_recovery_retval = 1;
 	sd->recovery_reason = 4;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	vb2_clear_recovery(ctx);
@@ -780,6 +791,7 @@ static void clear_recovery_tests(void)
 	reset_common_data();
 	allow_recovery_retval = 0;
 	sd->recovery_reason = 4;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	vb2_clear_recovery(ctx);

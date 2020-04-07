@@ -198,10 +198,14 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		VB2_TRY(handle_battery_cutoff(ctx));
 	}
 
+	/*
+	 * If in non-manual recovery mode, save the recovery reason as subcode.
+	 * Otherwise, clear any leftover recovery requests or subcodes.
+	 */
+	vb2_clear_recovery(ctx);
+
 	/* Select boot path */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-		vb2_clear_recovery(ctx);
-
 		/* If we're in recovery mode just to do memory retraining, all
 		   we need to do is reboot. */
 		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
@@ -214,6 +218,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * entering either manual recovery UI or BROKEN screen shortly.
 		 */
 		vb2ex_commit_data(ctx);
+
 		/*
 		 * In EFS2, recovery mode can be entered even when battery is
 		 * drained or damaged. EC-RO sets NO_BOOT flag in such case and
