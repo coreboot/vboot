@@ -321,10 +321,14 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			return rv;
 	}
 
+	/*
+	 * If in non-manual recovery mode, save the recovery reason as subcode.
+	 * Otherwise, clear any leftover recovery requests or subcodes.
+	 */
+	vb2_clear_recovery(ctx);
+
 	/* Select boot path */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
-		vb2_clear_recovery(ctx);
-
 		/* If we're in recovery mode just to do memory retraining, all
 		   we need to do is reboot. */
 		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
@@ -337,6 +341,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * entering either manual recovery UI or BROKEN screen shortly.
 		 */
 		vb2ex_commit_data(ctx);
+
 
 		/* Recovery boot.  This has UI. */
 		if (LEGACY_MENU_UI)
