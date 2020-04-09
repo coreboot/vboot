@@ -615,7 +615,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		}
 	} /* while(GptNextKernelEntry) */
 
-gpt_done:
+ gpt_done:
 	/* Write and free GPT data */
 	WriteAndFreeGptData(params->disk_handle, &gpt);
 
