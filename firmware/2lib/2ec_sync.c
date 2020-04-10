@@ -17,52 +17,6 @@
 	 VB2_SD_FLAG_ECSYNC_EC_RO : VB2_SD_FLAG_ECSYNC_EC_RW)
 
 /**
- * Set the RECOVERY_REQUEST flag in NV space
- */
-static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
-{
-	VB2_DEBUG("request_recovery(%u)\n", recovery_request);
-
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, recovery_request);
-}
-
-/**
- * Whether a reboot is requested.
- *
- * When this function returns 1, rv isn't considered an error and hence
- * recovery mode shouldn't be triggered.  This includes the following
- * situations:
- *
- * VBERROR_REBOOT_REQUIRED: When we need to display firmware sync screen, but
- * the display hasn't been initialized, a reboot will be required.
- *
- * VBERROR_EC_REBOOT_TO_RO_REQUIRED: The EC may know it needs a reboot.  It may
- * need to reboot to unprotect the region before updating, or may need to reboot
- * after updating.  When EC update fails, it also needs to reboot.
- */
-static inline int reboot_requested(vb2_error_t rv)
-{
-	return rv == VB2_REQUEST_REBOOT || rv == VB2_REQUEST_REBOOT_EC_TO_RO;
-}
-
-/**
- * Wrapper around vb2ex_ec_protect() which sets recovery reason on error.
- */
-static vb2_error_t protect_ec(struct vb2_context *ctx,
-			      enum vb2_firmware_selection select)
-{
-	vb2_error_t rv = vb2ex_ec_protect(select);
-
-	if (reboot_requested(rv)) {
-		VB2_DEBUG("vb2ex_ec_protect() needs reboot: %#x\n", rv);
-	} else if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("vb2ex_ec_protect() returned %#x\n", rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_PROTECT);
-	}
-	return rv;
-}
-
-/**
  * Print a hash to debug output
  *
  * @param hash		Pointer to the hash
@@ -112,13 +66,8 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 	/*
 	 * Get expected EC hash and length.
 	 */
-	rv = vb2ex_ec_get_expected_image_hash(select, &hexp, &hexp_len);
-	if (rv) {
-		VB2_DEBUG("vb2ex_ec_get_expected_image_hash() returned %#x\n",
-			  rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_EXPECTED_HASH);
-		return VB2_ERROR_EC_HASH_EXPECTED;
-	}
+	VB2_TRY(vb2ex_ec_get_expected_image_hash(select, &hexp, &hexp_len),
+		ctx, VB2_RECOVERY_EC_EXPECTED_HASH);
 	VB2_DEBUG("Hexp %10s: ", image_name_to_string(select));
 	print_hash(hexp, hexp_len);
 
@@ -135,8 +84,9 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 		if (hmir_len != hexp_len) {
 			VB2_DEBUG("Hmir size (%d) != Hexp size (%d)\n",
 				  hmir_len, hexp_len);
-			request_recovery(ctx, VB2_RECOVERY_EC_HASH_SIZE);
-			return VB2_ERROR_EC_HASH_SIZE;
+			rv = VB2_ERROR_EC_HASH_SIZE;
+			vb2api_fail(ctx, VB2_RECOVERY_EC_HASH_SIZE, rv);
+			return rv;
 		}
 		if (vb2_safe_memcmp(hmir, hexp, hexp_len)) {
 			VB2_DEBUG("Hmir != Hexp. Update Hmir.\n");
@@ -148,12 +98,8 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 	/*
 	 * Get effective EC hash and length.
 	 */
-	rv = vb2ex_ec_hash_image(select, &heff, &heff_len);
-	if (rv) {
-		VB2_DEBUG("vb2ex_ec_hash_image() returned %#x\n", rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_HASH_FAILED);
-		return VB2_ERROR_EC_HASH_IMAGE;
-	}
+	VB2_TRY(vb2ex_ec_hash_image(select, &heff, &heff_len),
+		ctx, VB2_RECOVERY_EC_HASH_FAILED);
 	VB2_DEBUG("Heff %10s: ", image_name_to_string(select));
 	print_hash(heff, heff_len);
 
@@ -161,8 +107,9 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 	if (heff_len != hexp_len) {
 		VB2_DEBUG("EC uses %d-byte hash but AP-RW contains %d bytes\n",
 			  heff_len, hexp_len);
-		request_recovery(ctx, VB2_RECOVERY_EC_HASH_SIZE);
-		return VB2_ERROR_EC_HASH_SIZE;
+		rv = VB2_ERROR_EC_HASH_SIZE;
+		vb2api_fail(ctx, VB2_RECOVERY_EC_HASH_SIZE, rv);
+		return rv;
 	}
 
 	if (vb2_safe_memcmp(heff, hexp, hexp_len)) {
@@ -184,25 +131,16 @@ static vb2_error_t update_ec(struct vb2_context *ctx,
 			     enum vb2_firmware_selection select)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
 	VB2_DEBUG("Updating %s...\n", image_name_to_string(select));
-
-	rv = vb2ex_ec_update_image(select);
-	if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("vb2ex_ec_update_image() returned %#x\n", rv);
-		if (!reboot_requested(rv))
-			request_recovery(ctx, VB2_RECOVERY_EC_UPDATE);
-		return rv;
-	}
+	VB2_TRY(vb2ex_ec_update_image(select), ctx, VB2_RECOVERY_EC_UPDATE);
 
 	/* Verify the EC was updated properly */
 	sd->flags &= ~SYNC_FLAG(select);
-	if (check_ec_hash(ctx, select) != VB2_SUCCESS)
-		return VB2_REQUEST_REBOOT_EC_TO_RO;
+	VB2_TRY(check_ec_hash(ctx, select));
 	if (sd->flags & SYNC_FLAG(select)) {
 		VB2_DEBUG("Failed to update\n");
-		request_recovery(ctx, VB2_RECOVERY_EC_UPDATE);
+		vb2api_fail(ctx, VB2_RECOVERY_EC_UPDATE, 0);
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
@@ -227,21 +165,15 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 	 * resets. So, we trust what EC-RW says. If it lies it's in RO, we'll
 	 * flash RW while it's in RW.
 	 */
-	vb2_error_t rv = vb2ex_ec_running_rw(&in_rw);
 	/* If we couldn't determine where the EC was, reboot to recovery. */
-	if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("vb2ex_ec_running_rw() returned %#x\n", rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_UNKNOWN_IMAGE);
-		return VB2_REQUEST_REBOOT_EC_TO_RO;
-	}
+	VB2_TRY(vb2ex_ec_running_rw(&in_rw),
+		ctx, VB2_RECOVERY_EC_UNKNOWN_IMAGE);
 
 	if (in_rw)
 		sd->flags |= VB2_SD_FLAG_ECSYNC_EC_IN_RW;
 
 	return VB2_SUCCESS;
 }
-
-#define RO_RETRIES 2  /* Maximum times to retry flashing RO */
 
 /**
  * Sync, jump, and protect EC device
@@ -252,7 +184,6 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 static vb2_error_t sync_ec(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_error_t rv;
 
 	const enum vb2_firmware_selection select_rw = EC_EFS ?
 		VB_SELECT_FIRMWARE_EC_UPDATE :
@@ -261,11 +192,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 
 	/* Update the RW Image */
 	if (sd->flags & SYNC_FLAG(select_rw)) {
-		rv = update_ec(ctx, select_rw);
-		if (reboot_requested(rv))
-			return rv;
-		else if (rv)
-			return VB2_REQUEST_REBOOT_EC_TO_RO;
+		VB2_TRY(update_ec(ctx, select_rw), ctx, VB2_RECOVERY_EC_UPDATE);
 		/* Updated successfully. Cold reboot to switch to the new RW. */
 		if (ctx->flags & VB2_CONTEXT_NO_BOOT) {
 			VB2_DEBUG("Rebooting to jump to new EC-RW\n");
@@ -288,22 +215,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 	/* Tell EC to jump to RW. It should already be in RW for EFS2. */
 	if (!(sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW)) {
 		VB2_DEBUG("jumping to EC-RW\n");
-		rv = vb2ex_ec_jump_to_rw();
-		if (rv != VB2_SUCCESS) {
-			VB2_DEBUG("vb2ex_ec_jump_to_rw() returned %x\n", rv);
-
-			/*
-			 * If a previous AP boot has called
-			 * vb2ex_ec_disable_jump(), we need to reboot the EC to
-			 * unlock the ability to jump to the RW firmware.
-			 *
-			 * All other errors trigger recovery mode.
-			 */
-			if (rv != VB2_REQUEST_REBOOT_EC_TO_RO)
-				request_recovery(ctx, VB2_RECOVERY_EC_JUMP_RW);
-
-			return VB2_REQUEST_REBOOT_EC_TO_RO;
-		}
+		VB2_TRY(vb2ex_ec_jump_to_rw(), ctx, VB2_RECOVERY_EC_JUMP_RW);
 	}
 
 	/* Might need to update EC-RO */
@@ -313,56 +225,22 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		/* Reset RO Software Sync NV flag */
 		vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 0);
 
-		/*
-		 * Get the current recovery request (if any).  This gets
-		 * overwritten by a failed try.  If a later try succeeds, we'll
-		 * need to restore this request (or the lack of a request), or
-		 * else we'll end up in recovery mode even though RO software
-		 * sync did eventually succeed.
-		 */
-		uint32_t recovery_request =
-			vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST);
-
-		/* Update the RO Image. */
-		int num_tries;
-		for (num_tries = 0; num_tries < RO_RETRIES; num_tries++) {
-			rv = update_ec(ctx, VB_SELECT_FIRMWARE_READONLY);
-			if (rv == VB2_SUCCESS)
-				break;
-			if (reboot_requested(rv))
-				return rv;
-		}
-		if (num_tries == RO_RETRIES) {
-			/* Ran out of tries */
-			return VB2_REQUEST_REBOOT_EC_TO_RO;
-		} else if (num_tries) {
-			/*
-			 * Update succeeded after a failure, so we've polluted
-			 * the recovery request.  Restore it.
-			 */
-			request_recovery(ctx, recovery_request);
-		}
+		/* Update the RO Image */
+		VB2_TRY(update_ec(ctx, VB_SELECT_FIRMWARE_READONLY),
+			ctx, VB2_RECOVERY_EC_UPDATE);
 	}
 
 	/* Protect RO flash */
-	rv = protect_ec(ctx, VB_SELECT_FIRMWARE_READONLY);
-	if (rv != VB2_SUCCESS)
-		return rv;
+	VB2_TRY(vb2ex_ec_protect(VB_SELECT_FIRMWARE_READONLY),
+		ctx, VB2_RECOVERY_EC_PROTECT);
 
 	/* Protect RW flash */
-	rv = protect_ec(ctx, select_rw);
-	if (rv != VB2_SUCCESS)
-		return rv;
+	VB2_TRY(vb2ex_ec_protect(select_rw), ctx, VB2_RECOVERY_EC_PROTECT);
 
 	/* Disable further sysjumps */
-	rv = vb2ex_ec_disable_jump();
-	if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("vb2ex_ec_disable_jump() returned %#x\n", rv);
-		request_recovery(ctx, VB2_RECOVERY_EC_SOFTWARE_SYNC);
-		return VB2_REQUEST_REBOOT_EC_TO_RO;
-	}
+	VB2_TRY(vb2ex_ec_disable_jump(), ctx, VB2_RECOVERY_EC_SOFTWARE_SYNC);
 
-	return rv;
+	return VB2_SUCCESS;
 }
 
 /**

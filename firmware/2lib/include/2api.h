@@ -35,7 +35,8 @@
 	if (_vb2_try_rv != VB2_SUCCESS) { \
 		vb2ex_printf(__func__, \
 			     "%s returned %#x\n", #expr, _vb2_try_rv); \
-		if ((_vb2_try_ctx) && \
+		if (_vb2_try_rv >= VB2_REQUEST_END && \
+		    (_vb2_try_ctx) && \
 		    (_vb2_try_reason) != VB2_RECOVERY_NOT_REQUESTED) \
 			vb2api_fail(_vb2_try_ctx, _vb2_try_reason, \
 				    _vb2_try_rv); \
@@ -44,7 +45,8 @@
 } while (0)
 
 /*
- * Evaluate an expression and return *from the caller* on failure.
+ * Evaluate an expression and return *from the caller* on failure or if an
+ * action (such as reboot) is requested.
  *
  * This macro supports two forms of usage:
  * 1. VB2_TRY(expr)

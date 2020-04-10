@@ -320,6 +320,12 @@ static void misc_tests(void)
 		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
 
 	reset_common_data(FOR_MISC);
+	call_vb2_try(VB2_REQUEST, VB2_RECOVERY_NOT_REQUESTED, 1);
+	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr) request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
+
+	reset_common_data(FOR_MISC);
 	call_vb2_try(VB2_ERROR_MOCK, VB2_RECOVERY_NOT_REQUESTED, 1);
 	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr) error");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
@@ -334,12 +340,20 @@ static void misc_tests(void)
 		0, "  vb2api_fail no subcode");
 
 	reset_common_data(FOR_MISC);
-	call_vb2_try(456, 123, 0);
+	call_vb2_try(VB2_REQUEST, 123, 0);
+	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr, ...) request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_NOT_REQUESTED, "  vb2api_fail no request");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
+		0, "  vb2api_fail no subcode");
+
+	reset_common_data(FOR_MISC);
+	call_vb2_try(VB2_ERROR_MOCK, 123, 0);
 	TEST_EQ(vb2_try_returned, 1, "VB2_TRY(expr, ...) error");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		123, "  vb2api_fail request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
-		456 & 0xff, "  vb2api_fail subcode");
+		VB2_ERROR_MOCK & 0xff, "  vb2api_fail subcode");
 }
 
 static void phase1_tests(void)

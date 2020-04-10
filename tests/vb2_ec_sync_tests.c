@@ -476,7 +476,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	update_retval = VB2_ERROR_MOCK;
-	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
+	test_ssync(VB2_ERROR_MOCK,
 		   VB2_RECOVERY_EC_UPDATE, "Update failed");
 	TEST_EQ(ec_ro_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -529,7 +529,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	jump_retval = VB2_ERROR_MOCK;
-	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
+	test_ssync(VB2_ERROR_MOCK,
 		   VB2_RECOVERY_EC_JUMP_RW, "Jump to RW fail");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
