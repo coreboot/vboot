@@ -70,7 +70,7 @@ vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 	auxfw_update_severity = auxfw_mock_severity;
 	if (*severity == VB_AUX_FW_SLOW_UPDATE)
 		if (!auxfw_mock_display_available)
-			return VBERROR_REBOOT_REQUIRED;
+			return VB2_REQUEST_REBOOT;
 	return VB2_SUCCESS;
 }
 
@@ -103,7 +103,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
+	test_auxsync(VB2_REQUEST_REBOOT_EC_TO_RO, 0,
 		     "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC"
 		     " does not disable auxiliary FW update request");
 	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
@@ -134,7 +134,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	auxfw_mock_severity = VB_AUX_FW_FAST_UPDATE;
-	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
+	test_auxsync(VB2_REQUEST_REBOOT_EC_TO_RO, 0,
 		     "Fast auxiliary FW update needed");
 	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
 	TEST_EQ(auxfw_protected, 0, "  aux fw protected");
@@ -142,12 +142,12 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	auxfw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
 	auxfw_mock_display_available = 0;
-	test_auxsync(VBERROR_REBOOT_REQUIRED, 0,
+	test_auxsync(VB2_REQUEST_REBOOT, 0,
 		     "Slow auxiliary FW update needed - reboot for display");
 
 	ResetMocks();
 	auxfw_mock_severity = VB_AUX_FW_SLOW_UPDATE;
-	test_auxsync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, 0,
+	test_auxsync(VB2_REQUEST_REBOOT_EC_TO_RO, 0,
 		     "Slow auxiliary FW update needed");
 	TEST_EQ(auxfw_update_req, 1, "  aux fw update requested");
 	TEST_EQ(auxfw_protected, 0, "  aux fw protected");

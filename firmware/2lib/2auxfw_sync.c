@@ -58,7 +58,7 @@ static vb2_error_t update_auxfw(struct vb2_context *ctx)
 		 *
 		 * If we fail for any other reason, trigger recovery mode.
 		 */
-		if (rv != VBERROR_EC_REBOOT_TO_RO_REQUIRED)
+		if (rv != VB2_REQUEST_REBOOT_EC_TO_RO)
 			vb2api_fail(ctx, VB2_RECOVERY_AUX_FW_UPDATE, rv);
 	}
 
@@ -100,7 +100,7 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 		 * RO, so that the chips that had FW update get reset to a
 		 * clean state.
 		 */
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	return vb2ex_auxfw_finalize(ctx);

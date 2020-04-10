@@ -50,7 +50,7 @@ vb2_error_t vb2_normal_boot(struct vb2_context *ctx)
 
 	if (vb2_reset_nv_requests(ctx)) {
 		VB2_DEBUG("Normal mode: reboot to reset NVRAM requests\n");
-		return VBERROR_REBOOT_REQUIRED;
+		return VB2_REQUEST_REBOOT;
 	}
 
 	vb2_error_t rv = VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED);

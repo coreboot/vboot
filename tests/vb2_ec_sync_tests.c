@@ -179,7 +179,7 @@ vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
 		return update_retval;
 
 	if (!mock_display_available)
-		return VBERROR_REBOOT_REQUIRED;
+		return VB2_REQUEST_REBOOT;
 
 	if (select == VB_SELECT_FIRMWARE_READONLY) {
 		ec_ro_updated = 1;
@@ -266,7 +266,7 @@ static void VbSoftwareSyncTest(void)
 	/* AP-RO cases */
 	ResetMocks();
 	in_rw_retval = VB2_ERROR_MOCK;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_UNKNOWN_IMAGE, "Unknown EC image");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -277,7 +277,7 @@ static void VbSoftwareSyncTest(void)
 	/* Calculate hashes */
 	ResetMocks();
 	mock_ec_rw_hash_size = 0;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_HASH_FAILED, "Bad EC hash");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -287,7 +287,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash_size = 16;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_HASH_SIZE, "Bad EC hash size");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -297,7 +297,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	hexp_size = 0;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_EXPECTED_HASH, "Bad precalculated hash");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -307,7 +307,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	hexp_size = 16;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_HASH_SIZE,
 		   "Hash size mismatch");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
@@ -319,7 +319,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	hexp_size = 4;
 	mock_ec_rw_hash_size = 4;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED, VB2_RECOVERY_EC_HASH_SIZE,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO, VB2_RECOVERY_EC_HASH_SIZE,
 		   "Custom hash size secdata_kernel v1");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -343,7 +343,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	ec_run_image = 1;
 	mock_ec_rw_hash[0]++;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Pending update needs reboot");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -357,7 +357,7 @@ static void VbSoftwareSyncTest(void)
 	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
 	ec_run_image = 1;
 	mock_ec_rw_hash[0] = 43;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Reboot after synching Hmir");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -370,7 +370,7 @@ static void VbSoftwareSyncTest(void)
 	ec_run_image = 0;
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;
 	mock_ec_rw_hash[0] = 43;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Reboot after synching Heff");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
@@ -385,7 +385,7 @@ static void VbSoftwareSyncTest(void)
 	ec_run_image = 0;
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;
 	mock_ec_rw_hash[0] = 43;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Reboot after synching Hmir and Heff");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
@@ -399,7 +399,7 @@ static void VbSoftwareSyncTest(void)
 	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
 	ec_run_image = 0;
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Reboot after synching Hmir");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -454,7 +454,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	update_hash++;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_UPDATE, "Updated hash mismatch");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
@@ -464,8 +464,8 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	update_retval = VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	update_retval = VB2_REQUEST_REBOOT_EC_TO_RO;
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Reboot for rw update");
 	TEST_EQ(ec_ro_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -476,7 +476,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	update_retval = VB2_ERROR_MOCK;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_UPDATE, "Update failed");
 	TEST_EQ(ec_ro_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -488,7 +488,7 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	mock_display_available = 0;
-	test_ssync(VBERROR_REBOOT_REQUIRED, 0,
+	test_ssync(VB2_REQUEST_REBOOT, 0,
 		   "Reboot for display - ec rw");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -501,7 +501,7 @@ static void VbSoftwareSyncTest(void)
 	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	mock_ec_ro_hash[0]++;
 	mock_display_available = 0;
-	test_ssync(VBERROR_REBOOT_REQUIRED, 0,
+	test_ssync(VB2_REQUEST_REBOOT, 0,
 		   "Reboot for display - ec ro");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -529,7 +529,7 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	jump_retval = VB2_ERROR_MOCK;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   VB2_RECOVERY_EC_JUMP_RW, "Jump to RW fail");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
@@ -538,8 +538,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
 	ResetMocks();
-	jump_retval = VBERROR_EC_REBOOT_TO_RO_REQUIRED;
-	test_ssync(VBERROR_EC_REBOOT_TO_RO_REQUIRED,
+	jump_retval = VB2_REQUEST_REBOOT_EC_TO_RO;
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
 		   0, "Jump to RW fail because locked");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");

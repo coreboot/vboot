@@ -48,7 +48,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 		VB2_TRY(vb2ex_commit_data(ctx));
 
 		vb2ex_ec_battery_cutoff();
-		return VBERROR_SHUTDOWN_REQUESTED;
+		return VB2_REQUEST_SHUTDOWN;
 	}
 
 	return VB2_SUCCESS;
@@ -210,7 +210,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		   we need to do is reboot. */
 		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
 			VB2_DEBUG("Reboot after retraining in recovery\n");
-			return VBERROR_REBOOT_REQUIRED;
+			return VB2_REQUEST_REBOOT;
 		}
 
 		/*
@@ -254,7 +254,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * The diagnostic menu should either boot a rom, or
 		 * return either of reboot or shutdown.
 		 */
-		return VBERROR_REBOOT_REQUIRED;
+		return VB2_REQUEST_REBOOT;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		/* Developer boot.  This has UI. */
 		if (MENU_UI)

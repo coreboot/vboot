@@ -365,7 +365,7 @@ static void VbBootDevTest(void)
 	/* Shutdown requested in loop */
 	ResetMocksForDeveloper();
 	shutdown_request_calls_left = 2;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -382,7 +382,7 @@ static void VbBootDevTest(void)
 	 */
 	ResetMocksForDeveloper();
 	mock_keypress[0] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev warning menu: default to power off");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
@@ -402,7 +402,7 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Cancel
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // Power Off
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Power Off in DEVELOPER");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -430,7 +430,7 @@ static void VbBootDevTest(void)
 	/* Pressing ENTER is equivalent to power button. */
 	ResetMocksForDeveloper();
 	mock_keypress[0] = VB_KEY_ENTER;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev warning menu: ENTER is power button");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
@@ -443,7 +443,7 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	gbb.flags |= VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM;
 	mock_keypress[0] = VB_KEY_ENTER;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev warning menu: ENTER unaffected by GBB");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
 		"  warning screen");
@@ -457,7 +457,7 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = ' ';
 	mock_keypress[1] = VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS;
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;	// select Power Off
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"SPACE or VolUp+Down have no effect");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -474,7 +474,7 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_REBOOT_REQUIRED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_REBOOT,
 		"disable developer mode");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
@@ -526,7 +526,7 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[1] = VB_BUTTON_POWER_SHORT_PRESS;
 	shutdown_request_calls_left = 2;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested at tonorm");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
@@ -1098,7 +1098,7 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enable os verification
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // confirm is the default
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_REBOOT_REQUIRED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_REBOOT,
 		"TONORM via menu");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
 		"  disable dev request");
@@ -1131,7 +1131,7 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_LONG_PRESS;	/* same */
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS;	/* noop */
 	mock_keypress[i++] = VB_KEY_ENTER;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_REBOOT_REQUIRED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_REBOOT,
 		"FWMP dev disabled");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
 		"  disable dev request");
@@ -1177,7 +1177,7 @@ static void VbBootDevTest(void)
 	ResetMocksForDeveloper();
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
 	shutdown_request_calls_left = 1;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested when dev disabled");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 0,
@@ -1195,7 +1195,7 @@ static void VbBootDevTest(void)
 	i = 0;
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS;	// Power Off
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Power Off when dev disabled");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 0,
@@ -1264,7 +1264,7 @@ static void VbBootRecTest(void)
 
 	/* Shutdown requested in BROKEN */
 	ResetMocks();
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in BROKEN");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1282,7 +1282,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[2] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[3] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in BROKEN with disks");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1297,7 +1297,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in BROKEN with later disk");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1314,7 +1314,7 @@ static void VbBootRecTest(void)
 		VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[2] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in BROKEN with dev switch");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1328,7 +1328,7 @@ static void VbBootRecTest(void)
 	ResetMocksForManualRecovery();
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in INSERT with manual rec");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1343,7 +1343,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shutdown requested in INSERT forced by GBB flag");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1358,7 +1358,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	sd->flags &= ~VB2_SD_FLAG_MANUAL_RECOVERY;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Go to BROKEN if recovery not manually requested");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1373,7 +1373,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	trust_ec = 0;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Go to BROKEN if EC is not trusted");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1457,7 +1457,7 @@ static void VbBootRecTest(void)
 	mock_keypress[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_LONG_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shortcuts ignored in BROKEN");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
@@ -1485,7 +1485,7 @@ static void VbBootRecTest(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shortcuts ignored in INSERT");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
@@ -1502,7 +1502,7 @@ static void VbBootRecTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enter options
 	mock_keypress[1] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Power Off BROKEN through OPTIONS");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1522,7 +1522,7 @@ static void VbBootRecTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enter options
 	mock_keypress[1] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Power Off NOGOOD through OPTIONS");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1546,7 +1546,7 @@ static void VbBootRecTest(void)
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
 	vbtlk_retval[0] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Power Off INSERT through TO_DEV");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1566,7 +1566,7 @@ static void VbBootRecTest(void)
 	mock_keypress[0] = VB_BUTTON_VOL_UP_SHORT_PRESS; // enter options
 	mock_keypress[1] = VB_BUTTON_VOL_UP_SHORT_PRESS; // show debug info
 	mock_keypress[2] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Show Debug info from BROKEN through OPTIONS");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 1, "  no debug info");
@@ -1584,7 +1584,7 @@ static void VbBootRecTest(void)
 	/* Show Debug Info on NOGOOD with Tab */
 	ResetMocksForManualRecovery();
 	mock_keypress[0] = '\t';
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Show Debug info on NOGOOD with Tab");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 1, "  no debug info");
@@ -1608,7 +1608,7 @@ static void VbBootRecTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // cancel
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // power off
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"go to TO_DEV screen and cancel");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
@@ -1639,7 +1639,7 @@ static void VbBootRecTest(void)
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_REBOOT_REQUIRED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_REBOOT,
 		"go to TO_DEV screen and confirm");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1661,7 +1661,7 @@ static void VbBootRecTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS; // try to_dev
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // try confirm
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Untrusted keyboard cannot enter TO_DEV");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1684,7 +1684,7 @@ static void VbBootRecTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS; // enter to_dev
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // try to confirm...
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Untrusted keyboard cannot navigate in TO_DEV");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1737,7 +1737,7 @@ static void VbBootRecTest(void)
 	i = 0;
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS; // enter to_dev
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Ctrl+D ignored if already in dev mode");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
@@ -1766,7 +1766,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[0] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[1] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Drop back to INSERT from TO_DEV when removing invalid USB");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
@@ -1801,7 +1801,7 @@ static void VbBootRecTest(void)
 	vbtlk_retval[3] = VB2_ERROR_LK_NO_DISK_FOUND -
 		VB_DISK_FLAG_REMOVABLE;
 	vbtlk_retval[4] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Drop back to NOGOOD from LANGUAGE when inserting invalid USB");
 	TEST_EQ(shutdown_request_calls_left, 0, "  timed out");
 	TEST_EQ(virtdev_set, 0, "  virtual dev mode off");
@@ -1862,7 +1862,7 @@ static void VbTestLanguageMenu(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // select current lang
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // cancel -> BROKEN
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // power off
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"go to language menu from BROKEN");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
@@ -1910,7 +1910,7 @@ static void VbTestLanguageMenu(void)
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"go to language menus from INSERT");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
@@ -1974,7 +1974,7 @@ static void VbTestLanguageMenu(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // cancel
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		" scroll through all language menus in developer options");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  powered down explicitly");
@@ -2094,7 +2094,7 @@ static void VbNavigationTest(void)
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // power off
 	mock_keypress[i++] = VB_BUTTON_VOL_DOWN_SHORT_PRESS; // language
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_SHUTDOWN_REQUESTED,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_SHUTDOWN,
 		"recovery mode long navigation");
 	TEST_EQ(debug_info_displayed, 1, "  showed debug info");
 	TEST_EQ(shutdown_request_calls_left, 0, "  timed out");

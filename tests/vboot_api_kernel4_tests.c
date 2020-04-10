@@ -298,7 +298,7 @@ static void select_and_load_kernel_tests(void)
 	/* Boot recovery - memory retraining */
 	reset_common_data();
 	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
-	test_slk(VBERROR_REBOOT_REQUIRED, 0, "Recovery train and reboot");
+	test_slk(VB2_REQUEST_REBOOT, 0, "Recovery train and reboot");
 	TEST_FALSE(commit_data_called, "  no commit data");
 
 	/* Boot BROKEN recovery */

@@ -55,7 +55,7 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 
 		if (vb2_want_shutdown(ctx, key)) {
 			VB2_DEBUG("Vendor Data UI - shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
+			return VB2_REQUEST_SHUTDOWN;
 		}
 		switch (key) {
 		case 0:
@@ -143,7 +143,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 		if (vb2_want_shutdown(ctx, key_confirm)) {
 			VB2_DEBUG("Confirm Vendor Data UI "
 				  "- shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
+			return VB2_REQUEST_SHUTDOWN;
 		}
 		switch (key_confirm) {
 		case 0:
@@ -176,7 +176,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 					vb2_nv_set(ctx,
 						   VB2_NV_DISABLE_DEV_REQUEST,
 						   1);
-					return VBERROR_REBOOT_REQUIRED;
+					return VB2_REQUEST_REBOOT;
 				} else {
 					vb2_error_notify(
 						"ERROR: Vendor data was not "
@@ -184,7 +184,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 						"System will now shutdown\n",
 						NULL, VB_BEEP_FAILED);
 					VbExSleepMs(5000);
-					return VBERROR_SHUTDOWN_REQUESTED;
+					return VB2_REQUEST_SHUTDOWN;
 				}
 			} else {
 				VB2_DEBUG("Confirm Vendor Data UI - user "
@@ -215,7 +215,7 @@ vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 
 		if (vb2_want_shutdown(ctx, key_set)) {
 			VB2_DEBUG("Vendor Data UI - shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
+			return VB2_REQUEST_SHUTDOWN;
 		}
 
 		switch (key_set) {
@@ -272,7 +272,7 @@ vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,
 		VB2_DEBUG("Diagnostic mode requested, rebooting\n");
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 
-		return VBERROR_REBOOT_REQUIRED;
+		return VB2_REQUEST_REBOOT;
 	}
 
 	return VB2_SUCCESS;
@@ -283,7 +283,7 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 	int active = 1;
 	int button_released = 0;
 	int button_pressed = 0;
-	vb2_error_t result = VBERROR_REBOOT_REQUIRED;
+	vb2_error_t result = VB2_REQUEST_REBOOT;
 	int action_confirmed = 0;
 	uint64_t start_time_us;
 
@@ -313,7 +313,7 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 		/* Check the lid and ignore the power button. */
 		if (vb2_want_shutdown(ctx, 0) & ~VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
 			VB2_DEBUG("vb2_diagnostics_ui() - shutdown request\n");
-			result = VBERROR_SHUTDOWN_REQUESTED;
+			result = VB2_REQUEST_SHUTDOWN;
 			active = 0;
 			break;
 		}

@@ -46,8 +46,7 @@ static void request_recovery(struct vb2_context *ctx, uint32_t recovery_request)
  */
 static inline int reboot_requested(vb2_error_t rv)
 {
-	return rv == VBERROR_REBOOT_REQUIRED ||
-	       rv == VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+	return rv == VB2_REQUEST_REBOOT || rv == VB2_REQUEST_REBOOT_EC_TO_RO;
 }
 
 /**
@@ -204,11 +203,11 @@ static vb2_error_t update_ec(struct vb2_context *ctx,
 	/* Verify the EC was updated properly */
 	sd->flags &= ~SYNC_FLAG(select);
 	if (check_ec_hash(ctx, select) != VB2_SUCCESS)
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	if (sd->flags & SYNC_FLAG(select)) {
 		VB2_DEBUG("Failed to update\n");
 		request_recovery(ctx, VB2_RECOVERY_EC_UPDATE);
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	VB2_DEBUG("Updated %s successfully\n", image_name_to_string(select));
@@ -237,7 +236,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("vb2ex_ec_running_rw() returned %#x\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_UNKNOWN_IMAGE);
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	if (in_rw)
@@ -270,14 +269,14 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		if (reboot_requested(rv))
 			return rv;
 		else if (rv)
-			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+			return VB2_REQUEST_REBOOT_EC_TO_RO;
 		/* Updated successfully. Cold reboot to switch to the new RW. */
 		if (ctx->flags & VB2_CONTEXT_NO_BOOT) {
 			VB2_DEBUG("Rebooting to jump to new EC-RW\n");
-			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+			return VB2_REQUEST_REBOOT_EC_TO_RO;
 		} else if (EC_EFS) {
 			VB2_DEBUG("Rebooting to switch to new EC-RW\n");
-			return VBERROR_EC_REBOOT_TO_SWITCH_RW;
+			return VB2_REQUEST_REBOOT_EC_SWITCH_RW;
 		}
 	}
 
@@ -287,7 +286,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		 * verification result is revoked.
 		 */
 		VB2_DEBUG("Reset EC after Hmir update\n");
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	/* Tell EC to jump to RW. It should already be in RW for EFS2. */
@@ -304,10 +303,10 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 			 *
 			 * All other errors trigger recovery mode.
 			 */
-			if (rv != VBERROR_EC_REBOOT_TO_RO_REQUIRED)
+			if (rv != VB2_REQUEST_REBOOT_EC_TO_RO)
 				request_recovery(ctx, VB2_RECOVERY_EC_JUMP_RW);
 
-			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+			return VB2_REQUEST_REBOOT_EC_TO_RO;
 		}
 	}
 
@@ -339,7 +338,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		}
 		if (num_tries == RO_RETRIES) {
 			/* Ran out of tries */
-			return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+			return VB2_REQUEST_REBOOT_EC_TO_RO;
 		} else if (num_tries) {
 			/*
 			 * Update succeeded after a failure, so we've polluted
@@ -364,7 +363,7 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("vb2ex_ec_disable_jump() returned %#x\n", rv);
 		request_recovery(ctx, VB2_RECOVERY_EC_SOFTWARE_SYNC);
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	return rv;
@@ -377,9 +376,8 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
  * whether any updates are necessary.
  *
  * @param ctx		Vboot2 context
- * @return VB2_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
- * reboot back to its RO code to continue EC sync, or other non-zero error
- * code.
+ * @return VB2_SUCCESS, VB2_REQUEST_REBOOT_EC_TO_RO if the EC must reboot back
+ * to its RO code to continue EC sync, or other non-zero error code.
  */
 static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 {
@@ -394,16 +392,16 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 
 	/* Set VB2_SD_FLAG_ECSYNC_EC_IN_RW flag */
 	if (check_ec_active(ctx))
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 
 	/* Check if we need to update RW. Failures trigger recovery mode. */
 	if (check_ec_hash(ctx, VB_SELECT_FIRMWARE_EC_ACTIVE))
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 
 	/* See if we need to update EC-RO. */
 	if (vb2_nv_get(ctx, VB2_NV_TRY_RO_SYNC) &&
 	    check_ec_hash(ctx, VB_SELECT_FIRMWARE_READONLY)) {
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	/*
@@ -415,7 +413,7 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	 */
 	if ((sd->flags & SYNC_FLAG(VB_SELECT_FIRMWARE_EC_ACTIVE)) &&
 	    (sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW) && !EC_EFS) {
-		return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
+		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
 	return VB2_SUCCESS;
@@ -449,7 +447,7 @@ static int ec_sync_allowed(struct vb2_context *ctx)
  * and makes sure it has jumped to the correct image.
  *
  * @param ctx		Vboot2 context
- * @return VB2_SUCCESS, VBERROR_EC_REBOOT_TO_RO_REQUIRED if the EC must
+ * @return VB2_SUCCESS, VB2_REQUEST_REBOOT_EC_TO_RO if the EC must
  * reboot back to its RO code to continue EC sync, or other non-zero error
  * code.
  */
