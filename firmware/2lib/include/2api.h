@@ -1173,6 +1173,8 @@ enum vb2_screen {
 	VB2_SCREEN_BLANK			= 0x0,
 	/* Wait screen for EC sync and AUXFW sync */
 	VB2_SCREEN_FIRMWARE_SYNC		= 0x100,
+	/* Broken screen */
+	VB2_SCREEN_RECOVERY_BROKEN		= 0x110,
 	/* First recovery screen to select recovering from disk or phone */
 	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
 };
