@@ -133,9 +133,17 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
  * Prompt the user to confirm the serial number and write to memory
  */
 static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
-					      char* data_value, VbScreenData *data)
+					      char* data_value)
 {
-	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_VENDOR_DATA, 1, data);
+	VbScreenData data = {
+		.vendor_data = {
+			.input_text = data_value,
+			.flags = 0,
+			.selected_index = 0,
+		}
+	};
+
+	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_VENDOR_DATA, 1, &data);
 	/* We'll loop until the user decides what to do */
 	do {
 		uint32_t key_confirm = VbExKeyboardRead();
@@ -149,23 +157,18 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 		case 0:
 			/* Nothing pressed */
 			break;
-		case VB_KEY_ESC:
-			/* Escape pressed - return to developer screen */
-			VB2_DEBUG("Confirm Vendor Data UI - user "
-				  "pressed Esc: exit to Developer screen\n");
-			return VB2_SUCCESS;
 		case VB_KEY_RIGHT:
 		case VB_KEY_LEFT:
-			data->vendor_data.selected_index =
-				data->vendor_data.selected_index ^ 1;
+			data.vendor_data.selected_index =
+				data.vendor_data.selected_index ^ 1;
 			VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_VENDOR_DATA,
-					1, data);
+					1, &data);
 			VB2_DEBUG("selected_index:%d\n",
-				  data->vendor_data.selected_index);
+				  data.vendor_data.selected_index);
 			break;
 		case VB_KEY_ENTER:
 			/* Enter pressed - write vendor data */
-			if (data->vendor_data.selected_index == 0) {
+			if (data.vendor_data.selected_index == 0) {
 				VB2_DEBUG("Confirm Vendor Data UI - user "
 					  "selected YES: "
 					  "write vendor data (%s) to VPD\n",
@@ -195,7 +198,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 		default:
 			VB2_DEBUG("Confirm Vendor Data UI - pressed "
 				  "key %#x\n", key_confirm);
-			VbCheckDisplayKey(ctx, key_confirm, data);
+			VbCheckDisplayKey(ctx, key_confirm, &data);
 			break;
 		}
 		VbExSleepMs(KEY_DELAY_MS);
@@ -205,65 +208,27 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 
 vb2_error_t vb2_vendor_data_ui(struct vb2_context *ctx)
 {
+	vb2_error_t ret;
 	char data_value[VENDOR_DATA_LENGTH + 1];
 
-	VbScreenData data = {.vendor_data = {data_value, 0, 0}};
-	VbDisplayScreen(ctx, VB_COMPLETE_VENDOR_DATA, 0, NULL);
+	data_value[0] = '\0';
 
 	do {
-		uint32_t key_set = VbExKeyboardRead();
+		VB2_DEBUG("Vendor Data UI - Enter VD set screen\n");
 
-		if (vb2_want_shutdown(ctx, key_set)) {
-			VB2_DEBUG("Vendor Data UI - shutdown requested!\n");
-			return VBERROR_SHUTDOWN_REQUESTED;
-		}
+		ret = vb2_enter_vendor_data_ui(ctx, data_value);
+		if (ret)
+			return ret;
 
-		switch (key_set) {
-		case 0:
-			/* Nothing pressed - do nothing. */
-			break;
-		case VB_KEY_ESC:
-			/* ESC pressed - boot normally */
-			VB2_DEBUG("Vendor Data UI - boot normally\n");
+		/* Vendor data was not entered just return */
+		if (vendor_data_length(data_value) == 0)
 			return VB2_SUCCESS;
-			break;
-		case VB_KEY_ENTER:
-			data_value[0] = '\0';
-			do {
-				/* ENTER pressed -
-				   enter vendor data set screen */
-				VB2_DEBUG("Vendor Data UI - Enter VD set "
-					  "screen\n");
-				vb2_error_t ret = vb2_enter_vendor_data_ui(
-					ctx, data_value);
 
-				if (ret)
-					return ret;
-
-				/* Vendor data was not entered just return */
-				if (vendor_data_length(data_value) == 0) {
-					return VB2_SUCCESS;
-				}
-
-				/* Reset confirmation answer to YES */
-				data.vendor_data.selected_index = 0;
-
-				ret = vb2_confirm_vendor_data_ui(
-					ctx, data_value, &data);
-
-				if (ret)
-					return ret;
-
-				/* Break if vendor data confirmed */
-				if (data.vendor_data.selected_index == 0)
-					return VB2_SUCCESS;
-			} while (1);
-			break;
-		default:
-			break;
-        }
+		ret = vb2_confirm_vendor_data_ui(ctx, data_value);
+		if (ret)
+			return ret;
 	} while (1);
-    return VB2_SUCCESS;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2_check_diagnostic_key(struct vb2_context *ctx,

@@ -897,7 +897,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data and reboot */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -912,7 +911,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; don't confirm and esc */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -929,7 +927,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; esc, don't confirm, and change last character */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -949,7 +946,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; extra keys ignored */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -965,7 +961,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; converts case */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'a';
 	mock_keypress[2] = 'B';
 	mock_keypress[3] = 'Y';
@@ -980,7 +975,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; backspace works */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = 'B';
 	mock_keypress[3] = 'C';
@@ -999,7 +993,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; invalid chars don't print */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '-';
 	mock_keypress[3] = '^';
@@ -1019,7 +1012,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; invalid chars don't print with backspace */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '-';
 	mock_keypress[3] = VB_KEY_BACKSPACE;  /* Should delete 4 */
@@ -1037,7 +1029,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; backspace only doesn't underrun */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = VB_KEY_BACKSPACE;
 	mock_keypress[3] = VB_KEY_BACKSPACE;
@@ -1055,7 +1046,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; vowels not allowed after first char */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = 'A';
 	mock_keypress[2] = 'A';
 	mock_keypress[3] = 'B';
@@ -1075,7 +1065,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; too short */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '1';
 	mock_keypress[2] = '2';
 	mock_keypress[3] = '3';
@@ -1092,7 +1081,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; esc from set screen */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = VB_KEY_ESC;
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
@@ -1102,7 +1090,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; esc from set screen with tag */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -1116,7 +1103,6 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; esc from confirm screen */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ENTER;  /* Enter vendor data setting */
 	mock_keypress[1] = '4';
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
@@ -1126,15 +1112,6 @@ static void VbBootDevVendorDataTest(void)
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Enter set vendor data esc from set screen");
-	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
-
-	/* Escape from vendor data warning screen */
-	ResetMocks();
-	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[0] = VB_KEY_ESC;  /* Enter vendor data setting */
-	vbtlk_expect_fixed = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
-		"Enter set vendor data esc, don't confirm, change last character");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
 	VB2_DEBUG("...done.\n");
