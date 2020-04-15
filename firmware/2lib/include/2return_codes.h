@@ -37,36 +37,13 @@ enum vb2_return_code {
 	VB2_ERROR_MOCK,
 
 	/**********************************************************************
-	 * ancient pre-vboot1 errors
-	 * TODO: deprecate these once they have all moved over to vboot2 style
-	 */
-	/* Invalid public key passed to a signature verficiation function. */
-	VBOOT_PUBLIC_KEY_INVALID = 4,
-	/* Preamble internal structure is invalid */
-	VBOOT_PREAMBLE_INVALID = 5,
-	/* Shared data is invalid. */
-	VBOOT_SHARED_DATA_INVALID = 7,
-	/* Kernel Preamble does not contain flags */
-	VBOOT_KERNEL_PREAMBLE_NO_FLAGS = 8,
-
-	/**********************************************************************
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* Unable to initialize shared data */
-	VBERROR_INIT_SHARED_DATA              = 0x10001,
 	/* Unable to set boot mode state in TPM */
 	VBERROR_TPM_SET_BOOT_MODE_STATE       = 0x10006,
 	/* Calling firmware needs to perform a reboot. */
 	VBERROR_REBOOT_REQUIRED               = 0x10007,
-	/* Unable to set up TPM */
-	VBERROR_TPM_FIRMWARE_SETUP            = 0x10008,
-	/* Unable to read kernel versions from TPM */
-	VBERROR_TPM_READ_KERNEL               = 0x10009,
-	/* Unable to write kernel versions to TPM */
-	VBERROR_TPM_WRITE_KERNEL              = 0x1000B,
-	/* Unable to lock kernel versions in TPM */
-	VBERROR_TPM_LOCK_KERNEL               = 0x1000C,
 	/* Calling firmware requested shutdown via VbExIsShutdownRequested() */
 	VBERROR_SHUTDOWN_REQUESTED            = 0x1000D,
 	/* VbExBeep() can't make sound in the background */
@@ -75,8 +52,6 @@ enum vb2_return_code {
 	VBERROR_EC_REBOOT_TO_SWITCH_RW        = 0x1001A,
 	/* Need EC to reboot to read-only code */
 	VBERROR_EC_REBOOT_TO_RO_REQUIRED      = 0x10022,
-	/* Error reading FWMP from TPM (note: not present is not an error) */
-	VBERROR_TPM_READ_FWMP                 = 0x10029,
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error writing VPD */
