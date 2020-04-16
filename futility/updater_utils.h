@@ -20,7 +20,7 @@ struct archive;
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
 		  * const PROG_EC = "ec",
-		  * const PROG_PD = "ec:dev=1";
+		  * const PROG_PD = "ec:type=pd";
 
 /* Firmware slots */
 static const char * const FWACT_A = "A",
