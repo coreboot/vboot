@@ -39,7 +39,7 @@ static enum VbAltFwIndex_t altfw_num;
 static uint64_t current_ticks;
 static int trust_ec;
 static int virtdev_set;
-static uint32_t virtdev_retval;
+static uint32_t virtdev_fail;
 static uint32_t mock_keypress[16];
 static uint32_t mock_keyflags[8];
 static uint32_t mock_keypress_count;
@@ -108,7 +108,7 @@ static void ResetMocks(void)
 	current_ticks = 0;
 	trust_ec = 0;
 	virtdev_set = 0;
-	virtdev_retval = 0;
+	virtdev_fail = 0;
 	set_vendor_data_called = 0;
 
 	memset(screens_displayed, 0, sizeof(screens_displayed));
@@ -267,10 +267,10 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_enable_developer_mode(struct vb2_context *c)
+void vb2_enable_developer_mode(struct vb2_context *c)
 {
+	VB2_ASSERT(!virtdev_fail);
 	virtdev_set = 1;
-	return virtdev_retval;
 }
 
 vb2_error_t VbExSetVendorData(const char *vendor_data_value)
@@ -1438,7 +1438,7 @@ static void VbBootRecTest(void)
 	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
 			  "Ctrl+D todev confirm via both then presence");
 
-	/* Handle TPM error in enabling dev mode */
+	/* Don't handle TPM error in enabling dev mode */
 	ResetMocks();
 	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
 	MockGpioAfter(10, GPIO_SHUTDOWN);
@@ -1447,11 +1447,11 @@ static void VbBootRecTest(void)
 	mock_keypress[0] = VB_KEY_CTRL('D');
 	mock_keypress[1] = VB_KEY_ENTER;
 	mock_keyflags[1] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
-	virtdev_retval = VB2_ERROR_MOCK;
+	virtdev_fail = 1;
 	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),
-		VBERROR_TPM_SET_BOOT_MODE_STATE,
-		"Ctrl+D todev failure");
+	TEST_ABORT(VbBootRecoveryLegacyClamshell(ctx),
+		   "Ctrl+D todev failure");
+	TEST_EQ(virtdev_set, 0, "  virtual dev mode still off");
 
 	/* Test Diagnostic Mode via Ctrl-C - display available */
 	ResetMocks();

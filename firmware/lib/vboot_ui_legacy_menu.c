@@ -358,15 +358,8 @@ static vb2_error_t to_dev_action(struct vb2_context *ctx)
 	    !vb2_allow_recovery(ctx))
 		return VBERROR_KEEP_LOOPING;
 
-	VB2_DEBUG("Enabling dev-mode...\n");
-	if (VB2_SUCCESS != vb2_enable_developer_mode(ctx))
-		return VBERROR_TPM_SET_BOOT_MODE_STATE;
+	vb2_enable_developer_mode(ctx);
 
-	/* This was meant for headless devices, shouldn't really matter here. */
-	if (USB_BOOT_ON_DEV)
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
-
-	VB2_DEBUG("Reboot so it will take effect\n");
 	return VBERROR_REBOOT_REQUIRED;
 }
 

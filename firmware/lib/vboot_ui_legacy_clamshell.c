@@ -499,12 +499,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 					     VB_CONFIRM_MUST_TRUST_KEYBOARD;
 			switch (VbUserConfirms(ctx, vbc_flags)) {
 			case 1:
-				VB2_DEBUG("Enabling dev-mode...\n");
-				if (VB2_SUCCESS != vb2_enable_developer_mode(ctx))
-					return VBERROR_TPM_SET_BOOT_MODE_STATE;
-				VB2_DEBUG("Reboot so it will take effect\n");
-				if (USB_BOOT_ON_DEV)
-					vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+				vb2_enable_developer_mode(ctx);
 				return VBERROR_EC_REBOOT_TO_RO_REQUIRED;
 			case -1:
 				VB2_DEBUG("Shutdown requested\n");

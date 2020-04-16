@@ -42,7 +42,7 @@ static enum VbAltFwIndex_t altfw_num;
 static int debug_info_displayed;
 static int trust_ec;
 static int virtdev_set;
-static uint32_t virtdev_retval;
+static uint32_t virtdev_fail;
 static uint32_t mock_keypress[64];
 static uint32_t mock_keyflags[64];
 static uint32_t mock_keypress_count;
@@ -78,7 +78,7 @@ static void ResetMocks(void)
 	debug_info_displayed = 0;
 	trust_ec = 0;
 	virtdev_set = 0;
-	virtdev_retval = 0;
+	virtdev_fail = 0;
 
 	vbtlk_last_retval = vbtlk_retval_fixed - VB_DISK_FLAG_FIXED;
 	memset(vbtlk_retval, 0, sizeof(vbtlk_retval));
@@ -226,10 +226,10 @@ vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_enable_developer_mode(struct vb2_context *c)
+void vb2_enable_developer_mode(struct vb2_context *c)
 {
+	VB2_ASSERT(!virtdev_fail);
 	virtdev_set = 1;
-	return virtdev_retval;
 }
 
 /* Tests */
@@ -1705,7 +1705,7 @@ static void VbBootRecTest(void)
 	TEST_EQ(beeps_played[0], 400, "    first beep");
 	TEST_EQ(beeps_played[1], 400, "    second beep");
 
-	/* Handle TPM error in enabling dev mode */
+	/* Don't handle TPM error in enabling dev mode */
 	ResetMocksForManualRecovery();
 	i = 0;
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
@@ -1713,13 +1713,12 @@ static void VbBootRecTest(void)
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // confirm enabling
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	virtdev_retval = VB2_ERROR_MOCK;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VBERROR_TPM_SET_BOOT_MODE_STATE,
-		"todev TPM failure");
+	virtdev_fail = 1;
+	TEST_ABORT(VbBootRecoveryLegacyMenu(ctx), "todev TPM failure");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
 	TEST_NEQ(shutdown_request_calls_left, 0, "  aborted explicitly");
-	TEST_EQ(virtdev_set, 1, "  virtual dev mode on");
+	TEST_EQ(virtdev_set, 0, "  virtual dev mode still off");
 	i = 0;
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_RECOVERY_NO_GOOD,
 		"  nogood screen");
@@ -1727,7 +1726,6 @@ static void VbBootRecTest(void)
 		"  recovery to_dev menu: cancel");
 	TEST_EQ(screens_displayed[i++], VB_SCREEN_RECOVERY_TO_DEV_MENU,
 		"  recovery to_dev menu: confirm disabling os verification");
-	TEST_EQ(screens_displayed[i++], VB_SCREEN_BLANK,"  final blank screen");
 	TEST_EQ(screens_count, i, "  no extra screens");
 	TEST_EQ(beeps_count, 0, "  no beeps");
 

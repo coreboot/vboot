@@ -375,7 +375,7 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx)
+void vb2_enable_developer_mode(struct vb2_context *ctx)
 {
 	uint32_t flags;
 
@@ -385,9 +385,10 @@ vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx)
 	flags |= VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE;
 	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS, flags);
 
-	VB2_DEBUG("Mode change will take effect on next reboot\n");
+	if (USB_BOOT_ON_DEV)
+		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 
-	return VB2_SUCCESS;
+	VB2_DEBUG("Mode change will take effect on next reboot\n");
 }
 
 test_mockable

@@ -637,6 +637,29 @@ static void dev_switch_tests(void)
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_REQ_WIPEOUT), 1, "  nv wipeout");
 }
 
+static void enable_dev_tests(void)
+{
+	reset_common_data();
+	vb2_enable_developer_mode(ctx);
+	TEST_NEQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
+	         VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE, 0,
+		 "dev mode flag set");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB), USB_BOOT_ON_DEV,
+		"NV_DEV_BOOT_USB set according to compile-time flag");
+
+	/* secdata_firmware not initialized, aborts */
+	reset_common_data();
+	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
+	TEST_ABORT(vb2_enable_developer_mode(ctx),
+		   "secdata_firmware no init, enable dev mode aborted");
+	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
+	TEST_EQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
+	        VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE, 0,
+		"dev mode flag not set");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB), 0,
+		"NV_DEV_BOOT_USB not set");
+}
+
 static void tpm_clear_tests(void)
 {
 	/* No clear request */
@@ -929,6 +952,7 @@ int main(int argc, char* argv[])
 	fail_tests();
 	recovery_tests();
 	dev_switch_tests();
+	enable_dev_tests();
 	tpm_clear_tests();
 	select_slot_tests();
 	need_reboot_for_display_tests();

@@ -40,8 +40,6 @@ enum vb2_return_code {
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* Unable to set boot mode state in TPM */
-	VBERROR_TPM_SET_BOOT_MODE_STATE       = 0x10006,
 	/* Calling firmware needs to perform a reboot. */
 	VBERROR_REBOOT_REQUIRED               = 0x10007,
 	/* Calling firmware requested shutdown via VbExIsShutdownRequested() */

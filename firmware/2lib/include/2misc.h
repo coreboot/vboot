@@ -171,9 +171,8 @@ vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
  * done on the next boot.
  *
  * @param ctx		Vboot context
- * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2_enable_developer_mode(struct vb2_context *ctx);
+void vb2_enable_developer_mode(struct vb2_context *ctx);
 
 /**
  * Check whether recovery is allowed or not.
