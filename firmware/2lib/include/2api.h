@@ -817,6 +817,15 @@ uint32_t vb2api_get_firmware_size(struct vb2_context *ctx);
 int vb2api_is_developer_signed(struct vb2_context *ctx);
 
 /**
+ * Return the current kernel rollback version from secdata.
+ *
+ * @param ctx		Vboot context
+ *
+ * @return The rollback version number.
+ */
+uint32_t vb2api_get_kernel_rollback_version(struct vb2_context *ctx);
+
+/**
  * If no display is available, set DISPLAY_REQUEST in nvdata.
  *
  * @param ctx           Vboot2 context

@@ -100,7 +100,7 @@ int vb2api_is_developer_signed(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
 	if (!sd->kernel_key_offset || !sd->kernel_key_size) {
-		VB2_REC_OR_DIE(ctx, "Cannot call this before kernel_phase1!\n");
+		VB2_DEBUG("ERROR: Cannot call this before kernel_phase1!\n");
 		return 0;
 	}
 

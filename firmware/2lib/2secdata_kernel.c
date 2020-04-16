@@ -306,3 +306,8 @@ void vb2_secdata_kernel_set_ec_hash(struct vb2_context *ctx,
 
 	return;
 }
+
+uint32_t vb2api_get_kernel_rollback_version(struct vb2_context *ctx)
+{
+	return vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
+}
