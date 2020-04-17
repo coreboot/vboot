@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/nvram.h>
+#include <linux/version.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 
 #include "crossystem_arch.h"
@@ -623,6 +625,10 @@ static int FindGpioChipOffsetByNumber(unsigned *gpio_num, unsigned *offset,
 static int BraswellFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
 				      const char *name)
 {
+	int ret;
+	struct utsname host;
+	unsigned int maj, min;
+	int gpe = 0;
 	static Basemapping data[]={
 		{0x20000, 0},
 		{0x18000, 4},
@@ -630,7 +636,46 @@ static int BraswellFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
 		{0x08000, 2},
 		{0x00000, 1}};
 
-	return FindGpioChipOffsetByNumber(gpio_num, offset, data);
+	/*
+	 * This quirk addresses b:143174998 and is required on kernels >= 4.16
+	 * when GPIO numbering has changed with an upstream commit:
+	 * 03c4749dd6c7ff948a0ce59a44a1b97c015353c2
+	 * "gpio / ACPI: Drop unnecessary ACPI GPIO to Linux GPIO translation".
+	 * With that change gpio ACPI/Linux kernel 1:1 mapping was introduced which
+	 * made mismatch for gpio number and backward compatibility for user-space.
+	 * Details on review commit review
+	 * https://chromium-review.googlesource.com/c/chromiumos/platform/vboot_reference/+/2153155
+	 */
+
+	/*
+	 * Here we are addressing particular wpsw_cur pin which is connected to
+	 * East Community GPIO chip (uid == 3, base == 0x10000). In this case there
+	 * is only one gap between 11 and 15 (0..11 15..26). For now crosssystem
+	 * is not checking pins in other gpio banks, but it is worth to mention that
+	 * there are gaps as well.
+	 */
+	if (*gpio_num >=  0x10000 && *gpio_num < 0x18000)
+		gpe = 1;
+
+	ret = FindGpioChipOffsetByNumber(gpio_num, offset, data);
+	if (!ret || !gpe)
+		return ret;
+
+	if (uname(&host) == 0) {
+		if (sscanf(host.release, "%u.%u.", &maj, &min) == 2) {
+			if (KERNEL_VERSION(maj, min, 0) >= KERNEL_VERSION(4, 16, 0) &&
+			    *offset > 11)
+				*offset += 3;
+		} else {
+			printf("Couldn't retrieve kernel version!\n");
+			ret = 0;
+		}
+	} else {
+		perror("uname");
+		ret = 0;
+	}
+
+	return ret;
 }
 
 /* BayTrail has 3 sets of GPIO banks. It is expected the firmware exposes
