@@ -999,13 +999,13 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx);
  */
 enum vb2_auxfw_update_severity {
 	/* no update needed and no protection needed */
-	VB_AUX_FW_NO_DEVICE = 0,
+	VB2_AUXFW_NO_DEVICE = 0,
 	/* no update needed */
-	VB_AUX_FW_NO_UPDATE = 1,
+	VB2_AUXFW_NO_UPDATE = 1,
 	/* update needed, can be done quickly */
-	VB_AUX_FW_FAST_UPDATE = 2,
+	VB2_AUXFW_FAST_UPDATE = 2,
 	/* update needed, "this would take a while..." */
-	VB_AUX_FW_SLOW_UPDATE = 3,
+	VB2_AUXFW_SLOW_UPDATE = 3,
 };
 
 /*
@@ -1031,10 +1031,10 @@ vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity);
 vb2_error_t vb2ex_auxfw_update(void);
 
 /*
- * Notify client that vboot is done with Aux FW.
+ * Notify client that vboot is done with auxfw.
  *
- * If Aux FW sync was successful, this will be called at the end so that
- * the client may perform actions that require the Aux FW to be in its
+ * If auxfw sync was successful, this will be called at the end so that
+ * the client may perform actions that require the auxfw to be in its
  * final state.  This may include protecting the communcations tunnels that
  * allow auxiliary firmware updates from the OS.
  *

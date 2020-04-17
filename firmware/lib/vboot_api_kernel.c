@@ -36,7 +36,7 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 {
 	/*
 	 * Check if we need to cut-off battery. This should be done after EC
-	 * FW and Aux FW are updated, and before the kernel is started.  This
+	 * FW and auxfw are updated, and before the kernel is started.  This
 	 * is to make sure all firmware is up-to-date before shipping (which
 	 * is the typical use-case for cutoff).
 	 */
@@ -189,7 +189,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	VB2_DEBUG("GBB flags are %#x\n", gbb_flags);
 
 	/*
-	 * Do EC and Aux FW software sync unless we're in recovery mode. This
+	 * Do EC and auxfw software sync unless we're in recovery mode. This
 	 * has UI but it's just a single non-interactive WAIT screen.
 	 */
 	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {

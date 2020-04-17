@@ -2,7 +2,7 @@
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
- * Auxiliary firmware sync routines for vboot
+ * Auxiliary firmware (auxfw) sync routines for vboot.
  */
 
 #include "2api.h"
@@ -10,7 +10,7 @@
 #include "2misc.h"
 
 /**
- * Determine if we are allowed to update auxfw
+ * Determine if we are allowed to update auxfw.
  *
  * @param ctx		Vboot2 context
  * @return boolean (true iff we can update auxfw)
@@ -28,7 +28,7 @@ static int auxfw_sync_allowed(struct vb2_context *ctx)
 }
 
 /**
- * Update the specified Aux FW and verify the update succeeded
+ * Update the specified auxfw and verify the update succeeded.
  *
  * @param ctx		Vboot2 context
  * @return VB2_SUCCESS, or non-zero error code.
@@ -55,14 +55,14 @@ static vb2_error_t update_auxfw(struct vb2_context *ctx)
 		 * If we fail for any other reason, trigger recovery mode.
 		 */
 		if (rv != VB2_REQUEST_REBOOT_EC_TO_RO)
-			vb2api_fail(ctx, VB2_RECOVERY_AUX_FW_UPDATE, rv);
+			vb2api_fail(ctx, VB2_RECOVERY_AUXFW_UPDATE, rv);
 	}
 
 	return rv;
 }
 
 /**
- * Decides if auxfw sync is allowed to be performed
+ * Decides if auxfw sync is allowed to be performed.
  *
  * If sync is allowed, invokes the external callback,
  * vb2ex_auxfw_check() to allow the client to decide on the auxfw
@@ -75,7 +75,7 @@ static vb2_error_t auxfw_sync_check_update(struct vb2_context *ctx,
 					   enum vb2_auxfw_update_severity *severity)
 {
 	if (!auxfw_sync_allowed(ctx)) {
-		*severity = VB_AUX_FW_NO_UPDATE;
+		*severity = VB2_AUXFW_NO_UPDATE;
 		return VB2_SUCCESS;
 	}
 
@@ -84,15 +84,15 @@ static vb2_error_t auxfw_sync_check_update(struct vb2_context *ctx,
 
 vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 {
-	enum vb2_auxfw_update_severity fw_update = VB_AUX_FW_NO_UPDATE;
+	enum vb2_auxfw_update_severity fw_update = VB2_AUXFW_NO_UPDATE;
 
 	/* Check for update severity */
 	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update));
 
-	if (fw_update > VB_AUX_FW_NO_UPDATE) {
+	if (fw_update > VB2_AUXFW_NO_UPDATE) {
 		VB2_TRY(update_auxfw(ctx));
 		/*
-		 * AUX FW Update is applied successfully. Request EC reboot to
+		 * auxfw update is applied successfully. Request EC reboot to
 		 * RO, so that the chips that had FW update get reset to a
 		 * clean state.
 		 */
