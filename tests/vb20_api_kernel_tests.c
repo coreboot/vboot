@@ -101,7 +101,7 @@ static void reset_common_data(enum reset_type t)
 		k->key_offset = vb2_offset_of(k, kdata);
 		k->key_size = sizeof(fw_kernel_key_data);
 		sd->preamble_size = sizeof(*fwpre) + k->key_size;
-		vb2_set_workbuf_used(ctx, 
+		vb2_set_workbuf_used(ctx,
 				     sd->preamble_offset + sd->preamble_size);
 
 		/* Needed to check that secdata_kernel initialization is
@@ -119,7 +119,7 @@ static void reset_common_data(enum reset_type t)
 			vb2_member_of(sd, sd->data_key_offset);
 		kdkey->algorithm = VB2_ALG_RSA2048_SHA256;
 		sd->data_key_size = sizeof(*kdkey);
-		vb2_set_workbuf_used(ctx, 
+		vb2_set_workbuf_used(ctx,
 				     sd->data_key_offset + sd->data_key_size);
 
 		/* Create mock kernel preamble in the context */
