@@ -109,11 +109,6 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2_secdata_kernel_init(struct vb2_context *c)
-{
-	return secdata_kernel_init_retval;
-}
-
 vb2_error_t vb2_secdata_fwmp_init(struct vb2_context *c)
 {
 	return secdata_fwmp_init_retval;

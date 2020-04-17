@@ -79,7 +79,8 @@ static void reset_common_data(enum reset_type t)
 	vb2_nv_init(ctx);
 
 	vb2api_secdata_firmware_create(ctx);
-	vb2_secdata_firmware_init(ctx);
+
+	vb2api_secdata_kernel_create(ctx);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_init_gbb = VB2_SUCCESS;
@@ -352,6 +353,10 @@ static void phase1_tests(void)
 		0, "  display init context flag");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		0, "  display available SD flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_SECDATA_FIRMWARE_INIT,
+		 0, "  secdata firmware initialized");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT,
+		 0, "  secdata kernel initialized");
 
 	reset_common_data(FOR_MISC);
 	retval_vb2_fw_init_gbb = VB2_ERROR_GBB_MAGIC;
@@ -388,6 +393,16 @@ static void phase1_tests(void)
 	TEST_EQ(vb2api_fw_phase1(ctx), VB2_ERROR_API_PHASE1_RECOVERY,
 		"phase1 secdata_firmware");
 	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_SECDATA_FIRMWARE_INIT,
+		"  recovery reason");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
+	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+
+	/* Bad secdata_kernel causes recovery mode */
+	reset_common_data(FOR_MISC);
+	ctx->secdata_kernel[2] ^= 0x42;  /* 3rd byte is CRC */
+	TEST_EQ(vb2api_fw_phase1(ctx), VB2_ERROR_API_PHASE1_RECOVERY,
+		"phase1 bad secdata_kernel");
+	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_SECDATA_KERNEL_INIT,
 		"  recovery reason");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");

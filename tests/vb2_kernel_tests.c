@@ -99,11 +99,6 @@ static void reset_common_data(enum reset_type t)
 		sd->preamble_size = sizeof(*fwpre) + k->key_size;
 		vb2_set_workbuf_used(ctx,
 				     sd->preamble_offset + sd->preamble_size);
-
-		/* Needed to check that secdata_kernel initialization is
-		   performed by phase1 function. */
-		sd->status &= ~VB2_SD_STATUS_SECDATA_KERNEL_INIT;
-
 	}
 };
 
@@ -218,22 +213,6 @@ static void phase1_tests(void)
 		"  key data");
 	TEST_EQ(sd->kernel_version_secdata, 0x20002,
 		"  secdata_kernel version");
-
-	/* Bad secdata_kernel causes failure in normal mode only */
-	reset_common_data(FOR_PHASE1);
-	ctx->secdata_kernel[2] ^= 0x33;  /* 3rd byte is CRC */
-	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_SECDATA_KERNEL_CRC,
-		"phase1 bad secdata_kernel");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_SECDATA_KERNEL_INIT, "  recovery reason");
-
-	reset_common_data(FOR_PHASE1);
-	ctx->secdata_kernel[0] ^= 0x33;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata_kernel rec");
-	TEST_EQ(sd->kernel_version_secdata, 0, "  secdata_kernel version");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_NOT_REQUESTED, "  no recovery");
 
 	/* Bad secdata_fwmp causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);

@@ -176,6 +176,7 @@ int main(int argc, char *argv[])
 
 	/* Initialize secure context */
 	vb2api_secdata_firmware_create(ctx);
+	vb2api_secdata_kernel_create(ctx);
 
 	// TODO: optional args to set contents for nvdata, secdata?
 

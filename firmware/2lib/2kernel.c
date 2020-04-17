@@ -131,16 +131,10 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/*
-	 * Init secdata_kernel and secdata_fwmp spaces.  No need to init
-	 * secdata_firmware, since it was already read during firmware
+	 * Init secdata_fwmp spaces. No need to init secdata_firmware or
+	 * secdata_kernel, since they were already read during firmware
 	 * verification.  Ignore errors in recovery mode.
 	 */
-	rv = vb2_secdata_kernel_init(ctx);
-	if (rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_DEBUG("TPM: init secdata_kernel returned %#x\n", rv);
-		vb2api_fail(ctx, VB2_RECOVERY_SECDATA_KERNEL_INIT, rv);
-		return rv;
-	}
 	rv = vb2_secdata_fwmp_init(ctx);
 	if (rv && !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
 		VB2_DEBUG("TPM: init secdata_fwmp returned %#x\n", rv);
