@@ -61,9 +61,9 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 		case 0:
 			/* Nothing pressed */
 			break;
-		case VB_KEY_ESC:
-			/* Escape pressed - return to developer screen */
-			VB2_DEBUG("Vendor Data UI - user pressed Esc: "
+		case VB_KEY_CTRL('S'):
+			/* Ctrl+S pressed - return to developer screen */
+			VB2_DEBUG("Vendor Data UI - user pressed Ctrl+S: "
 				  "exit to Developer screen\n");
 			data_value[0] = '\0';
 			return VB2_SUCCESS;

@@ -918,7 +918,7 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[5] = VB_KEY_ENTER;  /* Set vendor data */
 	mock_keypress[6] = VB_KEY_RIGHT;  /* Select NO */
 	mock_keypress[7] = VB_KEY_ENTER;  /* Do not confirm vendor data */
-	mock_keypress[8] = VB_KEY_ESC;  /* Escape to boot */
+	mock_keypress[8] = VB_KEY_CTRL('S');  /* Ctrl+S to boot */
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Enter set vendor data, don't confirm, esc");
@@ -1072,7 +1072,7 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[4] = VB_KEY_ENTER;
 	/* Confirm vendor data (nothing happens) */
 	mock_keypress[5] = VB_KEY_ENTER;
-	mock_keypress[6] = VB_KEY_ESC;
+	mock_keypress[6] = VB_KEY_CTRL('S');
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Enter set vendor data too short");
@@ -1081,7 +1081,7 @@ static void VbBootDevVendorDataTest(void)
 	/* Enter set vendor data; esc from set screen */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[1] = VB_KEY_ESC;
+	mock_keypress[1] = VB_KEY_CTRL('S');
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Enter set vendor data esc from set screen");
@@ -1094,24 +1094,10 @@ static void VbBootDevVendorDataTest(void)
 	mock_keypress[2] = '3';
 	mock_keypress[3] = '2';
 	mock_keypress[4] = '1';
-	mock_keypress[5] = VB_KEY_ESC;
+	mock_keypress[5] = VB_KEY_CTRL('S');
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Enter set vendor data esc from set screen with tag");
-	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
-
-	/* Enter set vendor data; esc from confirm screen */
-	ResetMocks();
-	ctx->flags |= VB2_CONTEXT_VENDOR_DATA_SETTABLE;
-	mock_keypress[1] = '4';
-	mock_keypress[2] = '3';
-	mock_keypress[3] = '2';
-	mock_keypress[4] = '1';
-	mock_keypress[5] = VB_KEY_ENTER;  /* Set vendor data */
-	mock_keypress[6] = VB_KEY_ESC;
-	vbtlk_expect_fixed = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
-		"Enter set vendor data esc from set screen");
 	TEST_EQ(set_vendor_data_called, 0, "  VbExSetVendorData() not called");
 
 	VB2_DEBUG("...done.\n");
