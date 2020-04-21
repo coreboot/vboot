@@ -1177,6 +1177,10 @@ enum vb2_screen {
 	VB2_SCREEN_RECOVERY_BROKEN		= 0x110,
 	/* First recovery screen to select recovering from disk or phone */
 	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
+	/* Recovery using disk */
+	VB2_SCREEN_RECOVERY_DISK_STEP1		= 0x210,
+	VB2_SCREEN_RECOVERY_DISK_STEP2		= 0x211,
+	VB2_SCREEN_RECOVERY_DISK_STEP3		= 0x212,
 };
 
 /**
