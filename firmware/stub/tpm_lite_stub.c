@@ -268,8 +268,8 @@ uint32_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 	VB2_DEBUG("response (%d bytes):\n", *response_length);
 	DbgPrintBytes(response, *response_length);
 	VB2_DEBUG("execution time: %dms\n",
-		  (int) ((after.tv_sec - before.tv_sec) * VB_MSEC_PER_SEC +
-			 (after.tv_usec - before.tv_usec) / VB_USEC_PER_MSEC));
+		  (int) ((after.tv_sec - before.tv_sec) * VB2_MSEC_PER_SEC +
+			 (after.tv_usec - before.tv_usec) / VB2_USEC_PER_MSEC));
 #endif
 
 #ifndef NDEBUG

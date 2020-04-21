@@ -17,6 +17,10 @@
 
 struct vb2_public_key;
 
+/* Time conversion constants. */
+#define VB2_USEC_PER_MSEC 1000ULL
+#define VB2_MSEC_PER_SEC 1000ULL
+
 /*
  * Return the min/max of A and B.  This is used in macros which calculate the
  * required buffer size, so can't be turned into a static inline function.

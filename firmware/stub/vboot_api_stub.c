@@ -17,13 +17,12 @@
 #include "vboot_api.h"
 #include "vboot_test.h"
 
-void VbExSleepMs(uint32_t msec)
+void vb2ex_msleep(uint32_t msec)
 {
 }
 
-vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
+void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
-	return VB2_SUCCESS;
 }
 
 vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,

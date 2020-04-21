@@ -1220,4 +1220,37 @@ int vb2ex_physical_presence_pressed(void);
  */
 uint32_t vb2ex_get_locale_count(void);
 
+/**
+ * Delay for at least the specified number of milliseconds.
+ *
+ * @param msec			Duration in milliseconds.
+ */
+void vb2ex_msleep(uint32_t msec);
+
+/**
+ * Play a beep tone of the specified frequency in Hz for the duration msec.
+ *
+ * This is effectively a sleep call that makes noise.  The implementation may
+ * beep at a fixed frequency if frequency support is not available.  Regardless
+ * of whether any errors occur, the callback is expected to delay for the
+ * specified duration before returning.
+ *
+ * @param msec			Duration of beep in milliseconds.
+ * @param frequency		Sound frequency in Hz.
+ */
+void vb2ex_beep(uint32_t msec, uint32_t frequency);
+
+/*****************************************************************************/
+/* Timer. */
+
+/**
+ * Read a millisecond timer.
+ *
+ * This should have a sufficient number of bits to avoid wraparound for at
+ * least 10 minutes.
+ *
+ * @return Current timer value in milliseconds.
+ */
+uint32_t vb2ex_mtime(void);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */

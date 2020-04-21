@@ -109,7 +109,7 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 					  &data);
 			break;
 		}
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 
 		if (++blink_count == blinks) {
 			blink_count = 0;
@@ -182,7 +182,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 						"set.\n"
 						"System will now shutdown\n",
 						NULL, VB_BEEP_FAILED);
-					VbExSleepMs(5000);
+					vb2ex_msleep(5 * VB2_MSEC_PER_SEC);
 					return VB2_REQUEST_SHUTDOWN;
 				}
 			} else {
@@ -198,7 +198,7 @@ static vb2_error_t vb2_confirm_vendor_data_ui(struct vb2_context *ctx,
 					  VB_SCREEN_CONFIRM_VENDOR_DATA, data);
 			break;
 		}
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	} while (1);
 	return VB2_SUCCESS;
 }
@@ -285,11 +285,11 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 	int button_pressed = 0;
 	vb2_error_t result = VB2_REQUEST_REBOOT;
 	int action_confirmed = 0;
-	uint64_t start_time_us;
+	uint32_t start_time_ms;
 
 	VbDisplayScreen(ctx, VB_SCREEN_CONFIRM_DIAG, 0, NULL);
 
-	start_time_us = VbExGetTimer();
+	start_time_ms = vb2ex_mtime();
 
 	/* We'll loop until the user decides what to do */
 	do {
@@ -334,12 +334,12 @@ vb2_error_t vb2_diagnostics_ui(struct vb2_context *ctx)
 					  NULL);
 			break;
 		}
-		if (VbExGetTimer() - start_time_us >= 30 * VB_USEC_PER_SEC) {
+		if (vb2ex_mtime() - start_time_ms >= 30 * VB2_MSEC_PER_SEC) {
 			VB2_DEBUG("vb2_diagnostics_ui() - timeout\n");
 			break;
 		}
 		if (active) {
-			VbExSleepMs(KEY_DELAY_MS);
+			vb2ex_msleep(KEY_DELAY_MS);
 		}
 	} while (active);
 

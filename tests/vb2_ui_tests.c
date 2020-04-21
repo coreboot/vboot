@@ -46,9 +46,9 @@ static int mock_key_trusted[64];
 static int mock_key_count;
 static int mock_key_total;
 
-static uint64_t mock_get_timer_last;
-static uint64_t mock_time;
-static const uint64_t mock_time_start = 31ULL * VB_USEC_PER_SEC;
+static uint32_t mock_get_timer_last;
+static uint32_t mock_time;
+static const uint32_t mock_time_start = 31ULL * VB2_MSEC_PER_SEC;
 static int mock_vbexbeep_called;
 
 static enum vb2_dev_default_boot mock_default_boot;
@@ -273,21 +273,20 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 	return 0;
 }
 
-uint64_t VbExGetTimer(void)
+uint32_t vb2ex_mtime(void)
 {
 	mock_get_timer_last = mock_time;
 	return mock_time;
 }
 
-void VbExSleepMs(uint32_t msec)
+void vb2ex_msleep(uint32_t msec)
 {
-	mock_time += msec * VB_USEC_PER_MSEC;
+	mock_time += msec;
 }
 
-vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
+void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
 	mock_vbexbeep_called++;
-	return VB2_SUCCESS;
 }
 
 enum vb2_dev_default_boot vb2_get_dev_boot_target(struct vb2_context *c)
@@ -349,7 +348,7 @@ static void developer_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
-		  30 * VB_USEC_PER_SEC, "  finished delay");
+		  30 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
@@ -364,7 +363,7 @@ static void developer_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
-		  30 * VB_USEC_PER_SEC, "  finished delay");
+		  30 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
@@ -377,7 +376,7 @@ static void developer_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
-		  30 * VB_USEC_PER_SEC, "  finished delay");
+		  30 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 

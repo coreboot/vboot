@@ -267,7 +267,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		}
 
 		/* Delay. */
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	}
 
 	return VB2_SUCCESS;

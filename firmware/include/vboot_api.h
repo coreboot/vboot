@@ -85,49 +85,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams);
 
 /*****************************************************************************/
-/* Timer and delay */
-
-#define VB_USEC_PER_MSEC	1000ULL
-#define VB_MSEC_PER_SEC		VB_USEC_PER_MSEC
-#define VB_USEC_PER_SEC		(VB_USEC_PER_MSEC * VB_MSEC_PER_SEC)
-
-/**
- * Read a microsecond timer.
- *
- * This should have a sufficient number of bits to avoid wraparound for at
- * least 10 minutes.  A 32-bit value would be plenty, but for historical
- * reasons this returns uint64_t.
- */
-uint64_t VbExGetTimer(void);
-
-/**
- * Delay for at least the specified number of milliseconds.  Should be accurate
- * to within 10% (a requested delay of 1000 ms should result in an actual delay
- * of between 1000 - 1100 ms).
- */
-void VbExSleepMs(uint32_t msec);
-
-/**
- * Play a beep tone of the specified frequency in Hz and duration in msec.
- * This is effectively a VbSleep() variant that makes noise.
- *
- * If the audio codec can run in the background, then:
- *   zero frequency means OFF, non-zero frequency means ON
- *   zero msec means return immediately, non-zero msec means delay (and
- *     then OFF if needed)
- * otherwise,
- *   non-zero msec and non-zero frequency means ON, delay, OFF, return
- *   zero msec or zero frequency means do nothing and return immediately
- *
- * The return value is used by the caller to determine the capabilities. The
- * implementation should always do the best it can if it cannot fully support
- * all features - for example, beeping at a fixed frequency if frequency
- * support is not available.  At a minimum, it must delay for the specified
- * non-zero duration.
- */
-vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency);
-
-/*****************************************************************************/
 /* TPM (from tlcl_stub.h) */
 
 /**

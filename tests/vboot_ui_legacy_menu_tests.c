@@ -190,8 +190,8 @@ vb2_error_t VbDisplayScreen(struct vb2_context *c, uint32_t screen, int force,
 {
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
-	printf("VbDisplayScreen: screens_displayed[%d] = %#x\n",
-	       screens_count - 1, screen);
+	VB2_DEBUG("screens_displayed[%d] = %#x\n",
+		  screens_count - 1, screen);
 	return VB2_SUCCESS;
 }
 
@@ -201,11 +201,11 @@ vb2_error_t VbDisplayMenu(struct vb2_context *c, uint32_t screen, int force,
 	if (screens_count < ARRAY_SIZE(screens_displayed))
 		screens_displayed[screens_count++] = screen;
 	else
-		printf("Ran out of screens_displayed entries!\n");
-	printf("VbDisplayMenu: screens_displayed[%d] = %#x,"
-	       " selected_index = %u, disabled_idx_mask = %#x\n",
-	       screens_count - 1, screen,
-	       selected_index, disabled_idx_mask);
+		VB2_DEBUG("Ran out of screens_displayed entries!\n");
+	VB2_DEBUG("screens_displayed[%d] = %#x,"
+		  " selected_index = %u, disabled_idx_mask = %#x\n",
+		  screens_count - 1, screen,
+		  selected_index, disabled_idx_mask);
 
 	return VB2_SUCCESS;
 }
@@ -216,13 +216,12 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *c)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
+void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
 	if (beeps_count < ARRAY_SIZE(beeps_played))
 		beeps_played[beeps_count++] = frequency;
-	printf("VbExBeep: beeps_played[%d] = %dHz for %dms\n",
-	       beeps_count - 1, frequency, msec);
-	return VB2_SUCCESS;
+	VB2_DEBUG("beeps_played[%d] = %dHz for %dms\n",
+		  beeps_count - 1, frequency, msec);
 }
 
 void vb2_enable_developer_mode(struct vb2_context *c)
@@ -237,7 +236,7 @@ static void VbBootDevTest(void)
 {
 	int i;
 
-	printf("Testing VbBootDeveloperLegacyMenu()...\n");
+	VB2_DEBUG("Testing VbBootDeveloperLegacyMenu()...\n");
 
 	/* Proceed after timeout */
 	ResetMocksForDeveloper();
@@ -1252,14 +1251,14 @@ static void VbBootDevTest(void)
 	TEST_EQ(beeps_count, 0, "  no beeps for debug info");
 
 
-	printf("...done.\n");
+	VB2_DEBUG("...done.\n");
 }
 
 static void VbBootRecTest(void)
 {
 	int i;
 
-	printf("Testing VbBootRecoveryLegacyMenu()...\n");
+	VB2_DEBUG("Testing VbBootRecoveryLegacyMenu()...\n");
 
 	/* Shutdown requested in BROKEN */
 	ResetMocks();
@@ -1842,14 +1841,14 @@ static void VbBootRecTest(void)
 	TEST_EQ(screens_count, 3, "  no extra screens");
 	TEST_EQ(beeps_count, 0, "  no beeps");
 
-	printf("...done.\n");
+	VB2_DEBUG("...done.\n");
 }
 
 static void VbTestLanguageMenu(void)
 {
 	int i;
 
-	printf("Testing VbTestLanguageMenu()...\n");
+	VB2_DEBUG("Testing VbTestLanguageMenu()...\n");
 
 	/* Navigate to language menu from BROKEN */
 	ResetMocks();
@@ -2030,14 +2029,14 @@ static void VbTestLanguageMenu(void)
 	TEST_EQ(screens_count, i, "  no extra screens");
 	TEST_EQ(beeps_count, 0, "  no beeps");
 
-	printf("...done.\n");
+	VB2_DEBUG("...done.\n");
 }
 
 static void VbNavigationTest(void)
 {
 	int i;
 
-	printf("Testing long navigation sequences...");
+	VB2_DEBUG("Testing long navigation sequences...");
 
 	/*
 	 * NOGOOD, OPTIONS, LANGUAGE, TODEV, LANGUAGE, TODEV,

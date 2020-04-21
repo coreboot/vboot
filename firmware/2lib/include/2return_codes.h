@@ -63,8 +63,6 @@ enum vb2_return_code {
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* VbExBeep() can't make sound in the background */
-	VBERROR_NO_BACKGROUND_SOUND           = 0x10019,
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error writing VPD */

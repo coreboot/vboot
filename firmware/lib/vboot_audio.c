@@ -13,7 +13,7 @@
 
 int audio_open_count = 0;	/* Times audio has been opened */
 static int audio_use_short;	/* Use short delay? */
-static uint64_t open_time;	/* Time of last open */
+static uint32_t open_time;	/* Time of last open */
 static int beep_count;		/* Number of beeps so far */
 
 /**
@@ -23,7 +23,7 @@ void vb2_audio_start(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	open_time = VbExGetTimer(); /* "zero" starts now */
+	open_time = vb2ex_mtime(); /* "zero" starts now */
 	beep_count = 0;
 
 	/*
@@ -44,19 +44,19 @@ void vb2_audio_start(struct vb2_context *ctx)
  */
 int vb2_audio_looping(void)
 {
-	uint64_t now = VbExGetTimer() - open_time;
+	uint32_t now = vb2ex_mtime() - open_time;
 
 	/* If we're using short delay, wait 2 seconds and don't beep */
 	if (audio_use_short)
-		return (now < 2 * VB_USEC_PER_SEC);
+		return now < 2 * VB2_MSEC_PER_SEC;
 
 	/* Otherwise, beep at 20 and 20.5 seconds */
-	if ((beep_count == 0 && now > 20000 * VB_MSEC_PER_SEC) ||
-	    (beep_count == 1 && now > 20500 * VB_MSEC_PER_SEC)) {
-		VbExBeep(250, 400);
+	if ((beep_count == 0 && now > 20 * VB2_MSEC_PER_SEC) ||
+	    (beep_count == 1 && now > 20 * VB2_MSEC_PER_SEC + 500)) {
+		vb2ex_beep(250, 400);
 		beep_count++;
 	}
 
 	/* Stop after 30 seconds */
-	return (now < 30 * VB_USEC_PER_SEC);
+	return (now < 30 * VB2_MSEC_PER_SEC);
 }

@@ -219,13 +219,13 @@ void vb2_error_beep(enum vb2_beep_type beep)
 {
 	switch (beep) {
 	case VB_BEEP_FAILED:
-		VbExBeep(250, 200);
+		vb2ex_beep(250, 200);
 		break;
 	default:
 	case VB_BEEP_NOT_ALLOWED:
-		VbExBeep(120, 400);
-		VbExSleepMs(120);
-		VbExBeep(120, 400);
+		vb2ex_beep(120, 400);
+		vb2ex_msleep(120);
+		vb2ex_beep(120, 400);
 		break;
 	}
 }

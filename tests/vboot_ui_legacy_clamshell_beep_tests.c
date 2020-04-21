@@ -37,7 +37,6 @@ typedef struct {
 typedef struct {
 	const char *name;
 	uint32_t gbb_flags;
-	vb2_error_t beep_return;
 	uint32_t keypress_key;
 	int keypress_at_count;
 	int num_events;
@@ -47,16 +46,14 @@ typedef struct {
 test_case_t test[] = {
 
 	{ "VbBootDeveloperSoundTest( fast )",
-	  VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY, VBERROR_NO_BACKGROUND_SOUND,
-	  0, 0,
+	  VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY, 0, 0,
 	  1,
 	  {
 		{0, 0, 2000},		// off and return at 2 seconds
 	  }},
 
 	{ "VbBootDeveloperSoundTest( normal )",
-	  0, VBERROR_NO_BACKGROUND_SOUND,
-	  0, 0,
+	  0, 0, 0,
 	  3,
 	  {
 		{250, 400, 20000},	// first beep at 20 seconds
@@ -67,8 +64,7 @@ test_case_t test[] = {
 	// Now with some keypresses
 
 	{ "VbBootDeveloperSoundTest( normal, Ctrl-D )",
-	  0, VBERROR_NO_BACKGROUND_SOUND,
-	  4, 20400,			// Ctrl-D between beeps
+	  0, 4, 20400,			// Ctrl-D between beeps
 	  2,
 	  {
 		{250, 400, 20000},	// first beep at 20 seconds
@@ -76,8 +72,7 @@ test_case_t test[] = {
 	  }},
 
 	{ "VbBootDeveloperSoundTest( normal, Ctrl-U not allowed )",
-	  0, VBERROR_NO_BACKGROUND_SOUND,
-	  21, 10000,                          // Ctrl-U at 10 seconds
+	  0, 21, 10000,                          // Ctrl-U at 10 seconds
 	  5,
 	  {
 		{120, 400, 10000},	// complains about Ctrl-U (one beep)
@@ -94,14 +89,13 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
-static int current_time;
-static uint64_t current_ticks;
+static uint32_t current_time;
+static uint32_t current_ticks;
 static int current_event;
 static int max_events;
 static int matched_events;
 static int kbd_fire_at;
 static uint32_t kbd_fire_key;
-static vb2_error_t beep_return;
 static note_event_t *expected_event;
 
 /* Audio open count, so we can reset it */
@@ -127,8 +121,6 @@ static void ResetMocks(void)
 	current_event = 0;
 	kbd_fire_at = 0;
 	kbd_fire_key = 0;
-
-	beep_return = VB2_SUCCESS;
 	audio_open_count = 0;
 
 	matched_events = 0;
@@ -181,76 +173,72 @@ uint32_t VbExKeyboardRead(void)
 	uint32_t tmp;
 	uint32_t now;
 
-	VbExSleepMs(KBD_READ_TIME);
+	vb2ex_msleep(KBD_READ_TIME);
 	now = current_time;
 
 	if (kbd_fire_key && now >= kbd_fire_at) {
-		VB2_DEBUG("  VbExKeyboardRead() - returning %d at %d msec\n",
+		VB2_DEBUG("returning %d at %d msec\n",
 			  kbd_fire_key, now);
 		tmp = kbd_fire_key;
 		kbd_fire_key = 0;
 		return tmp;
 	}
-	VB2_DEBUG("  VbExKeyboardRead() - returning %d at %d msec\n",
-		  0, now);
+	VB2_DEBUG("returning %d at %d msec\n", 0, now);
 	return 0;
 }
 
-void VbExSleepMs(uint32_t msec)
+void vb2ex_msleep(uint32_t msec)
 {
-	current_ticks += (uint64_t)msec * VB_USEC_PER_MSEC;
-	current_time = current_ticks / VB_USEC_PER_MSEC;
-	VB2_DEBUG("VbExSleepMs(%d) -> %d\n", msec, current_time);
+	current_ticks += msec;
+	current_time = current_ticks;
+	VB2_DEBUG("msec=%d at %d msec\n", msec, current_time);
 }
 
-uint64_t VbExGetTimer(void)
+uint32_t vb2ex_mtime(void)
 {
 	return current_ticks;
 }
 
-vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
+void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
-	VB2_DEBUG("VbExBeep(%d, %d) at %d msec\n",
+	VB2_DEBUG("msec=%d, frequency=%d at %d msec\n",
 		  msec, frequency, current_time);
 
 	if (current_event < max_events &&
 	    msec == expected_event[current_event].msec &&
 	    frequency == expected_event[current_event].freq &&
-	    abs(current_time - expected_event[current_event].time)
-	    < TIME_FUZZ ) {
+	    (current_time - expected_event[current_event].time) < TIME_FUZZ)
 		matched_events++;
-	}
 
 	if (msec)
-		VbExSleepMs(msec);
+		vb2ex_msleep(msec);
 	current_event++;
-	return beep_return;
 }
 
 vb2_error_t VbExDisplayScreen(uint32_t screen_type, uint32_t locale,
 			      const VbScreenData *data)
 {
-	switch(screen_type) {
+	switch (screen_type) {
 		case VB_SCREEN_BLANK:
-			VB2_DEBUG("VbExDisplayScreen(BLANK)\n");
+			VB2_DEBUG("screen_type=BLANK\n");
 			break;
 		case VB_SCREEN_DEVELOPER_WARNING:
-			VB2_DEBUG("VbExDisplayScreen(DEV)\n");
+			VB2_DEBUG("screen_type=DEV\n");
 			break;
 		case VB_SCREEN_RECOVERY_INSERT:
-			VB2_DEBUG("VbExDisplayScreen(INSERT)\n");
+			VB2_DEBUG("screen_type=INSERT\n");
 			break;
 		case VB_SCREEN_RECOVERY_NO_GOOD:
-			VB2_DEBUG("VbExDisplayScreen(NO_GOOD)\n");
+			VB2_DEBUG("screen_type=NO_GOOD\n");
 			break;
 		case VB_SCREEN_OS_BROKEN:
-			VB2_DEBUG("VbExDisplayScreen(BROKEN)\n");
+			VB2_DEBUG("screen_type=BROKEN\n");
 			break;
 		default:
-			VB2_DEBUG("VbExDisplayScreen(%d)\n", screen_type);
+			VB2_DEBUG("screen_type=%#x\n", screen_type);
 	}
 
-	VB2_DEBUG("  current_time is %d msec\n", current_time);
+	VB2_DEBUG("current_time is %d msec\n", current_time);
 
 	return VB2_SUCCESS;
 }
@@ -262,17 +250,16 @@ static void VbBootDeveloperSoundTest(void)
 	int i;
 	int num_tests =  sizeof(test) / sizeof(test_case_t);
 
-	for (i=0; i<num_tests; i++) {
+	for (i = 0; i < num_tests; i++) {
 		VB2_DEBUG("STARTING %s ...\n", test[i].name);
 		ResetMocks();
 		gbb.flags = test[i].gbb_flags;
-		beep_return = test[i].beep_return;
 		kbd_fire_key = test[i].keypress_key;
 		kbd_fire_at = test[i].keypress_at_count;
 		max_events = test[i].num_events;
 		expected_event = test[i].notes;
-		(void) VbBootDeveloperLegacyClamshell(ctx);
-		VbExBeep(0, 0); /* Dummy call to determine end time */
+		VbBootDeveloperLegacyClamshell(ctx);
+		vb2ex_beep(0, 0);  /* Dummy call to determine end time */
 		VB2_DEBUG("INFO: matched %d total %d expected %d\n",
 			  matched_events, current_event, test[i].num_events);
 		TEST_TRUE(matched_events == test[i].num_events &&

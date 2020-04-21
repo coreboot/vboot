@@ -320,7 +320,7 @@ static vb2_error_t vb2_load_partition(
 	LoadKernelParams *params, uint32_t min_version,
 	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
-	uint64_t read_us = 0, start_ts;
+	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wblocal = *wb;
 
 	/* Allocate kernel header buffer in workbuf */
@@ -328,13 +328,13 @@ static vb2_error_t vb2_load_partition(
 	if (!kbuf)
 		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
 
-	start_ts = VbExGetTimer();
+	start_ts = vb2ex_mtime();
 	if (VbExStreamRead(stream, KBUF_SIZE, kbuf)) {
 		VB2_DEBUG("Unable to read start of partition.\n");
 		shpart->check_result = VBSD_LKP_CHECK_READ_START;
 		return VB2_ERROR_LOAD_PARTITION_READ_VBLOCK;
 	}
-	read_us += VbExGetTimer() - start_ts;
+	read_ms += vb2ex_mtime() - start_ts;
 
 	if (VB2_SUCCESS !=
 	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, kernel_subkey,
@@ -389,17 +389,19 @@ static vb2_error_t vb2_load_partition(
 	body_readptr += body_copied;
 
 	/* Read the kernel data */
-	start_ts = VbExGetTimer();
+	start_ts = vb2ex_mtime();
 	if (body_toread && VbExStreamRead(stream, body_toread, body_readptr)) {
 		VB2_DEBUG("Unable to read kernel data.\n");
 		shpart->check_result = VBSD_LKP_CHECK_READ_DATA;
 		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
 	}
-	read_us += VbExGetTimer() - start_ts;
-	VB2_DEBUG("read %" PRIu32 " KB in %" PRIu64 " ms at %" PRIu64 " KB/s.\n",
-		  (body_toread + KBUF_SIZE) / 1024, read_us / 1000,
-		  ((uint64_t)(body_toread + KBUF_SIZE) * 1000 * 1000) /
-			  (read_us * 1024));
+	read_ms += vb2ex_mtime() - start_ts;
+	if (read_ms == 0)  /* Avoid division by 0 in speed calculation */
+		read_ms = 1;
+	VB2_DEBUG("read %u KB in %u ms at %u KB/s.\n",
+		  (body_toread + KBUF_SIZE) / 1024, read_ms,
+		  (uint32_t)(((body_toread + KBUF_SIZE) * VB2_MSEC_PER_SEC) /
+			     (read_ms * 1024)));
 
 	/* Get key for preamble/data verification from the keyblock. */
 	struct vb2_public_key data_key;

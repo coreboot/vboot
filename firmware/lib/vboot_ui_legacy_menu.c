@@ -106,7 +106,7 @@ static vb2_error_t vb2_draw_current_screen(struct vb2_context *ctx) {
 static void vb2_flash_screen(struct vb2_context *ctx)
 {
 	VbDisplayMenu(ctx, VB_SCREEN_BLANK, 0, 0, 0);
-	VbExSleepMs(50);
+	vb2ex_msleep(50);
 	vb2_draw_current_screen(ctx);
 }
 
@@ -414,7 +414,7 @@ static vb2_error_t to_norm_action(struct vb2_context *ctx)
 	vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
 	vb2_change_menu(VB_MENU_TO_NORM_CONFIRMED, 0);
 	vb2_draw_current_screen(ctx);
-	VbExSleepMs(5000);
+	vb2ex_msleep(5 * VB2_MSEC_PER_SEC);
 	return VB2_REQUEST_REBOOT;
 }
 
@@ -837,7 +837,7 @@ static vb2_error_t vb2_developer_legacy_menu(struct vb2_context *ctx)
 		if (key != 0)
 			vb2_audio_start(ctx);
 
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 
 		/* If dev mode was disabled, loop forever (never timeout) */
 	} while (disable_dev_boot ? 1 : vb2_audio_looping());
@@ -916,7 +916,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 			if (ret != VB2_REQUEST_UI_CONTINUE)
 				return ret;
 		}
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	}
 }
 

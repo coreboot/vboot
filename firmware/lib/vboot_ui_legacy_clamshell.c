@@ -130,7 +130,7 @@ int VbUserConfirms(struct vb2_context *ctx, uint32_t confirm_flags)
 			}
 			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 		}
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	} while (!shutdown_requested);
 
 	return -1;
@@ -182,7 +182,7 @@ static vb2_error_t vb2_altfw_ui(struct vb2_context *ctx)
 			VbCheckDisplayKey(ctx, key, disp_current_screen, NULL);
 			break;
 		}
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	} while (active);
 
 	/* Back to developer screen */
@@ -253,7 +253,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
 			VbDisplayScreen(ctx,
 				VB_SCREEN_TO_NORM_CONFIRMED, 0, NULL);
-			VbExSleepMs(5000);
+			vb2ex_msleep(5 * VB2_MSEC_PER_SEC);
 			return VB2_REQUEST_REBOOT;
 		case -1:
 			VB2_DEBUG("shutdown requested\n");
@@ -324,7 +324,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 				vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
 				VbDisplayScreen(ctx,
 					VB_SCREEN_TO_NORM_CONFIRMED, 0, NULL);
-				VbExSleepMs(5000);
+				vb2ex_msleep(5 * VB2_MSEC_PER_SEC);
 				return VB2_REQUEST_REBOOT;
 			case -1:
 				VB2_DEBUG("shutdown requested\n");
@@ -403,7 +403,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			break;
 		}
 
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	} while(vb2_audio_looping());
 
  fallout:
@@ -465,7 +465,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 				  vb2_check_diagnostic_key(ctx, key)) !=
 				  VB2_SUCCESS)
 				return retval;
-			VbExSleepMs(KEY_DELAY_MS);
+			vb2ex_msleep(KEY_DELAY_MS);
 		}
 	}
 
@@ -531,7 +531,7 @@ static vb2_error_t recovery_ui(struct vb2_context *ctx)
 		}
 		if (vb2_want_shutdown(ctx, key))
 			return VB2_REQUEST_SHUTDOWN;
-		VbExSleepMs(KEY_DELAY_MS);
+		vb2ex_msleep(KEY_DELAY_MS);
 	}
 
 	return VB2_SUCCESS;
