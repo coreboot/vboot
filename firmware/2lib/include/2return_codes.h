@@ -63,8 +63,6 @@ enum vb2_return_code {
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* Peripheral busy. Cannot upgrade firmware at present. */
-	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error writing VPD */
 	VBERROR_VPD_WRITE                     = 0x10032,
 
@@ -733,6 +731,9 @@ enum vb2_return_code {
 
 	/* vb2ex function is unimplemented (stubbed in 2lib/2stub.c) */
 	VB2_ERROR_EX_UNIMPLEMENTED,
+
+	/* AUXFW peripheral busy. Cannot upgrade firmware at present. */
+	VB2_ERROR_EX_AUXFW_PERIPHERAL_BUSY,
 
 	/**********************************************************************
 	 * LoadKernel errors
