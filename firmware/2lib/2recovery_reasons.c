@@ -96,6 +96,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "Error selecting RW firmware slot";
 	/* 0x30 */ case VB2_RECOVERY_AUXFW_UPDATE:
 		return "Error updating auxiliary firmware";
+	/* 0x31 */ case VB2_RECOVERY_INTEL_CSE_LITE_SKU:
+		return "Intel CSE Lite SKU firmware failure";
 	/* 0x3f */ case VB2_RECOVERY_RO_UNSPECIFIED:
 		return "Unspecified/unknown error in RO firmware";
 	/* 0x41 */ case VB2_RECOVERY_DEPRECATED_RW_DEV_SCREEN:
