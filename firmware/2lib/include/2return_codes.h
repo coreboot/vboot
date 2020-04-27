@@ -25,7 +25,7 @@ enum vb2_return_code {
 	VB2_SUCCESS = 0,
 
 	/**********************************************************************
-	 * Return values that are not considered errors
+	 * Requests to the caller that are not considered errors
 	 */
 	VB2_REQUEST = 0x1000,
 
@@ -42,7 +42,7 @@ enum vb2_return_code {
 	VB2_REQUEST_REBOOT_EC_TO_RO = 0x1004,
 
 	/* Continue in the UI loop.  This is used in UI internal functions. */
-	VB2_REQUEST_UI_CONTINUE	= 0x1005,
+	VB2_REQUEST_UI_CONTINUE = 0x1005,
 
 	/* End of VB2_REQUEST_* */
 	VB2_REQUEST_END = 0x5000,
@@ -63,23 +63,12 @@ enum vb2_return_code {
 	 * vboot1-style errors
 	 * TODO: deprecate these once they have all moved over to vboot2 style
 	 */
-	/* Calling firmware needs to perform a reboot. */
-	VBERROR_REBOOT_REQUIRED               = VB2_REQUEST_REBOOT,
-	/* Calling firmware requested shutdown via VbExIsShutdownRequested() */
-	VBERROR_SHUTDOWN_REQUESTED            = VB2_REQUEST_SHUTDOWN,
 	/* VbExBeep() can't make sound in the background */
 	VBERROR_NO_BACKGROUND_SOUND           = 0x10019,
-	/* Need EC to reboot to read-only code to switch RW slot */
-	VBERROR_EC_REBOOT_TO_SWITCH_RW        = VB2_REQUEST_REBOOT_EC_SWITCH_RW,
-	/* Need EC to reboot to read-only code */
-	VBERROR_EC_REBOOT_TO_RO_REQUIRED      = VB2_REQUEST_REBOOT_EC_TO_RO,
 	/* Peripheral busy. Cannot upgrade firmware at present. */
 	VBERROR_PERIPHERAL_BUSY               = 0x10030,
 	/* Error writing VPD */
 	VBERROR_VPD_WRITE                     = 0x10032,
-	/* Detachable UI internal functions may return the following codes */
-	/* No error; return to UI loop */
-	VBERROR_KEEP_LOOPING			= VB2_REQUEST_UI_CONTINUE,
 
 	/**********************************************************************
 	 * SHA errors
