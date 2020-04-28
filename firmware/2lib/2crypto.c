@@ -15,10 +15,11 @@
  * These two need to be exported for host/lib/crypto.c, but they also need to be
  * in .rodata to make coreboot XIP stages happy. We know they are immutable but
  * there is no C language way to guarantee that, so we have to manually force
- * the compiler to place them in .rodata.
+ * the compiler to place them in .rodata. Also inject custom section flags so
+ * they are only allocatable (a) but not writeable (w).
  */
 
-__attribute__((section(".rodata.vb2_sig_names")))
+__attribute__((section(".rodata.vb2_sig_names,\"a\"\n# ")))
 const char *vb2_sig_names[VB2_SIG_ALG_COUNT] = {
 	[VB2_SIG_NONE]		= "none",
 	[VB2_SIG_RSA1024]	= "RSA1024",
@@ -29,7 +30,7 @@ const char *vb2_sig_names[VB2_SIG_ALG_COUNT] = {
 	[VB2_SIG_RSA3072_EXP3]	= "RSA3072EXP3",
 };
 
-__attribute__((section(".rodata.vb2_hash_names")))
+__attribute__((section(".rodata.vb2_hash_names,\"a\"\n# ")))
 const char *vb2_hash_names[VB2_HASH_ALG_COUNT] = {
 	[VB2_HASH_NONE]		= "none",
 #if VB2_SUPPORT_SHA1
