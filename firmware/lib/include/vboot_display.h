@@ -8,13 +8,15 @@
 #ifndef VBOOT_REFERENCE_VBOOT_DISPLAY_H_
 #define VBOOT_REFERENCE_VBOOT_DISPLAY_H_
 
+#include "vboot_api.h"
+
 vb2_error_t VbDisplayScreen(struct vb2_context *ctx, uint32_t screen, int force,
-			  const VbScreenData *data);
+			    const VbScreenData *data);
 vb2_error_t VbDisplayMenu(struct vb2_context *ctx,
-			uint32_t screen, int force, uint32_t selected_index,
-			uint32_t disabled_idx_mask);
+			  uint32_t screen, int force, uint32_t selected_index,
+			  uint32_t disabled_idx_mask);
 vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx);
 vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
-			    const VbScreenData *data);
+			      const VbScreenData *data);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_DISPLAY_H_ */

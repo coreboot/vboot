@@ -11,10 +11,6 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
-#include "vboot_api.h"
-#include "vboot_display.h"
-#include "vboot_kernel.h"
-#include "vboot_test.h"
 
 #define SYNC_FLAG(select)					\
 	((select) == VB_SELECT_FIRMWARE_READONLY ?		\
