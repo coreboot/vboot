@@ -1175,6 +1175,8 @@ enum vb2_screen {
 	VB2_SCREEN_FIRMWARE_SYNC		= 0x100,
 	/* Broken screen */
 	VB2_SCREEN_RECOVERY_BROKEN		= 0x110,
+	/* Advanced options */
+	VB2_SCREEN_ADVANCED_OPTIONS		= 0x120,
 	/* First recovery screen to select recovering from disk or phone */
 	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
 	/* Invalid recovery media inserted */
