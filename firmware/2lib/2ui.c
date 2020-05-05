@@ -223,6 +223,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	vb2_error_t (*action)(struct vb2_ui_context *ui);
 	vb2_error_t rv;
 
+	memset(&ui, 0, sizeof(ui));
 	ui.ctx = ctx;
 	ui.root_screen = vb2_get_screen_info(root_screen_id);
 	if (ui.root_screen == NULL)
