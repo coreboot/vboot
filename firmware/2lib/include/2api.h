@@ -1181,6 +1181,8 @@ enum vb2_screen {
 	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
 	/* Invalid recovery media inserted */
 	VB2_SCREEN_RECOVERY_INVALID		= 0x201,
+	/* Confirm transition to developer mode */
+	VB2_SCREEN_RECOVERY_TO_DEV		= 0x202,
 	/* Recovery using disk */
 	VB2_SCREEN_RECOVERY_DISK_STEP1		= 0x210,
 	VB2_SCREEN_RECOVERY_DISK_STEP2		= 0x211,

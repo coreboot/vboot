@@ -595,11 +595,11 @@ static void menu_action_tests(void)
 		screen_state_eq(mock_state, MOCK_SCREEN_MENU, 1, MOCK_IGNORE);
 	}
 
-	/* menu_back_action */
+	/* vb2_ui_back_action */
 	reset_common_data();
 	mock_ui_context.key = VB_KEY_ESC;
-	TEST_EQ(menu_back_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"menu_back_action");
+	TEST_EQ(vb2_ui_back_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+		"vb2_ui_back_action");
 	screen_state_eq(mock_state, VB2_SCREEN_BLANK, 0, MOCK_IGNORE);
 
 	VB2_DEBUG("...done.\n");

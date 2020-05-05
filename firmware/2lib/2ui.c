@@ -132,27 +132,40 @@ vb2_error_t menu_select_action(struct vb2_ui_context *ui)
 
 	menu_item = &ui->state.screen->items[ui->state.selected_item];
 
-	VB2_DEBUG("Select <%s> menu item <%s>\n",
-		  ui->state.screen->name, menu_item->text);
-
-	if (menu_item->target) {
-		VB2_DEBUG("Changing to target screen %#x for menu item <%s>\n",
-			  menu_item->target, menu_item->text);
+	if (menu_item->action) {
+		VB2_DEBUG("Menu item <%s> run action\n", menu_item->text);
+		return menu_item->action(ui);
+	} else if (menu_item->target) {
+		VB2_DEBUG("Menu item <%s> to target screen %#x\n",
+			  menu_item->text, menu_item->target);
 		return change_screen(ui, menu_item->target);
 	}
 
-	VB2_DEBUG("No target screen for menu item <%s>\n", menu_item->text);
-
+	VB2_DEBUG("Menu item <%s> no action or target screen\n",
+		  menu_item->text);
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
 /**
  * Return back to the previous screen.
  */
-vb2_error_t menu_back_action(struct vb2_ui_context *ui)
+vb2_error_t vb2_ui_back_action(struct vb2_ui_context *ui)
 {
 	/* TODO(kitching): Return to previous screen instead of root screen. */
 	return change_screen(ui, ui->root_screen->id);
+}
+
+/**
+ * Context-dependent keyboard shortcut Ctrl+D.
+ *
+ * - Manual recovery mode: Change to dev mode transition screen.
+ * - Developer mode: Boot from internal disk (TODO).
+ */
+vb2_error_t ctrl_d_action(struct vb2_ui_context *ui)
+{
+	if (vb2_allow_recovery(ui->ctx))
+		return change_screen(ui, VB2_SCREEN_RECOVERY_TO_DEV);
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 /*****************************************************************************/
@@ -165,7 +178,9 @@ static struct input_action action_table[] = {
 	{ VB_BUTTON_VOL_UP_SHORT_PRESS, 	menu_up_action },
 	{ VB_BUTTON_VOL_DOWN_SHORT_PRESS, 	menu_down_action },
 	{ VB_BUTTON_POWER_SHORT_PRESS, 		menu_select_action },
-	{ VB_KEY_ESC, 			 	menu_back_action },
+	{ VB_KEY_ESC, 			 	vb2_ui_back_action },
+	{ VB_KEY_CTRL('D'),		 	ctrl_d_action },
+	{ ' ',				 	vb2_ui_recovery_to_dev_action },
 };
 
 vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
@@ -192,6 +207,9 @@ vb2_error_t change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 	memset(&ui->state, 0, sizeof(ui->state));
 	ui->state.screen = new_screen_info;
 
+	if (ui->state.screen->init)
+		return ui->state.screen->init(ui);
+
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
@@ -200,7 +218,6 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 {
 	struct vb2_ui_context ui;
 	struct vb2_screen_state prev_state;
-	uint32_t key;
 	uint32_t key_flags;
 	vb2_error_t (*action)(struct vb2_ui_context *ui);
 	vb2_error_t rv;
@@ -231,25 +248,37 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 					 ui.state.disabled_item_mask);
 		}
 
+		/* Run screen action. */
+		if (ui.state.screen->action) {
+			rv = ui.state.screen->action(&ui);
+			if (rv != VB2_REQUEST_UI_CONTINUE)
+				return rv;
+		}
+
+		/* Grab new keyboard input. */
+		ui.key = VbExKeyboardReadWithFlags(&key_flags);
+		ui.key_trusted = !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD);
+
 		/* Check for shutdown request. */
-		key = VbExKeyboardReadWithFlags(&key_flags);
-		if (shutdown_required(ctx, key)) {
+		if (shutdown_required(ctx, ui.key)) {
 			VB2_DEBUG("Shutdown required!\n");
 			return VB2_REQUEST_SHUTDOWN;
 		}
 
 		/* Run input action function if found. */
-		action = input_action_lookup(key);
+		action = input_action_lookup(ui.key);
 		if (action) {
-			ui.key = key;
 			rv = action(&ui);
-			ui.key = 0;
 			if (rv != VB2_REQUEST_UI_CONTINUE)
 				return rv;
-		} else if (key) {
-			VB2_DEBUG("Pressed key %#x, trusted? %d\n", key,
-				  !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD));
+		} else if (ui.key) {
+			VB2_DEBUG("Pressed key %#x, trusted? %d\n",
+				  ui.key, ui.key_trusted);
 		}
+
+		/* Reset keyboard input. */
+		ui.key = 0;
+		ui.key_trusted = 0;
 
 		/* Run global action function if available. */
 		if (global_action) {
