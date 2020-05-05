@@ -18,6 +18,13 @@
 #define MOCK_IGNORE 0xffffu
 
 /* Mock data */
+struct display_call {
+	const struct vb2_screen_info *screen;
+	uint32_t locale_id;
+	uint32_t selected_item;
+	uint32_t disabled_item_mask;
+};
+
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
@@ -27,7 +34,7 @@ static struct vb2_gbb_header gbb;
 static struct vb2_ui_context mock_ui_context;
 static struct vb2_screen_state *mock_state;
 
-static struct vb2_screen_state mock_displayed[64];
+static struct display_call mock_displayed[64];
 static int mock_displayed_count;
 static int mock_displayed_i;
 
@@ -142,13 +149,18 @@ static void reset_common_data(void)
 
 	/* For global actions */
 	invalid_disk_last = -1;
-	mock_ui_context.ctx = ctx;
-	mock_ui_context.root_screen = vb2_get_screen_info(VB2_SCREEN_BLANK);
-	mock_ui_context.state.screen = vb2_get_screen_info(VB2_SCREEN_BLANK);
-	mock_ui_context.state.locale_id = 0,
-	mock_ui_context.state.selected_item = 0,
-	mock_ui_context.state.disabled_item_mask = 0,
-	mock_ui_context.key = 0;
+	mock_ui_context = (struct vb2_ui_context){
+		.ctx = ctx,
+		.root_screen = vb2_get_screen_info(VB2_SCREEN_BLANK),
+		.state = (struct vb2_screen_state){
+			.screen = vb2_get_screen_info(VB2_SCREEN_BLANK),
+			.selected_item = 0,
+			.disabled_item_mask = 0,
+		},
+		.locale_id = 0,
+		.key = 0,
+
+	};
 	mock_state = &mock_ui_context.state;
 
 	/* For vb2ex_display_ui */
@@ -205,7 +217,7 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 		return VB2_ERROR_MOCK;
 	}
 
-	mock_displayed[mock_displayed_count] = (struct vb2_screen_state){
+	mock_displayed[mock_displayed_count] = (struct display_call){
 		.screen = vb2_get_screen_info(screen),
 		.locale_id = locale_id,
 		.selected_item = selected_item,

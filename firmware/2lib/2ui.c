@@ -184,14 +184,11 @@ vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
 void change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 {
 	const struct vb2_screen_info *new_screen_info = vb2_get_screen_info(id);
-	int locale_id;
 	if (new_screen_info == NULL) {
 		VB2_DEBUG("ERROR: Screen entry %#x not found; ignoring\n", id);
 	} else {
-		locale_id = ui->state.locale_id;
 		memset(&ui->state, 0, sizeof(ui->state));
 		ui->state.screen = new_screen_info;
-		ui->state.locale_id = locale_id;
 	}
 }
 
@@ -242,8 +239,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 				  ui.state.screen->items[
 				  ui.state.selected_item].text : "null");
 
-			/* TODO: Stop hard-coding the locale. */
-			vb2ex_display_ui(ui.state.screen->id, 0,
+			vb2ex_display_ui(ui.state.screen->id, ui.locale_id,
 					 ui.state.selected_item,
 					 ui.state.disabled_item_mask);
 		}

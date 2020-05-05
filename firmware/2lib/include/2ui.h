@@ -34,7 +34,6 @@ struct vb2_menu_item {
 
 struct vb2_screen_state {
 	const struct vb2_screen_info *screen;
-	uint32_t locale_id;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
 };
@@ -43,6 +42,7 @@ struct vb2_ui_context {
 	struct vb2_context *ctx;
 	const struct vb2_screen_info *root_screen;
 	struct vb2_screen_state state;
+	uint32_t locale_id;
 	uint32_t key;
 };
 
