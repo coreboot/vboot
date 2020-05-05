@@ -138,11 +138,10 @@ vb2_error_t menu_select_action(struct vb2_ui_context *ui)
 	if (menu_item->target) {
 		VB2_DEBUG("Changing to target screen %#x for menu item <%s>\n",
 			  menu_item->target, menu_item->text);
-		change_screen(ui, menu_item->target);
-	} else {
-		VB2_DEBUG("No target set for menu item <%s>\n",
-			  menu_item->text);
+		return change_screen(ui, menu_item->target);
 	}
+
+	VB2_DEBUG("No target screen for menu item <%s>\n", menu_item->text);
 
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -152,8 +151,8 @@ vb2_error_t menu_select_action(struct vb2_ui_context *ui)
  */
 vb2_error_t menu_back_action(struct vb2_ui_context *ui)
 {
-	change_screen(ui, ui->root_screen->id);
-	return VB2_REQUEST_UI_CONTINUE;
+	/* TODO(kitching): Return to previous screen instead of root screen. */
+	return change_screen(ui, ui->root_screen->id);
 }
 
 /*****************************************************************************/
@@ -181,33 +180,19 @@ vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
 /*****************************************************************************/
 /* Core UI functions */
 
-void change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
+vb2_error_t change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 {
 	const struct vb2_screen_info *new_screen_info = vb2_get_screen_info(id);
+
 	if (new_screen_info == NULL) {
 		VB2_DEBUG("ERROR: Screen entry %#x not found; ignoring\n", id);
-	} else {
-		memset(&ui->state, 0, sizeof(ui->state));
-		ui->state.screen = new_screen_info;
+		return VB2_REQUEST_UI_CONTINUE;
 	}
-}
 
-void validate_selection(struct vb2_screen_state *state)
-{
-	if ((state->selected_item == 0 && state->screen->num_items == 0) ||
-	    (state->selected_item < state->screen->num_items &&
-	     !((1 << state->selected_item) & state->disabled_item_mask)))
-		return;
+	memset(&ui->state, 0, sizeof(ui->state));
+	ui->state.screen = new_screen_info;
 
-	/* Selection invalid; select the first available non-disabled item. */
-	state->selected_item = 0;
-	while (((1 << state->selected_item) & state->disabled_item_mask) &&
-	       state->selected_item < state->screen->num_items)
-		state->selected_item++;
-
-	/* No non-disabled items available; just choose 0. */
-	if (state->selected_item >= state->screen->num_items)
-		state->selected_item = 0;
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
@@ -225,7 +210,9 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	ui.root_screen = vb2_get_screen_info(root_screen_id);
 	if (ui.root_screen == NULL)
 		VB2_DIE("Root screen not found.\n");
-	change_screen(&ui, ui.root_screen->id);
+	rv = change_screen(&ui, ui.root_screen->id);
+	if (rv != VB2_REQUEST_UI_CONTINUE)
+		return rv;
 	memset(&prev_state, 0, sizeof(prev_state));
 
 	while (1) {
@@ -259,7 +246,6 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 			ui.key = 0;
 			if (rv != VB2_REQUEST_UI_CONTINUE)
 				return rv;
-			validate_selection(&ui.state);
 		} else if (key) {
 			VB2_DEBUG("Pressed key %#x, trusted? %d\n", key,
 				  !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD));
@@ -268,7 +254,6 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		/* Run global action function if available. */
 		if (global_action) {
 			rv = global_action(&ui);
-			validate_selection(&ui.state);
 			if (rv != VB2_REQUEST_UI_CONTINUE)
 				return rv;
 		}
@@ -336,10 +321,9 @@ vb2_error_t try_recovery_action(struct vb2_ui_context *ui)
 	invalid_disk = rv != VB2_ERROR_LK_NO_DISK_FOUND;
 	if (invalid_disk_last != invalid_disk) {
 		invalid_disk_last = invalid_disk;
-		if (invalid_disk)
-			change_screen(ui, VB2_SCREEN_RECOVERY_INVALID);
-		else
-			change_screen(ui, VB2_SCREEN_RECOVERY_SELECT);
+		return change_screen(ui, invalid_disk ?
+				     VB2_SCREEN_RECOVERY_INVALID :
+				     VB2_SCREEN_RECOVERY_SELECT);
 	}
 
 	return VB2_REQUEST_UI_CONTINUE;

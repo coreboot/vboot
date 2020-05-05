@@ -614,68 +614,18 @@ static void change_screen_tests(void)
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 2;
 	mock_state->disabled_item_mask = 0x10;
-	VB2_DEBUG("change_screen will clear screen state\n");
-	change_screen(&mock_ui_context, MOCK_SCREEN_BASE);
+	TEST_EQ(change_screen(&mock_ui_context, MOCK_SCREEN_BASE),
+		VB2_REQUEST_UI_CONTINUE,
+		"change_screen will clear screen state");
 	screen_state_eq(mock_state, MOCK_SCREEN_BASE, 0, 0);
 
 	/* Change to screen which does not exist */
 	reset_common_data();
 	mock_state->screen = &mock_screen_menu;
-	VB2_DEBUG("change to screen which does not exist\n");
-	change_screen(&mock_ui_context, MOCK_NO_SCREEN);
+	TEST_EQ(change_screen(&mock_ui_context, MOCK_NO_SCREEN),
+		VB2_REQUEST_UI_CONTINUE,
+		"change to screen which does not exist");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, MOCK_IGNORE, MOCK_IGNORE);
-
-	VB2_DEBUG("...done.\n");
-}
-
-static void validate_selection_tests(void)
-{
-	VB2_DEBUG("Testing validate_selection...");
-
-	/* No item */
-	reset_common_data();
-	mock_state->screen = &mock_screen_base;
-	mock_state->selected_item = 2;
-	mock_state->disabled_item_mask = 0x10;
-	VB2_DEBUG("no item (fix selected_item)\n");
-	validate_selection(mock_state);
-	screen_state_eq(mock_state, MOCK_SCREEN_BASE, 0, MOCK_IGNORE);
-
-	/* Valid selected_item */
-	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	mock_state->selected_item = 2;
-	mock_state->disabled_item_mask = 0x13;  /* 0b10011 */
-	VB2_DEBUG("valid selected_item\n");
-	validate_selection(mock_state);
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 2, MOCK_IGNORE);
-
-	/* selected_item too large */
-	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	mock_state->selected_item = 5;
-	mock_state->disabled_item_mask = 0x15;  /* 0b10101 */
-	VB2_DEBUG("selected_item too large\n");
-	validate_selection(mock_state);
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 1, MOCK_IGNORE);
-
-	/* Select a disabled item */
-	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	mock_state->selected_item = 4;
-	mock_state->disabled_item_mask = 0x17;  /* 0b10111 */
-	VB2_DEBUG("select a disabled item\n");
-	validate_selection(mock_state);
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 3, MOCK_IGNORE);
-
-	/* No available item */
-	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	mock_state->selected_item = 2;
-	mock_state->disabled_item_mask = 0x1f;  /* 0b11111 */
-	VB2_DEBUG("no available item\n");
-	validate_selection(mock_state);
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 0, MOCK_IGNORE);
 
 	VB2_DEBUG("...done.\n");
 }
@@ -781,7 +731,6 @@ int main(void)
 	shutdown_required_tests();
 	menu_action_tests();
 	change_screen_tests();
-	validate_selection_tests();
 	ui_loop_tests();
 
 	return gTestSuccess ? 0 : 255;
