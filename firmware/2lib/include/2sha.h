@@ -75,6 +75,15 @@ struct vb2_sha512_context {
 	uint8_t block[2 * VB2_SHA512_BLOCK_SIZE];
 };
 
+/*
+ * SHA224/SHA384 are variants of SHA256/SHA512 that use almost all the same code
+ * (and the same context structures), so no separate "SUPPORT" flags for them.
+ */
+#define VB2_SHA224_DIGEST_SIZE 28
+#define VB2_SHA224_ALG_NAME "SHA224"
+#define VB2_SHA384_DIGEST_SIZE 48
+#define VB2_SHA384_ALG_NAME "SHA384"
+
 /* Hash algorithm independent digest context; includes all of the above. */
 struct vb2_digest_context {
 	/* Context union for all algorithms */
@@ -133,10 +142,13 @@ _Static_assert(VB2_HASH_ALG_COUNT <= UINT8_MAX, "vb2_hash.algo overflow!");
  * Initialize a hash context.
  *
  * @param ctx		Hash context
+ * @param algo		Hash algorithm (only for overloaded functions)
  */
 void vb2_sha1_init(struct vb2_sha1_context *ctx);
-void vb2_sha256_init(struct vb2_sha256_context *ctx);
-void vb2_sha512_init(struct vb2_sha512_context *ctx);
+void vb2_sha256_init(struct vb2_sha256_context *ctx,
+		     enum vb2_hash_algorithm algo);
+void vb2_sha512_init(struct vb2_sha512_context *ctx,
+		     enum vb2_hash_algorithm algo);
 
 /**
  * Update (extend) a hash.
@@ -160,10 +172,13 @@ void vb2_sha512_update(struct vb2_sha512_context *ctx,
  *
  * @param ctx		Hash context
  * @param digest	Destination for hash; must be VB_SHA*_DIGEST_SIZE bytes
+ * @param algo		Hash algorithm (only for overloaded functions)
  */
 void vb2_sha1_finalize(struct vb2_sha1_context *ctx, uint8_t *digest);
-void vb2_sha256_finalize(struct vb2_sha256_context *ctx, uint8_t *digest);
-void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest);
+void vb2_sha256_finalize(struct vb2_sha256_context *ctx, uint8_t *digest,
+			 enum vb2_hash_algorithm algo);
+void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest,
+			 enum vb2_hash_algorithm algo);
 
 /**
  * Hash-extend data

@@ -106,6 +106,13 @@ static const uint64_t sha512_h0[8] = {
 	0x1f83d9abfb41bd6bULL, 0x5be0cd19137e2179ULL
 };
 
+static const uint64_t sha384_h0[8] = {
+	0xcbbb9d5dc1059ed8ULL, 0x629a292a367cd507ULL,
+	0x9159015a3070dd17ULL, 0x152fecd8f70e5939ULL,
+	0x67332667ffc00b31ULL, 0x8eb44a8768581511ULL,
+	0xdb0c2e0d64f98fa7ULL, 0x47b5481dbefa4fa4ULL
+};
+
 static const uint64_t sha512_k[80] = {
 	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
 	0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
@@ -151,18 +158,21 @@ static const uint64_t sha512_k[80] = {
 
 /* SHA-512 implementation */
 
-void vb2_sha512_init(struct vb2_sha512_context *ctx)
+void vb2_sha512_init(struct vb2_sha512_context *ctx,
+		     enum vb2_hash_algorithm algo)
 {
+	const uint64_t *h0 = algo == VB2_HASH_SHA384 ? sha384_h0 : sha512_h0;
+
 #ifdef UNROLL_LOOPS_SHA512
-	ctx->h[0] = sha512_h0[0]; ctx->h[1] = sha512_h0[1];
-	ctx->h[2] = sha512_h0[2]; ctx->h[3] = sha512_h0[3];
-	ctx->h[4] = sha512_h0[4]; ctx->h[5] = sha512_h0[5];
-	ctx->h[6] = sha512_h0[6]; ctx->h[7] = sha512_h0[7];
+	ctx->h[0] = h0[0]; ctx->h[1] = h0[1];
+	ctx->h[2] = h0[2]; ctx->h[3] = h0[3];
+	ctx->h[4] = h0[4]; ctx->h[5] = h0[5];
+	ctx->h[6] = h0[6]; ctx->h[7] = h0[7];
 #else
 	int i;
 
 	for (i = 0; i < 8; i++)
-		ctx->h[i] = sha512_h0[i];
+		ctx->h[i] = h0[i];
 #endif /* UNROLL_LOOPS_SHA512 */
 
 	ctx->size = 0;
@@ -308,7 +318,8 @@ void vb2_sha512_update(struct vb2_sha512_context *ctx,
 	ctx->total_size += (block_nb + 1) << 7;
 }
 
-void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest)
+void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest,
+			 enum vb2_hash_algorithm algo)
 {
 	unsigned int block_nb;
 	unsigned int pm_size;
@@ -337,10 +348,12 @@ void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest)
 	UNPACK64(ctx->h[3], &digest[24]);
 	UNPACK64(ctx->h[4], &digest[32]);
 	UNPACK64(ctx->h[5], &digest[40]);
-	UNPACK64(ctx->h[6], &digest[48]);
-	UNPACK64(ctx->h[7], &digest[56]);
+	if (algo != VB2_HASH_SHA384) {
+		UNPACK64(ctx->h[6], &digest[48]);
+		UNPACK64(ctx->h[7], &digest[56]);
+	}
 #else
-	for (i = 0 ; i < 8; i++)
+	for (i = 0 ; i < (algo == VB2_HASH_SHA384 ? 6 : 8); i++)
 		UNPACK64(ctx->h[i], &digest[i << 3]);
 #endif /* UNROLL_LOOPS_SHA512 */
 }

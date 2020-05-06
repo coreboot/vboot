@@ -840,11 +840,18 @@ ${TLCL_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 
 # CFLAGS += -DTPM_MANUAL_SELFTEST
 
+# NOTE: UNROLL_LOOPS *only* affects SHA256, *not* SHA512. This seems to have
+# been a conscious decision at some point (see b/35501356) but whether it still
+# holds up in all situations on all architectures today might need to be
+# reevaluated. For now, since we currently always use SHA256 for (non-recovery)
+# kernel bodies and don't unroll loops for firmware verification, it's not very
+# relevant in practice. To unroll SHA512, UNROLL_LOOPS_SHA512 would need to be
+# defined.
 ifneq ($(filter-out 0,$(UNROLL_LOOPS)),)
-$(info vboot hash algos built with unrolled loops (faster, larger code size))
+$(info vboot SHA256 built with unrolled loops (faster, larger code size))
 CFLAGS += -DUNROLL_LOOPS
 else
-$(info vboot hash algos built with tight loops (slower, smaller code size))
+$(info vboot SHA256 built with tight loops (slower, smaller code size))
 endif
 
 .PHONY: fwlib

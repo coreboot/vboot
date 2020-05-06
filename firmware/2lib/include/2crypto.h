@@ -71,6 +71,10 @@ enum vb2_hash_algorithm {
 	VB2_HASH_SHA256 = 2,
 	VB2_HASH_SHA512 = 3,
 
+	/* SHA-224/SHA-384 are variants of SHA-256/SHA-512, respectively. */
+	VB2_HASH_SHA224 = 4,
+	VB2_HASH_SHA384 = 5,
+
 	/* Last index. Don't add anything below. */
 	VB2_HASH_ALG_COUNT,
 };

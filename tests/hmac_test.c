@@ -33,8 +33,14 @@ static void test_hmac_by_openssl(enum vb2_hash_algorithm alg,
 	case VB2_HASH_SHA1:
 		HMAC(EVP_sha1(), key, key_size, msg, msg_size, md, &md_size);
 		break;
+	case VB2_HASH_SHA224:
+		HMAC(EVP_sha224(), key, key_size, msg, msg_size, md, &md_size);
+		break;
 	case VB2_HASH_SHA256:
 		HMAC(EVP_sha256(), key, key_size, msg, msg_size, md, &md_size);
+		break;
+	case VB2_HASH_SHA384:
+		HMAC(EVP_sha384(), key, key_size, msg, msg_size, md, &md_size);
 		break;
 	case VB2_HASH_SHA512:
 		HMAC(EVP_sha512(), key, key_size, msg, msg_size, md, &md_size);
@@ -44,6 +50,7 @@ static void test_hmac_by_openssl(enum vb2_hash_algorithm alg,
 	}
 	sprintf(test_name, "%s: HMAC-%s (key_size=%d)",
 		__func__, vb2_get_hash_algorithm_name(alg), key_size);
+	TEST_EQ(vb2_digest_size(alg), md_size, "HMAC size");
 	TEST_SUCC(hmac(alg, key, key_size, msg, msg_size, mac, mac_size),
 		  test_name);
 	TEST_SUCC(memcmp(mac, md, md_size), "HMAC digests match");
