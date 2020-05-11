@@ -654,7 +654,7 @@ static int check_compatible_platform(struct updater_config *cfg)
 	}
 	len = from_dot - image_from->ro_version + 1;
 	VB2_DEBUG("Platform: %*.*s\n", len, len, image_from->ro_version);
-	return strncmp(image_from->ro_version, image_to->ro_version, len);
+	return strncasecmp(image_from->ro_version, image_to->ro_version, len);
 }
 
 /*
