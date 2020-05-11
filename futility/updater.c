@@ -1162,6 +1162,9 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	     image_to->file_name, image_to->ro_version,
 	     image_to->rw_version_a, image_to->rw_version_b);
 
+	if (try_apply_quirk(QUIRK_DISABLE_COMPATIBLE_PLATFORM_CHECK, cfg))
+		return UPDATE_ERR_PLATFORM;
+
 	if (try_apply_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg))
 		return UPDATE_ERR_PLATFORM;
 
