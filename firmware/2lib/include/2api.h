@@ -968,13 +968,6 @@ void vb2ex_abort(void);
  */
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 
-/**
- * Check that physical presence button is currently pressed by the user.
- *
- * @returns 1 for pressed, 0 for not.
- */
-int vb2ex_physical_presence_pressed(void);
-
 /*****************************************************************************/
 /* Auxiliary firmware (auxfw) */
 
@@ -1212,5 +1205,19 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 			     uint32_t locale_id,
 			     uint32_t selected_item,
 			     uint32_t disabled_item_mask);
+
+/**
+ * Check that physical presence button is currently pressed by the user.
+ *
+ * @returns 1 for pressed, 0 for not.
+ */
+int vb2ex_physical_presence_pressed(void);
+
+/**
+ * Get the number of supported locales.
+ *
+ * @returns Number of locales.  0 if none or on error.
+ */
+uint32_t vb2ex_get_locale_count(void);
 
 #endif  /* VBOOT_REFERENCE_2API_H_ */

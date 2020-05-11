@@ -5,6 +5,7 @@
  * Display functions used in kernel selection.
  */
 
+#include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
@@ -21,9 +22,8 @@ static uint32_t disp_current_index = 0;
 static uint32_t disp_disabled_idx_mask = 0;
 
 __attribute__((weak))
-vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
-	*count = 0;
-	return VB2_ERROR_UNKNOWN;
+uint32_t vb2ex_get_locale_count(void) {
+	return 0;
 }
 
 __attribute__((weak))
@@ -243,7 +243,8 @@ vb2_error_t VbCheckDisplayKey(struct vb2_context *ctx, uint32_t key,
 	case VB_KEY_DOWN:
 		/* Arrow keys = change localization */
 		loc = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
-		if (VB2_SUCCESS != VbExGetLocalizationCount(&count))
+		count = vb2ex_get_locale_count();
+		if (count == 0)
 			loc = 0;  /* No localization count (bad GBB?) */
 		else if (VB_KEY_RIGHT == key || VB_KEY_UP == key)
 			loc = (loc < count - 1 ? loc + 1 : 0);

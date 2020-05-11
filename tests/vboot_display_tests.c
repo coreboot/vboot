@@ -45,13 +45,9 @@ static void ResetMocks(void)
 }
 
 /* Mocks */
-vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
+uint32_t vb2ex_get_locale_count(void) {
 
-	if (mock_localization_count == 0xffffffff)
-		return VB2_ERROR_UNKNOWN;
-
-	*count = mock_localization_count;
-	return VB2_SUCCESS;
+	return mock_localization_count;
 }
 
 uint32_t VbExGetAltFwIdxMask() {
@@ -113,7 +109,7 @@ static void DisplayKeyTest(void)
 	/* Reset localization if localization count is invalid */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 1);
-	mock_localization_count = 0xffffffff;
+	mock_localization_count = 0;
 	VbCheckDisplayKey(ctx, VB_KEY_UP, NULL);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 0,
 		"DisplayKey invalid");

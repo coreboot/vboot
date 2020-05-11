@@ -118,9 +118,8 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-vb2_error_t VbExGetLocalizationCount(uint32_t *count) {
-	*count = 1;
-	return VB2_SUCCESS;
+uint32_t vb2ex_get_locale_count(void) {
+	return 1;
 }
 
 uint32_t VbExGetAltFwIdxMask() {

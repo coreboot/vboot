@@ -613,14 +613,6 @@ enum VbAltFwIndex_t {
  */
 vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num);
 
-/**
- * Return number of locales supported
- *
- * @param count		Pointer to the number of locales.
- * @return VBERROR_... error, VB2_SUCCESS on success.
- */
-vb2_error_t VbExGetLocalizationCount(uint32_t *count);
-
 enum vb_altfw {
 	VB_ALTFW_COUNT	= 9,	/* We allow 9 bootloaders, numbered 1-9 */
 };
