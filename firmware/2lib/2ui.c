@@ -21,23 +21,22 @@
 /*****************************************************************************/
 /* Global variables */
 
-enum power_button_state power_button;
 int invalid_disk_last = -1;
 
 /*****************************************************************************/
 /* Utility functions */
 
 /**
- * Checks GBB flags against VbExIsShutdownRequested() shutdown request to
- * determine if a shutdown is required.
+ * Check GBB flags against VbExIsShutdownRequested() shutdown request,
+ * and check for VB_BUTTON_POWER_SHORT_PRESS key, to determine if a
+ * shutdown is required.
  *
- * @param ctx		Context pointer
- * @param key		Pressed key (VB_BUTTON_POWER_SHORT_PRESS)
- * @return true if a shutdown is required, or false otherwise.
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_SHUTDOWN if shutdown needed, or VB2_REQUEST_UI_CONTINUE
  */
-int shutdown_required(struct vb2_context *ctx, uint32_t key)
+vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 {
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ui->ctx);
 	uint32_t shutdown_request = VbExIsShutdownRequested();
 
 	/*
@@ -48,15 +47,15 @@ int shutdown_required(struct vb2_context *ctx, uint32_t key)
 	 */
 	if (shutdown_request & VB_SHUTDOWN_REQUEST_POWER_BUTTON) {
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		if (power_button == POWER_BUTTON_RELEASED)
-			power_button = POWER_BUTTON_PRESSED;
+		if (ui->power_button == VB2_POWER_BUTTON_RELEASED)
+			ui->power_button = VB2_POWER_BUTTON_PRESSED;
 	} else {
-		if (power_button == POWER_BUTTON_PRESSED)
+		if (ui->power_button == VB2_POWER_BUTTON_PRESSED)
 			shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		power_button = POWER_BUTTON_RELEASED;
+		ui->power_button = VB2_POWER_BUTTON_RELEASED;
 	}
 
-	if (key == VB_BUTTON_POWER_SHORT_PRESS)
+	if (ui->key == VB_BUTTON_POWER_SHORT_PRESS)
 		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 
 	/* If desired, ignore shutdown request due to lid closure. */
@@ -70,7 +69,10 @@ int shutdown_required(struct vb2_context *ctx, uint32_t key)
 	if (DETACHABLE)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 
-	return !!shutdown_request;
+	if (shutdown_request)
+		return VB2_REQUEST_SHUTDOWN;
+
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 /*****************************************************************************/
@@ -278,8 +280,8 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		ui.key_trusted = !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD);
 
 		/* Check for shutdown request. */
-		if (shutdown_required(ctx, ui.key)) {
-			VB2_DEBUG("Shutdown required!\n");
+		if (check_shutdown_request(&ui) == VB2_REQUEST_SHUTDOWN) {
+			VB2_DEBUG("Shutdown requested!\n");
 			return VB2_REQUEST_SHUTDOWN;
 		}
 

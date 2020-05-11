@@ -246,7 +246,7 @@ static void reset_common_data(void)
 
 	vb2_nv_init(ctx);
 
-	/* For shutdown_required */
+	/* For check_shutdown_request */
 	mock_calls_until_shutdown = 10;
 
 	/* For try_recovery_action */

@@ -10,13 +10,7 @@
 #ifndef VBOOT_REFERENCE_2UI_PRIVATE_H_
 #define VBOOT_REFERENCE_2UI_PRIVATE_H_
 
-enum power_button_state {
-	POWER_BUTTON_HELD_SINCE_BOOT = 0,
-	POWER_BUTTON_RELEASED,
-	POWER_BUTTON_PRESSED,  /* Must have been previously released */
-};
-extern enum power_button_state power_button;
-int shutdown_required(struct vb2_context *ctx, uint32_t key);
+vb2_error_t check_shutdown_request(struct vb2_ui_context *ui);
 
 extern int invalid_disk_last;
 

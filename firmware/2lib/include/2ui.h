@@ -46,6 +46,12 @@ struct vb2_screen_state {
 	uint32_t disabled_item_mask;
 };
 
+enum vb2_power_button {
+	VB2_POWER_BUTTON_HELD_SINCE_BOOT = 0,
+	VB2_POWER_BUTTON_RELEASED,
+	VB2_POWER_BUTTON_PRESSED,  /* Must have been previously released */
+};
+
 struct vb2_ui_context {
 	struct vb2_context *ctx;
 	const struct vb2_screen_info *root_screen;
@@ -58,6 +64,9 @@ struct vb2_ui_context {
 	int disable_timer;
 	uint64_t start_time;
 	int beep_count;
+
+	/* For check_shutdown_request. */
+	enum vb2_power_button power_button;
 };
 
 vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id);

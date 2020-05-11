@@ -187,7 +187,7 @@ static void reset_common_data(enum reset_type t)
 	mock_displayed_count = 0;
 	mock_displayed_i = 0;
 
-	/* For shutdown_required */
+	/* For check_shutdown_request */
 	if (t == FOR_DEVELOPER)
 		mock_calls_until_shutdown = 2000;  /* Larger than 30s */
 	else
