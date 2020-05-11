@@ -53,11 +53,22 @@ struct vb2_ui_context {
 	uint32_t locale_id;
 	uint32_t key;
 	int key_trusted;
+
+	/* For developer mode screen. */
+	int disable_timer;
+	uint64_t start_time;
+	int beep_count;
 };
 
 vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id);
+vb2_error_t vb2_ui_menu_select_action(struct vb2_ui_context *ui);
 vb2_error_t vb2_ui_back_action(struct vb2_ui_context *ui);
+
 vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui);
+vb2_error_t vb2_ui_developer_mode_boot_internal_action(
+	struct vb2_ui_context *ui);
+vb2_error_t vb2_ui_developer_mode_boot_external_action(
+	struct vb2_ui_context *ui);
 
 /**
  * Get info struct of a screen.

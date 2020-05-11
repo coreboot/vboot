@@ -27,17 +27,20 @@ struct input_action {
 
 vb2_error_t menu_up_action(struct vb2_ui_context *ui);
 vb2_error_t menu_down_action(struct vb2_ui_context *ui);
-vb2_error_t menu_select_action(struct vb2_ui_context *ui);
 vb2_error_t ctrl_d_action(struct vb2_ui_context *ui);
+vb2_error_t change_to_dev_screen_action(struct vb2_ui_context *ui);
 vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui);
 
-vb2_error_t change_screen(struct vb2_ui_context *ui, enum vb2_screen id);
 vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		    vb2_error_t (*global_action)(struct vb2_ui_context *ui));
 
 vb2_error_t try_recovery_action(struct vb2_ui_context *ui);
 
 /* From 2ui_screens.c */
+vb2_error_t advanced_options_init(struct vb2_ui_context *ui);
 vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui);
+vb2_error_t developer_mode_init(struct vb2_ui_context *ui);
+vb2_error_t developer_mode_action(struct vb2_ui_context *ui);
+vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui);
 
 #endif  /* VBOOT_REFERENCE_2UI_PRIVATE_H_ */

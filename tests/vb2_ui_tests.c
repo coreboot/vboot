@@ -45,6 +45,11 @@ static int mock_key_trusted[64];
 static int mock_key_count;
 static int mock_key_total;
 
+static uint64_t mock_get_timer_last;
+static uint64_t mock_time;
+static const uint64_t mock_time_start = 31ULL * VB_USEC_PER_SEC;
+static int mock_vbexbeep_called;
+
 static enum vb2_dev_default_boot mock_default_boot;
 static int mock_dev_boot_allowed;
 static int mock_dev_boot_legacy_allowed;
@@ -135,8 +140,15 @@ static void displayed_no_extra(void)
 			"  no extra screens");
 }
 
+/* Type of test to reset for */
+enum reset_type {
+	FOR_DEVELOPER,
+	FOR_BROKEN_RECOVERY,
+	FOR_MANUAL_RECOVERY,
+};
+
 /* Reset mock data (for use before each test) */
-static void reset_common_data(void)
+static void reset_common_data(enum reset_type t)
 {
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
@@ -144,6 +156,9 @@ static void reset_common_data(void)
 	memset(&gbb, 0, sizeof(gbb));
 
 	vb2_nv_init(ctx);
+
+	if (t == FOR_DEVELOPER)
+		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 	sd = vb2_get_sd(ctx);
 
@@ -171,7 +186,10 @@ static void reset_common_data(void)
 	mock_displayed_i = 0;
 
 	/* For shutdown_required */
-	mock_calls_until_shutdown = 10;
+	if (t == FOR_DEVELOPER)
+		mock_calls_until_shutdown = 2000;  /* Larger than 30s */
+	else
+		mock_calls_until_shutdown = 10;
 
 	/* For VbExKeyboardRead */
 	memset(mock_key, 0, sizeof(mock_key));
@@ -180,6 +198,11 @@ static void reset_common_data(void)
 	mock_key_total = 0;
 	/* Avoid iteration #0 which has a screen change by global action */
 	add_mock_keypress(0);
+
+	/* For vboot_audio.h */
+	mock_get_timer_last = 0;
+	mock_time = mock_time_start;
+	mock_vbexbeep_called = 0;
 
 	/* For dev_boot* in 2misc.h */
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_DISK;
@@ -261,6 +284,23 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 	return 0;
 }
 
+uint64_t VbExGetTimer(void)
+{
+	mock_get_timer_last = mock_time;
+	return mock_time;
+}
+
+void VbExSleepMs(uint32_t msec)
+{
+	mock_time += msec * VB_USEC_PER_MSEC;
+}
+
+vb2_error_t VbExBeep(uint32_t msec, uint32_t frequency)
+{
+	mock_vbexbeep_called++;
+	return VB2_SUCCESS;
+}
+
 enum vb2_dev_default_boot vb2_get_dev_boot_target(struct vb2_context *c)
 {
 	return mock_default_boot;
@@ -311,51 +351,45 @@ static void developer_tests(void)
 {
 	VB2_DEBUG("Testing developer mode...\n");
 
-	/* Proceed */
-	reset_common_data();
+	/* Proceed to internal disk after timeout */
+	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
-	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS, "proceed");
-	displayed_no_extra();
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0,
-		"  recovery reason");
-	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
-
-	/* Proceed to legacy */
-	reset_common_data();
-	mock_default_boot = VB2_DEV_DEFAULT_BOOT_LEGACY;
-	mock_dev_boot_legacy_allowed = 1;
-	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS, "proceed to legacy");
-	TEST_EQ(mock_vbexlegacy_called, 1, "  try legacy");
-	TEST_EQ(mock_altfw_num_last, 0, "  check altfw_num");
-	displayed_no_extra();
-	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
-
-	/* Proceed to legacy only if enabled */
-	reset_common_data();
-	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
-	mock_default_boot = VB2_DEV_DEFAULT_BOOT_LEGACY;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
-		"default legacy not enabled");
-	TEST_EQ(mock_vbexlegacy_called, 0, "  not legacy");
+		"proceed to internal disk after timeout");
+	displayed_eq("dev mode", VB2_SCREEN_DEVELOPER_MODE, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
+	TEST_TRUE(mock_get_timer_last - mock_time_start >=
+		  30 * VB_USEC_PER_SEC, "  finished delay");
+	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
-	/* Proceed to USB */
-	reset_common_data();
+	/* Proceed to USB after timeout */
+	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_USB;
 	mock_dev_boot_usb_allowed = 1;
-	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS, "proceed to USB");
+	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
+		"proceed to USB after timeout");
+	displayed_eq("dev mode", VB2_SCREEN_DEVELOPER_MODE, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
+	TEST_TRUE(mock_get_timer_last - mock_time_start >=
+		  30 * VB_USEC_PER_SEC, "  finished delay");
+	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
-	/* Proceed to USB only if enabled */
-	reset_common_data();
-	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
+	/* Default boot USB not allowed, don't boot */
+	reset_common_data(FOR_DEVELOPER);
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_USB;
-	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
-		"default USB not enabled");
+	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"default USB not allowed, don't boot");
+	displayed_eq("dev mode", VB2_SCREEN_DEVELOPER_MODE, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
+	TEST_TRUE(mock_get_timer_last - mock_time_start >=
+		  30 * VB_USEC_PER_SEC, "  finished delay");
+	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
 	VB2_DEBUG("...done.\n");
@@ -367,7 +401,7 @@ static void broken_recovery_tests(void)
 
 	/* BROKEN screen shutdown request */
 	if (!DETACHABLE) {
-		reset_common_data();
+		reset_common_data(FOR_BROKEN_RECOVERY);
 		add_mock_keypress(VB_BUTTON_POWER_SHORT_PRESS);
 		mock_calls_until_shutdown = -1;
 		TEST_EQ(vb2_broken_recovery_menu(ctx),
@@ -379,7 +413,7 @@ static void broken_recovery_tests(void)
 	}
 
 	/* Shortcuts that are always ignored in BROKEN */
-	reset_common_data();
+	reset_common_data(FOR_BROKEN_RECOVERY);
 	add_mock_key(VB_KEY_CTRL('D'), 1);
 	add_mock_key(VB_KEY_CTRL('U'), 1);
 	add_mock_key(VB_KEY_CTRL('L'), 1);
@@ -388,7 +422,7 @@ static void broken_recovery_tests(void)
 	add_mock_key(VB_BUTTON_VOL_DOWN_LONG_PRESS, 1);
 	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"Shortcuts ignored in BROKEN");
-	TEST_EQ(mock_calls_until_shutdown, 0, "  ignore all");
+	TEST_EQ(mock_calls_until_shutdown, 0, "  loop forever");
 	displayed_eq("broken screen", VB2_SCREEN_RECOVERY_BROKEN,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
@@ -401,7 +435,7 @@ static void manual_recovery_tests(void)
 	VB2_DEBUG("Testing manual recovery mode...\n");
 
 	/* Timeout, shutdown */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"timeout, shutdown");
@@ -411,7 +445,7 @@ static void manual_recovery_tests(void)
 
 	/* Power button short pressed = shutdown request */
 	if (!DETACHABLE) {
-		reset_common_data();
+		reset_common_data(FOR_MANUAL_RECOVERY);
 		add_mock_keypress(VB_BUTTON_POWER_SHORT_PRESS);
 		add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND,
 			       VB_DISK_FLAG_REMOVABLE);
@@ -424,7 +458,7 @@ static void manual_recovery_tests(void)
 	}
 
 	/* Item 1 = phone recovery */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
@@ -436,7 +470,7 @@ static void manual_recovery_tests(void)
 	displayed_no_extra();
 
 	/* Item 2 = external disk recovery */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
@@ -451,7 +485,7 @@ static void manual_recovery_tests(void)
 	displayed_no_extra();
 
 	/* Boots if we have a valid image on first try */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	add_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_SUCCESS,
@@ -461,7 +495,7 @@ static void manual_recovery_tests(void)
 	displayed_no_extra();
 
 	/* Boots eventually if we get a valid image later */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
@@ -473,7 +507,7 @@ static void manual_recovery_tests(void)
 	displayed_no_extra();
 
 	/* Invalid image, then remove, then valid image */
-	reset_common_data();
+	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
