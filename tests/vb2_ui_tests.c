@@ -51,7 +51,7 @@ static int mock_dev_boot_legacy_allowed;
 static int mock_dev_boot_usb_allowed;
 
 static int mock_vbexlegacy_called;
-static enum VbAltFwIndex_t mock_altfw_num;
+static enum VbAltFwIndex_t mock_altfw_num_last;
 
 static vb2_error_t mock_vbtlk_retval[32];
 static uint32_t mock_vbtlk_expected_flag[32];
@@ -147,8 +147,10 @@ static void reset_common_data(void)
 
 	sd = vb2_get_sd(ctx);
 
-	/* For global actions */
+	/* For try_recovery_action */
 	invalid_disk_last = -1;
+
+	/* Mock ui_context based on real screens */
 	mock_ui_context = (struct vb2_ui_context){
 		.ctx = ctx,
 		.root_screen = vb2_get_screen_info(VB2_SCREEN_BLANK),
@@ -187,7 +189,7 @@ static void reset_common_data(void)
 
 	/* For VbExLegacy */
 	mock_vbexlegacy_called = 0;
-	mock_altfw_num = -100;
+	mock_altfw_num_last = -100;
 
 	/* For VbTryLoadKernel */
 	memset(mock_vbtlk_retval, 0, sizeof(mock_vbtlk_retval));
@@ -282,7 +284,7 @@ int vb2_dev_boot_usb_allowed(struct vb2_context *c)
 vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
 {
 	mock_vbexlegacy_called++;
-	mock_altfw_num = altfw_num;
+	mock_altfw_num_last = altfw_num;
 
 	return VB2_SUCCESS;
 }
@@ -305,89 +307,6 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 }
 
 /* Tests */
-static void try_recovery_action_tests(void)
-{
-	VB2_DEBUG("Testing try recovery action...\n");
-
-	/* Success on the first try */
-	reset_common_data();
-	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success on the first try");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_BLANK,
-		"  screen remains the same");
-
-	/* No disk found on the first try */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found on the first try");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_RECOVERY_SELECT,
-		"  recovery select screen");
-
-	/* Invalid disk on the first try */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid on the first try");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_RECOVERY_INVALID,
-		"  recovery invalid screen");
-
-	/* Success, last == 0 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success, last == 0");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_BLANK,
-		"  screen remains the same");
-
-	/* No disk found, last == 0 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found, last == 0");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_BLANK, "  screen no change");
-
-	/* Invalid disk, last == 0 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid, last == 0");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_RECOVERY_INVALID,
-		"  recovery invalid screen");
-
-	/* Success, last == 1 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success, last == 1");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_BLANK,
-		"  screen remains the same");
-
-	/* No disk found, last == 1 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found, last == 1");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_RECOVERY_SELECT,
-		"  recovery select screen");
-
-	/* Invalid disk, last == 1 */
-	reset_common_data();
-	add_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid, last == 1");
-	TEST_EQ(mock_state->screen->id, VB2_SCREEN_BLANK, "  screen no change");
-
-	VB2_DEBUG("...done.\n");
-}
-
 static void developer_tests(void)
 {
 	VB2_DEBUG("Testing developer mode...\n");
@@ -407,7 +326,7 @@ static void developer_tests(void)
 	mock_dev_boot_legacy_allowed = 1;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS, "proceed to legacy");
 	TEST_EQ(mock_vbexlegacy_called, 1, "  try legacy");
-	TEST_EQ(mock_altfw_num, 0, "  check altfw_num");
+	TEST_EQ(mock_altfw_num_last, 0, "  check altfw_num");
 	displayed_no_extra();
 	TEST_EQ(mock_vbtlk_count, mock_vbtlk_total, "  used up mock_vbtlk");
 
@@ -575,7 +494,6 @@ static void manual_recovery_tests(void)
 
 int main(void)
 {
-	try_recovery_action_tests();
 	developer_tests();
 	broken_recovery_tests();
 	manual_recovery_tests();
