@@ -59,18 +59,6 @@ static const struct quirks_record quirks_records[] = {
         { .match = "Google_Wizpig.", .quirks = "allow_empty_wltag" },
 
         { .match = "Google_Phaser.", .quirks = "override_signature_id" },
-
-	/* Zork Boards */
-	{ .match = "Google_Berknip.",
-		.quirks = "disable_compatible_platform_check" },
-	{ .match = "Google_Dalboz.",
-		.quirks = "disable_compatible_platform_check" },
-	{ .match = "Google_Ezkinil.",
-		.quirks = "disable_compatible_platform_check" },
-	{ .match = "Google_Morphius.",
-		.quirks = "disable_compatible_platform_check" },
-	{ .match = "Google_Trembyle.",
-		.quirks = "disable_compatible_platform_check" },
 };
 
 /* Preserves meta data and reload image contents from given file path. */
@@ -393,16 +381,6 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
 }
 
 /*
- * Disables compatible platform check.
- * The compatible platform check ensures the current platform and update
- * start with the same name.
- */
-static int quirk_disable_compatible_platform_check(struct updater_config *cfg) {
-	cfg->check_platform = 0;
-	return 0;
-}
-
-/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -455,13 +433,6 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "chromium/146876241; override signature id for "
 			"devices shipped with different root key.";
 	quirks->apply = NULL; /* Simple config. */
-
-	quirks = &cfg->quirks[QUIRK_DISABLE_COMPATIBLE_PLATFORM_CHECK];
-	quirks->name = "disable_compatible_platform_check";
-	quirks->help = "b/155941790; Disables compatible platform check."
-		       "The compatible platform check ensures the current"
-		       " platform and update start with the same name.";
-	quirks->apply = quirk_disable_compatible_platform_check;
 }
 
 /*
