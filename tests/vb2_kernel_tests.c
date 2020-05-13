@@ -213,9 +213,9 @@ static void phase1_tests(void)
 		"  key data");
 	TEST_EQ(sd->kernel_version_secdata, 0x20002,
 		"  secdata_kernel version");
-	/* Make sure phone recovery is disabled */
-	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 0,
-		"  phone recovery disabled");
+	/* Make sure phone recovery is enabled */
+	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
+		"  phone recovery enabled");
 
 	/* Bad secdata_fwmp causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
