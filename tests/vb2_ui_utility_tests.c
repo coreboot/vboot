@@ -29,6 +29,7 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_context *ctx;
 static struct vb2_gbb_header gbb;
 
+static uint32_t mock_locale_count;
 static int mock_shutdown_request;
 
 static struct vb2_ui_context mock_ui_context;
@@ -43,22 +44,18 @@ static vb2_error_t mock_action_base(struct vb2_ui_context *ui)
 }
 
 /* Mock screens */
-const struct vb2_menu_item mock_empty_menu[] = {};
 struct vb2_screen_info mock_screen_blank = {
 	.id = VB2_SCREEN_BLANK,
 	.name = "mock_screen_blank",
-	.num_items = ARRAY_SIZE(mock_empty_menu),
-	.items = mock_empty_menu,
 };
 struct vb2_screen_info mock_screen_base = {
 	.id = MOCK_SCREEN_BASE,
 	.name = "mock_screen_base: menuless screen",
-	.num_items = ARRAY_SIZE(mock_empty_menu),
-	.items = mock_empty_menu,
 };
 struct vb2_menu_item mock_screen_menu_items[] = {
 	{
-		.text = "option 0",
+		.text = "option 0: language selection",
+		.is_language_select = 1,
 	},
 	{
 		.text = "option 1",
@@ -76,14 +73,14 @@ struct vb2_menu_item mock_screen_menu_items[] = {
 const struct vb2_screen_info mock_screen_menu = {
 	.id = MOCK_SCREEN_MENU,
 	.name = "mock_screen_menu: screen with 5 options",
-	.num_items = ARRAY_SIZE(mock_screen_menu_items),
-	.items = mock_screen_menu_items,
+	.menu = {
+		.num_items = ARRAY_SIZE(mock_screen_menu_items),
+		.items = mock_screen_menu_items,
+	},
 };
 const struct vb2_screen_info mock_screen_root = {
 	.id = MOCK_SCREEN_ROOT,
 	.name = "mock_screen_root",
-	.num_items = ARRAY_SIZE(mock_empty_menu),
-	.items = mock_empty_menu,
 };
 
 static void screen_state_eq(const struct vb2_screen_state *state,
@@ -115,6 +112,9 @@ static void reset_common_data(void)
 
 	vb2_nv_init(ctx);
 
+	/* For vb2ex_get_locale_count */
+	mock_locale_count = 1;
+
 	/* For check_shutdown_request */
 	mock_shutdown_request = MOCK_IGNORE;
 
@@ -131,6 +131,11 @@ static void reset_common_data(void)
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;
+}
+
+uint32_t vb2ex_get_locale_count(void)
+{
+	return mock_locale_count;
 }
 
 uint32_t VbExIsShutdownRequested(void)
@@ -299,6 +304,46 @@ static void change_screen_tests(void)
 		VB2_SUCCESS, "change to screen with init");
 	TEST_EQ(mock_action_called, 1, "  action called once");
 
+	/* Change to screen without init; using default init() */
+	reset_common_data();
+	mock_state->screen = &mock_screen_base;
+	TEST_EQ(vb2_ui_change_screen(&mock_ui_context, MOCK_SCREEN_MENU),
+		VB2_REQUEST_UI_CONTINUE,
+		"change to screen with language selection");
+	screen_state_eq(mock_state, MOCK_SCREEN_MENU,
+			1,	/* Since index 0 is the language selection */
+			0);
+
+	VB2_DEBUG("...done.\n");
+}
+
+static void get_language_menu_tests(void)
+{
+	const struct vb2_menu *menu;
+	const struct vb2_menu_item *items;
+	VB2_DEBUG("Testing get_language_menu...\n");
+
+	/* Only allocate menu items once */
+	reset_common_data();
+	mock_locale_count = 7;
+	menu = get_language_menu(&mock_ui_context);
+	TEST_PTR_NEQ(menu, NULL, "get language menu");
+	TEST_EQ(menu->num_items, 7, "  correct locale count");
+	TEST_PTR_NEQ(menu->items, NULL, "  items not null");
+	items = menu->items;
+
+	menu = get_language_menu(&mock_ui_context);
+	TEST_PTR_NEQ(menu, NULL, "get language menu again");
+	TEST_EQ(menu->num_items, 7, "  correct locale count again");
+	TEST_PTR_EQ(menu->items, items, "  same pointer of items");
+
+	/* Locale count = 0 */
+	reset_common_data();
+	mock_locale_count = 0;
+	menu = get_language_menu(&mock_ui_context);
+	TEST_PTR_NEQ(menu, NULL, "menu not null");
+	TEST_EQ(menu->num_items, 1, "  locale count 1");
+
 	VB2_DEBUG("...done.\n");
 }
 
@@ -307,6 +352,7 @@ int main(void)
 	check_shutdown_request_tests();
 	vb2_ui_change_root_tests();
 	change_screen_tests();
+	get_language_menu_tests();
 
 	return gTestSuccess ? 0 : 255;
 }

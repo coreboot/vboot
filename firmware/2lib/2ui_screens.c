@@ -5,6 +5,7 @@
  * Firmware screen definitions.
  */
 
+#include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
@@ -13,9 +14,16 @@
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 
-#define MENU_ITEMS(a) \
+#define MENU_ITEMS(a) ((struct vb2_menu){ \
 	.num_items = ARRAY_SIZE(a), \
-	.items = a
+	.items = a, \
+})
+
+#define LANGUAGE_SELECT_ITEM { \
+	.text = "Language selection", \
+	.target = VB2_SCREEN_LANGUAGE_SELECT, \
+	.is_language_select = 1, \
+}
 
 #define ADVANCED_OPTIONS_ITEM { \
 	.text = "Advanced options", \
@@ -31,26 +39,105 @@ static const struct vb2_screen_info blank_screen = {
 };
 
 /******************************************************************************/
+/* VB2_SCREEN_LANGUAGE_SELECT */
+
+static vb2_error_t language_select_action(struct vb2_ui_context *ui)
+{
+	vb2_error_t rv;
+	ui->locale_id = ui->state.selected_item;
+	VB2_DEBUG("Locale changed to %u\n", ui->locale_id);
+
+	/* Write locale id back to nvdata. */
+	vb2_nv_set(ui->ctx, VB2_NV_LOCALIZATION_INDEX, ui->locale_id);
+
+	/* Commit nvdata changes immediately, in case of three-finger salute
+	   reboot.  Ignore commit errors in recovery mode. */
+	rv = vb2ex_commit_data(ui->ctx);
+	if (rv && !(ui->ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
+		return rv;
+
+	return vb2_ui_change_root(ui);
+}
+
+const struct vb2_menu *get_language_menu(struct vb2_ui_context *ui)
+{
+	int i;
+	uint32_t num_locales;
+	struct vb2_menu_item *items;
+
+	if (ui->language_menu.num_items > 0)
+		return &ui->language_menu;
+
+	num_locales = vb2ex_get_locale_count();
+	if (num_locales == 0) {
+		VB2_DEBUG("WARNING: No locales available; assuming 1 locale\n");
+		num_locales = 1;
+	}
+
+	items = malloc(num_locales * sizeof(struct vb2_menu_item));
+	if (!items) {
+		VB2_DEBUG("ERROR: malloc failed for language items\n");
+		return NULL;
+	}
+
+	for (i = 0; i < num_locales; i++) {
+		items[i].text = "Some language";
+		items[i].action = language_select_action;
+	}
+
+	ui->language_menu.num_items = num_locales;
+	ui->language_menu.items = items;
+	return &ui->language_menu;
+}
+
+static vb2_error_t language_select_init(struct vb2_ui_context *ui)
+{
+	const struct vb2_menu *menu = get_menu(ui);
+	if (menu->num_items == 0) {
+		VB2_DEBUG("ERROR: No menu items found; "
+			  "rejecting entering language selection screen\n");
+		return vb2_ui_change_root(ui);
+	}
+	if (ui->locale_id < menu->num_items) {
+		ui->state.selected_item = ui->locale_id;
+	} else {
+		VB2_DEBUG("WARNING: Current locale not found in menu items; "
+			  "initializing selected_item to 0\n");
+		ui->state.selected_item = 0;
+	}
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static const struct vb2_screen_info language_select_screen = {
+	.id = VB2_SCREEN_LANGUAGE_SELECT,
+	.name = "Language selection screen",
+	.init = language_select_init,
+	.get_menu = get_language_menu,
+};
+
+/******************************************************************************/
 /* VB2_SCREEN_RECOVERY_BROKEN */
 
 static const struct vb2_menu_item recovery_broken_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	ADVANCED_OPTIONS_ITEM,
 };
 
 static const struct vb2_screen_info recovery_broken_screen = {
 	.id = VB2_SCREEN_RECOVERY_BROKEN,
 	.name = "Recover broken device",
-	MENU_ITEMS(recovery_broken_items),
+	.menu = MENU_ITEMS(recovery_broken_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_ADVANCED_OPTIONS */
 
-#define ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE 0
-#define ADVANCED_OPTIONS_ITEM_BACK 1
+#define ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE 1
+#define ADVANCED_OPTIONS_ITEM_BACK 2
 
 vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 {
+	ui->state.selected_item = ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
 		ui->state.disabled_item_mask |=
 			1 << ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
@@ -61,6 +148,7 @@ vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 }
 
 static const struct vb2_menu_item advanced_options_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	[ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE] = {
 		.text = "Enable developer mode",
 		.target = VB2_SCREEN_RECOVERY_TO_DEV,
@@ -75,17 +163,18 @@ static const struct vb2_screen_info advanced_options_screen = {
 	.id = VB2_SCREEN_ADVANCED_OPTIONS,
 	.name = "Advanced options",
 	.init = advanced_options_init,
-	MENU_ITEMS(advanced_options_items),
+	.menu = MENU_ITEMS(advanced_options_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_SELECT */
 
-#define RECOVERY_SELECT_ITEM_PHONE 0
-#define RECOVERY_SELECT_ITEM_EXTERNAL_DISK 1
+#define RECOVERY_SELECT_ITEM_PHONE 1
+#define RECOVERY_SELECT_ITEM_EXTERNAL_DISK 2
 
 vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 {
+	ui->state.selected_item = RECOVERY_SELECT_ITEM_PHONE;
 	if (!vb2api_phone_recovery_enabled(ui->ctx)) {
 		VB2_DEBUG("WARNING: Phone recovery not available\n");
 		ui->state.disabled_item_mask |=
@@ -96,6 +185,7 @@ vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 }
 
 static const struct vb2_menu_item recovery_select_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	[RECOVERY_SELECT_ITEM_PHONE] = {
 		.text = "Recovery using phone",
 		.target = VB2_SCREEN_RECOVERY_PHONE_STEP1,
@@ -111,22 +201,27 @@ static const struct vb2_screen_info recovery_select_screen = {
 	.id = VB2_SCREEN_RECOVERY_SELECT,
 	.name = "Recovery method selection",
 	.init = recovery_select_init,
-	MENU_ITEMS(recovery_select_items),
+	.menu = MENU_ITEMS(recovery_select_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_INVALID */
 
+static const struct vb2_menu_item recovery_invalid_items[] = {
+	LANGUAGE_SELECT_ITEM,
+};
+
 static const struct vb2_screen_info recovery_invalid_screen = {
 	.id = VB2_SCREEN_RECOVERY_INVALID,
 	.name = "Invalid recovery inserted",
+	.menu = MENU_ITEMS(recovery_invalid_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_TO_DEV */
 
-#define RECOVERY_TO_DEV_ITEM_CONFIRM 0
-#define RECOVERY_TO_DEV_ITEM_CANCEL 1
+#define RECOVERY_TO_DEV_ITEM_CONFIRM 1
+#define RECOVERY_TO_DEV_ITEM_CANCEL 2
 
 vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 {
@@ -139,6 +234,8 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 		VB2_DEBUG("Presence button stuck?\n");
 		return vb2_ui_change_root(ui);
 	}
+
+	ui->state.selected_item = RECOVERY_TO_DEV_ITEM_CONFIRM;
 
 	/* Disable "Confirm" button for other physical presence types. */
 	if (!PHYSICAL_PRESENCE_KEYBOARD) {
@@ -207,6 +304,7 @@ vb2_error_t recovery_to_dev_action(struct vb2_ui_context *ui)
 }
 
 static const struct vb2_menu_item recovery_to_dev_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	[RECOVERY_TO_DEV_ITEM_CONFIRM] = {
 		.text = "Confirm",
 		.action = recovery_to_dev_confirm_action,
@@ -222,31 +320,41 @@ static const struct vb2_screen_info recovery_to_dev_screen = {
 	.name = "Transition to developer mode",
 	.init = recovery_to_dev_init,
 	.action = recovery_to_dev_action,
-	MENU_ITEMS(recovery_to_dev_items),
+	.menu = MENU_ITEMS(recovery_to_dev_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_PHONE_STEP1 */
 
+static const struct vb2_menu_item recovery_phone_step1_items[] = {
+	LANGUAGE_SELECT_ITEM,
+};
+
 static const struct vb2_screen_info recovery_phone_step1_screen = {
 	.id = VB2_SCREEN_RECOVERY_PHONE_STEP1,
 	.name = "Phone recovery step 1",
+	.menu = MENU_ITEMS(recovery_phone_step1_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_DISK_STEP1 */
 
+static const struct vb2_menu_item recovery_disk_step1_items[] = {
+	LANGUAGE_SELECT_ITEM,
+};
+
 static const struct vb2_screen_info recovery_disk_step1_screen = {
 	.id = VB2_SCREEN_RECOVERY_DISK_STEP1,
 	.name = "Disk recovery step 1",
+	.menu = MENU_ITEMS(recovery_disk_step1_items),
 };
 
 /******************************************************************************/
 /* VB2_SCREEN_DEVELOPER_MODE */
 
-#define DEVELOPER_MODE_ITEM_RETURN_TO_SECURE 0
-#define DEVELOPER_MODE_ITEM_BOOT_INTERNAL 1
-#define DEVELOPER_MODE_ITEM_BOOT_EXTERNAL 2
+#define DEVELOPER_MODE_ITEM_RETURN_TO_SECURE 1
+#define DEVELOPER_MODE_ITEM_BOOT_INTERNAL 2
+#define DEVELOPER_MODE_ITEM_BOOT_EXTERNAL 3
 
 vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 {
@@ -353,6 +461,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 }
 
 static const struct vb2_menu_item developer_mode_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	[DEVELOPER_MODE_ITEM_RETURN_TO_SECURE] = {
 		.text = "Return to secure mode",
 		.target = VB2_SCREEN_DEVELOPER_TO_NORM,
@@ -373,7 +482,7 @@ static const struct vb2_screen_info developer_mode_screen = {
 	.name = "Developer mode",
 	.init = developer_mode_init,
 	.action = developer_mode_action,
-	MENU_ITEMS(developer_mode_items),
+	.menu = MENU_ITEMS(developer_mode_items),
 };
 
 /******************************************************************************/
@@ -392,6 +501,7 @@ vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui)
 }
 
 static const struct vb2_menu_item developer_to_norm_items[] = {
+	LANGUAGE_SELECT_ITEM,
 	{
 		.text = "Confirm",
 		.action = developer_to_norm_action,
@@ -405,7 +515,7 @@ static const struct vb2_menu_item developer_to_norm_items[] = {
 static const struct vb2_screen_info developer_to_norm_screen = {
 	.id = VB2_SCREEN_DEVELOPER_TO_NORM,
 	.name = "Transition to normal mode",
-	MENU_ITEMS(developer_to_norm_items),
+	.menu = MENU_ITEMS(developer_to_norm_items),
 };
 
 /******************************************************************************/
@@ -418,6 +528,7 @@ static const struct vb2_screen_info developer_to_norm_screen = {
  */
 static const struct vb2_screen_info *screens[] = {
 	&blank_screen,
+	&language_select_screen,
 	&recovery_broken_screen,
 	&advanced_options_screen,
 	&recovery_select_screen,

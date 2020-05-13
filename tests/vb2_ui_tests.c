@@ -39,6 +39,8 @@ static struct display_call mock_displayed[64];
 static int mock_displayed_count;
 static int mock_displayed_i;
 
+static uint32_t mock_locale_count;
+
 static int mock_calls_until_shutdown;
 
 /* Iteration counter starts from 0
@@ -194,6 +196,9 @@ static void reset_common_data(enum reset_type t)
 	mock_displayed_count = 0;
 	mock_displayed_i = 0;
 
+	/* For vb2ex_get_locale_count */
+	mock_locale_count = 1;
+
 	/* For check_shutdown_request */
 	if (t == FOR_DEVELOPER)
 		mock_calls_until_shutdown = 2000;  /* Larger than 30s */
@@ -278,6 +283,11 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 	mock_displayed_count++;
 
 	return VB2_SUCCESS;
+}
+
+uint32_t vb2ex_get_locale_count(void)
+{
+	return mock_locale_count;
 }
 
 uint32_t VbExIsShutdownRequested(void)
@@ -502,7 +512,7 @@ static void manual_recovery_tests(void)
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"phone recovery");
 	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 0, MOCK_IGNORE);
+		     MOCK_IGNORE, 1, MOCK_IGNORE);
 	displayed_eq("phone recovery", VB2_SCREEN_RECOVERY_PHONE_STEP1,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
@@ -514,9 +524,9 @@ static void manual_recovery_tests(void)
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"external disk recovery");
 	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 0, MOCK_IGNORE);
-	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
 		     MOCK_IGNORE, 1, MOCK_IGNORE);
+	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+		     MOCK_IGNORE, 2, MOCK_IGNORE);
 	displayed_eq("disk recovery", VB2_SCREEN_RECOVERY_DISK_STEP1,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
@@ -703,11 +713,64 @@ static void manual_recovery_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static void language_selection_tests(void)
+{
+	VB2_DEBUG("Testing language selection...\n");
+
+	/* Enter language menu and change language */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	mock_locale_count = 100;
+	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 23);
+	add_mock_keypress(VB_KEY_UP);
+	add_mock_keypress(VB_KEY_ENTER);	/* select language */
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);	/* select locale 24 */
+	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"change language");
+	displayed_eq("RECOVERY_SELECT default", VB2_SCREEN_RECOVERY_SELECT,
+		     23, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_eq("RECOVERY_SELECT lang", VB2_SCREEN_RECOVERY_SELECT,
+		     23, 0, MOCK_IGNORE);
+	displayed_eq("LANGUAGE_SELECT 23", VB2_SCREEN_LANGUAGE_SELECT,
+		     23, 23, MOCK_IGNORE);
+	displayed_eq("LANGUAGE_SELECT 24", VB2_SCREEN_LANGUAGE_SELECT,
+		     23, 24, MOCK_IGNORE);
+	displayed_eq("RECOVERY_SELECT new locale", VB2_SCREEN_RECOVERY_SELECT,
+		     24, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_no_extra();
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX), 24,
+		"  locale 24 saved to nvdata");
+
+	/* Locale count = 0 */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	mock_locale_count = 0;
+	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, 23);
+	add_mock_keypress(VB_KEY_UP);
+	add_mock_keypress(VB_KEY_ENTER);	/* select language */
+	add_mock_keypress(VB_KEY_ENTER);	/* select locale 0 */
+	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"enter language menu");
+	displayed_eq("RECOVERY_SELECT default", VB2_SCREEN_RECOVERY_SELECT,
+		     23, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_eq("RECOVERY_SELECT lang", VB2_SCREEN_RECOVERY_SELECT,
+		     23, 0, MOCK_IGNORE);
+	displayed_eq("LANGUAGE_SELECT index 0", VB2_SCREEN_LANGUAGE_SELECT,
+		     23, 0, MOCK_IGNORE);
+	displayed_eq("RECOVERY_SELECT locale 0", VB2_SCREEN_RECOVERY_SELECT,
+		     0, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_no_extra();
+
+	VB2_DEBUG("...done.\n");
+}
+
 int main(void)
 {
 	developer_tests();
 	broken_recovery_tests();
 	manual_recovery_tests();
+	language_selection_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
