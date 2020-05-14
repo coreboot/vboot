@@ -81,12 +81,26 @@ static const struct vb2_screen_info advanced_options_screen = {
 /******************************************************************************/
 /* VB2_SCREEN_RECOVERY_SELECT */
 
+#define RECOVERY_SELECT_ITEM_PHONE 0
+#define RECOVERY_SELECT_ITEM_EXTERNAL_DISK 1
+
+vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
+{
+	if (!vb2api_phone_recovery_enabled(ui->ctx)) {
+		VB2_DEBUG("WARNING: Phone recovery not available\n");
+		ui->state.disabled_item_mask |=
+			1 << RECOVERY_SELECT_ITEM_PHONE;
+		ui->state.selected_item = RECOVERY_SELECT_ITEM_EXTERNAL_DISK;
+	}
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
 static const struct vb2_menu_item recovery_select_items[] = {
-	{
+	[RECOVERY_SELECT_ITEM_PHONE] = {
 		.text = "Recovery using phone",
 		.target = VB2_SCREEN_RECOVERY_PHONE_STEP1,
 	},
-	{
+	[RECOVERY_SELECT_ITEM_EXTERNAL_DISK] = {
 		.text = "Recovery using external disk",
 		.target = VB2_SCREEN_RECOVERY_DISK_STEP1,
 	},
@@ -96,6 +110,7 @@ static const struct vb2_menu_item recovery_select_items[] = {
 static const struct vb2_screen_info recovery_select_screen = {
 	.id = VB2_SCREEN_RECOVERY_SELECT,
 	.name = "Recovery method selection",
+	.init = recovery_select_init,
 	MENU_ITEMS(recovery_select_items),
 };
 

@@ -9,6 +9,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2struct.h"
 #include "2ui.h"
 #include "2ui_private.h"
 #include "test_common.h"
@@ -161,6 +162,7 @@ static void reset_common_data(enum reset_type t)
 		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 	sd = vb2_get_sd(ctx);
+	sd->status |= VB2_SD_STATUS_SECDATA_KERNEL_INIT;
 
 	/* For try_recovery_action */
 	invalid_disk_last = -1;
