@@ -514,7 +514,19 @@ enum vb2_dev_default_boot vb2_get_dev_boot_target(
 	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
 		return VB2_DEV_DEFAULT_BOOT_LEGACY;
 
-	return vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
+	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
+		case VB2_DEV_DEFAULT_BOOT_USB:
+			if (vb2_dev_boot_usb_allowed(ctx))
+				return VB2_DEV_DEFAULT_BOOT_USB;
+			break;
+
+		case VB2_DEV_DEFAULT_BOOT_LEGACY:
+			if (vb2_dev_boot_legacy_allowed(ctx))
+				return VB2_DEV_DEFAULT_BOOT_LEGACY;
+			break;
+	}
+
+	return VB2_DEV_DEFAULT_BOOT_DISK;
 }
 
 int vb2_dev_boot_allowed(struct vb2_context *ctx)
