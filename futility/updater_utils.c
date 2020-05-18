@@ -474,7 +474,7 @@ int host_detect_servo(const char **programmer_ptr, int *need_prepare_ptr)
 		programmer = "raiden_debug_spi:target=AP";
 	} else {
 		VB2_DEBUG("Selected Servo V2.\n");
-		programmer = "ft2232_spi:type=servo-v2";
+		programmer = "ft2232_spi:type=google-servo-v2";
 		need_prepare = 1;
 	}
 
