@@ -24,7 +24,8 @@
 #define MOCK_SCREEN_TARGET0 0xef20
 #define MOCK_SCREEN_TARGET1 0xef21
 #define MOCK_SCREEN_TARGET2 0xef22
-#define MOCK_SCREEN_TARGET3 0xef23
+#define MOCK_SCREEN_ACTION 0xef30
+#define MOCK_SCREEN_ALL_ACTION 0xef32
 
 /* Mock data */
 struct display_call {
@@ -37,6 +38,7 @@ struct display_call {
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
+static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
 static int mock_calls_until_shutdown;
@@ -60,9 +62,10 @@ static uint32_t mock_vbtlk_expected_flag;
 
 /* Mock actions */
 static uint32_t mock_action_called;
+static uint32_t mock_action_countdown_limit;
 static vb2_error_t mock_action_countdown(struct vb2_ui_context *ui)
 {
-	if (++mock_action_called >= 10)
+	if (++mock_action_called >= mock_action_countdown_limit)
 		return VB2_SUCCESS;
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -70,6 +73,34 @@ static vb2_error_t mock_action_countdown(struct vb2_ui_context *ui)
 static vb2_error_t mock_action_change_screen(struct vb2_ui_context *ui)
 {
 	return vb2_ui_change_screen(ui, MOCK_SCREEN_BASE);
+}
+
+static vb2_error_t mock_action_base(struct vb2_ui_context *ui)
+{
+	mock_action_called++;
+	return VB2_SUCCESS;
+}
+
+static int mock_action_flags;
+static vb2_error_t mock_action_flag0(struct vb2_ui_context *ui)
+{
+	if ((1 << 0) & mock_action_flags)
+		return VB2_SUCCESS;
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t mock_action_flag1(struct vb2_ui_context *ui)
+{
+	if ((1 << 1) & mock_action_flags)
+		return VB2_SUCCESS;
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t mock_action_flag2(struct vb2_ui_context *ui)
+{
+	if ((1 << 2) & mock_action_flags)
+		return VB2_SUCCESS;
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 /* Mock screens */
@@ -89,28 +120,28 @@ const struct vb2_screen_info mock_screen_base = {
 };
 const struct vb2_menu_item mock_screen_menu_items[] = {
 	{
-		.text = "option 0",
+		.text = "item 0",
 		.target = MOCK_SCREEN_TARGET0,
 	},
 	{
-		.text = "option 1",
+		.text = "item 1",
 		.target = MOCK_SCREEN_TARGET1,
 	},
 	{
-		.text = "option 2",
+		.text = "item 2",
 		.target = MOCK_SCREEN_TARGET2,
 	},
 	{
-		.text = "option 3",
-		.target = MOCK_SCREEN_TARGET3,
+		.text = "item 3",
+		.action = mock_action_base,
 	},
 	{
-		.text = "option 4 (no target)",
+		.text = "item 4 (no target)",
 	},
 };
 const struct vb2_screen_info mock_screen_menu = {
 	.id = MOCK_SCREEN_MENU,
-	.name = "mock_screen_menu: screen with 5 options",
+	.name = "mock_screen_menu: screen with 5 items",
 	.num_items = ARRAY_SIZE(mock_screen_menu_items),
 	.items = mock_screen_menu_items,
 };
@@ -132,11 +163,25 @@ const struct vb2_screen_info mock_screen_target2 = {
 	.num_items = ARRAY_SIZE(mock_empty_menu),
 	.items = mock_empty_menu,
 };
-const struct vb2_screen_info mock_screen_target3 = {
-	.id = MOCK_SCREEN_TARGET3,
-	.name = "mock_screen_target3",
+const struct vb2_screen_info mock_screen_action = {
+	.id = MOCK_SCREEN_ACTION,
+	.name = "mock_screen_action",
+	.action = mock_action_countdown,
 	.num_items = ARRAY_SIZE(mock_empty_menu),
 	.items = mock_empty_menu,
+};
+const struct vb2_menu_item mock_screen_all_action_items[] = {
+	{
+		.text = "all_action_screen_item",
+		.action = mock_action_flag1,
+	},
+};
+const struct vb2_screen_info mock_screen_all_action = {
+	.id = MOCK_SCREEN_ALL_ACTION,
+	.name = "mock_screen_all_action",
+	.action = mock_action_flag0,
+	.num_items = ARRAY_SIZE(mock_screen_all_action_items),
+	.items = mock_screen_all_action_items,
 };
 
 static void screen_state_eq(const struct vb2_screen_state *state,
@@ -239,6 +284,8 @@ static void reset_common_data(void)
 
 	vb2_nv_init(ctx);
 
+	sd = vb2_get_sd(ctx);
+
 	/* For check_shutdown_request */
 	mock_calls_until_shutdown = 10;
 
@@ -253,6 +300,7 @@ static void reset_common_data(void)
 	/* Mock ui_context based on mock screens */
 	memset(&mock_ui_context, 0, sizeof(mock_ui_context));
 	mock_ui_context.ctx = ctx;
+	mock_ui_context.state.screen = &mock_screen_temp;
 	mock_state = &mock_ui_context.state;
 
 	/* For vb2ex_display_ui */
@@ -268,6 +316,8 @@ static void reset_common_data(void)
 
 	/* For mock actions */
 	mock_action_called = 0;
+	mock_action_countdown_limit = 1;
+	mock_action_flags = 0;
 
 	/* For chagen_screen and vb2_get_screen_info */
 	mock_get_screen_info_called = 0;
@@ -311,8 +361,10 @@ const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen screen)
 		return &mock_screen_target1;
 	case MOCK_SCREEN_TARGET2:
 		return &mock_screen_target2;
-	case MOCK_SCREEN_TARGET3:
-		return &mock_screen_target3;
+	case MOCK_SCREEN_ACTION:
+		return &mock_screen_action;
+	case MOCK_SCREEN_ALL_ACTION:
+		return &mock_screen_all_action;
 	case MOCK_NO_SCREEN:
 		return NULL;
 	default:
@@ -491,9 +543,6 @@ static void menu_next_tests(void)
 
 static void menu_select_tests(void)
 {
-	int i, target_id;
-	char test_name[256];
-
 	VB2_DEBUG("Testing menu_select...\n");
 
 	/* select action with no item screen */
@@ -505,27 +554,32 @@ static void menu_select_tests(void)
 		"vb2_ui_menu_select with no item screen");
 	screen_state_eq(mock_state, MOCK_SCREEN_BASE, 0, MOCK_IGNORE);
 
-	/* Try to select target 0..3 */
-	for (i = 0; i <= 3; i++) {
-		sprintf(test_name, "select target %d", i);
-		target_id = MOCK_SCREEN_TARGET0 + i;
-		reset_common_data();
-		mock_state->screen = &mock_screen_menu;
-		mock_state->selected_item = i;
-		mock_ui_context.key = VB_KEY_ENTER;
-		TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, test_name);
-		screen_state_eq(mock_state, target_id, 0, MOCK_IGNORE);
-	}
+	/* Try to select an item with a target (item 2) */
+	reset_common_data();
+	mock_state->screen = &mock_screen_menu;
+	mock_state->selected_item = 2;
+	mock_ui_context.key = VB_KEY_ENTER;
+	TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
+		VB2_REQUEST_UI_CONTINUE, "select an item with a target");
+	screen_state_eq(mock_state, MOCK_SCREEN_TARGET2, 0, MOCK_IGNORE);
 
-	/* Try to select no target item (target 4) */
+	/* Try to select an item with an action (item 3) */
+	reset_common_data();
+	mock_state->screen = &mock_screen_menu;
+	mock_state->selected_item = 3;
+	mock_ui_context.key = VB_KEY_ENTER;
+	TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
+		VB2_SUCCESS, "select an item with an action");
+	TEST_EQ(mock_action_called, 1, "  action called once");
+
+	/* Try to select an item with neither targets nor actions (item 4) */
 	reset_common_data();
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 4;
 	mock_ui_context.key = VB_KEY_ENTER;
 	TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE,
-		"select no target");
+		"select an item with neither targets nor actions");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 4, MOCK_IGNORE);
 
 	/* Ignore power button short press when not DETACHABLE */
@@ -606,6 +660,13 @@ static void manual_recovery_action_tests(void)
 
 static void ui_loop_tests(void)
 {
+	int i;
+	const char *action_interfere_test_names[] = {
+		"hook all actions: screen action return SUCCESS",
+		"hook all actions: target action hooked return SUCCESS",
+		"hook all actions: global action return SUCCESS",
+	};
+
 	VB2_DEBUG("Testing ui_loop...\n");
 
 	/* Die if no root screen */
@@ -623,9 +684,18 @@ static void ui_loop_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
 
+	/* Screen action */
+	reset_common_data();
+	mock_calls_until_shutdown = -1;
+	mock_action_countdown_limit = 10;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_ACTION, NULL),
+		VB2_SUCCESS, "screen action");
+	TEST_EQ(mock_action_called, 10, "  action called");
+
 	/* Global action */
 	reset_common_data();
 	mock_calls_until_shutdown = -1;
+	mock_action_countdown_limit = 10;
 	TEST_EQ(ui_loop(ctx, VB2_SCREEN_BLANK, mock_action_countdown),
 		VB2_SUCCESS, "global action");
 	TEST_EQ(mock_action_called, 10, "  action called");
@@ -638,6 +708,21 @@ static void ui_loop_tests(void)
 		     MOCK_IGNORE);
 	displayed_eq("change to mock_screen_base", MOCK_IGNORE, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE);
+
+	/*
+	 * Hook all actions, and receive SUCCESS from actions one by one
+	 * Action #0: screen action
+	 * Action #1: item target action
+	 * Action #2: global action
+	 */
+	for (i = 0; i <= 2; i++) {
+		reset_common_data();
+		add_mock_keypress(VB_KEY_ENTER);
+		mock_calls_until_shutdown = -1;
+		mock_action_flags |= (1 << i);
+		TEST_EQ(ui_loop(ctx, MOCK_SCREEN_ALL_ACTION, mock_action_flag2),
+			VB2_SUCCESS, action_interfere_test_names[i]);
+	}
 
 	/* KEY_UP, KEY_DOWN, and KEY_ENTER navigation */
 	reset_common_data();

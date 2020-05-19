@@ -66,6 +66,14 @@ static vb2_error_t mock_vbtlk_retval[32];
 static uint32_t mock_vbtlk_expected_flag[32];
 static int mock_vbtlk_total;
 
+static int mock_allow_recovery;
+
+/* mock_pp_* = mock data for physical presence button */
+static int mock_pp_pressed[64];
+static int mock_pp_pressed_total;
+
+static int mock_enable_dev_mode;
+
 static void add_mock_key(uint32_t press, int trusted)
 {
 	if (mock_key_total >= ARRAY_SIZE(mock_key) ||
@@ -95,6 +103,16 @@ static void add_mock_vbtlk(vb2_error_t retval, uint32_t get_info_flags)
 	mock_vbtlk_retval[mock_vbtlk_total] = retval;
 	mock_vbtlk_expected_flag[mock_vbtlk_total] = get_info_flags;
 	mock_vbtlk_total++;
+}
+
+static void add_mock_pp_pressed(int pressed)
+{
+	if (mock_pp_pressed_total >= ARRAY_SIZE(mock_pp_pressed)) {
+		TEST_TRUE(0, "  mock_pp ran out of entries!");
+		return;
+	}
+
+	mock_pp_pressed[mock_pp_pressed_total++] = pressed;
 }
 
 static void displayed_eq(const char *text,
@@ -210,6 +228,16 @@ static void reset_common_data(enum reset_type t)
 	memset(mock_vbtlk_expected_flag, 0, sizeof(mock_vbtlk_expected_flag));
 	mock_vbtlk_total = 0;
 
+	/* For vb2_allow_recovery */
+	mock_allow_recovery = t == FOR_MANUAL_RECOVERY;
+
+	/* For vb2ex_physical_presence_pressed */
+	memset(mock_pp_pressed, 0, sizeof(mock_pp_pressed));
+	mock_pp_pressed_total = 0;
+
+	/* For vb2_enable_developer_mode */
+	mock_enable_dev_mode = 0;
+
 	/* Avoid Iteration #0 */
 	add_mock_keypress(0);
 	if (t == FOR_MANUAL_RECOVERY)
@@ -217,6 +245,7 @@ static void reset_common_data(enum reset_type t)
 			       VB_DISK_FLAG_REMOVABLE);
 	else
 		add_mock_vbtlk(VB2_ERROR_MOCK, 0);
+	add_mock_pp_pressed(0);
 }
 
 /* Mock functions */
@@ -339,6 +368,24 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 		"  unexpected get_info_flags");
 
 	return mock_vbtlk_retval[i];
+}
+
+int vb2_allow_recovery(struct vb2_context *c)
+{
+	return mock_allow_recovery;
+}
+
+int vb2ex_physical_presence_pressed(void)
+{
+	if (mock_iters >= mock_pp_pressed_total)
+		return 0;
+
+	return mock_pp_pressed[mock_iters];
+}
+
+void vb2_enable_developer_mode(struct vb2_context *c)
+{
+	mock_enable_dev_mode = 1;
 }
 
 /* Tests */
@@ -512,6 +559,146 @@ static void manual_recovery_tests(void)
 	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	displayed_no_extra();
+
+	/* Ctrl+D = to_dev; space = cancel */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_key(VB_KEY_CTRL('D'), 1);
+	add_mock_keypress(' ');
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"ctrl+D = to_dev; space = cancel");
+	TEST_EQ(mock_enable_dev_mode, 0, "  dev mode not enabled");
+	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_eq("to_dev", VB2_SCREEN_RECOVERY_TO_DEV,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	displayed_no_extra();
+
+	/* Cancel */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_key(VB_KEY_CTRL('D'), 1);
+	if (PHYSICAL_PRESENCE_KEYBOARD)
+		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN, "cancel");
+	TEST_EQ(mock_enable_dev_mode, 0, "  dev mode not enabled");
+
+	/* Confirm */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_key(VB_KEY_CTRL('D'), 1);
+	if (PHYSICAL_PRESENCE_KEYBOARD) {
+		add_mock_key(VB_KEY_ENTER, 1);
+	} else {
+		add_mock_pp_pressed(0);
+		add_mock_pp_pressed(1);
+		add_mock_pp_pressed(1);
+		add_mock_pp_pressed(0);
+	}
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_REBOOT_EC_TO_RO,
+		"confirm");
+	if (!PHYSICAL_PRESENCE_KEYBOARD)
+		TEST_TRUE(mock_iters >= mock_pp_pressed_total - 1,
+			  "  used up mock_pp_pressed");
+	TEST_EQ(mock_enable_dev_mode, 1, "  dev mode enabled");
+
+	/* Cannot confirm physical presence by untrusted keyboard */
+	if (PHYSICAL_PRESENCE_KEYBOARD) {
+		reset_common_data(FOR_MANUAL_RECOVERY);
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_key(VB_KEY_ENTER, 0);
+		TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+			"cannot confirm physical presence"
+			" by untrusted keyboard");
+		TEST_EQ(mock_enable_dev_mode, 0, "  dev mode not enabled");
+	}
+
+	/* Cannot enable dev mode if already enabled */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	add_mock_key(VB_KEY_CTRL('D'), 1);
+	if (PHYSICAL_PRESENCE_KEYBOARD) {
+		add_mock_key(VB_KEY_ENTER, 1);
+	} else {
+		add_mock_pp_pressed(0);
+		add_mock_pp_pressed(1);
+		add_mock_pp_pressed(0);
+	}
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"cannot enable dev mode if already enabled");
+	TEST_EQ(mock_enable_dev_mode, 0, "  dev mode already on");
+
+	/* Physical presence button tests */
+	if (!PHYSICAL_PRESENCE_KEYBOARD) {
+		/* Physical presence button stuck? */
+		reset_common_data(FOR_MANUAL_RECOVERY);
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_pp_pressed(1);  /* Hold since boot */
+		add_mock_pp_pressed(0);
+		TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+			"physical presence button stuck?");
+		TEST_EQ(mock_enable_dev_mode, 0, "  dev mode not enabled");
+		displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_no_extra();
+
+		/* Button stuck, enter to_dev again */
+		reset_common_data(FOR_MANUAL_RECOVERY);
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_pp_pressed(1);  /* Hold since boot */
+		add_mock_pp_pressed(0);
+		add_mock_pp_pressed(1);  /* Press again */
+		add_mock_pp_pressed(0);
+		TEST_EQ(vb2_manual_recovery_menu(ctx),
+			VB2_REQUEST_REBOOT_EC_TO_RO,
+			"button stuck, enter to_dev again");
+		TEST_TRUE(mock_iters >= mock_pp_pressed_total - 1,
+			  "  used up mock_pp_pressed");
+		TEST_EQ(mock_enable_dev_mode, 1, "  dev mode enabled");
+		displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_eq("to_dev", VB2_SCREEN_RECOVERY_TO_DEV,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_no_extra();
+
+		/* Cancel with holding pp button, enter again */
+		reset_common_data(FOR_MANUAL_RECOVERY);
+		/* Enter to_dev */
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_pp_pressed(0);
+		/* Press pp button */
+		add_mock_keypress(0);
+		add_mock_pp_pressed(1);
+		/* Space = back */
+		add_mock_keypress(' ');
+		add_mock_pp_pressed(1);
+		/* Wait */
+		add_mock_keypress(0);
+		add_mock_pp_pressed(0);
+		/* Enter to_dev again */
+		add_mock_key(VB_KEY_CTRL('D'), 1);
+		add_mock_pp_pressed(0);
+		/* Press pp button again */
+		add_mock_pp_pressed(1);
+		/* Release */
+		add_mock_pp_pressed(0);
+		TEST_EQ(vb2_manual_recovery_menu(ctx),
+			VB2_REQUEST_REBOOT_EC_TO_RO,
+			"cancel with holding pp button, enter again");
+		TEST_TRUE(mock_iters >= mock_pp_pressed_total - 1,
+			  "  used up mock_pp_pressed");
+		TEST_EQ(mock_enable_dev_mode, 1, "  dev mode enabled");
+		displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_eq("to_dev", VB2_SCREEN_RECOVERY_TO_DEV,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_eq("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_eq("to_dev", VB2_SCREEN_RECOVERY_TO_DEV,
+			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+		displayed_no_extra();
+	}
 
 	VB2_DEBUG("...done.\n");
 }
