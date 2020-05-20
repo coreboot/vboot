@@ -60,13 +60,16 @@ struct vb2_ui_context {
 	uint32_t key;
 	int key_trusted;
 
-	/* For developer mode screen. */
+	/* For check_shutdown_request. */
+	enum vb2_power_button power_button;
+
+	/* For developer mode. */
 	int disable_timer;
 	uint64_t start_time;
 	int beep_count;
 
-	/* For check_shutdown_request. */
-	enum vb2_power_button power_button;
+	/* For manual recovery. */
+	vb2_error_t recovery_rv;
 };
 
 vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id);

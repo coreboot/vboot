@@ -12,8 +12,6 @@
 
 vb2_error_t check_shutdown_request(struct vb2_ui_context *ui);
 
-extern int invalid_disk_last;
-
 struct input_action {
 	int key;
 	vb2_error_t (*action)(struct vb2_ui_context *ui);

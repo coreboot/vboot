@@ -19,11 +19,6 @@
 #define KEY_DELAY_MS 20  /* Delay between key scans in UI loops */
 
 /*****************************************************************************/
-/* Global variables */
-
-int invalid_disk_last = -1;
-
-/*****************************************************************************/
 /* Utility functions */
 
 /**
@@ -217,8 +212,14 @@ vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
 
 vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 {
-	const struct vb2_screen_info *new_screen_info = vb2_get_screen_info(id);
+	const struct vb2_screen_info *new_screen_info;
 
+	if (ui->state.screen && ui->state.screen->id == id) {
+		VB2_DEBUG("WARNING: Already on screen %#x; ignoring\n", id);
+		return VB2_REQUEST_UI_CONTINUE;
+	}
+
+	new_screen_info = vb2_get_screen_info(id);
 	if (new_screen_info == NULL) {
 		VB2_DEBUG("ERROR: Screen entry %#x not found; ignoring\n", id);
 		return VB2_REQUEST_UI_CONTINUE;
@@ -340,19 +341,18 @@ vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)
 
 vb2_error_t try_recovery_action(struct vb2_ui_context *ui)
 {
-	int invalid_disk;
+	/* See if we have a recovery kernel available yet. */
 	vb2_error_t rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
-
 	if (rv == VB2_SUCCESS)
 		return rv;
 
 	/* If disk validity state changed, switch to appropriate screen. */
-	invalid_disk = rv != VB2_ERROR_LK_NO_DISK_FOUND;
-	if (invalid_disk_last != invalid_disk) {
-		invalid_disk_last = invalid_disk;
-		return vb2_ui_change_screen(ui, invalid_disk ?
-					    VB2_SCREEN_RECOVERY_INVALID :
-					    VB2_SCREEN_RECOVERY_SELECT);
+	if (ui->recovery_rv != rv) {
+		ui->recovery_rv = rv;
+		return vb2_ui_change_screen(ui,
+					    rv == VB2_ERROR_LK_NO_DISK_FOUND ?
+					    VB2_SCREEN_RECOVERY_SELECT :
+					    VB2_SCREEN_RECOVERY_INVALID);
 	}
 
 	return VB2_REQUEST_UI_CONTINUE;

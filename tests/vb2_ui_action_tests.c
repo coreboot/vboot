@@ -249,9 +249,6 @@ static void reset_common_data(void)
 	/* For check_shutdown_request */
 	mock_calls_until_shutdown = 10;
 
-	/* For try_recovery_action */
-	invalid_disk_last = -1;
-
 	/* Mock ui_context based on mock screens */
 	mock_ui_context = (struct vb2_ui_context){
 		.ctx = ctx,
@@ -650,78 +647,57 @@ static void try_recovery_action_tests(void)
 {
 	VB2_DEBUG("Testing try recovery action...\n");
 
-	/* Success on the first try */
+	/* SUCCESS */
 	reset_common_data();
 	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success on the first try");
+		"SUCCESS");
 	TEST_EQ(mock_get_screen_info_last, -1, "  no change_screen");
 
-	/* No disk found on the first try */
+	/* NO_DISK_FOUND */
 	reset_common_data();
 	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found on the first try");
+		"NO_DISK_FOUND");
 	TEST_EQ(mock_get_screen_info_last, VB2_SCREEN_RECOVERY_SELECT,
 		"  recovery select screen");
 
-	/* Invalid disk on the first try */
+	/* NO_DISK_FOUND -> INVALID_KERNEL -> SUCCESS */
 	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
+	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid on the first try");
+		"NO_DISK_FOUND");
+	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+		"INVALID_KERNEL");
+	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS, "SUCCESS");
 	TEST_EQ(mock_get_screen_info_last, VB2_SCREEN_RECOVERY_INVALID,
 		"  recovery invalid screen");
 
-	/* Success, last == 0 */
+	/* INVALID_KERNEL */
 	reset_common_data();
-	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success, last == 0");
-	TEST_EQ(mock_get_screen_info_last, -1, "  no change_screen");
-
-	/* No disk found, last == 0 */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
+	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found, last == 0");
-	TEST_EQ(mock_get_screen_info_last, -1, "  no change_screen");
-
-	/* Invalid disk, last == 0 */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 0;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid, last == 0");
+		"INVALID_KERNEL");
 	TEST_EQ(mock_get_screen_info_last, VB2_SCREEN_RECOVERY_INVALID,
 		"  recovery invalid screen");
 
-	/* Success, last == 1 */
+	/* INVALID_KERNEL -> NO_DISK_FOUND -> SUCCESS */
 	reset_common_data();
-	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS,
-		"success, last == 1");
-	TEST_EQ(mock_get_screen_info_last, -1, "  no change_screen");
-
-	/* No disk found, last == 1 */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
+	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"no disk found, last == 1");
+		"INVALID_KERNEL");
+	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+		"NO_DISK_FOUND");
+	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
+	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_SUCCESS, "SUCCESS");
 	TEST_EQ(mock_get_screen_info_last, VB2_SCREEN_RECOVERY_SELECT,
 		"  recovery select screen");
-
-	/* Invalid disk, last == 1 */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_MOCK, VB_DISK_FLAG_REMOVABLE);
-	invalid_disk_last = 1;
-	TEST_EQ(try_recovery_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"invalid, last == 1");
-	TEST_EQ(mock_get_screen_info_last, -1, "  no change_screen");
 
 	VB2_DEBUG("...done.\n");
 }
