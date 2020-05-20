@@ -268,6 +268,7 @@ main() {
   # Packages cache needs to be regenerated when the key and timestamp are
   # changed for apks.
   local packages_cache="${system_mnt}/system/etc/packages_cache.xml"
+  local file_hash_cache="${system_mnt}/system/etc/file_hash_cache"
   if [[ -f "${packages_cache}" ]]; then
     if type -P aapt &>/dev/null; then
       info "Regenerating packages cache ${packages_cache}"
@@ -283,10 +284,12 @@ main() {
       sudo "${unsquashfs}" -x -f -no-progress -d "${vendor_mnt}/vendor" \
           "${vendor_img}"
       if ! arc_generate_packages_cache "${system_mnt}" "${vendor_mnt}" \
-          "${working_dir}/packages_cache.xml"; then
+          "${working_dir}/packages_cache.xml" \
+          "${working_dir}/file_hash_cache"; then
         die "Failed to generate packages cache."
       fi
       sudo cp "${working_dir}/packages_cache.xml" "${packages_cache}"
+      sudo cp "${working_dir}/file_hash_cache" "${file_hash_cache}"
       # Set android-root as an owner.
       sudo chown 655360:655360 "${packages_cache}"
       local packages_after=$(grep "<package " "${packages_cache}" | wc -l)
