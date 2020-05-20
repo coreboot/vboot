@@ -95,6 +95,68 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id);
 
 /*****************************************************************************/
+/* Menu navigation functions */
+
+/**
+ * Move selection to the previous menu item.
+ *
+ * Update selected_item, taking into account disabled indices (from
+ * disabled_item_mask).  The selection does not wrap, meaning that we block
+ * on 0 when we hit the start of the menu.
+ *
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ */
+vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui);
+
+/**
+ * Move selection to the next menu item.
+ *
+ * Update selected_item, taking into account disabled indices (from
+ * disabled_item_mask).  The selection does not wrap, meaning that we block
+ * on the max index when we hit the end of the menu.
+ *
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ */
+vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui);
+
+/**
+ * Select the current menu item.
+ *
+ * If the current menu item has an action associated with it, run the action.
+ * Otherwise, navigate to the target screen.  If neither of these are set, then
+ * selecting the menu item is a no-op.
+ *
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ */
+vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui);
+
+/*****************************************************************************/
+/* Screen navigation functions */
+
+/**
+ * Return back to the root screen.
+ *
+ * Return to the root screen originally provided to the ui_loop() function.
+ *
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ */
+vb2_error_t vb2_ui_change_root(struct vb2_ui_context *ui);
+
+/**
+ * Change to the given screen.
+ *
+ * If the screen is not found, the request is ignored.
+ *
+ * @param ui		UI context pointer
+ * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ */
+vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id);
+
+/*****************************************************************************/
 /* UI loops */
 
 /**

@@ -375,16 +375,16 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 }
 
 /* Tests */
-static void menu_up_action_tests(void)
+static void menu_prev_tests(void)
 {
-	VB2_DEBUG("Testing menu_up_action...\n");
+	VB2_DEBUG("Testing menu_prev...\n");
 
 	/* Valid action */
 	reset_common_data();
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 2;
 	mock_ui_context.key = VB_KEY_UP;
-	TEST_EQ(menu_up_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_prev(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"valid action");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 1, MOCK_IGNORE);
 
@@ -394,7 +394,7 @@ static void menu_up_action_tests(void)
 	mock_state->selected_item = 2;
 	mock_state->disabled_item_mask = 0x0a;  /* 0b01010 */
 	mock_ui_context.key = VB_KEY_UP;
-	TEST_EQ(menu_up_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_prev(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"valid action with mask");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 0, MOCK_IGNORE);
 
@@ -403,7 +403,7 @@ static void menu_up_action_tests(void)
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 0;
 	mock_ui_context.key = VB_KEY_UP;
-	TEST_EQ(menu_up_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_prev(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"invalid action (blocked)");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 0, MOCK_IGNORE);
 
@@ -413,7 +413,7 @@ static void menu_up_action_tests(void)
 	mock_state->selected_item = 2;
 	mock_state->disabled_item_mask = 0x0b;  /* 0b01011 */
 	mock_ui_context.key = VB_KEY_UP;
-	TEST_EQ(menu_up_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_prev(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"invalid action (blocked by mask)");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 2, MOCK_IGNORE);
 
@@ -423,7 +423,7 @@ static void menu_up_action_tests(void)
 		mock_state->screen = &mock_screen_menu;
 		mock_state->selected_item = 2;
 		mock_ui_context.key = VB_BUTTON_VOL_UP_SHORT_PRESS;
-		TEST_EQ(menu_up_action(&mock_ui_context),
+		TEST_EQ(vb2_ui_menu_prev(&mock_ui_context),
 			VB2_REQUEST_UI_CONTINUE,
 			"ignore volume-up when not DETACHABLE");
 		screen_state_eq(mock_state, MOCK_SCREEN_MENU, 2, MOCK_IGNORE);
@@ -432,16 +432,16 @@ static void menu_up_action_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void menu_down_action_tests(void)
+static void menu_next_tests(void)
 {
-	VB2_DEBUG("Testing menu_down_action...\n");
+	VB2_DEBUG("Testing menu_next...\n");
 
 	/* Valid action */
 	reset_common_data();
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 2;
 	mock_ui_context.key = VB_KEY_DOWN;
-	TEST_EQ(menu_down_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_next(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"valid action");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 3, MOCK_IGNORE);
 
@@ -451,7 +451,7 @@ static void menu_down_action_tests(void)
 	mock_state->selected_item = 2;
 	mock_state->disabled_item_mask = 0x0a;  /* 0b01010 */
 	mock_ui_context.key = VB_KEY_DOWN;
-	TEST_EQ(menu_down_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_next(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"valid action with mask");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 4, MOCK_IGNORE);
 
@@ -460,7 +460,7 @@ static void menu_down_action_tests(void)
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 4;
 	mock_ui_context.key = VB_KEY_DOWN;
-	TEST_EQ(menu_down_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_next(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"invalid action (blocked)");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 4, MOCK_IGNORE);
 
@@ -470,7 +470,7 @@ static void menu_down_action_tests(void)
 	mock_state->selected_item = 2;
 	mock_state->disabled_item_mask = 0x1a;  /* 0b11010 */
 	mock_ui_context.key = VB_KEY_DOWN;
-	TEST_EQ(menu_down_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_menu_next(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"invalid action (blocked by mask)");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 2, MOCK_IGNORE);
 
@@ -480,7 +480,7 @@ static void menu_down_action_tests(void)
 		mock_state->screen = &mock_screen_menu;
 		mock_state->selected_item = 2;
 		mock_ui_context.key = VB_BUTTON_VOL_DOWN_SHORT_PRESS;
-		TEST_EQ(menu_down_action(&mock_ui_context),
+		TEST_EQ(vb2_ui_menu_next(&mock_ui_context),
 			VB2_REQUEST_UI_CONTINUE,
 			"ignore volume-down when not DETACHABLE");
 		screen_state_eq(mock_state, MOCK_SCREEN_MENU, 2, MOCK_IGNORE);
@@ -489,20 +489,20 @@ static void menu_down_action_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void menu_select_action_tests(void)
+static void menu_select_tests(void)
 {
 	int i, target_id;
 	char test_name[256];
 
-	VB2_DEBUG("Testing menu_select_action...\n");
+	VB2_DEBUG("Testing menu_select...\n");
 
 	/* select action with no item screen */
 	reset_common_data();
 	mock_state->screen = &mock_screen_base;
 	mock_ui_context.key = VB_KEY_ENTER;
-	TEST_EQ(vb2_ui_menu_select_action(&mock_ui_context),
+	TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE,
-		"menu_select_action with no item screen");
+		"vb2_ui_menu_select with no item screen");
 	screen_state_eq(mock_state, MOCK_SCREEN_BASE, 0, MOCK_IGNORE);
 
 	/* Try to select target 0..3 */
@@ -513,7 +513,7 @@ static void menu_select_action_tests(void)
 		mock_state->screen = &mock_screen_menu;
 		mock_state->selected_item = i;
 		mock_ui_context.key = VB_KEY_ENTER;
-		TEST_EQ(vb2_ui_menu_select_action(&mock_ui_context),
+		TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
 			VB2_REQUEST_UI_CONTINUE, test_name);
 		screen_state_eq(mock_state, target_id, 0, MOCK_IGNORE);
 	}
@@ -523,7 +523,7 @@ static void menu_select_action_tests(void)
 	mock_state->screen = &mock_screen_menu;
 	mock_state->selected_item = 4;
 	mock_ui_context.key = VB_KEY_ENTER;
-	TEST_EQ(vb2_ui_menu_select_action(&mock_ui_context),
+	TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE,
 		"select no target");
 	screen_state_eq(mock_state, MOCK_SCREEN_MENU, 4, MOCK_IGNORE);
@@ -534,7 +534,7 @@ static void menu_select_action_tests(void)
 		mock_state->screen = &mock_screen_menu;
 		mock_state->selected_item = 1;
 		mock_ui_context.key = VB_BUTTON_POWER_SHORT_PRESS;
-		TEST_EQ(vb2_ui_menu_select_action(&mock_ui_context),
+		TEST_EQ(vb2_ui_menu_select(&mock_ui_context),
 			VB2_REQUEST_UI_CONTINUE,
 			"ignore power button short press when not DETACHABLE");
 		screen_state_eq(mock_state, MOCK_SCREEN_MENU, 1, MOCK_IGNORE);
@@ -707,9 +707,9 @@ static void ui_loop_tests(void)
 int main(void)
 {
 	/* Input actions */
-	menu_up_action_tests();
-	menu_down_action_tests();
-	menu_select_action_tests();
+	menu_prev_tests();
+	menu_next_tests();
+	menu_select_tests();
 
 	/* Global actions */
 	try_recovery_action_tests();

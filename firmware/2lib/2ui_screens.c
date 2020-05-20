@@ -67,7 +67,7 @@ static const struct vb2_menu_item advanced_options_items[] = {
 	},
 	[ADVANCED_OPTIONS_ITEM_BACK] = {
 		.text = "Back",
-		.action = vb2_ui_back_action,
+		.action = vb2_ui_change_root,
 	},
 };
 
@@ -132,12 +132,12 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 {
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
 		VB2_DEBUG("Dev mode already enabled?\n");
-		return vb2_ui_back_action(ui);
+		return vb2_ui_change_root(ui);
 	}
 
 	if (!PHYSICAL_PRESENCE_KEYBOARD && vb2ex_physical_presence_pressed()) {
 		VB2_DEBUG("Presence button stuck?\n");
-		return vb2_ui_back_action(ui);
+		return vb2_ui_change_root(ui);
 	}
 
 	/* Disable "Confirm" button for other physical presence types. */
@@ -163,7 +163,7 @@ vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui)
 
 	if (ui->key == ' ') {
 		VB2_DEBUG("SPACE means cancel dev mode transition\n");
-		return vb2_ui_back_action(ui);
+		return vb2_ui_change_root(ui);
 	}
 
 	if (PHYSICAL_PRESENCE_KEYBOARD) {
@@ -209,7 +209,7 @@ static const struct vb2_menu_item recovery_to_dev_items[] = {
 	},
 	[RECOVERY_TO_DEV_ITEM_CANCEL] = {
 		.text = "Cancel",
-		.action = vb2_ui_back_action,
+		.action = vb2_ui_change_root,
 	},
 };
 
@@ -332,7 +332,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 	if (use_short && elapsed > 2 * VB_USEC_PER_SEC) {
 		VB2_DEBUG("Booting default target after 2s\n");
 		ui->disable_timer = 1;
-		return vb2_ui_menu_select_action(ui);
+		return vb2_ui_menu_select(ui);
 	}
 
 	/* Otherwise, beep at 20 and 20.5 seconds. */
@@ -346,7 +346,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 	if (elapsed > 30 * VB_USEC_PER_SEC) {
 		VB2_DEBUG("Booting default target after 30s\n");
 		ui->disable_timer = 1;
-		return vb2_ui_menu_select_action(ui);
+		return vb2_ui_menu_select(ui);
 	}
 
 	return VB2_REQUEST_UI_CONTINUE;
@@ -398,7 +398,7 @@ static const struct vb2_menu_item developer_to_norm_items[] = {
 	},
 	{
 		.text = "Cancel",
-		.action = vb2_ui_back_action,
+		.action = vb2_ui_change_root,
 	},
 };
 

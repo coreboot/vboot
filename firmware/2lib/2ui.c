@@ -74,85 +74,6 @@ vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 /* Menu navigation actions */
 
 /**
- * Update selected_item, taking into account disabled indices (from
- * disabled_item_mask).  The selection does not wrap, meaning that we block
- * on the 0 or max index when we hit the top or bottom of the menu.
- */
-vb2_error_t menu_up_action(struct vb2_ui_context *ui)
-{
-	int item;
-
-	if (!DETACHABLE && ui->key == VB_BUTTON_VOL_UP_SHORT_PRESS)
-		return VB2_REQUEST_UI_CONTINUE;
-
-	item = ui->state.selected_item - 1;
-	while (item >= 0 &&
-	       ((1 << item) & ui->state.disabled_item_mask))
-		item--;
-	/* Only update if item is valid */
-	if (item >= 0)
-		ui->state.selected_item = item;
-
-	return VB2_REQUEST_UI_CONTINUE;
-}
-
-vb2_error_t menu_down_action(struct vb2_ui_context *ui)
-{
-	int item;
-
-	if (!DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_SHORT_PRESS)
-		return VB2_REQUEST_UI_CONTINUE;
-
-	item = ui->state.selected_item + 1;
-	while (item < ui->state.screen->num_items &&
-	       ((1 << item) & ui->state.disabled_item_mask))
-		item++;
-	/* Only update if item is valid */
-	if (item < ui->state.screen->num_items)
-		ui->state.selected_item = item;
-
-	return VB2_REQUEST_UI_CONTINUE;
-}
-
-/**
- * Navigate to the target screen of the current menu item selection.
- */
-vb2_error_t vb2_ui_menu_select_action(struct vb2_ui_context *ui)
-{
-	const struct vb2_menu_item *menu_item;
-
-	if (!DETACHABLE && ui->key == VB_BUTTON_POWER_SHORT_PRESS)
-		return VB2_REQUEST_UI_CONTINUE;
-
-	if (ui->state.screen->num_items == 0)
-		return VB2_REQUEST_UI_CONTINUE;
-
-	menu_item = &ui->state.screen->items[ui->state.selected_item];
-
-	if (menu_item->action) {
-		VB2_DEBUG("Menu item <%s> run action\n", menu_item->text);
-		return menu_item->action(ui);
-	} else if (menu_item->target) {
-		VB2_DEBUG("Menu item <%s> to target screen %#x\n",
-			  menu_item->text, menu_item->target);
-		return vb2_ui_change_screen(ui, menu_item->target);
-	}
-
-	VB2_DEBUG("Menu item <%s> no action or target screen\n",
-		  menu_item->text);
-	return VB2_REQUEST_UI_CONTINUE;
-}
-
-/**
- * Return back to the previous screen.
- */
-vb2_error_t vb2_ui_back_action(struct vb2_ui_context *ui)
-{
-	/* TODO(kitching): Return to previous screen instead of root screen. */
-	return vb2_ui_change_screen(ui, ui->root_screen->id);
-}
-
-/**
  * Context-dependent keyboard shortcut Ctrl+D.
  *
  * - Manual recovery mode: Change to dev mode transition screen.
@@ -180,22 +101,31 @@ vb2_error_t change_to_dev_screen_action(struct vb2_ui_context *ui)
 /* Action lookup tables */
 
 static struct input_action action_table[] = {
-	{ VB_KEY_UP,				menu_up_action },
-	{ VB_KEY_DOWN,				menu_down_action },
-	{ VB_KEY_ENTER,  			vb2_ui_menu_select_action },
-	{ VB_BUTTON_VOL_UP_SHORT_PRESS, 	menu_up_action },
-	{ VB_BUTTON_VOL_DOWN_SHORT_PRESS, 	menu_down_action },
-	{ VB_BUTTON_POWER_SHORT_PRESS, 		vb2_ui_menu_select_action },
-	{ VB_KEY_ESC, 			 	vb2_ui_back_action },
+	/* Common navigation (keyboard) */
+	{ VB_KEY_UP,				vb2_ui_menu_prev },
+	{ VB_KEY_DOWN,				vb2_ui_menu_next },
+	{ VB_KEY_ENTER,  			vb2_ui_menu_select },
+	{ VB_KEY_ESC, 			 	vb2_ui_change_root },
+
+	/* Common navigation (detachable) */
+	{ VB_BUTTON_VOL_UP_SHORT_PRESS, 	vb2_ui_menu_prev },
+	{ VB_BUTTON_VOL_DOWN_SHORT_PRESS, 	vb2_ui_menu_next },
+	{ VB_BUTTON_POWER_SHORT_PRESS, 		vb2_ui_menu_select },
+
+	/* Context-specific: developer and recovery */
 	{ VB_KEY_CTRL('D'),		 	ctrl_d_action },
-	{ VB_BUTTON_VOL_DOWN_LONG_PRESS,
-	  vb2_ui_developer_mode_boot_internal_action },
+
+	/* Context-specific: recovery mode */
 	{ VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS,	change_to_dev_screen_action },
 	{ ' ',					vb2_ui_recovery_to_dev_action },
+
+	/* Context-specific: developer mode */
 	{ VB_KEY_CTRL('U'),
 	  vb2_ui_developer_mode_boot_external_action },
 	{ VB_BUTTON_VOL_UP_LONG_PRESS,
 	  vb2_ui_developer_mode_boot_external_action },
+	{ VB_BUTTON_VOL_DOWN_LONG_PRESS,
+	  vb2_ui_developer_mode_boot_internal_action },
 };
 
 vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
@@ -208,7 +138,77 @@ vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
 }
 
 /*****************************************************************************/
-/* Core UI functions */
+/* Menu navigation functions */
+
+vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui)
+{
+	int item;
+
+	if (!DETACHABLE && ui->key == VB_BUTTON_VOL_UP_SHORT_PRESS)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	item = ui->state.selected_item - 1;
+	while (item >= 0 &&
+	       ((1 << item) & ui->state.disabled_item_mask))
+		item--;
+	/* Only update if item is valid */
+	if (item >= 0)
+		ui->state.selected_item = item;
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui)
+{
+	int item;
+
+	if (!DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_SHORT_PRESS)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	item = ui->state.selected_item + 1;
+	while (item < ui->state.screen->num_items &&
+	       ((1 << item) & ui->state.disabled_item_mask))
+		item++;
+	/* Only update if item is valid */
+	if (item < ui->state.screen->num_items)
+		ui->state.selected_item = item;
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui)
+{
+	const struct vb2_menu_item *menu_item;
+
+	if (!DETACHABLE && ui->key == VB_BUTTON_POWER_SHORT_PRESS)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	if (ui->state.screen->num_items == 0)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	menu_item = &ui->state.screen->items[ui->state.selected_item];
+
+	if (menu_item->action) {
+		VB2_DEBUG("Menu item <%s> run action\n", menu_item->text);
+		return menu_item->action(ui);
+	} else if (menu_item->target) {
+		VB2_DEBUG("Menu item <%s> to target screen %#x\n",
+			  menu_item->text, menu_item->target);
+		return vb2_ui_change_screen(ui, menu_item->target);
+	}
+
+	VB2_DEBUG("Menu item <%s> no action or target screen\n",
+		  menu_item->text);
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+/*****************************************************************************/
+/* Screen navigation functions */
+
+vb2_error_t vb2_ui_change_root(struct vb2_ui_context *ui)
+{
+	return vb2_ui_change_screen(ui, ui->root_screen->id);
+}
 
 vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 {
@@ -233,6 +233,9 @@ vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id)
 
 	return VB2_REQUEST_UI_CONTINUE;
 }
+
+/*****************************************************************************/
+/* Core UI loop */
 
 vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		    vb2_error_t (*global_action)(struct vb2_ui_context *ui))

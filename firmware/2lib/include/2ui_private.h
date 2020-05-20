@@ -17,8 +17,6 @@ struct input_action {
 	vb2_error_t (*action)(struct vb2_ui_context *ui);
 };
 
-vb2_error_t menu_up_action(struct vb2_ui_context *ui);
-vb2_error_t menu_down_action(struct vb2_ui_context *ui);
 vb2_error_t ctrl_d_action(struct vb2_ui_context *ui);
 vb2_error_t change_to_dev_screen_action(struct vb2_ui_context *ui);
 vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui);

@@ -244,16 +244,15 @@ static void check_shutdown_request_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void vb2_ui_back_action_tests(void)
+static void vb2_ui_change_root_tests(void)
 {
-	VB2_DEBUG("Testing vb2_ui_back_action...\n");
+	VB2_DEBUG("Testing vb2_ui_change_root...\n");
 
-	/* TODO: back to previous screen instead of root screen */
 	/* Back to root screen */
 	reset_common_data();
 	mock_ui_context.root_screen = &mock_screen_root;
 	mock_ui_context.key = VB_KEY_ESC;
-	TEST_EQ(vb2_ui_back_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_change_root(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"back to root screen");
 	screen_state_eq(mock_state, MOCK_SCREEN_ROOT, MOCK_IGNORE, MOCK_IGNORE);
 
@@ -290,7 +289,7 @@ static void change_screen_tests(void)
 int main(void)
 {
 	check_shutdown_request_tests();
-	vb2_ui_back_action_tests();
+	vb2_ui_change_root_tests();
 	change_screen_tests();
 
 	return gTestSuccess ? 0 : 255;
