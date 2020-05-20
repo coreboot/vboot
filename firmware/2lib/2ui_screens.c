@@ -152,46 +152,13 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
-vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui)
+static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 {
-	int pressed;
-
-	if (ui->state.screen->id != VB2_SCREEN_RECOVERY_TO_DEV) {
-		VB2_DEBUG("Action needs RECOVERY_TO_DEV screen\n");
-		return VB2_REQUEST_UI_CONTINUE;
-	}
-
-	if (ui->key == ' ') {
-		VB2_DEBUG("SPACE means cancel dev mode transition\n");
-		return vb2_ui_change_root(ui);
-	}
-
-	if (PHYSICAL_PRESENCE_KEYBOARD) {
-		if (ui->key != VB_KEY_ENTER &&
-		    ui->key != VB_BUTTON_POWER_SHORT_PRESS)
-			return VB2_REQUEST_UI_CONTINUE;
-		if (!ui->key_trusted) {
-			VB2_DEBUG("Reject untrusted %s confirmation\n",
-				  ui->key == VB_KEY_ENTER ?
-				  "ENTER" : "POWER");
-			return VB2_REQUEST_UI_CONTINUE;
-		}
-	} else {
-		pressed = vb2ex_physical_presence_pressed();
-		if (pressed) {
-			VB2_DEBUG("Physical presence button pressed, "
-				 "awaiting release\n");
-			ui->physical_presence_button_pressed = 1;
-			return VB2_REQUEST_UI_CONTINUE;
-		}
-		if (!ui->physical_presence_button_pressed)
-			return VB2_REQUEST_UI_CONTINUE;
-		VB2_DEBUG("Physical presence button released\n");
-	}
 	VB2_DEBUG("Physical presence confirmed!\n");
 
 	/* Sanity check, should never happen. */
-	if ((vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
+	if (ui->state.screen->id != VB2_SCREEN_RECOVERY_TO_DEV ||
+	    (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev transition sanity check failed\n");
 		return VB2_REQUEST_UI_CONTINUE;
@@ -202,10 +169,47 @@ vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui)
 	return VB2_REQUEST_REBOOT_EC_TO_RO;
 }
 
+vb2_error_t recovery_to_dev_confirm_action(struct vb2_ui_context *ui)
+{
+	if (!ui->key_trusted) {
+		VB2_DEBUG("Reject untrusted %s confirmation\n",
+			  ui->key == VB_KEY_ENTER ? "ENTER" : "POWER");
+		return VB2_REQUEST_UI_CONTINUE;
+	}
+	return recovery_to_dev_finalize(ui);
+}
+
+vb2_error_t recovery_to_dev_action(struct vb2_ui_context *ui)
+{
+	int pressed;
+
+	if (ui->key == ' ') {
+		VB2_DEBUG("SPACE means cancel dev mode transition\n");
+		return vb2_ui_change_root(ui);
+	}
+
+	/* Keyboard physical presence case covered by "Confirm" action. */
+	if (PHYSICAL_PRESENCE_KEYBOARD)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	pressed = vb2ex_physical_presence_pressed();
+	if (pressed) {
+		VB2_DEBUG("Physical presence button pressed, "
+			  "awaiting release\n");
+		ui->physical_presence_button_pressed = 1;
+		return VB2_REQUEST_UI_CONTINUE;
+	}
+	if (!ui->physical_presence_button_pressed)
+		return VB2_REQUEST_UI_CONTINUE;
+	VB2_DEBUG("Physical presence button released\n");
+
+	return recovery_to_dev_finalize(ui);
+}
+
 static const struct vb2_menu_item recovery_to_dev_items[] = {
 	[RECOVERY_TO_DEV_ITEM_CONFIRM] = {
 		.text = "Confirm",
-		.action = vb2_ui_recovery_to_dev_action,
+		.action = recovery_to_dev_confirm_action,
 	},
 	[RECOVERY_TO_DEV_ITEM_CANCEL] = {
 		.text = "Cancel",
@@ -217,7 +221,7 @@ static const struct vb2_screen_info recovery_to_dev_screen = {
 	.id = VB2_SCREEN_RECOVERY_TO_DEV,
 	.name = "Transition to developer mode",
 	.init = recovery_to_dev_init,
-	.action = vb2_ui_recovery_to_dev_action,
+	.action = recovery_to_dev_action,
 	MENU_ITEMS(recovery_to_dev_items),
 };
 

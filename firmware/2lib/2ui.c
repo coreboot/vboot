@@ -71,74 +71,39 @@ vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 }
 
 /*****************************************************************************/
-/* Menu navigation actions */
-
-/**
- * Context-dependent keyboard shortcut Ctrl+D.
- *
- * - Manual recovery mode: Change to dev mode transition screen.
- * - Developer mode: Boot from internal disk.
- */
-vb2_error_t ctrl_d_action(struct vb2_ui_context *ui)
-{
-	if (vb2_allow_recovery(ui->ctx))
-		return change_to_dev_screen_action(ui);
-	else if (ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE)
-		return vb2_ui_developer_mode_boot_internal_action(ui);
-
-	return VB2_REQUEST_UI_CONTINUE;
-}
-
-vb2_error_t change_to_dev_screen_action(struct vb2_ui_context *ui)
-{
-	if (vb2_allow_recovery(ui->ctx))
-		return vb2_ui_change_screen(ui, VB2_SCREEN_RECOVERY_TO_DEV);
-
-	return VB2_REQUEST_UI_CONTINUE;
-}
-
-/*****************************************************************************/
-/* Action lookup tables */
-
-static struct input_action action_table[] = {
-	/* Common navigation (keyboard) */
-	{ VB_KEY_UP,				vb2_ui_menu_prev },
-	{ VB_KEY_DOWN,				vb2_ui_menu_next },
-	{ VB_KEY_ENTER,  			vb2_ui_menu_select },
-	{ VB_KEY_ESC, 			 	vb2_ui_change_root },
-
-	/* Common navigation (detachable) */
-	{ VB_BUTTON_VOL_UP_SHORT_PRESS, 	vb2_ui_menu_prev },
-	{ VB_BUTTON_VOL_DOWN_SHORT_PRESS, 	vb2_ui_menu_next },
-	{ VB_BUTTON_POWER_SHORT_PRESS, 		vb2_ui_menu_select },
-
-	/* Context-specific: developer and recovery */
-	{ VB_KEY_CTRL('D'),		 	ctrl_d_action },
-
-	/* Context-specific: recovery mode */
-	{ VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS,	change_to_dev_screen_action },
-	{ ' ',					vb2_ui_recovery_to_dev_action },
-
-	/* Context-specific: developer mode */
-	{ VB_KEY_CTRL('U'),
-	  vb2_ui_developer_mode_boot_external_action },
-	{ VB_BUTTON_VOL_UP_LONG_PRESS,
-	  vb2_ui_developer_mode_boot_external_action },
-	{ VB_BUTTON_VOL_DOWN_LONG_PRESS,
-	  vb2_ui_developer_mode_boot_internal_action },
-};
-
-vb2_error_t (*input_action_lookup(int key))(struct vb2_ui_context *ui)
-{
-	int i;
-	for (i = 0; i < ARRAY_SIZE(action_table); i++)
-		if (action_table[i].key == key)
-			return action_table[i].action;
-	return NULL;
-}
-
-/*****************************************************************************/
 /* Menu navigation functions */
+
+vb2_error_t menu_navigation_action(struct vb2_ui_context *ui)
+{
+	uint32_t key = ui->key;
+
+	/* Map detachable button presses for simplicity. */
+	if (DETACHABLE) {
+		if (key == VB_BUTTON_VOL_UP_SHORT_PRESS)
+			key = VB_KEY_UP;
+		else if (key == VB_BUTTON_VOL_DOWN_SHORT_PRESS)
+			key = VB_KEY_DOWN;
+		else if (key == VB_BUTTON_POWER_SHORT_PRESS)
+			key = VB_KEY_ENTER;
+	}
+
+	switch (key) {
+	case VB_KEY_UP:
+		return vb2_ui_menu_prev(ui);
+	case VB_KEY_DOWN:
+		return vb2_ui_menu_next(ui);
+	case VB_KEY_ENTER:
+		return vb2_ui_menu_select(ui);
+	case VB_KEY_ESC:
+		return vb2_ui_change_root(ui);
+	default:
+		if (key != 0)
+			VB2_DEBUG("Pressed key %#x, trusted? %d\n",
+				  ui->key, ui->key_trusted);
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
 
 vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui)
 {
@@ -243,7 +208,6 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	struct vb2_ui_context ui;
 	struct vb2_screen_state prev_state;
 	uint32_t key_flags;
-	vb2_error_t (*action)(struct vb2_ui_context *ui);
 	vb2_error_t rv;
 
 	memset(&ui, 0, sizeof(ui));
@@ -272,6 +236,17 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 					 ui.state.disabled_item_mask);
 		}
 
+		/* Grab new keyboard input. */
+		ui.key = VbExKeyboardReadWithFlags(&key_flags);
+		ui.key_trusted = !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD);
+
+		/* Check for shutdown request. */
+		rv = check_shutdown_request(&ui);
+		if (rv != VB2_REQUEST_UI_CONTINUE) {
+			VB2_DEBUG("Shutdown requested!\n");
+			return rv;
+		}
+
 		/* Run screen action. */
 		if (ui.state.screen->action) {
 			rv = ui.state.screen->action(&ui);
@@ -279,30 +254,10 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 				return rv;
 		}
 
-		/* Grab new keyboard input. */
-		ui.key = VbExKeyboardReadWithFlags(&key_flags);
-		ui.key_trusted = !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD);
-
-		/* Check for shutdown request. */
-		if (check_shutdown_request(&ui) == VB2_REQUEST_SHUTDOWN) {
-			VB2_DEBUG("Shutdown requested!\n");
-			return VB2_REQUEST_SHUTDOWN;
-		}
-
-		/* Run input action function if found. */
-		action = input_action_lookup(ui.key);
-		if (action) {
-			rv = action(&ui);
-			if (rv != VB2_REQUEST_UI_CONTINUE)
-				return rv;
-		} else if (ui.key) {
-			VB2_DEBUG("Pressed key %#x, trusted? %d\n",
-				  ui.key, ui.key_trusted);
-		}
-
-		/* Reset keyboard input. */
-		ui.key = 0;
-		ui.key_trusted = 0;
+		/* Run menu navigation action. */
+		rv = menu_navigation_action(&ui);
+		if (rv != VB2_REQUEST_UI_CONTINUE)
+			return rv;
 
 		/* Run global action function if available. */
 		if (global_action) {
@@ -323,7 +278,20 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 
 vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 {
-	return ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL);
+	return ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, developer_action);
+}
+
+vb2_error_t developer_action(struct vb2_ui_context *ui)
+{
+	/* Developer mode keyboard shortcuts */
+	if (ui->key == VB_KEY_CTRL('U') ||
+	    (DETACHABLE && ui->key == VB_BUTTON_VOL_UP_LONG_PRESS))
+		return vb2_ui_developer_mode_boot_external_action(ui);
+	if (ui->key == VB_KEY_CTRL('D') ||
+	    (DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_LONG_PRESS))
+		return vb2_ui_developer_mode_boot_internal_action(ui);
+
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 /*****************************************************************************/
@@ -339,10 +307,10 @@ vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx)
 
 vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)
 {
-	return ui_loop(ctx, VB2_SCREEN_RECOVERY_SELECT, try_recovery_action);
+	return ui_loop(ctx, VB2_SCREEN_RECOVERY_SELECT, manual_recovery_action);
 }
 
-vb2_error_t try_recovery_action(struct vb2_ui_context *ui)
+vb2_error_t manual_recovery_action(struct vb2_ui_context *ui)
 {
 	/* See if we have a recovery kernel available yet. */
 	vb2_error_t rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
@@ -351,12 +319,19 @@ vb2_error_t try_recovery_action(struct vb2_ui_context *ui)
 
 	/* If disk validity state changed, switch to appropriate screen. */
 	if (ui->recovery_rv != rv) {
+		VB2_DEBUG("Recovery VbTryLoadKernel %#x --> %#x\n",
+			  ui->recovery_rv, rv);
 		ui->recovery_rv = rv;
 		return vb2_ui_change_screen(ui,
 					    rv == VB2_ERROR_LK_NO_DISK_FOUND ?
 					    VB2_SCREEN_RECOVERY_SELECT :
 					    VB2_SCREEN_RECOVERY_INVALID);
 	}
+
+	/* Manual recovery keyboard shortcuts */
+	if (ui->key == VB_KEY_CTRL('D') ||
+	    (DETACHABLE && ui->key == VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS))
+		return vb2_ui_change_screen(ui, VB2_SCREEN_RECOVERY_TO_DEV);
 
 	return VB2_REQUEST_UI_CONTINUE;
 }
