@@ -18,9 +18,10 @@
 #define MOCK_IGNORE 0xffffu
 
 /* Mock screen index for testing screen utility functions. */
-#define MOCK_NO_SCREEN 0xef0
-#define MOCK_SCREEN_BASE 0xeff
-#define MOCK_SCREEN_MENU 0xfff
+#define MOCK_NO_SCREEN 0xef00
+#define MOCK_SCREEN_BASE 0xef10
+#define MOCK_SCREEN_MENU 0xef11
+#define MOCK_SCREEN_ROOT 0xefff
 
 /* Mock data */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
@@ -70,6 +71,12 @@ const struct vb2_screen_info mock_screen_menu = {
 	.num_items = ARRAY_SIZE(mock_screen_menu_items),
 	.items = mock_screen_menu_items,
 };
+const struct vb2_screen_info mock_screen_root = {
+	.id = MOCK_SCREEN_ROOT,
+	.name = "mock_screen_root",
+	.num_items = ARRAY_SIZE(mock_empty_menu),
+	.items = mock_empty_menu,
+};
 
 static void screen_state_eq(const struct vb2_screen_state *state,
 			    enum vb2_screen screen,
@@ -104,19 +111,8 @@ static void reset_common_data(void)
 	mock_shutdown_request = MOCK_IGNORE;
 
 	/* Mock ui_context based on mock screens */
-	mock_ui_context = (struct vb2_ui_context){
-		.ctx = ctx,
-		.root_screen = &mock_screen_blank,
-		.state = (struct vb2_screen_state){
-			.screen = &mock_screen_blank,
-			.selected_item = 0,
-			.disabled_item_mask = 0,
-		},
-		.locale_id = 0,
-		.key = 0,
-		.power_button = VB2_POWER_BUTTON_HELD_SINCE_BOOT,
-
-	};
+	memset(&mock_ui_context, 0, sizeof(mock_ui_context));
+	mock_ui_context.power_button = VB2_POWER_BUTTON_HELD_SINCE_BOOT;
 	mock_state = &mock_ui_context.state;
 }
 
@@ -143,6 +139,8 @@ const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen screen)
 		return &mock_screen_base;
 	case MOCK_SCREEN_MENU:
 		return &mock_screen_menu;
+	case MOCK_SCREEN_ROOT:
+		return &mock_screen_root;
 	default:
 		return NULL;
 	}
@@ -246,6 +244,22 @@ static void check_shutdown_request_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static void vb2_ui_back_action_tests(void)
+{
+	VB2_DEBUG("Testing vb2_ui_back_action...\n");
+
+	/* TODO: back to previous screen instead of root screen */
+	/* Back to root screen */
+	reset_common_data();
+	mock_ui_context.root_screen = &mock_screen_root;
+	mock_ui_context.key = VB_KEY_ESC;
+	TEST_EQ(vb2_ui_back_action(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+		"back to root screen");
+	screen_state_eq(mock_state, MOCK_SCREEN_ROOT, MOCK_IGNORE, MOCK_IGNORE);
+
+	VB2_DEBUG("...done.\n");
+}
+
 static void change_screen_tests(void)
 {
 	VB2_DEBUG("Testing change_screen...\n");
@@ -276,6 +290,7 @@ static void change_screen_tests(void)
 int main(void)
 {
 	check_shutdown_request_tests();
+	vb2_ui_back_action_tests();
 	change_screen_tests();
 
 	return gTestSuccess ? 0 : 255;

@@ -165,18 +165,8 @@ static void reset_common_data(enum reset_type t)
 	sd->status |= VB2_SD_STATUS_SECDATA_KERNEL_INIT;
 
 	/* Mock ui_context based on real screens */
-	mock_ui_context = (struct vb2_ui_context){
-		.ctx = ctx,
-		.root_screen = vb2_get_screen_info(VB2_SCREEN_BLANK),
-		.state = (struct vb2_screen_state){
-			.screen = vb2_get_screen_info(VB2_SCREEN_BLANK),
-			.selected_item = 0,
-			.disabled_item_mask = 0,
-		},
-		.locale_id = 0,
-		.key = 0,
-
-	};
+	memset(&mock_ui_context, 0, sizeof(mock_ui_context));
+	mock_ui_context.ctx = ctx;
 	mock_state = &mock_ui_context.state;
 
 	/* For vb2ex_display_ui */
