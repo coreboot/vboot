@@ -56,6 +56,7 @@ struct vb2_screen_state {
 	const struct vb2_screen_info *screen;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
+	struct vb2_screen_state *prev;
 };
 
 enum vb2_power_button {
@@ -66,8 +67,7 @@ enum vb2_power_button {
 
 struct vb2_ui_context {
 	struct vb2_context *ctx;
-	const struct vb2_screen_info *root_screen;
-	struct vb2_screen_state state;
+	struct vb2_screen_state *state;
 	uint32_t locale_id;
 	uint32_t key;
 	int key_trusted;
@@ -150,14 +150,14 @@ vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui);
 /* Screen navigation functions */
 
 /**
- * Return back to the root screen.
+ * Return back to the previous screen.
  *
- * Return to the root screen originally provided to the ui_loop() function.
+ * If the current screen is already the root scren, the request is ignored.
  *
  * @param ui		UI context pointer
  * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
  */
-vb2_error_t vb2_ui_change_root(struct vb2_ui_context *ui);
+vb2_error_t vb2_ui_screen_back(struct vb2_ui_context *ui);
 
 /**
  * Change to the given screen.
@@ -167,7 +167,7 @@ vb2_error_t vb2_ui_change_root(struct vb2_ui_context *ui);
  * @param ui		UI context pointer
  * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
  */
-vb2_error_t vb2_ui_change_screen(struct vb2_ui_context *ui, enum vb2_screen id);
+vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);
 
 /*****************************************************************************/
 /* UI loops */

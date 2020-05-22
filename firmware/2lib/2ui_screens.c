@@ -32,7 +32,7 @@
 
 #define BACK_ITEM { \
 	.text = "Back", \
-	.action = vb2_ui_change_root, \
+	.action = vb2_ui_screen_back, \
 }
 
 #define ADVANCED_OPTIONS_ITEM { \
@@ -65,7 +65,7 @@ static const struct vb2_screen_info blank_screen = {
 static vb2_error_t language_select_action(struct vb2_ui_context *ui)
 {
 	vb2_error_t rv;
-	ui->locale_id = ui->state.selected_item;
+	ui->locale_id = ui->state->selected_item;
 	VB2_DEBUG("Locale changed to %u\n", ui->locale_id);
 
 	/* Write locale id back to nvdata. */
@@ -77,7 +77,7 @@ static vb2_error_t language_select_action(struct vb2_ui_context *ui)
 	if (rv && !(ui->ctx->flags & VB2_CONTEXT_RECOVERY_MODE))
 		return rv;
 
-	return vb2_ui_change_root(ui);
+	return vb2_ui_screen_back(ui);
 }
 
 const struct vb2_menu *get_language_menu(struct vb2_ui_context *ui)
@@ -117,14 +117,14 @@ static vb2_error_t language_select_init(struct vb2_ui_context *ui)
 	if (menu->num_items == 0) {
 		VB2_DEBUG("ERROR: No menu items found; "
 			  "rejecting entering language selection screen\n");
-		return vb2_ui_change_root(ui);
+		return vb2_ui_screen_back(ui);
 	}
 	if (ui->locale_id < menu->num_items) {
-		ui->state.selected_item = ui->locale_id;
+		ui->state->selected_item = ui->locale_id;
 	} else {
 		VB2_DEBUG("WARNING: Current locale not found in menu items; "
 			  "initializing selected_item to 0\n");
-		ui->state.selected_item = 0;
+		ui->state->selected_item = 0;
 	}
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -159,12 +159,12 @@ static const struct vb2_screen_info recovery_broken_screen = {
 
 vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 {
-	ui->state.selected_item = ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
+	ui->state->selected_item = ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
 	    !vb2_allow_recovery(ui->ctx)) {
-		ui->state.disabled_item_mask |=
+		ui->state->disabled_item_mask |=
 			1 << ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
-		ui->state.selected_item = ADVANCED_OPTIONS_ITEM_BACK;
+		ui->state->selected_item = ADVANCED_OPTIONS_ITEM_BACK;
 	}
 
 	return VB2_REQUEST_UI_CONTINUE;
@@ -195,12 +195,12 @@ static const struct vb2_screen_info advanced_options_screen = {
 
 vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 {
-	ui->state.selected_item = RECOVERY_SELECT_ITEM_PHONE;
+	ui->state->selected_item = RECOVERY_SELECT_ITEM_PHONE;
 	if (!vb2api_phone_recovery_ui_enabled(ui->ctx)) {
 		VB2_DEBUG("WARNING: Phone recovery not available\n");
-		ui->state.disabled_item_mask |=
+		ui->state->disabled_item_mask |=
 			1 << RECOVERY_SELECT_ITEM_PHONE;
-		ui->state.selected_item = RECOVERY_SELECT_ITEM_EXTERNAL_DISK;
+		ui->state->selected_item = RECOVERY_SELECT_ITEM_EXTERNAL_DISK;
 	}
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -251,21 +251,21 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
 		/* We're in dev mode, so let user know they can't transition */
 		ui->error_code = VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED;
-		return vb2_ui_change_root(ui);
+		return vb2_ui_screen_back(ui);
 	}
 
 	if (!PHYSICAL_PRESENCE_KEYBOARD && vb2ex_physical_presence_pressed()) {
 		VB2_DEBUG("Presence button stuck?\n");
-		return vb2_ui_change_root(ui);
+		return vb2_ui_screen_back(ui);
 	}
 
-	ui->state.selected_item = RECOVERY_TO_DEV_ITEM_CONFIRM;
+	ui->state->selected_item = RECOVERY_TO_DEV_ITEM_CONFIRM;
 
 	/* Disable "Confirm" button for other physical presence types. */
 	if (!PHYSICAL_PRESENCE_KEYBOARD) {
-		ui->state.disabled_item_mask |=
+		ui->state->disabled_item_mask |=
 			1 << RECOVERY_TO_DEV_ITEM_CONFIRM;
-		ui->state.selected_item = RECOVERY_TO_DEV_ITEM_CANCEL;
+		ui->state->selected_item = RECOVERY_TO_DEV_ITEM_CANCEL;
 	}
 
 	ui->physical_presence_button_pressed = 0;
@@ -278,7 +278,7 @@ static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 	VB2_DEBUG("Physical presence confirmed!\n");
 
 	/* Sanity check, should never happen. */
-	if (ui->state.screen->id != VB2_SCREEN_RECOVERY_TO_DEV ||
+	if (ui->state->screen->id != VB2_SCREEN_RECOVERY_TO_DEV ||
 	    (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev transition sanity check failed\n");
@@ -306,7 +306,7 @@ vb2_error_t recovery_to_dev_action(struct vb2_ui_context *ui)
 
 	if (ui->key == ' ') {
 		VB2_DEBUG("SPACE means cancel dev mode transition\n");
-		return vb2_ui_change_root(ui);
+		return vb2_ui_screen_back(ui);
 	}
 
 	/* Keyboard physical presence case covered by "Confirm" action. */
@@ -335,7 +335,7 @@ static const struct vb2_menu_item recovery_to_dev_items[] = {
 	},
 	[RECOVERY_TO_DEV_ITEM_CANCEL] = {
 		.text = "Cancel",
-		.action = vb2_ui_change_root,
+		.action = vb2_ui_screen_back,
 	},
 	POWER_OFF_ITEM,
 };
@@ -438,27 +438,27 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 	enum vb2_dev_default_boot_target default_boot =
 		vb2api_get_dev_default_boot_target(ui->ctx);
 
-	/* Get me outta here! */
+	/* TODO(b/159579189): Split this case into a separate root screen */
 	if (!vb2_dev_boot_allowed(ui->ctx))
-		vb2_ui_change_screen(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
+		vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 
 	/* Don't show "Return to secure mode" button if GBB forces dev mode. */
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
-		ui->state.disabled_item_mask |=
+		ui->state->disabled_item_mask |=
 			1 << DEVELOPER_MODE_ITEM_RETURN_TO_SECURE;
 
 	/* Don't show "Boot from external disk" button if not allowed. */
 	if (!vb2_dev_boot_external_allowed(ui->ctx))
-		ui->state.disabled_item_mask |=
+		ui->state->disabled_item_mask |=
 			1 << DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 
 	/* Choose the default selection. */
 	switch (default_boot) {
 	case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
-		ui->state.selected_item = DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
+		ui->state->selected_item = DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 		break;
 	default:
-		ui->state.selected_item = DEVELOPER_MODE_ITEM_BOOT_INTERNAL;
+		ui->state->selected_item = DEVELOPER_MODE_ITEM_BOOT_INTERNAL;
 		break;
 	}
 
@@ -498,18 +498,20 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	if (rv == VB2_SUCCESS) {
 		return VB2_SUCCESS;
 	} else if (rv == VB2_ERROR_LK_NO_DISK_FOUND) {
-		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL) {
+		if (ui->state->screen->id !=
+		    VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL) {
 			VB2_DEBUG("No external disk found\n");
 			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
 		}
-		return vb2_ui_change_screen(
+		return vb2_ui_screen_change(
 			ui, VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL);
 	} else {
-		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_INVALID_DISK) {
+		if (ui->state->screen->id !=
+		    VB2_SCREEN_DEVELOPER_INVALID_DISK) {
 			VB2_DEBUG("Invalid external disk: %#x\n", rv);
 			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
 		}
-		return vb2_ui_change_screen(
+		return vb2_ui_screen_change(
 			ui, VB2_SCREEN_DEVELOPER_INVALID_DISK);
 	}
 }
@@ -518,6 +520,10 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 {
 	const int use_short = vb2api_use_short_dev_screen_delay(ui->ctx);
 	uint64_t elapsed;
+
+	/* TODO(b/159579189): Split this case into a separate root screen */
+	if (!vb2_dev_boot_allowed(ui->ctx))
+		vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 
 	/* Once any user interaction occurs, stop the timer. */
 	if (ui->key)
@@ -600,7 +606,7 @@ static const struct vb2_menu_item developer_to_norm_items[] = {
 	},
 	{
 		.text = "Cancel",
-		.action = vb2_ui_change_root,
+		.action = vb2_ui_screen_back,
 	},
 	POWER_OFF_ITEM,
 };

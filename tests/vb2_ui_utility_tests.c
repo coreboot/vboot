@@ -33,7 +33,6 @@ static uint32_t mock_locale_count;
 static int mock_shutdown_request;
 
 static struct vb2_ui_context mock_ui_context;
-static struct vb2_screen_state *mock_state;
 
 /* Mock actions */
 static uint32_t mock_action_called;
@@ -70,7 +69,7 @@ struct vb2_menu_item mock_screen_menu_items[] = {
 		.text = "option 4",
 	},
 };
-const struct vb2_screen_info mock_screen_menu = {
+struct vb2_screen_info mock_screen_menu = {
 	.id = MOCK_SCREEN_MENU,
 	.name = "mock_screen_menu: screen with 5 options",
 	.menu = {
@@ -78,7 +77,7 @@ const struct vb2_screen_info mock_screen_menu = {
 		.items = mock_screen_menu_items,
 	},
 };
-const struct vb2_screen_info mock_screen_root = {
+struct vb2_screen_info mock_screen_root = {
 	.id = MOCK_SCREEN_ROOT,
 	.name = "mock_screen_root",
 };
@@ -121,10 +120,19 @@ static void reset_common_data(void)
 	/* Mock ui_context based on mock screens */
 	memset(&mock_ui_context, 0, sizeof(mock_ui_context));
 	mock_ui_context.power_button = VB2_POWER_BUTTON_HELD_SINCE_BOOT;
-	mock_state = &mock_ui_context.state;
 
 	/* For mock actions */
 	mock_action_called = 0;
+
+	/* Reset init and action functions */
+	mock_screen_blank.init = NULL;
+	mock_screen_blank.action = NULL;
+	mock_screen_base.init = NULL;
+	mock_screen_base.action = NULL;
+	mock_screen_menu.init = NULL;
+	mock_screen_menu.action = NULL;
+	mock_screen_root.init = NULL;
+	mock_screen_root.action = NULL;
 }
 
 /* Mock functions */
@@ -260,57 +268,56 @@ static void check_shutdown_request_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void vb2_ui_change_root_tests(void)
+static void screen_stack_tests(void)
 {
-	VB2_DEBUG("Testing vb2_ui_change_root...\n");
-
-	/* Back to root screen */
-	reset_common_data();
-	mock_ui_context.root_screen = &mock_screen_root;
-	mock_ui_context.key = VB_KEY_ESC;
-	TEST_EQ(vb2_ui_change_root(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
-		"back to root screen");
-	screen_state_eq(mock_state, MOCK_SCREEN_ROOT, MOCK_IGNORE, MOCK_IGNORE);
-
-	VB2_DEBUG("...done.\n");
-}
-
-static void change_screen_tests(void)
-{
-	VB2_DEBUG("Testing change_screen...\n");
-
-	/* Changing screen will clear screen state */
-	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	mock_state->selected_item = 2;
-	mock_state->disabled_item_mask = 0x10;
-	TEST_EQ(vb2_ui_change_screen(&mock_ui_context, MOCK_SCREEN_BASE),
-		VB2_REQUEST_UI_CONTINUE,
-		"change_screen will clear screen state");
-	screen_state_eq(mock_state, MOCK_SCREEN_BASE, 0, 0);
+	VB2_DEBUG("Testing screen stack functionality...\n");
 
 	/* Change to screen which does not exist */
 	reset_common_data();
-	mock_state->screen = &mock_screen_menu;
-	TEST_EQ(vb2_ui_change_screen(&mock_ui_context, MOCK_NO_SCREEN),
+	TEST_EQ(vb2_ui_screen_change(&mock_ui_context, MOCK_NO_SCREEN),
 		VB2_REQUEST_UI_CONTINUE,
 		"change to screen which does not exist");
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU, MOCK_IGNORE, MOCK_IGNORE);
+	TEST_PTR_EQ(mock_ui_context.state, NULL, "  stack is empty");
 
-	/* Change to screen with init */
+	/* Screen back with empty stack */
+	reset_common_data();
+	TEST_EQ(vb2_ui_screen_back(&mock_ui_context),
+		VB2_REQUEST_UI_CONTINUE,
+		"screen back with empty stack");
+	TEST_PTR_EQ(mock_ui_context.state, NULL, "  stack is empty");
+
+	/* Back to previous screen, restoring the state */
 	reset_common_data();
 	mock_screen_base.init = mock_action_base;
-	TEST_EQ(vb2_ui_change_screen(&mock_ui_context, MOCK_SCREEN_BASE),
-		VB2_SUCCESS, "change to screen with init");
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_ROOT);
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE);
+	mock_ui_context.state->selected_item = 2;
+	mock_ui_context.state->disabled_item_mask = 0x10;
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_MENU);
+	TEST_EQ(vb2_ui_screen_back(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
+		"back to previous screen");
+	screen_state_eq(mock_ui_context.state, MOCK_SCREEN_BASE, 2, 0x10);
+	TEST_EQ(mock_action_called, 1, "  action called once");
+
+	/* Change to target screen already in stack, restoring the state */
+	reset_common_data();
+	mock_screen_base.init = mock_action_base;
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_ROOT);
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE);
+	mock_ui_context.state->selected_item = 2;
+	mock_ui_context.state->disabled_item_mask = 0x10;
+	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_MENU);
+	TEST_EQ(vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE),
+		VB2_REQUEST_UI_CONTINUE, "change to target in stack");
+	screen_state_eq(mock_ui_context.state, MOCK_SCREEN_BASE, 2, 0x10);
 	TEST_EQ(mock_action_called, 1, "  action called once");
 
 	/* Change to screen without init; using default init() */
 	reset_common_data();
-	mock_state->screen = &mock_screen_base;
-	TEST_EQ(vb2_ui_change_screen(&mock_ui_context, MOCK_SCREEN_MENU),
+	TEST_EQ(vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_MENU),
 		VB2_REQUEST_UI_CONTINUE,
 		"change to screen with language selection");
-	screen_state_eq(mock_state, MOCK_SCREEN_MENU,
+	screen_state_eq(mock_ui_context.state, MOCK_SCREEN_MENU,
 			1,	/* Since index 0 is the language selection */
 			0);
 
@@ -350,8 +357,7 @@ static void get_language_menu_tests(void)
 int main(void)
 {
 	check_shutdown_request_tests();
-	vb2_ui_change_root_tests();
-	change_screen_tests();
+	screen_stack_tests();
 	get_language_menu_tests();
 
 	return gTestSuccess ? 0 : 255;
