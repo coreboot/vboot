@@ -284,6 +284,8 @@ vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 vb2_error_t developer_action(struct vb2_ui_context *ui)
 {
 	/* Developer mode keyboard shortcuts */
+	if (ui->key == VB_KEY_CTRL('S'))
+		return vb2_ui_change_screen(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 	if (ui->key == VB_KEY_CTRL('U') ||
 	    (DETACHABLE && ui->key == VB_BUTTON_VOL_UP_LONG_PRESS))
 		return vb2_ui_developer_mode_boot_external_action(ui);
