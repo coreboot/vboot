@@ -291,11 +291,7 @@ vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
-	if (VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_FIXED)) {
-		VB2_DEBUG("ERROR: Dev mode internal boot failed\n");
-		return VB2_REQUEST_UI_CONTINUE;
-	}
-
+	VB2_TRY(VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_FIXED));
 	return VB2_SUCCESS;
 }
 
