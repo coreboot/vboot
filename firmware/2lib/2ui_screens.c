@@ -147,12 +147,13 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 		ui->state.selected_item = RECOVERY_TO_DEV_ITEM_CANCEL;
 	}
 
+	ui->physical_presence_button_pressed = 0;
+
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
 vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui)
 {
-	static int pressed_last;
 	int pressed;
 
 	if (ui->state.screen->id != VB2_SCREEN_RECOVERY_TO_DEV) {
@@ -180,10 +181,10 @@ vb2_error_t vb2_ui_recovery_to_dev_action(struct vb2_ui_context *ui)
 		if (pressed) {
 			VB2_DEBUG("Physical presence button pressed, "
 				 "awaiting release\n");
-			pressed_last = 1;
+			ui->physical_presence_button_pressed = 1;
 			return VB2_REQUEST_UI_CONTINUE;
 		}
-		if (!pressed_last)
+		if (!ui->physical_presence_button_pressed)
 			return VB2_REQUEST_UI_CONTINUE;
 		VB2_DEBUG("Physical presence button released\n");
 	}
