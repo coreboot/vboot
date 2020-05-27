@@ -193,11 +193,11 @@ int vb2_write_nv_storage(struct vb2_context *ctx)
 	if (0 != VbCmosWrite(offs, expectsz, ctx->nvdata))
 		return -1;
 
-	/* Also attempt to write using mosys if using vboot2 */
+	/* Also attempt to write using flashrom if using vboot2 */
 	VbSharedDataHeader *sh = VbSharedDataRead();
 	if (sh) {
 		if (sh->flags & VBSD_BOOT_FIRMWARE_VBOOT2)
-			vb2_write_nv_storage_mosys(ctx);
+			vb2_write_nv_storage_flashrom(ctx);
 		free(sh);
 	}
 
