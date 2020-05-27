@@ -16,6 +16,7 @@
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
 #include "host_common.h"
+#include "flashrom.h"
 #include "subprocess.h"
 #include "vboot_struct.h"
 
@@ -655,6 +656,107 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 	return -1;
 }
 
+/**
+ * Get index of the last valid VBNV entry in an EEPROM.
+ *
+ * @param buf		Pointer to the beginning of the EEPROM.
+ * @param buf_sz	Size of the EEPROM.
+ * @param vbnv_size	The size of a single VBNV entry for this device.
+ *
+ * @return The index of the last valid VBNV entry on success, or -1 on
+ * failure.
+ */
+static int vb2_nv_index(const uint8_t *buf, uint32_t buf_sz, int vbnv_size)
+{
+	int index;
+	uint8_t blank[VB2_NVDATA_SIZE_V2];
+
+	/* The size of the buffer should be an even multiple of the
+	   VBNV size. */
+	if (buf_sz % vbnv_size != 0) {
+		VB2_DIE("The VBNV in flash (%u bytes) is not an even multiple "
+			"of the VBNV size (%u bytes).  This is likely a "
+			"firmware bug.\n", buf_sz, vbnv_size);
+	}
+
+	memset(blank, 0xff, sizeof(blank));
+	for (index = 0; index < buf_sz / vbnv_size; index++) {
+		if (!memcmp(blank, &buf[index * vbnv_size], vbnv_size))
+			break;
+	}
+
+	if (!index || index == buf_sz / vbnv_size) {
+		fprintf(stderr, "VBNV is either uninitialized or corrupted.\n");
+		return -1;
+	}
+
+	return index - 1;
+}
+
+#define VBNV_FMAP_REGION "RW_NVRAM"
+
+int vb2_read_nv_storage_flashrom(struct vb2_context *ctx)
+{
+	int index;
+	int vbnv_size = vb2_nv_get_size(ctx);
+	uint8_t *flash_buf;
+	uint32_t flash_size;
+
+	if (flashrom_read(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
+			  &flash_buf, &flash_size))
+		return -1;
+
+	index = vb2_nv_index(flash_buf, flash_size, vbnv_size);
+	if (index < 0) {
+		free(flash_buf);
+		return -1;
+	}
+
+	memcpy(ctx->nvdata, &flash_buf[index * vbnv_size], vbnv_size);
+	free(flash_buf);
+	return 0;
+}
+
+int vb2_write_nv_storage_flashrom(struct vb2_context *ctx)
+{
+	int rv = 0;
+	int current_index;
+	int next_index;
+	int vbnv_size = vb2_nv_get_size(ctx);
+	uint8_t *flash_buf;
+	uint32_t flash_size;
+
+	if (flashrom_read(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
+			  &flash_buf, &flash_size))
+		return -1;
+
+	current_index = vb2_nv_index(flash_buf, flash_size, vbnv_size);
+	if (current_index < 0) {
+		rv = -1;
+		goto exit;
+	}
+
+	next_index = current_index + 1;
+	if ((next_index + 1) * vbnv_size == flash_size) {
+		/* VBNV is full.  Erase and write at beginning. */
+		memset(flash_buf, 0xff, flash_size);
+		next_index = 0;
+	}
+
+	memcpy(&flash_buf[next_index * vbnv_size], ctx->nvdata, vbnv_size);
+	if (flashrom_write(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
+			   flash_buf, flash_size)) {
+		rv = -1;
+		goto exit;
+	}
+
+ exit:
+	free(flash_buf);
+	return rv;
+}
+
+/* TODO(crbug.com/1090803): remove these mosys nvdata functions
+   (approx. October 2020). */
 int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
 {
 	/* Reserve extra 32 bytes */

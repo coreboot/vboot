@@ -711,6 +711,7 @@ TEST2X_NAMES = \
 	tests/vb2_gbb_tests \
 	tests/vb2_host_flashrom_tests \
 	tests/vb2_host_key_tests \
+	tests/vb2_host_nvdata_flashrom_tests \
 	tests/vb2_kernel_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_nvstorage_tests \

@@ -15,6 +15,20 @@ extern "C" {
 struct vb2_context;
 
 /**
+ * Attempt to read non-volatile storage using flashrom.
+ *
+ * Returns 0 if success, non-zero if error.
+ */
+int vb2_read_nv_storage_flashrom(struct vb2_context *ctx);
+
+/**
+ * Attempt to write non-volatile storage using flashrom.
+ *
+ * Returns 0 if success, non-zero if error.
+ */
+int vb2_write_nv_storage_flashrom(struct vb2_context* ctx);
+
+/**
  * Attempt to read non-volatile storage using mosys.
  *
  * Returns 0 if success, non-zero if error.
