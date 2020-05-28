@@ -60,13 +60,6 @@ enum vb2_return_code {
 	VB2_ERROR_MOCK,
 
 	/**********************************************************************
-	 * vboot1-style errors
-	 * TODO: deprecate these once they have all moved over to vboot2 style
-	 */
-	/* Error writing VPD */
-	VBERROR_VPD_WRITE                     = 0x10032,
-
-	/**********************************************************************
 	 * SHA errors
 	 */
 	VB2_ERROR_SHA = VB2_ERROR_BASE + 0x010000,
@@ -734,6 +727,9 @@ enum vb2_return_code {
 
 	/* AUXFW peripheral busy. Cannot upgrade firmware at present. */
 	VB2_ERROR_EX_AUXFW_PERIPHERAL_BUSY,
+
+	/* Error setting vendor data (see: VbExSetVendorData). */
+	VB2_ERROR_EX_SET_VENDOR_DATA,
 
 	/**********************************************************************
 	 * LoadKernel errors
