@@ -66,7 +66,7 @@ main() {
   highest_key=$(printf '%s\n' firmware.loem*.keyblock |
                 sed -r 's:firmware.loem(.*).keyblock:\1:' |
                 sort -n | tail -1)
-  echo "There are ${highest_key} loem keys; ading ${num_keys} more"
+  echo "There are ${highest_key} loem keys; adding ${num_keys} more"
 
   for ((k = highest_key + 1; k < highest_key + 1 + num_keys; ++k)); do
     echo "Generating LOEM ${k}"
