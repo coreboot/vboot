@@ -1180,12 +1180,13 @@ enum vb2_screen {
 	VB2_SCREEN_RECOVERY_INVALID		= 0x201,
 	/* Confirm transition to developer mode */
 	VB2_SCREEN_RECOVERY_TO_DEV		= 0x202,
-	/* Recovery using disk */
-	VB2_SCREEN_RECOVERY_DISK_STEP1		= 0x210,
-	VB2_SCREEN_RECOVERY_DISK_STEP2		= 0x211,
-	VB2_SCREEN_RECOVERY_DISK_STEP3		= 0x212,
 	/* Recovery using phone */
-	VB2_SCREEN_RECOVERY_PHONE_STEP1		= 0x220,
+	VB2_SCREEN_RECOVERY_PHONE_STEP1		= 0x210,
+	VB2_SCREEN_RECOVERY_PHONE_STEP2		= 0x211,
+	/* Recovery using disk */
+	VB2_SCREEN_RECOVERY_DISK_STEP1		= 0x220,
+	VB2_SCREEN_RECOVERY_DISK_STEP2		= 0x221,
+	VB2_SCREEN_RECOVERY_DISK_STEP3		= 0x222,
 	/* Developer screen */
 	VB2_SCREEN_DEVELOPER_MODE		= 0x300,
 	/* Confirm transition to normal mode */

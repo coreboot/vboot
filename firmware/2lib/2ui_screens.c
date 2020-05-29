@@ -335,12 +335,28 @@ static const struct vb2_screen_info recovery_to_dev_screen = {
 
 static const struct vb2_menu_item recovery_phone_step1_items[] = {
 	LANGUAGE_SELECT_ITEM,
+	NEXT_ITEM(VB2_SCREEN_RECOVERY_PHONE_STEP2),
+	BACK_ITEM,
 };
 
 static const struct vb2_screen_info recovery_phone_step1_screen = {
 	.id = VB2_SCREEN_RECOVERY_PHONE_STEP1,
 	.name = "Phone recovery step 1",
 	.menu = MENU_ITEMS(recovery_phone_step1_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_RECOVERY_PHONE_STEP2 */
+
+static const struct vb2_menu_item recovery_phone_step2_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	BACK_ITEM,
+};
+
+static const struct vb2_screen_info recovery_phone_step2_screen = {
+	.id = VB2_SCREEN_RECOVERY_PHONE_STEP2,
+	.name = "Phone recovery step 2",
+	.menu = MENU_ITEMS(recovery_phone_step2_items),
 };
 
 /******************************************************************************/
@@ -573,6 +589,7 @@ static const struct vb2_screen_info *screens[] = {
 	&recovery_invalid_screen,
 	&recovery_to_dev_screen,
 	&recovery_phone_step1_screen,
+	&recovery_phone_step2_screen,
 	&recovery_disk_step1_screen,
 	&recovery_disk_step2_screen,
 	&recovery_disk_step3_screen,
