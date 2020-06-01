@@ -384,10 +384,12 @@ uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 	g_kernel_blob_size = preamble->body_signature.data_size;
 
 	/* Sanity check */
-	if (g_kernel_blob_size < preamble->body_signature.data_size)
+	if (kpart_size < now + g_kernel_blob_size) {
 		fprintf(stderr,
-			"Warning: kernel file only has %#x bytes\n",
+			"kernel body size %u exceeds partition end\n",
 			g_kernel_blob_size);
+		return NULL;
+	}
 
 	/* Update the blob pointers */
 	UnpackKernelBlob(g_kernel_blob_data);
