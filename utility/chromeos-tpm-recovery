@@ -16,6 +16,8 @@ awk=/usr/bin/awk
 initctl=/sbin/initctl
 daemon_was_running=
 err=0
+secdata_firmware=0x1007
+secdata_kernel=0x1008
 
 tpm2_target() {
   # This is not an ideal way to tell if we are running on a tpm2 target, but
@@ -23,6 +25,32 @@ tpm2_target() {
   if [ -f "/etc/init/trunksd.conf" ]; then
     return 0
   else
+    return 1
+  fi
+}
+
+use_v0_secdata_kernel() {
+  local fwid=$(crossystem ro_fwid)
+  local major=$(printf "$fwid" | cut -d. -f2)
+  local minor=$(printf "$fwid" | cut -d. -f3)
+
+  # TPM1 firmware never supports the v1 kernel space format.
+  if ! tpm2_target; then
+    return 0
+  fi
+
+  # First some sanity checks: X -eq X checks that X is a number. cut may return
+  # the whole string if no delimiter found, so major != minor checks that the
+  # version was at least somewhat correctly formatted.
+  if [ $major -eq $major ] && [ $minor -eq $minor ] && [ $major -ne $minor ]; then
+    # Now what we really care about: is this firmware older than CL:2041695?
+    if [ $major -lt 12953 ]; then
+      return 0
+    else
+      return 1
+    fi
+  else
+    log "Cannot parse FWID. Assuming local build that supports v1 kernel space."
     return 1
   fi
 }
@@ -63,27 +91,49 @@ tpm_clear_and_reenable () {
   $tpmc activate
 }
 
-reset_space () {
-  local index=$1
-  local permissions=$2
-  local size=$3
-  local bytes="$4"
+write_space () {
+  # do not quote "$2", as we mean to expand it here
+  if ! $tpmc write $1 $2; then
+    log_error "writing to $1 failed"
+  else
+    log "$1 written successfully"
+  fi
+}
 
-  if ! tpm2_target; then
-    # definespace is not yet supported for tpm2 (crosbug.com/p/59361), let's
-    # just rely on the firmware having created the required spaces for now.
+reset_ro_space () {
+  local index=$1
+  local bytes="$2"
+  local size=$(printf "$bytes" | wc -w)
+  local permissions=0x8001
+
+  if tpm2_target; then
+    log "Cannot redefine RO space for TPM2 (b/140958855). Let's just hope it looks good..."
+  else
     if ! $tpmc definespace $index $size $permissions; then
-      log "could not redefine space $index"
-      return 1
+      log_error "could not redefine RO space $index"
+      # try writing it anyway, just in case it works...
     fi
   fi
 
-  # do not quote "$bytes", as we mean to expand it here
-  if ! $tpmc write $index $bytes; then
-    log "writing to $index failed"
-    return 1
+  write_space $index "$bytes"
+}
+
+reset_rw_space () {
+  local index=$1
+  local bytes="$2"
+  local size=$(printf "$bytes" | wc -w)
+  local permissions=0x1
+
+  if tpm2_target; then
+    permissions=0x40050001
   fi
-  log "space $index was recreated successfully"
+
+  if ! $tpmc definespace $index $size $permissions; then
+    log_error "could not redefine RW space $index"
+    # try writing it anyway, just in case it works...
+  fi
+
+  write_space $index "$bytes"
 }
 
 restart_daemon_if_needed() {
@@ -161,10 +211,13 @@ fi
 tpm_clear_and_reenable
 
 # Reset firmware and kernel spaces to default (rollback version 1/1)
-reset_space 0x1007 0x8001 0xa "02  00  01 00 01 00  00 00 00  4f" || \
-  log_error "could not fix firmware space"
-reset_space 0x1008 0x1 0xd "02  4c 57 52 47  01 00 01 00  00 00 00  55" || \
-  log_error "could not fix kernel space"
+reset_ro_space $secdata_firmware "02  0  1 0 1 0  0 0 0  4f"
+
+if use_v0_secdata_kernel; then
+  reset_rw_space $secdata_kernel "02  4c 57 52 47  1 0 1 0  0 0 0  55"
+else
+  reset_rw_space $secdata_kernel "10  28  0c  0  1 0 1 0  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+fi
 
 restart_daemon_if_needed
 
