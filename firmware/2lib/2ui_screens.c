@@ -148,7 +148,8 @@ static const struct vb2_screen_info recovery_broken_screen = {
 vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 {
 	ui->state.selected_item = ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
-	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
+	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
+	    !vb2_allow_recovery(ui->ctx)) {
 		ui->state.disabled_item_mask |=
 			1 << ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
 		ui->state.selected_item = ADVANCED_OPTIONS_ITEM_BACK;
