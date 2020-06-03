@@ -7,6 +7,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <getopt.h>
 
 #include "futility.h"
@@ -29,6 +30,7 @@ enum {
 	OPT_QUIRKS_LIST,
 	OPT_REPACK,
 	OPT_SERVO,
+	OPT_SERVO_PORT,
 	OPT_SIGNATURE,
 	OPT_SYS_PROPS,
 	OPT_UNPACK,
@@ -51,6 +53,7 @@ static struct option const long_opts[] = {
 
 	{"ccd", 0, NULL, OPT_CCD},
 	{"servo", 0, NULL, OPT_SERVO},
+	{"servo_port", 1, NULL, OPT_SERVO_PORT},
 	{"emulate", 1, NULL, OPT_EMULATE},
 	{"factory", 0, NULL, OPT_FACTORY},
 	{"fast", 0, NULL, OPT_FAST},
@@ -113,6 +116,7 @@ static void print_help(int argc, char *argv[])
 		"    --model=MODEL   \tOverride system model for images\n"
 		"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"
 		"    --servo         \tFlash using Servo (v2, v4, micro, ...)\n"
+		"    --servo_port=PRT\tOverride servod port, implies --servo\n"
 		"    --signature_id=S\tOverride signature ID for key files\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
 		"-d, --debug         \tPrint debugging messages\n"
@@ -127,6 +131,7 @@ static int do_update(int argc, char *argv[])
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0, do_update = 1;
 	int detect_servo = 0, do_servo_cpu_fw_spi = 0;
+	char *servo_programmer = NULL;
 
 	cfg = updater_new_config();
 	assert(cfg);
@@ -226,6 +231,14 @@ static int do_update(int argc, char *argv[])
 			args.host_only = 1;
 			detect_servo = 1;
 			break;
+		case OPT_SERVO_PORT:
+			setenv(ENV_SERVOD_PORT, optarg, 1);
+			args.fast_update = 1;
+			args.force_update = 1;
+			args.write_protection = "0";
+			args.host_only = 1;
+			detect_servo = 1;
+			break;
 
 		case OPT_DUMMY:
 			break;
@@ -250,9 +263,13 @@ static int do_update(int argc, char *argv[])
 		ERROR("Unexpected arguments.\n");
 	}
 
-	if (!errorcnt && detect_servo)
-		errorcnt += host_detect_servo(&args.programmer,
-					      &do_servo_cpu_fw_spi);
+	if (!errorcnt && detect_servo) {
+		servo_programmer = host_detect_servo(&do_servo_cpu_fw_spi);
+		if (!servo_programmer)
+			errorcnt++;
+		else if (!args.programmer)
+			args.programmer = servo_programmer;
+	}
 	/*
 	 * Some boards may need to fetch firmware before starting to
 	 * update (i.e., in updater_setup_config) so we want to turn on
@@ -280,6 +297,7 @@ static int do_update(int argc, char *argv[])
 
 	if (do_servo_cpu_fw_spi)
 		free(host_shell("dut-control cpu_fw_spi:off"));
+	free(servo_programmer);
 
 	updater_delete_config(cfg);
 	return !!errorcnt;

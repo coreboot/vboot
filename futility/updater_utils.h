@@ -177,12 +177,14 @@ enum wp_state {
 /* Helper function to return write protection status via given programmer. */
 enum wp_state host_get_wp(const char *programmer);
 
+/* The environment variable name for setting servod port. */
+#define ENV_SERVOD_PORT	"SERVOD_PORT"
+
 /*
- * Helper function to detect type of Servo board attached to host,
- * and store the right programmer / prepare settings to arguments.
- * Returns 0 if success, non-zero if error.
+ * Helper function to detect type of Servo board attached to host.
+ * Returns a string as programmer parameter on success, otherwise NULL.
  */
-int host_detect_servo(const char **programmer_ptr, int *need_prepare_ptr);
+char *host_detect_servo(int *need_prepare_ptr);
 
 /*
  * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
