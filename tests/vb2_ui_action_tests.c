@@ -223,47 +223,65 @@ static void displayed_eq(const char *text,
 			 enum vb2_screen screen,
 			 uint32_t locale_id,
 			 uint32_t selected_item,
-			 uint32_t disabled_item_mask)
+			 uint32_t disabled_item_mask,
+			 int line)
 {
-	char text_buf[256];
+	char text_info[32], text_buf[128];
+
+	sprintf(text_info, "(line #%d, displayed #%d)", line, mock_displayed_i);
 
 	if (mock_displayed_i >= mock_displayed_count) {
-		sprintf(text_buf, "  missing screen %s", text);
+		sprintf(text_buf, "  %s missing screen %s",
+			text_info, text);
 		TEST_TRUE(0, text_buf);
 		return;
 	}
 
 	if (screen != MOCK_IGNORE) {
-		sprintf(text_buf, "  screen of %s", text);
+		sprintf(text_buf, "  %s screen of %s", text_info, text);
 		TEST_EQ(mock_displayed[mock_displayed_i].screen->id, screen,
 			text_buf);
 	}
 	if (locale_id != MOCK_IGNORE) {
-		sprintf(text_buf, "  locale_id of %s", text);
+		sprintf(text_buf, "  %s locale_id of %s", text_info, text);
 		TEST_EQ(mock_displayed[mock_displayed_i].locale_id, locale_id,
 			text_buf);
 	}
 	if (selected_item != MOCK_IGNORE) {
-		sprintf(text_buf, "  selected_item of %s", text);
+		sprintf(text_buf, "  %s selected_item of %s",
+			text_info, text);
 		TEST_EQ(mock_displayed[mock_displayed_i].selected_item,
 			selected_item, text_buf);
 	}
 	if (disabled_item_mask != MOCK_IGNORE) {
-		sprintf(text_buf, "  disabled_item_mask of %s", text);
+		sprintf(text_buf, "  %s disabled_item_mask of %s",
+			text_info, text);
 		TEST_EQ(mock_displayed[mock_displayed_i].disabled_item_mask,
 			disabled_item_mask, text_buf);
 	}
 	mock_displayed_i++;
 }
 
-static void displayed_no_extra(void)
+static void displayed_no_extra(int line)
 {
+	char text_info[32], text_buf[128];
+
+	sprintf(text_info, "(line #%d)", line);
+
 	if (mock_displayed_i == 0)
-		TEST_EQ(mock_displayed_count, 0, "  no screen");
+		sprintf(text_buf, "  %s no screen", text_info);
 	else
-		TEST_EQ(mock_displayed_count, mock_displayed_i,
-			"  no extra screens");
+		sprintf(text_buf, "  %s no extra screens", text_info);
+	TEST_EQ(mock_displayed_count, mock_displayed_i, text_buf);
 }
+
+#define DISPLAYED_EQ(...) displayed_eq(__VA_ARGS__, __LINE__)
+
+#define DISPLAYED_PASS() \
+	displayed_eq("", MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, \
+		     __LINE__)
+
+#define DISPLAYED_NO_EXTRA() displayed_no_extra(__LINE__)
 
 /* Reset mock data (for use before each test) */
 static void reset_common_data(void)
@@ -367,6 +385,19 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 			     uint32_t selected_item,
 			     uint32_t disabled_item_mask)
 {
+	struct display_call displayed = (struct display_call){
+		.screen = vb2_get_screen_info(screen),
+		.locale_id = locale_id,
+		.selected_item = selected_item,
+		.disabled_item_mask = disabled_item_mask,
+	};
+
+	/* Ignore repeated calls with same arguments */
+	if (mock_displayed_count > 0 &&
+	    !memcmp(&mock_displayed[mock_displayed_count - 1], &displayed,
+		    sizeof(struct display_call)))
+		return VB2_SUCCESS;
+
 	VB2_DEBUG("displayed %d: screen = %#x, locale_id = %u, "
 		  "selected_item = %u, disabled_item_mask = %#x\n",
 		  mock_displayed_count, screen, locale_id, selected_item,
@@ -377,13 +408,7 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 		return VB2_ERROR_MOCK;
 	}
 
-	mock_displayed[mock_displayed_count] = (struct display_call){
-		.screen = vb2_get_screen_info(screen),
-		.locale_id = locale_id,
-		.selected_item = selected_item,
-		.disabled_item_mask = disabled_item_mask,
-	};
-	mock_displayed_count++;
+	mock_displayed[mock_displayed_count++] = displayed;
 
 	return VB2_SUCCESS;
 }
@@ -662,16 +687,16 @@ static void ui_loop_tests(void)
 	reset_common_data();
 	TEST_ABORT(ui_loop(ctx, MOCK_NO_SCREEN, NULL),
 		   "die if no root screen");
-	displayed_no_extra();
+	DISPLAYED_NO_EXTRA();
 
 	/* Shutdown if requested */
 	reset_common_data();
 	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, NULL),
 		VB2_REQUEST_SHUTDOWN, "shutdown if requested");
 	TEST_EQ(mock_calls_until_shutdown, 0, "  used up shutdown request");
-	displayed_eq("mock_screen_base", MOCK_SCREEN_BASE, MOCK_IGNORE,
+	DISPLAYED_EQ("mock_screen_base", MOCK_SCREEN_BASE, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE);
-	displayed_no_extra();
+	DISPLAYED_NO_EXTRA();
 
 	/* Screen action */
 	reset_common_data();
@@ -693,10 +718,10 @@ static void ui_loop_tests(void)
 	reset_common_data();
 	TEST_EQ(ui_loop(ctx, VB2_SCREEN_BLANK, mock_action_change_screen),
 		VB2_REQUEST_SHUTDOWN, "global action can change screen");
-	displayed_eq("pass", MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	displayed_eq("change to mock_screen_base", MOCK_IGNORE, MOCK_IGNORE,
+	DISPLAYED_PASS();
+	DISPLAYED_EQ("change to mock_screen_base", MOCK_IGNORE, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE);
+	DISPLAYED_NO_EXTRA();
 
 	/*
 	 * Hook all actions, and receive SUCCESS from actions one by one
@@ -726,23 +751,23 @@ static void ui_loop_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
 		VB2_REQUEST_SHUTDOWN, "KEY_UP, KEY_DOWN, and KEY_ENTER");
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 0,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 0,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 1,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 1,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 2,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 2,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 3,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 3,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 4,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 4,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 3,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 3,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 2,
+	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 2,
 		     MOCK_IGNORE);
-	displayed_eq("mock_screen_target_2", MOCK_SCREEN_TARGET2, MOCK_IGNORE,
+	DISPLAYED_EQ("mock_screen_target_2", MOCK_SCREEN_TARGET2, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE);
-	displayed_no_extra();
+	DISPLAYED_NO_EXTRA();
 
 	/* For DETACHABLE */
 	if (DETACHABLE) {
@@ -758,23 +783,23 @@ static void ui_loop_tests(void)
 		add_mock_keypress(VB_BUTTON_POWER_SHORT_PRESS);
 		TEST_EQ(ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
 			VB2_REQUEST_SHUTDOWN, "DETACHABLE");
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     0, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     1, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     2, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     3, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     4, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     3, MOCK_IGNORE);
-		displayed_eq("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
+		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     2, MOCK_IGNORE);
-		displayed_eq("mock_screen_target_2", MOCK_SCREEN_TARGET2,
+		DISPLAYED_EQ("mock_screen_target_2", MOCK_SCREEN_TARGET2,
 			     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-		displayed_no_extra();
+		DISPLAYED_NO_EXTRA();
 	}
 
 	VB2_DEBUG("...done.\n");
