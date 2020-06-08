@@ -57,7 +57,7 @@ enum vb2_nv_param {
 	 * 0=no, 1=yes.  Deprecated; see chromium:995172.
 	 */
 	VB2_NV_DEPRECATED_DEV_BOOT_FASTBOOT_FULL_CAP,
-	/* Set default boot mode (see vb2_dev_default_boot) */
+	/* Set default boot mode (see vb2_dev_default_boot_target) */
 	VB2_NV_DEV_DEFAULT_BOOT,
 	/* Enable USB Device Controller */
 	VB2_NV_DEV_ENABLE_UDC,
@@ -125,19 +125,6 @@ enum vb2_nv_param {
 	VB2_NV_POST_EC_SYNC_DELAY,
 	/* Request booting of diagnostic rom.  0=no, 1=yes. */
 	VB2_NV_DIAG_REQUEST,
-};
-
-/* Set default boot in developer mode */
-enum vb2_dev_default_boot {
-	/* Default to boot from disk*/
-	VB2_DEV_DEFAULT_BOOT_DISK = 0,
-
-	/* Default to boot from USB */
-	VB2_DEV_DEFAULT_BOOT_USB = 1,
-
-	/* Default to boot legacy OS */
-	VB2_DEV_DEFAULT_BOOT_LEGACY = 2,
-
 };
 
 /* Firmware result codes for VB2_NV_FW_RESULT and VB2_NV_FW_PREV_RESULT */

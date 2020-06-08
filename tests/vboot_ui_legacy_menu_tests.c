@@ -273,7 +273,8 @@ static void VbBootDevTest(void)
 	/* Proceed to legacy after timeout if boot legacy and default boot
 	 * legacy are set */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_LEGACY);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default legacy NV");
@@ -292,7 +293,8 @@ static void VbBootDevTest(void)
 
 	/* Proceed to legacy boot mode only if enabled */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_LEGACY);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default legacy not enabled");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -312,7 +314,8 @@ static void VbBootDevTest(void)
 	/* Proceed to usb after timeout if boot usb and default boot
 	 * usb are set */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_USB);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), 0, "Ctrl+U USB");
@@ -325,7 +328,8 @@ static void VbBootDevTest(void)
 
 	/* Proceed to usb boot mode only if enabled */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_USB);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default USB not enabled");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -344,7 +348,8 @@ static void VbBootDevTest(void)
 	/* If no USB tries fixed disk */
 	ResetMocksForDeveloper();
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_USB);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default USB with no disk");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -792,7 +797,8 @@ static void VbBootDevTest(void)
 
 	/* If default USB, the option is preselected */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_USB);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	i = 0;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Enable OS Verif
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Show Debug Info
@@ -903,7 +909,8 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // Select first option
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS; // and again
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
-	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, VB2_DEV_DEFAULT_BOOT_LEGACY);
+	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
+		   VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"Menu selected legacy boot");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");

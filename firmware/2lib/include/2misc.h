@@ -210,15 +210,6 @@ int vb2_allow_recovery(struct vb2_context *ctx);
 void vb2_clear_recovery(struct vb2_context *ctx);
 
 /**
- * Return the developer mode default boot option; see vb2_dev_default_boot.
- *
- * @param ctx		Vboot context
- * @return The developer mode default boot option, or
- *  VB2_DEV_DEFAULT_BOOT_DISK if not specified.
- */
-enum vb2_dev_default_boot vb2_get_dev_boot_target(struct vb2_context *ctx);
-
-/**
  * Determine if developer mode is allowed.
  *
  * Developer boot is not allowed if and only if FWMP_DEV_DISABLE_BOOT is set and

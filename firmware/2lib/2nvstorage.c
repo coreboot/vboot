@@ -343,7 +343,7 @@ void vb2_nv_set(struct vb2_context *ctx,
 		/* Map out of range values to disk */
 		if (value > (VB2_NV_DEV_FLAG_DEFAULT_BOOT >>
 			     VB2_NV_DEV_DEFAULT_BOOT_SHIFT))
-			value = VB2_DEV_DEFAULT_BOOT_DISK;
+			value = VB2_DEV_DEFAULT_BOOT_TARGET_DISK;
 
 		p[VB2_NV_OFFS_DEV] &= ~VB2_NV_DEV_FLAG_DEFAULT_BOOT;
 		p[VB2_NV_OFFS_DEV] |=

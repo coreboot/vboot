@@ -506,27 +506,27 @@ int vb2api_phone_recovery_enabled(struct vb2_context *ctx)
 		 VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED);
 }
 
-enum vb2_dev_default_boot vb2_get_dev_boot_target(
+enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
-		return VB2_DEV_DEFAULT_BOOT_LEGACY;
+		return VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
 
 	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
-		case VB2_DEV_DEFAULT_BOOT_USB:
+		case VB2_DEV_DEFAULT_BOOT_TARGET_USB:
 			if (vb2_dev_boot_usb_allowed(ctx))
-				return VB2_DEV_DEFAULT_BOOT_USB;
+				return VB2_DEV_DEFAULT_BOOT_TARGET_USB;
 			break;
 
-		case VB2_DEV_DEFAULT_BOOT_LEGACY:
+		case VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY:
 			if (vb2_dev_boot_legacy_allowed(ctx))
-				return VB2_DEV_DEFAULT_BOOT_LEGACY;
+				return VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
 			break;
 	}
 
-	return VB2_DEV_DEFAULT_BOOT_DISK;
+	return VB2_DEV_DEFAULT_BOOT_TARGET_DISK;
 }
 
 int vb2_dev_boot_allowed(struct vb2_context *ctx)

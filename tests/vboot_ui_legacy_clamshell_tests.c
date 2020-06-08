@@ -521,7 +521,7 @@ static void VbBootDevTest(void)
 	   legacy are set */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_LEGACY);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_LEGACY, 1);
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK, "Timeout");
@@ -531,7 +531,7 @@ static void VbBootDevTest(void)
 	/* Proceed to legacy boot mode only if enabled */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_LEGACY);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY);
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK, "Timeout");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -540,7 +540,7 @@ static void VbBootDevTest(void)
 	   USB are set */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 	vbtlk_retval = VB2_SUCCESS;
 	vbtlk_expect_removable = 1;
@@ -549,7 +549,7 @@ static void VbBootDevTest(void)
 	/* Proceed to USB boot mode only if enabled */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK, "Timeout");
 
@@ -557,7 +557,7 @@ static void VbBootDevTest(void)
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
 	vbtlk_expect_fixed = 1;
 	vbtlk_expect_removable = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,

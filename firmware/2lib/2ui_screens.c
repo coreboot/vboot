@@ -413,8 +413,8 @@ static const struct vb2_screen_info recovery_disk_step3_screen = {
 
 vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 {
-	enum vb2_dev_default_boot default_boot =
-		vb2_get_dev_boot_target(ui->ctx);
+	enum vb2_dev_default_boot_target default_boot =
+		vb2api_get_dev_default_boot_target(ui->ctx);
 
 	/* Get me outta here! */
 	if (!vb2_dev_boot_allowed(ui->ctx))
@@ -432,7 +432,7 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 
 	/* Choose the default selection. */
 	switch (default_boot) {
-	case VB2_DEV_DEFAULT_BOOT_USB:
+	case VB2_DEV_DEFAULT_BOOT_TARGET_USB:
 		ui->state.selected_item = DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 		break;
 	default:

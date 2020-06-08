@@ -260,9 +260,10 @@ static void nv_storage_test(uint32_t ctxflags)
 		VB2_FW_RESULT_UNKNOWN, "Fw prev result out of range");
 
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_DISK + 100);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_DISK + 100);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT),
-		VB2_DEV_DEFAULT_BOOT_DISK, "default to booting from disk");
+		VB2_DEV_DEFAULT_BOOT_TARGET_DISK,
+		"default to booting from disk");
 }
 
 int main(int argc, char* argv[])

@@ -241,13 +241,13 @@ static vb2_error_t enter_developer_menu(struct vb2_context *ctx)
 	int menu_idx;
 	switch(default_boot) {
 	default:
-	case VB2_DEV_DEFAULT_BOOT_DISK:
+	case VB2_DEV_DEFAULT_BOOT_TARGET_DISK:
 		menu_idx = VB_DEV_DISK;
 		break;
-	case VB2_DEV_DEFAULT_BOOT_USB:
+	case VB2_DEV_DEFAULT_BOOT_TARGET_USB:
 		menu_idx = VB_DEV_USB;
 		break;
-	case VB2_DEV_DEFAULT_BOOT_LEGACY:
+	case VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY:
 		menu_idx = VB_DEV_LEGACY;
 		break;
 	}
@@ -769,7 +769,7 @@ static vb2_error_t vb2_developer_legacy_menu(struct vb2_context *ctx)
 	/* Check if the default is to boot using disk, usb, or legacy */
 	default_boot = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
 	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
-		default_boot = VB2_DEV_DEFAULT_BOOT_LEGACY;
+		default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
 
 	/* Check if developer mode is disabled by FWMP */
 	disable_dev_boot = 0;
@@ -842,10 +842,10 @@ static vb2_error_t vb2_developer_legacy_menu(struct vb2_context *ctx)
 		/* If dev mode was disabled, loop forever (never timeout) */
 	} while (disable_dev_boot ? 1 : vb2_audio_looping());
 
-	if (default_boot == VB2_DEV_DEFAULT_BOOT_LEGACY)
+	if (default_boot == VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY)
 		boot_legacy_action(ctx);	/* Doesn't return on success. */
 
-	if (default_boot == VB2_DEV_DEFAULT_BOOT_USB)
+	if (default_boot == VB2_DEV_DEFAULT_BOOT_TARGET_USB)
 		if (VB2_SUCCESS == boot_usb_action(ctx))
 			return VB2_SUCCESS;
 
