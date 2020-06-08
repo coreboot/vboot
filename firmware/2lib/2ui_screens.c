@@ -479,8 +479,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 
 vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 {
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ui->ctx);
-	const int use_short = gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
+	const int use_short = vb2api_use_short_dev_screen_delay(ui->ctx);
 	uint64_t elapsed;
 
 	/* Once any user interaction occurs, stop the timer. */

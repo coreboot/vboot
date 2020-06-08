@@ -557,3 +557,9 @@ int vb2_dev_boot_usb_allowed(struct vb2_context *ctx)
 	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) ||
 	       vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_USB);
 }
+
+int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	return gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
+}

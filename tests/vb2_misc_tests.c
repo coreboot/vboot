@@ -1004,6 +1004,19 @@ static void dev_boot_allowed_tests(void)
 		"dev boot usb - all flags set");
 }
 
+static void use_dev_screen_short_delay_tests(void)
+{
+	/* Normal delay */
+	reset_common_data();
+	TEST_EQ(vb2api_use_short_dev_screen_delay(ctx), 0,
+		"short delay: no");
+
+	/* Short delay */
+	gbb.flags |= VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
+	TEST_EQ(vb2api_use_short_dev_screen_delay(ctx), 1,
+		"short delay: yes");
+}
+
 int main(int argc, char* argv[])
 {
 	init_workbuf_tests();
@@ -1021,6 +1034,7 @@ int main(int argc, char* argv[])
 	phone_recovery_enabled_tests();
 	dev_default_boot_tests();
 	dev_boot_allowed_tests();
+	use_dev_screen_short_delay_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
