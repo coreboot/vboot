@@ -578,8 +578,8 @@ static void manual_recovery_tests(void)
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_key(VB_KEY_CTRL('D'), 1);
 	if (PHYSICAL_PRESENCE_KEYBOARD)
-		add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_ENTER);
+		add_mock_key(VB_KEY_DOWN, 1);
+	add_mock_key(VB_KEY_ENTER, 1);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN, "cancel");
 	TEST_EQ(mock_enable_dev_mode, 0, "  dev mode not enabled");
 
