@@ -40,6 +40,17 @@
 	.target = VB2_SCREEN_ADVANCED_OPTIONS, \
 }
 
+/* Action that will power off the device. */
+static vb2_error_t power_off_action(struct vb2_ui_context *ui)
+{
+	return VB2_REQUEST_SHUTDOWN;
+}
+
+#define POWER_OFF_ITEM { \
+	.text = "Power off", \
+	.action = power_off_action, \
+}
+
 /******************************************************************************/
 /* VB2_SCREEN_BLANK */
 
@@ -131,6 +142,7 @@ static const struct vb2_screen_info language_select_screen = {
 static const struct vb2_menu_item recovery_broken_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	ADVANCED_OPTIONS_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_broken_screen = {
@@ -165,6 +177,7 @@ static const struct vb2_menu_item advanced_options_items[] = {
 		.target = VB2_SCREEN_RECOVERY_TO_DEV,
 	},
 	[ADVANCED_OPTIONS_ITEM_BACK] = BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info advanced_options_screen = {
@@ -203,6 +216,7 @@ static const struct vb2_menu_item recovery_select_items[] = {
 		.target = VB2_SCREEN_RECOVERY_DISK_STEP1,
 	},
 	ADVANCED_OPTIONS_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_select_screen = {
@@ -217,6 +231,7 @@ static const struct vb2_screen_info recovery_select_screen = {
 
 static const struct vb2_menu_item recovery_invalid_items[] = {
 	LANGUAGE_SELECT_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_invalid_screen = {
@@ -321,6 +336,7 @@ static const struct vb2_menu_item recovery_to_dev_items[] = {
 		.text = "Cancel",
 		.action = vb2_ui_change_root,
 	},
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_to_dev_screen = {
@@ -338,6 +354,7 @@ static const struct vb2_menu_item recovery_phone_step1_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	NEXT_ITEM(VB2_SCREEN_RECOVERY_PHONE_STEP2),
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_phone_step1_screen = {
@@ -352,6 +369,7 @@ static const struct vb2_screen_info recovery_phone_step1_screen = {
 static const struct vb2_menu_item recovery_phone_step2_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_phone_step2_screen = {
@@ -367,6 +385,7 @@ static const struct vb2_menu_item recovery_disk_step1_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	NEXT_ITEM(VB2_SCREEN_RECOVERY_DISK_STEP2),
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_disk_step1_screen = {
@@ -382,6 +401,7 @@ static const struct vb2_menu_item recovery_disk_step2_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	NEXT_ITEM(VB2_SCREEN_RECOVERY_DISK_STEP3),
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_disk_step2_screen = {
@@ -396,6 +416,7 @@ static const struct vb2_screen_info recovery_disk_step2_screen = {
 static const struct vb2_menu_item recovery_disk_step3_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info recovery_disk_step3_screen = {
@@ -539,6 +560,7 @@ static const struct vb2_menu_item developer_mode_items[] = {
 		.action = vb2_ui_developer_mode_boot_external_action,
 	},
 	ADVANCED_OPTIONS_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info developer_mode_screen = {
@@ -574,6 +596,7 @@ static const struct vb2_menu_item developer_to_norm_items[] = {
 		.text = "Cancel",
 		.action = vb2_ui_change_root,
 	},
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info developer_to_norm_screen = {
@@ -588,6 +611,7 @@ static const struct vb2_screen_info developer_to_norm_screen = {
 static const struct vb2_menu_item developer_boot_external_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info developer_boot_external_screen = {
@@ -603,6 +627,7 @@ static const struct vb2_screen_info developer_boot_external_screen = {
 static const struct vb2_menu_item developer_invalid_disk_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	BACK_ITEM,
+	POWER_OFF_ITEM,
 };
 
 static const struct vb2_screen_info developer_invalid_disk_screen = {

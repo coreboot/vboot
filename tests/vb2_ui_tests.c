@@ -694,6 +694,17 @@ static void developer_tests(void)
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 0,
 		"  disable dev request");
 
+	/* Power off */
+	reset_common_data(FOR_DEVELOPER);
+	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
+	/* Navigate to the bottom most menu item */
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"select power off");
+
 	VB2_DEBUG("...done.\n");
 }
 
@@ -1077,7 +1088,6 @@ static void developer_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev mode screen");
 	/* #4: Advanced options */
@@ -1113,7 +1123,6 @@ static void developer_screen_tests(void)
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
-	add_mock_keypress(VB_KEY_DOWN);
 	extend_calls_until_shutdown();
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"advanced options screen");
@@ -1157,7 +1166,6 @@ static void broken_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	/* End of menu */
 	add_mock_keypress(VB_KEY_ESC);
-	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	extend_calls_until_shutdown();
 	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"broken screen");
@@ -1190,7 +1198,6 @@ static void broken_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	/* End of menu */
 	add_mock_keypress(VB_KEY_ENTER);
-	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	extend_calls_until_shutdown();
 	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"advanced options screen");
@@ -1239,7 +1246,6 @@ static void manual_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	extend_calls_until_shutdown();
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"recovery select screen");
@@ -1300,7 +1306,6 @@ static void manual_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	extend_calls_until_shutdown();
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"advanced options screen");
