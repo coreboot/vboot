@@ -336,7 +336,7 @@ static void VbUserConfirmsTestGpio(uint32_t first, uint32_t second,
 	}
 }
 
-static void VbUserConfirmsTest(void)
+static void VbUserConfirmsKeyboardTest(void)
 {
 	VB2_DEBUG("Testing VbUserConfirms()...\n");
 
@@ -381,6 +381,23 @@ static void VbUserConfirmsTest(void)
 			       VB_CONFIRM_MUST_TRUST_KEYBOARD),
 		0, "Untrusted keyboard");
 
+	ResetMocks();
+	mock_keypress[0] = VB_KEY_ENTER;
+	mock_keypress[1] = 'y';
+	mock_keypress[2] = 'z';
+	mock_keypress[3] = ' ';
+	mock_gpio[0].gpio_flags = GPIO_PRESENCE;
+	mock_gpio[0].count = ~0;
+	TEST_EQ(VbUserConfirms(ctx,
+			       VB_CONFIRM_SPACE_MEANS_NO |
+			       VB_CONFIRM_MUST_TRUST_KEYBOARD),
+		0, "Recovery button stuck");
+
+	VB2_DEBUG("...done.\n");
+}
+
+static void VbUserConfirmsPhysicalPresenceTest(void)
+{
 	ResetMocks();
 	MockGpioAfter(0, GPIO_PRESENCE);
 	TEST_EQ(VbUserConfirms(ctx,
@@ -464,18 +481,6 @@ static void VbUserConfirmsTest(void)
 	VbUserConfirmsTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN,
 			       GPIO_PRESENCE, 0, 0, "both, presence");
 
-	ResetMocks();
-	mock_keypress[0] = VB_KEY_ENTER;
-	mock_keypress[1] = 'y';
-	mock_keypress[2] = 'z';
-	mock_keypress[3] = ' ';
-	mock_gpio[0].gpio_flags = GPIO_PRESENCE;
-	mock_gpio[0].count = ~0;
-	TEST_EQ(VbUserConfirms(ctx,
-			       VB_CONFIRM_SPACE_MEANS_NO |
-			       VB_CONFIRM_MUST_TRUST_KEYBOARD),
-		0, "Recovery button stuck");
-	VB2_DEBUG("...done.\n");
 }
 
 static void VbBootDevTest(void)
@@ -1303,23 +1308,6 @@ static void VbBootRecTest(void)
 	TEST_NEQ(screens_displayed[1], VB_SCREEN_RECOVERY_TO_DEV,
 		 "  todev screen");
 
-	/* Ctrl+D ignored because the physical presence switch is still pressed
-	   and we don't like that. */
-	ResetMocks();
-	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
-	trust_ec = 1;
-	mock_keypress[0] = VB_KEY_CTRL('D');
-	mock_gpio[0].gpio_flags = GPIO_PRESENCE;
-	mock_gpio[0].count = 100;
-	mock_gpio[1].gpio_flags = GPIO_PRESENCE | GPIO_SHUTDOWN;
-	mock_gpio[1].count = 100;
-	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),
-		VB2_REQUEST_SHUTDOWN,
-		"Ctrl+D ignored if phys pres button is still pressed");
-	TEST_NEQ(screens_displayed[1], VB_SCREEN_RECOVERY_TO_DEV,
-		 "  todev screen");
-
 	/* Ctrl+D then space means don't enable */
 	ResetMocks();
 	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
@@ -1354,88 +1342,6 @@ static void VbBootRecTest(void)
 		VB2_REQUEST_REBOOT_EC_TO_RO,
 		"Ctrl+D todev confirm via enter");
 	TEST_EQ(virtdev_set, 1, "  virtual dev mode on");
-
-	/*
-	 * List of possiblities for shutdown and physical presence events that
-	 * occur over time.  Time advanced from left to right (where each
-	 * represents the gpio[s] that are seen during a given iteration of
-	 * the loop).  The meaning of the characters:
-	 *
-	 *   _ means no gpio
-	 *   s means shutdown gpio
-	 *   p means presence gpio
-	 *   B means both shutdown and presence gpio
-	 *
-	 *  1: ______ppp______ -> confirm
-	 *  2: ______sss______ -> shutdown
-	 *  3: ___pppsss______ -> confirm
-	 *  4: ___sssppp______ -> shutdown
-	 *  5: ___pppBBB______ -> confirm
-	 *  6: ___pppBBBppp___ -> shutdown
-	 *  7: ___pppBBBsss___ -> confirm
-	 *  8: ___sssBBB______ -> confirm
-	 *  9: ___sssBBBppp___ -> shutdown
-	 * 10: ___sssBBBsss___ -> confirm
-	 * 11: ______BBB______ -> confirm
-	 * 12: ______BBBsss___ -> confirm
-	 * 13: ______BBBppp___ -> shutdown
-	 */
-
-	/* 1: Ctrl+D then presence means enable */
-	VbBootRecTestGpio(GPIO_PRESENCE, 0, 0, 1,
-			  "Ctrl+D todev confirm via presence");
-
-	/* 2: Ctrl+D then shutdown means shutdown */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, 0, 0, 0,
-			  "Ctrl+D todev then shutdown");
-
-	/* 3: Ctrl+D then presence then shutdown means confirm */
-	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_SHUTDOWN, 0, 1,
-			  "Ctrl+D todev confirm via presence then shutdown");
-
-	/* 4: Ctrl+D then 2+ instance shutdown then presence means shutdown */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
-			  "Ctrl+D todev then 2+ shutdown then presence");
-
-	/* 5: Ctrl+D then presence then shutdown+presence then none */
-	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
-			  "Ctrl+D todev confirm via presence, both, none");
-
-	/* 6: Ctrl+D then presence then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_PRESENCE, 0,
-			  "Ctrl+D todev confirm via presence, both, presence");
-
-	/* 7: Ctrl+D then presence then shutdown+presence then shutdown */
-	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_SHUTDOWN, 1,
-			  "Ctrl+D todev confirm via presence, both, shutdown");
-
-	/* 8: Ctrl+D then shutdown then shutdown+presence then none */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
-			  "Ctrl+D todev then 2+ shutdown, both, none");
-
-	/* 9: Ctrl+D then shutdown then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_PRESENCE, 0,
-			  "Ctrl+D todev then 2+ shutdown, both, presence");
-
-	/* 10: Ctrl+D then shutdown then shutdown+presence then shutdown */
-	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
-			  GPIO_SHUTDOWN, 1,
-			  "Ctrl+D todev then 2+ shutdown, both, shutdown");
-
-	/* 11: Ctrl+D then shutdown+presence then none */
-	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 0, 1,
-			  "Ctrl+D todev confirm via both then none");
-
-	/* 12: Ctrl+D then shutdown+presence then shutdown */
-	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_SHUTDOWN, 0, 1,
-			  "Ctrl+D todev confirm via both then shutdown");
-
-	/* 13: Ctrl+D then shutdown+presence then presence */
-	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
-			  "Ctrl+D todev confirm via both then presence");
 
 	/* Don't handle TPM error in enabling dev mode */
 	ResetMocks();
@@ -1525,6 +1431,109 @@ static void VbBootRecTest(void)
 		"  os broken screen");
 
 	VB2_DEBUG("...done.\n");
+}
+
+static void VbBootRecPhysicalPresenceTest(void)
+{
+
+	/* Ctrl+D ignored because the physical presence switch is still pressed
+	   and we don't like that. */
+	ResetMocks();
+	sd->flags = VB2_SD_FLAG_MANUAL_RECOVERY;
+	trust_ec = 1;
+	mock_keypress[0] = VB_KEY_CTRL('D');
+	mock_gpio[0].gpio_flags = GPIO_PRESENCE;
+	mock_gpio[0].count = 100;
+	mock_gpio[1].gpio_flags = GPIO_PRESENCE | GPIO_SHUTDOWN;
+	mock_gpio[1].count = 100;
+	vbtlk_expect_removable = 1;
+	TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),
+		VB2_REQUEST_SHUTDOWN,
+		"Ctrl+D ignored if phys pres button is still pressed");
+	TEST_NEQ(screens_displayed[1], VB_SCREEN_RECOVERY_TO_DEV,
+		 "  todev screen");
+
+	/*
+	 * List of possiblities for shutdown and physical presence events that
+	 * occur over time.  Time advanced from left to right (where each
+	 * represents the gpio[s] that are seen during a given iteration of
+	 * the loop).  The meaning of the characters:
+	 *
+	 *   _ means no gpio
+	 *   s means shutdown gpio
+	 *   p means presence gpio
+	 *   B means both shutdown and presence gpio
+	 *
+	 *  1: ______ppp______ -> confirm
+	 *  2: ______sss______ -> shutdown
+	 *  3: ___pppsss______ -> confirm
+	 *  4: ___sssppp______ -> shutdown
+	 *  5: ___pppBBB______ -> confirm
+	 *  6: ___pppBBBppp___ -> shutdown
+	 *  7: ___pppBBBsss___ -> confirm
+	 *  8: ___sssBBB______ -> confirm
+	 *  9: ___sssBBBppp___ -> shutdown
+	 * 10: ___sssBBBsss___ -> confirm
+	 * 11: ______BBB______ -> confirm
+	 * 12: ______BBBsss___ -> confirm
+	 * 13: ______BBBppp___ -> shutdown
+	 */
+
+	/* 1: Ctrl+D then presence means enable */
+	VbBootRecTestGpio(GPIO_PRESENCE, 0, 0, 1,
+			  "Ctrl+D todev confirm via presence");
+
+	/* 2: Ctrl+D then shutdown means shutdown */
+	VbBootRecTestGpio(GPIO_SHUTDOWN, 0, 0, 0,
+			  "Ctrl+D todev then shutdown");
+
+	/* 3: Ctrl+D then presence then shutdown means confirm */
+	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_SHUTDOWN, 0, 1,
+			  "Ctrl+D todev confirm via presence then shutdown");
+
+	/* 4: Ctrl+D then 2+ instance shutdown then presence means shutdown */
+	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
+			  "Ctrl+D todev then 2+ shutdown then presence");
+
+	/* 5: Ctrl+D then presence then shutdown+presence then none */
+	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
+			  "Ctrl+D todev confirm via presence, both, none");
+
+	/* 6: Ctrl+D then presence then shutdown+presence then presence */
+	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
+			  GPIO_PRESENCE, 0,
+			  "Ctrl+D todev confirm via presence, both, presence");
+
+	/* 7: Ctrl+D then presence then shutdown+presence then shutdown */
+	VbBootRecTestGpio(GPIO_PRESENCE, GPIO_PRESENCE | GPIO_SHUTDOWN,
+			  GPIO_SHUTDOWN, 1,
+			  "Ctrl+D todev confirm via presence, both, shutdown");
+
+	/* 8: Ctrl+D then shutdown then shutdown+presence then none */
+	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 1,
+			  "Ctrl+D todev then 2+ shutdown, both, none");
+
+	/* 9: Ctrl+D then shutdown then shutdown+presence then presence */
+	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
+			  GPIO_PRESENCE, 0,
+			  "Ctrl+D todev then 2+ shutdown, both, presence");
+
+	/* 10: Ctrl+D then shutdown then shutdown+presence then shutdown */
+	VbBootRecTestGpio(GPIO_SHUTDOWN, GPIO_PRESENCE | GPIO_SHUTDOWN,
+			  GPIO_SHUTDOWN, 1,
+			  "Ctrl+D todev then 2+ shutdown, both, shutdown");
+
+	/* 11: Ctrl+D then shutdown+presence then none */
+	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, 0, 0, 1,
+			  "Ctrl+D todev confirm via both then none");
+
+	/* 12: Ctrl+D then shutdown+presence then shutdown */
+	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_SHUTDOWN, 0, 1,
+			  "Ctrl+D todev confirm via both then shutdown");
+
+	/* 13: Ctrl+D then shutdown+presence then presence */
+	VbBootRecTestGpio(GPIO_PRESENCE | GPIO_SHUTDOWN, GPIO_PRESENCE, 0, 0,
+			  "Ctrl+D todev confirm via both then presence");
 }
 
 static void VbBootDiagTest(void)
@@ -1630,10 +1639,14 @@ static void VbBootDiagTest(void)
 
 int main(void)
 {
-	VbUserConfirmsTest();
+	VbUserConfirmsKeyboardTest();
+	if (!PHYSICAL_PRESENCE_KEYBOARD)
+		VbUserConfirmsPhysicalPresenceTest();
 	VbBootDevTest();
 	VbBootDevVendorDataTest();
 	VbBootRecTest();
+	if (!PHYSICAL_PRESENCE_KEYBOARD)
+		VbBootRecPhysicalPresenceTest();
 	if (DIAGNOSTIC_UI)
 		VbBootDiagTest();
 
