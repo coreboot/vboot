@@ -95,7 +95,7 @@ vb2_error_t VbDisplayDebugInfo(struct vb2_context *ctx)
 	}
 
 	/* Add dev_boot_usb flag */
-	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB);
+	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL);
 	DEBUG_INFO_APPEND("\ndev_boot_usb: %d", i);
 
 	/* Add dev_boot_legacy flag */

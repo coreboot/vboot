@@ -863,11 +863,11 @@ int vb2api_phone_recovery_enabled(struct vb2_context *ctx);
 
 /* Default boot target in developer mode. */
 enum vb2_dev_default_boot_target {
-	/* Default to boot from disk. */
-	VB2_DEV_DEFAULT_BOOT_TARGET_DISK = 0,
+	/* Default to boot from internal disk. */
+	VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL = 0,
 
-	/* Default to boot from USB. */
-	VB2_DEV_DEFAULT_BOOT_TARGET_USB = 1,
+	/* Default to boot from external disk. */
+	VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL = 1,
 
 	/* Default to boot legacy OS. */
 	VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY = 2,

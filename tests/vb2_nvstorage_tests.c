@@ -40,7 +40,7 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_RECOVERY_SUBCODE, 0, 0x56, 0xAC, "recovery subcode"},
 	{VB2_NV_LOCALIZATION_INDEX, 0, 0x69, 0xB0, "localization index"},
 	{VB2_NV_KERNEL_FIELD, 0, 0x1234, 0xFEDC, "kernel field"},
-	{VB2_NV_DEV_BOOT_USB, 0, 1, 0, "dev boot usb"},
+	{VB2_NV_DEV_BOOT_EXTERNAL, 0, 1, 0, "dev boot usb"},
 	{VB2_NV_DEV_BOOT_LEGACY, 0, 1, 0, "dev boot legacy"},
 	{VB2_NV_DEV_BOOT_SIGNED_ONLY, 0, 1, 0, "dev boot custom"},
 	{VB2_NV_DEV_DEFAULT_BOOT, 0, 1, 2, "dev default boot"},
@@ -260,9 +260,9 @@ static void nv_storage_test(uint32_t ctxflags)
 		VB2_FW_RESULT_UNKNOWN, "Fw prev result out of range");
 
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_DISK + 100);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL + 100);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT),
-		VB2_DEV_DEFAULT_BOOT_TARGET_DISK,
+		VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL,
 		"default to booting from disk");
 }
 

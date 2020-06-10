@@ -536,28 +536,28 @@ static void VbBootDevTest(void)
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK, "Timeout");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
 
-	/* Proceed to USB after timeout if boot USB and default boot
-	   USB are set */
+	/* Proceed to external disk after timeout if boot external and default
+	 * boot external are set */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vbtlk_retval = VB2_SUCCESS;
 	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U USB");
+	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U external");
 
-	/* Proceed to USB boot mode only if enabled */
+	/* Proceed to external boot mode only if enabled */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK, "Timeout");
 
-	/* If no USB tries fixed disk */
+	/* If no external tries fixed disk */
 	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
 	vbtlk_expect_fixed = 1;
 	vbtlk_expect_removable = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
@@ -785,20 +785,20 @@ static void VbBootDevTest(void)
 		TEST_EQ(altfw_num, key - '0', "  check altfw_num");
 	}
 
-	/* Ctrl+U boots USB only if enabled */
+	/* Ctrl+U boots external only if enabled */
 	ResetMocks();
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_expect_fixed = 1;
 	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), VB2_ERROR_MOCK,
 		"Ctrl+U normal");
 
-	/* Ctrl+U enabled, with good USB boot */
+	/* Ctrl+U enabled, with good external boot */
 	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval = VB2_SUCCESS;
 	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U USB");
+	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U external");
 
 	/* Ctrl+U enabled via GBB */
 	ResetMocks();
@@ -806,19 +806,19 @@ static void VbBootDevTest(void)
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval = VB2_SUCCESS;
 	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U force USB");
+	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U force external");
 
 	/* Ctrl+U enabled via FWMP */
 	ResetMocks();
-	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_USB;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL;
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval = VB2_SUCCESS;
 	vbtlk_expect_removable = 1;
-	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U force USB");
+	TEST_EQ(VbBootDeveloperLegacyClamshell(ctx), 0, "Ctrl+U force external");
 
-	/* If no USB, eventually times out and tries fixed disk */
+	/* If no external disk, eventually times out and tries internal disk */
 	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	/* TODO: Currently the test suite has no way of specifying the order in
 	   which the expected VbTryLoadKernel calls occur. */
@@ -1148,8 +1148,9 @@ static void VbBootRecTestGpio(uint32_t first, uint32_t second, uint32_t third,
 		TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),
 			VB2_REQUEST_REBOOT_EC_TO_RO, msg);
 		TEST_EQ(virtdev_set, 1, "  virtual dev mode on");
-		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB), !!USB_BOOT_ON_DEV,
-			"  NV_DEV_BOOT_USB enabled");
+		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL),
+			!!USB_BOOT_ON_DEV,
+			"  NV_DEV_BOOT_EXTERNAL enabled");
 	} else {
 		TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),
 			VB2_REQUEST_SHUTDOWN, msg);

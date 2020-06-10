@@ -59,7 +59,7 @@ static int mock_vbexbeep_called;
 static enum vb2_dev_default_boot_target mock_default_boot;
 static int mock_dev_boot_allowed;
 static int mock_dev_boot_legacy_allowed;
-static int mock_dev_boot_usb_allowed;
+static int mock_dev_boot_external_allowed;
 
 static int mock_vbexlegacy_called;
 static enum VbAltFwIndex_t mock_altfw_num_last;
@@ -250,10 +250,10 @@ static void reset_common_data(enum reset_type t)
 	mock_vbexbeep_called = 0;
 
 	/* For dev_boot* in 2misc.h */
-	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_DISK;
+	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
 	mock_dev_boot_allowed = 1;
 	mock_dev_boot_legacy_allowed = 0;
-	mock_dev_boot_usb_allowed = 0;
+	mock_dev_boot_external_allowed = 0;
 
 	/* For VbExLegacy */
 	mock_vbexlegacy_called = 0;
@@ -392,9 +392,9 @@ int vb2_dev_boot_legacy_allowed(struct vb2_context *c)
 	return mock_dev_boot_legacy_allowed;
 }
 
-int vb2_dev_boot_usb_allowed(struct vb2_context *c)
+int vb2_dev_boot_external_allowed(struct vb2_context *c)
 {
-	return mock_dev_boot_usb_allowed;
+	return mock_dev_boot_external_allowed;
 }
 
 vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
@@ -452,23 +452,23 @@ static void developer_tests(void)
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
-	/* Proceed to USB after timeout */
+	/* Proceed to external disk after timeout */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_USB;
-	mock_dev_boot_usb_allowed = 1;
+	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
+	mock_dev_boot_external_allowed = 1;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
-		"proceed to USB after timeout");
+		"proceed to external disk after timeout");
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
 		  30 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
-	/* Default boot USB not allowed, don't boot */
+	/* Default boot from external not allowed, don't boot */
 	reset_common_data(FOR_DEVELOPER);
-	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_USB;
+	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"default USB not allowed, don't boot");
+		"default boot from external not allowed, don't boot");
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
 		  30 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_EQ(mock_vbexbeep_called, 2, "  beeped twice");

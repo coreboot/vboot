@@ -203,14 +203,14 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 
 	VB2_DEBUG("Entering\n");
 
-	/* Check if USB booting is allowed */
-	uint32_t allow_usb = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB);
+	/* Check if booting from external disk is allowed */
+	uint32_t allow_usb = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL);
 	uint32_t allow_legacy = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY);
 
-	/* Check if the default is to boot using disk, usb, or legacy */
+	/* Check if the default boot target: internal/external disk or legacy */
 	uint32_t default_boot = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
 
-	if (default_boot == VB2_DEV_DEFAULT_BOOT_TARGET_USB)
+	if (default_boot == VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL)
 		use_usb = 1;
 	if (default_boot == VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY)
 		use_legacy = 1;
@@ -226,7 +226,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 	}
 
 	/* Handle FWMP override */
-	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_USB))
+	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL))
 		allow_usb = 1;
 	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY))
 		allow_legacy = 1;

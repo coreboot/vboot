@@ -315,8 +315,8 @@ static void VbBootDevTest(void)
 	 * usb are set */
 	ResetMocksForDeveloper();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), 0, "Ctrl+U USB");
 	TEST_EQ(screens_displayed[0], VB_SCREEN_DEVELOPER_WARNING_MENU,
@@ -329,7 +329,7 @@ static void VbBootDevTest(void)
 	/* Proceed to usb boot mode only if enabled */
 	ResetMocksForDeveloper();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default USB not enabled");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
@@ -347,9 +347,9 @@ static void VbBootDevTest(void)
 
 	/* If no USB tries fixed disk */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"default USB with no disk");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -680,7 +680,7 @@ static void VbBootDevTest(void)
 
 	/* Ctrl+U enabled, with good USB boot */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_SUCCESS, "Ctrl+U USB");
@@ -696,7 +696,7 @@ static void VbBootDevTest(void)
 
 	/* Ctrl+U enabled, without valid USB */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"Ctrl+U without valid USB");
@@ -730,7 +730,7 @@ static void VbBootDevTest(void)
 
 	/* Ctrl+U enabled via FWMP */
 	ResetMocksForDeveloper();
-	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_USB;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL;
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_SUCCESS,
@@ -744,7 +744,7 @@ static void VbBootDevTest(void)
 
 	/* If no valid USB, eventually times out and tries fixed disk */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_KEY_CTRL('U');
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"Ctrl+U failed - no USB");
@@ -770,7 +770,7 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From USB
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_SUCCESS,
 		"Menu selected USB boot");
@@ -798,14 +798,14 @@ static void VbBootDevTest(void)
 	/* If default USB, the option is preselected */
 	ResetMocksForDeveloper();
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT,
-		   VB2_DEV_DEFAULT_BOOT_TARGET_USB);
+		   VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL);
 	i = 0;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Enable OS Verif
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Show Debug Info
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Developer Options
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_SUCCESS,
 		"Menu selected USB default boot");
@@ -836,7 +836,7 @@ static void VbBootDevTest(void)
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Boot From USB
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"Menu selected invalid USB boot");
 	TEST_EQ(vbexlegacy_called, 0, "  not legacy");
@@ -982,7 +982,7 @@ static void VbBootDevTest(void)
 
 	/* Use volume-up long press shortcut to boot USB */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	vbtlk_retval[0] = VB2_SUCCESS - VB_DISK_FLAG_REMOVABLE;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), VB2_SUCCESS, "VolUp USB");
@@ -997,7 +997,7 @@ static void VbBootDevTest(void)
 
 	/* Can boot a valid USB image after failing to boot invalid image */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	mock_keypress[1] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	vbtlk_retval[0] = VB2_ERROR_MOCK - VB_DISK_FLAG_REMOVABLE;
@@ -1038,7 +1038,7 @@ static void VbBootDevTest(void)
 
 	/* Volume-up long press without valid USB will still time out */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	mock_keypress[0] = VB_BUTTON_VOL_UP_LONG_PRESS;
 	TEST_EQ(VbBootDeveloperLegacyMenu(ctx), vbtlk_retval_fixed,
 		"VolUp without valid USB");
@@ -1057,7 +1057,7 @@ static void VbBootDevTest(void)
 
 	/* Volume-up long press works from other menus, like LANGUAGE */
 	ResetMocksForDeveloper();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	i = 0;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Enable OS Verif
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS; // Show Debug Info

@@ -46,8 +46,8 @@ enum vb2_nv_param {
 	VB2_NV_LOCALIZATION_INDEX,
 	/* Field reserved for kernel/user-mode use; 16-bit value. */
 	VB2_NV_KERNEL_FIELD,
-	/* Allow booting from USB in developer mode.  0=no, 1=yes. */
-	VB2_NV_DEV_BOOT_USB,
+	/* Allow booting from external disk in developer mode.  0=no, 1=yes. */
+	VB2_NV_DEV_BOOT_EXTERNAL,
 	/* Allow booting of legacy OSes in developer mode.  0=no, 1=yes. */
 	VB2_NV_DEV_BOOT_LEGACY,
 	/* Only boot Google-signed images in developer mode.  0=no, 1=yes. */

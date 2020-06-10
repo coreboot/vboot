@@ -142,8 +142,8 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 	case VB2_NV_KERNEL_FIELD:
 		return p[VB2_NV_OFFS_KERNEL1] | (p[VB2_NV_OFFS_KERNEL2] << 8);
 
-	case VB2_NV_DEV_BOOT_USB:
-		return GETBIT(VB2_NV_OFFS_DEV, VB2_NV_DEV_FLAG_USB);
+	case VB2_NV_DEV_BOOT_EXTERNAL:
+		return GETBIT(VB2_NV_OFFS_DEV, VB2_NV_DEV_FLAG_EXTERNAL);
 
 	case VB2_NV_DEV_BOOT_LEGACY:
 		return GETBIT(VB2_NV_OFFS_DEV, VB2_NV_DEV_FLAG_LEGACY);
@@ -327,8 +327,8 @@ void vb2_nv_set(struct vb2_context *ctx,
 		p[VB2_NV_OFFS_KERNEL2] = (uint8_t)(value >> 8);
 		break;
 
-	case VB2_NV_DEV_BOOT_USB:
-		SETBIT(VB2_NV_OFFS_DEV, VB2_NV_DEV_FLAG_USB);
+	case VB2_NV_DEV_BOOT_EXTERNAL:
+		SETBIT(VB2_NV_OFFS_DEV, VB2_NV_DEV_FLAG_EXTERNAL);
 		break;
 
 	case VB2_NV_DEV_BOOT_LEGACY:
@@ -343,7 +343,7 @@ void vb2_nv_set(struct vb2_context *ctx,
 		/* Map out of range values to disk */
 		if (value > (VB2_NV_DEV_FLAG_DEFAULT_BOOT >>
 			     VB2_NV_DEV_DEFAULT_BOOT_SHIFT))
-			value = VB2_DEV_DEFAULT_BOOT_TARGET_DISK;
+			value = VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
 
 		p[VB2_NV_OFFS_DEV] &= ~VB2_NV_DEV_FLAG_DEFAULT_BOOT;
 		p[VB2_NV_OFFS_DEV] |=

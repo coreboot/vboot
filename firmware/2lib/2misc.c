@@ -250,7 +250,7 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		 * initially disabled if the user later transitions back into
 		 * developer mode.
 		 */
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 0);
+		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_LEGACY, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, 0);
@@ -387,7 +387,7 @@ void vb2_enable_developer_mode(struct vb2_context *ctx)
 	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS, flags);
 
 	if (USB_BOOT_ON_DEV)
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_USB, 1);
+		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 
 	VB2_DEBUG("Mode change will take effect on next reboot\n");
 }
@@ -515,9 +515,9 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 		return VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
 
 	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
-		case VB2_DEV_DEFAULT_BOOT_TARGET_USB:
-			if (vb2_dev_boot_usb_allowed(ctx))
-				return VB2_DEV_DEFAULT_BOOT_TARGET_USB;
+		case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
+			if (vb2_dev_boot_external_allowed(ctx))
+				return VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
 			break;
 
 		case VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY:
@@ -526,7 +526,7 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 			break;
 	}
 
-	return VB2_DEV_DEFAULT_BOOT_TARGET_DISK;
+	return VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
 }
 
 int vb2_dev_boot_allowed(struct vb2_context *ctx)
@@ -549,13 +549,13 @@ int vb2_dev_boot_legacy_allowed(struct vb2_context *ctx)
 					 VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY);
 }
 
-int vb2_dev_boot_usb_allowed(struct vb2_context *ctx)
+int vb2_dev_boot_external_allowed(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_USB) ||
+	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL) ||
 	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) ||
-	       vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_USB);
+	       vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL);
 }
 
 int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)

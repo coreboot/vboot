@@ -426,13 +426,13 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 			1 << DEVELOPER_MODE_ITEM_RETURN_TO_SECURE;
 
 	/* Don't show "Boot from external disk" button if not allowed. */
-	if (!vb2_dev_boot_usb_allowed(ui->ctx))
+	if (!vb2_dev_boot_external_allowed(ui->ctx))
 		ui->state.disabled_item_mask |=
 			1 << DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 
 	/* Choose the default selection. */
 	switch (default_boot) {
-	case VB2_DEV_DEFAULT_BOOT_TARGET_USB:
+	case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
 		ui->state.selected_item = DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 		break;
 	default:
@@ -464,7 +464,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	/* Sanity check, should never happen. */
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
 	    !vb2_dev_boot_allowed(ui->ctx) ||
-	    !vb2_dev_boot_usb_allowed(ui->ctx)) {
+	    !vb2_dev_boot_external_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
 		return VB2_REQUEST_UI_CONTINUE;
 	}

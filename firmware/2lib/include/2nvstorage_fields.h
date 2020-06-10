@@ -89,7 +89,7 @@ enum vb2_nv_offset {
 #define VB2_NV_BOOT2_REQ_DIAG                  0x80
 
 /* Fields in VB2_NV_OFFS_DEV (unused = 0x80) */
-#define VB2_NV_DEV_FLAG_USB                    0x01
+#define VB2_NV_DEV_FLAG_EXTERNAL               0x01
 #define VB2_NV_DEV_FLAG_SIGNED_ONLY            0x02
 #define VB2_NV_DEV_FLAG_LEGACY                 0x04
 #define VB2_NV_DEV_FLAG_DEPRECATED_FASTBOOT_FULL_CAP      0x08
