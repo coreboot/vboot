@@ -73,7 +73,6 @@
 #define ACPI_BINF_PATH ACPI_BASE_PATH "/BINF"
 #define ACPI_CHNV_PATH ACPI_BASE_PATH "/CHNV"
 #define ACPI_CHSW_PATH ACPI_BASE_PATH "/CHSW"
-#define ACPI_FMAP_PATH ACPI_BASE_PATH "/FMAP"
 #define ACPI_GPIO_PATH ACPI_BASE_PATH "/GPIO"
 #define ACPI_VBNV_PATH ACPI_BASE_PATH "/VBNV"
 #define ACPI_VDAT_PATH ACPI_BASE_PATH "/VDAT"
@@ -830,15 +829,6 @@ static int ReadGpio(unsigned signal_type)
 int VbGetArchPropertyInt(const char* name)
 {
 	int value = -1;
-
-	/* Values from ACPI */
-	if (!strcasecmp(name,"fmap_base")) {
-		unsigned fmap_base;
-		if (ReadFileInt(ACPI_FMAP_PATH, &fmap_base) < 0)
-			return -1;
-		else
-			value = (int)fmap_base;
-	}
 
 	/* Switch positions */
 	if (!strcasecmp(name,"devsw_cur")) {

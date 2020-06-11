@@ -473,9 +473,7 @@ VbSharedDataHeader *VbSharedDataRead(void)
 
 int VbGetArchPropertyInt(const char* name)
 {
-	if (!strcasecmp(name, "fmap_base")) {
-		return ReadFdtInt("fmap-offset");
-	} else if (!strcasecmp(name, "devsw_cur")) {
+	if (!strcasecmp(name, "devsw_cur")) {
 		/* Systems with virtual developer switches return at-boot
 		 * value */
 		return VbGetSystemPropertyInt("devsw_boot");
