@@ -1256,6 +1256,8 @@ enum vb2_ui_error {
  *				doesn't have a menu, this value will be ignored.
  * @param disabled_item_mask	Mask for disabled menu items. Bit (1 << idx)
  *				indicates whether item 'idx' is disabled.
+ * @param timer_disabled	Whether timer is disabled or not. Some screen
+ *				descriptions will depend on this value.
  * @param error_code		Error code if an error occurred.
  * @return VB2_SUCCESS, or error code on error.
  */
@@ -1263,6 +1265,7 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 			     uint32_t locale_id,
 			     uint32_t selected_item,
 			     uint32_t disabled_item_mask,
+			     int timer_disabled,
 			     enum vb2_ui_error error_code);
 
 /**

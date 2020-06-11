@@ -285,6 +285,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 {
 	struct vb2_ui_context ui;
 	struct vb2_screen_state prev_state;
+	int prev_disable_timer;
 	enum vb2_ui_error prev_error_code;
 	const struct vb2_menu *menu;
 	const struct vb2_screen_info *root_info;
@@ -301,12 +302,15 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	if (rv != VB2_REQUEST_UI_CONTINUE)
 		return rv;
 	memset(&prev_state, 0, sizeof(prev_state));
+	prev_disable_timer = 0;
 	prev_error_code = VB2_UI_ERROR_NONE;
 
 	while (1) {
 		/* Draw if there are state changes. */
 		if (memcmp(&prev_state, ui.state, sizeof(*ui.state)) ||
-		    /* we want to redraw/beep on a transition */
+		    /* We want to redraw when timer is disabled. */
+		    prev_disable_timer != ui.disable_timer ||
+		    /* We want to redraw/beep on a transition. */
 		    prev_error_code != ui.error_code) {
 
 			menu = get_menu(&ui);
@@ -318,6 +322,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 			vb2ex_display_ui(ui.state->screen->id, ui.locale_id,
 					 ui.state->selected_item,
 					 ui.state->disabled_item_mask,
+					 ui.disable_timer,
 					 ui.error_code);
 			/*
 			 * Only beep if we're transitioning from no
@@ -329,6 +334,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 
 			/* Update prev variables. */
 			memcpy(&prev_state, ui.state, sizeof(*ui.state));
+			prev_disable_timer = ui.disable_timer;
 			prev_error_code = ui.error_code;
 		}
 
