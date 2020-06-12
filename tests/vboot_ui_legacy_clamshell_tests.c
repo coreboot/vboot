@@ -1149,7 +1149,7 @@ static void VbBootRecTestGpio(uint32_t first, uint32_t second, uint32_t third,
 			VB2_REQUEST_REBOOT_EC_TO_RO, msg);
 		TEST_EQ(virtdev_set, 1, "  virtual dev mode on");
 		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL),
-			!!USB_BOOT_ON_DEV,
+			!!BOOT_EXTERNAL_ON_DEV,
 			"  NV_DEV_BOOT_EXTERNAL enabled");
 	} else {
 		TEST_EQ(VbBootRecoveryLegacyClamshell(ctx),

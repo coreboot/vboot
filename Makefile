@@ -166,11 +166,11 @@ ifneq (${TPM2_MODE},)
 CFLAGS += -DTPM2_MODE
 endif
 
-# Enable USB boot when switching to dev mode
-ifneq ($(filter-out 0,${USB_BOOT_ON_DEV}),)
-CFLAGS += -DUSB_BOOT_ON_DEV=1
+# Enable boot from external disk when switching to dev mode
+ifneq ($(filter-out 0,${BOOT_EXTERNAL_ON_DEV}),)
+CFLAGS += -DBOOT_EXTERNAL_ON_DEV=1
 else
-CFLAGS += -DUSB_BOOT_ON_DEV=0
+CFLAGS += -DBOOT_EXTERNAL_ON_DEV=0
 endif
 
 # Enable EC early firmware selection.
