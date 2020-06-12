@@ -9,6 +9,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -27,6 +28,10 @@
 
 static bool flashrom_mock_success = true;
 static enum { FLASHROM_NONE, FLASHROM_READ, FLASHROM_WRITE } captured_operation;
+static enum {
+	FLASHROM_VERIFY_UNSPECIFIED,
+	FLASHROM_VERIFY_FAST,
+} captured_verify;
 static const char *captured_op_filename;
 static const char *captured_region_param;
 static const char *captured_programmer;
@@ -49,9 +54,20 @@ int subprocess_run(const char *const argv[],
 	int argc;
 	int opt;
 	int rv;
+	/* getopt_long wants an int instead of an enum, bummer... */
+	int captured_verify_int = FLASHROM_VERIFY_UNSPECIFIED;
+	struct option long_opts[] = {
+		{
+			.name = "fast-verify",
+			.has_arg = no_argument,
+			.flag = &captured_verify_int,
+			.val = FLASHROM_VERIFY_FAST,
+		},
+	};
 
 	/* Reset static variables to their defaults. */
 	captured_operation = FLASHROM_NONE;
+	captured_operation = FLASHROM_VERIFY_UNSPECIFIED;
 	captured_op_filename = NULL;
 	captured_region_param = NULL;
 	captured_programmer = NULL;
@@ -67,7 +83,8 @@ int subprocess_run(const char *const argv[],
 	/* We only understand the subset of arguments used by the
 	   wrapper library.  If it's updated to support more modes of
 	   operation, this unit test code should be updated too. */
-	while ((opt = getopt(argc, (char *const *)argv, ":p:r:w:i:")) != -1) {
+	while ((opt = getopt_long(argc, (char *const *)argv,
+				  ":p:r:w:i:", long_opts, NULL)) != -1) {
 		/* Always consume the next argument if it does not
 		   start with a dash.  We have to muck with getopt's
 		   global variables to make this happen. */
@@ -97,6 +114,9 @@ int subprocess_run(const char *const argv[],
 		case 'i':
 			captured_region_param = optarg;
 			break;
+		case 0:
+			/* long option */
+			break;
 		default:
 			return 1;
 		}
@@ -108,6 +128,7 @@ int subprocess_run(const char *const argv[],
 	}
 
 	rv = !flashrom_mock_success;
+	captured_verify = captured_verify_int;
 
 	if (captured_operation == FLASHROM_READ) {
 		/* Write the mocked string we read from the ROM. */
@@ -132,6 +153,8 @@ static void test_read_whole_chip(void)
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
 	TEST_EQ(captured_operation, FLASHROM_READ, "Doing a read operation");
+	TEST_EQ(captured_verify, FLASHROM_VERIFY_UNSPECIFIED,
+		"Verification not enabled");
 	TEST_STR_EQ(captured_op_filename, MOCK_TMPFILE_NAME,
 		    "Reading to correct file");
 	TEST_PTR_EQ(captured_region_param, NULL, "Not operating on a region");
@@ -152,6 +175,8 @@ static void test_read_region(void)
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
 	TEST_EQ(captured_operation, FLASHROM_READ, "Doing a read operation");
+	TEST_EQ(captured_verify, FLASHROM_VERIFY_UNSPECIFIED,
+		"Verification not enabled");
 	TEST_PTR_EQ(captured_op_filename, NULL,
 		    "Not doing a read of the whole ROM");
 	TEST_STR_EQ(captured_region_param, "SOME_REGION:" MOCK_TMPFILE_NAME,
@@ -185,6 +210,8 @@ static void test_write_whole_chip(void)
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
 	TEST_EQ(captured_operation, FLASHROM_WRITE, "Doing a write operation");
+	TEST_EQ(captured_verify, FLASHROM_VERIFY_FAST,
+		"Fast verification enabled");
 	TEST_STR_EQ(captured_op_filename, MOCK_TMPFILE_NAME,
 		    "Writing to correct file");
 	TEST_PTR_EQ(captured_region_param, NULL, "Not operating on a region");
@@ -205,6 +232,8 @@ static void test_write_region(void)
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
 	TEST_EQ(captured_operation, FLASHROM_WRITE, "Doing a write operation");
+	TEST_EQ(captured_verify, FLASHROM_VERIFY_FAST,
+		"Fast verification enabled");
 	TEST_PTR_EQ(captured_op_filename, NULL,
 		    "Not doing a write of the whole ROM");
 	TEST_STR_EQ(captured_region_param, "SOME_REGION:" MOCK_TMPFILE_NAME,
