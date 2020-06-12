@@ -249,7 +249,8 @@ static const struct vb2_screen_info recovery_invalid_screen = {
 vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 {
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
-		VB2_DEBUG("Dev mode already enabled?\n");
+		/* We're in dev mode, so let user know they can't transition */
+		ui->error_code = VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED;
 		return vb2_ui_change_root(ui);
 	}
 
@@ -489,6 +490,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	    !vb2_dev_boot_allowed(ui->ctx) ||
 	    !vb2_dev_boot_external_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
+		ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_NOT_ALLOWED;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
@@ -496,13 +498,17 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	if (rv == VB2_SUCCESS) {
 		return VB2_SUCCESS;
 	} else if (rv == VB2_ERROR_LK_NO_DISK_FOUND) {
-		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL)
+		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL) {
 			VB2_DEBUG("No external disk found\n");
+			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
+		}
 		return vb2_ui_change_screen(
 			ui, VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL);
 	} else {
-		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_INVALID_DISK)
+		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_INVALID_DISK) {
 			VB2_DEBUG("Invalid external disk: %#x\n", rv);
+			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
+		}
 		return vb2_ui_change_screen(
 			ui, VB2_SCREEN_DEVELOPER_INVALID_DISK);
 	}

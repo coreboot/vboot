@@ -72,6 +72,20 @@ vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 }
 
 /*****************************************************************************/
+/* Error action functions */
+
+vb2_error_t error_exit_action(struct vb2_ui_context *ui)
+{
+	/*
+	 * If the only difference is the error message, then just
+	 * redraw the screen without the error string.
+	 */
+	if (ui->key && ui->error_code != VB2_UI_ERROR_NONE)
+		ui->error_code = VB2_UI_ERROR_NONE;
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+/*****************************************************************************/
 /* Menu navigation functions */
 
 const struct vb2_menu *get_menu(struct vb2_ui_context *ui)
@@ -236,6 +250,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 {
 	struct vb2_ui_context ui;
 	struct vb2_screen_state prev_state;
+	enum vb2_ui_error prev_error_code;
 	const struct vb2_menu *menu;
 	uint32_t key_flags;
 	vb2_error_t rv;
@@ -250,11 +265,13 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	if (rv != VB2_REQUEST_UI_CONTINUE)
 		return rv;
 	memset(&prev_state, 0, sizeof(prev_state));
+	prev_error_code = VB2_UI_ERROR_NONE;
 
 	while (1) {
 		/* Draw if there are state changes. */
-		if (memcmp(&prev_state, &ui.state, sizeof(ui.state))) {
-			memcpy(&prev_state, &ui.state, sizeof(ui.state));
+		if (memcmp(&prev_state, &ui.state, sizeof(ui.state)) ||
+		    /* we want to redraw/beep on a transition */
+		    prev_error_code != ui.error_code) {
 
 			menu = get_menu(&ui);
 			VB2_DEBUG("<%s> menu item <%s>\n",
@@ -262,10 +279,21 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 				  menu->num_items ?
 				  menu->items[ui.state.selected_item].text :
 				  "null");
-
 			vb2ex_display_ui(ui.state.screen->id, ui.locale_id,
 					 ui.state.selected_item,
-					 ui.state.disabled_item_mask);
+					 ui.state.disabled_item_mask,
+					 ui.error_code);
+			/*
+			 * Only beep if we're transitioning from no
+			 * error to an error.
+			 */
+			if (prev_error_code == VB2_UI_ERROR_NONE &&
+			    ui.error_code != VB2_UI_ERROR_NONE)
+				vb2ex_beep(250, 400);
+
+			/* Update prev variables. */
+			memcpy(&prev_state, &ui.state, sizeof(ui.state));
+			prev_error_code = ui.error_code;
 		}
 
 		/* Grab new keyboard input. */
@@ -278,6 +306,11 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 			VB2_DEBUG("Shutdown requested!\n");
 			return rv;
 		}
+
+		/* Check if we need to exit an error box. */
+		rv = error_exit_action(&ui);
+		if (rv != VB2_REQUEST_UI_CONTINUE)
+			return rv;
 
 		/* Run screen action. */
 		if (ui.state.screen->action) {

@@ -325,7 +325,8 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 			     uint32_t locale_id,
 			     uint32_t selected_item,
-			     uint32_t disabled_item_mask)
+			     uint32_t disabled_item_mask,
+			     enum vb2_ui_error error_code)
 {
 	struct display_call displayed = (struct display_call){
 		.screen = vb2_get_screen_info(screen),

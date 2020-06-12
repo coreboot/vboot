@@ -13,6 +13,7 @@
 /* From 2ui.c */
 vb2_error_t check_shutdown_request(struct vb2_ui_context *ui);
 const struct vb2_menu *get_menu(struct vb2_ui_context *ui);
+vb2_error_t error_exit_action(struct vb2_ui_context *ui);
 vb2_error_t menu_navigation_action(struct vb2_ui_context *ui);
 vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		    vb2_error_t (*global_action)(struct vb2_ui_context *ui));
