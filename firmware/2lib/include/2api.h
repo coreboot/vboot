@@ -1216,10 +1216,14 @@ enum vb2_screen {
 	VB2_SCREEN_RECOVERY_DISK_STEP1		= 0x220,
 	VB2_SCREEN_RECOVERY_DISK_STEP2		= 0x221,
 	VB2_SCREEN_RECOVERY_DISK_STEP3		= 0x222,
-	/* Developer screen */
+	/* Developer mode screen */
 	VB2_SCREEN_DEVELOPER_MODE		= 0x300,
 	/* Confirm transition to normal mode */
 	VB2_SCREEN_DEVELOPER_TO_NORM		= 0x310,
+	/* Developer boot from external disk */
+	VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL	= 0x320,
+	/* Invalid external disk inserted */
+	VB2_SCREEN_DEVELOPER_INVALID_DISK	= 0x330,
 };
 
 /**

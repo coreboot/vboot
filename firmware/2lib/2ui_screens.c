@@ -461,6 +461,8 @@ vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	struct vb2_ui_context *ui)
 {
+	vb2_error_t rv;
+
 	/* Sanity check, should never happen. */
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
 	    !vb2_dev_boot_allowed(ui->ctx) ||
@@ -469,12 +471,20 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
-	if (VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE)) {
-		VB2_DEBUG("ERROR: Dev mode external boot failed\n");
-		return VB2_REQUEST_UI_CONTINUE;
+	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
+	if (rv == VB2_SUCCESS) {
+		return VB2_SUCCESS;
+	} else if (rv == VB2_ERROR_LK_NO_DISK_FOUND) {
+		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL)
+			VB2_DEBUG("No external disk found\n");
+		return vb2_ui_change_screen(
+			ui, VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL);
+	} else {
+		if (ui->state.screen->id != VB2_SCREEN_DEVELOPER_INVALID_DISK)
+			VB2_DEBUG("Invalid external disk: %#x\n", rv);
+		return vb2_ui_change_screen(
+			ui, VB2_SCREEN_DEVELOPER_INVALID_DISK);
 	}
-
-	return VB2_SUCCESS;
 }
 
 vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
@@ -573,6 +583,36 @@ static const struct vb2_screen_info developer_to_norm_screen = {
 };
 
 /******************************************************************************/
+/* VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL */
+
+static const struct vb2_menu_item developer_boot_external_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	BACK_ITEM,
+};
+
+static const struct vb2_screen_info developer_boot_external_screen = {
+	.id = VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL,
+	.name = "Developer boot from external disk",
+	.action = vb2_ui_developer_mode_boot_external_action,
+	.menu = MENU_ITEMS(developer_boot_external_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_DEVELOPER_INVALID_DISK */
+
+static const struct vb2_menu_item developer_invalid_disk_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	BACK_ITEM,
+};
+
+static const struct vb2_screen_info developer_invalid_disk_screen = {
+	.id = VB2_SCREEN_DEVELOPER_INVALID_DISK,
+	.name = "Invalid external disk in dev mode",
+	.action = vb2_ui_developer_mode_boot_external_action,
+	.menu = MENU_ITEMS(developer_invalid_disk_items),
+};
+
+/******************************************************************************/
 /*
  * TODO(chromium:1035800): Refactor UI code across vboot and depthcharge.
  * Currently vboot and depthcharge maintain their own copies of menus/screens.
@@ -595,6 +635,8 @@ static const struct vb2_screen_info *screens[] = {
 	&recovery_disk_step3_screen,
 	&developer_mode_screen,
 	&developer_to_norm_screen,
+	&developer_boot_external_screen,
+	&developer_invalid_disk_screen,
 };
 
 const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id)
