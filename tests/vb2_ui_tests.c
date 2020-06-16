@@ -19,7 +19,7 @@
 #define MOCK_IGNORE 0xffffu
 
 /* Fuzzy matches for beep time */
-#define MOCK_BEEP_FUZZ_MS 200
+#define FUZZ_MS 200
 
 /* Mock data */
 struct display_call {
@@ -27,6 +27,12 @@ struct display_call {
 	uint32_t locale_id;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
+};
+
+struct beep_call {
+	uint32_t msec;
+	uint32_t frequency;
+	uint32_t time_expected;
 };
 
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
@@ -58,8 +64,9 @@ static uint32_t mock_get_timer_last;
 static uint32_t mock_time;
 static const uint32_t mock_time_start = 31ULL * VB2_MSEC_PER_SEC;
 
-static int mock_beeped_ms[2];
-static int mock_vb2ex_beep_called;
+static struct beep_call mock_beep[8];
+static int mock_beep_count;
+static int mock_beep_total;
 
 static enum vb2_dev_default_boot_target mock_default_boot;
 static int mock_dev_boot_allowed;
@@ -197,6 +204,22 @@ static void displayed_no_extra(int line)
 
 #define DISPLAYED_NO_EXTRA() displayed_no_extra(__LINE__)
 
+static void expect_beep(uint32_t msec,
+			uint32_t frequency,
+			uint32_t time_expected)
+{
+	if (mock_beep_total >= ARRAY_SIZE(mock_beep)) {
+		TEST_TRUE(0, "  mock_beep ran out of entries!");
+		return;
+	}
+
+	mock_beep[mock_beep_total++] = (struct beep_call){
+		.msec = msec,
+		.frequency = frequency,
+		.time_expected = time_expected,
+	};
+}
+
 /* Type of test to reset for */
 enum reset_type {
 	FOR_DEVELOPER,
@@ -254,8 +277,9 @@ static void reset_common_data(enum reset_type t)
 	mock_time = mock_time_start;
 
 	/* For vb2ex_beep */
-	memset(mock_beeped_ms, 0, sizeof(mock_beeped_ms));
-	mock_vb2ex_beep_called = 0;
+	memset(mock_beep, 0, sizeof(mock_beep));
+	mock_beep_count = 0;
+	mock_beep_total = 0;
 
 	/* For dev_boot* in 2misc.h */
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
@@ -381,10 +405,32 @@ void vb2ex_msleep(uint32_t msec)
 
 void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
-	if (mock_vb2ex_beep_called < ARRAY_SIZE(mock_beeped_ms))
-		mock_beeped_ms[mock_vb2ex_beep_called] = mock_time;
+	struct beep_call *beep;
+	uint32_t cur_time = mock_time - mock_time_start;
+
+	VB2_DEBUG("beep %d: msec = %d, frequency = %d at %d msec\n",
+		  mock_beep_count, msec, frequency, cur_time);
+
+	if (mock_beep_total > 0) {
+		TEST_TRUE(mock_beep_count < mock_beep_total,
+			  "  too many beep calls!");
+
+		beep = &mock_beep[mock_beep_count];
+
+		VB2_DEBUG("beep expected: msec = %d, frequency = %d, "
+			  "at %d msec\n",
+			  beep->msec, beep->frequency, beep->time_expected);
+
+		TEST_EQ(msec, beep->msec, "  beep duration");
+		TEST_EQ(frequency, beep->frequency, "  beep frequency");
+		TEST_TRUE(cur_time >= beep->time_expected,
+			  "  beep started after expected time");
+		TEST_TRUE(cur_time - beep->time_expected < FUZZ_MS,
+			  "  beep started within FUZZ_MS");
+	}
+
 	mock_time += msec;
-	mock_vb2ex_beep_called++;
+	mock_beep_count++;
 }
 
 enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
@@ -466,21 +512,13 @@ static void developer_tests(void)
 	/* Proceed to internal disk after timeout */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
+	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC);
+	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC + 500);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"proceed to internal disk after timeout");
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
 		  30 * VB2_MSEC_PER_SEC, "  finished delay");
-	TEST_EQ(mock_vb2ex_beep_called, 2, "  beeped twice");
-	TEST_TRUE(mock_beeped_ms[0] - mock_time_start >=
-		  20 * VB2_MSEC_PER_SEC, "  beep #0: at 20s");
-	TEST_TRUE(mock_beeped_ms[0] - mock_time_start <=
-		  20 * VB2_MSEC_PER_SEC + MOCK_BEEP_FUZZ_MS,
-		  "  beep #0: fuzzy matching");
-	TEST_TRUE(mock_beeped_ms[1] - mock_time_start >=
-		  20 * VB2_MSEC_PER_SEC + 500, "  beep #1: at 20.5s");
-	TEST_TRUE(mock_beeped_ms[1] - mock_time_start <=
-		  20 * VB2_MSEC_PER_SEC + 500 + MOCK_BEEP_FUZZ_MS,
-		  "  beep #1: fuzzy matching");
+	TEST_EQ(mock_beep_count, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
 	/* Use short delay */
@@ -493,7 +531,7 @@ static void developer_tests(void)
 		  2 * VB2_MSEC_PER_SEC, "  finished delay");
 	TEST_TRUE(mock_get_timer_last - mock_time_start <
 		  30 * VB2_MSEC_PER_SEC, "  not a 30s delay");
-	TEST_EQ(mock_vb2ex_beep_called, 0, "  never beeped");
+	TEST_EQ(mock_beep_count, 0, "  never beeped");
 
 	/* Stop timer on any user input: normal delay */
 	reset_common_data(FOR_DEVELOPER);
@@ -502,7 +540,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"stop timer on any user input: normal delay");
 	TEST_EQ(mock_calls_until_shutdown, 0, "  loop forever");
-	TEST_EQ(mock_vb2ex_beep_called, 0, "  never beeped");
+	TEST_EQ(mock_beep_count, 0, "  never beeped");
 
 	/* Stop timer on any user input: short delay */
 	reset_common_data(FOR_DEVELOPER);
@@ -512,7 +550,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"stop timer on any user input: short delay");
 	TEST_EQ(mock_calls_until_shutdown, 0, "  loop forever");
-	TEST_EQ(mock_vb2ex_beep_called, 0, "  never beeped");
+	TEST_EQ(mock_beep_count, 0, "  never beeped");
 
 	/* If fail to load internal disk, don't boot */
 	reset_common_data(FOR_DEVELOPER);
@@ -553,11 +591,13 @@ static void developer_tests(void)
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
+	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC);
+	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC + 500);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"proceed to external disk after timeout");
 	TEST_TRUE(mock_get_timer_last - mock_time_start >=
 		  30 * VB2_MSEC_PER_SEC, "  finished delay");
-	TEST_EQ(mock_vb2ex_beep_called, 2, "  beeped twice");
+	TEST_EQ(mock_beep_count, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
 	/* Default boot from external not allowed, don't boot */
