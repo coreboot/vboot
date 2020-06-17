@@ -3,24 +3,17 @@
  * found in the LICENSE file.
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "2common.h"
 #include "subprocess.h"
 
 #define MAX_CB_BUF_SIZE 2048
-
-static char *program_name;
-
-__attribute__((constructor, used))
-static int libinit(int argc, char **argv)
-{
-	program_name = *argv;
-	return 0;
-}
 
 static int init_target_private(struct subprocess_target *target)
 {
@@ -325,10 +318,7 @@ int subprocess_run(const char *const argv[],
 		return WEXITSTATUS(status);
 
  fail:
-	if (program_name)
-		perror(program_name);
-	else
-		perror("subprocess");
+	VB2_DEBUG("Failed to execute external command: %s\n", strerror(errno));
 	if (pid == 0)
 		exit(127);
 	return -1;
