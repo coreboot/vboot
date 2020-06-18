@@ -433,9 +433,10 @@ int vb2_read_nv_storage(struct vb2_context *ctx)
 	media = ReadFdtString(FDT_NVSTORAGE_TYPE_PROP);
 	if (!strcmp(media, "disk"))
 		return vb2_read_nv_storage_disk(ctx);
-	if (!strcmp(media, "cros-ec") || !strcmp(media, "mkbp") ||
-	    !strcmp(media, "flash"))
+	if (!strcmp(media, "cros-ec") || !strcmp(media, "mkbp"))
 		return vb2_read_nv_storage_mosys(ctx);
+	if (!strcmp(media, "flash"))
+		return vb2_read_nv_storage_flashrom(ctx);
 	return -1;
 }
 
@@ -449,9 +450,10 @@ int vb2_write_nv_storage(struct vb2_context *ctx)
 	media = ReadFdtString(FDT_NVSTORAGE_TYPE_PROP);
 	if (!strcmp(media, "disk"))
 		return vb2_write_nv_storage_disk(ctx);
-	if (!strcmp(media, "cros-ec") || !strcmp(media, "mkbp") ||
-	    !strcmp(media, "flash"))
+	if (!strcmp(media, "cros-ec") || !strcmp(media, "mkbp"))
 		return vb2_write_nv_storage_mosys(ctx);
+	if (!strcmp(media, "flash"))
+		return vb2_write_nv_storage_flashrom(ctx);
 	return -1;
 }
 
