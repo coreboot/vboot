@@ -574,3 +574,136 @@ int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	return gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
 }
+
+static void snprint_sha1_sum(struct vb2_packed_key *key,
+			     char *dest, size_t dest_size)
+{
+	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
+	uint64_t buflen = key->key_size;
+	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
+	int32_t used = 0;
+	int i;
+
+	vb2_digest_buffer(buf, buflen, VB2_HASH_SHA1, digest, sizeof(digest));
+	for (i = 0; i < sizeof(digest); i++)
+		if (used < dest_size)
+			used += snprintf(dest + used, dest_size - used,
+					 "%02x", digest[i]);
+	dest[dest_size - 1] = '\0';
+}
+
+#define DEBUG_INFO_MAX_LENGTH 1024
+
+#define DEBUG_INFO_APPEND(format, args...) do { \
+	if (used < DEBUG_INFO_MAX_LENGTH) \
+		used += snprintf(buf + used, DEBUG_INFO_MAX_LENGTH - used, \
+				 format, ## args); \
+} while (0)
+
+char *vb2api_get_debug_info(struct vb2_context *ctx)
+{
+	char *buf;
+	uint32_t used = 0;
+
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	struct vb2_workbuf wb;
+	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
+
+	vb2_error_t rv;
+	uint32_t i;
+
+	buf = malloc(DEBUG_INFO_MAX_LENGTH + 1);
+	if (buf == NULL)
+		return NULL;
+
+	vb2_workbuf_from_ctx(ctx, &wb);
+
+	/* Add hardware ID */
+	{
+		char hwid[VB2_GBB_HWID_MAX_SIZE];
+		uint32_t size = sizeof(hwid);
+		rv = vb2api_gbb_read_hwid(ctx, hwid, &size);
+		if (rv)
+			strcpy(hwid, "{INVALID}");
+		DEBUG_INFO_APPEND("HWID: %s", hwid);
+	}
+
+	/* Add recovery reason and subcode */
+	i = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
+	DEBUG_INFO_APPEND("\nrecovery_reason: %#.2x / %#.2x  %s",
+			  sd->recovery_reason, i,
+			  vb2_get_recovery_reason_string(sd->recovery_reason));
+
+	/* Add vb2_context and vb2_shared_data flags */
+	DEBUG_INFO_APPEND("\ncontext.flags: %#.16" PRIx64, ctx->flags);
+	DEBUG_INFO_APPEND("\nshared_data.flags: %#.8x", sd->flags);
+	DEBUG_INFO_APPEND("\nshared_data.status: %#.8x", sd->status);
+
+	/* Add raw contents of nvdata */
+	DEBUG_INFO_APPEND("\nnvdata:");
+	if (vb2_nv_get_size(ctx) > 16)  /* Multi-line starts on next line */
+		DEBUG_INFO_APPEND("\n  ");
+	for (i = 0; i < vb2_nv_get_size(ctx); i++) {
+		/* Split into 16-byte blocks */
+		if (i > 0 && i % 16 == 0)
+			DEBUG_INFO_APPEND("\n  ");
+		DEBUG_INFO_APPEND(" %02x", ctx->nvdata[i]);
+	}
+
+	/* Add dev_boot_usb flag */
+	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL);
+	DEBUG_INFO_APPEND("\ndev_boot_usb: %d", i);
+
+	/* Add dev_boot_legacy flag */
+	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY);
+	DEBUG_INFO_APPEND("\ndev_boot_legacy: %d", i);
+
+	/* Add dev_default_boot flag */
+	i = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);
+	DEBUG_INFO_APPEND("\ndev_default_boot: %d", i);
+
+	/* Add dev_boot_signed_only flag */
+	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY);
+	DEBUG_INFO_APPEND("\ndev_boot_signed_only: %d", i);
+
+	/* Add TPM versions */
+	DEBUG_INFO_APPEND("\nTPM: fwver=%#.8x kernver=%#.8x",
+			  sd->fw_version_secdata, sd->kernel_version_secdata);
+
+	/* Add GBB flags */
+	DEBUG_INFO_APPEND("\ngbb.flags: %#.8x", gbb->flags);
+
+	/* Add sha1sum for Root & Recovery keys */
+	{
+		struct vb2_packed_key *key;
+		struct vb2_workbuf wblocal = wb;
+		rv = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
+		if (rv == VB2_SUCCESS) {
+			snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+			DEBUG_INFO_APPEND("\ngbb.rootkey: %s", sha1sum);
+		}
+	}
+
+	{
+		struct vb2_packed_key *key;
+		struct vb2_workbuf wblocal = wb;
+		rv = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
+		if (rv == VB2_SUCCESS) {
+			snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+			DEBUG_INFO_APPEND("\ngbb.recovery_key: %s", sha1sum);
+		}
+	}
+
+	/* If we're in dev-mode, show the kernel subkey that we expect, too. */
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	    sd->kernel_key_offset) {
+		struct vb2_packed_key *key =
+			vb2_member_of(sd, sd->kernel_key_offset);
+		snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+		DEBUG_INFO_APPEND("\nkernel_subkey: %s", sha1sum);
+	}
+
+	buf[DEBUG_INFO_MAX_LENGTH] = '\0';
+	return buf;
+}
