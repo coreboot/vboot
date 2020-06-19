@@ -52,6 +52,66 @@ static vb2_error_t power_off_action(struct vb2_ui_context *ui)
 }
 
 /******************************************************************************/
+/* Functions used for log screens */
+
+static vb2_error_t log_page_init(struct vb2_ui_context *ui,
+				 uint32_t page_up_item,
+				 uint32_t page_down_item,
+				 uint32_t alternate_item)
+{
+	ui->state->current_page = 0;
+
+	if (ui->state->page_count == 1) {
+		ui->state->disabled_item_mask |= 1 << page_up_item;
+		ui->state->disabled_item_mask |= 1 << page_down_item;
+		ui->state->selected_item = alternate_item;
+	} else {
+		ui->state->disabled_item_mask |= 1 << page_up_item;
+		ui->state->selected_item = page_down_item;
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t log_page_prev(struct vb2_ui_context *ui,
+				 uint32_t page_up_item,
+				 uint32_t page_down_item)
+{
+	if (ui->state->current_page == 0)
+		return VB2_REQUEST_UI_CONTINUE;
+	ui->state->current_page--;
+
+	/* Clear bits of page down. */
+	ui->state->disabled_item_mask &= ~(1 << page_down_item);
+
+	if (ui->state->current_page == 0) {
+		ui->state->disabled_item_mask |= 1 << page_up_item;
+		ui->state->selected_item = page_down_item;
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t log_page_next(struct vb2_ui_context *ui,
+				 uint32_t page_up_item,
+				 uint32_t page_down_item)
+{
+	if (ui->state->current_page == ui->state->page_count - 1)
+		return VB2_REQUEST_UI_CONTINUE;
+	ui->state->current_page++;
+
+	/* Clear bits of page up. */
+	ui->state->disabled_item_mask &= ~(1 << page_up_item);
+
+	if (ui->state->current_page == ui->state->page_count - 1) {
+		ui->state->disabled_item_mask |= 1 << page_down_item;
+		ui->state->selected_item = page_up_item;
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+/******************************************************************************/
 /* VB2_SCREEN_BLANK */
 
 static const struct vb2_screen_info blank_screen = {
@@ -176,6 +236,7 @@ static const struct vb2_menu_item advanced_options_items[] = {
 		.text = "Enable developer mode",
 		.target = VB2_SCREEN_RECOVERY_TO_DEV,
 	},
+	/* TODO(b:144969088): Add debug info item */
 	[ADVANCED_OPTIONS_ITEM_BACK] = BACK_ITEM,
 	POWER_OFF_ITEM,
 };
@@ -185,6 +246,62 @@ static const struct vb2_screen_info advanced_options_screen = {
 	.name = "Advanced options",
 	.init = advanced_options_init,
 	.menu = MENU_ITEMS(advanced_options_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_DEBUG_INFO */
+
+#define DEBUG_INFO_ITEM_PAGE_UP 1
+#define DEBUG_INFO_ITEM_PAGE_DOWN 2
+#define DEBUG_INFO_ITEM_BACK 3
+
+static vb2_error_t debug_info_init(struct vb2_ui_context *ui)
+{
+	const char *log_string = vb2ex_get_debug_info(ui->ctx);
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+	return log_page_init(ui,
+			     DEBUG_INFO_ITEM_PAGE_UP,
+			     DEBUG_INFO_ITEM_PAGE_DOWN,
+			     DEBUG_INFO_ITEM_BACK);
+}
+
+static vb2_error_t debug_info_page_prev_action(struct vb2_ui_context *ui)
+{
+	return log_page_prev(ui,
+			     DEBUG_INFO_ITEM_PAGE_UP,
+			     DEBUG_INFO_ITEM_PAGE_DOWN);
+}
+
+static vb2_error_t debug_info_page_next_action(struct vb2_ui_context *ui)
+{
+	return log_page_next(ui,
+			     DEBUG_INFO_ITEM_PAGE_UP,
+			     DEBUG_INFO_ITEM_PAGE_DOWN);
+}
+
+static const struct vb2_menu_item debug_info_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	[DEBUG_INFO_ITEM_PAGE_UP] = {
+		.text = "Page up",
+		.action = debug_info_page_prev_action,
+	},
+	[DEBUG_INFO_ITEM_PAGE_DOWN] = {
+		.text = "Page down",
+		.action = debug_info_page_next_action,
+	},
+	[DEBUG_INFO_ITEM_BACK] = BACK_ITEM,
+	POWER_OFF_ITEM,
+};
+
+static const struct vb2_screen_info debug_info_screen = {
+	.id = VB2_SCREEN_DEBUG_INFO,
+	.name = "Debug info",
+	.init = debug_info_init,
+	.menu = MENU_ITEMS(debug_info_items),
 };
 
 /******************************************************************************/
@@ -662,6 +779,7 @@ static const struct vb2_screen_info *screens[] = {
 	&language_select_screen,
 	&recovery_broken_screen,
 	&advanced_options_screen,
+	&debug_info_screen,
 	&recovery_select_screen,
 	&recovery_invalid_screen,
 	&recovery_to_dev_screen,
