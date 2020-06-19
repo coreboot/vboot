@@ -17,6 +17,7 @@ vb2_error_t menu_navigation_action(struct vb2_ui_context *ui);
 vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		    vb2_error_t (*global_action)(struct vb2_ui_context *ui));
 vb2_error_t developer_action(struct vb2_ui_context *ui);
+vb2_error_t broken_recovery_action(struct vb2_ui_context *ui);
 vb2_error_t manual_recovery_action(struct vb2_ui_context *ui);
 
 /* From 2ui_screens.c */
