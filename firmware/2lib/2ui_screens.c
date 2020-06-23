@@ -196,7 +196,7 @@ static const struct vb2_screen_info advanced_options_screen = {
 vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 {
 	ui->state.selected_item = RECOVERY_SELECT_ITEM_PHONE;
-	if (!vb2api_phone_recovery_enabled(ui->ctx)) {
+	if (!vb2api_phone_recovery_ui_enabled(ui->ctx)) {
 		VB2_DEBUG("WARNING: Phone recovery not available\n");
 		ui->state.disabled_item_mask |=
 			1 << RECOVERY_SELECT_ITEM_PHONE;

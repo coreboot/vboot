@@ -506,6 +506,17 @@ int vb2api_phone_recovery_enabled(struct vb2_context *ctx)
 		 VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED);
 }
 
+int vb2api_phone_recovery_ui_enabled(struct vb2_context *ctx)
+{
+	/*
+	 * When phone recovery functionality is disabled, return 0 even if
+	 * PHONE_RECOVERY_UI_DISABLED is not set.
+	 */
+	return vb2api_phone_recovery_enabled(ctx) &&
+	       !(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS) &
+		 VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED);
+}
+
 enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	struct vb2_context *ctx)
 {

@@ -854,12 +854,20 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx);
 uint32_t vb2api_get_locale_id(struct vb2_context *ctx);
 
 /**
- * Whether phone recovery is enabled or not.
+ * Whether phone recovery functionality is enabled or not.
  *
  * @param ctx		Vboot context
  * @return 1 if enabled, 0 if disabled.
  */
 int vb2api_phone_recovery_enabled(struct vb2_context *ctx);
+
+/**
+ * Whether phone recovery instructions in recovery UI are enabled or not.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if enabled, 0 if disabled.
+ */
+int vb2api_phone_recovery_ui_enabled(struct vb2_context *ctx);
 
 /* Default boot target in developer mode. */
 enum vb2_dev_default_boot_target {

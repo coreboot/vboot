@@ -839,6 +839,8 @@ static void phone_recovery_enabled_tests(void)
 	vb2_secdata_kernel_init(ctx);
 	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
 		"phone recovery enabled");
+	TEST_EQ(vb2api_phone_recovery_ui_enabled(ctx), 1,
+		"  ui also enabled");
 
 	/* Phone recovery disabled */
 	reset_common_data();
@@ -848,6 +850,20 @@ static void phone_recovery_enabled_tests(void)
 			       VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED);
 	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 0,
 		"phone recovery disabled");
+	TEST_EQ(vb2api_phone_recovery_ui_enabled(ctx), 0,
+		"  ui also disabled");
+
+	/* Only UI disabled */
+	reset_common_data();
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	vb2_secdata_kernel_set(
+		ctx, VB2_SECDATA_KERNEL_FLAGS,
+		VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED);
+	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
+		"phone recovery enabled again");
+	TEST_EQ(vb2api_phone_recovery_ui_enabled(ctx), 0,
+		"  ui disabled");
 }
 
 static void dev_default_boot_tests(void)
