@@ -104,6 +104,12 @@ else ifeq (${ARCH},amd64)
   override ARCH := x86_64
 endif
 
+ifneq ($(wildcard host/arch/${ARCH}/lib/crossystem_arch.c),)
+	CROSSYSTEM_ARCH_C := host/arch/${ARCH}/lib/crossystem_arch.c
+else
+	CROSSYSTEM_ARCH_C := host/arch/stub/lib/crossystem_arch.c
+endif
+
 # FIRMWARE_ARCH is only defined by the Chromium OS ebuild if compiling
 # for a firmware target (coreboot or depthcharge). It must map to the same
 # consistent set of architectures as the host.
@@ -445,7 +451,7 @@ UTILLIB_SRCS = \
 	cgpt/cgpt_repair.c \
 	cgpt/cgpt_show.c \
 	futility/dump_kernel_config_lib.c \
-	host/arch/${ARCH}/lib/crossystem_arch.c \
+	$(CROSSYSTEM_ARCH_C) \
 	host/lib/chromeos_config.c \
 	host/lib/crossystem.c \
 	host/lib/crypto.c \
@@ -505,7 +511,7 @@ HOSTLIB_SRCS = \
 	firmware/stub/vboot_api_stub_disk.c \
 	firmware/stub/vboot_api_stub_init.c \
 	futility/dump_kernel_config_lib.c \
-	host/arch/${ARCH}/lib/crossystem_arch.c \
+	$(CROSSYSTEM_ARCH_C) \
 	host/lib/chromeos_config.c \
 	host/lib/crossystem.c \
 	host/lib/crypto.c \
