@@ -971,6 +971,20 @@ static void manual_recovery_tests(void)
 		DISPLAYED_NO_EXTRA();
 	}
 
+	/* Enter diagnostics */
+	if (DIAGNOSTIC_UI) {
+		/* Launch diagnostics is inside manual recovery */
+		reset_common_data(FOR_MANUAL_RECOVERY);
+		add_mock_keypress(VB_KEY_DOWN);
+		add_mock_keypress(VB_KEY_DOWN);
+		add_mock_keypress(VB_KEY_ENTER);
+		TEST_EQ(vb2_manual_recovery_menu(ctx),
+			VB2_REQUEST_REBOOT,
+			"Reboot immediately after request diagnostics");
+		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 1,
+			"VB2_NV_DIAG_REQUEST is set");
+	}
+
 	VB2_DEBUG("...done.\n");
 }
 
@@ -1382,8 +1396,11 @@ static void manual_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
-	/* #3: Advanced options */
 	add_mock_keypress(VB_KEY_ESC);
+	/* #3: Launch diagnostics */
+	if (DIAGNOSTIC_UI)
+		add_mock_keypress(VB_KEY_DOWN);
+	/* #4: Advanced options */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	/* End of menu */
@@ -1396,31 +1413,38 @@ static void manual_recovery_screen_tests(void)
 	/* #0: Language menu */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 0, 0x0, MOCK_IGNORE);
+		     MOCK_IGNORE, 0, DIAGNOSTIC_UI ? 0x0 : (1 << 3),
+		     MOCK_IGNORE);
 	DISPLAYED_EQ("#0: language menu", VB2_SCREEN_LANGUAGE_SELECT,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #1: Phone recovery */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 1, 0x0, MOCK_IGNORE);
+		     MOCK_IGNORE, 1, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_EQ("#1: phone recovery", VB2_SCREEN_RECOVERY_PHONE_STEP1,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #2: External disk recovery */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 2, 0x0, MOCK_IGNORE);
+		     MOCK_IGNORE, 2, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_EQ("#2: disk recovery", VB2_SCREEN_RECOVERY_DISK_STEP1,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	/* #3: Advanced options */
-	DISPLAYED_PASS();
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 3, 0x0, MOCK_IGNORE);
+		MOCK_IGNORE, 2, MOCK_IGNORE, MOCK_IGNORE);
+	/* #3: Launch diagnostics */
+	if (DIAGNOSTIC_UI)
+		DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+			MOCK_IGNORE, 3, MOCK_IGNORE, MOCK_IGNORE);
+	/* #4: Advanced options */
+	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+		     MOCK_IGNORE, 4, MOCK_IGNORE, MOCK_IGNORE);
+
 	DISPLAYED_EQ("#3: advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* End of menu */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("end of menu", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, 4, MOCK_IGNORE, MOCK_IGNORE);
+		     MOCK_IGNORE, 5, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_NO_EXTRA();
 
 	/* Advanced options screen */
@@ -1428,6 +1452,8 @@ static void manual_recovery_screen_tests(void)
 	/* #0: Language menu */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
+	if (DIAGNOSTIC_UI)
+		add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1451,6 +1477,8 @@ static void manual_recovery_screen_tests(void)
 		"advanced options screen");
 	DISPLAYED_PASS();
 	DISPLAYED_PASS();
+	if (DIAGNOSTIC_UI)
+		DISPLAYED_PASS();
 	DISPLAYED_PASS();
 	/* #0: Language menu */
 	DISPLAYED_PASS();
