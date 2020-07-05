@@ -937,7 +937,7 @@ cgpt_wrapper: ${CGPT_WRAPPER}
 
 ${CGPT_WRAPPER}: ${CGPT_WRAPPER_OBJS} ${UTILLIB}
 	@$(PRINTF) "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o ${CGPT_WRAPPER} ${CFLAGS} $^
+	${Q}${LD} -o ${CGPT_WRAPPER} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: cgpt
 cgpt: ${CGPT} ${CGPT_WRAPPER}
@@ -946,7 +946,7 @@ ${CGPT}: LDLIBS += -luuid
 
 ${CGPT}: ${CGPT_OBJS} ${UTILLIB}
 	@${PRINTF} "    LDcgpt        $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o ${CGPT} ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
+	${Q}${LD} -o ${CGPT} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: cgpt_install
 cgpt_install: ${CGPT}
@@ -1018,7 +1018,7 @@ FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 ${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $^ ${LDLIBS}
+	${Q}${LD} -o $@ ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: futil_install
 futil_install: ${FUTIL_BIN}
@@ -1089,7 +1089,7 @@ ${FUZZ_TEST_BINS}: LDFLAGS += -fsanitize=fuzzer
 
 ${BUILD}/%: ${BUILD}/%.o ${OBJS} ${LIBS}
 	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o $@ ${CFLAGS} ${LDFLAGS} $< ${OBJS} ${LIBS} ${LDLIBS}
+	${Q}${LD} -o $@ ${LDFLAGS} $< ${OBJS} ${LIBS} ${LDLIBS}
 
 ${BUILD}/%.o: %.c
 	@${PRINTF} "    CC            $(subst ${BUILD}/,,$@)\n"
@@ -1129,7 +1129,7 @@ ${BUILD}/tests/hmac_test: LDLIBS += ${CRYPTO_LIBS}
 ${TEST21_BINS}: LDLIBS += ${CRYPTO_LIBS}
 
 # Allow multiple definitions, so tests can mock functions from other libraries
-${BUILD}/tests/%: CFLAGS += -Xlinker --allow-multiple-definition
+${BUILD}/tests/%: LDFLAGS += -Xlinker --allow-multiple-definition
 ${BUILD}/tests/%: LDLIBS += -lrt -luuid
 ${BUILD}/tests/%: LIBS += ${TESTLIB}
 
