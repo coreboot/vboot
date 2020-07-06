@@ -63,21 +63,6 @@
  */
 #define VB2_TRY(expr, ...) _VB2_TRY_IMPL(expr, ##__VA_ARGS__, NULL, 0)
 
-/* Modes for vb2ex_tpm_set_mode. */
-enum vb2_tpm_mode {
-	/*
-	 * TPM is enabled tentatively, and may be set to either
-	 * ENABLED or DISABLED mode.
-	 */
-	VB2_TPM_MODE_ENABLED_TENTATIVE = 0,
-
-	/* TPM is enabled, and mode may not be changed. */
-	VB2_TPM_MODE_ENABLED = 1,
-
-	/* TPM is disabled, and mode may not be changed. */
-	VB2_TPM_MODE_DISABLED = 2,
-};
-
 /* Flags for vb2_context.
  *
  * Unless otherwise noted, flags are set by verified boot and may be read (but
@@ -128,7 +113,7 @@ enum vb2_context_flags {
 	/* Wipeout by the app should be requested. */
 	VB2_CONTEXT_FORCE_WIPEOUT_MODE = (1 << 8),
 
-	/* Erase TPM developer mode state if it is enabled. */
+	/* Erase developer mode state if it is enabled. */
 	VB2_CONTEXT_DISABLE_DEVELOPER_MODE = (1 << 9),
 
 	/*
@@ -902,14 +887,6 @@ int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx);
 /* APIs provided by the caller to verified boot */
 
 /**
- * Clear the TPM owner.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx);
-
-/**
  * Read a verified boot resource.
  *
  * @param ctx		Vboot context
@@ -968,21 +945,6 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 					   uint32_t digest_size);
 
 /*
- * Set the current TPM mode value, and validate that it was changed.  If one
- * of the following occurs, the function call fails:
- *   - TPM does not understand the instruction (old version)
- *   - TPM has already left the TpmModeEnabledTentative mode
- *   - TPM responds with a mode other than the requested mode
- *   - Some other communication error occurs
- *  Otherwise, the function call succeeds.
- *
- * @param mode_val       Desired TPM mode to set.  May be one of ENABLED
- *                       or DISABLED from vb2_tpm_mode enum.
- * @returns VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
-
-/*
  * Abort vboot flow due to a failed assertion or broken assumption.
  *
  * Likely due to caller misusing vboot (e.g. calling API functions
@@ -1006,6 +968,47 @@ void vb2ex_abort(void);
  * @returns VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
+
+/*****************************************************************************/
+/* TPM functionality */
+
+/* Modes for vb2ex_tpm_set_mode. */
+enum vb2_tpm_mode {
+	/*
+	 * TPM is enabled tentatively, and may be set to either
+	 * ENABLED or DISABLED mode.
+	 */
+	VB2_TPM_MODE_ENABLED_TENTATIVE = 0,
+
+	/* TPM is enabled, and mode may not be changed. */
+	VB2_TPM_MODE_ENABLED = 1,
+
+	/* TPM is disabled, and mode may not be changed. */
+	VB2_TPM_MODE_DISABLED = 2,
+};
+
+/*
+ * Set the current TPM mode value, and validate that it was changed.  If one
+ * of the following occurs, the function call fails:
+ *   - TPM does not understand the instruction (old version)
+ *   - TPM has already left the TpmModeEnabledTentative mode
+ *   - TPM responds with a mode other than the requested mode
+ *   - Some other communication error occurs
+ *  Otherwise, the function call succeeds.
+ *
+ * @param mode_val       Desired TPM mode to set.  May be one of ENABLED
+ *                       or DISABLED from vb2_tpm_mode enum.
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
+
+/**
+ * Clear the TPM owner.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx);
 
 /*****************************************************************************/
 /* Auxiliary firmware (auxfw) */
