@@ -154,7 +154,7 @@ CFLAGS += -DCHROMEOS_ENVIRONMENT ${COMMON_FLAGS}
 endif
 
 # Needs -Wl because LD is actually set to CC by default.
-LDFLAGS ?= -Wl,--gc-sections
+LDFLAGS += -Wl,--gc-sections
 
 ifneq (${DEBUG},)
 CFLAGS += -DVBOOT_DEBUG
