@@ -24,7 +24,6 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
-#include "vboot_api.h"
 
 #define TPM_DEVICE_PATH "/dev/tpm0"
 /* Retry failed open()s for 5 seconds in 10ms polling intervals. */
@@ -173,15 +172,15 @@ static inline int TpmResponseSize(const uint8_t* buffer)
 	return (int) size;
 }
 
-vb2_error_t VbExTpmInit(void)
+vb2_error_t vb2ex_tpm_init(void)
 {
 	char *no_exit = getenv("TPM_NO_EXIT");
 	if (no_exit)
 		exit_on_failure = !atoi(no_exit);
-	return VbExTpmOpen();
+	return vb2ex_tpm_open();
 }
 
-vb2_error_t VbExTpmClose(void)
+vb2_error_t vb2ex_tpm_close(void)
 {
 	if (tpm_fd != -1) {
 		close(tpm_fd);
@@ -190,7 +189,7 @@ vb2_error_t VbExTpmClose(void)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExTpmOpen(void)
+vb2_error_t vb2ex_tpm_open(void)
 {
 	const char *device_path;
 	struct timespec delay;
@@ -227,8 +226,8 @@ vb2_error_t VbExTpmOpen(void)
 		       device_path, strerror(saved_errno));
 }
 
-uint32_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
-			    uint8_t* response, uint32_t* response_length)
+uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
+			     uint8_t* response, uint32_t* response_length)
 {
 	/*
 	 * In a real firmware implementation, this function should contain
@@ -290,7 +289,7 @@ uint32_t VbExTpmSendReceive(const uint8_t* request, uint32_t request_length,
 	return TPM_SUCCESS;
 }
 
-vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
+vb2_error_t vb2ex_tpm_get_random(uint8_t *buf, uint32_t length)
 {
 	static int urandom_fd = -1;
 	if (urandom_fd < 0) {

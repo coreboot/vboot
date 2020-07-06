@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "2api.h"
 #include "host_common.h"
 #include "test_common.h"
 #include "tlcl.h"
@@ -19,7 +20,7 @@
 static char debug_info[4096];
 static vb2_error_t mock_retval;
 
-/* Call to mocked VbExTpmSendReceive() */
+/* Call to mocked vb2ex_tpm_send_recv() */
 struct srcall
 {
 	const uint8_t *req;  /* Request */
@@ -64,19 +65,18 @@ static void SetResponse(int call_idx, uint32_t response_code, int rsp_size)
 
 /* Mocks */
 
-vb2_error_t VbExTpmInit(void)
+vb2_error_t vb2ex_tpm_init(void)
 {
 	return mock_retval;
 }
 
-
-vb2_error_t VbExTpmClose(void)
+vb2_error_t vb2ex_tpm_close(void)
 {
 	return mock_retval;
 }
 
-uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
-			    uint8_t *response, uint32_t *response_length)
+uint32_t vb2ex_tpm_send_recv(const uint8_t *request, uint32_t request_length,
+			     uint8_t *response, uint32_t *response_length)
 {
 	struct srcall *c = calls + ncalls++;
 
@@ -97,7 +97,7 @@ uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
 	return c->retval;
 }
 
-vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length)
+vb2_error_t vb2ex_tpm_get_random(uint8_t *buf, uint32_t length)
 {
 	memset(buf, 0xa5, length);
 	return VB2_SUCCESS;

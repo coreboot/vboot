@@ -6,11 +6,10 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
-#include "vboot_api.h"
 
 uint32_t TlclLibInit(void)
 {
-	return VbExTpmInit();
+	return TPM_SUCCESS;
 }
 
 uint32_t TlclLibClose(void)

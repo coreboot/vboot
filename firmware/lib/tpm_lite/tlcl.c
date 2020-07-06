@@ -21,7 +21,6 @@
 #include "tlcl.h"
 #include "tlcl_internal.h"
 #include "tlcl_structures.h"
-#include "vboot_api.h"
 
 /* Sets the size field of a TPM command. */
 static inline void SetTpmCommandSize(uint8_t* buffer, uint32_t size)
@@ -75,8 +74,8 @@ static uint32_t TlclSendReceiveNoRetry(const uint8_t* request,
 		  request[6], request[7], request[8], request[9]);
 #endif
 
-	result = VbExTpmSendReceive(request, TpmCommandSize(request),
-				    response, &response_length);
+	result = vb2ex_tpm_send_recv(request, TpmCommandSize(request),
+				     response, &response_length);
 	if (TPM_SUCCESS != result) {
 		/* Communication with TPM failed, so response is garbage */
 		VB2_DEBUG("TPM: command %#x send/receive failed: %#x\n",
@@ -202,8 +201,8 @@ static uint32_t StartOSAPSession(
 	memcpy(&cmd, &tpm_osap_cmd, sizeof(cmd));
 	ToTpmUint16(cmd.buffer + cmd.entityType, entity_type);
 	ToTpmUint32(cmd.buffer + cmd.entityValue, entity_value);
-	if (VbExTpmGetRandom(cmd.buffer + cmd.nonceOddOSAP,
-			     sizeof(TPM_NONCE)) != VB2_SUCCESS) {
+	if (vb2ex_tpm_get_random(cmd.buffer + cmd.nonceOddOSAP,
+				 sizeof(TPM_NONCE)) != VB2_SUCCESS) {
 		return TPM_E_INTERNAL_ERROR;
 	}
 
@@ -283,8 +282,8 @@ static uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
 	vb2_sha1_finalize(&sha1_ctx, buf);
 
 	/* Generate a fresh nonce. */
-	if (VbExTpmGetRandom(auth_session->nonce_odd.nonce,
-			     sizeof(TPM_NONCE)) != VB2_SUCCESS) {
+	if (vb2ex_tpm_get_random(auth_session->nonce_odd.nonce,
+				 sizeof(TPM_NONCE)) != VB2_SUCCESS) {
 		return TPM_E_INTERNAL_ERROR;
 	}
 
@@ -389,12 +388,12 @@ static uint32_t CheckResponseAuthBlock(struct auth_session* auth_session,
 
 uint32_t TlclLibInit(void)
 {
-	return VbExTpmInit();
+	return vb2ex_tpm_init();
 }
 
 uint32_t TlclLibClose(void)
 {
-	return VbExTpmClose();
+	return vb2ex_tpm_close();
 }
 
 uint32_t TlclStartup(void)
@@ -1216,8 +1215,8 @@ uint32_t TlclReadPubek(uint32_t* public_exponent,
 {
 	struct s_tpm_readpubek_cmd cmd;
 	memcpy(&cmd, &tpm_readpubek_cmd, sizeof(cmd));
-	if (VbExTpmGetRandom(cmd.buffer + tpm_readpubek_cmd.antiReplay,
-			     sizeof(TPM_NONCE)) != VB2_SUCCESS) {
+	if (vb2ex_tpm_get_random(cmd.buffer + tpm_readpubek_cmd.antiReplay,
+				 sizeof(TPM_NONCE)) != VB2_SUCCESS) {
 		return TPM_E_INTERNAL_ERROR;
 	}
 

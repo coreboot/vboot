@@ -10,7 +10,6 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tpm2_marshaling.h"
-#include "vboot_api.h"
 
 /*
  * TODO(chromium:1032930): Originally accessed by including secdata_tpm.h.
@@ -56,7 +55,7 @@ static uint32_t tpm_get_response(TPM_CC command,
 	}
 
 	in_size = sizeof(cr_buffer);
-	res = VbExTpmSendReceive(cr_buffer, out_size, cr_buffer, &in_size);
+	res = vb2ex_tpm_send_recv(cr_buffer, out_size, cr_buffer, &in_size);
 	if (res != TPM_SUCCESS) {
 		VB2_DEBUG("tpm transaction failed for %#x with error %#x\n",
 			  command, res);
@@ -118,7 +117,7 @@ uint32_t TlclLibInit(void)
 {
 	uint32_t rv;
 
-	rv = VbExTpmInit();
+	rv = vb2ex_tpm_init();
 	if (rv != TPM_SUCCESS)
 		return rv;
 
@@ -131,7 +130,7 @@ uint32_t TlclLibInit(void)
 
 uint32_t TlclLibClose(void)
 {
-	return VbExTpmClose();
+	return vb2ex_tpm_close();
 }
 
 uint32_t TlclSendReceive(const uint8_t *request, uint8_t *response,
@@ -140,8 +139,8 @@ uint32_t TlclSendReceive(const uint8_t *request, uint8_t *response,
 	uint32_t rv, resp_size;
 
 	resp_size = max_length;
-	rv = VbExTpmSendReceive(request, tpm_get_packet_size(request),
-				response, &resp_size);
+	rv = vb2ex_tpm_send_recv(request, tpm_get_packet_size(request),
+				 response, &resp_size);
 
 	return rv ? rv : tpm_get_packet_response_code(response);
 }

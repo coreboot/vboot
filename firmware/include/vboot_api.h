@@ -85,54 +85,6 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams);
 
 /*****************************************************************************/
-/* TPM (from tlcl_stub.h) */
-
-/**
- * Initialize the stub library. */
-vb2_error_t VbExTpmInit(void);
-
-/**
- * Close and open the device.  This is needed for running more complex commands
- * at user level, such as TPM_TakeOwnership, since the TPM device can be opened
- * only by one process at a time.
- */
-vb2_error_t VbExTpmClose(void);
-vb2_error_t VbExTpmOpen(void);
-
-/**
- * Send request to TPM and receive response
- *
- * Send a request_length-byte request to the TPM and receive a response.  On
- * input, response_length is the size of the response buffer in bytes.  On
- * exit, response_length is set to the actual received response length in
- * bytes.
- *
- * @param request		Pointer to request buffer
- * @param request_length	Number of bytes to send
- * @param response		Pointer to response buffer
- * @param response_length	Size of response buffer; on return,
- * 				set to number of received bytes
- * @return TPM_SUCCESS, or non-zero if error.
- */
-uint32_t VbExTpmSendReceive(const uint8_t *request, uint32_t request_length,
-			    uint8_t *response, uint32_t *response_length);
-
-#ifdef CHROMEOS_ENVIRONMENT
-
-/**
- * Obtain cryptographically secure random bytes. This function is used to
- * generate random nonces for TPM auth sessions for example. As an implication,
- * the generated random bytes should not be predictable for a TPM communication
- * interception attack. This implies a local source of randomness should be
- * used, i.e. this should not be wired to the TPM RNG directly. Otherwise, an
- * attacker with communication interception abilities could launch replay
- * attacks by reusing previous nonces.
- */
-vb2_error_t VbExTpmGetRandom(uint8_t *buf, uint32_t length);
-
-#endif  /* CHROMEOS_ENVIRONMENT */
-
-/*****************************************************************************/
 /* Disk access (previously in boot_device.h) */
 
 /* Flags for VbDisk APIs */

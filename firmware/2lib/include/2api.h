@@ -972,6 +972,61 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 /*****************************************************************************/
 /* TPM functionality */
 
+/**
+ * Initialize the TPM.
+ *
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_tpm_init(void);
+
+/**
+ * Close and open the TPM.
+ *
+ * This is needed for running more complex commands at user level, such as
+ * TPM_TakeOwnership, since the TPM device can be opened only by one process at
+ * a time.
+ *
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_tpm_close(void);
+vb2_error_t vb2ex_tpm_open(void);
+
+/**
+ * Send request to TPM and receive response
+ *
+ * Send a request_length-byte request to the TPM and receive a response.  On
+ * input, response_length is the size of the response buffer in bytes.  On
+ * exit, response_length is set to the actual received response length in
+ * bytes.
+ *
+ * @param request		Pointer to request buffer
+ * @param request_length	Number of bytes to send
+ * @param response		Pointer to response buffer
+ * @param response_length	Size of response buffer; on return,
+ * 				set to number of received bytes
+ * @return TPM_SUCCESS, or non-zero if error.
+ */
+uint32_t vb2ex_tpm_send_recv(const uint8_t *request, uint32_t request_length,
+			     uint8_t *response, uint32_t *response_length);
+
+#ifdef CHROMEOS_ENVIRONMENT
+
+/**
+ * Obtain cryptographically secure random bytes.
+ *
+ * This function is used to generate random nonces for TPM auth sessions for
+ * example. As an implication, the generated random bytes should not be
+ * predictable for a TPM communication interception attack. This implies a
+ * local source of randomness should be used, i.e. this should not be wired to
+ * the TPM RNG directly. Otherwise, an attacker with communication interception
+ * abilities could launch replay attacks by reusing previous nonces.
+ *
+ * @returns VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_tpm_get_random(uint8_t *buf, uint32_t length);
+
+#endif  /* CHROMEOS_ENVIRONMENT */
+
 /* Modes for vb2ex_tpm_set_mode. */
 enum vb2_tpm_mode {
 	/*
@@ -987,7 +1042,7 @@ enum vb2_tpm_mode {
 	VB2_TPM_MODE_DISABLED = 2,
 };
 
-/*
+/**
  * Set the current TPM mode value, and validate that it was changed.  If one
  * of the following occurs, the function call fails:
  *   - TPM does not understand the instruction (old version)
