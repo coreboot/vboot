@@ -396,7 +396,7 @@ static vb2_error_t to_dev_action(struct vb2_context *ctx)
 
 	vb2_enable_developer_mode(ctx);
 
-	return VB2_REQUEST_REBOOT;
+	return VB2_REQUEST_REBOOT_EC_TO_RO;
 }
 
 /* Action that disables developer mode, shows TO_NORM_CONFIRMED and reboots. */

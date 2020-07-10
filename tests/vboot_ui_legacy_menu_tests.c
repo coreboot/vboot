@@ -1644,7 +1644,7 @@ static void VbBootRecTest(void)
 	mock_keyflags[i] = VB_KEY_FLAG_TRUSTED_KEYBOARD;
 	mock_keypress[i++] = VB_BUTTON_VOL_UP_SHORT_PRESS;
 	mock_keypress[i++] = VB_BUTTON_POWER_SHORT_PRESS;
-	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_REBOOT,
+	TEST_EQ(VbBootRecoveryLegacyMenu(ctx), VB2_REQUEST_REBOOT_EC_TO_RO,
 		"go to TO_DEV screen and confirm");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "  no recovery");
 	TEST_EQ(debug_info_displayed, 0, "  no debug info");
