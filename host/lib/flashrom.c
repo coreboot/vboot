@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "2api.h"
@@ -43,11 +45,15 @@ static vb2_error_t write_temp_file(const uint8_t *data, uint32_t data_size,
 	ssize_t write_rv;
 	vb2_error_t rv;
 	char *path;
+	mode_t umask_save;
 
 	*path_out = NULL;
 	path = strdup(P_tmpdir "/vb2_flashrom.XXXXXX");
 
+	/* Set the umask before mkstemp for security considerations. */
+	umask_save = umask(077);
 	fd = mkstemp(path);
+	umask(umask_save);
 	if (fd < 0) {
 		rv = VB2_ERROR_WRITE_FILE_OPEN;
 		goto fail;

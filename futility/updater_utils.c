@@ -7,6 +7,8 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "2common.h"
@@ -697,8 +699,12 @@ const char *create_temp_file(struct tempfile *head)
 	struct tempfile *new_temp;
 	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
 	int fd;
+	mode_t umask_save;
 
+	/* Set the umask before mkstemp for security considerations. */
+	umask_save = umask(077);
 	fd = mkstemp(new_path);
+	umask(umask_save);
 	if (fd < 0) {
 		ERROR("Failed to create new temp file in %s\n", new_path);
 		return NULL;
