@@ -215,7 +215,7 @@ static const struct vb2_screen_info recovery_broken_screen = {
 /* VB2_SCREEN_ADVANCED_OPTIONS */
 
 #define ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE 1
-#define ADVANCED_OPTIONS_ITEM_BACK 2
+#define ADVANCED_OPTIONS_ITEM_DEBUG_INFO 2
 
 vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 {
@@ -224,7 +224,7 @@ vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 	    !vb2_allow_recovery(ui->ctx)) {
 		ui->state->disabled_item_mask |=
 			1 << ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
-		ui->state->selected_item = ADVANCED_OPTIONS_ITEM_BACK;
+		ui->state->selected_item = ADVANCED_OPTIONS_ITEM_DEBUG_INFO;
 	}
 
 	return VB2_REQUEST_UI_CONTINUE;
@@ -236,8 +236,11 @@ static const struct vb2_menu_item advanced_options_items[] = {
 		.text = "Enable developer mode",
 		.target = VB2_SCREEN_RECOVERY_TO_DEV,
 	},
-	/* TODO(b:144969088): Add debug info item */
-	[ADVANCED_OPTIONS_ITEM_BACK] = BACK_ITEM,
+	[ADVANCED_OPTIONS_ITEM_DEBUG_INFO] = {
+		.text = "Debug info",
+		.target = VB2_SCREEN_DEBUG_INFO,
+	},
+	BACK_ITEM,
 	POWER_OFF_ITEM,
 };
 
