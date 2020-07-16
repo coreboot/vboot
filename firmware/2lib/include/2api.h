@@ -1297,12 +1297,6 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_NONE = 0,
 	/* Dev mode already enabled */
 	VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED,
-	/* Dev mode internal boot not allowed */
-	VB2_UI_ERROR_DEV_INTERNAL_NOT_ALLOWED,
-	/* Dev mode external boot not allowed */
-	VB2_UI_ERROR_DEV_EXTERNAL_NOT_ALLOWED,
-	/* Dev mode external boot failed */
-	VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED,
 };
 
 /**

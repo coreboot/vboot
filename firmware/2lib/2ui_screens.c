@@ -490,7 +490,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	    !vb2_dev_boot_allowed(ui->ctx) ||
 	    !vb2_dev_boot_external_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
-		ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_NOT_ALLOWED;
+		ui->error_beep = 1;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
@@ -501,7 +501,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 		if (ui->state->screen->id !=
 		    VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL) {
 			VB2_DEBUG("No external disk found\n");
-			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
+			ui->error_beep = 1;
 		}
 		return vb2_ui_screen_change(
 			ui, VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL);
@@ -509,7 +509,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 		if (ui->state->screen->id !=
 		    VB2_SCREEN_DEVELOPER_INVALID_DISK) {
 			VB2_DEBUG("Invalid external disk: %#x\n", rv);
-			ui->error_code = VB2_UI_ERROR_DEV_EXTERNAL_BOOT_FAILED;
+			ui->error_beep = 1;
 		}
 		return vb2_ui_screen_change(
 			ui, VB2_SCREEN_DEVELOPER_INVALID_DISK);
