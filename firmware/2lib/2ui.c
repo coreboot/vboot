@@ -327,13 +327,10 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 					 ui.state->disabled_item_mask,
 					 ui.disable_timer,
 					 ui.error_code);
-			/*
-			 * Only beep if we're transitioning from no
-			 * error to an error.
-			 */
-			if (prev_error_code == VB2_UI_ERROR_NONE &&
-			    ui.error_code != VB2_UI_ERROR_NONE)
+			if (ui.error_beep) {
 				vb2ex_beep(250, 400);
+				ui.error_beep = 0;
+			}
 
 			/* Update prev variables. */
 			memcpy(&prev_state, ui.state, sizeof(*ui.state));
