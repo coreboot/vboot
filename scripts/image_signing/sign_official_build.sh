@@ -742,7 +742,7 @@ resign_android_image_if_exists() {
   local rootfs_dir=$(make_temp_dir)
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
 
-  local system_img="${rootfs_dir}/opt/google/containers/android/system.raw.img"
+  local system_img="$(echo "${rootfs_dir}"/opt/google/*/android/system.raw.img)"
   local arc_version=$(grep CHROMEOS_ARC_VERSION= \
     "${rootfs_dir}/etc/lsb-release" | cut -d= -f2)
   if [[ ! -e "${system_img}" || -z "${arc_version}" ]]; then

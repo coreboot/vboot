@@ -220,7 +220,9 @@ snapshot_file_properties() {
 main() {
   local root_fs_dir=$1
   local key_dir=$2
-  local android_dir="${root_fs_dir}/opt/google/containers/android"
+  local android_system_image="$(echo \
+    "${root_fs_dir}"/opt/google/*/android/system.raw.img)"
+  local android_dir=$(dirname "${android_system_image}")
   local system_img="${android_dir}/system.raw.img"
   # Use the versions in $PATH rather than the system ones.
   local unsquashfs=$(which unsquashfs)

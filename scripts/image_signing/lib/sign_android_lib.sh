@@ -125,7 +125,8 @@ android_choose_signing_keyset() {
     keyset="aosp"
   elif [[ "${flavor_prop}" == cheets_* ||
     "${flavor_prop}" == sdk_cheets_* ||
-    "${flavor_prop}" == sdk_google_cheets_* ]]; then
+    "${flavor_prop}" == sdk_google_cheets_* ||
+    "${flavor_prop}" == bertha_* ]]; then
     keyset="cheets"
   else
     return 1

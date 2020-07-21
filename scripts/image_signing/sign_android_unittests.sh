@@ -175,9 +175,16 @@ test_android_choose_signing_keyset() {
   choose_signing_keyset_test_helper "cheets_x86_64-user" "cheets"
   echo "TEST: Keyset for userdebug build."
   choose_signing_keyset_test_helper "cheets_x86-userdebug" "cheets"
+  echo "TEST: Keyset for bertha_x86 build."
+  choose_signing_keyset_test_helper "bertha_x86-user" "cheets"
+  echo "TEST: Keyset for bertha_arm build."
+  choose_signing_keyset_test_helper "bertha_arm-user" "cheets"
+  echo "TEST: Keyset for bertha_x86_64 build."
+  choose_signing_keyset_test_helper "bertha_x86_64-user" "cheets"
 
   choose_signing_keyset_test_invalid_flavors "aosp"
   choose_signing_keyset_test_invalid_flavors "cheets"
+  choose_signing_keyset_test_invalid_flavors "bertha"
   choose_signing_keyset_test_invalid_flavors ""
   choose_signing_keyset_test_invalid_flavors " "
 }
