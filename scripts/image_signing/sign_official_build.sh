@@ -37,7 +37,6 @@ where <type> is one of:
              firmware (sign a firmware image)
              usb  (sign an image to boot directly from USB)
              verify (verify an image including rootfs hashes)
-             nv_lp0_firmware (sign nvidia lp0 firmware)
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
              cr50_firmware (sign a cr50 firmware image)
@@ -401,17 +400,6 @@ sign_firmware() {
   "${SCRIPT_DIR}/sign_firmware.sh" "${image}" "${key_dir}" "${image}" \
     "${firmware_version}" "${loem_output_dir}"
   info "Signed firmware image output to ${image}"
-}
-
-# Sign nvidia lp0 firmware with the given keys.
-# Args: NV_LP0_FIRMWARE_IMAGE KEY_DIR
-sign_nv_lp0_firmware() {
-  local nv_lp0_fw_image=$1
-  local key_dir=$2
-
-  "${SCRIPT_DIR}/sign_nv_cbootimage.sh" "lp0_firmware" \
-      "${key_dir%/}/nv_pkc.pem" "${nv_lp0_fw_image}" "tegra210"
-  info "Signed nvidia lp0 firmware image output to ${nv_lp0_fw_image}"
 }
 
 # Sign a kernel in-place with the given keys.
@@ -1108,12 +1096,6 @@ elif [[ "${TYPE}" == "firmware" ]]; then
   fi
   cp ${INPUT_IMAGE} ${OUTPUT_IMAGE}
   sign_firmware ${OUTPUT_IMAGE} ${KEY_DIR} ${FIRMWARE_VERSION}
-elif [[ "${TYPE}" == "nv_lp0_firmware" ]]; then
-  if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-    die "LOEM signing not implemented yet for nv_lp0_firmware images"
-  fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  sign_nv_lp0_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}"
 elif [[ "${TYPE}" == "kernel" ]]; then
   if [[ -e "${KEY_DIR}/loem.ini" ]]; then
     die "LOEM signing not implemented yet for kernel images"
