@@ -240,7 +240,8 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		} else {
 			VB2_TRY(VbBootRecoveryLegacyClamshell(ctx));
 		}
-	} else if (DIAGNOSTIC_UI && vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
+	} else if (DIAGNOSTIC_UI && !MENU_UI &&
+		   vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
 
 		/*
