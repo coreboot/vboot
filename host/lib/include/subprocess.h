@@ -85,22 +85,22 @@ struct subprocess_target {
 /**
  * A convenience subprocess target which uses TARGET_NULL.
  */
-struct subprocess_target subprocess_null;
+extern struct subprocess_target subprocess_null;
 
 /**
  * A convenience subprocess target which uses TARGET_FD to STDIN_FILENO.
  */
-struct subprocess_target subprocess_stdin;
+extern struct subprocess_target subprocess_stdin;
 
 /**
  * A convenience subprocess target which uses TARGET_FD to STDOUT_FILENO.
  */
-struct subprocess_target subprocess_stdout;
+extern struct subprocess_target subprocess_stdout;
 
 /**
  * A convenience subprocess target which uses TARGET_FD to STDERR_FILENO.
  */
-struct subprocess_target subprocess_stderr;
+extern struct subprocess_target subprocess_stderr;
 
 /**
  * Call a process and run until completion.
