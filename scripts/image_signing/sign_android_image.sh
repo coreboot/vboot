@@ -206,9 +206,16 @@ reapply_file_security_context() {
 
   info "Reapplying file security context"
 
-  sudo /sbin/setfiles -v -r "${system_mnt}" \
-      "${root_fs_dir}/etc/selinux/arc/contexts/files/android_file_contexts" \
-      "${system_mnt}"
+  local selinux_dir="${root_fs_dir}/etc/selinux"
+  local file_contexts="${selinux_dir}/arc/contexts/files/android_file_contexts"
+  if [[ ! -f "${file_contexts}" ]]; then
+    file_contexts="${file_contexts}_vm"
+    if [[ ! -f "${file_contexts}" ]]; then
+      die "Can't find Android's file contexts"
+    fi
+  fi
+
+  sudo /sbin/setfiles -v -r "${system_mnt}" "${file_contexts}" "${system_mnt}"
 }
 
 # Snapshot file properties in a directory recursively.
