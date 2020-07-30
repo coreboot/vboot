@@ -1293,6 +1293,8 @@ enum vb2_screen {
 	VB2_SCREEN_LANGUAGE_SELECT		= 0x130,
 	/* Debug info */
 	VB2_SCREEN_DEBUG_INFO			= 0x140,
+	/* Firmware log */
+	VB2_SCREEN_FIRMWARE_LOG			= 0x150,
 	/* First recovery screen to select recovering from disk or phone */
 	VB2_SCREEN_RECOVERY_SELECT		= 0x200,
 	/* Invalid recovery media inserted */
@@ -1323,6 +1325,8 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED,
 	/* Debug info screen initialization failed */
 	VB2_UI_ERROR_DEBUG_LOG,
+	/* Firmware log screen initialization failed */
+	VB2_UI_ERROR_FIRMWARE_LOG,
 	/* Untrusted confirmation */
 	VB2_UI_ERROR_UNTRUSTED_CONFIRMATION,
 };
@@ -1410,6 +1414,18 @@ const char *vb2ex_get_debug_info(struct vb2_context *ctx);
  * @return The pointer to the vboot debug info string.  NULL on error.
  */
 char *vb2api_get_debug_info(struct vb2_context *ctx);
+
+/**
+ * Get the full firmware log string.
+ *
+ * Return a pointer to the full firmware log string which is guaranteed to be
+ * null-terminated.  The function implementation should snapshot the full
+ * firmware log when it is called the first time.  Subsequent calls should
+ * return the same pointer.
+ *
+ * @return The pointer to the full firmware log string.  NULL on error.
+ */
+const char *vb2ex_get_firmware_log(void);
 
 /**
  * Specify the string to be used for an upcoming log screen display.

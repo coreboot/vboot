@@ -515,7 +515,12 @@ void vb2_enable_developer_mode(struct vb2_context *c)
 
 const char *vb2ex_get_debug_info(struct vb2_context *c)
 {
-	return NULL;
+	return "mocked debug info";
+}
+
+const char *vb2ex_get_firmware_log(void)
+{
+	return "mocked firmware log";
 }
 
 uint32_t vb2ex_prepare_log_screen(const char *str)
@@ -1261,7 +1266,11 @@ static void developer_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
-	/* #3: Back */
+	/* #3: Firmware log */
+	add_mock_keypress(VB_KEY_ESC);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #4: Back */
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1286,11 +1295,17 @@ static void developer_screen_tests(void)
 		     MOCK_IGNORE, 2, 0x2, MOCK_IGNORE);
 	DISPLAYED_EQ("#2: debug info", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	/* #3: Back */
+	/* #3: Firmware log */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, 3, 0x2, MOCK_IGNORE);
-	DISPLAYED_EQ("#3: back", VB2_SCREEN_DEVELOPER_MODE,
+	DISPLAYED_EQ("#3: firmware log", VB2_SCREEN_FIRMWARE_LOG,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #4: Back */
+	DISPLAYED_PASS();
+	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
+		     MOCK_IGNORE, 4, 0x2, MOCK_IGNORE);
+	DISPLAYED_EQ("#4: back", VB2_SCREEN_DEVELOPER_MODE,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* End of menu */
 	DISPLAYED_EQ("end of menu", VB2_SCREEN_ADVANCED_OPTIONS,
@@ -1344,7 +1359,11 @@ static void broken_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
-	/* #3: Back */
+	/* #3: Firmware log */
+	add_mock_keypress(VB_KEY_ESC);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #4: Back */
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1367,11 +1386,17 @@ static void broken_recovery_screen_tests(void)
 		     MOCK_IGNORE, 2, 0x2, MOCK_IGNORE);
 	DISPLAYED_EQ("#2: debug info", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	/* #3: Back */
+	/* #3: Firmware log */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, 3, 0x2, MOCK_IGNORE);
-	DISPLAYED_EQ("#3: back", VB2_SCREEN_RECOVERY_BROKEN,
+	DISPLAYED_EQ("#3: firmware log", VB2_SCREEN_FIRMWARE_LOG,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #4: Back */
+	DISPLAYED_PASS();
+	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
+		     MOCK_IGNORE, 4, 0x2, MOCK_IGNORE);
+	DISPLAYED_EQ("#4: back", VB2_SCREEN_RECOVERY_BROKEN,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* End of menu */
 	DISPLAYED_EQ("end of menu", VB2_SCREEN_ADVANCED_OPTIONS,
@@ -1465,7 +1490,11 @@ static void manual_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
-	/* #3: Back */
+	/* #3: Firmware log */
+	add_mock_keypress(VB_KEY_ESC);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #4: Back */
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1498,11 +1527,17 @@ static void manual_recovery_screen_tests(void)
 		     MOCK_IGNORE, 2, 0x0, MOCK_IGNORE);
 	DISPLAYED_EQ("#2: debug info", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	/* #3: Back */
+	/* #3: Firmware log */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, 3, 0x0, MOCK_IGNORE);
-	DISPLAYED_EQ("#3: back", VB2_SCREEN_RECOVERY_SELECT,
+	DISPLAYED_EQ("#3: firmware log", VB2_SCREEN_FIRMWARE_LOG,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #4: Back */
+	DISPLAYED_PASS();
+	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
+		     MOCK_IGNORE, 4, 0x0, MOCK_IGNORE);
+	DISPLAYED_EQ("#4: back", VB2_SCREEN_RECOVERY_SELECT,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* End of menu */
 	DISPLAYED_PASS();

@@ -81,6 +81,12 @@ const char *vb2ex_get_debug_info(struct vb2_context *ctx)
 }
 
 __attribute__((weak))
+const char *vb2ex_get_firmware_log(void)
+{
+	return NULL;
+}
+
+__attribute__((weak))
 uint32_t vb2ex_prepare_log_screen(const char *str)
 {
 	return 1;

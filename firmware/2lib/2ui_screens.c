@@ -240,6 +240,10 @@ static const struct vb2_menu_item advanced_options_items[] = {
 		.text = "Debug info",
 		.target = VB2_SCREEN_DEBUG_INFO,
 	},
+	{
+		.text = "Firmware log",
+		.target = VB2_SCREEN_FIRMWARE_LOG,
+	},
 	BACK_ITEM,
 	POWER_OFF_ITEM,
 };
@@ -261,8 +265,14 @@ static const struct vb2_screen_info advanced_options_screen = {
 static vb2_error_t debug_info_init(struct vb2_ui_context *ui)
 {
 	const char *log_string = vb2ex_get_debug_info(ui->ctx);
+	if (!log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve debug info\n");
+		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
+		return vb2_ui_screen_back(ui);
+	}
 	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
 	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare debug info screen\n");
 		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
 		return vb2_ui_screen_back(ui);
 	}
@@ -276,8 +286,14 @@ static vb2_error_t debug_info_init(struct vb2_ui_context *ui)
 static vb2_error_t debug_info_reinit(struct vb2_ui_context *ui)
 {
 	const char *log_string = vb2ex_get_debug_info(ui->ctx);
+	if (!log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve debug info\n");
+		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
+		return vb2_ui_screen_back(ui);
+	}
 	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
 	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare debug info screen\n");
 		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
 		return vb2_ui_screen_back(ui);
 	}
@@ -319,6 +335,88 @@ static const struct vb2_screen_info debug_info_screen = {
 	.init = debug_info_init,
 	.reinit = debug_info_reinit,
 	.menu = MENU_ITEMS(debug_info_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_FIRMWARE_LOG */
+
+#define FIRMWARE_LOG_ITEM_PAGE_UP 1
+#define FIRMWARE_LOG_ITEM_PAGE_DOWN 2
+#define FIRMWARE_LOG_ITEM_BACK 3
+
+static vb2_error_t firmware_log_init(struct vb2_ui_context *ui)
+{
+	const char *log_string = vb2ex_get_firmware_log();
+	if (!log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve firmware log\n");
+		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare firmware log screen\n");
+		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+
+	return log_page_init(ui,
+			     FIRMWARE_LOG_ITEM_PAGE_UP,
+			     FIRMWARE_LOG_ITEM_PAGE_DOWN,
+			     FIRMWARE_LOG_ITEM_BACK);
+}
+
+static vb2_error_t firmware_log_reinit(struct vb2_ui_context *ui)
+{
+	const char *log_string = vb2ex_get_firmware_log();
+	if (!log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve firmware log\n");
+		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare firmware log screen\n");
+		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t firmware_log_page_prev_action(struct vb2_ui_context *ui)
+{
+	return log_page_prev(ui,
+			     FIRMWARE_LOG_ITEM_PAGE_UP,
+			     FIRMWARE_LOG_ITEM_PAGE_DOWN);
+}
+
+static vb2_error_t firmware_log_page_next_action(struct vb2_ui_context *ui)
+{
+	return log_page_next(ui,
+			     FIRMWARE_LOG_ITEM_PAGE_UP,
+			     FIRMWARE_LOG_ITEM_PAGE_DOWN);
+}
+
+static const struct vb2_menu_item firmware_log_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	[FIRMWARE_LOG_ITEM_PAGE_UP] = {
+		.text = "Page up",
+		.action = firmware_log_page_prev_action,
+	},
+	[FIRMWARE_LOG_ITEM_PAGE_DOWN] = {
+		.text = "Page down",
+		.action = firmware_log_page_next_action,
+	},
+	[FIRMWARE_LOG_ITEM_BACK] = BACK_ITEM,
+	POWER_OFF_ITEM,
+};
+
+static const struct vb2_screen_info firmware_log_screen = {
+	.id = VB2_SCREEN_FIRMWARE_LOG,
+	.name = "Firmware log",
+	.init = firmware_log_init,
+	.reinit = firmware_log_reinit,
+	.menu = MENU_ITEMS(firmware_log_items),
 };
 
 /******************************************************************************/
@@ -822,6 +920,7 @@ static const struct vb2_screen_info *screens[] = {
 	&recovery_broken_screen,
 	&advanced_options_screen,
 	&debug_info_screen,
+	&firmware_log_screen,
 	&recovery_select_screen,
 	&recovery_invalid_screen,
 	&recovery_to_dev_screen,
