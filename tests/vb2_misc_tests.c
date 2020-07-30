@@ -866,6 +866,24 @@ static void phone_recovery_enabled_tests(void)
 		"  ui disabled");
 }
 
+static void diagnostic_ui_enabled_tests(void)
+{
+	reset_common_data();
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	TEST_EQ(vb2api_diagnostic_ui_enabled(ctx), 1,
+		"diagnostic UI enabled");
+
+	reset_common_data();
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	vb2_secdata_kernel_set(
+		ctx, VB2_SECDATA_KERNEL_FLAGS,
+		VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED);
+	TEST_EQ(vb2api_diagnostic_ui_enabled(ctx), 0,
+		"diagnostic UI disabled");
+}
+
 static void dev_default_boot_tests(void)
 {
 	/* No default boot */
@@ -1048,6 +1066,7 @@ int main(int argc, char* argv[])
 	clear_recovery_tests();
 	get_recovery_reason_tests();
 	phone_recovery_enabled_tests();
+	diagnostic_ui_enabled_tests();
 	dev_default_boot_tests();
 	dev_boot_allowed_tests();
 	use_dev_screen_short_delay_tests();

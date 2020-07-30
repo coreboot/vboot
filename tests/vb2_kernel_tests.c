@@ -218,6 +218,9 @@ static void phase1_tests(void)
 		"  phone recovery enabled");
 	TEST_EQ(vb2api_phone_recovery_ui_enabled(ctx), 0,
 		"  phone recovery ui disabled");
+	/* Make sure diagnostic UI is disabled */
+	TEST_EQ(vb2api_diagnostic_ui_enabled(ctx), 0,
+		"  diagnostic ui disabled");
 
 	/* Bad secdata_fwmp causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
