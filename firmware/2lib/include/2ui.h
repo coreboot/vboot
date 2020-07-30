@@ -39,8 +39,17 @@ struct vb2_screen_info {
 	enum vb2_screen id;
 	/* Screen name for printing to console only */
 	const char *name;
-	/* Init function runs once when changing to the screen. */
+	/*
+	 * Init function runs once when changing to the screen which is not in
+	 * the history stack.
+	 */
 	vb2_error_t (*init)(struct vb2_ui_context *ui);
+	/*
+	 * Re-init function runs once when changing to the screen which is
+	 * already in the history stack, for example, when going back to the
+	 * screen. Exactly one of init() and reinit() will be called.
+	 */
+	vb2_error_t (*reinit)(struct vb2_ui_context *ui);
 	/* Action function runs repeatedly while on the screen. */
 	vb2_error_t (*action)(struct vb2_ui_context *ui);
 	/* Menu items. */

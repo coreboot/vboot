@@ -266,10 +266,23 @@ static vb2_error_t debug_info_init(struct vb2_ui_context *ui)
 		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
 		return vb2_ui_screen_back(ui);
 	}
+
 	return log_page_init(ui,
 			     DEBUG_INFO_ITEM_PAGE_UP,
 			     DEBUG_INFO_ITEM_PAGE_DOWN,
 			     DEBUG_INFO_ITEM_BACK);
+}
+
+static vb2_error_t debug_info_reinit(struct vb2_ui_context *ui)
+{
+	const char *log_string = vb2ex_get_debug_info(ui->ctx);
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
+		return vb2_ui_screen_back(ui);
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
 }
 
 static vb2_error_t debug_info_page_prev_action(struct vb2_ui_context *ui)
@@ -304,6 +317,7 @@ static const struct vb2_screen_info debug_info_screen = {
 	.id = VB2_SCREEN_DEBUG_INFO,
 	.name = "Debug info",
 	.init = debug_info_init,
+	.reinit = debug_info_reinit,
 	.menu = MENU_ITEMS(debug_info_items),
 };
 
