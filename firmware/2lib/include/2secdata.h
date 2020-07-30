@@ -100,6 +100,13 @@ enum vb2_secdata_kernel_flags {
 
 	/* Phone recovery instructions in recovery UI are disabled. */
 	VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED = (1 << 1),
+
+	/*
+	 * Diagnostic UI is disabled.  This includes both hiding the entry
+	 * point on the recovery UI menu ("Launch diagnostics"), and
+	 * disallowing the user from booting into the diagnostic UI.
+	 */
+	VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED = (1 << 2),
 };
 
 /**

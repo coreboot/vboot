@@ -143,10 +143,11 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		return rv;
 	}
 
-	/* Enable phone recovery while disabling the UI */
+	/* Enable phone recovery while disabling the UI; disable diagnostics. */
 	secdata_flags = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS);
 	secdata_flags &= ~VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED;
 	secdata_flags |= VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED;
+	secdata_flags |= VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
 	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, secdata_flags);
 
 	/* Read kernel version from secdata. */
