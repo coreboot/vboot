@@ -214,6 +214,8 @@ vb2_error_t vb2_ui_screen_back(struct vb2_ui_context *ui)
 		tmp = ui->state->prev;
 		free(ui->state);
 		ui->state = tmp;
+		if (ui->state->screen->reinit)
+			return ui->state->screen->reinit(ui);
 	} else {
 		VB2_DEBUG("ERROR: No previous screen; ignoring\n");
 	}
@@ -259,6 +261,8 @@ vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id)
 			ui->state = cur_state->prev;
 			free(cur_state);
 		}
+		if (ui->state->screen->reinit)
+			return ui->state->screen->reinit(ui);
 	} else {
 		/* Allocate the requested screen on top of the stack. */
 		cur_state = malloc(sizeof(*ui->state));
