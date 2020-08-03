@@ -317,7 +317,9 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		    /* We want to redraw when timer is disabled. */
 		    prev_disable_timer != ui.disable_timer ||
 		    /* We want to redraw/beep on a transition. */
-		    prev_error_code != ui.error_code) {
+		    prev_error_code != ui.error_code ||
+		    /* We want to beep. */
+		    ui.error_beep != 0) {
 
 			menu = get_menu(&ui);
 			VB2_DEBUG("<%s> menu item <%s>\n",
@@ -403,6 +405,8 @@ vb2_error_t developer_action(struct vb2_ui_context *ui)
 	if (ui->key == VB_KEY_CTRL('D') ||
 	    (DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_LONG_PRESS))
 		return vb2_ui_developer_mode_boot_internal_action(ui);
+	if (ui->key == VB_KEY_CTRL('L'))
+		return vb2_ui_developer_mode_boot_alternate_action(ui);
 	if (ui->key == '\t')
 		return vb2_ui_screen_change(ui, VB2_SCREEN_DEBUG_INFO);
 

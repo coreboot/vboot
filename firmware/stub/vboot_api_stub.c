@@ -49,9 +49,14 @@ uint32_t vb2ex_get_locale_count(void)
 	return 0;
 }
 
-vb2_error_t VbExGetAltFwIdxMask(void)
+uint32_t vb2ex_get_bootloader_count(void)
 {
-	return VB2_SUCCESS;
+	return 0;
+}
+
+uint32_t VbExGetAltFwIdxMask(void)
+{
+	return 0;
 }
 
 uint32_t VbExKeyboardRead(void)

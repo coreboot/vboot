@@ -1236,6 +1236,8 @@ enum vb2_screen {
 	VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL	= 0x320,
 	/* Invalid external disk inserted */
 	VB2_SCREEN_DEVELOPER_INVALID_DISK	= 0x330,
+	/* Select alternate bootloader ("legacy boot") */
+	VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER	= 0x340,
 };
 
 enum vb2_ui_error {
@@ -1287,6 +1289,13 @@ int vb2ex_physical_presence_pressed(void);
  * @returns Number of locales.  0 if none or on error.
  */
 uint32_t vb2ex_get_locale_count(void);
+
+/**
+ * Return how many alternate bootloaders are available.
+ *
+ * @returns Number of alternate bootloaders.  0 if none or on error.
+ */
+uint32_t vb2ex_get_bootloader_count(void);
 
 /**
  * Delay for at least the specified number of milliseconds.

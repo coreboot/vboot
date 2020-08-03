@@ -103,6 +103,9 @@ struct vb2_ui_context {
 	/* For language selection screen. */
 	struct vb2_menu language_menu;
 
+	/* For bootloader selection screen. */
+	struct vb2_menu bootloader_menu;
+
 	/* For error beep sound. */
 	int error_beep;
 
@@ -113,6 +116,8 @@ struct vb2_ui_context {
 vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 	struct vb2_ui_context *ui);
 vb2_error_t vb2_ui_developer_mode_boot_external_action(
+	struct vb2_ui_context *ui);
+vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	struct vb2_ui_context *ui);
 
 /**
