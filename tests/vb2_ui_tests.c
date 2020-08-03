@@ -77,6 +77,7 @@ static int mock_dev_boot_external_allowed;
 
 static int mock_vbexlegacy_called;
 static enum VbAltFwIndex_t mock_altfw_num_last;
+static uint32_t mock_bootloader_count;
 
 static vb2_error_t mock_vbtlk_retval[32];
 static uint32_t mock_vbtlk_expected_flag[32];
@@ -302,6 +303,7 @@ static void reset_common_data(enum reset_type t)
 	/* For VbExLegacy */
 	mock_vbexlegacy_called = 0;
 	mock_altfw_num_last = -100;
+	mock_bootloader_count = 2;
 
 	/* For VbTryLoadKernel */
 	memset(mock_vbtlk_retval, 0, sizeof(mock_vbtlk_retval));
@@ -480,6 +482,11 @@ vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
 	mock_altfw_num_last = altfw_num;
 
 	return VB2_SUCCESS;
+}
+
+uint32_t vb2ex_get_bootloader_count(void)
+{
+	return mock_bootloader_count;
 }
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
@@ -666,6 +673,25 @@ static void developer_tests(void)
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"ctrl+u = boot external");
+	TEST_TRUE(mock_get_timer_last - mock_time_start <
+		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+
+	/* Ctrl+L = boot legacy (allowed) */
+	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_legacy_allowed = 1;
+	add_mock_keypress(VB_KEY_CTRL('L'));
+	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"ctrl+l = boot legacy");
+	TEST_EQ(mock_vbexlegacy_called, 1, "  VbExLegacy called");
+	TEST_TRUE(mock_get_timer_last - mock_time_start <
+		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+
+	/* Ctrl+L = boot legacy (disallowed) */
+	reset_common_data(FOR_DEVELOPER);
+	add_mock_keypress(VB_KEY_CTRL('L'));
+	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"ctrl+l = boot legacy");
+	TEST_EQ(mock_vbexlegacy_called, 0, "  VbExLegacy not called");
 	TEST_TRUE(mock_get_timer_last - mock_time_start <
 		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
 
@@ -1164,6 +1190,7 @@ static void developer_screen_tests(void)
 
 	/* Dev mode: disabled item mask */
 	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_legacy_allowed = 1;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: no disabled item mask");
@@ -1171,6 +1198,7 @@ static void developer_screen_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE, 0x0, MOCK_IGNORE);
 
 	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_legacy_allowed = 1;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
@@ -1181,6 +1209,7 @@ static void developer_screen_tests(void)
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	mock_dev_boot_external_allowed = 0;
+	mock_dev_boot_legacy_allowed = 1;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: disable boot external");
 	DISPLAYED_EQ("dev mode screen", VB2_SCREEN_DEVELOPER_MODE,
@@ -1237,8 +1266,19 @@ static void developer_screen_tests(void)
 	DISPLAYED_NO_EXTRA();
 
 	reset_common_data(FOR_DEVELOPER);  /* Select #2 by default */
+	mock_dev_boot_legacy_allowed = 1;
+	/* #4: Alternate boot */
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"dev mode screen");
+	TEST_EQ(mock_vbexlegacy_called, 1, "  VbExLegacy called");
+
+	reset_common_data(FOR_DEVELOPER);  /* Select #2 by default */
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
-	/* #4: Advanced options */
+	/* #5: Advanced options */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1248,17 +1288,17 @@ static void developer_screen_tests(void)
 	add_mock_keypress(VB_KEY_DOWN);  /* Blocked */
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev mode screen");
-	/* #4: Advanced options */
+	/* #5: Advanced options */
 	DISPLAYED_PASS();
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("dev mode", VB2_SCREEN_DEVELOPER_MODE,
-		     MOCK_IGNORE, 4, MOCK_IGNORE, MOCK_IGNORE);
+		     MOCK_IGNORE, 5, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_EQ("#4: advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* End of menu */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("end of menu", VB2_SCREEN_DEVELOPER_MODE,
-		     MOCK_IGNORE, 5, MOCK_IGNORE, MOCK_IGNORE);
+		     MOCK_IGNORE, 6, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_NO_EXTRA();
 
 	/* Advanced options screen */
