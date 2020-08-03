@@ -642,6 +642,7 @@ static const struct vb2_screen_info recovery_disk_step3_screen = {
 #define DEVELOPER_MODE_ITEM_RETURN_TO_SECURE 1
 #define DEVELOPER_MODE_ITEM_BOOT_INTERNAL 2
 #define DEVELOPER_MODE_ITEM_BOOT_EXTERNAL 3
+#define DEVELOPER_MODE_ITEM_SELECT_BOOTLOADER 4
 
 vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 {
@@ -662,10 +663,19 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 		ui->state->disabled_item_mask |=
 			1 << DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
 
+	/* Don't show "Select alternate bootloader" button if not allowed. */
+	if (!vb2_dev_boot_legacy_allowed(ui->ctx))
+		ui->state->disabled_item_mask |=
+			1 << DEVELOPER_MODE_ITEM_SELECT_BOOTLOADER;
+
 	/* Choose the default selection. */
 	switch (default_boot) {
 	case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
 		ui->state->selected_item = DEVELOPER_MODE_ITEM_BOOT_EXTERNAL;
+		break;
+	case VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY:
+		ui->state->selected_item =
+			DEVELOPER_MODE_ITEM_SELECT_BOOTLOADER;
 		break;
 	default:
 		ui->state->selected_item = DEVELOPER_MODE_ITEM_BOOT_INTERNAL;
@@ -781,6 +791,10 @@ static const struct vb2_menu_item developer_mode_items[] = {
 		.text = "Boot from external disk",
 		.action = vb2_ui_developer_mode_boot_external_action,
 	},
+	[DEVELOPER_MODE_ITEM_SELECT_BOOTLOADER] = {
+		.text = "Select alternate bootloader",
+		.target = VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER,
+	},
 	ADVANCED_OPTIONS_ITEM,
 	POWER_OFF_ITEM,
 };
@@ -857,6 +871,108 @@ static const struct vb2_screen_info developer_invalid_disk_screen = {
 	.name = "Invalid external disk in dev mode",
 	.action = vb2_ui_developer_mode_boot_external_action,
 	.menu = MENU_ITEMS(developer_invalid_disk_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER */
+
+const struct vb2_menu_item developer_select_bootloader_items_before[] = {
+	LANGUAGE_SELECT_ITEM,
+};
+
+const struct vb2_menu_item developer_select_bootloader_items_after[] = {
+	BACK_ITEM,
+	POWER_OFF_ITEM,
+};
+
+vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
+	struct vb2_ui_context *ui)
+{
+	uint32_t altfw_num;
+	const size_t menu_before_len =
+		ARRAY_SIZE(developer_select_bootloader_items_before);
+
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
+	    !vb2_dev_boot_allowed(ui->ctx) ||
+	    !vb2_dev_boot_legacy_allowed(ui->ctx)) {
+		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
+		ui->error_beep = 1;
+		return VB2_REQUEST_UI_CONTINUE;
+	}
+
+	if (vb2ex_get_bootloader_count() == 0) {
+		VB2_DEBUG("ERROR: No bootloader was found\n");
+		ui->error_beep = 1;
+		return VB2_REQUEST_UI_CONTINUE;
+	}
+
+	if (ui->key == VB_KEY_CTRL('L')) {
+		altfw_num = 0;
+		VB2_DEBUG("Try booting from default bootloader\n");
+	} else {
+		altfw_num = ui->state->selected_item - menu_before_len + 1;
+		VB2_DEBUG("Try booting from bootloader #%u\n", altfw_num);
+	}
+
+	/* VbExLegacy will not return if successful */
+	VbExLegacy(altfw_num);
+
+	VB2_DEBUG("ERROR: Alternate bootloader failed\n");
+	/* TODO(b/161092974): Leverage the error dialog on error. */
+	ui->error_beep = 1;
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static const struct vb2_menu *get_bootloader_menu(struct vb2_ui_context *ui)
+{
+	int i;
+	uint32_t num_bootloaders, num_items;
+	struct vb2_menu_item *items;
+	const size_t menu_before_len =
+		ARRAY_SIZE(developer_select_bootloader_items_before);
+	const size_t menu_after_len =
+		ARRAY_SIZE(developer_select_bootloader_items_after);
+
+	if (ui->bootloader_menu.num_items > 0)
+		return &ui->bootloader_menu;
+
+	/* TODO(b/161092974): Show error dialog if no bootloader. */
+	num_bootloaders = vb2ex_get_bootloader_count();
+	VB2_DEBUG("num_bootloaders: %u\n", num_bootloaders);
+	num_items = num_bootloaders + menu_before_len + menu_after_len;
+	items = malloc(num_items * sizeof(struct vb2_menu_item));
+	if (!items) {
+		VB2_DEBUG("ERROR: malloc failed for bootloader items\n");
+		return NULL;
+	}
+
+	/* Copy prefix items to the begin. */
+	memcpy(&items[0],
+	       developer_select_bootloader_items_before,
+	       menu_before_len * sizeof(struct vb2_menu_item));
+
+	/* Copy bootloaders. */
+	for (i = 0; i < num_bootloaders; i++) {
+		items[i + menu_before_len].text = "Some bootloader";
+		items[i + menu_before_len].action =
+			vb2_ui_developer_mode_boot_alternate_action;
+	}
+
+	/* Copy postfix items to the end. */
+	memcpy(&items[num_items - menu_after_len],
+	       developer_select_bootloader_items_after,
+	       menu_after_len * sizeof(struct vb2_menu_item));
+
+	ui->bootloader_menu.num_items = num_items;
+	ui->bootloader_menu.items = items;
+
+	return &ui->bootloader_menu;
+}
+
+static const struct vb2_screen_info developer_select_bootloader_screen = {
+	.id = VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER,
+	.name = "Select alternate bootloader",
+	.get_menu = get_bootloader_menu,
 };
 
 /******************************************************************************/
@@ -1071,6 +1187,7 @@ static const struct vb2_screen_info *screens[] = {
 	&developer_to_norm_screen,
 	&developer_boot_external_screen,
 	&developer_invalid_disk_screen,
+	&developer_select_bootloader_screen,
 	&diagnostics_screen,
 	&diagnostics_storage_screen,
 	&diagnostics_memory_quick_screen,
