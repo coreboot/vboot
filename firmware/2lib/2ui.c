@@ -314,12 +314,14 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	while (1) {
 		/* Draw if there are state changes. */
 		if (memcmp(&prev_state, ui.state, sizeof(*ui.state)) ||
-		    /* We want to redraw when timer is disabled. */
+		    /* Redraw when timer is disabled. */
 		    prev_disable_timer != ui.disable_timer ||
-		    /* We want to redraw/beep on a transition. */
+		    /* Redraw/beep on a transition. */
 		    prev_error_code != ui.error_code ||
-		    /* We want to beep. */
-		    ui.error_beep != 0) {
+		    /* Beep. */
+		    ui.error_beep != 0 ||
+		    /* Redraw on a screen request to refresh. */
+		    ui.force_display) {
 
 			menu = get_menu(&ui);
 			VB2_DEBUG("<%s> menu item <%s>\n",
@@ -337,6 +339,9 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 				vb2ex_beep(250, 400);
 				ui.error_beep = 0;
 			}
+
+			/* Reset refresh flag. */
+			ui.force_display = 0;
 
 			/* Update prev variables. */
 			memcpy(&prev_state, ui.state, sizeof(*ui.state));
