@@ -11,6 +11,7 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
+#include "2ui.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "test_common.h"
@@ -138,6 +139,11 @@ static vb2_error_t boot_dev(struct vb2_context *c)
 	return vbboot_retval;
 }
 
+vb2_error_t vb2_developer_menu(struct vb2_context *c)
+{
+	return boot_dev(c);
+}
+
 vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
 {
 	return boot_dev(c);
@@ -148,31 +154,50 @@ vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *c)
 	return boot_dev(c);
 }
 
-static vb2_error_t boot_legacy(struct vb2_context *c)
+static void rec_check(struct vb2_context *c)
 {
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
 		"  recovery reason");
 	TEST_TRUE(commit_data_called, "  commit data");
+}
 
+vb2_error_t vb2_manual_recovery_menu(struct vb2_context *c)
+{
+	rec_check(c);
 	if (vbboot_retval == -3)
 		return VB2_ERROR_MOCK;
+	return vbboot_retval;
+}
 
+vb2_error_t vb2_broken_recovery_menu(struct vb2_context *c)
+{
+	rec_check(c);
+	if (vbboot_retval == -4)
+		return VB2_ERROR_MOCK;
 	return vbboot_retval;
 }
 
 vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
 {
-	return boot_legacy(c);
+	rec_check(c);
+	/* Don't care if it's manual recovery or not */
+	if (vbboot_retval == -3 || vbboot_retval == -4)
+		return VB2_ERROR_MOCK;
+	return vbboot_retval;
 }
 
 vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *c)
 {
-	return boot_legacy(c);
+	rec_check(c);
+	/* Don't care if it's manual recovery or not */
+	if (vbboot_retval == -3 || vbboot_retval == -4)
+		return VB2_ERROR_MOCK;
+	return vbboot_retval;
 }
 
 vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *c)
 {
-	if (vbboot_retval == -4)
+	if (vbboot_retval == -5)
 		return VB2_ERROR_MOCK;
 
 	return vbboot_retval;
@@ -243,11 +268,11 @@ static void select_and_load_kernel_tests(void)
 	test_slk(VB2_ERROR_MOCK, 0, "Normal boot bad");
 
 	/* Check that NV_DIAG_REQUEST triggers diagnostic UI */
-	if (DIAGNOSTIC_UI) {
+	if (DIAGNOSTIC_UI && !MENU_UI) {
 		reset_common_data();
 		mock_diagnostic_ui_enabled = 1;
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-		vbboot_retval = -4;
+		vbboot_retval = -5;
 		test_slk(VB2_ERROR_MOCK, 0,
 			 "Normal boot with diag enabled");
 		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST),
@@ -298,7 +323,7 @@ static void select_and_load_kernel_tests(void)
 	/* Boot recovery */
 	reset_common_data();
 	sd->recovery_reason = 123;
-	vbboot_retval = -3;
+	vbboot_retval = -4;
 	test_slk(VB2_ERROR_MOCK, 0, "Recovery boot bad");
 	TEST_TRUE(commit_data_called, "  commit data");
 
