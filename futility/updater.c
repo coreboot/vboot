@@ -270,7 +270,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
  * Returns 0 if success, non-zero if error.
  */
 static int set_try_cookies(struct updater_config *cfg, const char *target,
-			   int is_vboot2)
+			   int has_update, int is_vboot2)
 {
 	int tries = 6;
 	const char *slot;
@@ -278,6 +278,9 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	/* EC Software Sync needs few more reboots. */
 	if (cfg->ec_image.data)
 		tries += 2;
+
+	if (!has_update)
+		tries = 0;
 
 	/* Find new slot according to target (section) name. */
 	if (strcmp(target, FMAP_RW_SECTION_A) == 0)
@@ -290,19 +293,29 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	}
 
 	if (cfg->emulation) {
-		INFO("(emulation) Setting try_next to %s, try_count to %d.\n",
-		     slot, tries);
+		INFO("(emulation) %s slot %s on next boot, try_count=%d.\n",
+		     has_update ? "Try" : "Keep", slot, tries);
 		return 0;
 	}
 
-	if (is_vboot2 && VbSetSystemPropertyString("fw_try_next", slot)) {
-		ERROR("Failed to set fw_try_next to %s.\n", slot);
-		return -1;
+	if (is_vboot2) {
+		if (VbSetSystemPropertyString("fw_try_next", slot)) {
+			ERROR("Failed to set fw_try_next to %s.\n", slot);
+			return -1;
+		}
+		if (!has_update &&
+		    VbSetSystemPropertyString("fw_result", "success")) {
+			ERROR("Failed to set fw_result to success.\n");
+			return -1;
+		}
 	}
+
+	/* fw_try_count is identical to fwb_tries in vboot1. */
 	if (VbSetSystemPropertyInt("fw_try_count", tries)) {
 		ERROR("Failed to set fw_try_count to %d.\n", tries);
 		return -1;
 	}
+
 	return 0;
 }
 
@@ -1019,13 +1032,11 @@ static enum updater_error_codes update_try_rw_firmware(
 
 		if (write_firmware(cfg, image_to, target))
 			return UPDATE_ERR_WRITE_FIRMWARE;
-		if (set_try_cookies(cfg, target, is_vboot2))
-			return UPDATE_ERR_SET_COOKIES;
-	} else {
-		/* Clear trial cookies for vboot1. */
-		if (!is_vboot2 && !cfg->emulation)
-			VbSetSystemPropertyInt("fwb_tries", 0);
 	}
+
+	/* Always set right cookies for next boot. */
+	if (set_try_cookies(cfg, target, has_update, is_vboot2))
+		return UPDATE_ERR_SET_COOKIES;
 
 	/* Do not fail on updating legacy. */
 	if (legacy_needs_update(cfg)) {
