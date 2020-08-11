@@ -433,6 +433,13 @@ vb2_error_t recovery_to_dev_confirm_action(struct vb2_ui_context *ui)
 	if (!ui->key_trusted) {
 		VB2_DEBUG("Reject untrusted %s confirmation\n",
 			  ui->key == VB_KEY_ENTER ? "ENTER" : "POWER");
+		/*
+		 * If physical presence is confirmed using the keyboard,
+		 * beep and notify the user when the ENTER key comes
+		 * from an untrusted keyboard.
+		 */
+		if (PHYSICAL_PRESENCE_KEYBOARD && ui->key == VB_KEY_ENTER)
+			ui->error_code = VB2_UI_ERROR_UNTRUSTED_CONFIRMATION;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 	return recovery_to_dev_finalize(ui);
