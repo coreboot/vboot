@@ -1257,6 +1257,8 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_DEBUG_LOG,
 	/* Firmware log screen initialization failed */
 	VB2_UI_ERROR_FIRMWARE_LOG,
+	/* Untrusted confirmation */
+	VB2_UI_ERROR_UNTRUSTED_CONFIRMATION,
 };
 
 /**
