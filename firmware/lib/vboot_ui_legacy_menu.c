@@ -389,7 +389,7 @@ static vb2_error_t altfw_action(struct vb2_context *ctx)
 /* Action that enables developer mode and reboots. */
 static vb2_error_t to_dev_action(struct vb2_context *ctx)
 {
-	/* Sanity check, should never happen. */
+	/* Validity check, should never happen. */
 	if ((vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ctx))
 		return VB2_REQUEST_UI_CONTINUE;

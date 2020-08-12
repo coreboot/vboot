@@ -21,7 +21,7 @@ extern "C" {
  * Return the description of an object starting with a vb21_struct_common
  * header.
  *
- * Does not sanity-check the buffer; merely returns the pointer.
+ * Does not validity-check the buffer; merely returns the pointer.
  *
  * @param buf		Pointer to common object
  * @return A pointer to description or an empty string if none.

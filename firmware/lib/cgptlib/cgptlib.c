@@ -19,9 +19,9 @@ int GptInit(GptData *gpt)
 	gpt->current_kernel = CGPT_KERNEL_ENTRY_NOT_FOUND;
 	gpt->current_priority = 999;
 
-	retval = GptSanityCheck(gpt);
+	retval = GptValidityCheck(gpt);
 	if (GPT_SUCCESS != retval) {
-		VB2_DEBUG("GptInit() failed sanity check\n");
+		VB2_DEBUG("GptInit() failed validity check\n");
 		return retval;
 	}
 

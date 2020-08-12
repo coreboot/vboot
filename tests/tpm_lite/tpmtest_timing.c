@@ -3,7 +3,7 @@
  * found in the LICENSE file.
  */
 
-/* Timing test for various TPM operations.  This is mostly a sanity check to
+/* Timing test for various TPM operations.  This is mostly a validity check to
  * make sure the part doesn't have ridicolously bad timing on simple
  * operations.
  */

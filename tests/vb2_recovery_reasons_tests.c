@@ -17,10 +17,10 @@ static void get_recovery_reason_string_tests(void)
 		TEST_PTR_NEQ(vb2_get_recovery_reason_string(i), NULL,
 			     "Non-null reason");
 
-	/* Sanity check on one of the strings */
+	/* Validity check on one of the strings */
 	TEST_EQ(strcmp(vb2_get_recovery_reason_string(VB2_RECOVERY_GBB_HEADER),
 		       "Error parsing GBB header"), 0,
-		"Recovery reason sanity check");
+		"Recovery reason validity check");
 }
 
 int main(void)

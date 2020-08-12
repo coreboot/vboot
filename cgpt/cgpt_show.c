@@ -180,8 +180,8 @@ static void EntriesDetails(struct drive *drive, const int secondary, int raw) {
 
 static int GptShow(struct drive *drive, CgptShowParams *params) {
   int gpt_retval;
-  if (GPT_SUCCESS != (gpt_retval = GptSanityCheck(&drive->gpt))) {
-    Error("GptSanityCheck() returned %d: %s\n",
+  if (GPT_SUCCESS != (gpt_retval = GptValidityCheck(&drive->gpt))) {
+    Error("GptValidityCheck() returned %d: %s\n",
           gpt_retval, GptError(gpt_retval));
     return CGPT_FAILED;
   }

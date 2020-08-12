@@ -39,9 +39,9 @@ use_v0_secdata_kernel() {
     return 0
   fi
 
-  # First some sanity checks: X -eq X checks that X is a number. cut may return
-  # the whole string if no delimiter found, so major != minor checks that the
-  # version was at least somewhat correctly formatted.
+  # First some validity checks: X -eq X checks that X is a number. cut may
+  # return the whole string if no delimiter found, so major != minor checks that
+  # the version was at least somewhat correctly formatted.
   if [ $major -eq $major ] && [ $minor -eq $minor ] && [ $major -ne $minor ]; then
     # Now what we really care about: is this firmware older than CL:2041695?
     if [ $major -lt 12953 ]; then
@@ -147,7 +147,7 @@ restart_daemon_if_needed() {
 # MAIN PROGRAM
 # ------------
 
-# Sanity check: are we executing in a recovery image?
+# validity check: are we executing in a recovery image?
 
 if [ -e $dot_recovery ]; then
   quit "This is a developer utility, it should never run on a (production) recovery image"

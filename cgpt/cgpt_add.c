@@ -113,8 +113,8 @@ static int SetEntryAttributes(struct drive *drive,
 
 static int CgptCheckAddValidity(struct drive *drive) {
   int gpt_retval;
-  if (GPT_SUCCESS != (gpt_retval = GptSanityCheck(&drive->gpt))) {
-    Error("GptSanityCheck() returned %d: %s\n",
+  if (GPT_SUCCESS != (gpt_retval = GptValidityCheck(&drive->gpt))) {
+    Error("GptValidityCheck() returned %d: %s\n",
           gpt_retval, GptError(gpt_retval));
     return -1;
   }

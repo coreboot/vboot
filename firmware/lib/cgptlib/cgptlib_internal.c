@@ -237,7 +237,7 @@ int HeaderFieldsSame(GptHeader *h1, GptHeader *h2)
 	return 0;
 }
 
-int GptSanityCheck(GptData *gpt)
+int GptValidityCheck(GptData *gpt)
 {
 	int retval;
 	GptHeader *header1 = (GptHeader *)(gpt->primary_header);

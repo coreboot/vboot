@@ -63,7 +63,7 @@ static int parse_size_opts(uint32_t len,
 	VB2_DEBUG("rw_size     0x%08x\n", rw_size);
 	VB2_DEBUG("rw_offset   0x%08x\n", rw_offset);
 
-	/* Now let's do some sanity checks. */
+	/* Now let's do some validity checks. */
 	if (ro_size > len || ro_offset > len - ro_size ||
 	    rw_size > len || rw_offset > len - rw_size) {
 		printf("size/offset values are bogus\n");

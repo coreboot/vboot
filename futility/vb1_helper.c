@@ -322,7 +322,7 @@ uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 	uint64_t vmlinuz_header_address = 0;
 	uint32_t now = 0;
 
-	/* Sanity-check the keyblock */
+	/* Validity-check the keyblock */
 	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)kpart_data;
 	VB2_DEBUG("Keyblock is %#x bytes\n", keyblock->keyblock_size);
 	now += keyblock->keyblock_size;
@@ -383,7 +383,7 @@ uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 	g_kernel_blob_data = kpart_data + now;
 	g_kernel_blob_size = preamble->body_signature.data_size;
 
-	/* Sanity check */
+	/* Validity check */
 	if (kpart_size < now + g_kernel_blob_size) {
 		fprintf(stderr,
 			"kernel body size %u exceeds partition end\n",

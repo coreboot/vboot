@@ -53,7 +53,7 @@ sign_framework_apks() {
 
   info "Start signing framework apks"
 
-  # Counters for sanity check.
+  # Counters for validity check.
   local counter_platform=0
   local counter_media=0
   local counter_shared=0
@@ -133,7 +133,7 @@ build flavor '${flavor_prop}'."
   info "Found ${counter_shared} shared APKs."
   info "Found ${counter_releasekey} release APKs."
   info "Found ${counter_total} total APKs."
-  # Sanity check.
+  # Validity check.
   if [[ ${counter_platform} -lt 2 || ${counter_media} -lt 2 ||
         ${counter_shared} -lt 2 || ${counter_releasekey} -lt 2 ||
         ${counter_total} -lt 25 ]]; then
@@ -174,7 +174,7 @@ update_sepolicy() {
   cp "${xml}" "${orig}"
   sudo sed -i -E "s/${pattern}/\1${new_cert}"'\2/g' "${xml}"
 
-  # Sanity check.
+  # Validity check.
   if cmp "${xml}" "${orig}"; then
     die "Failed to replace SELinux policy cert"
   fi
@@ -267,7 +267,7 @@ main() {
   replace_ota_cert "${system_mnt}" "${key_dir}/releasekey.x509.pem"
   reapply_file_security_context "${system_mnt}" "${root_fs_dir}"
 
-  # Sanity check.
+  # Validity check.
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.new"
   local d
   if ! d=$(diff "${working_dir}"/properties.{orig,new}); then
@@ -281,7 +281,7 @@ main() {
   if [[ -f "${packages_cache}" ]]; then
     if type -P aapt &>/dev/null; then
       info "Regenerating packages cache ${packages_cache}"
-      # For the sanity check.
+      # For the validity check.
       local packages_before=$(grep "<package " "${packages_cache}" | wc -l)
       local vendor_mnt=$(make_temp_dir)
       local vendor_img="${android_dir}/vendor.raw.img"

@@ -48,7 +48,7 @@ vb2_error_t vb2_unpack_key(struct vb2_public_key *key,
 /**
  * Verify a keyblock using its hash.
  *
- * Header fields are also checked for sanity.  Does not verify key index or key
+ * Header fields are also checked for validity. Does not verify key index or key
  * block flags.  Use this for self-signed keyblocks in developer mode.
  *
  * @param block		Keyblock to verify
@@ -62,7 +62,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 				     const struct vb2_workbuf *wb);
 
 /**
- * Check the sanity of a kernel preamble using a public key.
+ * Check the validity of a kernel preamble using a public key.
  *
  * The signature in the preamble is destroyed during the check.
  *

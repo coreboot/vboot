@@ -46,7 +46,7 @@ vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 	if (!vb2_aligned(buf32, sizeof(uint32_t)))
 		return VB2_ERROR_UNPACK_KEY_ALIGN;
 
-	/* Sanity check key array size */
+	/* Validity check key array size */
 	key->arrsize = buf32[0];
 	if (key->arrsize * sizeof(uint32_t) != vb2_rsa_sig_size(key->sig_alg))
 		return VB2_ERROR_UNPACK_KEY_ARRAY_SIZE;

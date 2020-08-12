@@ -196,15 +196,15 @@ static void verify_keyblock_hash_tests(void)
 	TEST_SUCC(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
 		  "Keyblock hash good");
 
-	/* Sanity check keyblock */
+	/* Validity check keyblock */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->magic[0] ^= 0xd0;
 	TEST_EQ(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
-		VB2_ERROR_KEYBLOCK_MAGIC, "Keyblock sanity check");
+		VB2_ERROR_KEYBLOCK_MAGIC, "Keyblock validity check");
 
 	/*
-	 * Sanity check should be looking at the keyblock hash struct, not the
-	 * keyblock signature struct.
+	 * Validity check should be looking at the keyblock hash struct, not
+	 * the keyblock signature struct.
 	 */
 	reset_common_data(FOR_KEYBLOCK);
 	kb->keyblock_hash.data_size = sizeof(*kb) - 1;

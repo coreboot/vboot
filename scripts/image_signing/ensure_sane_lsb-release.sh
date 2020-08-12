@@ -59,7 +59,7 @@ check_keyval_in_list() {
 }
 
 # Usage: lsb_syntaxcheck path-to-lsb-file
-# Enforces a number of basic sanity checks on the overall format and contents
+# Enforces a number of basic validity checks on the overall format and contents
 # of the lsb-release file:
 # - Every line is "key=value".
 # - No space after key, no space before value.

@@ -19,9 +19,9 @@ int CgptRepair(CgptRepairParams *params) {
                            params->drive_size))
     return CGPT_FAILED;
 
-  int gpt_retval = GptSanityCheck(&drive.gpt);
+  int gpt_retval = GptValidityCheck(&drive.gpt);
   if (params->verbose)
-    printf("GptSanityCheck() returned %d: %s\n",
+    printf("GptValidityCheck() returned %d: %s\n",
            gpt_retval, GptError(gpt_retval));
 
   GptRepair(&drive.gpt);

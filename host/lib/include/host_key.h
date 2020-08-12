@@ -113,7 +113,7 @@ vb2_error_t vb2_copy_packed_key(struct vb2_packed_key *dest,
 struct vb2_packed_key *vb2_read_packed_key(const char *filename);
 
 /**
- * Sanity-check a packed key structure.
+ * Validity-check a packed key structure.
  *
  * @param key	     	Key to check
  * @param size		Size of key buffer in bytes

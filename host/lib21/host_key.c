@@ -399,7 +399,7 @@ vb2_error_t vb21_packed_key_read(struct vb21_packed_key **key_ptr,
 	if (vb2_read_file(filename, &buf, &size))
 		return VB2_ERROR_READ_PACKED_KEY_DATA;
 
-	/* Sanity check: make sure key unpacks properly */
+	/* Validity check: make sure key unpacks properly */
 	if (vb21_unpack_key(&key, buf, size))
 		return VB2_ERROR_READ_PACKED_KEY;
 

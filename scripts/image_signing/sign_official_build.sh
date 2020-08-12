@@ -321,7 +321,7 @@ update_stateful_partition_vblock() {
   sudo umount "${stateful_dir}"
 }
 
-# Do a sanity check on the image's rootfs
+# Do a validity check on the image's rootfs
 # ARGS: Image
 verify_image_rootfs() {
   local rootfs=$1

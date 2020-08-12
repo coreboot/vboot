@@ -626,10 +626,10 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		VB2_DEBUG("Good partition %d\n", params->partition_number);
 		shcall.check_result = VBSD_LKC_CHECK_GOOD_PARTITION;
 		/*
-		 * Sanity check - only store a new TPM version if we found one.
-		 * If lowest_version is still at its initial value, we didn't
-		 * find one; for example, we're in developer mode and just
-		 * didn't look.
+		 * Validity check - only store a new TPM version if we found
+		 * one. If lowest_version is still at its initial value, we
+		 * didn't find one; for example, we're in developer mode and
+		 * just didn't look.
 		 */
 		if (lowest_version != LOWEST_TPM_VERSION &&
 		    lowest_version > sd->kernel_version)

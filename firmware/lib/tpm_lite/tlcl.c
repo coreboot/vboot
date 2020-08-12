@@ -257,8 +257,8 @@ static uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
 		return TPM_E_AUTHFAIL;
 	}
 
-	/* Sanity check to make sure the command buffer has sufficient space to
-	 * add the auth block at the end of the command. */
+	/* Validity check to make sure the command buffer has sufficient space
+	 * to add the auth block at the end of the command. */
 	if (command_buffer_size < kTpmRequestHeaderLength) {
 		return TPM_E_BUFFER_SIZE;
 	}

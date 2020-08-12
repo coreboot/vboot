@@ -3,7 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Script that sanity checks a keyset to ensure actual key versions
+# Script that validity checks a keyset to ensure actual key versions
 # match those set in key.versions.
 
 # Load common constants and variables.
@@ -16,7 +16,7 @@ if [ $# -ne 1 ]; then
   cat <<EOF
 Usage: $0 <keyset directory>
 
-Sanity check a keyset directory for key versions.
+Validity check a keyset directory for key versions.
 EOF
   exit 1
 fi

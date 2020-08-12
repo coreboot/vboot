@@ -315,7 +315,7 @@ vb2_error_t vb2_unpack_key_data(struct vb2_public_key *key,
 
 	key->arrsize = buf32[0];
 
-	/* Sanity check key array size */
+	/* Validity check key array size */
 	if (key->arrsize * sizeof(uint32_t) != vb2_rsa_sig_size(key->sig_alg))
 		return VB2_ERROR_UNPACK_KEY_ARRAY_SIZE;
 

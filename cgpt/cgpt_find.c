@@ -120,7 +120,7 @@ static int gpt_search(CgptFindParams *params, struct drive *drive,
   int retval = 0;
   char partlabel[GPT_PARTNAME_LEN];
 
-  if (GPT_SUCCESS != GptSanityCheck(&drive->gpt)) {
+  if (GPT_SUCCESS != GptValidityCheck(&drive->gpt)) {
     return 0;
   }
 

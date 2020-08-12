@@ -46,7 +46,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	uint8_t *digest;
 	uint32_t digest_size;
 
-	/* Sanity check keyblock before attempting hash check of data */
+	/* Validity check keyblock before attempting hash check of data */
 	VB2_TRY(vb2_check_keyblock(block, size, sig));
 
 	VB2_DEBUG("Checking keyblock hash...\n");

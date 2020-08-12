@@ -48,7 +48,8 @@ DEFINE_string partitions "" \
   "List of partitions to examine (default: $DEFAULT_PARTITIONS)" ""
 DEFINE_boolean recovery_key "$FLAGS_FALSE" \
   "Use recovery key to sign image (to boot from USB)" ""
-DEFINE_boolean force "$FLAGS_FALSE" "Skip sanity checks and make the change" "f"
+DEFINE_boolean force "$FLAGS_FALSE" \
+  "Skip validity checks and make the change" "f"
 DEFINE_boolean default_rw_root "${FLAGS_TRUE}" \
   "When --remove_rootfs_verification is set, change root mount option to RW." ""
 
@@ -334,8 +335,8 @@ resign_ssd_kernel() {
   return $resigned_kernels
 }
 
-sanity_check_crossystem_flags() {
-  debug_msg "crossystem sanity check"
+validity_check_crossystem_flags() {
+  debug_msg "crossystem validity check"
   if [ -n "${FLAGS_save_config}" ]; then
     debug_msg "not resigning kernel."
     return
@@ -360,8 +361,8 @@ sanity_check_crossystem_flags() {
   return $FLAGS_FALSE
 }
 
-sanity_check_live_partitions() {
-  debug_msg "Partition sanity check"
+validity_check_live_partitions() {
+  debug_msg "Partition validity check"
   if [ "$FLAGS_partitions" = "$ROOTDEV_KERNEL" ]; then
     debug_msg "only for current active partition - safe."
     return
@@ -387,8 +388,8 @@ sanity_check_live_partitions() {
   return $FLAGS_FALSE
 }
 
-sanity_check_live_firmware() {
-  debug_msg "Firmware compatibility sanity check"
+validity_check_live_firmware() {
+  debug_msg "Firmware compatibility validity check"
   if [ "$(crossystem mainfw_type)" = "developer" ]; then
     debug_msg "developer type firmware in active."
     return
@@ -471,12 +472,12 @@ main() {
       die "No valid kernel partitions on ${FLAGS_image} (${FLAGS_partitions})."
     FLAGS_partitions="$valid_partitions"
 
-    # Sanity checks
+    # Validity checks
     if [ "$FLAGS_force" = "$FLAGS_TRUE" ]; then
       echo "
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      ! INFO: ALL SANITY CHECKS WERE BYPASSED. YOU ARE ON YOUR OWN. !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! INFO: ALL VALIDITY CHECKS WERE BYPASSED. YOU ARE ON YOUR OWN. !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       " >&2
       local i
       for i in $(seq 5 -1 1); do
@@ -484,9 +485,9 @@ main() {
         sleep 1
       done
       echo ""
-    elif ! sanity_check_live_firmware ||
-         ! sanity_check_live_partitions ||
-         ! sanity_check_crossystem_flags; then
+    elif ! validity_check_live_firmware ||
+         ! validity_check_live_partitions ||
+         ! validity_check_crossystem_flags; then
       die "IMAGE ${FLAGS_image} IS NOT MODIFIED."
     fi
   fi

@@ -267,7 +267,7 @@ vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 	struct vb2_signature *sig = &block->keyblock_signature;
 	vb2_error_t rv;
 
-	/* Sanity check keyblock before attempting signature check of data */
+	/* Validity check keyblock before attempting signature check of data */
 	VB2_TRY(vb2_check_keyblock(block, size, sig));
 
 	VB2_DEBUG("Checking keyblock signature...\n");
@@ -290,7 +290,7 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 
 	VB2_DEBUG("Verifying preamble.\n");
 
-	/* Sanity checks before attempting signature of data */
+	/* Validity checks before attempting signature of data */
 	if(size < sizeof(*preamble)) {
 		VB2_DEBUG("Not enough data for preamble header\n");
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;

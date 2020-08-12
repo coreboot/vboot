@@ -73,7 +73,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	for (i = 0; i < disk_count; i++) {
 		VB2_DEBUG("trying disk %d\n", (int)i);
 		/*
-		 * Sanity-check what we can. FWIW, VbTryLoadKernel() is always
+		 * Validity-check what we can. FWIW, VbTryLoadKernel() is always
 		 * called with only a single bit set in get_info_flags.
 		 *
 		 * Ensure that we got a partition with only the flags we asked

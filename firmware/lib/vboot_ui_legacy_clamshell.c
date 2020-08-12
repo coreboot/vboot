@@ -300,7 +300,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("sd->flags=%#x\n", sd->flags);
 
-			/* Sanity check, should never fail. */
+			/* Validity check, should never fail. */
 			VB2_ASSERT(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED);
 
 			/* Stop the countdown while we go ask... */

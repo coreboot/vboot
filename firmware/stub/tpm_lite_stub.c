@@ -273,7 +273,7 @@ uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
 #endif
 
 #ifndef NDEBUG
-	/* sanity checks */
+	/* validity checks */
 	tag = TpmTag(request);
 	response_tag = TpmTag(response);
 	assert(

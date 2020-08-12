@@ -415,11 +415,11 @@ static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 {
 	VB2_DEBUG("Physical presence confirmed!\n");
 
-	/* Sanity check, should never happen. */
+	/* Validity check, should never happen. */
 	if (ui->state->screen->id != VB2_SCREEN_RECOVERY_TO_DEV ||
 	    (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ui->ctx)) {
-		VB2_DEBUG("ERROR: Dev transition sanity check failed\n");
+		VB2_DEBUG("ERROR: Dev transition validity check failed\n");
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
@@ -630,7 +630,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 {
 	vb2_error_t rv;
 
-	/* Sanity check, should never happen. */
+	/* Validity check, should never happen. */
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
 	    !vb2_dev_boot_allowed(ui->ctx) ||
 	    !vb2_dev_boot_external_allowed(ui->ctx)) {
