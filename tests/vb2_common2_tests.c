@@ -20,6 +20,26 @@
 static const uint8_t test_data[] = "This is some test data to sign.";
 static const uint32_t test_size = sizeof(test_data);
 
+static enum {
+	HWCRYPTO_OK,
+	HWCRYPTO_NOTSUPPORTED,
+	HWCRYPTO_ERROR,
+} hwcrypto_state;
+
+vb2_error_t vb2ex_hwcrypto_rsa_verify_digest(const struct vb2_public_key *key,
+					     const uint8_t *sig, const uint8_t *digest)
+{
+	switch (hwcrypto_state) {
+		case HWCRYPTO_OK:
+			return VB2_SUCCESS;
+		case HWCRYPTO_NOTSUPPORTED:
+			return VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
+		case HWCRYPTO_ERROR:
+			return VB2_ERROR_RSA_VERIFY_DIGEST;
+	}
+}
+
+
 static void test_unpack_key(const struct vb2_packed_key *key1)
 {
 	struct vb2_public_key pubk;
@@ -132,6 +152,32 @@ static void test_verify_data(const struct vb2_packed_key *key1,
 	vb2_signature_data_mutable(sig2)[0] ^= 0x5A;
 	TEST_NEQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
 		 0, "vb2_verify_data() wrong sig");
+
+	pubk.allow_hwcrypto = 1;
+
+	hwcrypto_state = HWCRYPTO_OK;
+	memcpy(sig2, sig, sig_total_size);
+	vb2_signature_data_mutable(sig2)[0] ^= 0x5A;
+	TEST_EQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
+		0, "vb2_verify_data() hwcrypto ok");
+
+	hwcrypto_state = HWCRYPTO_ERROR;
+	memcpy(sig2, sig, sig_total_size);
+	TEST_NEQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
+		0, "vb2_verify_data() hwcrypto error");
+
+	hwcrypto_state = HWCRYPTO_NOTSUPPORTED;
+	memcpy(sig2, sig, sig_total_size);
+	TEST_EQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
+		0, "vb2_verify_data() hwcrypto fallback ok");
+
+	memcpy(sig2, sig, sig_total_size);
+	sig2->sig_size -= 16;
+	TEST_NEQ(vb2_verify_data(test_data, test_size, sig2, &pubk, &wb),
+		0, "vb2_verify_data() hwcrypto fallback error");
+
+	pubk.allow_hwcrypto = 0;
+
 
 	free(sig2);
 }

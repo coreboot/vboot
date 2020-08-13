@@ -149,6 +149,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		flags &= ~VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
+		flags |= VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED;
 		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, flags);
 	}
 

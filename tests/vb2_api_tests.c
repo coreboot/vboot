@@ -81,6 +81,7 @@ static void reset_common_data(enum reset_type t)
 	vb2api_secdata_firmware_create(ctx);
 
 	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_init_gbb = VB2_SUCCESS;
@@ -260,10 +261,13 @@ uint32_t vb2_rsa_sig_size(enum vb2_signature_algorithm sig_alg)
 	return mock_sig_size;
 }
 
+static struct vb2_public_key last_used_key;
+
 vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 				  uint8_t *sig, const uint8_t *digest,
 				  const struct vb2_workbuf *wb)
 {
+	memcpy(&last_used_key, key, sizeof(struct vb2_public_key));
 	return retval_vb2_verify_digest;
 }
 
@@ -735,6 +739,28 @@ static void check_hash_tests(void)
 	/* Check the first 4 bytes to ensure it was copied over. */
 	TEST_SUCC(memcmp(digest_result, &digest_value, sizeof(digest_value)),
 		"check digest value");
+
+	/* Test hwcrypto conditions */
+	reset_common_data(FOR_CHECK_HASH);
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag");
+
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag on recovery mode");
+
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
+
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden on recovery mode");
+
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
 
 	reset_common_data(FOR_CHECK_HASH);
 	TEST_EQ(vb2api_check_hash_get_digest(ctx, digest_result,

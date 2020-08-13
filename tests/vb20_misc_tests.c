@@ -76,6 +76,9 @@ static void reset_common_data(enum reset_type t)
 	vb2api_secdata_firmware_create(ctx);
 	vb2_secdata_firmware_init(ctx);
 
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+
 	mock_read_res_fail_on_call = 0;
 	mock_unpack_key_retval = VB2_SUCCESS;
 	mock_verify_keyblock_retval = VB2_SUCCESS;
@@ -156,10 +159,13 @@ vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return mock_unpack_key_retval;
 }
 
+static struct vb2_public_key last_used_key;
+
 vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 				const struct vb2_public_key *key,
 				const struct vb2_workbuf *wb)
 {
+	memcpy(&last_used_key, key, sizeof(struct vb2_public_key));
 	return mock_verify_keyblock_retval;
 }
 
@@ -168,6 +174,7 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 				   const struct vb2_public_key *key,
 				   const struct vb2_workbuf *wb)
 {
+	memcpy(&last_used_key, key, sizeof(struct vb2_public_key));
 	return mock_verify_preamble_retval;
 }
 
@@ -207,6 +214,29 @@ static void verify_keyblock_tests(void)
 		vb2_wb_round_up(sd->data_key_offset +
 				sd->data_key_size),
 		"workbuf used after");
+
+	/* Test hwcrypto conditions */
+	reset_common_data(FOR_KEYBLOCK);
+
+	TEST_SUCC(vb2_load_fw_keyblock(ctx), "keyblock verify");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag");
+
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_fw_keyblock(ctx), "keyblock verify");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag on recovery mode");
+
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
+
+	TEST_SUCC(vb2_load_fw_keyblock(ctx), "keyblock verify");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden on recovery mode");
+
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_fw_keyblock(ctx), "keyblock verify");
+	TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
 
 	/* Test failures */
 	reset_common_data(FOR_KEYBLOCK);
@@ -297,6 +327,31 @@ static void verify_preamble_tests(void)
 		vb2_wb_round_up(sd->preamble_offset +
 				sd->preamble_size),
 		"workbuf used");
+
+	/* Test hwcrypto conditions */
+	reset_common_data(FOR_PREAMBLE);
+
+	TEST_SUCC(vb2_load_fw_preamble(ctx), "preamble good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag");
+
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_fw_preamble(ctx), "preamble good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag on recovery mode");
+
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
+
+	TEST_SUCC(vb2_load_fw_preamble(ctx), "preamble good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden on recovery mode");
+
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2_load_fw_preamble(ctx), "preamble good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 1,
+		"hwcrypto is allowed");
+
 
 	/* Expected failures */
 	reset_common_data(FOR_PREAMBLE);
