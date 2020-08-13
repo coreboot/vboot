@@ -164,6 +164,23 @@ vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 		return VB2_ERROR_VDATA_SIG_SIZE;
 	}
 
+	if (key->allow_hwcrypto) {
+		vb2_error_t rv =
+			vb2ex_hwcrypto_rsa_verify_digest(key, sig_data, digest);
+
+		if (rv != VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED) {
+			VB2_DEBUG("Using HW RSA engine for sig_alg %d %s\n",
+					key->sig_alg,
+					rv ? "failed" : "succeeded");
+			return rv;
+		}
+
+		VB2_DEBUG("HW RSA for sig_alg %d not supported, using SW\n",
+			  key->sig_alg);
+	} else {
+		VB2_DEBUG("HW RSA forbidden, using SW\n");
+	}
+
 	return vb2_rsa_verify_digest(key, sig_data, digest, wb);
 }
 

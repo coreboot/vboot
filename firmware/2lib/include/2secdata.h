@@ -107,6 +107,18 @@ enum vb2_secdata_kernel_flags {
 	 * disallowing the user from booting into the diagnostic UI.
 	 */
 	VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED = (1 << 2),
+
+	/*
+	 * Allow HW acceleration for RSA.
+	 *
+	 * RW firmware currently set this flag to enable RSA acceleration.
+	 * Verstage will use HW implementation for RSA only when
+	 * this flag is set.
+	 *
+	 * Note: this will only allow/disallow HWCRYPTO for RSA.
+	 * Using HW for hash digest is controlled by flag in the FW preamble.
+	 */
+	VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED = (1 << 3),
 };
 
 /**
@@ -203,5 +215,24 @@ int vb2_secdata_fwmp_get_flag(struct vb2_context *ctx,
  * @return uint8_t pointer to dev_key_hash field
  */
 uint8_t *vb2_secdata_fwmp_get_dev_key_hash(struct vb2_context *ctx);
+
+/*
+ * Helper function to check if hwcrypto for RSA is allowed
+ */
+static inline int vb2_hwcrypto_rsa_allowed(struct vb2_context *ctx) {
+
+	/* disable hwcrypto in recovery mode */
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
+		return 0;
+
+	/* enable hwcrypto only if RW firmware set the flag */
+	if (vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS)
+				& VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED)
+		return 1;
+
+	return 0;
+
+}
+
 
 #endif  /* VBOOT_REFERENCE_2SECDATA_H_ */
