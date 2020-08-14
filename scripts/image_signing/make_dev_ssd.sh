@@ -27,7 +27,7 @@ DEFAULT_BACKUP_FOLDER="${DEFAULT_BACKUP_FOLDER}/cros_sign_backups"
 # TODO(hungte) The default image selection is no longer a SSD, so the script
 # works more like "make_dev_image".  We may change the file name in future.
 ROOTDEV="$(rootdev -s 2>/dev/null)"
-ROOTDEV_PARTITION="$(echo $ROOTDEV | sed -n 's/.*\([0-9][0-9]*\)$/\1/p')"
+ROOTDEV_PARTITION="$(echo $ROOTDEV | sed -n 's/.*[^0-9]\([0-9][0-9]*\)$/\1/p')"
 ROOTDEV_DISK="$(rootdev -s -d 2>/dev/null)"
 ROOTDEV_KERNEL="$((ROOTDEV_PARTITION - 1))"
 
