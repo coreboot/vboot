@@ -711,6 +711,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	    !vb2_dev_boot_external_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
 		ui->error_beep = 1;
+		ui->error_code = VB2_UI_ERROR_EXTERNAL_BOOT_NOT_ENABLED;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
