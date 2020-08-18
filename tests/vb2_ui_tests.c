@@ -1095,7 +1095,7 @@ static void debug_info_tests(void)
 		"get a one-page debug info");
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("debug info", VB2_SCREEN_DEBUG_INFO,
-		     MOCK_IGNORE, 3, 0x6, 0);
+		     MOCK_IGNORE, 3, 0x0, 0);
 	DISPLAYED_EQ("back to root screen", VB2_SCREEN_RECOVERY_SELECT,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_NO_EXTRA();
@@ -1106,24 +1106,31 @@ static void debug_info_tests(void)
 	add_mock_keypress('\t');
 	add_mock_keypress(VB_KEY_ENTER);  /* page 0, select on page down */
 	add_mock_keypress(VB_KEY_ENTER);  /* page 1, select on page down */
+	add_mock_keypress(VB_KEY_UP);	  /* page 2, select on page down */
 	add_mock_keypress(VB_KEY_ENTER);  /* page 2, select on page up */
 	add_mock_keypress(VB_KEY_ENTER);  /* page 1, select on page up */
+	add_mock_keypress(VB_KEY_DOWN);	  /* page 0, select on page up */
 	add_mock_keypress(VB_KEY_ENTER);  /* page 0, select on page down */
-	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);	  /* page 1, select on page down */
 	add_mock_keypress(VB_KEY_ENTER);  /* page 1, select on back */
+	extend_calls_until_shutdown();
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"get a three-page debug info and navigate");
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("debug info page #0", VB2_SCREEN_DEBUG_INFO,
-		     MOCK_IGNORE, 2, 0x2, 0);
+		     MOCK_IGNORE, 2, 0x0, 0);
 	DISPLAYED_EQ("debug info page #1", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, 2, 0x0, 1);
 	DISPLAYED_EQ("debug info page #2", VB2_SCREEN_DEBUG_INFO,
-		     MOCK_IGNORE, 1, 0x4, 2);
+		     MOCK_IGNORE, 2, 0x0, 2);
+	DISPLAYED_EQ("debug info page #2", VB2_SCREEN_DEBUG_INFO,
+		     MOCK_IGNORE, 1, 0x0, 2);
 	DISPLAYED_EQ("debug info page #1", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, 1, 0x0, 1);
 	DISPLAYED_EQ("debug info page #0", VB2_SCREEN_DEBUG_INFO,
-		     MOCK_IGNORE, 2, 0x2, 0);
+		     MOCK_IGNORE, 1, 0x0, 0);
+	DISPLAYED_EQ("debug info page #0", VB2_SCREEN_DEBUG_INFO,
+		     MOCK_IGNORE, 2, 0x0, 0);
 	DISPLAYED_EQ("debug info page #1", VB2_SCREEN_DEBUG_INFO,
 		     MOCK_IGNORE, 2, 0x0, 1);
 	DISPLAYED_EQ("debug info page #1", VB2_SCREEN_DEBUG_INFO,
