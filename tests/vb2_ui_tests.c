@@ -236,6 +236,7 @@ enum reset_type {
 	FOR_DEVELOPER,
 	FOR_BROKEN_RECOVERY,
 	FOR_MANUAL_RECOVERY,
+	FOR_DIAGNOSTICS,
 };
 
 /* Reset mock data (for use before each test) */
@@ -1548,6 +1549,55 @@ static void manual_recovery_screen_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static void diagnostics_screen_tests(void)
+{
+	VB2_DEBUG("Testing diagnostic screens...\n");
+
+	/* Diagnostics screen */
+	reset_common_data(FOR_DIAGNOSTICS);
+
+	/* #0: Language menu */
+	add_mock_keypress(VB_KEY_UP);
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #1: Storage (no-op) */
+	add_mock_keypress(VB_KEY_ESC);
+	add_mock_keypress(VB_KEY_DOWN);
+	/* #2: Quick memory test (no-op) */
+	add_mock_keypress(VB_KEY_DOWN);
+	/* #3: Full memory test (no-op) */
+	add_mock_keypress(VB_KEY_DOWN);
+	/* #4: Power off (End of menu) */
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	mock_calls_until_shutdown = -1;
+	TEST_EQ(vb2_diagnostic_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"diagnostic screen");
+
+	DISPLAYED_EQ("default on first button of menu",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 1, 0x0, MOCK_IGNORE);
+	/* #0: Language menu */
+	DISPLAYED_EQ("language selection",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 0, 0x0, MOCK_IGNORE);
+	DISPLAYED_EQ("#0: language menu", VB2_SCREEN_LANGUAGE_SELECT,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #1: Storage (no-op) */
+	DISPLAYED_PASS();
+	DISPLAYED_EQ("storage button",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 1, 0x0, MOCK_IGNORE);
+	/* #2: Quick memory test (no-op) */
+	DISPLAYED_EQ("quick memory test button",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 2, 0x0, MOCK_IGNORE);
+	/* #3: Full memory test (no-op) */
+	DISPLAYED_EQ("full memory test button",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 3, 0x0, MOCK_IGNORE);
+	/* #4: Power of (End of menu) */
+	DISPLAYED_EQ("power off",
+		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 4, 0x0, MOCK_IGNORE);
+	DISPLAYED_NO_EXTRA();
+
+	VB2_DEBUG("...done.\n");
+}
+
 int main(void)
 {
 	developer_tests();
@@ -1560,6 +1610,7 @@ int main(void)
 	developer_screen_tests();
 	broken_recovery_screen_tests();
 	manual_recovery_screen_tests();
+	diagnostics_screen_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
