@@ -177,6 +177,15 @@ vb2_error_t vb2_broken_recovery_menu(struct vb2_context *c)
 	return vbboot_retval;
 }
 
+vb2_error_t vb2_diagnostic_menu(struct vb2_context *c)
+{
+	TEST_TRUE(MENU_UI, "Using menu_ui");
+	if (vbboot_retval == -5)
+		return VB2_ERROR_MOCK;
+
+	return vbboot_retval;
+}
+
 vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
 {
 	rec_check(c);
@@ -197,6 +206,7 @@ vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *c)
 
 vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *c)
 {
+	TEST_TRUE(!MENU_UI, "Not using menu_ui");
 	if (vbboot_retval == -5)
 		return VB2_ERROR_MOCK;
 
@@ -268,20 +278,21 @@ static void select_and_load_kernel_tests(void)
 	test_slk(VB2_ERROR_MOCK, 0, "Normal boot bad");
 
 	/* Check that NV_DIAG_REQUEST triggers diagnostic UI */
-	if (DIAGNOSTIC_UI && !MENU_UI) {
+	if (DIAGNOSTIC_UI) {
 		reset_common_data();
 		mock_diagnostic_ui_enabled = 1;
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 		vbboot_retval = -5;
 		test_slk(VB2_ERROR_MOCK, 0,
 			 "Normal boot with diag enabled");
-		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST),
-			0, "  diag not requested");
+		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
+			"  diag not requested");
 
 		reset_common_data();
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 		test_slk(VB2_REQUEST_REBOOT, 0,
-			 "Normal boot with diag disabled (reboot to unset)");
+			 "Normal boot with diag disabled (reboot to "
+			 "unset)");
 	}
 
 	/* Boot normal - phase1 failure */

@@ -907,6 +907,29 @@ static const struct vb2_screen_info developer_invalid_disk_screen = {
 };
 
 /******************************************************************************/
+/* VB2_SCREEN_DIAGNOSTICS */
+
+static const struct vb2_menu_item diagnostics_items[] = {
+	LANGUAGE_SELECT_ITEM,
+	{
+		.text = "Storage",
+	},
+	{
+		.text = "Quick memory check",
+	},
+	{
+		.text = "Full memory check",
+	},
+	POWER_OFF_ITEM,
+};
+
+static const struct vb2_screen_info diagnostics_screen = {
+	.id = VB2_SCREEN_DIAGNOSTICS,
+	.name = "Diagnostic tools",
+	.menu = MENU_ITEMS(diagnostics_items),
+};
+
+/******************************************************************************/
 /*
  * TODO(chromium:1035800): Refactor UI code across vboot and depthcharge.
  * Currently vboot and depthcharge maintain their own copies of menus/screens.
@@ -933,6 +956,7 @@ static const struct vb2_screen_info *screens[] = {
 	&developer_to_norm_screen,
 	&developer_boot_external_screen,
 	&developer_invalid_disk_screen,
+	&diagnostics_screen,
 };
 
 const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id)
