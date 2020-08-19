@@ -61,6 +61,13 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 }
 
 __attribute__((weak))
+vb2_error_t vb2ex_hwcrypto_rsa_verify_digest(const struct vb2_public_key *key,
+					     const uint8_t *sig, const uint8_t *digest)
+{
+	return VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
+}
+
+__attribute__((weak))
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
 	fprintf(stderr, "%s: function not implemented\n", __func__);

@@ -8,7 +8,6 @@
 
 #include "2crypto.h"
 #include "2return_codes.h"
-#include "2struct.h"
 
 struct vb2_workbuf;
 
