@@ -17,6 +17,13 @@
 #include <unistd.h>
 
 #ifdef HAVE_LIBZIP
+#ifndef __clang__
+/* If libzip headers were built for Clang but later get included with GCC you
+   need this. This check should really be in libzip but apparently they think
+   it's fine to ship compiler-specific system headers or something... */
+#define _Nullable
+#define _Nonnull
+#endif
 #include <zip.h>
 #endif
 
