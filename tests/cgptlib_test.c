@@ -859,7 +859,7 @@ static int ValidityCheckTest(void)
 	GptEntry *e1 = (GptEntry *)gpt->primary_entries;
 	uint8_t *tempptr;
 
-	/* Unmodified test data is completely sane */
+	/* Unmodified test data is completely valid. */
 	BuildTestGptData(gpt);
 	EXPECT(GPT_SUCCESS == GptValidityCheck(gpt));
 	EXPECT(MASK_BOTH == gpt->valid_headers);

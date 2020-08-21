@@ -49,7 +49,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	}
 	memcpy(&params, data, sizeof(params));
 
-	// Enforce a sane sector size. The sector size must accommodate the GPT
+	// Enforce a valid sector size. The sector size must accommodate the GPT
 	// header (the code assumes this) and large values don't make sense
 	// either (both in terms of actual hardware parameters and ability for
 	// the fuzzer to deal with effectively).
