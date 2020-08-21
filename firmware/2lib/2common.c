@@ -250,7 +250,7 @@ vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 		return VB2_ERROR_KEYBLOCK_SIG_OUTSIDE;
 	}
 
-	/* Make sure advertised signature data sizes are sane. */
+	/* Make sure advertised signature data sizes are valid. */
 	if (block->keyblock_size < sig->data_size) {
 		VB2_DEBUG("Signature calculated past end of block\n");
 		return VB2_ERROR_KEYBLOCK_SIGNED_TOO_MUCH;
@@ -335,7 +335,7 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 		return VB2_ERROR_PREAMBLE_SIG_OUTSIDE;
 	}
 
-	/* Make sure advertised signature data sizes are sane. */
+	/* Make sure advertised signature data sizes are valid. */
 	if (preamble->preamble_size < sig->data_size) {
 		VB2_DEBUG("Signature calculated past end of the block\n");
 		return VB2_ERROR_PREAMBLE_SIGNED_TOO_MUCH;

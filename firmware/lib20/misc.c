@@ -99,7 +99,7 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	VB2_TRY(vb2_verify_packed_key_inside(kb, block_size, &kb->data_key));
 
 	/* Save the future offset and size while kb->data_key is still valid.
-	   The check above made sure that key_offset and key_size are sane. */
+	   The check above made sure that key_offset and key_size are valid. */
 	sd->data_key_offset = vb2_offset_of(sd, key_data);
 	sd->data_key_size = kb->data_key.key_offset + kb->data_key.key_size;
 

@@ -87,7 +87,7 @@ _machname := $(shell uname -m)
 HOST_ARCH ?= ${_machname}
 
 # ARCH and/or FIRMWARE_ARCH are defined by the Chromium OS ebuild.
-# Pick a sane target architecture if none is defined.
+# Pick a valid target architecture if none is defined.
 ifeq (${ARCH},)
   ARCH := ${HOST_ARCH}
 endif

@@ -265,7 +265,7 @@ vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 		return VB2_ERROR_PREAMBLE_SIG_OUTSIDE;
 	}
 
-	/* Make sure advertised signature data sizes are sane. */
+	/* Make sure advertised signature data sizes are valid. */
 	if (preamble->preamble_size < sig->data_size) {
 		VB2_DEBUG("Signature calculated past end of the block\n");
 		return VB2_ERROR_PREAMBLE_SIGNED_TOO_MUCH;

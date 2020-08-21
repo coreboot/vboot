@@ -85,7 +85,7 @@ enum {
 };
 
 /**
- * Verify GptData parameters are sane.
+ * Verify GptData parameters are valid.
  */
 int CheckParameters(GptData* gpt);
 
