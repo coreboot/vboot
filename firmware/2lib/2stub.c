@@ -91,3 +91,23 @@ uint32_t vb2ex_prepare_log_screen(const char *str)
 {
 	return 1;
 }
+
+__attribute__((weak))
+const char *vb2ex_get_diagnostic_storage(void)
+{
+	return "mock";
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out)
+{
+	*out = "mock";
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out)
+{
+	*out = "mock";
+	return VB2_SUCCESS;
+}

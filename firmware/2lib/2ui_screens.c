@@ -998,12 +998,15 @@ static const struct vb2_menu_item diagnostics_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	{
 		.text = "Storage",
+		.target = VB2_SCREEN_DIAGNOSTICS_STORAGE,
 	},
 	{
 		.text = "Quick memory check",
+		.target = VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK,
 	},
 	{
 		.text = "Full memory check",
+		.target = VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL,
 	},
 	POWER_OFF_ITEM,
 };
@@ -1012,6 +1015,165 @@ static const struct vb2_screen_info diagnostics_screen = {
 	.id = VB2_SCREEN_DIAGNOSTICS,
 	.name = "Diagnostic tools",
 	.menu = MENU_ITEMS(diagnostics_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_DIAGNOSTICS_STORAGE */
+
+#define DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN 1
+#define DIAGNOSTICS_STORAGE_ITEM_BACK 2
+
+static vb2_error_t diagnostics_storage_init(struct vb2_ui_context *ui)
+{
+	const char *log_string = vb2ex_get_diagnostic_storage();
+	if (!log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve storage log message\n");
+		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
+		ui->error_beep = 1;
+		return vb2_ui_screen_back(ui);
+	}
+
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare storage log screen\n");
+		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
+		ui->error_beep = 1;
+		return vb2_ui_screen_back(ui);
+	}
+	return log_page_init(ui, DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN,
+			     DIAGNOSTICS_STORAGE_ITEM_BACK);
+}
+
+static const struct vb2_menu_item diagnostics_storage_items[] = {
+	{
+		.text = "Page up",
+		.action = log_page_prev_action,
+	},
+	[DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN] = {
+		.text = "Page down",
+		.action = log_page_next_action,
+	},
+	[DIAGNOSTICS_STORAGE_ITEM_BACK] = BACK_ITEM,
+	POWER_OFF_ITEM,
+};
+
+static const struct vb2_screen_info diagnostics_storage_screen = {
+	.id = VB2_SCREEN_DIAGNOSTICS_STORAGE,
+	.name = "Storage",
+	.init = diagnostics_storage_init,
+	.menu = MENU_ITEMS(diagnostics_storage_items),
+};
+
+/******************************************************************************/
+/* VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK
+   VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL */
+
+#define DIAGNOSTICS_MEMORY_ITEM_PAGE_DOWN 1
+#define DIAGNOSTICS_MEMORY_ITEM_CANCEL 2
+#define DIAGNOSTICS_MEMORY_ITEM_BACK 3
+
+typedef vb2_error_t (*memory_test_op_t)(int reset, const char **out);
+static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
+						    memory_test_op_t op,
+						    int reset)
+{
+	const char *log_string = NULL;
+	vb2_error_t rv = op(reset, &log_string);
+	if ((rv && rv != VB2_ERROR_EX_DIAG_TEST_RUNNING) || !log_string) {
+		VB2_DEBUG("ERROR: Failed to retrieve memory test status\n");
+		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
+		ui->error_beep = 1;
+		return vb2_ui_screen_back(ui);
+	}
+
+	ui->state->page_count = vb2ex_prepare_log_screen(log_string);
+	if (ui->state->page_count == 0) {
+		VB2_DEBUG("ERROR: Failed to prepare memory log screen, error: "
+			  "%#x\n", rv);
+		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
+		ui->error_beep = 1;
+		return vb2_ui_screen_back(ui);
+	}
+	if (ui->state->current_page >= ui->state->page_count)
+		ui->state->current_page = ui->state->page_count - 1;
+
+	ui->force_display = 1;
+
+	/* Show cancel button when the test is running, otherwise show the back
+	 * button. VB2_SUCCESS indicates the test is finished. */
+	ui->state->disabled_item_mask &= ~(1 << DIAGNOSTICS_MEMORY_ITEM_CANCEL);
+	ui->state->disabled_item_mask &= ~(1 << DIAGNOSTICS_MEMORY_ITEM_BACK);
+	if (rv == VB2_ERROR_EX_DIAG_TEST_RUNNING) {
+		ui->state->disabled_item_mask |=
+			1 << DIAGNOSTICS_MEMORY_ITEM_BACK;
+		if (ui->state->selected_item == DIAGNOSTICS_MEMORY_ITEM_BACK)
+			ui->state->selected_item =
+				DIAGNOSTICS_MEMORY_ITEM_CANCEL;
+	} else {
+		ui->state->disabled_item_mask |=
+			1 << DIAGNOSTICS_MEMORY_ITEM_CANCEL;
+		if (ui->state->selected_item == DIAGNOSTICS_MEMORY_ITEM_CANCEL)
+			ui->state->selected_item = DIAGNOSTICS_MEMORY_ITEM_BACK;
+	}
+
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t diagnostics_memory_init_quick(struct vb2_ui_context *ui)
+{
+	return diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_quick_test, 1);
+}
+
+static vb2_error_t diagnostics_memory_init_full(struct vb2_ui_context *ui)
+{
+	return diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_full_test, 1);
+}
+
+static vb2_error_t diagnostics_memory_update_quick(struct vb2_ui_context *ui)
+{
+	return diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_quick_test, 0);
+}
+
+static vb2_error_t diagnostics_memory_update_full(struct vb2_ui_context *ui)
+{
+	return diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_full_test, 0);
+}
+
+static const struct vb2_menu_item diagnostics_memory_items[] = {
+	{
+		.text = "Page up",
+		.action = log_page_prev_action,
+	},
+	[DIAGNOSTICS_MEMORY_ITEM_PAGE_DOWN] = {
+		.text = "Page down",
+		.action = log_page_next_action,
+	},
+	[DIAGNOSTICS_MEMORY_ITEM_CANCEL] = {
+		.text = "Cancel and go back",
+		.action = vb2_ui_screen_back,
+	},
+	[DIAGNOSTICS_MEMORY_ITEM_BACK] = BACK_ITEM,
+	POWER_OFF_ITEM,
+};
+
+static const struct vb2_screen_info diagnostics_memory_quick_screen = {
+	.id = VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK,
+	.name = "Quick memory check",
+	.init = diagnostics_memory_init_quick,
+	.action = diagnostics_memory_update_quick,
+	.menu = MENU_ITEMS(diagnostics_memory_items),
+};
+
+static const struct vb2_screen_info diagnostics_memory_full_screen = {
+	.id = VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL,
+	.name = "Full memory check",
+	.init = diagnostics_memory_init_full,
+	.action = diagnostics_memory_update_full,
+	.menu = MENU_ITEMS(diagnostics_memory_items),
 };
 
 /******************************************************************************/
@@ -1043,6 +1205,9 @@ static const struct vb2_screen_info *screens[] = {
 	&developer_invalid_disk_screen,
 	&developer_select_bootloader_screen,
 	&diagnostics_screen,
+	&diagnostics_storage_screen,
+	&diagnostics_memory_quick_screen,
+	&diagnostics_memory_full_screen,
 };
 
 const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id)
