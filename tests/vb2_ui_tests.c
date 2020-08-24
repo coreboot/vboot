@@ -1566,14 +1566,20 @@ static void diagnostics_screen_tests(void)
 	/* #0: Language menu */
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
-	/* #1: Storage (no-op) */
+	/* #1: Storage screen */
 	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
-	/* #2: Quick memory test (no-op) */
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #2: Quick memory test screen */
+	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
-	/* #3: Full memory test (no-op) */
+	add_mock_keypress(VB_KEY_ENTER);
+	/* #3: Full memory test screen */
+	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
 	/* #4: Power off (End of menu) */
+	add_mock_keypress(VB_KEY_ESC);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	mock_calls_until_shutdown = -1;
@@ -1587,17 +1593,28 @@ static void diagnostics_screen_tests(void)
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 0, 0x0, MOCK_IGNORE);
 	DISPLAYED_EQ("#0: language menu", VB2_SCREEN_LANGUAGE_SELECT,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	/* #1: Storage (no-op) */
+	/* #1: Storage screen */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("storage button",
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 1, 0x0, MOCK_IGNORE);
-	/* #2: Quick memory test (no-op) */
+	DISPLAYED_EQ("#1: storage screen", VB2_SCREEN_DIAGNOSTICS_STORAGE,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #2: Quick memory test screen */
+	DISPLAYED_PASS();
 	DISPLAYED_EQ("quick memory test button",
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 2, 0x0, MOCK_IGNORE);
-	/* #3: Full memory test (no-op) */
+	DISPLAYED_EQ("#1: quick memory test screen",
+		     VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	/* #3: Full memory test screen */
+	DISPLAYED_PASS();
 	DISPLAYED_EQ("full memory test button",
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 3, 0x0, MOCK_IGNORE);
+	DISPLAYED_EQ("#3: full memory test screen",
+		     VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #4: Power of (End of menu) */
+	DISPLAYED_PASS();
 	DISPLAYED_EQ("power off",
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 4, 0x0, MOCK_IGNORE);
 	DISPLAYED_NO_EXTRA();

@@ -731,6 +731,12 @@ enum vb2_return_code {
 	/* Error setting vendor data (see: VbExSetVendorData). */
 	VB2_ERROR_EX_SET_VENDOR_DATA,
 
+	/* The memory test is running. */
+	VB2_ERROR_EX_DIAG_TEST_RUNNING,
+
+	/* The memory test initialization failed. */
+	VB2_ERROR_EX_DIAG_TEST_INIT_FAILED,
+
 	/**********************************************************************
 	 * LoadKernel errors
 	 *

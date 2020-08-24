@@ -1318,6 +1318,11 @@ enum vb2_screen {
 	VB2_SCREEN_DEVELOPER_INVALID_DISK	= 0x330,
 	/* Diagnostic tools */
 	VB2_SCREEN_DIAGNOSTICS			= 0x400,
+	/* Storage diagnostic screen */
+	VB2_SCREEN_DIAGNOSTICS_STORAGE	      	= 0x410,
+	/* Memory diagnostic screens */
+	VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK    	= 0x420,
+	VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL     	= 0x421,
 };
 
 enum vb2_ui_error {
@@ -1331,6 +1336,8 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_FIRMWARE_LOG,
 	/* Untrusted confirmation */
 	VB2_UI_ERROR_UNTRUSTED_CONFIRMATION,
+	/* Diagnostics internal failure */
+	VB2_UI_ERROR_DIAGNOSTICS,
 };
 
 /**
@@ -1441,6 +1448,37 @@ const char *vb2ex_get_firmware_log(void);
  * @return The number of pages after pagination.  0 if none or error.
  */
 uint32_t vb2ex_prepare_log_screen(const char *str);
+
+/**
+ * Get the full storage diagnostic log.
+ *
+ * Return a pointer of full log string which is guaranteed to be
+ * null-terminated.  The function implementation should manage string memory
+ * internally.  Subsequent calls may update the string and/or may return a new
+ * pointer.
+ *
+ * @return The pointer to the full debug info string.  NULL on error.
+ */
+const char *vb2ex_get_diagnostic_storage(void);
+
+/**
+ * Get the memory diagnostic status. When it is called, it will take over the
+ * control for a short period of time running memory test, and then return the
+ * result of current status. If `reset` is not zero, it will reset the memory
+ * test state.
+ * *
+ * @param reset	Discard the current memory test result and re-initialize
+ *		a new test.
+ * @param out	For returning a read-only pointer of full log string which is
+ *		guaranteed to be null-terminated. The function will manage
+ *		memory internally, so the returned pointer will only be valid
+ *		until next call.
+ * @return The status of memory test. VB2_SUCCESS means the test is finished,
+ * regardless of passing or failing. VB2_ERROR_EX_DIAG_TEST_RUNNING means
+ * the test is still running. Other non-zero codes for internal errors.
+ */
+vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out);
+vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
 
 /*****************************************************************************/
 /* Timer. */
