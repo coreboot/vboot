@@ -472,7 +472,8 @@ static int write_optional_firmware(struct updater_config *cfg,
  */
 static int preserve_gbb(const struct firmware_image *image_from,
 			struct firmware_image *image_to,
-			int preserve_flags)
+			int preserve_flags, int override_flags,
+			uint64_t override_value)
 {
 	const struct vb2_gbb_header *gbb_from;
 	struct vb2_gbb_header *gbb_to;
@@ -484,8 +485,10 @@ static int preserve_gbb(const struct firmware_image *image_from,
 	if (!gbb_from || !gbb_to)
 		return -1;
 
-	/* Preserve flags (for non-factory mode). */
-	if (preserve_flags)
+	/* Preserve (for non-factory mode) or override flags. */
+	if (override_flags)
+		gbb_to->flags = override_value;
+	else if (preserve_flags)
 		gbb_to->flags = gbb_from->flags;
 
 	/* Preserve HWID. */
@@ -583,7 +586,8 @@ static int preserve_images(struct updater_config *cfg)
 	int errcnt = 0, found;
 	struct firmware_image *from = &cfg->image_current, *to = &cfg->image;
 
-	errcnt += preserve_gbb(from, to, !cfg->factory_update);
+	errcnt += preserve_gbb(from, to, !cfg->factory_update,
+			       cfg->override_gbb_flags, cfg->gbb_flags);
 	errcnt += preserve_management_engine(cfg, from, to);
 	errcnt += preserve_fmap_sections(from, to, &found);
 
@@ -998,7 +1002,7 @@ static enum updater_error_codes update_try_rw_firmware(
 	int has_update = 1;
 	int is_vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
 
-	preserve_gbb(image_from, image_to, 1);
+	preserve_gbb(image_from, image_to, 1, 0, 0);
 	if (!wp_enabled && section_needs_update(
 			image_from, image_to, FMAP_RO_SECTION))
 		return UPDATE_ERR_NEED_RO_UPDATE;
@@ -1502,6 +1506,8 @@ int updater_setup_config(struct updater_config *cfg,
 		check_wp_disabled = 1;
 		cfg->try_update = 0;
 	}
+	cfg->gbb_flags = arg->gbb_flags;
+	cfg->override_gbb_flags = arg->override_gbb_flags;
 
 	/* Setup properties and fields that do not have external dependency. */
 	if (arg->programmer) {
