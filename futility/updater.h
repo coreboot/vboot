@@ -69,6 +69,8 @@ struct updater_config {
 	int fast_update;
 	int verbosity;
 	const char *emulation;
+	int override_gbb_flags;
+	uint32_t gbb_flags;
 };
 
 struct updater_config_arguments {
@@ -82,6 +84,8 @@ struct updater_config_arguments {
 	int is_factory, try_update, force_update, do_manifest, host_only;
 	int fast_update;
 	int verbosity;
+	int override_gbb_flags;
+	uint32_t gbb_flags;
 };
 
 struct patch_config {

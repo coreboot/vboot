@@ -133,6 +133,8 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0"
 "${FUTILITY}" gbb -s --flags=0 "${TMP}.expected.full.gbb0"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
 "${FUTILITY}" gbb -s --flags=0 "${FROM_IMAGE}.gbb0"
+cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0x27"
+"${FUTILITY}" gbb -s --flags=0x27 "${TMP}.expected.full.gbb0x27"
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
@@ -208,6 +210,10 @@ test_update "Full update (from stdin)" \
 test_update "Full update (GBB=0 -> 0)" \
 	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full.gbb0" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (GBB flags -> 0x27)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full.gbb0x27" \
+	-i "${TO_IMAGE}" --gbb_flags=0x27 --wp=0 --sys_props 0,0x10001,1
 
 test_update "Full update (--host_only)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
@@ -302,7 +308,7 @@ test_update "Factory mode update (WP=1)" \
 	"${FROM_IMAGE}" "!remove write protection for factory mode" \
 	--factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001,1
 
-test_update "Factory mode update (GBB=0 -> 39)" \
+test_update "Factory mode update (GBB=0 -> 0x39)" \
 	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full" \
 	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
