@@ -325,7 +325,7 @@ export BUILD_RUN
 .PHONY: all
 all: fwlib futil utillib hostlib cgpt tlcl \
 	$(if ${SDK_BUILD},utils_sdk,utils_board) \
-	$(if $(filter x86_64,${ARCH}),fuzzers) \
+	$(if $(filter x86_64,${ARCH}),$(if $(filter clang,${CC}),fuzzers)) \
 	$(if ${COV},coverage)
 
 ##############################################################################
@@ -944,6 +944,8 @@ ${CGPT_WRAPPER}: ${CGPT_WRAPPER_OBJS} ${UTILLIB}
 .PHONY: cgpt
 cgpt: ${CGPT} ${CGPT_WRAPPER}
 
+# on FreeBSD: install misc/e2fsprogs-libuuid from ports,
+# or e2fsprogs-libuuid from its binary package system.
 ${CGPT}: LDLIBS += -luuid
 
 ${CGPT}: ${CGPT_OBJS} ${UTILLIB}
@@ -1116,6 +1118,9 @@ ${UTIL_DEFAULTS}:
 
 # Some utilities need external crypto functions
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
+ifeq ($(shell uname -s), FreeBSD)
+CRYPTO_LIBS += -lcrypto
+endif
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/utility/pad_digest_utility: LDLIBS += ${CRYPTO_LIBS}

@@ -7,7 +7,7 @@
 #define VBOOT_REFERENCE_CGPT_H_
 
 #include <fcntl.h>
-#ifndef HAVE_MACOS
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
 #include <features.h>
 #endif
 #include <stdint.h>

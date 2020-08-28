@@ -47,6 +47,10 @@ static vb2_error_t write_temp_file(const uint8_t *data, uint32_t data_size,
 	char *path;
 	mode_t umask_save;
 
+#if defined(__FreeBSD__)
+#define P_tmpdir "/tmp"
+#endif
+
 	*path_out = NULL;
 	path = strdup(P_tmpdir "/vb2_flashrom.XXXXXX");
 

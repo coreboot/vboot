@@ -8,7 +8,9 @@
 #include <fcntl.h>
 #include <ftw.h>
 #include <inttypes.h>
+#if !defined(__FreeBSD__)
 #include <linux/major.h>
+#endif
 #include <stdbool.h>
 #include <stdarg.h>
 #include <stdlib.h>

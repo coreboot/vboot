@@ -10,7 +10,9 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#if !defined (__FreeBSD__)
 #include <sys/sysmacros.h>
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -122,7 +124,11 @@ char *FindKernelConfig(const char *infile, uint64_t kernel_body_load_address)
 {
 	char *newstr = NULL;
 
-	int fd = open(infile, O_RDONLY | O_CLOEXEC | O_LARGEFILE);
+	int fd = open(infile, O_RDONLY | O_CLOEXEC
+#if !defined(__FreeBSD__)
+			| O_LARGEFILE
+#endif
+			);
 	if (fd < 0) {
 		FATAL("Cannot open %s\n", infile);
 		return NULL;

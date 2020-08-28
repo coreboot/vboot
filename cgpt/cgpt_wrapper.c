@@ -11,14 +11,18 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#if !defined(__FreeBSD__)
 #include <linux/major.h>
+#endif
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#if !defined(__FreeBSD__)
 #include <sys/sysmacros.h>
+#endif
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -49,11 +53,12 @@ static bool is_mtd(const char *device_path) {
     return false;
   }
 
-  if (major(stat.st_rdev) != MTD_CHAR_MAJOR) {
-    return false;
+#if !defined(__FreeBSD__)
+  if (major(stat.st_rdev) == MTD_CHAR_MAJOR) {
+    return true;
   }
-
-  return true;
+#endif
+  return false;
 }
 
 // Return the element in |argv| that is an MTD device.
