@@ -892,14 +892,27 @@ static const struct vb2_screen_info developer_invalid_disk_screen = {
 /******************************************************************************/
 /* VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER */
 
-const struct vb2_menu_item developer_select_bootloader_items_before[] = {
+static const struct vb2_menu_item developer_select_bootloader_items_before[] = {
 	LANGUAGE_SELECT_ITEM,
 };
 
-const struct vb2_menu_item developer_select_bootloader_items_after[] = {
+static const struct vb2_menu_item developer_select_bootloader_items_after[] = {
 	BACK_ITEM,
 	POWER_OFF_ITEM,
 };
+
+static vb2_error_t developer_select_bootloader_init(struct vb2_ui_context *ui)
+{
+	if (get_menu(ui)->num_items == 0) {
+		ui->error_beep = 1;
+		ui->error_code = VB2_UI_ERROR_NO_BOOTLOADER;
+		return vb2_ui_screen_back(ui);
+	}
+	/* Select the first bootloader. */
+	ui->state->selected_item =
+		ARRAY_SIZE(developer_select_bootloader_items_before);
+	return VB2_REQUEST_UI_CONTINUE;
+}
 
 vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	struct vb2_ui_context *ui)
@@ -913,12 +926,14 @@ vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	    !vb2_dev_boot_legacy_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
 		ui->error_beep = 1;
+		ui->error_code = VB2_UI_ERROR_ALTERNATE_BOOT_DISABLED;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
 	if (vb2ex_get_bootloader_count() == 0) {
-		VB2_DEBUG("ERROR: No bootloader was found\n");
+		VB2_DEBUG("ERROR: No alternate bootloader was found\n");
 		ui->error_beep = 1;
+		ui->error_code = VB2_UI_ERROR_NO_BOOTLOADER;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
@@ -934,8 +949,8 @@ vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	VbExLegacy(altfw_num);
 
 	VB2_DEBUG("ERROR: Alternate bootloader failed\n");
-	/* TODO(b/161092974): Leverage the error dialog on error. */
 	ui->error_beep = 1;
+	ui->error_code = VB2_UI_ERROR_ALTERNATE_BOOT_FAILED;
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
@@ -952,8 +967,11 @@ static const struct vb2_menu *get_bootloader_menu(struct vb2_ui_context *ui)
 	if (ui->bootloader_menu.num_items > 0)
 		return &ui->bootloader_menu;
 
-	/* TODO(b/161092974): Show error dialog if no bootloader. */
 	num_bootloaders = vb2ex_get_bootloader_count();
+	if (num_bootloaders == 0) {
+		VB2_DEBUG("ERROR: No bootloader was found\n");
+		return NULL;
+	}
 	VB2_DEBUG("num_bootloaders: %u\n", num_bootloaders);
 	num_items = num_bootloaders + menu_before_len + menu_after_len;
 	items = malloc(num_items * sizeof(struct vb2_menu_item));
@@ -988,6 +1006,7 @@ static const struct vb2_menu *get_bootloader_menu(struct vb2_ui_context *ui)
 static const struct vb2_screen_info developer_select_bootloader_screen = {
 	.id = VB2_SCREEN_DEVELOPER_SELECT_BOOTLOADER,
 	.name = "Select alternate bootloader",
+	.init = developer_select_bootloader_init,
 	.get_menu = get_bootloader_menu,
 };
 
