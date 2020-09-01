@@ -6,6 +6,7 @@
  */
 
 #include <stdarg.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "2api.h"
@@ -70,7 +71,7 @@ __attribute__((weak))
 void vb2ex_abort(void)
 {
 	/* Stub simply exits. */
-	exit(1);
+	abort();
 }
 
 __attribute__((weak))
