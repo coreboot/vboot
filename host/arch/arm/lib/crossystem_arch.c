@@ -288,7 +288,7 @@ static int gpiod_read(const char *name, bool active_low)
 		return -1;
 
 	for (i = 0; i < max; i++) {
-		char buf[30];
+		char buf[5 + NAME_MAX + 1];
 		int fd;
 
 		snprintf(buf, sizeof(buf), "/dev/%s", list[i]->d_name);
