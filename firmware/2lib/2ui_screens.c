@@ -818,7 +818,6 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 	/* Don't allow to-norm if GBB forces dev mode */
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		VB2_DEBUG("ERROR: to-norm not allowed\n");
-		ui->error_beep = 1;
 		ui->error_code = VB2_UI_ERROR_TO_NORM_NOT_ALLOWED;
 		return vb2_ui_screen_back(ui);
 	}
@@ -905,7 +904,6 @@ static const struct vb2_menu_item developer_select_bootloader_items_after[] = {
 static vb2_error_t developer_select_bootloader_init(struct vb2_ui_context *ui)
 {
 	if (get_menu(ui)->num_items == 0) {
-		ui->error_beep = 1;
 		ui->error_code = VB2_UI_ERROR_NO_BOOTLOADER;
 		return vb2_ui_screen_back(ui);
 	}
@@ -926,14 +924,12 @@ vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	    !vb2_dev_boot_allowed(ui->ctx) ||
 	    !vb2_dev_boot_legacy_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
-		ui->error_beep = 1;
 		ui->error_code = VB2_UI_ERROR_ALTERNATE_BOOT_DISABLED;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
 
 	if (vb2ex_get_bootloader_count() == 0) {
 		VB2_DEBUG("ERROR: No alternate bootloader was found\n");
-		ui->error_beep = 1;
 		ui->error_code = VB2_UI_ERROR_NO_BOOTLOADER;
 		return VB2_REQUEST_UI_CONTINUE;
 	}
@@ -950,7 +946,6 @@ vb2_error_t vb2_ui_developer_mode_boot_alternate_action(
 	VbExLegacy(altfw_num);
 
 	VB2_DEBUG("ERROR: Alternate bootloader failed\n");
-	ui->error_beep = 1;
 	ui->error_code = VB2_UI_ERROR_ALTERNATE_BOOT_FAILED;
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -1049,7 +1044,6 @@ static vb2_error_t diagnostics_storage_init(struct vb2_ui_context *ui)
 	if (!log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve storage log message\n");
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		ui->error_beep = 1;
 		return vb2_ui_screen_back(ui);
 	}
 
@@ -1057,7 +1051,6 @@ static vb2_error_t diagnostics_storage_init(struct vb2_ui_context *ui)
 	if (ui->state->page_count == 0) {
 		VB2_DEBUG("ERROR: Failed to prepare storage log screen\n");
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		ui->error_beep = 1;
 		return vb2_ui_screen_back(ui);
 	}
 	return log_page_init(ui, DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN,
@@ -1102,7 +1095,6 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 	if ((rv && rv != VB2_ERROR_EX_DIAG_TEST_RUNNING) || !log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve memory test status\n");
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		ui->error_beep = 1;
 		return vb2_ui_screen_back(ui);
 	}
 
@@ -1111,7 +1103,6 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 		VB2_DEBUG("ERROR: Failed to prepare memory log screen, error: "
 			  "%#x\n", rv);
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		ui->error_beep = 1;
 		return vb2_ui_screen_back(ui);
 	}
 	if (ui->state->current_page >= ui->state->page_count)
