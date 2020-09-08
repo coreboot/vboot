@@ -80,7 +80,7 @@ vb2_error_t error_exit_action(struct vb2_ui_context *ui)
 	 * key press clears that error.  Unset the key so that it is
 	 * not processed by other action functions.
 	 */
-	if (ui->key && ui->error_code != VB2_UI_ERROR_NONE) {
+	if (ui->key && ui->error_code) {
 		ui->error_code = VB2_UI_ERROR_NONE;
 		ui->key = 0;
 	}
@@ -335,7 +335,9 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 					 ui.disable_timer,
 					 ui.state->current_page,
 					 ui.error_code);
-			if (ui.error_beep) {
+			if (ui.error_beep ||
+			    (ui.error_code &&
+			     prev_error_code != ui.error_code)) {
 				vb2ex_beep(250, 400);
 				ui.error_beep = 0;
 			}
