@@ -34,7 +34,7 @@ lsbequals() {
 
 # Usage: check_keyval_in_list lsbfile lsbkey [list of values]
 # Extracts the lsb-release value for the specified key, and confirms it
-# matches one of the allowlisted values specified in value_array.
+# matches one of the allowed values specified in value_array.
 # Implementation note:
 # You can't really pass bash arrays to functions. Best you can do is either
 # serialize to string/pass/deserialize (e.g. using whitspace/IFS hacks), or,
