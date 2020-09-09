@@ -685,8 +685,8 @@ static int vb2_nv_index(const uint8_t *buf, uint32_t buf_sz, int vbnv_size)
 			break;
 	}
 
-	if (!index || index == buf_sz / vbnv_size) {
-		fprintf(stderr, "VBNV is either uninitialized or corrupted.\n");
+	if (!index) {
+		fprintf(stderr, "VBNV is uninitialized.\n");
 		return -1;
 	}
 
@@ -737,7 +737,7 @@ int vb2_write_nv_storage_flashrom(struct vb2_context *ctx)
 	}
 
 	next_index = current_index + 1;
-	if ((next_index + 1) * vbnv_size == flash_size) {
+	if (next_index * vbnv_size == flash_size) {
 		/* VBNV is full.  Erase and write at beginning. */
 		memset(flash_buf, 0xff, flash_size);
 		next_index = 0;

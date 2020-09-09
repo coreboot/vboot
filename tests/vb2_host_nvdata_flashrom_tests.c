@@ -147,12 +147,12 @@ static void test_read_ok_full(void)
 
 	reset_test_data(&ctx, sizeof(test_nvdata_16b));
 
-	for (int entry = 0; entry < fake_flash_entry_count - 2; entry++)
+	for (int entry = 0; entry < fake_flash_entry_count - 1; entry++)
 		memcpy(fake_flash_region + (entry * VB2_NVDATA_SIZE),
 		       test_nvdata_16b, sizeof(test_nvdata_16b));
 
 	memcpy(fake_flash_region +
-	       ((fake_flash_entry_count - 2) * VB2_NVDATA_SIZE),
+	       ((fake_flash_entry_count - 1) * VB2_NVDATA_SIZE),
 	       test_nvdata2_16b, sizeof(test_nvdata2_16b));
 
 	TEST_EQ(vb2_read_nv_storage_flashrom(&ctx), 0,
@@ -222,7 +222,7 @@ static void test_write_ok_full(void)
 
 	reset_test_data(&ctx, sizeof(test_nvdata_16b));
 
-	for (int entry = 0; entry < fake_flash_entry_count - 1; entry++)
+	for (int entry = 0; entry < fake_flash_entry_count; entry++)
 		memcpy(fake_flash_region + (entry * VB2_NVDATA_SIZE),
 		       test_nvdata_16b, sizeof(test_nvdata_16b));
 
