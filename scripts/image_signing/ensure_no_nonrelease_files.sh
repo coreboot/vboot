@@ -41,10 +41,10 @@ main() {
     local rootfs=$(make_temp_dir)
     mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
     # Pick the right set of test-expectation data to use.
-    local boardvar=$(get_boardvar_from_lsb_release "${rootfs}")
-    eval "release_file_denylist=(\"\${RELEASE_FILE_DENYLIST_${boardvar}[@]}\")"
+    local brdvar=$(get_boardvar_from_lsb_release "${rootfs}")
+    eval "release_file_blocklist=(\"\${RELEASE_FILE_BLOCKLIST_${brdvar}[@]}\")"
 
-    for file in ${release_file_denylist}; do
+    for file in ${release_file_blocklist}; do
         if [ -e "${rootfs}/${file}" ]; then
             error "${file} exists in this image!"
             ls -al "${rootfs}/${file}"
