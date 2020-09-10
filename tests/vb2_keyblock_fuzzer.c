@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <assert.h>
-
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
+#include "2nvstorage.h"
 #include "2rsa.h"
+#include "2secdata.h"
 #include "vboot_test.h"
 
 static struct vb2_context *ctx;
@@ -73,6 +73,7 @@ vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size);
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+	/* Initialize fuzzing inputs. */
 	if (size < sizeof(gbb.rootkey))
 		return 0;
 
@@ -84,9 +85,16 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	mock_keyblock = data + sizeof(gbb.rootkey);
 	mock_keyblock_size = size - sizeof(gbb.rootkey);
 
+	/* Set up data structures needed by the tested function. */
 	if (vb2api_init(workbuf, sizeof(workbuf), &ctx))
 		abort();
+	vb2_nv_init(ctx);
+	vb2api_secdata_firmware_create(ctx);
+	vb2api_secdata_kernel_create(ctx);
+	if (vb2_secdata_firmware_init(ctx) || vb2_secdata_kernel_init(ctx))
+		abort();
 
+	/* Run function to test. */
 	vb2_load_fw_keyblock(ctx);
 
 	return 0;
