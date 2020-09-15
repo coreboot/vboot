@@ -91,6 +91,11 @@ static int mock_pp_pressed_total;
 
 static int mock_enable_dev_mode;
 
+#define MOCK_PREPARE_LOG_SIZE 32
+
+static int mock_snapshot_count;
+static char mock_prepare_log[64][MOCK_PREPARE_LOG_SIZE];
+static int mock_prepare_log_count;
 static uint32_t mock_log_page_count;
 
 static void add_mock_key(uint32_t press, int trusted)
@@ -321,6 +326,8 @@ static void reset_common_data(enum reset_type t)
 	mock_enable_dev_mode = 0;
 
 	/* For vb2ex_prepare_log_screen */
+	mock_snapshot_count = 0;
+	mock_prepare_log_count = 0;
 	mock_log_page_count = 1;
 
 	/* Avoid Iteration #0 */
@@ -526,16 +533,25 @@ const char *vb2ex_get_debug_info(struct vb2_context *c)
 	return "mocked debug info";
 }
 
-const char *vb2ex_get_firmware_log(void)
+const char *vb2ex_get_firmware_log(int reset)
 {
-	return "mocked firmware log";
+	static char mock_firmware_log_buf[MOCK_PREPARE_LOG_SIZE];
+	if (reset)
+		mock_snapshot_count++;
+	snprintf(mock_firmware_log_buf, MOCK_PREPARE_LOG_SIZE,
+		 "%d", mock_snapshot_count);
+	return mock_firmware_log_buf;
 }
 
 uint32_t vb2ex_prepare_log_screen(const char *str)
 {
+	if (mock_prepare_log_count < ARRAY_SIZE(mock_prepare_log))
+		strncpy(mock_prepare_log[mock_prepare_log_count],
+			str, MOCK_PREPARE_LOG_SIZE);
+	mock_prepare_log_count++;
+
 	return mock_log_page_count;
 }
-
 
 /* Tests */
 static void developer_tests(void)
@@ -1168,6 +1184,73 @@ static void debug_info_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static void firmware_log_tests(void)
+{
+	VB2_DEBUG("Testing firmware log screens...\n");
+
+	/* Get firmware log */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	if (DIAGNOSTIC_UI)
+		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"get firmware log");
+	TEST_EQ(mock_prepare_log_count, 1,
+		"  prepared firmware log once");
+	TEST_EQ(strcmp(mock_prepare_log[0], "1"), 0,
+		"  got correct firmware log");
+
+	/* Enter firmware log screen again will reacquire a newer one */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	if (DIAGNOSTIC_UI)
+		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_ESC);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"enter the screen again and reacquire a new log");
+	TEST_EQ(mock_prepare_log_count, 2,
+		"  prepared firmware log twice");
+	TEST_EQ(strcmp(mock_prepare_log[0], "1"), 0,
+		"  got correct firmware log");
+	TEST_EQ(strcmp(mock_prepare_log[1], "2"), 0,
+		"  got a new firmware log");
+
+	/* Back to firmware log screen again will not reacquire a newer one */
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	if (DIAGNOSTIC_UI)
+		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress('\t');  /* enter debug info screen */
+	add_mock_keypress(VB_KEY_ESC);
+	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
+		"back to the screen and do not reacquire a new log");
+	TEST_EQ(mock_prepare_log_count, 3,
+		"  prepared firmware log three times");
+	TEST_EQ(strcmp(mock_prepare_log[0], "1"), 0,
+		"  got correct firmware log");
+	/* Skip entry #1 which is for preparing debug info */
+	TEST_EQ(strcmp(mock_prepare_log[2], "1"), 0,
+		"  got the same firmware log");
+
+	VB2_DEBUG("...done.\n");
+}
+
 static void developer_screen_tests(void)
 {
 	VB2_DEBUG("Testing developer mode screens...\n");
@@ -1669,6 +1752,7 @@ int main(void)
 	manual_recovery_tests();
 	language_selection_tests();
 	debug_info_tests();
+	firmware_log_tests();
 
 	/* Screen displayed */
 	developer_screen_tests();
