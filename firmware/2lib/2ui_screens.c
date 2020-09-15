@@ -314,7 +314,7 @@ static const struct vb2_screen_info debug_info_screen = {
 
 static vb2_error_t firmware_log_init(struct vb2_ui_context *ui)
 {
-	const char *log_string = vb2ex_get_firmware_log();
+	const char *log_string = vb2ex_get_firmware_log(1);
 	if (!log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve firmware log\n");
 		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
@@ -334,7 +334,7 @@ static vb2_error_t firmware_log_init(struct vb2_ui_context *ui)
 
 static vb2_error_t firmware_log_reinit(struct vb2_ui_context *ui)
 {
-	const char *log_string = vb2ex_get_firmware_log();
+	const char *log_string = vb2ex_get_firmware_log(0);
 	if (!log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve firmware log\n");
 		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
