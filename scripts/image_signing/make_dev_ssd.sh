@@ -35,7 +35,15 @@ ROOTDEV_KERNEL="$((ROOTDEV_PARTITION - 1))"
 DEFINE_string image "$ROOTDEV_DISK" "Path to device or image file" "i"
 DEFINE_string keys "$DEFAULT_KEYS_FOLDER" "Path to folder of dev keys" "k"
 DEFINE_boolean remove_rootfs_verification \
-  $FLAGS_FALSE "Modify kernel boot config to disable rootfs verification" ""
+  "${FLAGS_FALSE}" "Modify kernel boot config to disable rootfs verification" ""
+DEFINE_boolean enable_earlycon "${FLAGS_FALSE}" \
+  "Enable earlycon from stdout-path (ARM/ARM64) or SPCR (x86)." ""
+DEFINE_boolean disable_earlycon "${FLAGS_FALSE}" \
+  "Disable earlycon." ""
+DEFINE_boolean enable_console "${FLAGS_FALSE}" \
+  "Enable serial console." ""
+DEFINE_boolean disable_console "${FLAGS_FALSE}" \
+  "Disable serial console." ""
 DEFINE_string backup_dir \
   "$DEFAULT_BACKUP_FOLDER" "Path of directory to store kernel backups" ""
 DEFINE_string save_config "" \
@@ -104,6 +112,28 @@ remove_legacy_boot_rootfs_verification() {
   [ ! -f "$config_file" ] ||
     sudo sed -i 's/-vusb/-usb/g; s/-vhd/-hd/g' "$config_file"
   sudo umount "$mount_point"
+}
+
+# Enable/Disable earlycon or serial console
+insert_parameter() {
+  local cmdline="$1"
+  local param="$2"
+
+  if [ -n "${cmdline##*${param}*}" ]; then
+    cmdline="${param} ${cmdline}"
+  fi
+
+  echo "${cmdline}"
+}
+
+remove_parameter() {
+  local cmdline="$1"
+  local param="$2"
+
+  cmdline=$(echo "${cmdline}" | sed '
+    s/'"${param} "'//g')
+
+  echo "${cmdline}"
 }
 
 # Wrapped version of dd
@@ -242,6 +272,26 @@ resign_ssd_kernel() {
       debug_msg "New kernel config: $kernel_config"
       info "${name}: Disabled rootfs verification."
       remove_legacy_boot_rootfs_verification "$ssd_device"
+    fi
+
+    if [ "${FLAGS_enable_earlycon}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Enabling earlycon"
+      kernel_config="$(insert_parameter "${kernel_config}" "earlycon")"
+      debug_msg "New kernel config: ${kernel_config}"
+    elif [ "${FLAGS_disable_earlycon}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Disabling earlycon"
+      kernel_config="$(remove_parameter "${kernel_config}" "earlycon")"
+      debug_msg "New kernel config: ${kernel_config}"
+    fi
+
+    if [ "${FLAGS_enable_console}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Enabling serial console"
+      kernel_config="$(remove_parameter "${kernel_config}" "console=")"
+      debug_msg "New kernel config: ${kernel_config}"
+    elif [ "${FLAGS_disable_console}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Disabling serial console"
+      kernel_config="$(insert_parameter "${kernel_config}" "console=")"
+      debug_msg "New kernel config: ${kernel_config}"
     fi
 
     local new_kernel_config_file="$(make_temp_file)"
