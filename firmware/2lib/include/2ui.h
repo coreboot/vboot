@@ -78,6 +78,9 @@ struct vb2_screen_state {
 	uint32_t page_count;
 	uint32_t current_page;
 
+	/* For memory check screen. */
+	int test_finished;  /* Do not update screen if the content is done */
+
 	struct vb2_screen_state *prev;
 };
 
