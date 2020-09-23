@@ -1134,7 +1134,12 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 		return VB2_REQUEST_UI_CONTINUE;
 
 	vb2_error_t rv = op(reset, &log_string);
-	if ((rv && rv != VB2_ERROR_EX_DIAG_TEST_RUNNING) || !log_string) {
+
+	/* The test is still running but the output buffer was unchanged. */
+	if (rv == VB2_ERROR_EX_DIAG_TEST_RUNNING)
+		return VB2_REQUEST_UI_CONTINUE;
+
+	if ((rv && rv != VB2_ERROR_EX_DIAG_TEST_UPDATED) || !log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve memory test status\n");
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
 		return vb2_ui_screen_back(ui);
@@ -1158,7 +1163,7 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 	VB2_CLR_BIT(ui->state->hidden_item_mask,
 		    DIAGNOSTICS_MEMORY_ITEM_CANCEL);
 	VB2_CLR_BIT(ui->state->hidden_item_mask, DIAGNOSTICS_MEMORY_ITEM_BACK);
-	if (rv == VB2_ERROR_EX_DIAG_TEST_RUNNING) {
+	if (rv == VB2_ERROR_EX_DIAG_TEST_UPDATED) {
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DIAGNOSTICS_MEMORY_ITEM_BACK);
 		if (ui->state->selected_item == DIAGNOSTICS_MEMORY_ITEM_BACK)
