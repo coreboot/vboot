@@ -300,6 +300,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	const struct vb2_menu *menu;
 	const struct vb2_screen_info *root_info;
 	uint32_t key_flags;
+	uint32_t start_time_ms, elapsed_ms;
 	vb2_error_t rv;
 
 	memset(&ui, 0, sizeof(ui));
@@ -316,6 +317,8 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 	prev_error_code = VB2_UI_ERROR_NONE;
 
 	while (1) {
+		start_time_ms = vb2ex_mtime();
+
 		/* Draw if there are state changes. */
 		if (memcmp(&prev_state, ui.state, sizeof(*ui.state)) ||
 		    /* Redraw when timer is disabled. */
@@ -392,7 +395,9 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		}
 
 		/* Delay. */
-		vb2ex_msleep(KEY_DELAY_MS);
+		elapsed_ms = vb2ex_mtime() - start_time_ms;
+		if (elapsed_ms < KEY_DELAY_MS)
+			vb2ex_msleep(KEY_DELAY_MS - elapsed_ms);
 	}
 
 	return VB2_SUCCESS;
