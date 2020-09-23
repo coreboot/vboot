@@ -1513,7 +1513,7 @@ const char *vb2ex_get_diagnostic_storage(void);
  * control for a short period of time running memory test, and then return the
  * result of current status. If `reset` is not zero, it will reset the memory
  * test state.
- * *
+ *
  * @param reset	Discard the current memory test result and re-initialize
  *		a new test.
  * @param out	For returning a read-only pointer of full log string which is
@@ -1522,7 +1522,9 @@ const char *vb2ex_get_diagnostic_storage(void);
  *		until next call.
  * @return The status of memory test. VB2_SUCCESS means the test is finished,
  * regardless of passing or failing. VB2_ERROR_EX_DIAG_TEST_RUNNING means
- * the test is still running. Other non-zero codes for internal errors.
+ * the test is still running but the output buffer was unchanged.
+ * VB2_ERROR_EX_DIAG_TEST_UPDATED means the test is still running and the output
+ * buffer was updated. Other non-zero codes for internal errors.
  */
 vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out);
 vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
