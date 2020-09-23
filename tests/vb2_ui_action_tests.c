@@ -71,6 +71,9 @@ static int mock_vbexlegacy_called;
 static enum VbAltFwIndex_t mock_altfw_num_last;
 static uint32_t mock_bootloader_count;
 
+static uint32_t mock_time_ms;
+static const uint32_t mock_time_start_ms = 31ULL * VB2_MSEC_PER_SEC;
+
 /* Mock actions */
 static uint32_t mock_action_called;
 static uint32_t mock_action_countdown_limit;
@@ -111,6 +114,13 @@ static vb2_error_t mock_action_flag2(struct vb2_ui_context *ui)
 {
 	if ((1 << 2) & mock_action_flags)
 		return VB2_SUCCESS;
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static uint32_t mock_action_delay_ms;
+static vb2_error_t mock_action_msleep(struct vb2_ui_context *ui)
+{
+	vb2ex_msleep(mock_action_delay_ms);
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
@@ -339,6 +349,7 @@ static void reset_common_data(void)
 	mock_action_called = 0;
 	mock_action_countdown_limit = 1;
 	mock_action_flags = 0;
+	mock_action_delay_ms = 0;
 
 	/* For chagen_screen and vb2_get_screen_info */
 	mock_get_screen_info_called = 0;
@@ -355,6 +366,9 @@ static void reset_common_data(void)
 	mock_vbexlegacy_called = 0;
 	mock_altfw_num_last = -100;
 	mock_bootloader_count = 2;
+
+	/* For vb2ex_mtime and vb2ex_msleep  */
+	mock_time_ms = mock_time_start_ms;
 }
 
 /* Mock functions */
@@ -497,6 +511,16 @@ vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
 uint32_t vb2ex_get_bootloader_count(void)
 {
 	return mock_bootloader_count;
+}
+
+uint32_t vb2ex_mtime(void)
+{
+	return mock_time_ms;
+}
+
+void vb2ex_msleep(uint32_t msec)
+{
+	mock_time_ms += msec;
 }
 
 /* Tests */
@@ -962,6 +986,66 @@ static void ui_loop_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static void ui_loop_delay_tests(void)
+{
+	VB2_DEBUG("Testing ui_loop delay...\n");
+
+	/* Sleep for 20 ms each iteration */
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  sleep for 20 ms in each iteration");
+	TEST_EQ(mock_time_ms - mock_time_start_ms, KEY_DELAY_MS,
+		"  delay 20 ms in total");
+
+	/* Complement to 20 ms */
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	mock_action_delay_ms = KEY_DELAY_MS / 2;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  complement to 20 ms");
+	TEST_EQ(mock_time_ms - mock_time_start_ms, KEY_DELAY_MS,
+		"  delay 10 ms in total");
+
+	/* No extra sleep if an iteration takes longer than KEY_DELAY_MS */
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	mock_action_delay_ms = 1234;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  no extra sleep time");
+	TEST_EQ(mock_time_ms - mock_time_start_ms, mock_action_delay_ms,
+		"  no extra delay");
+
+	/* Integer overflow */
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	mock_time_ms = UINT32_MAX;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  integer overflow #1");
+	TEST_EQ(mock_time_ms - UINT32_MAX, KEY_DELAY_MS,
+		"  delay 20 ms in total");
+
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	mock_time_ms = UINT32_MAX;
+	mock_action_delay_ms = KEY_DELAY_MS / 2;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  integer overflow #2");
+	TEST_EQ(mock_time_ms - UINT32_MAX, KEY_DELAY_MS,
+		"  delay 10 ms in total");
+
+	reset_common_data();
+	mock_calls_until_shutdown = 1;
+	mock_time_ms = UINT32_MAX;
+	mock_action_delay_ms = 1234;
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+		VB2_REQUEST_SHUTDOWN, "  integer overflow #3");
+	TEST_EQ(mock_time_ms - UINT32_MAX, mock_action_delay_ms,
+		"  no extra delay");
+
+	VB2_DEBUG("...done.\n");
+}
+
 int main(void)
 {
 	/* Input actions */
@@ -977,6 +1061,7 @@ int main(void)
 
 	/* Core UI loop */
 	ui_loop_tests();
+	ui_loop_delay_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
