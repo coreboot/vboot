@@ -1293,6 +1293,11 @@ vb2_error_t vb2ex_ec_battery_cutoff(void);
 /*****************************************************************************/
 /* Functions for UI display. */
 
+/* Helpers for bitmask operations */
+#define VB2_SET_BIT(mask, index) ((mask) |= ((uint32_t)1 << (index)))
+#define VB2_CLR_BIT(mask, index) ((mask) &= ~((uint32_t)1 << (index)))
+#define VB2_GET_BIT(mask, index) ((mask) & ((uint32_t)1 << (index)))
+
 /* Screens. */
 enum vb2_screen {
 	/* Blank screen */
@@ -1375,6 +1380,12 @@ enum vb2_ui_error {
  *				doesn't have a menu, this value will be ignored.
  * @param disabled_item_mask	Mask for disabled menu items. Bit (1 << idx)
  *				indicates whether item 'idx' is disabled.
+ *				A disabled menu item is visible and selectable,
+ *				with a different button style.
+ * @param hidden_item_mask	Mask for hidden menu items. Bit (1 << idx)
+ *				indicates whether item 'idx' is hidden.
+ *				A hidden menu item is neither visible nor
+ *				selectable.
  * @param timer_disabled	Whether timer is disabled or not. Some screen
  *				descriptions will depend on this value.
  * @param current_page		Current page number for a log screen. If the
@@ -1387,6 +1398,7 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 			     uint32_t locale_id,
 			     uint32_t selected_item,
 			     uint32_t disabled_item_mask,
+			     uint32_t hidden_item_mask,
 			     int timer_disabled,
 			     uint32_t current_page,
 			     enum vb2_ui_error error_code);

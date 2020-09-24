@@ -59,12 +59,20 @@ struct vb2_screen_info {
 	 * will be ignored.
 	 */
 	const struct vb2_menu *(*get_menu)(struct vb2_ui_context *ui);
+	/*
+	 * Indices of menu items;
+	 * used by log_page_* functions in 2ui_screens.c.
+	 */
+	uint32_t page_up_item;
+	uint32_t page_down_item;
+	uint32_t back_item;
 };
 
 struct vb2_screen_state {
 	const struct vb2_screen_info *screen;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
+	uint32_t hidden_item_mask;
 
 	/* For log screen. */
 	uint32_t page_count;
@@ -139,8 +147,8 @@ const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id);
 /**
  * Move selection to the previous menu item.
  *
- * Update selected_item, taking into account disabled indices (from
- * disabled_item_mask).  The selection does not wrap, meaning that we block
+ * Update selected_item, taking into account hidden indices (from
+ * hidden_item_mask).  The selection does not wrap, meaning that we block
  * on 0 when we hit the start of the menu.
  *
  * @param ui		UI context pointer
@@ -151,8 +159,8 @@ vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui);
 /**
  * Move selection to the next menu item.
  *
- * Update selected_item, taking into account disabled indices (from
- * disabled_item_mask).  The selection does not wrap, meaning that we block
+ * Update selected_item, taking into account hidden indices (from
+ * hidden_item_mask).  The selection does not wrap, meaning that we block
  * on the max index when we hit the end of the menu.
  *
  * @param ui		UI context pointer
