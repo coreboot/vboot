@@ -85,7 +85,7 @@ struct vb2_screen_info mock_screen_root = {
 static void screen_state_eq(const struct vb2_screen_state *state,
 			    enum vb2_screen screen,
 			    uint32_t selected_item,
-			    uint32_t disabled_item_mask)
+			    uint32_t hidden_item_mask)
 {
 	if (screen != MOCK_IGNORE) {
 		if (state->screen == NULL)
@@ -96,9 +96,9 @@ static void screen_state_eq(const struct vb2_screen_state *state,
 	if (selected_item != MOCK_IGNORE)
 		TEST_EQ(state->selected_item,
 			selected_item, "  state.selected_item");
-	if (disabled_item_mask != MOCK_IGNORE)
-		TEST_EQ(state->disabled_item_mask,
-			disabled_item_mask, "  state.disabled_item_mask");
+	if (hidden_item_mask != MOCK_IGNORE)
+		TEST_EQ(state->hidden_item_mask,
+			hidden_item_mask, "  state.hidden_item_mask");
 }
 
 /* Reset mock data (for use before each test) */
@@ -292,7 +292,7 @@ static void screen_stack_tests(void)
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_ROOT);
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE);
 	mock_ui_context.state->selected_item = 2;
-	mock_ui_context.state->disabled_item_mask = 0x10;
+	mock_ui_context.state->hidden_item_mask = 0x10;
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_MENU);
 	TEST_EQ(vb2_ui_screen_back(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"back to previous screen");
@@ -305,7 +305,7 @@ static void screen_stack_tests(void)
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_ROOT);
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE);
 	mock_ui_context.state->selected_item = 2;
-	mock_ui_context.state->disabled_item_mask = 0x10;
+	mock_ui_context.state->hidden_item_mask = 0x10;
 	vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_MENU);
 	TEST_EQ(vb2_ui_screen_change(&mock_ui_context, MOCK_SCREEN_BASE),
 		VB2_REQUEST_UI_CONTINUE, "change to target in stack");
