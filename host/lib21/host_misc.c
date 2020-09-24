@@ -42,11 +42,12 @@ vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
 		return VB2_ERROR_READ_FILE_SIZE;
 	}
 
-	buf = malloc(size);
+	buf = malloc(size + 1);
 	if (!buf) {
 		fclose(f);
 		return VB2_ERROR_READ_FILE_ALLOC;
 	}
+	buf[size] = '\0';
 
 	if(1 != fread(buf, size, 1, f)) {
 		VB2_DEBUG("Unable to read file %s\n", filename);

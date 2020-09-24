@@ -44,6 +44,7 @@ vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size);
 
 /**
  * Read data from a file into a newly allocated buffer.
+ * The buffer will end with an extra null byte ('\0', not counted in size).
  *
  * @param filename	Name of file to read from
  * @param data_ptr	On exit, pointer to newly allocated buffer with data
