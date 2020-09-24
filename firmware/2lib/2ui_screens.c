@@ -397,8 +397,8 @@ vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 		ui->state->selected_item = RECOVERY_SELECT_ITEM_EXTERNAL_DISK;
 	}
 
-        if (!DIAGNOSTIC_UI || !vb2api_diagnostic_ui_enabled(ui->ctx))
-                ui->state->disabled_item_mask |=
+	if (!DIAGNOSTIC_UI || !vb2api_diagnostic_ui_enabled(ui->ctx))
+		ui->state->disabled_item_mask |=
 			1 << RECOVERY_SELECT_ITEM_DIAGNOSTICS;
 
 	return VB2_REQUEST_UI_CONTINUE;
