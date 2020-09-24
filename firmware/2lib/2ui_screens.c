@@ -19,26 +19,26 @@
 	.items = a, \
 })
 
-#define LANGUAGE_SELECT_ITEM { \
+#define LANGUAGE_SELECT_ITEM ((struct vb2_menu_item){ \
 	.text = "Language selection", \
 	.target = VB2_SCREEN_LANGUAGE_SELECT, \
 	.is_language_select = 1, \
-}
+})
 
-#define NEXT_ITEM(target_screen) { \
+#define NEXT_ITEM(target_screen) ((struct vb2_menu_item){ \
 	.text = "Next", \
 	.target = (target_screen), \
-}
+})
 
-#define BACK_ITEM { \
+#define BACK_ITEM ((struct vb2_menu_item){ \
 	.text = "Back", \
 	.action = vb2_ui_screen_back, \
-}
+})
 
-#define ADVANCED_OPTIONS_ITEM { \
+#define ADVANCED_OPTIONS_ITEM ((struct vb2_menu_item){ \
 	.text = "Advanced options", \
 	.target = VB2_SCREEN_ADVANCED_OPTIONS, \
-}
+})
 
 /* Action that will power off the device. */
 static vb2_error_t power_off_action(struct vb2_ui_context *ui)
@@ -46,10 +46,10 @@ static vb2_error_t power_off_action(struct vb2_ui_context *ui)
 	return VB2_REQUEST_SHUTDOWN;
 }
 
-#define POWER_OFF_ITEM { \
+#define POWER_OFF_ITEM ((struct vb2_menu_item){ \
 	.text = "Power off", \
 	.action = power_off_action, \
-}
+})
 
 /******************************************************************************/
 /* Functions used for log screens */
