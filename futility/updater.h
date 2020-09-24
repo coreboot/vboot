@@ -175,10 +175,16 @@ int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg);
 int get_system_property(enum system_property_type property_type,
 			struct updater_config *cfg);
 /*
- * Gets the default quirk config string for target image.
+ * Gets the default quirk config string from target image name.
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
  */
-const char * const updater_get_default_quirks(struct updater_config *cfg);
+const char * const updater_get_model_quirks(struct updater_config *cfg);
+
+/*
+ * Gets the quirk config string from target image CBFS.
+ * Returns a string (in same format as --quirks) to load or NULL if no quirks.
+ */
+char * updater_get_cbfs_quirks(struct updater_config *cfg);
 
 /*
  * Overrides signature id if the device was shipped with known

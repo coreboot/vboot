@@ -1288,10 +1288,15 @@ static int updater_setup_quirks(struct updater_config *cfg,
 				const struct updater_config_arguments *arg)
 {
 	int errorcnt = 0;
-	const char *quirks = updater_get_default_quirks(cfg);
+	const char *model_quirks = updater_get_model_quirks(cfg);
+	char *cbfs_quirks = updater_get_cbfs_quirks(cfg);
 
-	if (quirks)
-		errorcnt += !!setup_config_quirks(quirks, cfg);
+	if (model_quirks)
+		errorcnt += !!setup_config_quirks(model_quirks, cfg);
+	if (cbfs_quirks) {
+		errorcnt += !!setup_config_quirks(cbfs_quirks, cfg);
+		free(cbfs_quirks);
+	}
 	if (arg->quirks)
 		errorcnt += !!setup_config_quirks(arg->quirks, cfg);
 	return errorcnt;

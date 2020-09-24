@@ -480,4 +480,16 @@ if type cbfstool >/dev/null 2>&1; then
 		"${TMP}.from.smm" "${TMP}.expected.full_smm" \
 		-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
 		--quirks eve_smm_store
+
+	echo "min_platform_version=3" >"${TMP}.quirk"
+	cp -f "${TO_IMAGE}" "${TO_IMAGE}.quirk"
+	${FUTILITY} dump_fmap -x "${TO_IMAGE}" "BOOT_STUB:${TMP}.cbfs"
+	# Create a fake CBFS using FW_MAIN_A size.
+	truncate -s $((0x000dffc0)) "${TMP}.cbfs"
+	${FUTILITY} load_fmap "${TO_IMAGE}.quirk" "FW_MAIN_A:${TMP}.cbfs"
+	cbfstool "${TO_IMAGE}.quirk" add -r FW_MAIN_A -n updater_quirks \
+		-f "${TMP}.quirk" -t raw
+	test_update "Full update (failure by CBFS quirks)" \
+		"${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
+		-i "${TO_IMAGE}.quirk" --wp=0 --sys_props 0,0x10001,1,2
 fi
