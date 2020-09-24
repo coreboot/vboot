@@ -476,10 +476,10 @@ void updater_register_quirks(struct updater_config *cfg)
 }
 
 /*
- * Gets the default quirk config string for target image.
+ * Gets the default quirk config string from target image name.
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
  */
-const char * const updater_get_default_quirks(struct updater_config *cfg)
+const char * const updater_get_model_quirks(struct updater_config *cfg)
 {
 	const char *pattern = cfg->image.ro_version;
 	int i;
@@ -497,6 +497,51 @@ const char * const updater_get_default_quirks(struct updater_config *cfg)
 		return r->quirks;
 	}
 	return NULL;
+}
+
+/*
+ * Gets the quirk config string from target image CBFS.
+ * Returns a string (in same format as --quirks) to load or NULL if no quirks.
+ */
+char *updater_get_cbfs_quirks(struct updater_config *cfg)
+{
+	const char *entry_name = "updater_quirks";
+	const char *cbfs_region = "FW_MAIN_A";
+	struct firmware_section cbfs_section;
+
+	/* Before invoking cbfstool, try to search for CBFS file name. */
+	find_firmware_section(&cbfs_section, &cfg->image, cbfs_region);
+	if (!cbfs_section.size || !memmem(cbfs_section.data, cbfs_section.size,
+					  entry_name, strlen(entry_name))) {
+		if (!cbfs_section.size)
+			VB2_DEBUG("Missing region: %s\n", cbfs_region);
+		else
+			VB2_DEBUG("Cannot find entry: %s\n", entry_name);
+		return NULL;
+	}
+
+	const char *tmp_path = get_firmware_image_temp_file(
+			&cfg->image, &cfg->tempfiles);
+	uint8_t *data = NULL;
+	uint32_t size = 0;
+
+	/* Although the name exists, it may not be a real file. */
+	if (!cbfs_file_exists(tmp_path, cbfs_region, entry_name)) {
+		VB2_DEBUG("Found string '%s' but not a file.\n", entry_name);
+		return NULL;
+	}
+
+	VB2_DEBUG("Found %s from CBFS %s\n", entry_name, cbfs_region);
+	tmp_path = cbfs_extract_file(tmp_path, cbfs_region, entry_name,
+				     &cfg->tempfiles);
+	if (!tmp_path ||
+	    vb2_read_file(tmp_path, &data, &size) != VB2_SUCCESS) {
+		ERROR("Failed to read [%s] from CBFS [%s].\n",
+		      entry_name, cbfs_region);
+		return NULL;
+	}
+	VB2_DEBUG("Got quirks (%u bytes): %s\n", size, data);
+	return (char *)data;
 }
 
 /*
