@@ -10,7 +10,6 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2return_codes.h"
-#include "2secdata.h"
 #include "2ui.h"
 #include "2ui_private.h"
 #include "vboot_api.h"  /* For VB_SHUTDOWN_REQUEST_POWER_BUTTON */
