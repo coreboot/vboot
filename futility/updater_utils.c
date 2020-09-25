@@ -639,6 +639,17 @@ int load_system_firmware(struct firmware_image *image,
 
 	r = host_flashrom(FLASHROM_READ, tmp_path, image->programmer,
 			  verbosity, NULL, NULL);
+	/*
+	 * The verbosity for host_flashrom will be translated to
+	 * (verbosity-1)*'-V', and usually 3*'-V' is enough for debugging.
+	 */
+	const int debug_verbosity = 4;
+	if (r && verbosity < debug_verbosity) {
+		/* Read again, with verbose messages for debugging. */
+		WARN("Failed reading system firmware (%d), try again...\n", r);
+		r = host_flashrom(FLASHROM_READ, tmp_path, image->programmer,
+				  debug_verbosity, NULL, NULL);
+	}
 	if (!r)
 		r = load_firmware_image(image, tmp_path, NULL);
 	return r;
