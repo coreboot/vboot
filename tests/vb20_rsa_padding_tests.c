@@ -14,6 +14,14 @@
 #include "test_common.h"
 #include "vb2_common.h"
 
+vb2_error_t hwcrypto_modexp_return_value = VB2_SUCCESS;
+vb2_error_t vb2ex_hwcrypto_modexp(const struct vb2_public_key *key,
+				  uint8_t *inout,
+				  uint32_t *workbuf32, int exp) {
+	return hwcrypto_modexp_return_value;
+}
+
+
 /**
  * Test valid and invalid signatures.
  */
@@ -66,6 +74,20 @@ static void test_verify_digest(struct vb2_public_key *key) {
 
 	TEST_EQ(vb2_rsa_verify_digest(key, NULL, test_message_sha1_hash, &wb),
 		VB2_ERROR_RSA_VERIFY_PARAM, "vb2_rsa_verify_digest() bad arg");
+
+	key->allow_hwcrypto = 1;
+	memcpy(sig, signatures[0], sizeof(sig));
+	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
+	hwcrypto_modexp_return_value = VB2_SUCCESS;
+	TEST_NEQ(vb2_rsa_verify_digest(key, sig, test_message_sha1_hash, &wb),
+		VB2_SUCCESS, "vb2_rsa_verify_digest() hwcrypto modexp fails");
+
+	memcpy(sig, signatures[0], sizeof(sig));
+	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
+	hwcrypto_modexp_return_value = VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
+	TEST_SUCC(vb2_rsa_verify_digest(key, sig, test_message_sha1_hash, &wb),
+		"vb2_rsa_verify_digest() hwcrypto modexp fallback to sw");
+	key->allow_hwcrypto = 0;
 
 	memcpy(sig, signatures[0], sizeof(sig));
 	vb2_workbuf_init(&wb, workbuf, sizeof(sig) * 3 - 1);
