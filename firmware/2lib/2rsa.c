@@ -342,7 +342,7 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 	int sig_size;
 	int pad_size;
 	int exp;
-	vb2_error_t rv;
+	vb2_error_t rv = VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
 
 	if (!key || !sig || !digest)
 		return VB2_ERROR_RSA_VERIFY_PARAM;
@@ -367,7 +367,22 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 		return VB2_ERROR_RSA_VERIFY_WORKBUF;
 	}
 
-	modpow(key, sig, workbuf32, exp);
+	if (key->allow_hwcrypto) {
+		rv = vb2ex_hwcrypto_modexp(key, sig, workbuf32, exp);
+
+		if (rv == VB2_SUCCESS)
+			VB2_DEBUG("Using HW modexp engine for sig_alg %d\n",
+					key->sig_alg);
+		else
+			VB2_DEBUG("HW modexp for sig_alg %d not supported, using SW\n",
+					key->sig_alg);
+	} else {
+		VB2_DEBUG("HW modexp forbidden, using SW\n");
+	}
+
+	if (rv != VB2_SUCCESS) {
+		modpow(key, sig, workbuf32, exp);
+	}
 
 	vb2_workbuf_free(&wblocal, 3 * key_bytes);
 

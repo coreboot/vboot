@@ -966,6 +966,20 @@ vb2_error_t vb2ex_hwcrypto_rsa_verify_digest(const struct vb2_public_key *key,
 					     const uint8_t *sig,
 					     const uint8_t *digest);
 
+/**
+ * Calculate modexp using hardware crypto engine.
+ *
+ * @param key		Key to use in signing
+ * @param inout		Input and output big-endian byte array
+ * @param workbuf32	Work buffer; caller must verify this is
+ *			(3 * key->arrsize) elements long.
+ * @param exp		RSA public exponent: either 65537 (F4) or 3
+ * @return VB2_SUCCESS or HWCRYPTO_UNSUPPORTED.
+ */
+vb2_error_t vb2ex_hwcrypto_modexp(const struct vb2_public_key *key,
+				  uint8_t *inout,
+				  uint32_t *workbuf32, int exp);
+
 /*
  * Abort vboot flow due to a failed assertion or broken assumption.
  *
