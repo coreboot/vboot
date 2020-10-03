@@ -141,6 +141,34 @@ build flavor '${flavor_prop}'."
   fi
 }
 
+# Extracts certificate from the provided public key.
+get_cert() {
+  # Full path to public key to read and extract certificate. It must exist.
+  local public_key=$1
+  local cert=$(sed -E '/(BEGIN|END) CERTIFICATE/d' \
+    "${public_key}" | tr -d '\n' \
+    | base64 --decode | hexdump -v -e '/1 "%02x"')
+
+  if [[ -z "${cert}" ]]; then
+    die "Unable to get the public platform key"
+  fi
+  echo "${cert}"
+}
+
+# Replaces particular certificate in mac_permissions xml file with new one.
+# Note, this does not fail if particular entry is not found. For example
+# network_stack does not exist in P.
+change_cert() {
+  # Type of signer entry to process. Could be platform, media or network_stack.
+  local type=$1
+  # New certificate encoded to string. This replaces old one.
+  local cert=$2
+  # *mac_permissions xml file to modify, plat_mac_permissions.xml for example.
+  local xml=$3
+  local pattern="(<signer signature=\")\w+(\"><seinfo value=\"${type})"
+  sudo sed -i -E "s/${pattern}/\1${cert}"'\2/g' "${xml}"
+}
+
 # Platform key is part of the SELinux policy.  Since we are re-signing framework
 # apks, we need to replace the key in the policy as well.
 update_sepolicy() {
@@ -149,16 +177,14 @@ update_sepolicy() {
 
   # Only platform is used at this time.
   local public_platform_key="${key_dir}/platform.x509.pem"
+  local public_media_key="${key_dir}/media.x509.pem"
+  local public_network_stack_key="${key_dir}/releasekey.x509.pem"
 
   info "Start updating sepolicy"
 
-  local new_cert=$(sed -E '/(BEGIN|END) CERTIFICATE/d' \
-    "${public_platform_key}" | tr -d '\n' \
-    | base64 --decode | hexdump -v -e '/1 "%02x"')
-
-  if [[ -z "${new_cert}" ]]; then
-    die "Unable to get the public platform key"
-  fi
+  local new_platform_cert=$(get_cert "${public_platform_key}")
+  local new_media_cert=$(get_cert "${public_media_key}")
+  local new_network_stack_cert=$(get_cert "${public_network_stack_key}")
 
   shopt -s nullglob
   local xml_list=( "${system_mnt}"/system/etc/**/*mac_permissions.xml )
@@ -170,9 +196,11 @@ update_sepolicy() {
 
   local xml="${xml_list[0]}"
   local orig=$(make_temp_file)
-  local pattern='(<signer signature=")\w+("><seinfo value="platform)'
   cp "${xml}" "${orig}"
-  sudo sed -i -E "s/${pattern}/\1${new_cert}"'\2/g' "${xml}"
+
+  change_cert "platform" "${new_platform_cert}" "${xml}"
+  change_cert "media" "${new_media_cert}" "${xml}"
+  change_cert "network_stack" "${new_network_stack_cert}" "${xml}"
 
   # Validity check.
   if cmp "${xml}" "${orig}"; then
