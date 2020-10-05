@@ -28,11 +28,15 @@
 #define MOCK_SCREEN_ALL_ACTION 0xef32
 
 /* Mock data */
+/* TODO(b/156448738): Add tests for timer_disabled and error_code */
 struct display_call {
 	const struct vb2_screen_info *screen;
 	uint32_t locale_id;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
+	int timer_disabled;
+	uint32_t current_page;
+	enum vb2_ui_error error_code;
 } __attribute__((packed));
 
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
@@ -411,6 +415,9 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 		.locale_id = locale_id,
 		.selected_item = selected_item,
 		.disabled_item_mask = disabled_item_mask,
+		.timer_disabled = timer_disabled,
+		.current_page = current_page,
+		.error_code = error_code,
 	};
 
 	/* Ignore repeated calls with same arguments */
@@ -419,10 +426,11 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 		    sizeof(struct display_call)))
 		return VB2_SUCCESS;
 
-	VB2_DEBUG("displayed %d: screen = %#x, locale_id = %u, "
-		  "selected_item = %u, disabled_item_mask = %#x\n",
+	VB2_DEBUG("displayed %d: screen=%#x, locale_id=%u, selected_item=%u, "
+		  "disabled_item_mask=%#x, timer_disabled=%d, current_page=%u, "
+		  "error=%#x\n",
 		  mock_displayed_count, screen, locale_id, selected_item,
-		  disabled_item_mask);
+		  disabled_item_mask, timer_disabled, current_page, error_code);
 
 	if (mock_displayed_count >= ARRAY_SIZE(mock_displayed)) {
 		TEST_TRUE(0, "  mock vb2ex_display_ui ran out of entries!");
