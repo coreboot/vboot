@@ -11,8 +11,8 @@ usage() {
   cat <<EOF
 Usage: ${PROG} [FLAGS] DIR
 
-Generate Android's 4 framework key pairs at DIR.  For detail, please refer to
-"Certificates and private keys" and "Manually generating keys" in
+Generate Android's set of framework key pairs at DIR.  For detail, please refer
+to "Certificates and private keys" and "Manually generating keys" in
 https://source.android.com/devices/tech/ota/sign_builds.html.
 
 FLAGS:
@@ -78,7 +78,7 @@ main() {
   fi
   dir=$1
 
-  for name in platform shared media releasekey; do
+  for name in platform shared media releasekey networkstack; do
     make_pair "${dir}" "${name}"
 
     if [ -d "${old_dir}" ]; then
