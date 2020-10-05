@@ -18,7 +18,7 @@ Re-sign framework apks in an Android system image.  The image itself does not
 need to be signed since it is shipped with Chrome OS image, which is already
 signed.
 
-Android has many ``framework apks'' that are signed with 4 different framework
+Android has many ``framework apks'' that are signed with different framework
 keys, depends on the purpose of the apk.  During development, apks are signed
 with the debug one.  This script is to re-sign those apks with corresponding
 release key.  It also handles some of the consequences of the key changes, such
@@ -58,6 +58,7 @@ sign_framework_apks() {
   local counter_media=0
   local counter_shared=0
   local counter_releasekey=0
+  local counter_networkstack=0
   local counter_total=0
 
   local apk
@@ -132,6 +133,7 @@ build flavor '${flavor_prop}'."
   info "Found ${counter_media} media APKs."
   info "Found ${counter_shared} shared APKs."
   info "Found ${counter_releasekey} release APKs."
+  info "Found ${counter_networkstack} networkstack APKs."
   info "Found ${counter_total} total APKs."
   # Validity check.
   if [[ ${counter_platform} -lt 2 || ${counter_media} -lt 2 ||
