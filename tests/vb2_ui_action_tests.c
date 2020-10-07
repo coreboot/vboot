@@ -33,7 +33,7 @@ struct display_call {
 	uint32_t locale_id;
 	uint32_t selected_item;
 	uint32_t disabled_item_mask;
-};
+} __attribute__((packed));
 
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
