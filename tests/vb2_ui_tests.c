@@ -29,7 +29,7 @@ struct display_call {
 	uint32_t disabled_item_mask;
 	/* TODO(b/156448738): Add more params and their tests */
 	uint32_t current_page;
-};
+} __attribute__((packed));
 
 struct beep_call {
 	uint32_t msec;
