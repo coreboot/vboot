@@ -180,7 +180,7 @@ update_sepolicy() {
   # Only platform is used at this time.
   local public_platform_key="${key_dir}/platform.x509.pem"
   local public_media_key="${key_dir}/media.x509.pem"
-  local public_network_stack_key="${key_dir}/releasekey.x509.pem"
+  local public_network_stack_key="${key_dir}/networkstack.x509.pem"
 
   info "Start updating sepolicy"
 
