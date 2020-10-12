@@ -382,6 +382,39 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
 }
 
 /*
+ * Preserve ME during firmware update.
+ *
+ * Updating ME region while SoC is in S0 state is an unsupported use-case. On
+ * recent platforms, we are seeing issues more frequently because of this use-
+ * case. For the firmware updates performed using firmware update archive,
+ * preserve the ME region so that it gets updated in the successive boot.
+ *
+ * Returns:
+ *   1 to signal ME needs to be preserved.
+ *   0 to signal ME does not need to be preserved.
+ */
+static int quirk_preserve_me(struct updater_config *cfg)
+{
+	/* For a factory update donot preserve ME. */
+	if (cfg->factory_update) {
+	       WARN("Factory update. Not preserving ME.\n");
+	       return 0;
+	}
+
+	/*
+	 * For a non-archive update, the post boot script that updates ME
+	 * does not have access to the firmware image after the boot. Hence
+	 * donot preserve ME.
+	 */
+	if (!cfg->archive) {
+		WARN("Update using a non-archive image. Not preserving ME.\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -434,6 +467,12 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "chromium/146876241; override signature id for "
 			"devices shipped with different root key.";
 	quirks->apply = NULL; /* Simple config. */
+
+	quirks = &cfg->quirks[QUIRK_PRESERVE_ME];
+	quirks->name = "preserve_me";
+	quirks->help = "b/165590952; Preserve ME during firmware update except "
+		       "for factory update or developer images.";
+	quirks->apply = quirk_preserve_me;
 }
 
 /*
