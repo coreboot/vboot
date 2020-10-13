@@ -66,6 +66,7 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 				      entries_sectors,
 				      gptdata->primary_entries)) {
 			VB2_DEBUG("Read error in primary GPT entries\n");
+			memset(gptdata->primary_entries, 0, entries_bytes);
 			primary_valid = 0;
 		}
 	} else {
@@ -102,6 +103,7 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 				      entries_sectors,
 				      gptdata->secondary_entries)) {
 			VB2_DEBUG("Read error in secondary GPT entries\n");
+			memset(gptdata->secondary_entries, 0, entries_bytes);
 			secondary_valid = 0;
 		}
 	} else {
