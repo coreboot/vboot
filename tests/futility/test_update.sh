@@ -327,6 +327,11 @@ test_update "Full update (--quirks enlarge_image)" \
 	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
+test_update "Full update (multi-line --quirks enlarge_image)" \
+	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks '
+	enlarge_image
+	' -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
 test_update "Full update (--quirks unlock_me_for_update)" \
 	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
 	--quirks unlock_me_for_update \
