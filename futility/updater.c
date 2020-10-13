@@ -188,13 +188,17 @@ static int setup_config_quirks(const char *quirks, struct updater_config *cfg)
 	int r = 0;
 	char *buf = strdup(quirks);
 	char *token;
+	const char *delimiters = ", \n\r\t";
 
-	token = strtok(buf, ", ");
-	for (; token; token = strtok(NULL, ", ")) {
+	token = strtok(buf, delimiters);
+	for (; token; token = strtok(NULL, delimiters)) {
 		const char *name = token;
 		char *equ = strchr(token, '=');
 		int i, value = 1;
 		struct quirk_entry *entry = cfg->quirks;
+
+		if (!*name)
+			continue;
 
 		if (equ) {
 			*equ = '\0';
