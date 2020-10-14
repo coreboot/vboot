@@ -75,6 +75,12 @@ void vb2ex_abort(void)
 }
 
 __attribute__((weak))
+const char *vb2ex_get_mainboard_name(void)
+{
+	return "";
+}
+
+__attribute__((weak))
 const char *vb2ex_get_debug_info(struct vb2_context *ctx)
 {
 	return NULL;
