@@ -23,8 +23,6 @@
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"
 
-#define MOSYS_PATH "/usr/sbin/mosys"
-
 /* Fields that GetVdatString() can get */
 typedef enum VdatStringField {
 	VDAT_STRING_DEPRECATED_TIMERS = 0,  /* Timer values */
@@ -753,72 +751,4 @@ int vb2_write_nv_storage_flashrom(struct vb2_context *ctx)
  exit:
 	free(flash_buf);
 	return rv;
-}
-
-/* TODO(crbug.com/1090803): remove these mosys nvdata functions
-   (approx. October 2020). */
-int vb2_read_nv_storage_mosys(struct vb2_context *ctx)
-{
-	/* Reserve extra 32 bytes */
-	char hexstring[VB2_NVDATA_SIZE_V2 * 2 + 32];
-	/*
-	 * TODO(rspangler): mosys doesn't know how to read anything but 16-byte
-	 * records yet.  When it grows a command line option to do that, call
-	 * it here when needed.
-	 *
-	 * It's possible mosys won't need that.  For example, if if examines
-	 * the header byte to determine the records size, or if it calls back
-	 * to crossystem to read the VBSD flag.
-	 */
-	const char * const argv[] = {
-		MOSYS_PATH, "nvram", "vboot", "read", NULL
-	};
-	char hexdigit[3];
-	const int nvsize = vb2_nv_get_size(ctx);
-	int i;
-
-	struct subprocess_target output = {
-		.type = TARGET_BUFFER,
-		.buffer = {
-			.buf = hexstring,
-			.size = sizeof(hexstring),
-		},
-	};
-
-	if (subprocess_run(argv, &subprocess_null, &output, NULL)) {
-		fprintf(stderr, "Error running mosys to read nvram data\n");
-		return -1;
-	}
-
-	if (output.buffer.bytes_consumed < 2 * nvsize) {
-		fprintf(stderr, "mosys returned hex nvdata size %d"
-			" (need %d)\n", (int)strlen(hexstring), 2 * nvsize);
-		return -1;
-	}
-	hexdigit[2] = '\0';
-	for (i = 0; i < nvsize; i++) {
-		hexdigit[0] = hexstring[i * 2];
-		hexdigit[1] = hexstring[i * 2 + 1];
-		ctx->nvdata[i] = strtol(hexdigit, NULL, 16);
-	}
-	return 0;
-}
-
-int vb2_write_nv_storage_mosys(struct vb2_context *ctx)
-{
-	char hexstring[VB2_NVDATA_SIZE_V2 * 2 + 1];
-	const char * const argv[] = {
-		MOSYS_PATH, "nvram", "vboot", "write", hexstring, NULL
-	};
-	const int nvsize = vb2_nv_get_size(ctx);
-	int i;
-
-	for (i = 0; i < nvsize; i++)
-		snprintf(hexstring + i * 2, 3, "%02x", ctx->nvdata[i]);
-	hexstring[sizeof(hexstring) - 1] = '\0';
-	if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL)) {
-		fprintf(stderr, "Error running mosys to write nvram data\n");
-		return -1;
-	}
-	return 0;
 }
