@@ -121,26 +121,6 @@ int vb2api_is_developer_signed(struct vb2_context *ctx)
 	return 0;
 }
 
-/* Enable board-specific flags */
-static void board_modify_flags(uint32_t *flags)
-{
-	const char *board_name = vb2ex_get_mainboard_name();
-	int i;
-
-	/* Enable diagnostics only for Dirinboz */
-	const char *list_enable_diagnostics[] = {
-		"Dirinboz",
-	};
-	for (i = 0; i < ARRAY_SIZE(list_enable_diagnostics); i++) {
-		const char *enable_diagnostics = list_enable_diagnostics[i];
-		if (strncasecmp(board_name, enable_diagnostics,
-				strlen(enable_diagnostics)))
-			continue;
-		VB2_DEBUG("Enable diagnostics for %s\n", board_name);
-		*flags &= ~VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
-	}
-}
-
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -170,7 +150,6 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		flags |= VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED;
-		board_modify_flags(&flags);
 		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, flags);
 	}
 
