@@ -231,7 +231,7 @@ replace_ota_cert() {
 # Snapshot file properties in a directory recursively.
 snapshot_file_properties() {
   local dir=$1
-  sudo find "${dir}" -exec stat -c '%n:%u:%g:%a:%C' {} + | sort
+  sudo find "${dir}" -exec stat -c '%n:%u:%g:%a' {} + | sort
 }
 
 main() {
@@ -289,7 +289,7 @@ main() {
   local system_mnt="${working_dir}/mnt"
 
   info "Unpacking squashfs system image to ${system_mnt}"
-  sudo "${unsquashfs}" -x -f -no-progress -d "${system_mnt}" "${system_img}"
+  sudo "${unsquashfs}" -no-xattrs -f -no-progress -d "${system_mnt}" "${system_img}"
 
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.orig"
 
