@@ -21,7 +21,7 @@ add_cleanup_action() {
 perform_latest_cleanup_action() {
   local num_actions=${#cleanup_actions[*]}
   if [ ${num_actions} -gt 0 ]; then
-    eval "${cleanup_actions[$num_actions-1]}" > /dev/null 2>&1
+    eval "${cleanup_actions[$num_actions-1]} || true" > /dev/null 2>&1
     unset cleanup_actions[$num_actions-1]
   fi
 }
