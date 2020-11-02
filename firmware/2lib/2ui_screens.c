@@ -720,7 +720,7 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 		break;
 	}
 
-	ui->start_time = vb2ex_mtime();
+	ui->start_time_ms = vb2ex_mtime();
 
 	return VB2_REQUEST_UI_CONTINUE;
 }
@@ -778,7 +778,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 {
 	const int use_short = vb2api_use_short_dev_screen_delay(ui->ctx);
-	uint64_t elapsed;
+	uint64_t elapsed_ms;
 
 	/* TODO(b/159579189): Split this case into a separate root screen */
 	if (!vb2_dev_boot_allowed(ui->ctx))
@@ -790,24 +790,24 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 	if (ui->disable_timer)
 		return VB2_REQUEST_UI_CONTINUE;
 
-	elapsed = vb2ex_mtime() - ui->start_time;
+	elapsed_ms = vb2ex_mtime() - ui->start_time_ms;
 
 	/* If we're using short delay, wait 2 seconds and don't beep. */
-	if (use_short && elapsed > 2 * VB2_MSEC_PER_SEC) {
+	if (use_short && elapsed_ms > 2 * VB2_MSEC_PER_SEC) {
 		VB2_DEBUG("Booting default target after 2s\n");
 		ui->disable_timer = 1;
 		return vb2_ui_menu_select(ui);
 	}
 
 	/* Otherwise, beep at 20 and 20.5 seconds. */
-	if ((ui->beep_count == 0 && elapsed > 20 * VB2_MSEC_PER_SEC) ||
-	    (ui->beep_count == 1 && elapsed > 20 * VB2_MSEC_PER_SEC + 500)) {
+	if ((ui->beep_count == 0 && elapsed_ms > 20 * VB2_MSEC_PER_SEC) ||
+	    (ui->beep_count == 1 && elapsed_ms > 20 * VB2_MSEC_PER_SEC + 500)) {
 		vb2ex_beep(250, 400);
 		ui->beep_count++;
 	}
 
 	/* Stop after 30 seconds. */
-	if (elapsed > 30 * VB2_MSEC_PER_SEC) {
+	if (elapsed_ms > 30 * VB2_MSEC_PER_SEC) {
 		VB2_DEBUG("Booting default target after 30s\n");
 		ui->disable_timer = 1;
 		return vb2_ui_menu_select(ui);

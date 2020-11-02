@@ -99,7 +99,7 @@ struct vb2_ui_context {
 
 	/* For developer mode. */
 	int disable_timer;
-	uint32_t start_time;
+	uint32_t start_time_ms;
 	int beep_count;
 
 	/* For manual recovery. */
