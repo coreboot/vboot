@@ -32,6 +32,8 @@ perform_latest_cleanup_action() {
 # Performs clean up by executing actions in the cleanup_actions array in
 # reversed order.
 cleanup() {
+  # Save the existing return value.
+  rv=$?
   set +e
 
   while [ ${#cleanup_actions[*]} -gt 0 ]; do
@@ -39,6 +41,7 @@ cleanup() {
   done
 
   set -e
+  return $rv
 }
 
 # ANSI color codes used when displaying messages.
