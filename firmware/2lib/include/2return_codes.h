@@ -728,8 +728,9 @@ enum vb2_return_code {
 	/* AUXFW peripheral busy. Cannot upgrade firmware at present. */
 	VB2_ERROR_EX_AUXFW_PERIPHERAL_BUSY,
 
-	/* Error setting vendor data (see: VbExSetVendorData). */
-	VB2_ERROR_EX_SET_VENDOR_DATA,
+	/* Error setting vendor data (see: VbExSetVendorData).
+	 * Deprecated: functionality removed with legacy UI (b/167643628) */
+	VB2_ERROR_DEPRECATED_EX_SET_VENDOR_DATA,
 
 	/* The memory test is running but the output buffer was unchanged. */
 	VB2_ERROR_EX_DIAG_TEST_RUNNING,

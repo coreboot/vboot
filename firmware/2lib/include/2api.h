@@ -182,8 +182,12 @@ enum vb2_context_flags {
 	 */
 	VB2_CONTEXT_NVDATA_V2 = (1 << 18),
 
-	/* Allow vendor data to be set via the vendor data ui. */
-	VB2_CONTEXT_VENDOR_DATA_SETTABLE = (1 << 19),
+	/*
+	 * Allow vendor data to be set via the vendor data ui.
+	 *
+	 * Deprecated with CL:2512740.
+	 */
+	VB2_CONTEXT_DEPRECATED_VENDOR_DATA_SETTABLE = (1 << 19),
 
 	/*
 	 * Caller may set this before running vb2api_fw_phase1.  In this case,

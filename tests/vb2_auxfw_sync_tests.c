@@ -19,7 +19,6 @@
 #include "vboot_audio.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
-#include "vboot_ui_legacy.h"
 
 /* Mock data */
 static struct vb2_context *ctx;

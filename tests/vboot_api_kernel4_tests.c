@@ -144,16 +144,6 @@ vb2_error_t vb2_developer_menu(struct vb2_context *c)
 	return boot_dev(c);
 }
 
-vb2_error_t VbBootDeveloperLegacyClamshell(struct vb2_context *c)
-{
-	return boot_dev(c);
-}
-
-vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *c)
-{
-	return boot_dev(c);
-}
-
 static void rec_check(struct vb2_context *c)
 {
 	TEST_EQ(current_recovery_reason, expected_recovery_reason,
@@ -179,34 +169,6 @@ vb2_error_t vb2_broken_recovery_menu(struct vb2_context *c)
 
 vb2_error_t vb2_diagnostic_menu(struct vb2_context *c)
 {
-	TEST_TRUE(MENU_UI, "Using menu_ui");
-	if (vbboot_retval == -5)
-		return VB2_ERROR_MOCK;
-
-	return vbboot_retval;
-}
-
-vb2_error_t VbBootRecoveryLegacyClamshell(struct vb2_context *c)
-{
-	rec_check(c);
-	/* Don't care if it's manual recovery or not */
-	if (vbboot_retval == -3 || vbboot_retval == -4)
-		return VB2_ERROR_MOCK;
-	return vbboot_retval;
-}
-
-vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *c)
-{
-	rec_check(c);
-	/* Don't care if it's manual recovery or not */
-	if (vbboot_retval == -3 || vbboot_retval == -4)
-		return VB2_ERROR_MOCK;
-	return vbboot_retval;
-}
-
-vb2_error_t VbBootDiagnosticLegacyClamshell(struct vb2_context *c)
-{
-	TEST_TRUE(!MENU_UI, "Not using menu_ui");
 	if (vbboot_retval == -5)
 		return VB2_ERROR_MOCK;
 
