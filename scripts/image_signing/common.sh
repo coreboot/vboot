@@ -120,6 +120,7 @@ loopback_detach() {
 cleanup_loopbacks() {
   local line
   while read -r line; do
+    info "Cleanup: detaching ${line}"
     loopback_detach "${line}" 2>/dev/null
   done <"${TEMP_LOOP_LIST}"
   rm -f "${TEMP_LOOP_LIST}"
