@@ -7,11 +7,13 @@
 # Note: This file must be written in dash compatible way as scripts that use
 # this may run in the Chrome OS client enviornment.
 
+# shellcheck disable=SC2039,SC2059,SC2155
+
 # Determine script directory
-SCRIPT_DIR=$(dirname $0)
-PROG=$(basename $0)
-: ${GPT:=cgpt}
-: ${FUTILITY:=futility}
+SCRIPT_DIR=$(dirname "$0")
+PROG=$(basename "$0")
+: "${GPT:=cgpt}"
+: "${FUTILITY:=futility}"
 
 # The tag when the rootfs is changed.
 TAG_NEEDS_TO_BE_SIGNED="/root/.need_to_be_signed"
@@ -24,8 +26,10 @@ TEMP_DIR_LIST=$(mktemp)
 load_shflags() {
   # Load shflags
   if [ -f /usr/share/misc/shflags ]; then
+    # shellcheck disable=SC1090,SC1091
     .  /usr/share/misc/shflags
   elif [ -f "${SCRIPT_DIR}/lib/shflags/shflags" ]; then
+    # shellcheck disable=SC1090
     . "${SCRIPT_DIR}/lib/shflags/shflags"
   else
     echo "ERROR: Cannot find the required shflags library."
@@ -84,9 +88,9 @@ debug_msg() {
 # Create a new temporary file and return its name.
 # File is automatically cleaned when cleanup_temps_and_mounts() is called.
 make_temp_file() {
-  local tempfile=$(mktemp)
-  echo "$tempfile" >> $TEMP_FILE_LIST
-  echo $tempfile
+  local tempfile="$(mktemp)"
+  echo "$tempfile" >> "$TEMP_FILE_LIST"
+  echo "$tempfile"
 }
 
 # Create a new temporary directory and return its name.
@@ -94,26 +98,27 @@ make_temp_file() {
 # when cleanup_temps_and_mounts() is called.
 make_temp_dir() {
   local tempdir=$(mktemp -d)
-  echo "$tempdir" >> $TEMP_DIR_LIST
-  echo $tempdir
+  echo "$tempdir" >> "$TEMP_DIR_LIST"
+  echo "$tempdir"
 }
 
 cleanup_temps_and_mounts() {
-  for i in $(cat $TEMP_FILE_LIST); do
-    rm -f $i
-  done
+  while read -r line; do
+    rm -f "$line"
+  done < "$TEMP_FILE_LIST"
+
   set +e  # umount may fail for unmounted directories
-  for i in $(cat $TEMP_DIR_LIST); do
-    if [ -n "$i" ]; then
-      if has_needs_to_be_resigned_tag "$i"; then
+  while read -r line; do
+    if [ -n "$line" ]; then
+      if has_needs_to_be_resigned_tag "$line"; then
         echo "Warning: image may be modified. Please resign image."
       fi
-      sudo umount $i 2>/dev/null
-      rm -rf $i
+      sudo umount "$line" 2>/dev/null
+      rm -rf "$line"
     fi
-  done
+  done < "$TEMP_DIR_LIST"
   set -e
-  rm -rf $TEMP_DIR_LIST $TEMP_FILE_LIST
+  rm -rf "$TEMP_DIR_LIST" "$TEMP_FILE_LIST"
 }
 
 trap "cleanup_temps_and_mounts" EXIT
@@ -155,14 +160,14 @@ blocksize() {
 # Args: DEVICE PARTNUM
 # Returns: offset (in sectors) of partition PARTNUM
 partoffset() {
-  sudo $GPT show -b -i $2 $1
+  sudo "$GPT" show -b -i "$2" "$1"
 }
 
 # Read GPT table to find the size of a specific partition.
 # Args: DEVICE PARTNUM
 # Returns: size (in sectors) of partition PARTNUM
 partsize() {
-  sudo $GPT show -s -i $2 $1
+  sudo "$GPT" show -s -i "$2" "$1"
 }
 
 # Tags a file system as "needs to be resigned".
@@ -204,6 +209,7 @@ _mount_image_partition_retry() {
   local offset=$(( $(partoffset "${image}" "${partnum}") * bs ))
   local out try
 
+  # shellcheck disable=SC2086
   set -- sudo LC_ALL=C mount -o loop,offset=${offset},${ro} \
     "${image}" "${mount_dir}"
   try=1
@@ -337,7 +343,9 @@ extract_image_partition() {
   local output_file=$3
   local offset=$(partoffset "$image" "$partnum")
   local size=$(partsize "$image" "$partnum")
-  dd if=$image of=$output_file bs=512 skip=$offset count=$size \
+
+  # shellcheck disable=SC2086
+  dd if="$image" of="$output_file" bs=512 skip=$offset count=$size \
     conv=notrunc 2>/dev/null
 }
 
@@ -349,7 +357,9 @@ replace_image_partition() {
   local input_file=$3
   local offset=$(partoffset "$image" "$partnum")
   local size=$(partsize "$image" "$partnum")
-  dd if=$input_file of=$image bs=512 seek=$offset count=$size \
+
+  # shellcheck disable=SC2086
+  dd if="$input_file" of="$image" bs=512 seek=$offset count=$size \
     conv=notrunc 2>/dev/null
 }
 
@@ -359,6 +369,7 @@ enable_rw_mount() {
   local offset="${2-0}"
 
   # Make sure we're checking an ext2 image
+  # shellcheck disable=SC2086
   if ! is_ext2 "$rootfs" $offset; then
     echo "enable_rw_mount called on non-ext2 filesystem: $rootfs $offset" 1>&2
     return 1
@@ -394,6 +405,7 @@ disable_rw_mount() {
   local offset="${2-0}"
 
   # Make sure we're checking an ext2 image
+  # shellcheck disable=SC2086
   if ! is_ext2 "$rootfs" $offset; then
     echo "disable_rw_mount called on non-ext2 filesystem: $rootfs $offset" 1>&2
     return 1
@@ -413,6 +425,7 @@ rw_mount_disabled() {
   local offset="${2-0}"
 
   # Make sure we're checking an ext2 image
+  # shellcheck disable=SC2086
   if ! is_ext2 "$rootfs" $offset; then
     return 2
   fi
@@ -481,7 +494,7 @@ get_version() {
 ensure_files_exist() {
   local filename return_value=0
   for filename in "$@"; do
-    if [ ! -f "$filename" -a ! -b "$filename" ]; then
+    if [ ! -f "$filename"  ] && [ ! -b "$filename" ]; then
       echo "ERROR: Cannot find required file: $filename"
       return_value=1
     fi
