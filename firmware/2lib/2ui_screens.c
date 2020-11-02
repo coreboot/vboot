@@ -793,21 +793,21 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 	elapsed_ms = vb2ex_mtime() - ui->start_time_ms;
 
 	/* If we're using short delay, wait 2 seconds and don't beep. */
-	if (use_short && elapsed_ms > 2 * VB2_MSEC_PER_SEC) {
+	if (use_short && elapsed_ms > DEV_DELAY_SHORT_MS) {
 		VB2_DEBUG("Booting default target after 2s\n");
 		ui->disable_timer = 1;
 		return vb2_ui_menu_select(ui);
 	}
 
 	/* Otherwise, beep at 20 and 20.5 seconds. */
-	if ((ui->beep_count == 0 && elapsed_ms > 20 * VB2_MSEC_PER_SEC) ||
-	    (ui->beep_count == 1 && elapsed_ms > 20 * VB2_MSEC_PER_SEC + 500)) {
+	if ((ui->beep_count == 0 && elapsed_ms > DEV_DELAY_BEEP1_MS) ||
+	    (ui->beep_count == 1 && elapsed_ms > DEV_DELAY_BEEP2_MS)) {
 		vb2ex_beep(250, 400);
 		ui->beep_count++;
 	}
 
 	/* Stop after 30 seconds. */
-	if (elapsed_ms > 30 * VB2_MSEC_PER_SEC) {
+	if (elapsed_ms > DEV_DELAY_NORMAL_MS) {
 		VB2_DEBUG("Booting default target after 30s\n");
 		ui->disable_timer = 1;
 		return vb2_ui_menu_select(ui);

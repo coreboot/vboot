@@ -6,9 +6,17 @@
  */
 
 #include "2api.h"
+#include "2common.h"
 
 #ifndef VBOOT_REFERENCE_2UI_PRIVATE_H_
 #define VBOOT_REFERENCE_2UI_PRIVATE_H_
+
+/* Time-related constants */
+#define KEY_DELAY_MS 20  /* Delay between key scans in UI loops */
+#define DEV_DELAY_SHORT_MS (2 * VB2_MSEC_PER_SEC)  /* 2 seconds */
+#define DEV_DELAY_NORMAL_MS (30 * VB2_MSEC_PER_SEC)  /* 30 seconds */
+#define DEV_DELAY_BEEP1_MS (20 * VB2_MSEC_PER_SEC)  /* 20 seconds */
+#define DEV_DELAY_BEEP2_MS (20 * VB2_MSEC_PER_SEC + 500)  /* 20.5 seconds */
 
 /* From 2ui.c */
 vb2_error_t check_shutdown_request(struct vb2_ui_context *ui);
