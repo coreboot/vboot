@@ -586,12 +586,12 @@ static void developer_tests(void)
 	/* Proceed to internal disk after timeout */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
-	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC);
-	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC + 500);
+	expect_beep(250, 400, DEV_DELAY_BEEP1_MS);
+	expect_beep(250, 400, DEV_DELAY_BEEP2_MS);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"proceed to internal disk after timeout");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms >=
-		  30 * VB2_MSEC_PER_SEC, "  finished delay");
+		  DEV_DELAY_NORMAL_MS, "  finished delay");
 	TEST_EQ(mock_beep_count, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
@@ -602,9 +602,9 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"use short delay");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms >=
-		  2 * VB2_MSEC_PER_SEC, "  finished delay");
+		  DEV_DELAY_SHORT_MS, "  finished delay");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  not a 30s delay");
+		  DEV_DELAY_NORMAL_MS, "  not a 30s delay");
 	TEST_EQ(mock_beep_count, 0, "  never beeped");
 
 	/* Stop timer on any user input: normal delay */
@@ -639,7 +639,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"select boot internal in dev menu");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* Ctrl+D = boot internal */
 	reset_common_data(FOR_DEVELOPER);
@@ -648,7 +648,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"ctrl+d = boot internal");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* VB_BUTTON_VOL_DOWN_LONG_PRESS = boot internal */
 	if (DETACHABLE) {
@@ -658,19 +658,19 @@ static void developer_tests(void)
 		TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 			"VB_BUTTON_VOL_DOWN_LONG_PRESS = boot internal");
 		TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-			  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+			  DEV_DELAY_NORMAL_MS, "  delay aborted");
 	}
 
 	/* Proceed to external disk after timeout */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
-	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC);
-	expect_beep(250, 400, 20 * VB2_MSEC_PER_SEC + 500);
+	expect_beep(250, 400, DEV_DELAY_BEEP1_MS);
+	expect_beep(250, 400, DEV_DELAY_BEEP2_MS);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"proceed to external disk after timeout");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms >=
-		  30 * VB2_MSEC_PER_SEC, "  finished delay");
+		  DEV_DELAY_NORMAL_MS, "  finished delay");
 	TEST_EQ(mock_beep_count, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
@@ -696,7 +696,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"select boot external in dev menu");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* Ctrl+U = boot external */
 	reset_common_data(FOR_DEVELOPER);
@@ -705,7 +705,7 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"ctrl+u = boot external");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* Ctrl+L = boot legacy (allowed) */
 	reset_common_data(FOR_DEVELOPER);
@@ -715,7 +715,7 @@ static void developer_tests(void)
 		"ctrl+l = boot legacy");
 	TEST_EQ(mock_vbexlegacy_called, 1, "  VbExLegacy called");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* Ctrl+L = boot legacy (disallowed) */
 	reset_common_data(FOR_DEVELOPER);
@@ -724,7 +724,7 @@ static void developer_tests(void)
 		"ctrl+l = boot legacy");
 	TEST_EQ(mock_vbexlegacy_called, 0, "  VbExLegacy not called");
 	TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-		  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+		  DEV_DELAY_NORMAL_MS, "  delay aborted");
 
 	/* VB_BUTTON_VOL_UP_LONG_PRESS = boot external */
 	if (DETACHABLE) {
@@ -734,7 +734,7 @@ static void developer_tests(void)
 		TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 			"VB_BUTTON_VOL_UP_LONG_PRESS = boot external");
 		TEST_TRUE(mock_get_timer_last_ms - mock_time_start_ms <
-			  30 * VB2_MSEC_PER_SEC, "  delay aborted");
+			  DEV_DELAY_NORMAL_MS, "  delay aborted");
 	}
 
 	/* If dev mode is disabled, goes to to_norm screen repeatedly */

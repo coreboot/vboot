@@ -15,8 +15,6 @@
 #include "vboot_api.h"  /* For VB_SHUTDOWN_REQUEST_POWER_BUTTON */
 #include "vboot_kernel.h"
 
-#define KEY_DELAY_MS 20  /* Delay between key scans in UI loops */
-
 /*****************************************************************************/
 /* Utility functions */
 
