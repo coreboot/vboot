@@ -4,6 +4,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# shellcheck disable=SC2039,SC2059,SC2155
+
+# shellcheck source=./common_minimal.sh
 . "$(dirname "$0")/common_minimal.sh"
 CROS_LOG_PREFIX="${PROG}: "
 
@@ -20,9 +23,9 @@ add_cleanup_action() {
 # Performs the latest clean up action and removes it from the list.
 perform_latest_cleanup_action() {
   local num_actions=${#cleanup_actions[*]}
-  if [ ${num_actions} -gt 0 ]; then
+  if [ "${num_actions}" -gt 0 ]; then
     eval "${cleanup_actions[$num_actions-1]} || true" > /dev/null 2>&1
-    unset cleanup_actions[$num_actions-1]
+    unset "cleanup_actions[$num_actions-1]"
   fi
 }
 
@@ -40,8 +43,6 @@ cleanup() {
 
 # ANSI color codes used when displaying messages.
 # Taken from src/scripts/common.sh.
-V_RED="\e[31m"
-V_YELLOW="\e[33m"
 V_BOLD_GREEN="\e[1;32m"
 V_BOLD_RED="\e[1;31m"
 V_BOLD_YELLOW="\e[1;33m"
