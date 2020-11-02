@@ -518,4 +518,3 @@ is_ec_rw_signed() {
   ${FUTILITY} dump_fmap "$1" | grep -q KEY_RO
 }
 
-trap "cleanup_temps_and_mounts" EXIT
