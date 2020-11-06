@@ -560,7 +560,8 @@ const char *vb2ex_get_firmware_log(int reset)
 	return mock_firmware_log_buf;
 }
 
-uint32_t vb2ex_prepare_log_screen(const char *str)
+uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
+				  const char *str)
 {
 	if (mock_prepare_log_count < ARRAY_SIZE(mock_prepare_log))
 		strncpy(mock_prepare_log[mock_prepare_log_count],

@@ -1491,10 +1491,13 @@ const char *vb2ex_get_firmware_log(int reset);
  * pages in the log string is returned.  If the log string ever changes, this
  * function should be called again before the next vb2ex_display_ui() call.
  *
+ * @param screen	Screen to display the log.
+ * @param locale_id	Id of current locale.
  * @param str		The log string to display.
  * @return The number of pages after pagination.  0 if none or error.
  */
-uint32_t vb2ex_prepare_log_screen(const char *str);
+uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
+				  const char *str);
 
 /**
  * Get the full storage diagnostic log.
