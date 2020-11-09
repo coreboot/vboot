@@ -1005,13 +1005,6 @@ void vb2ex_abort(void);
  */
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 
-/**
- * Get mainboard name.
- *
- * @return The pointer to the mainboard name string.  NULL on error.
- */
-const char *vb2ex_get_mainboard_name(void);
-
 /*****************************************************************************/
 /* TPM functionality */
 
