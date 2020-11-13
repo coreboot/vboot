@@ -39,7 +39,7 @@ where <type> is one of:
              verify (verify an image including rootfs hashes)
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
-             cr50_firmware (sign a cr50 firmware image)
+             gsc_firmware (sign a GSC firmware image)
 
 output_image: File name of the signed output image
 version_file: File name of where to read the kernel and firmware versions.
@@ -817,14 +817,14 @@ verify_uefi_signatures() {
   fi
 }
 
-# Sign a cr50 firmware image with the given keys.
+# Sign a GSC firmware image with the given keys.
 # Args: CONTAINER KEY_DIR [OUTPUT_CONTAINER]
-sign_cr50_firmware() {
+sign_gsc_firmware() {
   local image=$1
   local key_dir=$2
   local output=$3
 
-  "${SCRIPT_DIR}/sign_cr50_firmware.sh" \
+  "${SCRIPT_DIR}/sign_gsc_firmware.sh" \
     "${image}" "${key_dir}" "${output}"
 }
 
@@ -1140,8 +1140,8 @@ elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
   futility sign --type rwsig --prikey "${KEY_NAME}" \
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "cr50_firmware" ]]; then
-  sign_cr50_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+elif [[ "${TYPE}" == "gsc_firmware" ]]; then
+  sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 else
   die "Invalid type ${TYPE}"
 fi
