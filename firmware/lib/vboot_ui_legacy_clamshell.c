@@ -295,7 +295,7 @@ static vb2_error_t vb2_developer_ui(struct vb2_context *ctx)
 			/* Only disable virtual dev switch if allowed by GBB */
 			if (!(gbb->flags & VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM))
 				break;
-			__attribute__ ((fallthrough));
+			VBOOT_FALLTHROUGH;
 		case ' ':
 			/* See if we should disable virtual dev-mode switch. */
 			VB2_DEBUG("sd->flags=%#x\n", sd->flags);

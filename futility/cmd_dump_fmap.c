@@ -445,7 +445,7 @@ static int do_dump_fmap(int argc, char *argv[])
 			break;
 		case 'H':
 			opt_gaps = 1;
-			__attribute__ ((fallthrough));
+			VBOOT_FALLTHROUGH;
 		case 'h':
 			opt_format = FMT_HUMAN;
 			opt_overlap++;
@@ -508,7 +508,7 @@ static int do_dump_fmap(int argc, char *argv[])
 		case FMT_NORMAL:
 			printf("hit at 0x%08x\n",
 			       (uint32_t) ((char *)fmap - (char *)base_of_rom));
-			__attribute__ ((fallthrough));
+			VBOOT_FALLTHROUGH;
 		default:
 			retval = normal_fmap(fmap,
 					     argc - optind - 1,

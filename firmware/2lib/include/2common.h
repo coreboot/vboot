@@ -84,6 +84,13 @@ struct vb2_public_key;
 #endif
 #endif
 
+#if (defined(__GNUC__) && __GNUC__ >= 7) || \
+    (defined(__clang__) && __has_attribute(fallthrough))
+#define VBOOT_FALLTHROUGH __attribute__((fallthrough))
+#else
+#define VBOOT_FALLTHROUGH ((void)0)
+#endif
+
 /**
  * Round up a number to a multiple of VB2_WORKBUF_ALIGN
  *

@@ -67,7 +67,7 @@ static vb2_error_t vb2_enter_vendor_data_ui(struct vb2_context *ctx,
 			return VB2_SUCCESS;
 		case 'a'...'z':
 			key = toupper(key);
-			__attribute__ ((fallthrough));
+			VBOOT_FALLTHROUGH;
 		case '0'...'9':
 		case 'A'...'Z':
 			if ((len > 0 && is_vowel(key)) ||
