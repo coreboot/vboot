@@ -84,9 +84,12 @@ struct vb2_public_key;
 #endif
 #endif
 
-#if (defined(__GNUC__) && __GNUC__ >= 7) || \
-    (defined(__clang__) && __has_attribute(fallthrough))
+#if (defined(__GNUC__) && __GNUC__ >= 7)
 #define VBOOT_FALLTHROUGH __attribute__((fallthrough))
+#elif defined(__clang__)
+#if __has_attribute(fallthrough)
+#define VBOOT_FALLTHROUGH __attribute__((fallthrough))
+#endif
 #else
 #define VBOOT_FALLTHROUGH ((void)0)
 #endif
