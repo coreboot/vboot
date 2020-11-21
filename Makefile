@@ -387,23 +387,27 @@ FWLIB_SRCS = \
 	firmware/2lib/2sha_utility.c \
 	firmware/2lib/2stub_hwcrypto.c \
 	firmware/2lib/2tpm_bootmode.c \
-	firmware/2lib/2ui.c \
-	firmware/2lib/2ui_screens.c \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
 	firmware/lib/gpt_misc.c \
 	firmware/lib/vboot_api_kernel.c \
-	firmware/lib/vboot_audio.c \
 	firmware/lib/vboot_kernel.c \
-	firmware/lib/vboot_ui_legacy.c \
-	firmware/lib/vboot_ui_legacy_clamshell.c \
-	firmware/lib/vboot_ui_legacy_menu.c \
-	firmware/lib/vboot_ui_legacy_wilco.c \
 	firmware/lib20/api_kernel.c \
 	firmware/lib20/kernel.c \
 	firmware/lib20/misc.c \
 	firmware/lib20/packed_key.c
+
+# Only add these to firmware and test builds,
+# as regular host builds don't need them
+$(if ${FIRMWARE_ARCH},FWLIB_SRCS,TESTLIB_SRCS) += \
+	firmware/2lib/2ui.c \
+	firmware/2lib/2ui_screens.c \
+	firmware/lib/vboot_audio.c \
+	firmware/lib/vboot_ui_legacy.c \
+	firmware/lib/vboot_ui_legacy_clamshell.c \
+	firmware/lib/vboot_ui_legacy_menu.c \
+	firmware/lib/vboot_ui_legacy_wilco.c
 
 # TPM lightweight command library
 ifeq (${TPM2_MODE},)
@@ -677,7 +681,7 @@ ALL_OBJS += ${FUTIL_OBJS}
 # Library of handy test functions.
 TESTLIB = ${BUILD}/tests/test.a
 
-TESTLIB_SRCS = \
+TESTLIB_SRCS += \
 	tests/test_common.c \
 	tests/timer_utils.c \
 	tests/crc32_test.c
