@@ -355,7 +355,7 @@ vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 				      vb2_member_of(sd, sd->data_key_offset),
 				      sd->data_key_size));
 
-	key.allow_hwcrypto = vb2_hwcrypto_rsa_allowed(ctx);
+	key.allow_hwcrypto = vb2_hwcrypto_allowed(ctx);
 
 	/*
 	 * Check digest vs. signature.  Note that this destroys the signature.

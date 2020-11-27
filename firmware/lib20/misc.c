@@ -43,7 +43,7 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx)
 	/* Unpack the root key */
 	VB2_TRY(vb2_unpack_key_buffer(&root_key, key_data, key_size));
 
-	root_key.allow_hwcrypto = vb2_hwcrypto_rsa_allowed(ctx);
+	root_key.allow_hwcrypto = vb2_hwcrypto_allowed(ctx);
 
 	/* Load the firmware keyblock header after the root key */
 	kb = vb2_workbuf_alloc(&wb, sizeof(*kb));
@@ -149,7 +149,7 @@ vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx)
 
 	VB2_TRY(vb2_unpack_key_buffer(&data_key, key_data, key_size));
 
-	data_key.allow_hwcrypto = vb2_hwcrypto_rsa_allowed(ctx);
+	data_key.allow_hwcrypto = vb2_hwcrypto_allowed(ctx);
 
 	/* Load the firmware preamble header */
 	pre = vb2_workbuf_alloc(&wb, sizeof(*pre));
