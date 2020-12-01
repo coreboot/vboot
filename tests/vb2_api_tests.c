@@ -82,6 +82,9 @@ static void reset_common_data(enum reset_type t)
 
 	vb2api_secdata_kernel_create(ctx);
 	vb2_secdata_kernel_init(ctx);
+	if (hwcrypto_state != HWCRYPTO_FORBIDDEN)
+		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+				VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_init_gbb = VB2_SUCCESS;
@@ -102,10 +105,7 @@ static void reset_common_data(enum reset_type t)
 	pre = vb2_member_of(sd, sd->preamble_offset);
 	pre->body_signature.data_size = mock_body_size;
 	pre->body_signature.sig_size = mock_sig_size;
-	if (hwcrypto_state == HWCRYPTO_FORBIDDEN)
-		pre->flags = VB2_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO;
-	else
-		pre->flags = 0;
+	pre->flags = 0;
 
 	sd->data_key_offset = sd->workbuf_used;
 	sd->data_key_size = sizeof(*k) + 8;
@@ -741,26 +741,28 @@ static void check_hash_tests(void)
 		"check digest value");
 
 	/* Test hwcrypto conditions */
-	reset_common_data(FOR_CHECK_HASH);
-	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-	TEST_EQ(last_used_key.allow_hwcrypto, 0,
-		"hwcrypto is forbidden by TPM flag");
+	if (hwcrypto_state == HWCRYPTO_FORBIDDEN) {
+		reset_common_data(FOR_CHECK_HASH);
+		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+		TEST_EQ(last_used_key.allow_hwcrypto, 0,
+			"hwcrypto is forbidden by TPM flag");
 
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-	TEST_EQ(last_used_key.allow_hwcrypto, 0,
-		"hwcrypto is forbidden by TPM flag on recovery mode");
+		reset_common_data(FOR_CHECK_HASH);
+		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+		TEST_EQ(last_used_key.allow_hwcrypto, 0,
+			"hwcrypto is forbidden by TPM flag on recovery mode");
+	} else {
+		reset_common_data(FOR_CHECK_HASH);
+		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+		TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
 
-	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
-			VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
-
-	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-	TEST_EQ(last_used_key.allow_hwcrypto, 0,
-		"hwcrypto is forbidden on recovery mode");
-
-	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
-	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-	TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
+		reset_common_data(FOR_CHECK_HASH);
+		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+		TEST_EQ(last_used_key.allow_hwcrypto, 0,
+			"hwcrypto is forbidden on recovery mode");
+	}
 
 	reset_common_data(FOR_CHECK_HASH);
 	TEST_EQ(vb2api_check_hash_get_digest(ctx, digest_result,
