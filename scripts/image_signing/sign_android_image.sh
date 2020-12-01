@@ -250,7 +250,8 @@ main() {
       "${root_fs_dir}/opt/google/containers/android/system.raw.img")
   if [[ -f "${vm_candidate}" ]]; then
     system_image="${vm_candidate}"
-    compression_flags="-comp lz4 -Xhc -b 256K"
+    #compression_flags="-comp lz4 -Xhc -b 256K"
+    compression_flags="-comp gzip"
     file_contexts="${selinux_dir}/arc/contexts/files/android_file_contexts_vm"
   elif [[ -f "${container_candidate}" ]]; then
     system_image="${container_candidate}"
