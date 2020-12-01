@@ -276,7 +276,7 @@ vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag)
 	sd->hash_tag = tag;
 	sd->hash_remaining_size = pre->body_signature.data_size;
 
-	if (!(pre->flags & VB2_FIRMWARE_PREAMBLE_DISALLOW_HWCRYPTO)) {
+	if (vb2_hwcrypto_allowed(ctx)) {
 		vb2_error_t rv = vb2ex_hwcrypto_digest_init(
 			key.hash_alg, pre->body_signature.data_size);
 		if (!rv) {
@@ -291,7 +291,7 @@ vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag)
 		VB2_DEBUG("HW crypto for hash_alg %d not supported, using SW\n",
 			  key.hash_alg);
 	} else {
-		VB2_DEBUG("HW crypto forbidden by preamble, using SW\n");
+		VB2_DEBUG("HW crypto forbidden by TPM flag, using SW\n");
 	}
 
 	return vb2_digest_init(dc, key.hash_alg);
