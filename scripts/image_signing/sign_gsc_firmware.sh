@@ -36,6 +36,92 @@ to_int32() {
            print (struct.unpack('i', d)[0])"
 }
 
+# Functions allowing to determine the base address of a binary blob in ihex
+# format. Invoked in a subprocess through () to be able to use stdout as the
+# return values.
+
+# In ihex format binary data is represented as a set of records. Each record
+# is a text string of hex values in ASCII. All records start with a header
+# which determines the record contents.
+#
+# The most common record type is the data record, its header includes the 16
+# bit address of where the record data will have to be placed in the physical
+# address space. Naturally 16 bits is not enough as of last thirty years, some
+# special types of record are used to specify the segment base of there the
+# 16 bit address is used as the offset.
+#
+# The segment base is still represented as a 16 bit value, depending on the
+# record type the base is shifted right ether 4 (record type 02) or 16 (record
+# type 04) bits.
+#
+# The first two records of the ihex binary blob are a segment record and a
+# data record. Combining the segment value from the first record and the
+# address value from the second record one can determine the base address
+# where the blob is supposed to be placed.
+#
+# See https://en.wikipedia.org/wiki/Intel_HEX for further details.
+parse_segment() {
+  local string="$1"
+
+  if [[ "${string}" =~ ^:020000 && "${#string}" -eq 15 ]]; then
+    local type="${string:7:2}"
+    local value="0x${string:9:4}"
+    local segment
+
+    case "${type}" in
+      (02)
+        segment=$(( value << 4 ))
+        ;;
+      (04)
+        segment=$(( value << 16 ))
+        ;;
+      (*)
+        error "unknown segment record type ${type}"
+        ;;
+    esac
+    printf "0x%x" "${segment}"
+  else
+    error "unexpected segment record: ${string}"
+  fi
+}
+
+# The second record in the ihex binary blob is mapped to the lowest 16 bit
+# address in the segment.
+parse_data() {
+  local string="$1"
+
+  if [[ "${string}" =~ ^:10 && "${#string}" -eq 43 ]]; then
+    echo "0x${string:3:4}"
+  else
+    error "unexpected data record: ${string}"
+  fi
+}
+
+# Given an ihex binary blob determine its base address as a sum of the segment
+# address and the offset of the first record into the segment.
+get_hex_base() {
+  local hexf="$1"
+  local strings
+  local segment
+  local base_offset
+
+  # Some ihex blobs include <cr><lf>, drop <cr> to allow for fixed size check.
+  mapfile -t strings < <(head -2 "${hexf}" | sed 's/\x0d//')
+
+  if [[ ${#strings[@]} != 2 ]]; then
+    error "input file ${hexf} too short"
+    return
+  fi
+  segment="$(parse_segment "${strings[0]}")"
+  base_offset="$(parse_data "${strings[1]}")"
+
+  if [[ -n "${segment}" && -n "${base_offset}" ]]; then
+    printf "%d\n" $(( segment + base_offset ))
+  else
+    error "${hexf} does not seem to be a valid ihex module."
+  fi
+}
+
 # This function accepts one argument, the name of the GSC manifest file which
 # needs to be verified and in certain cases altered.
 #
