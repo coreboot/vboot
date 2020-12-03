@@ -122,6 +122,28 @@ get_hex_base() {
   fi
 }
 
+# Paste a binary blob into a larger binary file at a given offset.
+paste_bin() {
+  local file="${1}"
+  local blob="${2}"
+  local image_base="${3}"
+  local hex_base="${4}"
+  local file_size
+  local blob_size
+  local offset
+
+
+  file_size="$(stat -c '%s' "${file}")"
+  blob_size="$(stat -c '%s' "${blob}")"
+  offset="$(( hex_base - image_base ))"
+
+  if [[ $(( blob_size + offset )) -ge ${file_size} ]];then
+    die \
+      "Can't fit ${blob_size} bytes at offset ${offset} into ${file_size} bytes"
+  fi
+  dd if="${blob}" of="${file}" seek="${offset}" bs=1 conv=notrunc
+}
+
 # This function accepts one argument, the name of the GSC manifest file which
 # needs to be verified and in certain cases altered.
 #
@@ -306,30 +328,26 @@ determine_rma_key_base() {
 # Sign GSC RW firmware ELF images into a combined GSC firmware image
 # using the provided production keys and manifests.
 sign_rw() {
-  if [[ $# -ne 8 ]]; then
+  if [[ $# -ne 9 ]]; then
     die "Usage: sign_rw <key_file> <manifest> <fuses>" \
-        "<rma_key_dir> <rw_a> <rw_b> <output> <generation>"
+        "<rma_key_dir> <rw_a> <rw_b> <output> <generation> <image_base>"
   fi
 
   local key_file="$1"
   local manifest_file="$2"
   local fuses_file="$3"
   local rma_key_dir="$4"
-  local elfs=( "$5" "$6" )
+  local rws=( "$5" "$6" )
   local result_file="$7"
   local generation="$8"
-  local temp_dir
+  local image_base="$9"
+  local base_name
   local rma_key_base=""
-  local rw_a_offset
-  local rw_b_offset
+  local signer_command_params
+  local temp_dir
 
   temp_dir="$(make_temp_dir)"
-
-  if [[ ! -f "${result_file}" ]]; then
-    die "${result_file} not found."
-  fi
-
-  local signer_command_params=(-x "${fuses_file}" --key "${key_file}")
+  signer_command_params=(-x "${fuses_file}" --key "${key_file}")
 
   case "${generation}"  in
     (h)
@@ -342,9 +360,9 @@ sign_rw() {
         "${manifest_file}")"
 
       if [[ "${gsc_version}" != "22" ]]; then
-        rma_key_base="$(determine_rma_key_base "${rma_key_dir}" "${elfs[@]}")"
+        rma_key_base="$(determine_rma_key_base "${rma_key_dir}" "${rws[@]}")"
       else
-        echo "Ignoring RMA keys for factory branch ${gsc_version}"
+        warn "Ignoring RMA keys for factory branch ${gsc_version}"
       fi
 
       # Swap test public RMA server key with the prod version.
@@ -355,15 +373,13 @@ sign_rw() {
       fi
 
       # Indicate H1 signing.
-      signer_command_params+=( '--b' )
-      # Fixed offsets into the binary blob where RW sections start.
-      rw_a_offset=16384
-      rw_b_offset=278528
+      signer_command_params+=( "--b" )
+      base_name="cr50"
       ;;
     (d)
       # Indicate D1 signing.
-      signer_command_params+=( '--dauntless' )
-      die "Need to figure out D2 RW sections offsets"
+      signer_command_params+=( "--dauntless" "--ihex" )
+      base_name="ti50"
       ;;
     (*)
       die "Unknown generation value \"${generation}\""
@@ -372,46 +388,46 @@ sign_rw() {
 
   signer_command_params+=(--json "${manifest_file}")
 
-  signer_command_params+=(--format=bin)
-  dst_suffix='flat'
 
   if [[ "${FLAGS_override_keyid}" == "${FLAGS_TRUE}" ]]; then
     signer_command_params+=(--override-keyid)
   fi
 
-  local count=0
-  for elf in "${elfs[@]}"; do
-    if strings "${elf}" | grep -q "DBG/cr50"; then
-      die "Will not sign debug image with prod keys"
-    fi
-    signed_file="${temp_dir}/${count}.${dst_suffix}"
+  for rw in "${rws[@]}"; do
+    local hex_signed="${temp_dir}/hex_signed"
+    local bin_signed="${temp_dir}/bin_signed"
+    local hex_base
 
-    # Make sure output file is not owned by root.
-    touch "${signed_file}"
+    # Make sure output files are not owned by root.
+    touch "${bin_signed}" "${hex_signed}"
     if ! gsc-codesigner "${signer_command_params[@]}" \
-        -i "${elf}" -o "${signed_file}"; then
+        -i "${rw}" -o "${hex_signed}"; then
       die "gsc-codesigner ${signer_command_params[*]}" \
-        "-i ${elf} -o ${signed_file} failed"
+        "-i ${rw} -o ${hex_signed} failed"
+    fi
+
+    if ! objcopy -I ihex "${hex_signed}" -O binary "${bin_signed}"; then
+      die "Failed to convert ${rw} from hex to bin"
     fi
 
     if [[ -n "${rma_key_base}" ]]; then
-      if find_blob_in_blob  "${signed_file}" "${rma_key_base}.test"; then
+      if find_blob_in_blob  "${bin_signed}" "${rma_key_base}.test"; then
         die "test RMA key in the signed image!"
       fi
 
-      if ! find_blob_in_blob "${signed_file}" "${rma_key_base}.prod"; then
+      if ! find_blob_in_blob "${bin_signed}" "${rma_key_base}.prod"; then
         die "prod RMA key not in the signed image!"
       fi
     fi
-    : $(( count++ ))
+
+    hex_base="$(get_hex_base "${hex_signed}")"
+    paste_bin "${result_file}" "${bin_signed}" "${image_base}" "${hex_base}"
   done
 
-  # Full binary image is required, paste the newly signed blobs into the
-  # output image.
-  dd if="${temp_dir}/0.${dst_suffix}" of="${result_file}" \
-    seek="${rw_a_offset}" bs=1 conv=notrunc
-  dd if="${temp_dir}/1.${dst_suffix}" of="${result_file}" \
-    seek="${rw_b_offset}" bs=1 conv=notrunc
+  if strings "${rw}" | grep -q "DBG/${base_name}"; then
+    die "Will not sign debug image with prod keys"
+  fi
+
 }
 
 # A very crude RO verification function. The key signature found at a fixed
@@ -460,13 +476,13 @@ verify_ro() {
 # downloading the tarball from the BCS expects the image to be in that
 # directory.
 sign_gsc_firmware() {
-  if [[ $# -ne 9 ]]; then
+  if [[ $# -ne 10 ]]; then
     die "Usage: sign_gsc_firmware <key_file> <manifest> <fuses>" \
-        "<rma_key_dir> <ro_a> <ro_b> <rw_a> <rw_b> <output>"
+        "<rma_key_dir> <ro_a> <ro_b> <rw_a> <rw_b> <output> <generation>"
   fi
 
   local key_file="$1"
-  local manifest_source="$2"
+  local manifest_file="$2"
   local fuses_file="$3"
   local rma_key_dir="$4"
   local ro_a_hex="$5"
@@ -474,33 +490,21 @@ sign_gsc_firmware() {
   local rw_a="$7"
   local rw_b="$8"
   local output_file="$9"
-  local generation
-  local manifest_file
+  local generation="${10}"
   local temp_dir
-  local ro_b_base
 
-  manifest_file="${manifest_source}.updated"
   temp_dir="$(make_temp_dir)"
 
-  # Prepare file for inline editing.
-  jq . < "${manifest_source}" > "${manifest_file}" || \
-    die "basic validation of ${manifest_json} failed"
-
-  # Retrieve chip type from the manifest, if preset, otherwise use h1.
-  generation="$(jq '.generation' "${manifest_file}")"
   case "${generation}"  in
-    (h|null)
-      generation="h"  # Just in case this is a legacy manifest.
-
+    (h)
       # H1 flash size, image size must match.
       IMAGE_SIZE="$(( 512 * 1024 ))"
+      IMAGE_BASE="0x40000"
       ;;
     (d)
       # D2 flash size, image size must match.
-      IMAGE_SIZE="$(( 512 * 1024 ))"
-      ;;
-    (*)
-      die "Unknown generation value \"${generation}\" in signing manifest"
+      IMAGE_SIZE="$(( 1024 * 1024 ))"
+      IMAGE_BASE="0x80000"
       ;;
   esac
 
@@ -512,54 +516,101 @@ sign_gsc_firmware() {
     die "Failed creating ${output_file}"
   fi
 
-  local f
-  local count=0
-  for f in "${ro_a_hex}" "${ro_b_hex}"; do
-    if ! objcopy -I ihex "${f}" -O binary "${temp_dir}/${count}.bin"; then
-      die "Failed to convert ${f} from hex to bin"
-    fi
-    verify_ro "${temp_dir}/${count}.bin" "${key_file}"
-    : $(( count++ ))
-  done
-
   if ! sign_rw "${key_file}" "${manifest_file}" "${fuses_file}" \
        "${rma_key_dir}" "${rw_a}" "${rw_b}" \
-       "${output_file}" "${generation}"; then
-    die "Failed invoking sign_rw for ELF files ${rw_a} ${rw_b}"
+       "${output_file}" "${generation}" "${IMAGE_BASE}"; then
+    die "Failed invoking sign_rw for ${rw_a} and ${rw_b}"
   fi
 
-  ro_b_base=$(( IMAGE_SIZE / 2 ))
-  dd if="${temp_dir}/0.bin" of="${output_file}" conv=notrunc
-  dd if="${temp_dir}/1.bin" of="${output_file}" seek="${ro_b_base}" bs=1 \
-     conv=notrunc
+  local f
+  for f in "${ro_a_hex}" "${ro_b_hex}"; do
+    local hex_base
+    local bin
 
-  echo "Image successfully signed to ${output_file}"
+    hex_base="$(get_hex_base "${f}")"
+    bin="${temp_dir}/bin"
+
+    if [[ -z ${hex_base} ]]; then
+      die "Failed retrieving base address from ${f}"
+    fi
+
+    if ! objcopy -I ihex "${f}" -O binary "${bin}"; then
+      die "Failed to convert ${f} from hex to bin"
+    fi
+    if [[ "${generation}" == "h" ]]; then
+      verify_ro "${bin}" "${key_file}"
+    fi
+
+    paste_bin "${output_file}" "${bin}" "${IMAGE_BASE}" "${hex_base}"
+  done
+
+  info "Image successfully signed to ${output_file}"
 }
 
 # Sign the directory holding GSC firmware.
 sign_gsc_firmware_dir() {
   if [[ $# -ne 3 ]]; then
-    die "Usage: sign_gsc_firmware_dir <input> <key> <output>"
+    die "Usage: sign_gsc_firmware_dir <input> <key dir> <output>"
   fi
 
   local input="${1%/}"
-  local key_file="$2"
+  local key_dir="$2"
   local output="$3"
+  local generation
+  local rw_a
+  local rw_b
+  local manifest_source
+  local manifest_file
+  local key_file
+  local base_name
+
+  manifest_source="${input}/prod.json"
+  manifest_file="${manifest_source}.updated"
+
+  # Verify signing manifest.
+  jq . < "${manifest_source}" > "${manifest_file}" || \
+    die "basic validation of ${manifest_source} failed"
+
+
+  # Retrieve chip type from the manifest, if present, otherwise use h1.
+  generation="$(jq ".generation" "${input}/prod.json" | sed 's/"//g')"
+  case "${generation}"  in
+    (h|null)
+      generation="h"
+      base_name="cr50"
+      rw_a="${input}/ec.RW.elf"
+      rw_b="${input}/ec.RW_B.elf"
+      ;;
+    (d)
+      base_name="ti50"
+      rw_a="${input}/rw_A.hex"
+      rw_b="${input}/rw_B.hex"
+      ;;
+    (*)
+      die "Unknown generation value \"${generation}\" in signing manifest"
+      ;;
+  esac
+
+  key_file="${key_dir}/${base_name}.pem"
+  if [[ ! -e "${key_file}" ]]; then
+    die "Missing key file: ${key_file}"
+  fi
 
   if [[ -d "${output}" ]]; then
-    output="${output}/cr50.bin.prod"
+    output="${output}/${base_name}.bin.prod"
   fi
 
   sign_gsc_firmware \
           "${key_file}" \
-          "${input}/prod.json" \
+          "${manifest_file}" \
           "${input}/fuses.xml" \
           "${input}" \
           "${input}/prod.ro.A" \
           "${input}/prod.ro.B" \
-          "${input}/ec.RW.elf" \
-          "${input}/ec.RW_B.elf" \
-          "${output}"
+          "${rw_a}" \
+          "${rw_b}" \
+          "${output}" \
+          "${generation}"
 }
 
 main() {
@@ -572,7 +623,6 @@ main() {
   local key_dir="$2"
   local output="$3"
 
-  local key_file="${key_dir}/cr50.pem"
   local signing_instructions="${input}/signing_instructions.sh"
 
   if [[ -f ${signing_instructions} ]]; then
@@ -581,14 +631,10 @@ main() {
     die "${signing_instructions} not found"
   fi
 
-  if [[ ! -e "${key_file}" ]]; then
-    die "Missing key file: ${key_file}"
-  fi
-
   if [[ ! -d "${input}" ]]; then
     die "Missing input directory: ${input}"
   fi
 
-  sign_gsc_firmware_dir "${input}" "${key_file}" "${output}"
+  sign_gsc_firmware_dir "${input}" "${key_dir}" "${output}"
 }
 main "$@"
