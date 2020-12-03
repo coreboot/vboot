@@ -37,6 +37,7 @@ set -e
 sign_framework_apks() {
   local system_mnt="$1"
   local key_dir="$2"
+  local working_dir="$3"
   local flavor_prop=""
   local keyset=""
 
@@ -52,6 +53,9 @@ sign_framework_apks() {
   info "Expecting signing keyset '${keyset}'."
 
   info "Start signing framework apks"
+
+  image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                "Prepare apks signing"
 
   # Counters for validity check.
   local counter_platform=0
@@ -116,6 +120,8 @@ build flavor '${flavor_prop}'."
         --in "${temp_apk}" --out "${signed_apk}" \
         ${extra_flags}
     fi
+    image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                  "sign apk ${signed_apk}"
 
     # Copy the content instead of mv to avoid owner/mode changes.
     sudo cp "${signed_apk}" "${apk}" && rm -f "${signed_apk}"
@@ -127,6 +133,8 @@ build flavor '${flavor_prop}'."
 
     : $(( counter_${keyname} += 1 ))
     : $(( counter_total += 1 ))
+    image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                  "update re-signed apk ${apk}"
   done < <(find "${system_mnt}/system" -type f -name '*.apk' -print0)
 
   info "Found ${counter_platform} platform APKs."
@@ -234,6 +242,18 @@ snapshot_file_properties() {
   sudo find "${dir}" -exec stat -c '%n:%u:%g:%a' {} + | sort
 }
 
+# Integrity check that image content is unchanged.
+image_content_integrity_check() {
+  local system_mnt=$1
+  local working_dir=$2
+  local reason=$3
+  snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.new"
+  local d
+  if ! d=$(diff "${working_dir}"/properties.{orig,new}); then
+    die "Unexpected change of file property, diff due to ${reason}\n${d}"
+  fi
+}
+
 main() {
   local root_fs_dir=$1
   local key_dir=$2
@@ -293,16 +313,17 @@ main() {
 
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.orig"
 
-  sign_framework_apks "${system_mnt}" "${key_dir}"
-  update_sepolicy "${system_mnt}" "${key_dir}"
-  replace_ota_cert "${system_mnt}" "${key_dir}/releasekey.x509.pem"
+  sign_framework_apks "${system_mnt}" "${key_dir}" "${working_dir}"
+  image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                "sign_framework_apks"
 
-  # Validity check.
-  snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.new"
-  local d
-  if ! d=$(diff "${working_dir}"/properties.{orig,new}); then
-    die "Unexpected change of file property, diff\n${d}"
-  fi
+  update_sepolicy "${system_mnt}" "${key_dir}"
+  image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                "update_sepolicy"
+
+  replace_ota_cert "${system_mnt}" "${key_dir}/releasekey.x509.pem"
+  image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                "replace_ota_cert"
 
   # Packages cache needs to be regenerated when the key and timestamp are
   # changed for apks.
