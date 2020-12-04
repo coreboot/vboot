@@ -415,6 +415,16 @@ static int quirk_preserve_me(struct updater_config *cfg)
 }
 
 /*
+ * Disable checking platform compatibility.
+ */
+static int quirk_no_check_platform(struct updater_config *cfg)
+{
+	WARN("Disabled checking platform. You are on your own.\n");
+	cfg->check_platform = 0;
+	return 0;
+}
+
+/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -473,6 +483,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "b/165590952; Preserve ME during firmware update except "
 		       "for factory update or developer images.";
 	quirks->apply = quirk_preserve_me;
+
+	quirks = &cfg->quirks[QUIRK_NO_CHECK_PLATFORM];
+	quirks->name = "no_check_platform";
+	quirks->help = "Do not check platform name.";
+	quirks->apply = quirk_no_check_platform;
 }
 
 /*

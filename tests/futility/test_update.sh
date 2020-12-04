@@ -48,6 +48,7 @@ cp -f ${LINK_BIOS} ${TO_IMAGE}
 cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
 "${FUTILITY}" load_fmap "${FROM_IMAGE}" \
 	RO_VPD:"${RO_VPD_BLOB}" RW_VPD:"${RO_VPD_BLOB}"
+cp -f "${FROM_IMAGE}" "${FROM_IMAGE}".unpatched
 
 patch_file() {
 	local file="$1"
@@ -346,6 +347,15 @@ test_update "Full update (--quirks min_platform_version)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	--quirks min_platform_version=3 \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1,3
+
+test_update "Full update (incompatible platform)" \
+	"${FROM_IMAGE}".unpatched "!platform is not compatible" \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks no_check_platform)" \
+	"${FROM_IMAGE}".unpatched "${TMP}.expected.full" \
+	--quirks no_check_platform \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 # Test archive and manifest.
 A="${TMP}.archive"

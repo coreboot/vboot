@@ -1209,8 +1209,13 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	       image_from->file_name, image_from->ro_version,
 	       image_from->rw_version_a, image_from->rw_version_b);
 
-	if (cfg->check_platform && check_compatible_platform(cfg))
+	try_apply_quirk(QUIRK_NO_CHECK_PLATFORM, cfg);
+	if (cfg->check_platform && check_compatible_platform(cfg)) {
+		ERROR("The firmware image is not compatible with your system. "
+		      "If you really want to proceed, please run again with: "
+		      "--quirks=no_check_platform\n");
 		return UPDATE_ERR_PLATFORM;
+	}
 
 	wp_enabled = is_write_protection_enabled(cfg);
 	STATUS("Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
