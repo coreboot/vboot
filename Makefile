@@ -213,6 +213,15 @@ else
 CFLAGS += -DTPM2_SIMULATOR=0
 endif
 
+# VTPM_PROXY indicates whether the TPM driver simulator feature
+# is enable or not.
+# This flag only takes effect when TPM2_SIMULATOR is enabled.
+ifneq ($(filter-out 0,${VTPM_PROXY}),)
+CFLAGS += -DVTPM_PROXY=1
+else
+CFLAGS += -DVTPM_PROXY=0
+endif
+
 # DETACHABLE indicates whether the device is a detachable or not.
 ifneq ($(filter-out 0,${DETACHABLE}),)
 CFLAGS += -DDETACHABLE=1
