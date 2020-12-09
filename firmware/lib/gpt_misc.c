@@ -35,6 +35,11 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 	gptdata->primary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
 	gptdata->secondary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
 
+	/* In some cases we try to validate header1 with entries2 or vice versa,
+	   so make sure the entries buffers always got fully initialized. */
+	memset(gptdata->primary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
+	memset(gptdata->secondary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
+
 	if (gptdata->primary_header == NULL ||
 	    gptdata->secondary_header == NULL ||
 	    gptdata->primary_entries == NULL ||
@@ -66,7 +71,6 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 				      entries_sectors,
 				      gptdata->primary_entries)) {
 			VB2_DEBUG("Read error in primary GPT entries\n");
-			memset(gptdata->primary_entries, 0, entries_bytes);
 			primary_valid = 0;
 		}
 	} else {
@@ -103,7 +107,6 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
 				      entries_sectors,
 				      gptdata->secondary_entries)) {
 			VB2_DEBUG("Read error in secondary GPT entries\n");
-			memset(gptdata->secondary_entries, 0, entries_bytes);
 			secondary_valid = 0;
 		}
 	} else {
