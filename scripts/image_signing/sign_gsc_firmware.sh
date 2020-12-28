@@ -598,8 +598,6 @@ sign_gsc_firmware_dir() {
 
   if [[ -d "${output}" ]]; then
     output="${output}/${base_name}.bin.prod"
-  else
-    output="${output/@CHIP@/${base_name}}"
   fi
 
   sign_gsc_firmware \
