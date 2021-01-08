@@ -170,7 +170,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		flags = vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS);
 		flags &= ~VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED;
-		flags |= VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
+		flags &= ~VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED;
 		flags |= VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED;
 		board_modify_flags(&flags);
 		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, flags);
