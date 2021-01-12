@@ -242,7 +242,13 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		}
 	} else if (DIAGNOSTIC_UI && vb2api_diagnostic_ui_enabled(ctx) &&
 		   vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
+		/*
+		 * Need to clear the request flag and commit nvdata changes
+		 * immediately to avoid booting back into diagnostic tool when a
+		 * forced system reset occurs.
+		 */
 		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
+		vb2ex_commit_data(ctx);
 
 		/* Diagnostic boot.  This has UI. */
 		if (MENU_UI)
