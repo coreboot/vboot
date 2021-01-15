@@ -283,7 +283,7 @@ static void marshal_blob(void **buffer, void *blob,
 	}
 
 	memcpy(*buffer, blob, blob_size);
-	buffer_space -= blob_size;
+	*buffer_space -= blob_size;
 	*buffer = (void *)((uintptr_t)(*buffer) + blob_size);
 }
 
@@ -327,6 +327,7 @@ static void marshal_u32(void **buffer, uint32_t value, int *buffer_space)
 #define marshal_TPM_HANDLE(a, b, c) marshal_u32(a, b, c)
 #define marshal_TPM_SU(a, b, c) marshal_u16(a, b, c)
 #define marshal_ALG_ID(a, b, c) marshal_u16(a, b, c)
+#define marshal_TPMI_ALG_HASH(a, b, c) marshal_u16(a, b, c)
 
 /*
  * For TPM2B* structures the size field (16 or 32 bits) goes before the data.
@@ -671,6 +672,48 @@ static void marshal_shutdown(void **buffer,
 	marshal_TPM_SU(buffer, command_body->shutdown_type, buffer_space);
 }
 
+static void marshal_TPMT_HA(void **buffer,
+			    TPMT_HA *data,
+			    int *buffer_space)
+{
+	if (data->hashAlg != TPM_ALG_SHA256)
+	{
+		VB2_DEBUG("Unsupported TPMT_HA hash algorithm: %#x\n",
+			  data->hashAlg);
+		*buffer_space = -1;
+		return;
+	}
+	marshal_TPMI_ALG_HASH(buffer, data->hashAlg, buffer_space);
+	/* We only support SHA256 now. */
+	marshal_blob(buffer, data->digest.sha256,
+		     SHA256_DIGEST_SIZE, buffer_space);
+}
+
+static void marshal_TPML_DIGEST_VALUES(void **buffer,
+				       TPML_DIGEST_VALUES *data,
+				       int *buffer_space)
+{
+	int i;
+
+	marshal_u32(buffer, data->count, buffer_space);
+	for (i = 0; i < data->count; i++)
+		marshal_TPMT_HA(buffer, &data->digests[i], buffer_space);
+}
+
+static void marshal_pcr_extend(void **buffer,
+			       struct tpm2_pcr_extend_cmd *command_body,
+			       int *buffer_space)
+{
+	struct tpm2_session_header session_header;
+
+	tpm_tag = TPM_ST_SESSIONS;
+	marshal_TPM_HANDLE(buffer, command_body->pcrHandle, buffer_space);
+	memset(&session_header, 0, sizeof(session_header));
+	session_header.session_handle = TPM_RS_PW;
+	marshal_session_header(buffer, &session_header, buffer_space);
+	marshal_TPML_DIGEST_VALUES(buffer, &command_body->digests, buffer_space);
+}
+
 int tpm_marshal_command(TPM_CC command, void *tpm_command_body,
 			void *buffer, int buffer_size)
 {
@@ -738,6 +781,10 @@ int tpm_marshal_command(TPM_CC command, void *tpm_command_body,
 
 	case TPM2_Shutdown:
 		marshal_shutdown(&cmd_body, tpm_command_body, &body_size);
+		break;
+
+	case TPM2_PCR_Extend:
+		marshal_pcr_extend(&cmd_body, tpm_command_body, &body_size);
 		break;
 
 	default:
@@ -811,6 +858,7 @@ int tpm_unmarshal_response(TPM_CC command,
 	case TPM2_Shutdown:
 	case TPM2_NV_DefineSpace:
 	case TPM2_NV_UndefineSpace:
+	case TPM2_PCR_Extend:
 		/* Session data included in response can be safely ignored. */
 		cr_size = 0;
 		break;

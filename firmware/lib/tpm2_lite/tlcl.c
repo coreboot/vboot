@@ -314,8 +314,15 @@ int TlclIsOwned(void)
 
 uint32_t TlclExtend(int pcr_num, const uint8_t *in_digest, uint8_t *out_digest)
 {
-	VB2_DEBUG("NOT YET IMPLEMENTED\n");
-	return TPM_SUCCESS;
+	struct tpm2_pcr_extend_cmd pcr_ext_cmd;
+
+	pcr_ext_cmd.pcrHandle = HR_PCR + pcr_num;
+	pcr_ext_cmd.digests.count = 1;
+	pcr_ext_cmd.digests.digests[0].hashAlg = TPM_ALG_SHA256;
+	memcpy(pcr_ext_cmd.digests.digests[0].digest.sha256, in_digest,
+	       sizeof(pcr_ext_cmd.digests.digests[0].digest.sha256));
+
+	return tpm_get_response_code(TPM2_PCR_Extend, &pcr_ext_cmd);
 }
 
 

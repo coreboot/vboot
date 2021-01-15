@@ -34,9 +34,13 @@ extern "C" {
 #define TPM2_NV_ReadPublic     ((TPM_CC)0x00000169)
 #define TPM2_GetCapability     ((TPM_CC)0x0000017A)
 #define TPM2_GetRandom         ((TPM_CC)0x0000017B)
+#define TPM2_PCR_Extend        ((TPM_CC)0x00000182)
+
+#define TPM_HT_PCR             0x00
+#define TPM_HT_NV_INDEX        0x01
 
 #define HR_SHIFT               24
-#define TPM_HT_NV_INDEX        0x01
+#define HR_PCR                (TPM_HT_PCR <<  HR_SHIFT)
 #define HR_NV_INDEX           (TPM_HT_NV_INDEX <<  HR_SHIFT)
 #define TPM_RH_OWNER        0x40000001
 #define TPM_RH_PLATFORM     0x4000000C
@@ -110,9 +114,15 @@ extern "C" {
 #define TPMI_RH_NV_INDEX_TCG_WG_START	((TPMI_RH_NV_INDEX)0x01C40000)
 #define TPMI_RH_NV_INDEX_RESERVED_START	((TPMI_RH_NV_INDEX)0x01C90000)
 
+#define HASH_COUNT 1 /* Only SHA-256 is supported */
+
+/* Table 206 - Defines for SHA256 Hash Values */
+#define SHA256_DIGEST_SIZE  32
+
 typedef uint8_t TPMI_YES_NO;
 typedef uint32_t TPM_CC;
 typedef uint32_t TPM_HANDLE;
+typedef TPM_HANDLE TPMI_DH_PCR;
 typedef TPM_HANDLE TPMI_RH_NV_INDEX;
 typedef TPM_HANDLE TPMI_RH_ENABLES;
 typedef uint32_t TPM_CAP;
@@ -144,6 +154,20 @@ typedef struct {
 	uint32_t count;
 	TPMS_TAGGED_PROPERTY tpm_property[1];
 } TPML_TAGGED_TPM_PROPERTY;
+
+typedef union {
+	uint8_t sha256[SHA256_DIGEST_SIZE];
+} TPMU_HA;
+
+typedef struct {
+	TPMI_ALG_HASH  hashAlg;
+	TPMU_HA        digest;
+} TPMT_HA;
+
+typedef struct {
+	uint32_t   count;
+	TPMT_HA digests[HASH_COUNT];
+} TPML_DIGEST_VALUES;
 
 typedef union {
 	TPML_TAGGED_TPM_PROPERTY tpm_properties;
@@ -221,6 +245,11 @@ struct tpm2_startup_cmd {
 
 struct tpm2_shutdown_cmd {
 	TPM_SU shutdown_type;
+};
+
+struct tpm2_pcr_extend_cmd {
+	TPMI_DH_PCR pcrHandle;
+	TPML_DIGEST_VALUES digests;
 };
 
 /* Common command/response header. */
