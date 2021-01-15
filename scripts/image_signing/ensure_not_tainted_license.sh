@@ -42,8 +42,9 @@ main() {
 
   license=$(find "${license_dir}" -name about_os_credits.html 2>/dev/null)
   if [[ -z "${license}" ]]; then
-    echo "License file about_os_credits.html not found in ${license_dir}"
-    exit 1
+    echo "License file about_os_credits.html not found in ${license_dir}."
+    echo "Skipping the check of tainted license."
+    exit 0
   fi
 
   tainted_tag="<!-- tainted -->"
