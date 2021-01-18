@@ -9,6 +9,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2packed_key.h"
 #include "2rsa.h"
 #include "2sha.h"
 #include "2secdata.h"

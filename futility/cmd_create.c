@@ -22,7 +22,6 @@
 #include "host_misc21.h"
 #include "openssl_compat.h"
 #include "util_misc.h"
-#include "vb2_common.h"
 #include "vboot_host.h"
 
 /* Command line options */

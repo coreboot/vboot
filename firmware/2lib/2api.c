@@ -15,7 +15,6 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "2tpm_bootmode.h"
-#include "vb2_common.h"
 
 vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 {

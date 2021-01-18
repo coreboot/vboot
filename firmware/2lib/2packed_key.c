@@ -6,9 +6,9 @@
  */
 
 #include "2common.h"
+#include "2packed_key.h"
 #include "2rsa.h"
 #include "2sysincludes.h"
-#include "vb2_common.h"
 
 test_mockable
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,

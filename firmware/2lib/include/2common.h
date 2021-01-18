@@ -10,6 +10,7 @@
 
 #include "2api.h"
 #include "2gbb.h"
+#include "2packed_key.h"
 #include "2return_codes.h"
 #include "2sha.h"
 #include "2struct.h"

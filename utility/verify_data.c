@@ -21,7 +21,6 @@
 #include "2sysincludes.h"
 #include "file_keys.h"
 #include "host_common.h"
-#include "vb2_common.h"
 
 /* ANSI Color coding sequences. */
 #define COL_GREEN "\e[1;32m"

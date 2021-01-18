@@ -15,7 +15,6 @@
 #include "2sysincludes.h"
 #include "2ui.h"
 #include "load_kernel_fw.h"
-#include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"

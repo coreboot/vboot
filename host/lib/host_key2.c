@@ -19,7 +19,6 @@
 #include "host_key21.h"
 #include "host_key.h"
 #include "host_misc.h"
-#include "vb2_common.h"
 
 enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
 	enum vb2_hash_algorithm hash_alg,

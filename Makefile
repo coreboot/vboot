@@ -382,6 +382,7 @@ FWLIB_SRCS = \
 	firmware/2lib/2kernel.c \
 	firmware/2lib/2misc.c \
 	firmware/2lib/2nvstorage.c \
+	firmware/2lib/2packed_key.c \
 	firmware/2lib/2recovery_reasons.c \
 	firmware/2lib/2rsa.c \
 	firmware/2lib/2secdata_firmware.c \
@@ -400,8 +401,7 @@ FWLIB_SRCS = \
 	firmware/lib/vboot_api_kernel.c \
 	firmware/lib/vboot_kernel.c \
 	firmware/lib20/api_kernel.c \
-	firmware/lib20/kernel.c \
-	firmware/lib20/packed_key.c
+	firmware/lib20/kernel.c
 
 # Only add these to firmware and test builds,
 # as regular host builds don't need them

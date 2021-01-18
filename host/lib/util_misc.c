@@ -20,7 +20,6 @@
 #include "host_key21.h"
 #include "openssl_compat.h"
 #include "util_misc.h"
-#include "vb2_common.h"
 
 const char *packed_key_sha1_string(const struct vb2_packed_key *key)
 {

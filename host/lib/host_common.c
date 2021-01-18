@@ -12,7 +12,6 @@
 #include "2sysincludes.h"
 #include "host_common.h"
 #include "host_key21.h"
-#include "vb2_common.h"
 
 struct vb2_fw_preamble *vb2_create_fw_preamble(
 	uint32_t firmware_version,

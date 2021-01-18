@@ -21,7 +21,6 @@
 #include "2sysincludes.h"
 #include "host_common.h"
 #include "host_signature21.h"
-#include "vb2_common.h"
 
 /* Invoke [external_signer] command with [pem_file] as an argument, contents of
  * [inbuf] passed redirected to stdin, and the stdout of the command is put

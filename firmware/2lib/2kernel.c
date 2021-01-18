@@ -11,7 +11,6 @@
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "2secdata.h"
-#include "vb2_common.h"
 #include "vboot_kernel.h"
 
 /**
