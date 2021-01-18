@@ -74,6 +74,9 @@ void vb2ex_abort(void)
 	abort();
 }
 
+/*****************************************************************************/
+/* UI-related stubs */
+
 __attribute__((weak))
 const char *vb2ex_get_debug_info(struct vb2_context *ctx)
 {
@@ -110,5 +113,42 @@ __attribute__((weak))
 vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out)
 {
 	*out = "mock";
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+void vb2ex_msleep(uint32_t msec)
+{
+}
+
+__attribute__((weak))
+void vb2ex_beep(uint32_t msec, uint32_t frequency)
+{
+}
+
+__attribute__((weak))
+uint32_t vb2ex_get_locale_count(void)
+{
+	return 0;
+}
+
+__attribute__((weak))
+uint32_t vb2ex_get_bootloader_count(void)
+{
+	return 0;
+}
+
+__attribute__((weak))
+int vb2ex_physical_presence_pressed(void)
+{
+	return 0;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
+{
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	return VB2_SUCCESS;
 }

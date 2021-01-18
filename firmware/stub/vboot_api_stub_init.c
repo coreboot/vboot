@@ -20,12 +20,3 @@ uint32_t vb2ex_mtime(void)
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * VB2_MSEC_PER_SEC + tv.tv_usec / VB2_USEC_PER_MSEC;
 }
-
-__attribute__((weak))
-vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
-{
-	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
-	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
-	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
-	return VB2_SUCCESS;
-}
