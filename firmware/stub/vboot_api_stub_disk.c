@@ -16,6 +16,7 @@
 #include "vboot_api.h"
 
 
+__attribute__((weak))
 vb2_error_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
 			    uint32_t disk_flags)
 {
@@ -25,6 +26,7 @@ vb2_error_t VbExDiskGetInfo(VbDiskInfo** infos_ptr, uint32_t* count,
 }
 
 
+__attribute__((weak))
 vb2_error_t VbExDiskFreeInfo(VbDiskInfo* infos_ptr,
 			     VbExDiskHandle_t preserve_handle)
 {
@@ -32,6 +34,7 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo* infos_ptr,
 }
 
 
+__attribute__((weak))
 vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 			 uint64_t lba_count, void* buffer)
 {
@@ -39,6 +42,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 }
 
 
+__attribute__((weak))
 vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 			  uint64_t lba_count, const void* buffer)
 {

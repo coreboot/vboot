@@ -18,65 +18,78 @@
 #include "vboot_api.h"
 #include "vboot_test.h"
 
+__attribute__((weak))
 void vb2ex_msleep(uint32_t msec)
 {
 }
 
+__attribute__((weak))
 void vb2ex_beep(uint32_t msec, uint32_t frequency)
 {
 }
 
+__attribute__((weak))
 uint32_t vb2ex_get_locale_count(void)
 {
 	return 0;
 }
 
+__attribute__((weak))
 uint32_t vb2ex_get_bootloader_count(void)
 {
 	return 0;
 }
 
+__attribute__((weak))
 uint32_t VbExKeyboardRead(void)
 {
 	return 0;
 }
 
+__attribute__((weak))
 uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr)
 {
 	return 0;
 }
 
+__attribute__((weak))
 int vb2ex_physical_presence_pressed(void)
 {
 	return 0;
 }
 
+__attribute__((weak))
 uint32_t VbExIsShutdownRequested(void)
 {
 	return 0;
 }
 
+__attribute__((weak))
 int vb2ex_ec_trusted(void)
 {
 	return 1;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 {
 	*in_rw = 0;
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_jump_to_rw(void)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_disable_jump(void)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
 				const uint8_t **hash, int *hash_size)
 {
@@ -87,6 +100,7 @@ vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 					     const uint8_t **hash, int *hash_size)
 {
@@ -97,37 +111,44 @@ vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_ec_battery_cutoff(void)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = VB2_AUXFW_NO_UPDATE;
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t vb2ex_auxfw_update(void)
 {
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
 {
 	return VB2_SUCCESS;
