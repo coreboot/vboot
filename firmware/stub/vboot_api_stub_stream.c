@@ -25,6 +25,7 @@ struct disk_stream {
 	uint64_t sectors_left;
 };
 
+__attribute__((weak))
 vb2_error_t VbExStreamOpen(VbExDiskHandle_t handle, uint64_t lba_start,
 			   uint64_t lba_count, VbExStream_t *stream)
 {
@@ -45,6 +46,7 @@ vb2_error_t VbExStreamOpen(VbExDiskHandle_t handle, uint64_t lba_start,
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 {
 	struct disk_stream *s = (struct disk_stream *)stream;
@@ -73,6 +75,7 @@ vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 	return VB2_SUCCESS;
 }
 
+__attribute__((weak))
 void VbExStreamClose(VbExStream_t stream)
 {
 	struct disk_stream *s = (struct disk_stream *)stream;
