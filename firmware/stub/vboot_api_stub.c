@@ -19,28 +19,6 @@
 #include "vboot_test.h"
 
 __attribute__((weak))
-void vb2ex_msleep(uint32_t msec)
-{
-}
-
-__attribute__((weak))
-void vb2ex_beep(uint32_t msec, uint32_t frequency)
-{
-}
-
-__attribute__((weak))
-uint32_t vb2ex_get_locale_count(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
-uint32_t vb2ex_get_bootloader_count(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
 uint32_t VbExKeyboardRead(void)
 {
 	return 0;
@@ -48,12 +26,6 @@ uint32_t VbExKeyboardRead(void)
 
 __attribute__((weak))
 uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr)
-{
-	return 0;
-}
-
-__attribute__((weak))
-int vb2ex_physical_presence_pressed(void)
 {
 	return 0;
 }
