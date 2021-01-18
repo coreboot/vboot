@@ -62,7 +62,6 @@ VBSLK_SRCS = \
 VBINIT_SRCS += \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/utility_stub.c \
-	firmware/stub/vboot_api_stub_init.c \
 	firmware/stub/vboot_api_stub_region.c
 
 VBSF_SRCS += \
