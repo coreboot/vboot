@@ -26,6 +26,13 @@ void vb2ex_printf(const char *func, const char *fmt, ...)
 }
 
 __attribute__((weak))
+void vb2ex_abort(void)
+{
+	/* Stub simply exits. */
+	abort();
+}
+
+__attribute__((weak))
 vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx)
 {
 	fprintf(stderr, "%s: function not implemented\n", __func__);
@@ -48,6 +55,80 @@ vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 
+/*****************************************************************************/
+/* auxfw and EC-related stubs */
+
+__attribute__((weak))
+int vb2ex_ec_trusted(void)
+{
+	return 1;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_running_rw(int *in_rw)
+{
+	*in_rw = 0;
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_jump_to_rw(void)
+{
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_disable_jump(void)
+{
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_hash_image(enum vb2_firmware_selection select,
+				const uint8_t **hash, int *hash_size)
+{
+	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
+
+	*hash = fake_hash;
+	*hash_size = sizeof(fake_hash);
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_get_expected_image_hash(enum vb2_firmware_selection select,
+					     const uint8_t **hash, int *hash_size)
+{
+	static const uint8_t fake_hash[32] = {1, 2, 3, 4};
+
+	*hash = fake_hash;
+	*hash_size = sizeof(fake_hash);
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
+{
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
+{
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx)
+{
+	return VB2_SUCCESS;
+}
+
+__attribute__((weak))
+vb2_error_t vb2ex_ec_battery_cutoff(void)
+{
+	return VB2_SUCCESS;
+}
+
 __attribute__((weak))
 vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
@@ -65,13 +146,6 @@ __attribute__((weak))
 vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
-void vb2ex_abort(void)
-{
-	/* Stub simply exits. */
-	abort();
 }
 
 /*****************************************************************************/
