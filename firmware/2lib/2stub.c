@@ -8,9 +8,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "2api.h"
+#include "2common.h"
 #include "2sysincludes.h"
+
+/*****************************************************************************/
+/* General utility stubs */
 
 __attribute__((weak))
 void vb2ex_printf(const char *func, const char *fmt, ...)
@@ -33,16 +38,27 @@ void vb2ex_abort(void)
 }
 
 __attribute__((weak))
-vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx)
+uint32_t vb2ex_mtime(void)
 {
-	fprintf(stderr, "%s: function not implemented\n", __func__);
-	return VB2_ERROR_EX_UNIMPLEMENTED;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * VB2_MSEC_PER_SEC + tv.tv_usec / VB2_USEC_PER_MSEC;
 }
 
 __attribute__((weak))
 vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
 				enum vb2_resource_index index, uint32_t offset,
 				void *buf, uint32_t size)
+{
+	fprintf(stderr, "%s: function not implemented\n", __func__);
+	return VB2_ERROR_EX_UNIMPLEMENTED;
+}
+
+/*****************************************************************************/
+/* TPM-related stubs */
+
+__attribute__((weak))
+vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx)
 {
 	fprintf(stderr, "%s: function not implemented\n", __func__);
 	return VB2_ERROR_EX_UNIMPLEMENTED;

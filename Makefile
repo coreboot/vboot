@@ -434,7 +434,6 @@ FWLIB_SRCS += \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
-	firmware/stub/vboot_api_stub_init.c \
 	firmware/stub/vboot_api_stub_stream.c \
 	firmware/2lib/2stub.c
 endif
@@ -515,7 +514,6 @@ HOSTLIB_SRCS = \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
-	firmware/stub/vboot_api_stub_init.c \
 	futility/dump_kernel_config_lib.c \
 	$(CROSSYSTEM_ARCH_C) \
 	host/lib/chromeos_config.c \
