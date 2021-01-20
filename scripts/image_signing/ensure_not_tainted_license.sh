@@ -48,7 +48,10 @@ main() {
   fi
 
   tainted_tag="<!-- tainted -->"
-  tainted_status=$(grep "${tainted_tag}" "${license}")
+  # Add "|| :" to the grep command to prevent it from returning error code 1 if
+  # no match is found, which would cause the script to exit immediately with
+  # error code 1 due to set -e.
+  tainted_status=$(grep "${tainted_tag}" "${license}") || :
   if [[ -n "${tainted_status}" ]]; then
     echo "${license}:"
     echo "License file contains packages with LICENSE=TAINTED."
@@ -61,6 +64,7 @@ main() {
       /^[[:space:]]*$/d
       p
     }' "${license}"
+    exit 1
   fi
   exit 0
 }
