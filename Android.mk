@@ -54,7 +54,6 @@ VBSLK_SRCS = \
 	firmware/lib/gpt_misc.c \
 	firmware/lib/utility_string.c \
 	firmware/lib/vboot_api_kernel.c \
-	firmware/lib/vboot_audio.c \
 	firmware/lib/vboot_display.c \
 	firmware/lib/vboot_kernel.c \
 	firmware/lib/region-kernel.c \

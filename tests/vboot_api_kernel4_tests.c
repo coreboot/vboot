@@ -17,7 +17,6 @@
 #include "test_common.h"
 #include "tlcl.h"
 #include "tss_constants.h"
-#include "vboot_audio.h"
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"

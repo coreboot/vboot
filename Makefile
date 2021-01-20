@@ -408,7 +408,6 @@ FWLIB_SRCS = \
 $(if ${FIRMWARE_ARCH},FWLIB_SRCS,TESTLIB_SRCS) += \
 	firmware/2lib/2ui.c \
 	firmware/2lib/2ui_screens.c \
-	firmware/lib/vboot_audio.c
 
 # TPM lightweight command library
 ifeq (${TPM2_MODE},)
