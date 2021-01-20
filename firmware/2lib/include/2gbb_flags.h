@@ -53,8 +53,8 @@ enum vb2_gbb_flag {
 	/* Allow Enter key to trigger dev->tonorm screen transition */
 	VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM = 1 << 6,
 
-	/* Allow booting Legacy OSes in dev mode even if dev_boot_legacy=0. */
-	VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY = 1 << 7,
+	/* Allow booting Legacy OSes in dev mode even if dev_boot_altfw=0. */
+	VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW = 1 << 7,
 
 	/*
 	 * Currently running FAFT tests.  May be used as a hint to disable
@@ -69,7 +69,7 @@ enum vb2_gbb_flag {
 	VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC = 1 << 9,
 
 	/* Default to booting legacy OS when dev screen times out */
-	VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY = 1 << 10,
+	VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW = 1 << 10,
 
 	/* Disable auxiliary firmware (auxfw) software sync */
 	VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC = 1 << 11,

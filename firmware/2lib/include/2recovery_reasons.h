@@ -265,8 +265,8 @@ enum vb2_nv_recovery {
 	/* Failed to disable the TPM [prior to running untrusted code] */
 	VB2_RECOVERY_TPM_DISABLE_FAILED = 0x60,
 
-	/* Alt FW Failed hash verification */
-	VB2_RECOVERY_ALTFW_HASH_FAILED = 0x61,
+	/* Verification of altfw payload failed (deprecated) */
+	VB2_RECOVERY_ALTFW_HASH_MISMATCH = 0x61,
 
 	/* FWMP secure data initialization error */
 	VB2_RECOVERY_SECDATA_FWMP_INIT = 0x62,

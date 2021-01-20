@@ -37,7 +37,7 @@ uint32_t VbExIsShutdownRequested(void)
 }
 
 __attribute__((weak))
-vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
+vb2_error_t vb2ex_run_altfw(uint32_t altfw_id)
 {
 	return VB2_SUCCESS;
 }

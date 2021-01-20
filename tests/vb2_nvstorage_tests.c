@@ -41,7 +41,7 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_LOCALIZATION_INDEX, 0, 0x69, 0xB0, "localization index"},
 	{VB2_NV_KERNEL_FIELD, 0, 0x1234, 0xFEDC, "kernel field"},
 	{VB2_NV_DEV_BOOT_EXTERNAL, 0, 1, 0, "dev boot usb"},
-	{VB2_NV_DEV_BOOT_LEGACY, 0, 1, 0, "dev boot legacy"},
+	{VB2_NV_DEV_BOOT_ALTFW, 0, 1, 0, "dev boot altfw"},
 	{VB2_NV_DEV_BOOT_SIGNED_ONLY, 0, 1, 0, "dev boot custom"},
 	{VB2_NV_DEV_DEFAULT_BOOT, 0, 1, 2, "dev default boot"},
 	{VB2_NV_DIAG_REQUEST, 0, 1, 0, "diagnostic rom request"},

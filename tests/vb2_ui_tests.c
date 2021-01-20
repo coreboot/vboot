@@ -74,12 +74,12 @@ static int mock_beep_total;
 
 static enum vb2_dev_default_boot_target mock_default_boot;
 static int mock_dev_boot_allowed;
-static int mock_dev_boot_legacy_allowed;
+static int mock_dev_boot_altfw_allowed;
 static int mock_dev_boot_external_allowed;
 
-static int mock_vbexlegacy_called;
-static enum VbAltFwIndex_t mock_altfw_num_last;
-static uint32_t mock_bootloader_count;
+static int mock_run_altfw_called;
+static uint32_t mock_altfw_last;
+static uint32_t mock_altfw_count;
 
 static vb2_error_t mock_vbtlk_retval[32];
 static uint32_t mock_vbtlk_expected_flag[32];
@@ -317,13 +317,13 @@ static void reset_common_data(enum reset_type t)
 	/* For dev_boot* in 2misc.h */
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
 	mock_dev_boot_allowed = 1;
-	mock_dev_boot_legacy_allowed = 0;
+	mock_dev_boot_altfw_allowed = 0;
 	mock_dev_boot_external_allowed = 1;
 
-	/* For VbExLegacy */
-	mock_vbexlegacy_called = 0;
-	mock_altfw_num_last = -100;
-	mock_bootloader_count = 2;
+	/* For vb2ex_run_altfw */
+	mock_run_altfw_called = 0;
+	mock_altfw_last = -100;
+	mock_altfw_count = 2;
 
 	/* For VbTryLoadKernel */
 	memset(mock_vbtlk_retval, 0, sizeof(mock_vbtlk_retval));
@@ -490,9 +490,9 @@ int vb2_dev_boot_allowed(struct vb2_context *c)
 	return mock_dev_boot_allowed;
 }
 
-int vb2_dev_boot_legacy_allowed(struct vb2_context *c)
+int vb2_dev_boot_altfw_allowed(struct vb2_context *c)
 {
-	return mock_dev_boot_legacy_allowed;
+	return mock_dev_boot_altfw_allowed;
 }
 
 int vb2_dev_boot_external_allowed(struct vb2_context *c)
@@ -500,17 +500,17 @@ int vb2_dev_boot_external_allowed(struct vb2_context *c)
 	return mock_dev_boot_external_allowed;
 }
 
-vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num)
+vb2_error_t vb2ex_run_altfw(uint32_t altfw_id)
 {
-	mock_vbexlegacy_called++;
-	mock_altfw_num_last = altfw_num;
+	mock_run_altfw_called++;
+	mock_altfw_last = altfw_id;
 
 	return VB2_SUCCESS;
 }
 
-uint32_t vb2ex_get_bootloader_count(void)
+uint32_t vb2ex_get_altfw_count(void)
 {
-	return mock_bootloader_count;
+	return mock_altfw_count;
 }
 
 vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
@@ -702,20 +702,21 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"select boot external in dev menu");
 
-	/* Ctrl+L = boot legacy (allowed) */
+	/* Ctrl+L = boot altfw (allowed) */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_legacy_allowed = 1;
+	mock_dev_boot_altfw_allowed = 1;
 	add_mock_keypress(VB_KEY_CTRL('L'));
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"ctrl+l = boot legacy");
-	TEST_EQ(mock_vbexlegacy_called, 1, "  VbExLegacy called");
+		"ctrl+l = boot altfw");
+	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called");
 
-	/* Ctrl+L = boot legacy (disallowed) */
+	/* Ctrl+L = boot altfw (disallowed) */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_keypress(VB_KEY_CTRL('L'));
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"ctrl+l = boot legacy");
-	TEST_EQ(mock_vbexlegacy_called, 0, "  VbExLegacy not called");
+		"ctrl+l = boot altfw");
+	TEST_EQ(mock_run_altfw_called, 0,
+		"  vb2ex_run_altfw not called");
 
 	/* VB_BUTTON_VOL_UP_LONG_PRESS = boot external */
 	if (DETACHABLE) {
@@ -1286,7 +1287,7 @@ static void developer_screen_tests(void)
 
 	/* Dev mode: disabled and hidden item mask */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_legacy_allowed = 1;
+	mock_dev_boot_altfw_allowed = 1;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: no disabled or hidden item");
@@ -1294,7 +1295,7 @@ static void developer_screen_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x0, MOCK_IGNORE);
 
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_legacy_allowed = 1;
+	mock_dev_boot_altfw_allowed = 1;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
@@ -1305,7 +1306,7 @@ static void developer_screen_tests(void)
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	mock_dev_boot_external_allowed = 0;
-	mock_dev_boot_legacy_allowed = 1;
+	mock_dev_boot_altfw_allowed = 1;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: hide boot external");
 	DISPLAYED_EQ("dev mode screen", VB2_SCREEN_DEVELOPER_MODE,
@@ -1364,7 +1365,7 @@ static void developer_screen_tests(void)
 	DISPLAYED_NO_EXTRA();
 
 	reset_common_data(FOR_DEVELOPER);  /* Select #2 by default */
-	mock_dev_boot_legacy_allowed = 1;
+	mock_dev_boot_altfw_allowed = 1;
 	/* #4: Alternate boot */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
@@ -1372,7 +1373,7 @@ static void developer_screen_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"dev mode screen");
-	TEST_EQ(mock_vbexlegacy_called, 1, "  VbExLegacy called");
+	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called");
 
 	reset_common_data(FOR_DEVELOPER);  /* Select #2 by default */
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);

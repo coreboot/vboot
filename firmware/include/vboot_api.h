@@ -355,33 +355,6 @@ uint32_t VbExIsShutdownRequested(void);
 /* Shutdown requested due to a power button being pressed. */
 #define VB_SHUTDOWN_REQUEST_POWER_BUTTON	0x00000004
 
-enum VbAltFwIndex_t {
-	VB_ALTFW_DIAGNOSTIC = -1,
-	VB_ALTFW_DEFAULT = 0,
-	VB_ALTFW_FIRST = 1,
-	VB_ALTFW_SECOND,
-	VB_ALTFW_THIRD,
-	VB_ALTFW_FOURTH,
-	VB_ALTFW_FIFTH,
-	VB_ALTFW_SIXTH,
-	VB_ALTFW_SEVENTH,
-	VB_ALTFW_EIGHTH,
-	VB_ALTFW_NINTH,
-};
-
-/**
- * Execute legacy boot option.
- *
- * @param altfw_num	Bootloader sequence number to execute. Use
- *	0 to boot the default payload, if any
- *     >0 (i.e., positive #) run a payload by # based in altfw/list file
- *     <0 (i.e., negative #) run a specific payload by name without using
- *        the altfw/list file.  Typically payloads in this category will be
- *        verified before they are run. Currently these #s are defined:
- *          -1 diagnostic payload
- */
-vb2_error_t VbExLegacy(enum VbAltFwIndex_t altfw_num);
-
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

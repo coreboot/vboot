@@ -37,13 +37,13 @@ const Param sys_param_list[] = {
   {"cros_debug", 0, "OS should allow debug features"},
   {"dbg_reset", CAN_WRITE, "Debug reset mode request"},
   {"debug_build", 0, "OS image built for debug features"},
-  {"dev_boot_legacy", CAN_WRITE, "Enable developer mode boot Legacy OSes"},
+  {"dev_boot_altfw", CAN_WRITE, "Enable developer mode alternate bootloader"},
   {"dev_boot_signed_only", CAN_WRITE,
    "Enable developer mode boot only from official kernels"},
   {"dev_boot_usb", CAN_WRITE,
    "Enable developer mode boot from external disk (USB/SD)"},
   {"dev_default_boot", IS_STRING|CAN_WRITE,
-   "Default boot from disk, legacy or usb"},
+   "Default boot from disk, altfw or usb"},
   {"dev_enable_udc", CAN_WRITE, "Enable USB Device Controller"},
   {"devsw_boot", 0, "Developer switch position at boot"},
   {"devsw_cur",  0, "Developer switch current position"},
@@ -135,6 +135,14 @@ static const Param* FindParam(const char* name) {
   const Param* p;
   if (!name)
     return NULL;
+  /* "legacy" term deprecated in favour of "altfw" (see: b/179458327) */
+  if (!strcasecmp(name, "dev_boot_legacy")) {
+    fprintf(stderr,
+            "!!!\n"
+            "!!! PLEASE USE 'dev_boot_altfw' INSTEAD OF 'dev_boot_legacy'\n"
+            "!!!\n");
+    name = "dev_boot_altfw";
+  }
   for (p = sys_param_list; p->name; p++) {
     if (!strcasecmp(p->name, name))
       return p;
@@ -308,13 +316,13 @@ int main(int argc, char* argv[]) {
       case PARAM_SUCCESS:
         break;
       case PARAM_ERROR_READ_ONLY:
-        fprintf(stderr, "Parameter %s is read-only\n", name);
+        fprintf(stderr, "Parameter %s is read-only\n", p->name);
         break;
       case PARAM_ERROR_INVALID_INT:
         fprintf(stderr, "Value %s is not a valid integer\n", value);
         break;
       default:
-        fprintf(stderr, "Failed to set parameter %s\n", name);
+        fprintf(stderr, "Failed to set parameter %s\n", p->name);
         break;
       }
     } else if (has_expect)

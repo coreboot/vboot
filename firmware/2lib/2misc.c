@@ -251,7 +251,7 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		 * developer mode.
 		 */
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 0);
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_LEGACY, 0);
+		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_ALTFW, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, 0);
 	}
@@ -528,8 +528,8 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_LEGACY)
-		return VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
+	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW)
+		return VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW;
 
 	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
 		case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
@@ -537,9 +537,9 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 				return VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
 			break;
 
-		case VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY:
-			if (vb2_dev_boot_legacy_allowed(ctx))
-				return VB2_DEV_DEFAULT_BOOT_TARGET_LEGACY;
+		case VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW:
+			if (vb2_dev_boot_altfw_allowed(ctx))
+				return VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW;
 			break;
 	}
 
@@ -556,14 +556,14 @@ int vb2_dev_boot_allowed(struct vb2_context *ctx)
 	return 1;
 }
 
-int vb2_dev_boot_legacy_allowed(struct vb2_context *ctx)
+int vb2_dev_boot_altfw_allowed(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY) ||
-	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY) ||
+	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_ALTFW) ||
+	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW) ||
 	       vb2_secdata_fwmp_get_flag(ctx,
-					 VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY);
+					 VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW);
 }
 
 int vb2_dev_boot_external_allowed(struct vb2_context *ctx)
@@ -661,9 +661,9 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL);
 	DEBUG_INFO_APPEND("\ndev_boot_usb: %d", i);
 
-	/* Add dev_boot_legacy flag */
-	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_LEGACY);
-	DEBUG_INFO_APPEND("\ndev_boot_legacy: %d", i);
+	/* Add dev_boot_altfw flag */
+	i = vb2_nv_get(ctx, VB2_NV_DEV_BOOT_ALTFW);
+	DEBUG_INFO_APPEND("\ndev_boot_altfw: %d", i);
 
 	/* Add dev_default_boot flag */
 	i = vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT);

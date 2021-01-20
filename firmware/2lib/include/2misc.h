@@ -224,13 +224,13 @@ int vb2_dev_boot_allowed(struct vb2_context *ctx);
  * Determine if booting from legacy BIOS is allowed.
  *
  * Legacy BIOS is allowed if any of these flags are set:
- * VB2_NV_DEV_BOOT_LEGACY, VB2_GBB_FLAG_FORCE_DEV_BOOT_LEGACY, and
- * VB2_SECDATA_FWMP_DEV_ENABLE_LEGACY.
+ * VB2_NV_DEV_BOOT_ALTFW, VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW, and
+ * VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW.
  *
  * @param ctx		Vboot context
  * @return 1 if allowed, or 0 otherwise.
  */
-int vb2_dev_boot_legacy_allowed(struct vb2_context *ctx);
+int vb2_dev_boot_altfw_allowed(struct vb2_context *ctx);
 
 /**
  * Determine if booting from external disk is allowed.
