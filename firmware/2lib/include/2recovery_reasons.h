@@ -14,7 +14,7 @@
  * Return a description of the recovery reason code.
  *
  * @param		recovery reason code
- * @returns A string literal with English description of the recovery reason
+ * @return A string literal with English description of the recovery reason
  */
 const char *vb2_get_recovery_reason_string(uint8_t code);
 

@@ -219,7 +219,7 @@ vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);
  * If a timeout occurs, take the default boot action.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2_developer_menu(struct vb2_context *ctx);
 
@@ -230,7 +230,7 @@ vb2_error_t vb2_developer_menu(struct vb2_context *ctx);
  * encountered last boot. Wait for the user to physically reset or shut down.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx);
 
@@ -241,7 +241,7 @@ vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx);
  * navigate the step-by-step recovery, or enter developer mode if allowed.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx);
 
@@ -252,7 +252,7 @@ vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx);
  * diagnostic tests of various hardware components.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx);
 

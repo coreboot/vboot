@@ -1005,7 +1005,7 @@ void vb2ex_abort(void);
  * caller may not get a chance to commit this data.
  *
  * @param ctx		Vboot context
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 
@@ -1015,7 +1015,7 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *ctx);
 /**
  * Initialize the TPM.
  *
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_tpm_init(void);
 
@@ -1026,7 +1026,7 @@ vb2_error_t vb2ex_tpm_init(void);
  * TPM_TakeOwnership, since the TPM device can be opened only by one process at
  * a time.
  *
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_tpm_close(void);
 vb2_error_t vb2ex_tpm_open(void);
@@ -1061,7 +1061,7 @@ uint32_t vb2ex_tpm_send_recv(const uint8_t *request, uint32_t request_length,
  * the TPM RNG directly. Otherwise, an attacker with communication interception
  * abilities could launch replay attacks by reusing previous nonces.
  *
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_tpm_get_random(uint8_t *buf, uint32_t length);
 
@@ -1093,7 +1093,7 @@ enum vb2_tpm_mode {
  *
  * @param mode_val       Desired TPM mode to set.  May be one of ENABLED
  *                       or DISABLED from vb2_tpm_mode enum.
- * @returns VB2_SUCCESS, or non-zero error code.
+ * @return VB2_SUCCESS, or non-zero error code.
  */
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val);
 
@@ -1410,21 +1410,21 @@ vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
 /**
  * Check that physical presence button is currently pressed by the user.
  *
- * @returns 1 for pressed, 0 for not.
+ * @return 1 for pressed, 0 for not.
  */
 int vb2ex_physical_presence_pressed(void);
 
 /**
  * Get the number of supported locales.
  *
- * @returns Number of locales.  0 if none or on error.
+ * @return Number of locales.  0 if none or on error.
  */
 uint32_t vb2ex_get_locale_count(void);
 
 /**
  * Return the number of available alternate bootloaders.
  *
- * @returns Number of alternate bootloaders.  0 if none or on error.
+ * @return Number of alternate bootloaders.  0 if none or on error.
  */
 uint32_t vb2ex_get_bootloader_count(void);
 
