@@ -29,15 +29,4 @@ vb2_error_t vb2_check_padding(const uint8_t *sig,
 struct LoadKernelParams;
 struct LoadKernelParams *VbApiKernelGetParams(void);
 
-/****************************************************************************
- * 2secdata_kernel.c */
-
-/**
- * Calculate crc8 of kernel secure storage.
- *
- * @param ctx		Context pointer
- * @return Calculated crc8 value.
- */
-uint8_t vb2_secdata_kernel_crc(struct vb2_context *ctx);
-
 #endif  /* VBOOT_REFERENCE_TEST_API_H_ */

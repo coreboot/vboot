@@ -22,7 +22,13 @@ static inline int is_v0(struct vb2_context *ctx)
 	return MAJOR_VER(sec->struct_version) == 0;
 }
 
-uint8_t vb2_secdata_kernel_crc(struct vb2_context *ctx)
+/**
+ * Calculate crc8 of kernel secure storage.
+ *
+ * @param ctx		Context pointer
+ * @return Calculated crc8 value.
+ */
+static uint8_t secdata_kernel_crc(struct vb2_context *ctx)
 {
 	size_t offset, size;
 
@@ -54,7 +60,7 @@ static vb2_error_t secdata_kernel_check_v0(struct vb2_context *ctx,
 	*size = VB2_SECDATA_KERNEL_SIZE_V02;
 
 	/* Verify CRC */
-	if (sec->crc8 != vb2_secdata_kernel_crc(ctx)) {
+	if (sec->crc8 != secdata_kernel_crc(ctx)) {
 		VB2_DEBUG("secdata_kernel: bad CRC\n");
 		return VB2_ERROR_SECDATA_KERNEL_CRC;
 	}
@@ -101,7 +107,7 @@ static vb2_error_t secdata_kernel_check_v1(struct vb2_context *ctx,
 	*size = sec->struct_size;
 
 	/* Verify CRC */
-	if (sec->crc8 != vb2_secdata_kernel_crc(ctx)) {
+	if (sec->crc8 != secdata_kernel_crc(ctx)) {
 		VB2_DEBUG("secdata_kernel: bad CRC\n");
 		return VB2_ERROR_SECDATA_KERNEL_CRC;
 	}
@@ -131,7 +137,7 @@ uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx)
 	memset(sec, 0, sizeof(*sec));
 	sec->struct_version = VB2_SECDATA_KERNEL_VERSION_LATEST;
 	sec->struct_size = sizeof(*sec);
-	sec->crc8 = vb2_secdata_kernel_crc(ctx);
+	sec->crc8 = secdata_kernel_crc(ctx);
 
 	/* Mark as changed */
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
@@ -256,9 +262,9 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 	}
 
 	if (is_v0(ctx))
-		v0->crc8 = vb2_secdata_kernel_crc(ctx);
+		v0->crc8 = secdata_kernel_crc(ctx);
 	else
-		v1->crc8 = vb2_secdata_kernel_crc(ctx);
+		v1->crc8 = secdata_kernel_crc(ctx);
 
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 	return;
@@ -300,7 +306,7 @@ void vb2_secdata_kernel_set_ec_hash(struct vb2_context *ctx,
 	}
 
 	memcpy(sec->ec_hash, sha256, sizeof(sec->ec_hash));
-	sec->crc8 = vb2_secdata_kernel_crc(ctx);
+	sec->crc8 = secdata_kernel_crc(ctx);
 
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 
