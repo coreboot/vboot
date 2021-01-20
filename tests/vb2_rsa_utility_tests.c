@@ -8,6 +8,7 @@
 
 #include "2common.h"
 #include "2rsa.h"
+#include "2rsa_private.h"
 #include "2sysincludes.h"
 #include "file_keys.h"
 #include "rsa_padding_test.h"
