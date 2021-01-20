@@ -49,7 +49,7 @@ enum vb2_nv_param {
 	/* Allow booting from external disk in developer mode.  0=no, 1=yes. */
 	VB2_NV_DEV_BOOT_EXTERNAL,
 	/* Allow booting of legacy OSes in developer mode.  0=no, 1=yes. */
-	VB2_NV_DEV_BOOT_LEGACY,
+	VB2_NV_DEV_BOOT_ALTFW,
 	/* Only boot Google-signed images in developer mode.  0=no, 1=yes. */
 	VB2_NV_DEV_BOOT_SIGNED_ONLY,
 	/*

@@ -152,8 +152,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "Recovery hash space lock error in RO firmware";
 	/* 0x60 */ case VB2_RECOVERY_TPM_DISABLE_FAILED:
 		return "Failed to disable TPM before running untrusted code";
-	/* 0x61 */ case VB2_RECOVERY_ALTFW_HASH_FAILED:
-		return "Verification of alternative firmware payload failed";
+	/* 0x61 */ case VB2_RECOVERY_ALTFW_HASH_MISMATCH:
+		return "Verification of alternate bootloader payload failed";
 	/* 0x62 */ case VB2_RECOVERY_SECDATA_FWMP_INIT:
 		return "FWMP secure NVRAM (TPM) initialization error";
 	/* 0x63 */ case VB2_RECOVERY_CR50_BOOT_MODE:

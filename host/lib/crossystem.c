@@ -69,7 +69,7 @@ typedef enum VbBuildOption {
 } VbBuildOption;
 
 static const char *fw_results[] = {"unknown", "trying", "success", "failure"};
-static const char *default_boot[] = {"disk", "usb", "legacy"};
+static const char *default_boot[] = {"disk", "usb", "altfw"};
 
 /* Masks for kern_nv usage by kernel. */
 #define KERN_NV_FWUPDATE_TRIES_MASK 0x000F
@@ -420,8 +420,9 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_BACKUP_NVRAM_REQUEST);
 	} else if (!strcasecmp(name,"dev_boot_usb")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_EXTERNAL);
-	} else if (!strcasecmp(name,"dev_boot_legacy")) {
-		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_LEGACY);
+	} else if (!strcasecmp(name,"dev_boot_altfw") ||
+		   !strcasecmp(name,"dev_boot_legacy")) {
+		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_ALTFW);
 	} else if (!strcasecmp(name,"dev_boot_signed_only")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_SIGNED_ONLY);
 	} else if (!strcasecmp(name,"dev_enable_udc")) {
@@ -630,9 +631,10 @@ int VbSetSystemPropertyInt(const char *name, int value)
 	} else if (!strcasecmp(name,"dev_boot_usb")) {
 		return vb2_set_nv_storage_with_backup(
 			VB2_NV_DEV_BOOT_EXTERNAL, value);
-	} else if (!strcasecmp(name,"dev_boot_legacy")) {
+	} else if (!strcasecmp(name,"dev_boot_altfw") ||
+		   !strcasecmp(name,"dev_boot_legacy")) {
 		return vb2_set_nv_storage_with_backup(
-			VB2_NV_DEV_BOOT_LEGACY, value);
+			VB2_NV_DEV_BOOT_ALTFW, value);
 	} else if (!strcasecmp(name,"dev_boot_signed_only")) {
 		return vb2_set_nv_storage_with_backup(
 			VB2_NV_DEV_BOOT_SIGNED_ONLY, value);
@@ -680,6 +682,16 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 		return -1;
 	} else if (!strcasecmp(name, "dev_default_boot")) {
 		int i;
+
+		/* "legacy" term deprecated in favour of "altfw"
+		   (see: b/179458327) */
+		if (!strcasecmp(value, "legacy")) {
+			fprintf(stderr,
+				"!!!\n"
+				"!!! PLEASE USE 'altfw' INSTEAD OF 'legacy'\n"
+				"!!!\n");
+			value = "altfw";
+		}
 
 		for (i = 0; i < ARRAY_SIZE(default_boot); i++) {
 			if (!strcasecmp(value, default_boot[i]))

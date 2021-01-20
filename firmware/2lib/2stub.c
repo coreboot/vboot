@@ -223,7 +223,7 @@ uint32_t vb2ex_get_locale_count(void)
 }
 
 __attribute__((weak))
-uint32_t vb2ex_get_bootloader_count(void)
+uint32_t vb2ex_get_altfw_count(void)
 {
 	return 0;
 }
