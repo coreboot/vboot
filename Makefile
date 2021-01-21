@@ -430,6 +430,14 @@ else
 CFLAGS += -DVENDOR_DATA_LENGTH=0
 endif
 
+ifneq ($(filter-out 0,${X86_SHA_EXT}),)
+CFLAGS += -DX86_SHA_EXT
+FWLIB_SRCS += \
+	firmware/2lib/2sha256_x86.c
+endif
+# Even if X86_SHA_EXT is 0 we need cflags since this will be compiled for tests
+${BUILD}/firmware/2lib/2sha256_x86.o: CFLAGS += -mssse3 -mno-avx -msha
+
 ifeq (${FIRMWARE_ARCH},)
 # Include BIOS stubs in the firmware library when compiling for host
 # TODO: split out other stub funcs too
@@ -759,6 +767,11 @@ TEST21_NAMES = \
 
 TEST_NAMES += ${TEST2X_NAMES} ${TEST20_NAMES} ${TEST21_NAMES}
 
+# This is build-only test since we can't run this without
+# sha-ni extension on x86. To run this test, you have to
+# manually copy executable into compatible machine and run it.
+TEST_NAMES += tests/vb2_sha256_x86_tests
+
 # And a few more...
 ifeq (${TPM2_MODE},)
 TLCL_TEST_NAMES = \
@@ -1077,6 +1090,11 @@ ${TEST2X_BINS}: LIBS += ${FWLIB}
 ${TEST20_BINS}: ${FWLIB}
 ${TEST20_BINS}: LIBS += ${FWLIB}
 ${TEST20_BINS}: LDLIBS += ${CRYPTO_LIBS}
+
+# Special build for sha256_x86 test
+X86_SHA256_TEST = ${BUILD_RUN}/tests/vb2_sha256_x86_tests
+${X86_SHA256_TEST}: ${BUILD}/firmware/2lib/2sha256_x86.o
+${X86_SHA256_TEST}: LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o
 
 ${TESTLIB}: ${TESTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
