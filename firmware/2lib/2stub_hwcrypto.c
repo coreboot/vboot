@@ -7,6 +7,7 @@
 
 #include "2api.h"
 
+#ifndef X86_SHA_EXT
 __attribute__((weak))
 vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
 				       uint32_t data_size)
@@ -26,6 +27,7 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 {
 	return VB2_ERROR_SHA_FINALIZE_ALGORITHM;  /* Should not be called. */
 }
+#endif
 
 __attribute__((weak))
 vb2_error_t vb2ex_hwcrypto_rsa_verify_digest(const struct vb2_public_key *key,
