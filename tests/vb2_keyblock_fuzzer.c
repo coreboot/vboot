@@ -7,6 +7,7 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
+#include "2rsa_private.h"
 #include "2secdata.h"
 #include "vboot_test.h"
 
