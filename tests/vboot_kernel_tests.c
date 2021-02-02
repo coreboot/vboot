@@ -175,7 +175,12 @@ static void ResetMocks(void)
 	fwmp = (struct vb2_secdata_fwmp *)ctx->secdata_fwmp;
 	memcpy(&fwmp->dev_key_hash, mock_digest, sizeof(fwmp->dev_key_hash));
 
-	// TODO: more workbuf fields - flags, secdata_firmware, secdata_kernel
+	// TODO: more workbuf fields - flags, secdata_firmware
+
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
 }
 
 /* Mocks */
