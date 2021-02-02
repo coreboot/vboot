@@ -136,6 +136,9 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		return VB2_ERROR_VBLOCK_KERNEL_SUBKEY;
 	}
 
+	if (vb2_hwcrypto_allowed(ctx))
+		kernel_subkey2.allow_hwcrypto = 1;
+
 	/* Verify the keyblock. */
 	int keyblock_valid = 1;  /* Assume valid */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
@@ -410,6 +413,9 @@ static vb2_error_t vb2_load_partition(
 		shpart->check_result = VBSD_LKP_CHECK_DATA_KEY_PARSE;
 		return VB2_ERROR_LOAD_PARTITION_DATA_KEY;
 	}
+
+	if (vb2_hwcrypto_allowed(ctx))
+		data_key.allow_hwcrypto = 1;
 
 	/* Verify kernel data */
 	if (VB2_SUCCESS != vb2_verify_data(kernbuf, kernbuf_size,

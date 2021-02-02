@@ -10,6 +10,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2secdata.h"
 #include "host_common.h"
 #include "util_misc.h"
 #include "vboot_api.h"
@@ -124,6 +125,11 @@ int main(int argc, char *argv[])
 	 * dev mode.  So just use defaults for nv storage.
 	 */
 	vb2_nv_init(ctx);
+	/* We need to init kernel secdata for
+	 * VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED.
+	 */
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
 
 	/* Try loading kernel */
 	rv = LoadKernel(ctx, &params);
