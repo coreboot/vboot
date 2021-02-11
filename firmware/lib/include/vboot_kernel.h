@@ -80,8 +80,6 @@ typedef struct VbSharedDataKernelCall {
 	uint32_t sector_size;
 	/* Check result; see VBSD_LKC_CHECK_* */
 	uint8_t check_result;
-	/* Boot mode for LoadKernel(); see VBSD_LK_BOOT_MODE_* constants */
-	uint8_t boot_mode;
 	/* Test error number, if non-zero */
 	uint8_t test_error_num;
 	/* Return code from LoadKernel() */

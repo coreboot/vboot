@@ -769,6 +769,14 @@ static void LoadKernelTest(void)
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Fail keyblock dev fwmp hash");
 
+	/* Check developer key hash - bad (recovery mode) */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
+	fwmp->dev_key_hash[0]++;
+	TestLoadKernel(0, "Bad keyblock dev fwmp hash ignored in rec mode");
+
 	/* Check developer key hash - good */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
