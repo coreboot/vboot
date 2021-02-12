@@ -152,6 +152,13 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	if (vb2_hwcrypto_allowed(ctx))
 		kernel_subkey2.allow_hwcrypto = 1;
 
+	/*
+	 * Clear any previous keyblock-valid flag (for example, from a previous
+	 * kernel where the keyblock was signed but the preamble failed
+	 * verification).
+	 */
+	sd->flags &= ~VB2_SD_FLAG_KERNEL_SIGNED;
+
 	/* Verify the keyblock. */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
 	rv = vb2_verify_keyblock(keyblock, kbuf_size, &kernel_subkey2, wb);
@@ -258,6 +265,15 @@ static vb2_error_t vb2_verify_kernel_vblock(
 			return VB2_ERROR_VBLOCK_DEV_KEY_HASH;
 		}
 	}
+
+	/*
+	 * At this point, we've checked everything.  The kernel keyblock is at
+	 * least self-consistent, and has either a valid signature or a valid
+	 * hash.  Track if it had a valid signature (that is, would we have
+	 * been willing to boot it even if developer mode was off).
+	 */
+	if (keyblock_valid)
+		sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
 
 	/* Get key for preamble verification from the keyblock. */
 	struct vb2_public_key data_key;
@@ -572,13 +588,10 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			continue;
 		}
 
-		int keyblock_valid = (shpart->flags &
-				      VBSD_LKP_FLAG_KEYBLOCK_VALID);
-		if (keyblock_valid) {
-			sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
-			/* Track lowest version from a valid header. */
-			if (lowest_version > sd->kernel_version)
-				lowest_version = sd->kernel_version;
+		int keyblock_valid = sd->flags & VB2_SD_FLAG_KERNEL_SIGNED;
+		/* Track lowest version from a valid header. */
+		if (keyblock_valid && lowest_version > sd->kernel_version) {
+			lowest_version = sd->kernel_version;
 		}
 		VB2_DEBUG("Keyblock valid: %d\n", keyblock_valid);
 		VB2_DEBUG("Combined version: %u\n", sd->kernel_version);
