@@ -281,23 +281,23 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	}
 
 	/*
-	 * If the keyblock is valid and we're not in recovery mode, check for
-	 * rollback of the kernel version.
+	 * Kernel preamble version is the lower 16 bits of the composite
+	 * kernel version.
 	 */
-	uint32_t combined_version = (key_version << 16) |
-			(preamble->kernel_version & 0xFFFF);
-	shpart->combined_version = combined_version;
-	if (keyblock_valid && boot_mode != VB2_BOOT_MODE_RECOVERY) {
-		if (combined_version < sd->kernel_version_secdata) {
-			VB2_DEBUG("Kernel version too low.\n");
-			shpart->check_result = VBSD_LKP_CHECK_KERNEL_ROLLBACK;
-			/*
-			 * If not in developer mode, kernel version
-			 * must be valid.
-			 */
-			if (boot_mode != VB2_BOOT_MODE_DEVELOPER)
-				return VB2_ERROR_UNKNOWN;
-		}
+	if (preamble->kernel_version > VB2_MAX_PREAMBLE_VERSION)
+		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE;
+
+	/* Combine with the key version. */
+	sd->kernel_version = key_version << 16 | preamble->kernel_version;
+	shpart->combined_version = sd->kernel_version;
+
+	/* If not in recovery mode, check for rollback of the kernel version. */
+	if (need_keyblock_valid &&
+	    boot_mode != VB2_BOOT_MODE_RECOVERY &&
+	    sd->kernel_version < sd->kernel_version_secdata) {
+		VB2_DEBUG("Kernel version too low.\n");
+		shpart->check_result = VBSD_LKP_CHECK_KERNEL_ROLLBACK;
+		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK;
 	}
 
 	VB2_DEBUG("Kernel preamble is good.\n");
@@ -577,11 +577,11 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		if (keyblock_valid) {
 			sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
 			/* Track lowest version from a valid header. */
-			if (lowest_version > shpart->combined_version)
-				lowest_version = shpart->combined_version;
+			if (lowest_version > sd->kernel_version)
+				lowest_version = sd->kernel_version;
 		}
 		VB2_DEBUG("Keyblock valid: %d\n", keyblock_valid);
-		VB2_DEBUG("Combined version: %u\n", shpart->combined_version);
+		VB2_DEBUG("Combined version: %u\n", sd->kernel_version);
 
 		/*
 		 * If we're only looking at headers, we're done with this
@@ -630,7 +630,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * Otherwise, we'll check all the other headers to see if they
 		 * contain a newer key.
 		 */
-		if (shpart->combined_version == sd->kernel_version_secdata) {
+		if (sd->kernel_version == sd->kernel_version_secdata) {
 			VB2_DEBUG("Same kernel version\n");
 			break;
 		}
