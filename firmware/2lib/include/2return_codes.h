@@ -544,8 +544,9 @@ enum vb2_return_code {
 	/* Kernel preamble not loaded before calling vb2api_get_kernel_size() */
 	VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE,
 
-	/* Unable to unpack kernel subkey in vb2_verify_vblock() */
-	VB2_ERROR_VBLOCK_KERNEL_SUBKEY,
+	/* Unable to unpack kernel subkey in vb2_verify_vblock();
+	 * deprecated and replaced with VB2_ERROR_UNPACK_KEY_* */
+	VB2_ERROR_DEPRECATED_VBLOCK_KERNEL_SUBKEY,
 
 	/*
 	 * Got a self-signed kernel in vb2_verify_vblock(), but need an

@@ -124,32 +124,33 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  *
  * @param kbuf		Buffer containing the vblock
  * @param kbuf_size	Size of the buffer in bytes
- * @param kernel_subkey	Packed kernel subkey to use in validating keyblock
  * @param wb		Work buffer.  Must be at least
  *			VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t vb2_verify_kernel_vblock(
 	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
-	const struct vb2_packed_key *kernel_subkey,
 	struct vb2_workbuf *wb)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	uint8_t *key_data;
+	uint32_t key_size;
+	struct vb2_public_key kernel_key;
 
 	int need_keyblock_valid = need_valid_keyblock(ctx);
 	int keyblock_valid = 1;  /* Assume valid */
 
 	vb2_error_t rv;
 
-	/* Unpack kernel subkey */
-	struct vb2_public_key kernel_subkey2;
-	if (VB2_SUCCESS != vb2_unpack_key(&kernel_subkey2, kernel_subkey)) {
-		VB2_DEBUG("Unable to unpack kernel subkey\n");
-		return VB2_ERROR_VBLOCK_KERNEL_SUBKEY;
-	}
+	/* Locate key to verify kernel.  This will either be a recovery key, or
+	   a kernel subkey passed from firmware verification. */
+	key_data = vb2_member_of(sd, sd->kernel_key_offset);
+	key_size = sd->kernel_key_size;
+	VB2_TRY(vb2_unpack_key_buffer(&kernel_key, key_data, key_size));
 
 	if (vb2_hwcrypto_allowed(ctx))
-		kernel_subkey2.allow_hwcrypto = 1;
+		kernel_key.allow_hwcrypto = 1;
 
 	/*
 	 * Clear any previous keyblock-valid flag (for example, from a previous
@@ -160,7 +161,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 
 	/* Verify the keyblock. */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
-	rv = vb2_verify_keyblock(keyblock, kbuf_size, &kernel_subkey2, wb);
+	rv = vb2_verify_keyblock(keyblock, kbuf_size, &kernel_key, wb);
 	if (rv) {
 		VB2_DEBUG("Verifying keyblock signature failed.\n");
 		keyblock_valid = 0;
@@ -324,17 +325,14 @@ enum vb2_load_partition_flags {
  *
  * @param ctx		Vboot context
  * @param stream	Stream to load kernel from
- * @param kernel_subkey	Key to use to verify vblock
  * @param flags		Flags (one or more of vb2_load_partition_flags)
  * @param params	Load-kernel parameters
  * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t vb2_load_partition(
-	struct vb2_context *ctx, VbExStream_t stream,
-	const struct vb2_packed_key *kernel_subkey, uint32_t flags,
-	LoadKernelParams *params,
-	struct vb2_workbuf *wb)
+	struct vb2_context *ctx, VbExStream_t stream, uint32_t flags,
+	LoadKernelParams *params, struct vb2_workbuf *wb)
 {
 	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wblocal = *wb;
@@ -352,8 +350,7 @@ static vb2_error_t vb2_load_partition(
 	read_ms += vb2ex_mtime() - start_ts;
 
 	if (VB2_SUCCESS !=
-	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, kernel_subkey,
-				     &wblocal)) {
+	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wblocal)) {
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 
@@ -464,11 +461,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	params->bootloader_size = 0;
 	params->flags = 0;
 
-	/* Locate key to verify kernel.  This will either be a recovery key, or
-	   a kernel subkey passed from firmware verification. */
-	struct vb2_packed_key *kernel_subkey =
-		vb2_member_of(sd, sd->kernel_key_offset);
-
 	/* Read GPT data */
 	GptData gpt;
 	gpt.sector_bytes = (uint32_t)params->bytes_per_lba;
@@ -520,7 +512,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 
 		rv = vb2_load_partition(ctx,
 					stream,
-					kernel_subkey,
 					lpflags,
 					params,
 					&wb);
