@@ -71,7 +71,7 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 	if (vb2_safe_memcmp(vb2_signature_data(sig), digest,
 			    digest_size) != 0) {
 		VB2_DEBUG("Invalid keyblock hash.\n");
-		return VB2_ERROR_KEYBLOCK_SIG_INVALID;
+		return VB2_ERROR_KEYBLOCK_HASH_INVALID_IN_DEV_MODE;
 	}
 
 	/* Success */

@@ -228,7 +228,7 @@ static void verify_keyblock_hash_tests(void)
 	reset_common_data(FOR_KEYBLOCK);
 	mock_vblock.k.data_key_data[0] ^= 0xa0;
 	TEST_EQ(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
-		VB2_ERROR_KEYBLOCK_SIG_INVALID,
+		VB2_ERROR_KEYBLOCK_HASH_INVALID_IN_DEV_MODE,
 		"Keyblock check hash invalid");
 }
 

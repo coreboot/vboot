@@ -139,6 +139,8 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	int need_keyblock_valid = need_valid_keyblock(ctx);
 	int keyblock_valid = 1;  /* Assume valid */
 
+	vb2_error_t rv;
+
 	/* Unpack kernel subkey */
 	struct vb2_public_key kernel_subkey2;
 	if (VB2_SUCCESS != vb2_unpack_key(&kernel_subkey2, kernel_subkey)) {
@@ -151,8 +153,8 @@ static vb2_error_t vb2_verify_kernel_vblock(
 
 	/* Verify the keyblock. */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
-	if (VB2_SUCCESS != vb2_verify_keyblock(keyblock, kbuf_size,
-					       &kernel_subkey2, wb)) {
+	rv = vb2_verify_keyblock(keyblock, kbuf_size, &kernel_subkey2, wb);
+	if (rv) {
 		VB2_DEBUG("Verifying keyblock signature failed.\n");
 		shpart->check_result = VBSD_LKP_CHECK_KEYBLOCK_SIG;
 		keyblock_valid = 0;
@@ -161,15 +163,15 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		if (need_keyblock_valid) {
 			VB2_DEBUG("Self-signed kernels not enabled.\n");
 			shpart->check_result = VBSD_LKP_CHECK_SELF_SIGNED;
-			return VB2_ERROR_VBLOCK_SELF_SIGNED;
+			return rv;
 		}
 
 		/* Otherwise, allow the kernel if the keyblock hash is valid */
-		if (VB2_SUCCESS !=
-		    vb2_verify_keyblock_hash(keyblock, kbuf_size, wb)) {
+		rv = vb2_verify_keyblock_hash(keyblock, kbuf_size, wb);
+		if (rv) {
 			VB2_DEBUG("Verifying keyblock hash failed.\n");
 			shpart->check_result = VBSD_LKP_CHECK_KEYBLOCK_HASH;
-			return VB2_ERROR_VBLOCK_KEYBLOCK_HASH;
+			return rv;
 		}
 	}
 
@@ -258,22 +260,23 @@ static vb2_error_t vb2_verify_kernel_vblock(
 
 	/* Get key for preamble verification from the keyblock. */
 	struct vb2_public_key data_key;
-	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
+	rv = vb2_unpack_key(&data_key, &keyblock->data_key);
+	if (rv) {
 		VB2_DEBUG("Unable to unpack kernel data key\n");
 		shpart->check_result = VBSD_LKP_CHECK_DATA_KEY_PARSE;
-		return VB2_ERROR_UNKNOWN;
+		return rv;
 	}
 
 	/* Verify the preamble, which follows the keyblock */
 	struct vb2_kernel_preamble *preamble = get_preamble(kbuf);
-	if (VB2_SUCCESS !=
-	    vb2_verify_kernel_preamble(preamble,
-				       kbuf_size - keyblock->keyblock_size,
-				       &data_key,
-				       wb)) {
+	rv = vb2_verify_kernel_preamble(preamble,
+					kbuf_size - keyblock->keyblock_size,
+					&data_key,
+					wb);
+	if (rv) {
 		VB2_DEBUG("Preamble verification failed.\n");
 		shpart->check_result = VBSD_LKP_CHECK_VERIFY_PREAMBLE;
-		return VB2_ERROR_UNKNOWN;
+		return rv;
 	}
 
 	/*
