@@ -54,25 +54,28 @@ static enum vb2_boot_mode get_boot_mode(struct vb2_context *ctx)
 }
 
 /**
- * Check if the parameters require an officially signed OS.
+ * Check if a valid keyblock is required.
  *
- * @param params	Load kernel parameters
- * @return 1 if official OS required; 0 if self-signed kernels are ok
+ * @param ctx		Vboot context
+ * @return 1 if valid keyblock required (officially signed kernel);
+ *         0 if valid hash is enough (self-signed kernel).
  */
-static int require_official_os(struct vb2_context *ctx,
-			       const LoadKernelParams *params)
+static int need_valid_keyblock(struct vb2_context *ctx)
 {
 	/* Normal and recovery modes always require official OS */
 	if (get_boot_mode(ctx) != VB2_BOOT_MODE_DEVELOPER)
 		return 1;
 
-	/* FWMP can require developer mode to use official OS */
+	/* FWMP can require developer mode to use signed kernels */
 	if (vb2_secdata_fwmp_get_flag(
 		ctx, VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY))
 		return 1;
 
-	/* Developer can request official OS via nvstorage */
-	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY);
+	/* Developers may require signed kernels */
+	if (vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY))
+		return 1;
+
+	return 0;
 }
 
 /**
@@ -122,7 +125,6 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  * @param kbuf		Buffer containing the vblock
  * @param kbuf_size	Size of the buffer in bytes
  * @param kernel_subkey	Packed kernel subkey to use in validating keyblock
- * @param params	Load kernel parameters
  * @param min_version	Minimum kernel version
  * @param shpart	Destination for verification results
  * @param wb		Work buffer.  Must be at least
@@ -131,10 +133,12 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  */
 static vb2_error_t vb2_verify_kernel_vblock(
 	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
-	const struct vb2_packed_key *kernel_subkey,
-	const LoadKernelParams *params, uint32_t min_version,
+	const struct vb2_packed_key *kernel_subkey, uint32_t min_version,
 	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
+	int need_keyblock_valid = need_valid_keyblock(ctx);
+	int keyblock_valid = 1;  /* Assume valid */
+
 	/* Unpack kernel subkey */
 	struct vb2_public_key kernel_subkey2;
 	if (VB2_SUCCESS != vb2_unpack_key(&kernel_subkey2, kernel_subkey)) {
@@ -146,7 +150,6 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		kernel_subkey2.allow_hwcrypto = 1;
 
 	/* Verify the keyblock. */
-	int keyblock_valid = 1;  /* Assume valid */
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
 	if (VB2_SUCCESS != vb2_verify_keyblock(keyblock, kbuf_size,
 					       &kernel_subkey2, wb)) {
@@ -155,7 +158,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		keyblock_valid = 0;
 
 		/* Check if we must have an officially signed kernel */
-		if (require_official_os(ctx, params)) {
+		if (need_keyblock_valid) {
 			VB2_DEBUG("Self-signed kernels not enabled.\n");
 			shpart->check_result = VBSD_LKP_CHECK_SELF_SIGNED;
 			return VB2_ERROR_VBLOCK_SELF_SIGNED;
@@ -178,6 +181,8 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		VB2_DEBUG("Keyblock developer flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_DEV_MISMATCH;
 		keyblock_valid = 0;
+		if (need_keyblock_valid)
+			return VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG;
 	}
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) ?
@@ -186,6 +191,8 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		VB2_DEBUG("Keyblock recovery flag mismatch.\n");
 		shpart->check_result = VBSD_LKP_CHECK_REC_MISMATCH;
 		keyblock_valid = 0;
+		if (need_keyblock_valid)
+			return VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG;
 	}
 
 	/* Check for rollback of key version except in recovery mode. */
@@ -196,6 +203,8 @@ static vb2_error_t vb2_verify_kernel_vblock(
 			VB2_DEBUG("Key version too old.\n");
 			shpart->check_result = VBSD_LKP_CHECK_KEY_ROLLBACK;
 			keyblock_valid = 0;
+			if (need_keyblock_valid)
+				return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
 		}
 		if (key_version > 0xFFFF) {
 			/*
@@ -206,13 +215,9 @@ static vb2_error_t vb2_verify_kernel_vblock(
 			VB2_DEBUG("Key version > 0xFFFF.\n");
 			shpart->check_result = VBSD_LKP_CHECK_KEY_ROLLBACK;
 			keyblock_valid = 0;
+			if (need_keyblock_valid)
+				return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_RANGE;
 		}
-	}
-
-	/* If not in developer mode, keyblock required to be valid. */
-	if (boot_mode != VB2_BOOT_MODE_DEVELOPER && !keyblock_valid) {
-		VB2_DEBUG("Keyblock is invalid.\n");
-		return VB2_ERROR_VBLOCK_KEYBLOCK;
 	}
 
 	/* If in developer mode and using key hash, check it */
@@ -347,7 +352,7 @@ static vb2_error_t vb2_load_partition(
 
 	if (VB2_SUCCESS !=
 	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, kernel_subkey,
-				     params, min_version, shpart, &wblocal)) {
+				     min_version, shpart, &wblocal)) {
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 

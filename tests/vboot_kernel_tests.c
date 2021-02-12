@@ -705,6 +705,24 @@ static void LoadKernelTest(void)
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock rec!dev flag mismatch");
 
+	/* Check keyblock flag mismatches (dev mode + signed kernel required) */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
+	kbh.keyblock_flags =
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock dev flag mismatch (signed kernel required)");
+
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
+	kbh.keyblock_flags =
+		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock dev flag mismatch (signed kernel required)");
+
+	/* Check kernel key version */
 	ResetMocks();
 	kbh.data_key.key_version = 1;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
@@ -760,6 +778,23 @@ static void LoadKernelTest(void)
 	kph.kernel_version = 0;
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TestLoadKernel(0, "Kernel version ignored in rec mode");
+
+	/* Check kernel version (dev mode + signed kernel required) */
+	ResetMocks();
+	kbh.data_key.key_version = 0;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock key version checked in dev mode "
+		       "(signed kernel required)");
+
+	ResetMocks();
+	kbh.data_key.key_version = 0;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock key version checked in dev mode "
+		       "(signed kernel required)");
 
 	/* Check developer key hash - bad */
 	ResetMocks();

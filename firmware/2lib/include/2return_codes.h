@@ -553,8 +553,9 @@ enum vb2_return_code {
 	/* Invalid keyblock hash in vb2_verify_vblock() */
 	VB2_ERROR_VBLOCK_KEYBLOCK_HASH,
 
-	/* Invalid keyblock in vb2_verify_vblock() */
-	VB2_ERROR_VBLOCK_KEYBLOCK,
+	/* Invalid keyblock in vb2_verify_vblock();
+	 * deprecated and replaced with VB2_ERROR_KERNEL_KEYBLOCK_* */
+	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK,
 
 	/* Wrong developer key hash in vb2_verify_vblock() */
 	VB2_ERROR_VBLOCK_DEV_KEY_HASH,
