@@ -125,7 +125,6 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  * @param kbuf		Buffer containing the vblock
  * @param kbuf_size	Size of the buffer in bytes
  * @param kernel_subkey	Packed kernel subkey to use in validating keyblock
- * @param min_version	Minimum kernel version
  * @param shpart	Destination for verification results
  * @param wb		Work buffer.  Must be at least
  *			VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
@@ -133,9 +132,11 @@ static uint32_t get_body_offset(uint8_t *kbuf)
  */
 static vb2_error_t vb2_verify_kernel_vblock(
 	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
-	const struct vb2_packed_key *kernel_subkey, uint32_t min_version,
+	const struct vb2_packed_key *kernel_subkey,
 	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
 	int need_keyblock_valid = need_valid_keyblock(ctx);
 	int keyblock_valid = 1;  /* Assume valid */
 
@@ -201,14 +202,14 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	enum vb2_boot_mode boot_mode = get_boot_mode(ctx);
 	uint32_t key_version = keyblock->data_key.key_version;
 	if (boot_mode != VB2_BOOT_MODE_RECOVERY) {
-		if (key_version < (min_version >> 16)) {
+		if (key_version < (sd->kernel_version_secdata >> 16)) {
 			VB2_DEBUG("Key version too old.\n");
 			shpart->check_result = VBSD_LKP_CHECK_KEY_ROLLBACK;
 			keyblock_valid = 0;
 			if (need_keyblock_valid)
 				return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
 		}
-		if (key_version > 0xFFFF) {
+		if (key_version > VB2_MAX_KEY_VERSION) {
 			/*
 			 * Key version is stored in 16 bits in the TPM, so key
 			 * versions greater than 0xFFFF can't be stored
@@ -287,7 +288,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 			(preamble->kernel_version & 0xFFFF);
 	shpart->combined_version = combined_version;
 	if (keyblock_valid && boot_mode != VB2_BOOT_MODE_RECOVERY) {
-		if (combined_version < min_version) {
+		if (combined_version < sd->kernel_version_secdata) {
 			VB2_DEBUG("Kernel version too low.\n");
 			shpart->check_result = VBSD_LKP_CHECK_KERNEL_ROLLBACK;
 			/*
@@ -326,7 +327,6 @@ enum vb2_load_partition_flags {
  * @param kernel_subkey	Key to use to verify vblock
  * @param flags		Flags (one or more of vb2_load_partition_flags)
  * @param params	Load-kernel parameters
- * @param min_version	Minimum kernel version from TPM
  * @param shpart	Destination for verification results
  * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
@@ -334,7 +334,7 @@ enum vb2_load_partition_flags {
 static vb2_error_t vb2_load_partition(
 	struct vb2_context *ctx, VbExStream_t stream,
 	const struct vb2_packed_key *kernel_subkey, uint32_t flags,
-	LoadKernelParams *params, uint32_t min_version,
+	LoadKernelParams *params,
 	VbSharedDataKernelPart *shpart, struct vb2_workbuf *wb)
 {
 	uint32_t read_ms = 0, start_ts;
@@ -355,7 +355,7 @@ static vb2_error_t vb2_load_partition(
 
 	if (VB2_SUCCESS !=
 	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, kernel_subkey,
-				     min_version, shpart, &wblocal)) {
+				     shpart, &wblocal)) {
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 
@@ -562,7 +562,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 					kernel_subkey,
 					lpflags,
 					params,
-					sd->kernel_version,
 					shpart,
 					&wb);
 		VbExStreamClose(stream);
@@ -631,7 +630,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * Otherwise, we'll check all the other headers to see if they
 		 * contain a newer key.
 		 */
-		if (shpart->combined_version == sd->kernel_version) {
+		if (shpart->combined_version == sd->kernel_version_secdata) {
 			VB2_DEBUG("Same kernel version\n");
 			break;
 		}
@@ -652,7 +651,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		 * just didn't look.
 		 */
 		if (lowest_version != LOWEST_TPM_VERSION &&
-		    lowest_version > sd->kernel_version)
+		    lowest_version > sd->kernel_version_secdata)
 			sd->kernel_version = lowest_version;
 
 		/* Success! */
