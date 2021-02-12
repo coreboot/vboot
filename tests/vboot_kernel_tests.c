@@ -168,7 +168,7 @@ static void ResetMocks(void)
 	vb2_nv_init(ctx);
 
 	sd = vb2_get_sd(ctx);
-	sd->kernel_version = 0x20001;
+	sd->kernel_version_secdata = 0x20001;
 
 	/* CRC will be invalid after here, but nobody's checking */
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
