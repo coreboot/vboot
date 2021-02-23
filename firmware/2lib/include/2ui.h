@@ -66,6 +66,7 @@ struct vb2_screen_info {
 	uint32_t page_up_item;
 	uint32_t page_down_item;
 	uint32_t back_item;
+	uint32_t cancel_item;
 };
 
 struct vb2_screen_state {
