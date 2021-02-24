@@ -851,6 +851,7 @@ static const struct vb2_screen_info developer_mode_screen = {
 /* VB2_SCREEN_DEVELOPER_TO_NORM */
 
 #define DEVELOPER_TO_NORM_ITEM_CONFIRM 1
+#define DEVELOPER_TO_NORM_ITEM_CANCEL 2
 
 static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 {
@@ -861,6 +862,10 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 		return vb2_ui_screen_back(ui);
 	}
 	ui->state->selected_item = DEVELOPER_TO_NORM_ITEM_CONFIRM;
+	/* Hide "Cancel" button if dev boot is not allowed */
+	if (!vb2_dev_boot_allowed(ui->ctx))
+		VB2_SET_BIT(ui->state->hidden_item_mask,
+			    DEVELOPER_TO_NORM_ITEM_CANCEL);
 	return VB2_REQUEST_UI_CONTINUE;
 }
 
@@ -878,11 +883,11 @@ vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui)
 
 static const struct vb2_menu_item developer_to_norm_items[] = {
 	LANGUAGE_SELECT_ITEM,
-	{
+	[DEVELOPER_TO_NORM_ITEM_CONFIRM] = {
 		.text = "Confirm",
 		.action = developer_to_norm_action,
 	},
-	{
+	[DEVELOPER_TO_NORM_ITEM_CANCEL] = {
 		.text = "Cancel",
 		.action = vb2_ui_screen_back,
 	},
