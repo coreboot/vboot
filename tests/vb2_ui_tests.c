@@ -727,15 +727,11 @@ static void developer_tests(void)
 			"VB_BUTTON_VOL_UP_LONG_PRESS = boot external");
 	}
 
-	/* If dev mode is disabled, goes to to_norm screen repeatedly */
+	/* If dev mode is disabled, directly goes to to_norm screen */
 	reset_common_data(FOR_DEVELOPER);
-	add_mock_keypress(VB_KEY_ESC);
 	mock_dev_boot_allowed = 0;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"if dev mode is disabled, goes to to_norm screen repeatedly");
-	DISPLAYED_EQ("to_norm", VB2_SCREEN_DEVELOPER_TO_NORM, MOCK_IGNORE,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_PASS();
+		"if dev mode is disabled, directly goes to to_norm screen");
 	DISPLAYED_EQ("to_norm", VB2_SCREEN_DEVELOPER_TO_NORM, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	DISPLAYED_NO_EXTRA();
