@@ -138,7 +138,7 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 /**
  * Get info struct of a screen.
  *
- * @param screen	Screen from enum vb2_screen
+ * @param id		Screen from enum vb2_screen
  *
  * @return screen info struct on success, NULL on error.
  */
@@ -174,6 +174,9 @@ vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui);
 /**
  * Select the current menu item.
  *
+ * The caller should take care of returning after this function, and should not
+ * continue executing under the assumption that the screen has *not* changed.
+ *
  * If the current menu item has an action associated with it, run the action.
  * Otherwise, navigate to the target screen.  If neither of these are set, then
  * selecting the menu item is a no-op.
@@ -189,7 +192,13 @@ vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui);
 /**
  * Return back to the previous screen.
  *
- * If the current screen is already the root scren, the request is ignored.
+ * The caller should take care of returning after this function, and should not
+ * continue executing under the assumption that the screen has *not* changed.
+ *
+ * If the current screen is already the root screen, the request is ignored.
+ *
+ * TODO(b/157625765): Consider falling into recovery mode (BROKEN screen) when
+ * the current screen is already the root screen.
  *
  * @param ui		UI context pointer
  * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
@@ -199,9 +208,16 @@ vb2_error_t vb2_ui_screen_back(struct vb2_ui_context *ui);
 /**
  * Change to the given screen.
  *
+ * The caller should take care of returning after this function, and should not
+ * continue executing under the assumption that the screen has *not* changed.
+ *
  * If the screen is not found, the request is ignored.
  *
+ * TODO(b/157625765): Consider falling into recovery mode (BROKEN screen) when
+ * the target screen is not found.
+ *
  * @param ui		UI context pointer
+ * @param id		Screen from enum vb2_screen
  * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
  */
 vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);

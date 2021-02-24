@@ -690,7 +690,7 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 
 	/* TODO(b/159579189): Split this case into a separate root screen */
 	if (!vb2_dev_boot_allowed(ui->ctx))
-		vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
+		return vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 
 	/* Don't show "Return to secure mode" button if GBB forces dev mode. */
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
@@ -783,7 +783,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 
 	/* TODO(b/159579189): Split this case into a separate root screen */
 	if (!vb2_dev_boot_allowed(ui->ctx))
-		vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
+		return vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 
 	/* Once any user interaction occurs, stop the timer. */
 	if (ui->key)
