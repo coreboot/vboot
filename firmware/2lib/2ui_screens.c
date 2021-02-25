@@ -1056,8 +1056,8 @@ static const struct vb2_screen_info developer_select_bootloader_screen = {
 static const struct vb2_menu_item diagnostics_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	{
-		.text = "Storage",
-		.target = VB2_SCREEN_DIAGNOSTICS_STORAGE,
+		.text = "Storage health info",
+		.target = VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH,
 	},
 	{
 		.text = "Quick memory check",
@@ -1077,16 +1077,17 @@ static const struct vb2_screen_info diagnostics_screen = {
 };
 
 /******************************************************************************/
-/* VB2_SCREEN_DIAGNOSTICS_STORAGE */
+/* VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH */
 
-#define DIAGNOSTICS_STORAGE_ITEM_PAGE_UP 0
-#define DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN 1
-#define DIAGNOSTICS_STORAGE_ITEM_BACK 2
+#define DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_UP 0
+#define DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_DOWN 1
+#define DIAGNOSTICS_STORAGE_HEALTH_ITEM_BACK 2
 
-static vb2_error_t diagnostics_storage_init(struct vb2_ui_context *ui)
+static vb2_error_t diagnostics_storage_health_init(struct vb2_ui_context *ui)
 {
-	const char *log_string = vb2ex_get_diagnostic_storage();
-	if (!log_string) {
+	const char *log_string;
+	vb2_error_t rv = vb2ex_diag_get_storage_health(&log_string);
+	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("ERROR: Failed to retrieve storage log message\n");
 		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
 		return vb2_ui_screen_back(ui);
@@ -1102,21 +1103,21 @@ static vb2_error_t diagnostics_storage_init(struct vb2_ui_context *ui)
 	return log_page_init(ui);
 }
 
-static const struct vb2_menu_item diagnostics_storage_items[] = {
-	[DIAGNOSTICS_STORAGE_ITEM_PAGE_UP] = PAGE_UP_ITEM,
-	[DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN] = PAGE_DOWN_ITEM,
-	[DIAGNOSTICS_STORAGE_ITEM_BACK] = BACK_ITEM,
+static const struct vb2_menu_item diagnostics_storage_health_items[] = {
+	[DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_UP] = PAGE_UP_ITEM,
+	[DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_DOWN] = PAGE_DOWN_ITEM,
+	[DIAGNOSTICS_STORAGE_HEALTH_ITEM_BACK] = BACK_ITEM,
 	POWER_OFF_ITEM,
 };
 
-static const struct vb2_screen_info diagnostics_storage_screen = {
-	.id = VB2_SCREEN_DIAGNOSTICS_STORAGE,
-	.name = "Storage",
-	.init = diagnostics_storage_init,
-	.menu = MENU_ITEMS(diagnostics_storage_items),
-	.page_up_item = DIAGNOSTICS_STORAGE_ITEM_PAGE_UP,
-	.page_down_item = DIAGNOSTICS_STORAGE_ITEM_PAGE_DOWN,
-	.back_item = DIAGNOSTICS_STORAGE_ITEM_BACK,
+static const struct vb2_screen_info diagnostics_storage_health_screen = {
+	.id = VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH,
+	.name = "Storage health info",
+	.init = diagnostics_storage_health_init,
+	.menu = MENU_ITEMS(diagnostics_storage_health_items),
+	.page_up_item = DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_UP,
+	.page_down_item = DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_DOWN,
+	.back_item = DIAGNOSTICS_STORAGE_HEALTH_ITEM_BACK,
 };
 
 /******************************************************************************/
@@ -1283,7 +1284,7 @@ static const struct vb2_screen_info *screens[] = {
 	&developer_invalid_disk_screen,
 	&developer_select_bootloader_screen,
 	&diagnostics_screen,
-	&diagnostics_storage_screen,
+	&diagnostics_storage_health_screen,
 	&diagnostics_memory_quick_screen,
 	&diagnostics_memory_full_screen,
 };

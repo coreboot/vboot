@@ -187,9 +187,10 @@ uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
 }
 
 __attribute__((weak))
-const char *vb2ex_get_diagnostic_storage(void)
+vb2_error_t vb2ex_diag_get_storage_health(const char **out)
 {
-	return "mock";
+	*out = "mock";
+	return VB2_SUCCESS;
 }
 
 __attribute__((weak))
