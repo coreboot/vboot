@@ -1344,7 +1344,7 @@ enum vb2_screen {
 	/* Diagnostic tools */
 	VB2_SCREEN_DIAGNOSTICS			= 0x400,
 	/* Storage diagnostic screen */
-	VB2_SCREEN_DIAGNOSTICS_STORAGE	      	= 0x410,
+	VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH	= 0x410,
 	/* Memory diagnostic screens */
 	VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK    	= 0x420,
 	VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL     	= 0x421,
@@ -1515,16 +1515,15 @@ uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
 				  const char *str);
 
 /**
- * Get the full storage diagnostic log.
+ * Get the health info of the storage.
  *
- * Return a pointer of full log string which is guaranteed to be
- * null-terminated.  The function implementation should manage string memory
- * internally.  Subsequent calls may update the string and/or may return a new
- * pointer.
- *
- * @return The pointer to the full debug info string.  NULL on error.
+ * @param out	For returning a read-only pointer of full log string which is
+ *		guaranteed to be null-terminated. The function will manage
+ *		memory internally, so the returned pointer will only be valid
+ *		until next call.
+ * @return VB2_SUCCESS, or error code on error.
  */
-const char *vb2ex_get_diagnostic_storage(void);
+vb2_error_t vb2ex_diag_get_storage_health(const char **out);
 
 /**
  * Get the memory diagnostic status. When it is called, it will take over the

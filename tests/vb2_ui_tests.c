@@ -1818,9 +1818,9 @@ static void diagnostics_screen_tests(void)
 	DISPLAYED_EQ("storage button",
 		     VB2_SCREEN_DIAGNOSTICS, MOCK_IGNORE, 1, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#1: storage screen", VB2_SCREEN_DIAGNOSTICS_STORAGE,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
+	DISPLAYED_EQ("#1: storage screen",
+		     VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH, MOCK_IGNORE,
+		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #2: Quick memory test screen */
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("quick memory test button",
