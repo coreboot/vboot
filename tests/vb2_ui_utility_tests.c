@@ -268,6 +268,18 @@ static void check_shutdown_request_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static vb2_error_t try_back_helper(void)
+{
+	VB2_TRY(vb2_ui_screen_back(&mock_ui_context));
+	return VB2_ERROR_MOCK;
+}
+
+static vb2_error_t try_screen_change_helper(enum vb2_screen screen_id)
+{
+	VB2_TRY(vb2_ui_screen_change(&mock_ui_context, screen_id));
+	return VB2_ERROR_MOCK;
+}
+
 static void screen_stack_tests(void)
 {
 	VB2_DEBUG("Testing screen stack functionality...\n");
@@ -298,6 +310,16 @@ static void screen_stack_tests(void)
 		"back to previous screen");
 	screen_state_eq(mock_ui_context.state, MOCK_SCREEN_BASE, 2, 0x10);
 	TEST_EQ(mock_action_called, 1, "  action called once");
+
+	/* VB2_TRY around back should return right away */
+	reset_common_data();
+	TEST_NEQ(try_back_helper(), VB2_ERROR_MOCK,
+		 "continued executing after VB2_TRY(back)");
+
+	/* VB2_TRY around screen_change should return right away */
+	reset_common_data();
+	TEST_NEQ(try_screen_change_helper(MOCK_SCREEN_ROOT), VB2_ERROR_MOCK,
+		 "continued executing after VB2_TRY(screen_change)");
 
 	/* Change to target screen already in stack, restoring the state */
 	reset_common_data();

@@ -670,6 +670,12 @@ static void menu_next_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
+static vb2_error_t try_menu_select_helper(void)
+{
+	VB2_TRY(vb2_ui_menu_select(&mock_ui_context));
+	return VB2_ERROR_MOCK;
+}
+
 static void menu_select_tests(void)
 {
 	VB2_DEBUG("Testing menu_select...\n");
@@ -683,6 +689,13 @@ static void menu_select_tests(void)
 		"vb2_ui_menu_select with no item screen");
 	screen_state_eq(mock_ui_context.state, MOCK_SCREEN_BASE, 0,
 			MOCK_IGNORE);
+
+	/* VB2_TRY around item selection should return right away */
+	reset_common_data();
+	mock_ui_context.state->screen = &mock_screen_menu;
+	mock_ui_context.key = VB_KEY_ENTER;
+	TEST_NEQ(try_menu_select_helper(), VB2_ERROR_MOCK,
+		"continued executing after VB2_TRY(menu_select)");
 
 	/* Try to select an item with a target (item 2) */
 	reset_common_data();
