@@ -492,6 +492,7 @@ sign_gsc_firmware() {
   local output_file="$9"
   local generation="${10}"
   local temp_dir
+  local chip_name
 
   temp_dir="$(make_temp_dir)"
 
@@ -500,11 +501,13 @@ sign_gsc_firmware() {
       # H1 flash size, image size must match.
       IMAGE_SIZE="$(( 512 * 1024 ))"
       IMAGE_BASE="0x40000"
+      chip_name="cr50"
       ;;
     (d)
       # D2 flash size, image size must match.
       IMAGE_SIZE="$(( 1024 * 1024 ))"
       IMAGE_BASE="0x80000"
+      chip_name="ti50"
       ;;
   esac
 
@@ -543,6 +546,9 @@ sign_gsc_firmware() {
 
     paste_bin "${output_file}" "${bin}" "${IMAGE_BASE}" "${hex_base}"
   done
+
+  # Tell the signer how to rename the @CHIP@ portion of the output.
+  echo "${chip_name}" > "${output_file}.rename"
 
   info "Image successfully signed to ${output_file}"
 }
