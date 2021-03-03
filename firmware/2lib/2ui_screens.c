@@ -688,10 +688,6 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 	enum vb2_dev_default_boot_target default_boot =
 		vb2api_get_dev_default_boot_target(ui->ctx);
 
-	/* TODO(b/159579189): Split this case into a separate root screen */
-	if (!vb2_dev_boot_allowed(ui->ctx))
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
-
 	/* Don't show "Return to secure mode" button if GBB forces dev mode. */
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
 		VB2_SET_BIT(ui->state->hidden_item_mask,
@@ -780,10 +776,6 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 {
 	const int use_short = vb2api_use_short_dev_screen_delay(ui->ctx);
 	uint64_t elapsed_ms;
-
-	/* TODO(b/159579189): Split this case into a separate root screen */
-	if (!vb2_dev_boot_allowed(ui->ctx))
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
 
 	/* Once any user interaction occurs, stop the timer. */
 	if (ui->key)
