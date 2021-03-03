@@ -598,6 +598,14 @@ static void developer_tests(void)
 	TEST_EQ(mock_beep_count, 2, "  beeped twice");
 	TEST_TRUE(mock_iters >= mock_vbtlk_total, "  used up mock_vbtlk");
 
+	/* Don't proceed to internal disk after timeout (dev mode disallowed) */
+	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_allowed = 0;
+	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+		VB2_REQUEST_SHUTDOWN,
+		"do not proceed to internal disk after timeout "
+		"(dev mode disallowed)");
+
 	/* Use short delay */
 	reset_common_data(FOR_DEVELOPER);
 	gbb.flags |= VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
@@ -687,6 +695,15 @@ static void developer_tests(void)
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"default boot from external disk not allowed, don't boot");
 
+	/* Don't proceed to external disk after timeout (dev mode disallowed) */
+	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_allowed = 0;
+	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
+	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+		VB2_REQUEST_SHUTDOWN,
+		"do not proceed to external disk after timeout "
+		"(dev mode disallowed)");
+
 	/* If no external disk, don't boot */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
@@ -727,15 +744,6 @@ static void developer_tests(void)
 			"VB_BUTTON_VOL_UP_LONG_PRESS = boot external");
 	}
 
-	/* If dev mode is disabled, directly goes to to_norm screen */
-	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_allowed = 0;
-	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"if dev mode is disabled, directly goes to to_norm screen");
-	DISPLAYED_EQ("to_norm", VB2_SCREEN_DEVELOPER_TO_NORM, MOCK_IGNORE,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_NO_EXTRA();
-
 	/* Select to_norm in dev menu and confirm */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_keypress(VB_KEY_UP);
@@ -743,6 +751,18 @@ static void developer_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_REBOOT,
 		"select to_norm in dev menu and confirm");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
+		"  disable dev request");
+
+	/* Select to_norm in dev menu and confirm (dev mode disallowed) */
+	reset_common_data(FOR_DEVELOPER);
+	mock_dev_boot_allowed = 0;
+	add_mock_keypress(VB_KEY_UP);
+	add_mock_keypress(VB_KEY_ENTER);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+		VB2_REQUEST_REBOOT,
+		"select to_norm in dev menu and confirm (dev mode disallowed)");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,
 		"  disable dev request");
 
