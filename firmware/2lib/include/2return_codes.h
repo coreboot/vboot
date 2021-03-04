@@ -44,6 +44,9 @@ enum vb2_return_code {
 	/* Continue in the UI loop.  This is used in UI internal functions. */
 	VB2_REQUEST_UI_CONTINUE = 0x1005,
 
+	/* Break from the UI loop.  This is used in UI internal functions. */
+	VB2_REQUEST_UI_EXIT = 0x1006,
+
 	/* End of VB2_REQUEST_* */
 	VB2_REQUEST_END = 0x5000,
 

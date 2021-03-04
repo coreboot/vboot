@@ -155,7 +155,7 @@ const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen id);
  * on 0 when we hit the start of the menu.
  *
  * @param ui		UI context pointer
- * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui);
 
@@ -167,7 +167,7 @@ vb2_error_t vb2_ui_menu_prev(struct vb2_ui_context *ui);
  * on the max index when we hit the end of the menu.
  *
  * @param ui		UI context pointer
- * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui);
 
@@ -182,13 +182,18 @@ vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui);
  * selecting the menu item is a no-op.
  *
  * @param ui		UI context pointer
- * @return VB2_REQUEST_UI_CONTINUE, or error code on error.
+ * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui);
 
 /*****************************************************************************/
 /* Screen navigation functions */
-
+/**
+ * After these functions are called, no assumptions may be made about which
+ * screen is currently displayed, and thus execution should return to ui_loop.
+ * VB2_REQUEST_UI_CONTINUE is returned rather than VB2_SUCCESS, so VB2_TRY can
+ * be used to wrapped to these functions and the callers of these functions.
+ */
 /**
  * Return back to the previous screen.
  *
