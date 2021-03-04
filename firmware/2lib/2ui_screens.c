@@ -80,7 +80,7 @@ static vb2_error_t log_page_init(struct vb2_ui_context *ui)
 		ui->state->selected_item = screen->page_down_item;
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t log_page_prev_action(struct vb2_ui_context *ui)
@@ -89,7 +89,7 @@ static vb2_error_t log_page_prev_action(struct vb2_ui_context *ui)
 
 	/* Validity check. */
 	if (ui->state->current_page == 0)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	ui->state->current_page--;
 
@@ -103,7 +103,7 @@ static vb2_error_t log_page_prev_action(struct vb2_ui_context *ui)
 		VB2_SET_BIT(ui->state->disabled_item_mask,
 			    screen->page_up_item);
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t log_page_next_action(struct vb2_ui_context *ui)
@@ -112,7 +112,7 @@ static vb2_error_t log_page_next_action(struct vb2_ui_context *ui)
 
 	/* Validity check. */
 	if (ui->state->current_page == ui->state->page_count - 1)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	ui->state->current_page++;
 
@@ -126,7 +126,7 @@ static vb2_error_t log_page_next_action(struct vb2_ui_context *ui)
 		VB2_SET_BIT(ui->state->disabled_item_mask,
 			    screen->page_down_item);
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 #define PAGE_UP_ITEM ((struct vb2_menu_item){ \
@@ -214,7 +214,7 @@ static vb2_error_t language_select_init(struct vb2_ui_context *ui)
 			  "initializing selected_item to 0\n");
 		ui->state->selected_item = 0;
 	}
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_screen_info language_select_screen = {
@@ -255,7 +255,7 @@ vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 		ui->state->selected_item = ADVANCED_OPTIONS_ITEM_DEBUG_INFO;
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item advanced_options_items[] = {
@@ -325,7 +325,7 @@ static vb2_error_t debug_info_reinit(struct vb2_ui_context *ui)
 		return vb2_ui_screen_back(ui);
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item debug_info_items[] = {
@@ -389,7 +389,7 @@ static vb2_error_t firmware_log_reinit(struct vb2_ui_context *ui)
 		return vb2_ui_screen_back(ui);
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item firmware_log_items[] = {
@@ -440,7 +440,7 @@ vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    RECOVERY_SELECT_ITEM_DIAGNOSTICS);
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item recovery_select_items[] = {
@@ -512,7 +512,7 @@ vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 
 	ui->physical_presence_button_pressed = 0;
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
@@ -524,7 +524,7 @@ static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 	    (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
 	    !vb2_allow_recovery(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev transition validity check failed\n");
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	VB2_DEBUG("Enabling dev mode and rebooting...\n");
@@ -544,7 +544,7 @@ vb2_error_t recovery_to_dev_confirm_action(struct vb2_ui_context *ui)
 		 */
 		if (PHYSICAL_PRESENCE_KEYBOARD && ui->key == VB_KEY_ENTER)
 			ui->error_code = VB2_UI_ERROR_UNTRUSTED_CONFIRMATION;
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 	return recovery_to_dev_finalize(ui);
 }
@@ -560,17 +560,17 @@ vb2_error_t recovery_to_dev_action(struct vb2_ui_context *ui)
 
 	/* Keyboard physical presence case covered by "Confirm" action. */
 	if (PHYSICAL_PRESENCE_KEYBOARD)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	pressed = vb2ex_physical_presence_pressed();
 	if (pressed) {
 		VB2_DEBUG("Physical presence button pressed, "
 			  "awaiting release\n");
 		ui->physical_presence_button_pressed = 1;
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 	if (!ui->physical_presence_button_pressed)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	VB2_DEBUG("Physical presence button released\n");
 
 	return recovery_to_dev_finalize(ui);
@@ -723,7 +723,7 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 
 	ui->start_time_ms = vb2ex_mtime();
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2_ui_developer_mode_boot_internal_action(
@@ -732,11 +732,11 @@ vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
 	    !vb2_dev_boot_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode internal boot not allowed\n");
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	VB2_TRY(VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_FIXED));
-	return VB2_SUCCESS;
+	return VB2_REQUEST_UI_EXIT;
 }
 
 vb2_error_t vb2_ui_developer_mode_boot_external_action(
@@ -751,12 +751,12 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
 		ui->error_beep = 1;
 		ui->error_code = VB2_UI_ERROR_EXTERNAL_BOOT_NOT_ENABLED;
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
 	if (rv == VB2_SUCCESS) {
-		return VB2_SUCCESS;
+		return VB2_REQUEST_UI_EXIT;
 	} else if (rv == VB2_ERROR_LK_NO_DISK_FOUND) {
 		if (ui->state->screen->id !=
 		    VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL) {
@@ -789,7 +789,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 	if (ui->key)
 		ui->disable_timer = 1;
 	if (ui->disable_timer)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	elapsed_ms = vb2ex_mtime() - ui->start_time_ms;
 
@@ -814,7 +814,7 @@ vb2_error_t developer_mode_action(struct vb2_ui_context *ui)
 		return vb2_ui_menu_select(ui);
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item developer_mode_items[] = {
@@ -866,14 +866,14 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 	if (!vb2_dev_boot_allowed(ui->ctx))
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DEVELOPER_TO_NORM_ITEM_CANCEL);
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui)
 {
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		VB2_DEBUG("ERROR: dev mode forced by GBB flag\n");
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	VB2_DEBUG("Leaving dev mode\n");
@@ -954,7 +954,7 @@ static vb2_error_t developer_select_bootloader_init(struct vb2_ui_context *ui)
 	/* Select the first bootloader. */
 	ui->state->selected_item =
 		ARRAY_SIZE(developer_select_bootloader_items_before);
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
@@ -969,13 +969,13 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 	    !vb2_dev_boot_altfw_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
 		ui->error_code = VB2_UI_ERROR_ALTFW_DISABLED;
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	if (vb2ex_get_altfw_count() == 0) {
 		VB2_DEBUG("ERROR: No alternate bootloader was found\n");
 		ui->error_code = VB2_UI_ERROR_ALTFW_EMPTY;
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 	}
 
 	if (ui->key == VB_KEY_CTRL('L')) {
@@ -991,7 +991,7 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 
 	VB2_DEBUG("ERROR: Alternate bootloader failed\n");
 	ui->error_code = VB2_UI_ERROR_ALTFW_FAILED;
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu *get_bootloader_menu(struct vb2_ui_context *ui)
@@ -1138,13 +1138,13 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 
 	/* Early return if the memory test is done. */
 	if (ui->state->test_finished)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	vb2_error_t rv = op(reset, &log_string);
 
 	/* The test is still running but the output buffer was unchanged. */
 	if (rv == VB2_ERROR_EX_DIAG_TEST_RUNNING)
-		return VB2_REQUEST_UI_CONTINUE;
+		return VB2_SUCCESS;
 
 	if ((rv && rv != VB2_ERROR_EX_DIAG_TEST_UPDATED) || !log_string) {
 		VB2_DEBUG("ERROR: Failed to retrieve memory test status\n");
@@ -1185,28 +1185,20 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 		ui->state->test_finished = 1;
 	}
 
-	return VB2_REQUEST_UI_CONTINUE;
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_memory_init_quick(struct vb2_ui_context *ui)
 {
-	vb2_error_t rv;
-	rv = diagnostics_memory_update_screen(
-		ui, &vb2ex_diag_memory_quick_test, 1);
-
-	if (rv != VB2_REQUEST_UI_CONTINUE)
-		return rv;
+	VB2_TRY(diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_quick_test, 1));
 	return log_page_init(ui);
 }
 
 static vb2_error_t diagnostics_memory_init_full(struct vb2_ui_context *ui)
 {
-	vb2_error_t rv;
-	rv = diagnostics_memory_update_screen(
-		ui, &vb2ex_diag_memory_full_test, 1);
-
-	if (rv != VB2_REQUEST_UI_CONTINUE)
-		return rv;
+	VB2_TRY(diagnostics_memory_update_screen(
+		ui, &vb2ex_diag_memory_full_test, 1));
 	return log_page_init(ui);
 }
 

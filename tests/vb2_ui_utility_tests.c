@@ -179,14 +179,13 @@ static void check_shutdown_request_tests(void)
 	if (!DETACHABLE) {
 		reset_common_data();
 		mock_shutdown_request = 0;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE,
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
 			"release, press, hold, and release");
 		mock_shutdown_request = VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "  press");
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "  hold");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"  press");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"  hold");
 		mock_shutdown_request = 0;
 		TEST_EQ(check_shutdown_request(&mock_ui_context),
 			VB2_REQUEST_SHUTDOWN, "  release");
@@ -196,8 +195,8 @@ static void check_shutdown_request_tests(void)
 	if (!DETACHABLE) {
 		reset_common_data();
 		mock_shutdown_request = VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "press is ignored");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"press is ignored");
 	}
 
 	/* Power button short press from key */
@@ -222,13 +221,13 @@ static void check_shutdown_request_tests(void)
 	reset_common_data();
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN;
 	mock_shutdown_request = VB_SHUTDOWN_REQUEST_LID_CLOSED;
-	TEST_EQ(check_shutdown_request(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "lid ignored");
+	TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+		"lid ignored");
 	if (!DETACHABLE) {  /* Power button works for non DETACHABLE */
 		mock_shutdown_request = VB_SHUTDOWN_REQUEST_LID_CLOSED |
 					VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "  lidsw + pwdsw");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"  lidsw + pwdsw");
 		mock_shutdown_request = 0;
 		TEST_EQ(check_shutdown_request(&mock_ui_context),
 			VB2_REQUEST_SHUTDOWN, "  pwdsw release");
@@ -250,18 +249,17 @@ static void check_shutdown_request_tests(void)
 		/* Flag pwdsw */
 		reset_common_data();
 		mock_shutdown_request = VB_SHUTDOWN_REQUEST_POWER_BUTTON;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "DETACHABLE: ignore pwdsw");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"DETACHABLE: ignore pwdsw");
 		mock_shutdown_request = 0;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE, "  ignore on release");
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
+			"  ignore on release");
 
 		/* Power button short press */
 		reset_common_data();
 		mock_shutdown_request = 0;
 		mock_ui_context.key = VB_BUTTON_POWER_SHORT_PRESS;
-		TEST_EQ(check_shutdown_request(&mock_ui_context),
-			VB2_REQUEST_UI_CONTINUE,
+		TEST_EQ(check_shutdown_request(&mock_ui_context), VB2_SUCCESS,
 			"DETACHABLE: ignore power button short press");
 	}
 
@@ -293,8 +291,7 @@ static void screen_stack_tests(void)
 
 	/* Screen back with empty stack */
 	reset_common_data();
-	TEST_EQ(vb2_ui_screen_back(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE,
+	TEST_EQ(vb2_ui_screen_back(&mock_ui_context), VB2_REQUEST_UI_CONTINUE,
 		"screen back with empty stack");
 	TEST_PTR_EQ(mock_ui_context.state, NULL, "  stack is empty");
 
