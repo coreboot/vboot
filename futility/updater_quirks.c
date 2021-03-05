@@ -46,7 +46,7 @@ static const struct quirks_record quirks_records[] = {
 
 	{ .match = "Google_Poppy.", .quirks = "min_platform_version=6" },
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
-	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=1" },
+	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=2" },
 
         /* Legacy white label units. */
         { .match = "Google_Enguarde.", .quirks = "allow_empty_wltag" },
