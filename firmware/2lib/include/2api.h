@@ -1355,22 +1355,22 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_NONE = 0,
 	/* Dev mode already enabled */
 	VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED,
-	/* To-norm not allowed */
-	VB2_UI_ERROR_TO_NORM_NOT_ALLOWED,
-	/* Debug info screen initialization failed */
-	VB2_UI_ERROR_DEBUG_LOG,
-	/* External boot not enabled */
-	VB2_UI_ERROR_EXTERNAL_BOOT_NOT_ENABLED,
-	/* Firmware log screen initialization failed */
-	VB2_UI_ERROR_FIRMWARE_LOG,
 	/* Untrusted confirmation */
 	VB2_UI_ERROR_UNTRUSTED_CONFIRMATION,
+	/* To-norm not allowed */
+	VB2_UI_ERROR_TO_NORM_NOT_ALLOWED,
+	/* External boot is disabled */
+	VB2_UI_ERROR_EXTERNAL_BOOT_DISABLED,
 	/* Alternate bootloader is disabled */
 	VB2_UI_ERROR_ALTFW_DISABLED,
 	/* No alternate bootloader was found */
 	VB2_UI_ERROR_ALTFW_EMPTY,
 	/* Alternate bootloader failed */
 	VB2_UI_ERROR_ALTFW_FAILED,
+	/* Debug info screen initialization failed */
+	VB2_UI_ERROR_DEBUG_LOG,
+	/* Firmware log screen initialization failed */
+	VB2_UI_ERROR_FIRMWARE_LOG,
 	/* Diagnostics internal failure */
 	VB2_UI_ERROR_DIAGNOSTICS,
 };
