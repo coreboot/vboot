@@ -1033,11 +1033,11 @@ static const struct vb2_menu_item diagnostics_items[] = {
 		.target = VB2_SCREEN_DIAGNOSTICS_STORAGE_HEALTH,
 	},
 	{
-		.text = "Quick memory check",
+		.text = "Memory check (quick)",
 		.target = VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK,
 	},
 	{
-		.text = "Full memory check",
+		.text = "Memory check (full)",
 		.target = VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL,
 	},
 	POWER_OFF_ITEM,
@@ -1180,7 +1180,7 @@ static const struct vb2_menu_item diagnostics_memory_items[] = {
 
 static const struct vb2_screen_info diagnostics_memory_quick_screen = {
 	.id = VB2_SCREEN_DIAGNOSTICS_MEMORY_QUICK,
-	.name = "Quick memory check",
+	.name = "Memory check (quick)",
 	.init = diagnostics_memory_init_quick,
 	.action = diagnostics_memory_update_quick,
 	.menu = MENU_ITEMS(diagnostics_memory_items),
@@ -1192,7 +1192,7 @@ static const struct vb2_screen_info diagnostics_memory_quick_screen = {
 
 static const struct vb2_screen_info diagnostics_memory_full_screen = {
 	.id = VB2_SCREEN_DIAGNOSTICS_MEMORY_FULL,
-	.name = "Full memory check",
+	.name = "Memory check (full)",
 	.init = diagnostics_memory_init_full,
 	.action = diagnostics_memory_update_full,
 	.menu = MENU_ITEMS(diagnostics_memory_items),
