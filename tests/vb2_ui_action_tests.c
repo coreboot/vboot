@@ -757,7 +757,9 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	reset_common_data();
 	mock_dev_boot_altfw_allowed = 1;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_SUCCESS, "not allowed: not in dev mode");
+		VB2_REQUEST_UI_CONTINUE, "not allowed: not in dev mode");
+	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
+		"ui_error code is set");
 	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
 
 	/* Not allowed: dev boot not allowed */
@@ -766,14 +768,18 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	mock_dev_boot_allowed = 0;
 	mock_dev_boot_altfw_allowed = 1;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_SUCCESS, "not allowed: dev boot not allowed");
+		VB2_REQUEST_UI_CONTINUE, "not allowed: dev boot not allowed");
+	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
+		"ui_error code is set");
 	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
 
 	/* Not allowed: boot altfw not allowed */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_SUCCESS, "not allowed: boot altfw not allowed");
+		VB2_REQUEST_UI_CONTINUE, "not allowed: boot altfw not allowed");
+	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
+		"ui_error code is set");
 	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
 
 	/* Allowed */
@@ -782,7 +788,9 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	mock_dev_boot_altfw_allowed = 1;
 	mock_ui_context.state->selected_item = 2;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_SUCCESS, "allowed");
+		VB2_REQUEST_UI_CONTINUE, "allowed");
+	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_FAILED,
+		"ui_error code is set");
 	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called once");
 	TEST_EQ(mock_altfw_last, 2, "  select bootloader #2");
 
@@ -793,7 +801,9 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	mock_ui_context.key = VB_KEY_CTRL('L');
 	mock_ui_context.state->selected_item = 4;  /* Ignored */
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_SUCCESS, "allowed: ctrl+l");
+		VB2_REQUEST_UI_CONTINUE, "allowed: ctrl+l");
+	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_FAILED,
+		"ui_error code is set");
 	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called once");
 	TEST_EQ(mock_altfw_last, 0, "  select bootloader #0");
 

@@ -64,6 +64,17 @@
  */
 #define VB2_TRY(expr, ...) _VB2_TRY_IMPL(expr, ##__VA_ARGS__, NULL, 0)
 
+/**
+ * Check if the return value is an error.
+ *
+ * @param rv	The return value.
+ * @return True if the value is an error.
+ */
+static inline int vb2_is_error(vb2_error_t rv)
+{
+	return rv >= VB2_ERROR_BASE && rv <= VB2_ERROR_MAX;
+}
+
 /* Flags for vb2_context.
  *
  * Unless otherwise noted, flags are set by verified boot and may be read (but

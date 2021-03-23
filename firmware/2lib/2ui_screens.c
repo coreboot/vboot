@@ -53,6 +53,32 @@ static vb2_error_t power_off_action(struct vb2_ui_context *ui)
 
 /******************************************************************************/
 /*
+ * Functions for ui error handling
+ */
+
+static vb2_error_t set_ui_error(struct vb2_ui_context *ui,
+				enum vb2_ui_error error_code)
+{
+	/* Keep the first occurring error. */
+	if (ui->error_code)
+		VB2_DEBUG("When handling ui error %#x, another ui error "
+			  "occurred: %#x",
+			  ui->error_code, error_code);
+	else
+		ui->error_code = error_code;
+	/* Return to the ui loop to show the error code. */
+	return VB2_REQUEST_UI_CONTINUE;
+}
+
+static vb2_error_t set_ui_error_and_go_back(struct vb2_ui_context *ui,
+					    enum vb2_ui_error error_code)
+{
+	set_ui_error(ui, error_code);
+	return vb2_ui_screen_back(ui);
+}
+
+/******************************************************************************/
+/*
  * Functions used for log screens
  *
  * Expects that the page_count is valid and page_up_item and page_down_item are
@@ -295,23 +321,19 @@ static const struct vb2_screen_info advanced_options_screen = {
 static vb2_error_t debug_info_set_content(struct vb2_ui_context *ui)
 {
 	const char *log_string = vb2ex_get_debug_info(ui->ctx);
-	if (!log_string) {
-		VB2_DEBUG("ERROR: Failed to retrieve debug info\n");
-		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
-		return vb2_ui_screen_back(ui);
-	}
-	vb2_error_t rv = log_page_update(ui, log_string);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DEBUG_LOG;
-		return vb2_ui_screen_back(ui);
-	}
+	if (!log_string)
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DEBUG_LOG);
+	if (vb2_is_error(log_page_update(ui, log_string)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DEBUG_LOG);
 	return VB2_SUCCESS;
 }
 
 static vb2_error_t debug_info_init(struct vb2_ui_context *ui)
 {
 	VB2_TRY(debug_info_set_content(ui));
-	return log_page_reset_to_top(ui);
+	if (vb2_is_error(log_page_reset_to_top(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DEBUG_LOG);
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t debug_info_reinit(struct vb2_ui_context *ui)
@@ -349,23 +371,19 @@ static vb2_error_t firmware_log_set_content(struct vb2_ui_context *ui,
 					    int reset)
 {
 	const char *log_string = vb2ex_get_firmware_log(reset);
-	if (!log_string) {
-		VB2_DEBUG("ERROR: Failed to retrieve firmware log\n");
-		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
-		return vb2_ui_screen_back(ui);
-	}
-	vb2_error_t rv = log_page_update(ui, log_string);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_FIRMWARE_LOG;
-		return vb2_ui_screen_back(ui);
-	}
+	if (!log_string)
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_FIRMWARE_LOG);
+	if (vb2_is_error(log_page_update(ui, log_string)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_FIRMWARE_LOG);
 	return VB2_SUCCESS;
 }
 
 static vb2_error_t firmware_log_init(struct vb2_ui_context *ui)
 {
 	VB2_TRY(firmware_log_set_content(ui, 1));
-	return log_page_reset_to_top(ui);
+	if (vb2_is_error(log_page_reset_to_top(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_FIRMWARE_LOG);
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t firmware_log_reinit(struct vb2_ui_context *ui)
@@ -471,11 +489,10 @@ static const struct vb2_screen_info recovery_invalid_screen = {
 
 vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui)
 {
-	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) {
+	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED)
 		/* We're in dev mode, so let user know they can't transition */
-		ui->error_code = VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED;
-		return vb2_ui_screen_back(ui);
-	}
+		return set_ui_error_and_go_back(
+			ui, VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED);
 
 	if (!PHYSICAL_PRESENCE_KEYBOARD && vb2ex_physical_presence_pressed()) {
 		VB2_DEBUG("Presence button stuck?\n");
@@ -524,7 +541,8 @@ vb2_error_t recovery_to_dev_confirm_action(struct vb2_ui_context *ui)
 		 * from an untrusted keyboard.
 		 */
 		if (PHYSICAL_PRESENCE_KEYBOARD && ui->key == VB_KEY_ENTER)
-			ui->error_code = VB2_UI_ERROR_UNTRUSTED_CONFIRMATION;
+			return set_ui_error(
+				ui, VB2_UI_ERROR_UNTRUSTED_CONFIRMATION);
 		return VB2_SUCCESS;
 	}
 	return recovery_to_dev_finalize(ui);
@@ -727,8 +745,7 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 	    !vb2_dev_boot_external_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
 		ui->error_beep = 1;
-		ui->error_code = VB2_UI_ERROR_EXTERNAL_BOOT_DISABLED;
-		return VB2_SUCCESS;
+		return set_ui_error(ui, VB2_UI_ERROR_EXTERNAL_BOOT_DISABLED);
 	}
 
 	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
@@ -831,8 +848,8 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 	/* Don't allow to-norm if GBB forces dev mode */
 	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		VB2_DEBUG("ERROR: to-norm not allowed\n");
-		ui->error_code = VB2_UI_ERROR_TO_NORM_NOT_ALLOWED;
-		return vb2_ui_screen_back(ui);
+		return set_ui_error_and_go_back(
+			ui, VB2_UI_ERROR_TO_NORM_NOT_ALLOWED);
 	}
 	ui->state->selected_item = DEVELOPER_TO_NORM_ITEM_CONFIRM;
 	/* Hide "Cancel" button if dev boot is not allowed */
@@ -920,10 +937,8 @@ static const struct vb2_menu_item developer_select_bootloader_items_after[] = {
 
 static vb2_error_t developer_select_bootloader_init(struct vb2_ui_context *ui)
 {
-	if (get_menu(ui)->num_items == 0) {
-		ui->error_code = VB2_UI_ERROR_ALTFW_EMPTY;
-		return vb2_ui_screen_back(ui);
-	}
+	if (get_menu(ui)->num_items == 0)
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_ALTFW_EMPTY);
 	/* Select the first bootloader. */
 	ui->state->selected_item =
 		ARRAY_SIZE(developer_select_bootloader_items_before);
@@ -941,14 +956,12 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 	    !vb2_dev_boot_allowed(ui->ctx) ||
 	    !vb2_dev_boot_altfw_allowed(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
-		ui->error_code = VB2_UI_ERROR_ALTFW_DISABLED;
-		return VB2_SUCCESS;
+		return set_ui_error(ui, VB2_UI_ERROR_ALTFW_DISABLED);
 	}
 
 	if (vb2ex_get_altfw_count() == 0) {
 		VB2_DEBUG("ERROR: No alternate bootloader was found\n");
-		ui->error_code = VB2_UI_ERROR_ALTFW_EMPTY;
-		return VB2_SUCCESS;
+		return set_ui_error(ui, VB2_UI_ERROR_ALTFW_EMPTY);
 	}
 
 	if (ui->key == VB_KEY_CTRL('L')) {
@@ -963,8 +976,7 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 	vb2ex_run_altfw(altfw_id);
 
 	VB2_DEBUG("ERROR: Alternate bootloader failed\n");
-	ui->error_code = VB2_UI_ERROR_ALTFW_FAILED;
-	return VB2_SUCCESS;
+	return set_ui_error(ui, VB2_UI_ERROR_ALTFW_FAILED);
 }
 
 static const struct vb2_menu *get_bootloader_menu(struct vb2_ui_context *ui)
@@ -1083,20 +1095,20 @@ static const struct vb2_screen_info diagnostics_screen = {
 #define DIAGNOSTICS_STORAGE_HEALTH_ITEM_PAGE_DOWN 1
 #define DIAGNOSTICS_STORAGE_HEALTH_ITEM_BACK 2
 
-static vb2_error_t diagnostics_storage_health_init(struct vb2_ui_context *ui)
+static vb2_error_t diagnostics_storage_health_init_impl(
+	struct vb2_ui_context *ui)
 {
 	const char *log_string;
-	vb2_error_t rv = vb2ex_diag_get_storage_health(&log_string);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		return vb2_ui_screen_back(ui);
-	}
-	rv = log_page_update(ui, log_string);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		return vb2_ui_screen_back(ui);
-	}
+	VB2_TRY(vb2ex_diag_get_storage_health(&log_string));
+	VB2_TRY(log_page_update(ui, log_string));
 	return log_page_reset_to_top(ui);
+}
+
+static vb2_error_t diagnostics_storage_health_init(struct vb2_ui_context *ui)
+{
+	if (vb2_is_error(diagnostics_storage_health_init_impl(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
+	return VB2_SUCCESS;
 }
 
 static const struct vb2_menu_item diagnostics_storage_health_items[] = {
@@ -1152,29 +1164,25 @@ static vb2_error_t diagnostics_storage_test_update_impl(
 
 static vb2_error_t diagnostics_storage_test_update(struct vb2_ui_context *ui)
 {
-	vb2_error_t rv = diagnostics_storage_test_update_impl(ui);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		return vb2_ui_screen_back(ui);
-	}
+	if (vb2_is_error(diagnostics_storage_test_update_impl(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
 	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_storage_test_control(
 	struct vb2_ui_context *ui, enum vb2_diag_storage_test op)
 {
-	vb2_error_t rv = vb2ex_diag_storage_test_control(op);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		return vb2_ui_screen_back(ui);
-	}
+	if (vb2_is_error(vb2ex_diag_storage_test_control(op)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
 	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_storage_test_init(struct vb2_ui_context *ui)
 {
 	VB2_TRY(diagnostics_storage_test_update(ui));
-	return log_page_reset_to_top(ui);
+	if (vb2_is_error(log_page_reset_to_top(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_storage_test_short_init(
@@ -1283,11 +1291,8 @@ static vb2_error_t diagnostics_memory_update_screen(struct vb2_ui_context *ui,
 						    memory_test_op_t op,
 						    int reset)
 {
-	vb2_error_t rv = diagnostics_memory_update_screen_impl(ui, op, reset);
-	if (rv) {
-		ui->error_code = VB2_UI_ERROR_DIAGNOSTICS;
-		return vb2_ui_screen_back(ui);
-	}
+	if (vb2_is_error(diagnostics_memory_update_screen_impl(ui, op, reset)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
 	return VB2_SUCCESS;
 }
 
@@ -1295,14 +1300,18 @@ static vb2_error_t diagnostics_memory_init_quick(struct vb2_ui_context *ui)
 {
 	VB2_TRY(diagnostics_memory_update_screen(
 		ui, &vb2ex_diag_memory_quick_test, 1));
-	return log_page_reset_to_top(ui);
+	if (vb2_is_error(log_page_reset_to_top(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_memory_init_full(struct vb2_ui_context *ui)
 {
 	VB2_TRY(diagnostics_memory_update_screen(
 		ui, &vb2ex_diag_memory_full_test, 1));
-	return log_page_reset_to_top(ui);
+	if (vb2_is_error(log_page_reset_to_top(ui)))
+		return set_ui_error_and_go_back(ui, VB2_UI_ERROR_DIAGNOSTICS);
+	return VB2_SUCCESS;
 }
 
 static vb2_error_t diagnostics_memory_update_quick(struct vb2_ui_context *ui)
