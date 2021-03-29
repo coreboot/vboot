@@ -1214,7 +1214,7 @@ static const struct vb2_menu_item diagnostics_memory_items[] = {
 	[DIAGNOSTICS_MEMORY_ITEM_PAGE_UP] = PAGE_UP_ITEM,
 	[DIAGNOSTICS_MEMORY_ITEM_PAGE_DOWN] = PAGE_DOWN_ITEM,
 	[DIAGNOSTICS_MEMORY_ITEM_CANCEL] = {
-		.text = "Cancel and go back",
+		.text = "Cancel",
 		.action = vb2_ui_screen_back,
 	},
 	[DIAGNOSTICS_MEMORY_ITEM_BACK] = BACK_ITEM,
