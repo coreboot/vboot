@@ -452,7 +452,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	struct vb2_workbuf wb;
-	VbSharedDataKernelCall shcall;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t rv;
@@ -464,14 +463,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	params->bootloader_address = 0;
 	params->bootloader_size = 0;
 	params->flags = 0;
-
-	/*
-	 * Set up tracking for this call.  This wraps around if called many
-	 * times, so we need to initialize the call entry each time.
-	 */
-	memset(&shcall, 0, sizeof(shcall));
-	shcall.boot_flags = (uint32_t)params->boot_flags;
-	shcall.sector_size = (uint32_t)params->bytes_per_lba;
 
 	/* Locate key to verify kernel.  This will either be a recovery key, or
 	   a kernel subkey passed from firmware verification. */
@@ -506,7 +497,6 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			  part_start, part_size);
 
 		/* Found at least one kernel partition. */
-		shcall.kernel_parts_found++;
 		found_partitions++;
 
 		/* Set up the stream */
@@ -628,6 +618,5 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 		rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 	}
 
-	shcall.return_code = (uint8_t)rv;
 	return rv;
 }

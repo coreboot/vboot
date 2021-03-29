@@ -16,37 +16,6 @@
 
 struct vb2_context;
 
-/* Result codes for VbSharedDataKernelCall.check_result */
-#define VBSD_LKC_CHECK_NOT_DONE            0
-#define VBSD_LKC_CHECK_DEV_SWITCH_MISMATCH 1
-#define VBSD_LKC_CHECK_GPT_READ_ERROR      2
-#define VBSD_LKC_CHECK_GPT_PARSE_ERROR     3
-#define VBSD_LKC_CHECK_GOOD_PARTITION      4
-#define VBSD_LKC_CHECK_INVALID_PARTITIONS  5
-#define VBSD_LKC_CHECK_NO_PARTITIONS       6
-
-/* Information about a single call to LoadKernel() */
-typedef struct VbSharedDataKernelCall {
-	/* Bottom 32 bits of flags passed in LoadKernelParams.boot_flags */
-	uint32_t boot_flags;
-	/* Debug flags; see VBSD_LK_FLAG_* */
-	uint32_t flags;
-	/* Number of sectors on drive */
-	uint64_t sector_count;
-	/* Sector size in bytes */
-	uint32_t sector_size;
-	/* Check result; see VBSD_LKC_CHECK_* */
-	uint8_t check_result;
-	/* Test error number, if non-zero */
-	uint8_t test_error_num;
-	/* Return code from LoadKernel() */
-	uint8_t return_code;
-	/* Number of kernel partitions found */
-	uint8_t kernel_parts_found;
-	/* Reserved for padding */
-	uint8_t reserved0[199];
-} VbSharedDataKernelCall;
-
 /**
  * Attempt loading a kernel from the specified type(s) of disks.
  *

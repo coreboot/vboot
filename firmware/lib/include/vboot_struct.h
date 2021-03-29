@@ -53,9 +53,6 @@ extern "C" {
 /* NvStorage uses 64-byte record, not 16-byte */
 #define VBSD_NVDATA_V2                   0x00100000
 
-/* Number of kernel calls to track.  Must be power of 2. */
-#define VBSD_MAX_KERNEL_CALLS 4
-
 /* Data shared to OS. */
 typedef struct VbSharedDataHeader {
 	/* Fields present in version 1 */
@@ -117,8 +114,8 @@ typedef struct VbSharedDataHeader {
 	/* Debugging information from LoadKernel() */
 	/* Number of times LoadKernel() called */
 	uint32_t lk_call_count;
-	/* Info on calls */
-	VbSharedDataKernelCall lk_calls[VBSD_MAX_KERNEL_CALLS];
+	/* Reserved for padding */
+	uint8_t reserved3[896];
 
 	/*
 	 * Offset and size of supplemental kernel data.  Reserve space for
@@ -137,7 +134,7 @@ typedef struct VbSharedDataHeader {
 	/* Recovery reason for current boot */
 	uint8_t recovery_reason;
 	/* Reserved for padding */
-	uint8_t reserved3[7];
+	uint8_t reserved4[7];
 	/* Flags from firmware keyblock */
 	uint64_t fw_keyblock_flags;
 	/* Kernel TPM version at start of VbSelectAndLoadKernel() */
