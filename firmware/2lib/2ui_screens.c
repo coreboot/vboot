@@ -150,14 +150,6 @@ static vb2_error_t log_page_next_action(struct vb2_ui_context *ui)
 })
 
 /******************************************************************************/
-/* VB2_SCREEN_BLANK */
-
-static const struct vb2_screen_info blank_screen = {
-	.id = VB2_SCREEN_BLANK,
-	.name = "Blank",
-};
-
-/******************************************************************************/
 /* VB2_SCREEN_LANGUAGE_SELECT */
 
 static vb2_error_t language_select_action(struct vb2_ui_context *ui)
@@ -1219,7 +1211,6 @@ static const struct vb2_screen_info diagnostics_memory_full_screen = {
  * screen, based on the menu information passed from vboot.
  */
 static const struct vb2_screen_info *screens[] = {
-	&blank_screen,
 	&language_select_screen,
 	&recovery_broken_screen,
 	&advanced_options_screen,

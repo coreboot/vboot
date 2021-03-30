@@ -19,8 +19,9 @@
 
 /* Mock screen index for testing screen utility functions. */
 #define MOCK_NO_SCREEN 0xef00
-#define MOCK_SCREEN_BASE 0xef10
-#define MOCK_SCREEN_MENU 0xef11
+#define MOCK_SCREEN_BLANK 0xef10
+#define MOCK_SCREEN_BASE 0xef11
+#define MOCK_SCREEN_MENU 0xef12
 #define MOCK_SCREEN_TARGET0 0xef20
 #define MOCK_SCREEN_TARGET1 0xef21
 #define MOCK_SCREEN_TARGET2 0xef22
@@ -127,7 +128,7 @@ static vb2_error_t mock_action_msleep(struct vb2_ui_context *ui)
 /* Mock screens */
 struct vb2_screen_info mock_screen_temp;
 const struct vb2_screen_info mock_screen_blank = {
-	.id = VB2_SCREEN_BLANK,
+	.id = MOCK_SCREEN_BLANK,
 	.name = "mock_screen_blank",
 };
 const struct vb2_screen_info mock_screen_base = {
@@ -393,7 +394,7 @@ const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen screen)
 	mock_get_screen_info_called++;
 
 	switch ((int)screen) {
-	case VB2_SCREEN_BLANK:
+	case MOCK_SCREEN_BLANK:
 		return &mock_screen_blank;
 	case MOCK_SCREEN_BASE:
 		return &mock_screen_base;
@@ -898,13 +899,13 @@ static void ui_loop_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = -1;
 	mock_action_countdown_limit = 10;
-	TEST_EQ(ui_loop(ctx, VB2_SCREEN_BLANK, mock_action_countdown),
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_countdown),
 		VB2_SUCCESS, "global action");
 	TEST_EQ(mock_action_called, 10, "  action called");
 
 	/* Global action can change screen */
 	reset_common_data();
-	TEST_EQ(ui_loop(ctx, VB2_SCREEN_BLANK, mock_action_screen_change),
+	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_screen_change),
 		VB2_REQUEST_SHUTDOWN, "global action can change screen");
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("change to mock_screen_base", MOCK_SCREEN_BASE,

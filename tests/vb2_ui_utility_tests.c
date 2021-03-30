@@ -43,10 +43,6 @@ static vb2_error_t mock_action_base(struct vb2_ui_context *ui)
 }
 
 /* Mock screens */
-struct vb2_screen_info mock_screen_blank = {
-	.id = VB2_SCREEN_BLANK,
-	.name = "mock_screen_blank",
-};
 struct vb2_screen_info mock_screen_base = {
 	.id = MOCK_SCREEN_BASE,
 	.name = "mock_screen_base: menuless screen",
@@ -125,8 +121,6 @@ static void reset_common_data(void)
 	mock_action_called = 0;
 
 	/* Reset init and action functions */
-	mock_screen_blank.init = NULL;
-	mock_screen_blank.action = NULL;
 	mock_screen_base.init = NULL;
 	mock_screen_base.action = NULL;
 	mock_screen_menu.init = NULL;
@@ -157,8 +151,6 @@ uint32_t VbExIsShutdownRequested(void)
 const struct vb2_screen_info *vb2_get_screen_info(enum vb2_screen screen)
 {
 	switch ((int)screen) {
-	case VB2_SCREEN_BLANK:
-		return &mock_screen_blank;
 	case MOCK_SCREEN_BASE:
 		return &mock_screen_base;
 	case MOCK_SCREEN_MENU:
