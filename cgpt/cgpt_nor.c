@@ -24,6 +24,7 @@
 
 #include "cgpt.h"
 #include "cgpt_nor.h"
+#include "subprocess.h"
 
 static const char FLASHROM_PATH[] = "/usr/sbin/flashrom";
 
@@ -48,6 +49,7 @@ int GetMtdSize(const char *mtd_device, uint64_t *size) {
   return ret;
 }
 
+// TODO(b:184559695): Remove these functions and use subprocess_run everywhere.
 int ForkExecV(const char *cwd, const char *const argv[]) {
   pid_t pid = fork();
   if (pid == -1) {
@@ -212,27 +214,42 @@ int ReadNorFlash(char *temp_dir_template) {
 
   // Read RW_GPT section from NOR flash to "rw_gpt".
   ret++;
-  int fd_flags = fcntl(1, F_GETFD);
-  // Close stdout on exec so that flashrom does not muck up cgpt's output.
-  if (0 != fcntl(1, F_SETFD, FD_CLOEXEC))
-    Warning("Can't stop flashrom from mucking up our output\n");
-  if (ForkExecL(temp_dir_template, FLASHROM_PATH, "-i", "RW_GPT:rw_gpt", "-r",
-                NULL) != 0) {
+
+  // TODO(b:184559695): Add parameter to subprocess_run to change directory
+  // before exec. Also, NULL parameter is a glibc extension that _might_
+  // break FreeBSD.
+  char *cwd = getcwd(NULL, 0);
+  if (!cwd) {
+    Error("Cannot get current directory.\n");
+    return ret;
+  }
+  if (chdir(temp_dir_template) < 0) {
+    Error("Cannot change directory.\n");
+    goto out_free;
+  }
+  const char *const argv[] = {FLASHROM_PATH, "-i", "RW_GPT:rw_gpt", "-r"};
+  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
+  // output.
+  if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL) != 0) {
     Error("Cannot exec flashrom to read from RW_GPT section.\n");
     RemoveDir(temp_dir_template);
   } else {
     ret = 0;
   }
+  if (chdir(cwd) < 0) {
+    Error("Cannot change directory back to original.\n");
+    goto out_free;
+  }
 
-  // Restore stdout flags
-  if (0 != fcntl(1, F_SETFD, fd_flags))
-    Warning("Can't restore stdout flags\n");
+out_free:
+  free(cwd);
   return ret;
 }
 
 // Write "rw_gpt" back to NOR flash. We write the file in two parts for safety.
 int WriteNorFlash(const char *dir) {
   int ret = 0;
+
   ret++;
   if (split_gpt(dir, "rw_gpt") != 0) {
     Error("Cannot split rw_gpt in two.\n");
@@ -240,26 +257,46 @@ int WriteNorFlash(const char *dir) {
   }
   ret++;
   int nr_fails = 0;
-  int fd_flags = fcntl(1, F_GETFD);
-  // Close stdout on exec so that flashrom does not muck up cgpt's output.
-  if (0 != fcntl(1, F_SETFD, FD_CLOEXEC))
-    Warning("Can't stop flashrom from mucking up our output\n");
-  if (ForkExecL(dir, FLASHROM_PATH, "-i", "RW_GPT_PRIMARY:rw_gpt_1",
-                "-w", "--fast-verify", NULL) != 0) {
+
+  // TODO(b:184559695): Add parameter to subprocess_run to change directory
+  // before exec. Also, NULL parameter is a glibc extension that _might_
+  // break FreeBSD.
+  char *cwd = getcwd(NULL, 0);
+  if (!cwd) {
+    Error("Cannot get current directory.\n");
+    return ret;
+  }
+  if (chdir(dir) < 0) {
+    Error("Cannot change directory.\n");
+    goto out_free;
+  }
+  const char *const argv1[] = {FLASHROM_PATH, "-i", "RW_GPT_PRIMARY:rw_gpt_1",
+                "-w", "--fast-verify"};
+  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
+  // output.
+  if (subprocess_run(argv1, &subprocess_null, &subprocess_null, NULL) != 0) {
     Warning("Cannot write the 1st half of rw_gpt back with flashrom.\n");
     nr_fails++;
   }
-  if (ForkExecL(dir, FLASHROM_PATH, "-i", "RW_GPT_SECONDARY:rw_gpt_2",
-                "-w", "--fast-verify", NULL) != 0) {
+  const char *const argv2[] = {FLASHROM_PATH, "-i", "RW_GPT_SECONDARY:rw_gpt_2",
+                "-w", "--fast-verify"};
+  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
+  // output.
+  if (subprocess_run(argv2, &subprocess_null, &subprocess_null, NULL) != 0) {
     Warning("Cannot write the 2nd half of rw_gpt back with flashrom.\n");
     nr_fails++;
   }
-  if (0 != fcntl(1, F_SETFD, fd_flags))
-    Warning("Can't restore stdout flags\n");
+  if (chdir(cwd) < 0) {
+    Error("Cannot change directory back to original.\n");
+    goto out_free;
+  }
   switch (nr_fails) {
     case 0: ret = 0; break;
     case 1: Warning("It might still be okay.\n"); break;
     case 2: Error("Cannot write both parts back with flashrom.\n"); break;
   }
+
+out_free:
+  free(cwd);
   return ret;
 }
