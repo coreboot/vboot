@@ -49,7 +49,7 @@ int GetMtdSize(const char *mtd_device, uint64_t *size) {
   return ret;
 }
 
-// TODO(b:184559695): Remove these functions and use subprocess_run everywhere.
+// TODO(b:184812319): Remove these functions and use subprocess_run everywhere.
 int ForkExecV(const char *cwd, const char *const argv[]) {
   pid_t pid = fork();
   if (pid == -1) {
@@ -202,6 +202,7 @@ int RemoveDir(const char *dir) {
 // Read RW_GPT from NOR flash to "rw_gpt" in a temp dir |temp_dir_template|.
 // |temp_dir_template| is passed to mkdtemp() so it must satisfy all
 // requirements by mkdtemp.
+// TODO(b:184812319): Replace this function with flashrom_read.
 int ReadNorFlash(char *temp_dir_template) {
   int ret = 0;
 
@@ -215,9 +216,6 @@ int ReadNorFlash(char *temp_dir_template) {
   // Read RW_GPT section from NOR flash to "rw_gpt".
   ret++;
 
-  // TODO(b:184559695): Add parameter to subprocess_run to change directory
-  // before exec. Also, NULL parameter is a glibc extension that _might_
-  // break FreeBSD.
   char *cwd = getcwd(NULL, 0);
   if (!cwd) {
     Error("Cannot get current directory.\n");
@@ -247,6 +245,7 @@ out_free:
 }
 
 // Write "rw_gpt" back to NOR flash. We write the file in two parts for safety.
+// TODO(b:184812319): Replace this function with flashrom_write.
 int WriteNorFlash(const char *dir) {
   int ret = 0;
 
@@ -258,9 +257,6 @@ int WriteNorFlash(const char *dir) {
   ret++;
   int nr_fails = 0;
 
-  // TODO(b:184559695): Add parameter to subprocess_run to change directory
-  // before exec. Also, NULL parameter is a glibc extension that _might_
-  // break FreeBSD.
   char *cwd = getcwd(NULL, 0);
   if (!cwd) {
     Error("Cannot get current directory.\n");

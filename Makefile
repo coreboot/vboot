@@ -187,6 +187,12 @@ ifneq (${TPM2_MODE},)
 CFLAGS += -DTPM2_MODE
 endif
 
+# Support devices with GPT in SPI-NOR (for nand device)
+# TODO(b:184812319): Consider removing this code if nobody uses it.
+ifneq (${GPT_SPI_NOR},)
+CFLAGS += -DGPT_SPI_NOR
+endif
+
 # Enable boot from external disk when switching to dev mode
 ifneq ($(filter-out 0,${BOOT_EXTERNAL_ON_DEV}),)
 CFLAGS += -DBOOT_EXTERNAL_ON_DEV=1
@@ -498,7 +504,6 @@ HOSTLIB_SRCS = \
 	cgpt/cgpt_create.c \
 	cgpt/cgpt_edit.c \
 	cgpt/cgpt_find.c \
-	cgpt/cgpt_nor.c \
 	cgpt/cgpt_prioritize.c \
 	cgpt/cgpt_show.c \
 	firmware/2lib/2common.c \
@@ -535,6 +540,10 @@ HOSTLIB_SRCS = \
 	host/lib21/host_misc.c \
 	${TLCL_SRCS}
 
+ifneq (${GPT_SPI_NOR},)
+HOSTLIB_SRCS += cgpt/cgpt_nor.c
+endif
+
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${HOSTLIB_OBJS}
 
@@ -552,7 +561,6 @@ CGPT_SRCS = \
 	cgpt/cgpt_edit.c \
 	cgpt/cgpt_find.c \
 	cgpt/cgpt_legacy.c \
-	cgpt/cgpt_nor.c \
 	cgpt/cgpt_prioritize.c \
 	cgpt/cgpt_repair.c \
 	cgpt/cgpt_show.c \
@@ -565,6 +573,10 @@ CGPT_SRCS = \
 	cgpt/cmd_prioritize.c \
 	cgpt/cmd_repair.c \
 	cgpt/cmd_show.c
+
+ifneq (${GPT_SPI_NOR},)
+CGPT_SRCS += cgpt/cgpt_nor.c
+endif
 
 CGPT_OBJS = ${CGPT_SRCS:%.c=${BUILD}/%.o}
 
@@ -948,7 +960,7 @@ ${CGPT_WRAPPER}: ${CGPT_WRAPPER_OBJS} ${UTILLIB}
 	${Q}${LD} -o ${CGPT_WRAPPER} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: cgpt
-cgpt: ${CGPT} ${CGPT_WRAPPER}
+cgpt: ${CGPT} $(if ${GPT_SPI_NOR},cgpt_wrapper)
 
 # on FreeBSD: install misc/e2fsprogs-libuuid from ports,
 # or e2fsprogs-libuuid from its binary package system.

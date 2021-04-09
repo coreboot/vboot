@@ -96,19 +96,6 @@ static void showmatch(CgptFindParams *params, const char *filename,
     EntryDetails(entry, partnum - 1, params->numeric);
 }
 
-// This handles the MTD devices. ChromeOS uses /dev/mtdX for kernel partitions,
-// /dev/ubiblockX_0 for root partitions, and /dev/ubiX for stateful partition.
-static void chromeos_mtd_show(CgptFindParams *params, const char *filename,
-                              int partnum, GptEntry *entry) {
-  if (GuidEqual(&guid_chromeos_kernel, &entry->type)) {
-    printf("/dev/mtd%d\n", partnum);
-  } else if (GuidEqual(&guid_chromeos_rootfs, &entry->type)) {
-    printf("/dev/ubiblock%d_0\n", partnum);
-  } else {
-    printf("/dev/ubi%d_0\n", partnum);
-  }
-}
-
 // This returns true if a GPT partition matches the search criteria. If a match
 // isn't found (or if the file doesn't contain a GPT), it returns false. The
 // filename and partition number that matched is left in a global, since we
@@ -214,6 +201,76 @@ static char *is_wholedev(const char *basename) {
   return 0;
 }
 
+#ifdef GPT_SPI_NOR
+// This handles the MTD devices. ChromeOS uses /dev/mtdX for kernel partitions,
+// /dev/ubiblockX_0 for root partitions, and /dev/ubiX for stateful partition.
+static void chromeos_mtd_show(CgptFindParams *params, const char *filename,
+                              int partnum, GptEntry *entry) {
+  if (GuidEqual(&guid_chromeos_kernel, &entry->type)) {
+    printf("/dev/mtd%d\n", partnum);
+  } else if (GuidEqual(&guid_chromeos_rootfs, &entry->type)) {
+    printf("/dev/ubiblock%d_0\n", partnum);
+  } else {
+    printf("/dev/ubi%d_0\n", partnum);
+  }
+}
+
+static int scan_spi_gpt(CgptFindParams *params) {
+  int found = 0;
+  char partname[MAX_PARTITION_NAME_LEN];
+  FILE *fp;
+  size_t line_length = 0;
+  char *line = NULL;
+
+  fp = fopen(PROC_MTD, "re");
+  if (!fp) {
+    return found;
+  }
+
+  while (getline(&line, &line_length, fp) != -1) {
+    uint64_t sz;
+    uint32_t erasesz;
+    char name[128];
+    // dev:  size  erasesize  name
+    if (sscanf(line, "%64[^:]: %" PRIx64 " %x \"%127[^\"]\"",
+               partname, &sz, &erasesz, name) != 4)
+      continue;
+    if (strcmp(partname, "mtd0") == 0) {
+      char temp_dir[] = "/tmp/cgpt_find.XXXXXX";
+      if (params->drive_size == 0) {
+        if (GetMtdSize("/dev/mtd0", &params->drive_size) != 0) {
+          perror("GetMtdSize");
+          goto cleanup;
+        }
+      }
+      if (ReadNorFlash(temp_dir) != 0) {
+        perror("ReadNorFlash");
+        goto cleanup;
+      }
+      char nor_file[64];
+      if (snprintf(nor_file, sizeof(nor_file), "%s/rw_gpt", temp_dir) > 0) {
+        params->show_fn = chromeos_mtd_show;
+        if (do_search(params, nor_file)) {
+          found++;
+        }
+        params->show_fn = NULL;
+      }
+      RemoveDir(temp_dir);
+      break;
+    }
+  }
+cleanup:
+  fclose(fp);
+  free(line);
+  return found;
+}
+#else
+// Stub
+static int scan_spi_gpt(CgptFindParams *params) {
+  return 0;
+}
+#endif
+
 // This scans all the physical devices it can find, looking for a match. It
 // returns true if any matches were found, false otherwise.
 static int scan_real_devs(CgptFindParams *params) {
@@ -255,48 +312,10 @@ static int scan_real_devs(CgptFindParams *params) {
   }
 
   fclose(fp);
-
-  fp = fopen(PROC_MTD, "re");
-  if (!fp) {
-    free(line);
-    return found;
-  }
-
-  while (getline(&line, &line_length, fp) != -1) {
-    uint64_t sz;
-    uint32_t erasesz;
-    char name[128];
-    // dev:  size  erasesize  name
-    if (sscanf(line, "%64[^:]: %" PRIx64 " %x \"%127[^\"]\"",
-               partname, &sz, &erasesz, name) != 4)
-      continue;
-    if (strcmp(partname, "mtd0") == 0) {
-      char temp_dir[] = "/tmp/cgpt_find.XXXXXX";
-      if (params->drive_size == 0) {
-        if (GetMtdSize("/dev/mtd0", &params->drive_size) != 0) {
-          perror("GetMtdSize");
-          goto cleanup;
-        }
-      }
-      if (ReadNorFlash(temp_dir) != 0) {
-        perror("ReadNorFlash");
-        goto cleanup;
-      }
-      char nor_file[64];
-      if (snprintf(nor_file, sizeof(nor_file), "%s/rw_gpt", temp_dir) > 0) {
-        params->show_fn = chromeos_mtd_show;
-        if (do_search(params, nor_file)) {
-          found++;
-        }
-        params->show_fn = NULL;
-      }
-      RemoveDir(temp_dir);
-      break;
-    }
-  }
-cleanup:
-  fclose(fp);
   free(line);
+
+  found += scan_spi_gpt(params);
+
   return found;
 }
 
