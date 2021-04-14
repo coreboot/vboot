@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include "2common.h"
 #include "2rsa.h"
 #include "2sysincludes.h"
 #include "file_keys.h"
@@ -15,7 +16,6 @@
 #include "host_key.h"
 #include "host_signature.h"
 #include "test_common.h"
-#include "vb2_common.h"
 
 static void resign_keyblock(struct vb2_keyblock *h,
 			    const struct vb2_private_key *key)

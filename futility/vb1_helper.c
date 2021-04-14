@@ -21,7 +21,6 @@
 #include "kernel_blob.h"
 #include "util_misc.h"
 #include "vb1_helper.h"
-#include "vb2_common.h"
 
 /****************************************************************************/
 /* Here are globals containing all the bits & pieces I'm working on.

@@ -133,3 +133,22 @@ struct vb2_kernel_preamble *vb2_create_kernel_preamble(
 	/* Return the header */
 	return h;
 }
+
+void vb2_kernel_get_vmlinuz_header(const struct vb2_kernel_preamble *preamble,
+				   uint64_t *vmlinuz_header_address,
+				   uint32_t *vmlinuz_header_size)
+{
+	if (preamble->header_version_minor < 1) {
+		*vmlinuz_header_address = 0;
+		*vmlinuz_header_size = 0;
+	} else {
+		/*
+		 * Set header and size only if the preamble header version is >
+		 * 2.1 as they don't exist in version 2.0 (Note that we don't
+		 * need to check header_version_major; if that's not 2 then
+		 * vb2_verify_kernel_preamble() would have already failed.
+		 */
+		*vmlinuz_header_address = preamble->vmlinuz_header_address;
+		*vmlinuz_header_size = preamble->vmlinuz_header_size;
+	}
+}

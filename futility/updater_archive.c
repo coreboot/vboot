@@ -33,7 +33,6 @@
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"
-#include "vb2_common.h"
 
 /*
  * A firmware update package (archive) is a file packed by either shar(1) or

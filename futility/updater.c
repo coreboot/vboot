@@ -14,7 +14,6 @@
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"
-#include "vb2_common.h"
 
 #define REMOVE_WP_URL "https://goo.gl/ces83U"
 

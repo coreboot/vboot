@@ -428,4 +428,44 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 				   const struct vb2_public_key *key,
 				   const struct vb2_workbuf *wb);
 
+/**
+ * Get the flags for the kernel preamble.
+ *
+ * @param preamble	Preamble to check
+ * @return Flags for the preamble.  Old preamble versions (<2.2) return 0.
+ */
+uint32_t vb2_kernel_get_flags(const struct vb2_kernel_preamble *preamble);
+
+/**
+ * Verify a keyblock using its hash.
+ *
+ * Header fields are also checked for validity. Does not verify key index or key
+ * block flags.  Use this for self-signed keyblocks in developer mode.
+ *
+ * @param block		Keyblock to verify
+ * @param size		Size of keyblock buffer
+ * @param key		Key to use to verify block
+ * @param wb		Work buffer
+ * @return VB2_SUCCESS, or non-zero error code if error.
+ */
+vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
+				     uint32_t size,
+				     const struct vb2_workbuf *wb);
+
+/**
+ * Check the validity of a kernel preamble using a public key.
+ *
+ * The signature in the preamble is destroyed during the check.
+ *
+ * @param preamble     	Preamble to verify
+ * @param size		Size of preamble buffer
+ * @param key		Key to use to verify preamble
+ * @param wb		Work buffer
+ * @return VB2_SUCCESS, or non-zero error code if error.
+ */
+vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
+				       uint32_t size,
+				       const struct vb2_public_key *key,
+				       const struct vb2_workbuf *wb);
+
 #endif  /* VBOOT_REFERENCE_2COMMON_H_ */

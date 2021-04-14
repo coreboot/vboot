@@ -26,7 +26,6 @@
 #include "host_common.h"
 #include "kernel_blob.h"
 #include "vb1_helper.h"
-#include "vb2_common.h"
 
 /* Global opts */
 static int opt_verbose;

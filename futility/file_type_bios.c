@@ -16,7 +16,6 @@
 #include "futility_options.h"
 #include "host_common.h"
 #include "vb1_helper.h"
-#include "vb2_common.h"
 
 static const char * const fmap_name[] = {
 	"GBB",					/* BIOS_FMAP_GBB */

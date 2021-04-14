@@ -10,18 +10,13 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2packed_key.h"
-#include "2rsa.h"
-#include "2sha.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
 #include "gpt_misc.h"
 #include "load_kernel_fw.h"
-#include "vb2_common.h"
 #include "vboot_api.h"
-#include "vboot_kernel.h"
-#include "vboot_struct.h"
 
 #define LOWEST_TPM_VERSION 0xffffffff
 

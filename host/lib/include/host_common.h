@@ -64,4 +64,18 @@ struct vb2_kernel_preamble *vb2_create_kernel_preamble(
 	uint32_t desired_size,
 	const struct vb2_private_key *signing_key);
 
+/**
+ * Retrieve the 16-bit vmlinuz header address and size from the preamble.
+ *
+ * Size 0 means there is no 16-bit vmlinuz header present.  Old preamble
+ * versions (<2.1) return 0 for both fields.
+ *
+ * @param preamble	Preamble to check
+ * @param vmlinuz_header_address	Destination for header address
+ * @param vmlinuz_header_size		Destination for header size
+ */
+void vb2_kernel_get_vmlinuz_header(const struct vb2_kernel_preamble *preamble,
+				   uint64_t *vmlinuz_header_address,
+				   uint32_t *vmlinuz_header_size);
+
 #endif  /* VBOOT_REFERENCE_HOST_COMMON_H_ */

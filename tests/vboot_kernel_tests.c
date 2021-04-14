@@ -20,7 +20,6 @@
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "test_common.h"
-#include "vb2_common.h"
 #include "vboot_api.h"
 #include "vboot_kernel.h"
 
