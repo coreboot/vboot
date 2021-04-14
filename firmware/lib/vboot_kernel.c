@@ -120,6 +120,52 @@ static uint32_t get_body_offset(uint8_t *kbuf)
 }
 
 /**
+ * Verify developer mode key hash.
+ *
+ * @param ctx		Vboot context
+ * @param keyblock	Keyblock to verify
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+static vb2_error_t vb2_verify_kernel_dev_key_hash(
+	struct vb2_context *ctx, struct vb2_keyblock *keyblock)
+{
+	struct vb2_packed_key *key = &keyblock->data_key;
+	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
+	uint32_t buflen = key->key_size;
+	uint8_t digest[VB2_SHA256_DIGEST_SIZE];
+
+	VB2_DEBUG("Checking developer key hash.\n");
+	VB2_TRY(vb2_digest_buffer(buf, buflen, VB2_HASH_SHA256, digest,
+				  sizeof(digest)));
+
+	uint8_t *fwmp_dev_key_hash =
+		vb2_secdata_fwmp_get_dev_key_hash(ctx);
+	if (fwmp_dev_key_hash == NULL) {
+		VB2_DEBUG("Couldn't retrieve developer key hash.\n");
+		return VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH;
+	}
+
+	if (vb2_safe_memcmp(digest, fwmp_dev_key_hash,
+			    VB2_SHA256_DIGEST_SIZE)) {
+		int i;
+
+		VB2_DEBUG("Wrong developer key hash.\n");
+		VB2_DEBUG("Want: ");
+		for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++)
+			VB2_DEBUG_RAW("%02x ", fwmp_dev_key_hash[i]);
+		VB2_DEBUG_RAW("\n");
+		VB2_DEBUG("Got:  ");
+		for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++)
+			VB2_DEBUG_RAW("%02x ", digest[i]);
+		VB2_DEBUG_RAW("\n");
+
+		return VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH;
+	}
+
+	return VB2_SUCCESS;
+}
+
+/**
  * Verify a kernel vblock.
  *
  * @param kbuf		Buffer containing the vblock
@@ -223,40 +269,10 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		}
 	}
 
-	/* If in developer mode and using key hash, check it */
+	/* If in developer mode and using key hash, check it. */
 	if (boot_mode == VB2_BOOT_MODE_DEVELOPER &&
 	    vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_USE_KEY_HASH)) {
-		struct vb2_packed_key *key = &keyblock->data_key;
-		uint8_t *buf = ((uint8_t *)key) + key->key_offset;
-		uint32_t buflen = key->key_size;
-		uint8_t digest[VB2_SHA256_DIGEST_SIZE];
-
-		VB2_DEBUG("Checking developer key hash.\n");
-		vb2_digest_buffer(buf, buflen, VB2_HASH_SHA256,
-				  digest, sizeof(digest));
-
-		uint8_t *fwmp_dev_key_hash =
-			vb2_secdata_fwmp_get_dev_key_hash(ctx);
-		if (fwmp_dev_key_hash == NULL) {
-			VB2_DEBUG("Couldn't retrieve developer key hash.\n");
-			return VB2_ERROR_VBLOCK_DEV_KEY_HASH;
-		}
-
-		if (0 != vb2_safe_memcmp(digest, fwmp_dev_key_hash,
-					 VB2_SHA256_DIGEST_SIZE)) {
-			int i;
-
-			VB2_DEBUG("Wrong developer key hash.\n");
-			VB2_DEBUG("Want: ");
-			for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++)
-				VB2_DEBUG("%02x", fwmp_dev_key_hash[i]);
-			VB2_DEBUG("\nGot:  ");
-			for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++)
-				VB2_DEBUG("%02x", digest[i]);
-			VB2_DEBUG("\n");
-
-			return VB2_ERROR_VBLOCK_DEV_KEY_HASH;
-		}
+		VB2_TRY(vb2_verify_kernel_dev_key_hash(ctx, keyblock));
 	}
 
 	/*

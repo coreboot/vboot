@@ -563,8 +563,8 @@ enum vb2_return_code {
 	 * deprecated and replaced with VB2_ERROR_KERNEL_KEYBLOCK_* */
 	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK,
 
-	/* Wrong developer key hash in vb2_verify_vblock() */
-	VB2_ERROR_VBLOCK_DEV_KEY_HASH,
+	/* Wrong dev key hash in vb2_verify_kernel_vblock_dev_key_hash() */
+	VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH,
 
 	/* Work buffer too small in vb2_load_partition() */
 	VB2_ERROR_LOAD_PARTITION_WORKBUF,
