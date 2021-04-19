@@ -365,8 +365,7 @@ static vb2_error_t vb2_load_partition(
 	}
 	read_ms += vb2ex_mtime() - start_ts;
 
-	if (VB2_SUCCESS !=
-	    vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wblocal)) {
+	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wblocal)) {
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 
@@ -430,7 +429,7 @@ static vb2_error_t vb2_load_partition(
 
 	/* Get key for preamble/data verification from the keyblock. */
 	struct vb2_public_key data_key;
-	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
+	if (vb2_unpack_key(&data_key, &keyblock->data_key)) {
 		VB2_DEBUG("Unable to unpack kernel data key\n");
 		return VB2_ERROR_LOAD_PARTITION_DATA_KEY;
 	}
@@ -439,9 +438,8 @@ static vb2_error_t vb2_load_partition(
 		data_key.allow_hwcrypto = 1;
 
 	/* Verify kernel data */
-	if (VB2_SUCCESS != vb2_verify_data(kernbuf, kernbuf_size,
-					   &preamble->body_signature,
-					   &data_key, &wblocal)) {
+	if (vb2_verify_data(kernbuf, kernbuf_size, &preamble->body_signature,
+			    &data_key, &wblocal)) {
 		VB2_DEBUG("Kernel data verification failed.\n");
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_BODY;
 	}
@@ -484,21 +482,21 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 	gpt.gpt_drive_sectors = params->gpt_lba_count;
 	gpt.flags = params->boot_flags & BOOT_FLAG_EXTERNAL_GPT
 			? GPT_FLAG_EXTERNAL : 0;
-	if (0 != AllocAndReadGptData(params->disk_handle, &gpt)) {
+	if (AllocAndReadGptData(params->disk_handle, &gpt)) {
 		VB2_DEBUG("Unable to read GPT data\n");
 		goto gpt_done;
 	}
 
 	/* Initialize GPT library */
-	if (GPT_SUCCESS != GptInit(&gpt)) {
+	if (GptInit(&gpt)) {
 		VB2_DEBUG("Error parsing GPT\n");
 		goto gpt_done;
 	}
 
 	/* Loop over candidate kernel partitions */
 	uint64_t part_start, part_size;
-	while (GPT_SUCCESS ==
-	       GptNextKernelEntry(&gpt, &part_start, &part_size)) {
+	while (GptNextKernelEntry(&gpt, &part_start, &part_size) ==
+	       GPT_SUCCESS) {
 
 		VB2_DEBUG("Found kernel entry at %"
 			  PRIu64 " size %" PRIu64 "\n",
@@ -526,14 +524,10 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			lpflags |= VB2_LOAD_PARTITION_VBLOCK_ONLY;
 		}
 
-		rv = vb2_load_partition(ctx,
-					stream,
-					lpflags,
-					params,
-					&wb);
+		rv = vb2_load_partition(ctx, stream, lpflags, params, &wb);
 		VbExStreamClose(stream);
 
-		if (rv != VB2_SUCCESS) {
+		if (rv) {
 			VB2_DEBUG("Marking kernel as invalid.\n");
 			GptUpdateKernelEntry(&gpt, GPT_UPDATE_ENTRY_BAD);
 			continue;
