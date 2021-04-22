@@ -312,7 +312,7 @@ static void ResetMocks(int i)
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
 
-	memset(VbApiKernelGetParams(), 0, sizeof(LoadKernelParams));
+	memset(VbApiKernelGetParams(), 0, sizeof(VbSelectAndLoadKernelParams));
 
 	memset(&mock_disks, 0, sizeof(mock_disks));
 	load_kernel_calls = 0;
@@ -395,7 +395,8 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t LoadKernel(struct vb2_context *c, LoadKernelParams *params,
+vb2_error_t LoadKernel(struct vb2_context *c,
+		       VbSelectAndLoadKernelParams *params,
 		       VbDiskInfo *disk_info)
 {
 	got_find_disk = (const char *)params->disk_handle;

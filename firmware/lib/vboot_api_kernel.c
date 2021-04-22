@@ -21,11 +21,11 @@
 #include "vboot_test.h"
 
 /* Global variables */
-static LoadKernelParams lkp;
+static VbSelectAndLoadKernelParams lkp;
 
 #ifdef CHROMEOS_ENVIRONMENT
 /* Global variable accessor for unit tests */
-struct LoadKernelParams *VbApiKernelGetParams(void)
+struct VbSelectAndLoadKernelParams *VbApiKernelGetParams(void)
 {
 	return &lkp;
 }

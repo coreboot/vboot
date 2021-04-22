@@ -54,7 +54,7 @@ static int gpt_flag_external;
 
 static struct vb2_gbb_header gbb;
 static VbExDiskHandle_t handle;
-static LoadKernelParams lkp;
+static VbSelectAndLoadKernelParams lkp;
 static VbDiskInfo disk_info;
 static struct vb2_keyblock kbh;
 static struct vb2_kernel_preamble kph;

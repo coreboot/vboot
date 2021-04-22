@@ -343,7 +343,7 @@ enum vb2_load_partition_flags {
  */
 static vb2_error_t vb2_load_partition(
 	struct vb2_context *ctx, VbExStream_t stream, uint32_t flags,
-	LoadKernelParams *params)
+	VbSelectAndLoadKernelParams *params)
 {
 	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wb;
@@ -456,7 +456,8 @@ static vb2_error_t vb2_load_partition(
 	return VB2_SUCCESS;
 }
 
-vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params,
+vb2_error_t LoadKernel(struct vb2_context *ctx,
+		       VbSelectAndLoadKernelParams *params,
 		       VbDiskInfo *disk_info)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

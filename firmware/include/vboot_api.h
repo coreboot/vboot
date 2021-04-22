@@ -44,7 +44,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
  */
 typedef void *VbExDiskHandle_t;
 
-/* Data used only by VbSelectAndLoadKernel() */
 typedef struct VbSelectAndLoadKernelParams {
 	/* Inputs to VbSelectAndLoadKernel() */
 	/* Destination buffer for kernel (normally at 0x100000 on x86) */
@@ -68,12 +67,6 @@ typedef struct VbSelectAndLoadKernelParams {
 	uint8_t partition_guid[16];
 	/* Flags set by signer */
 	uint32_t flags;
-	/*
-	 * TODO: in H2C, all that pretty much just gets passed to the
-	 * bootloader as KernelBootloaderOptions, though the disk handle is
-	 * passed as an index instead of a handle.  Is that used anymore now
-	 * that we're passing partition_guid?
-	 */
 } VbSelectAndLoadKernelParams;
 
 /**
