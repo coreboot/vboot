@@ -251,10 +251,11 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	uint32_t key_version = keyblock->data_key.key_version;
 	if (boot_mode != VB2_BOOT_MODE_RECOVERY) {
 		if (key_version < (sd->kernel_version_secdata >> 16)) {
-			VB2_DEBUG("Key version too old.\n");
 			keyblock_valid = 0;
-			if (need_keyblock_valid)
+			if (need_keyblock_valid) {
+				VB2_DEBUG("Key version too old.\n");
 				return VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK;
+			}
 		}
 		if (key_version > VB2_MAX_KEY_VERSION) {
 			/*
