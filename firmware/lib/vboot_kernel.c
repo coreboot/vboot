@@ -456,7 +456,8 @@ static vb2_error_t vb2_load_partition(
 	return VB2_SUCCESS;
 }
 
-vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
+vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params,
+		       VbDiskInfo *disk_info)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int found_partitions = 0;
@@ -471,12 +472,13 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 
 	/* Read GPT data */
 	GptData gpt;
-	gpt.sector_bytes = (uint32_t)params->bytes_per_lba;
-	gpt.streaming_drive_sectors = params->streaming_lba_count;
-	gpt.gpt_drive_sectors = params->gpt_lba_count;
-	gpt.flags = params->boot_flags & BOOT_FLAG_EXTERNAL_GPT
+	gpt.sector_bytes = (uint32_t)disk_info->bytes_per_lba;
+	gpt.streaming_drive_sectors = disk_info->streaming_lba_count
+		?: disk_info->lba_count;
+	gpt.gpt_drive_sectors = disk_info->lba_count;
+	gpt.flags = disk_info->flags & VB_DISK_FLAG_EXTERNAL_GPT
 			? GPT_FLAG_EXTERNAL : 0;
-	if (AllocAndReadGptData(params->disk_handle, &gpt)) {
+	if (AllocAndReadGptData(disk_info->handle, &gpt)) {
 		VB2_DEBUG("Unable to read GPT data\n");
 		goto gpt_done;
 	}
@@ -501,7 +503,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 
 		/* Set up the stream */
 		VbExStream_t stream = NULL;
-		if (VbExStreamOpen(params->disk_handle,
+		if (VbExStreamOpen(disk_info->handle,
 				   part_start, part_size, &stream)) {
 			VB2_DEBUG("Partition error getting stream.\n");
 			VB2_DEBUG("Marking kernel as invalid.\n");
@@ -590,7 +592,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 
  gpt_done:
 	/* Write and free GPT data */
-	WriteAndFreeGptData(params->disk_handle, &gpt);
+	WriteAndFreeGptData(disk_info->handle, &gpt);
 
 	/* Handle finding a good partition */
 	if (params->partition_number > 0) {

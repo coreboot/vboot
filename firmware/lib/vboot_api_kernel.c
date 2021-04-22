@@ -91,20 +91,14 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 				  disk_info[i].flags);
 			continue;
 		}
-		lkp.disk_handle = disk_info[i].handle;
-		lkp.bytes_per_lba = disk_info[i].bytes_per_lba;
-		lkp.gpt_lba_count = disk_info[i].lba_count;
-		lkp.streaming_lba_count = disk_info[i].streaming_lba_count
-						?: lkp.gpt_lba_count;
-		lkp.boot_flags |= disk_info[i].flags & VB_DISK_FLAG_EXTERNAL_GPT
-				? BOOT_FLAG_EXTERNAL_GPT : 0;
 
-		vb2_error_t new_rv = LoadKernel(ctx, &lkp);
+		lkp.disk_handle = disk_info[i].handle;
+		vb2_error_t new_rv = LoadKernel(ctx, &lkp, &disk_info[i]);
 		VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
 
 		/* Stop now if we found a kernel. */
 		if (VB2_SUCCESS == new_rv) {
-			VbExDiskFreeInfo(disk_info, lkp.disk_handle);
+			VbExDiskFreeInfo(disk_info, disk_info[i].handle);
 			return VB2_SUCCESS;
 		}
 

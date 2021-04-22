@@ -27,6 +27,7 @@ static struct vb2_shared_data *sd;
 
 /* Global variables for stub functions */
 static LoadKernelParams lkp;
+static VbDiskInfo disk_info;
 static FILE *image_file = NULL;
 
 
@@ -36,17 +37,19 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 {
 	printf("Read(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
-	if (lba_start >= lkp.streaming_lba_count ||
-	    lba_start + lba_count > lkp.streaming_lba_count) {
+	if (lba_start >= disk_info.streaming_lba_count ||
+	    lba_start + lba_count > disk_info.streaming_lba_count) {
 		fprintf(stderr,
 			"Read overrun: %" PRIu64 " + %" PRIu64
 			" > %" PRIu64 "\n", lba_start,
-			lba_count, lkp.streaming_lba_count);
+			lba_count, disk_info.streaming_lba_count);
 		return 1;
 	}
 
-	if (0 != fseek(image_file, lba_start * lkp.bytes_per_lba, SEEK_SET) ||
-	    1 != fread(buffer, lba_count * lkp.bytes_per_lba, 1, image_file)) {
+	if (0 != fseek(image_file, lba_start * disk_info.bytes_per_lba,
+		       SEEK_SET) ||
+	    1 != fread(buffer, lba_count * disk_info.bytes_per_lba, 1,
+		       image_file)) {
 		fprintf(stderr, "Read error.");
 		return 1;
 	}
@@ -59,12 +62,12 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 {
 	printf("Write(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
-	if (lba_start >= lkp.streaming_lba_count ||
-	    lba_start + lba_count > lkp.streaming_lba_count) {
+	if (lba_start >= disk_info.streaming_lba_count ||
+	    lba_start + lba_count > disk_info.streaming_lba_count) {
 		fprintf(stderr,
 			"Read overrun: %" PRIu64 " + %" PRIu64
 			" > %" PRIu64 "\n", lba_start, lba_count,
-			lkp.streaming_lba_count);
+			disk_info.streaming_lba_count);
 		return 1;
 	}
 
@@ -72,8 +75,9 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 	   our example file */
 	return VB2_SUCCESS;
 
-	fseek(image_file, lba_start * lkp.bytes_per_lba, SEEK_SET);
-	if (1 != fwrite(buffer, lba_count * lkp.bytes_per_lba, 1, image_file)) {
+	fseek(image_file, lba_start * disk_info.bytes_per_lba, SEEK_SET);
+	if (1 != fwrite(buffer, lba_count * disk_info.bytes_per_lba, 1,
+			image_file)) {
 		fprintf(stderr, "Read error.");
 		return 1;
 	}
@@ -97,7 +101,7 @@ int main(int argc, char* argv[])
 	char *e = 0;
 
 	memset(&lkp, 0, sizeof(LoadKernelParams));
-	lkp.bytes_per_lba = LBA_BYTES;
+	disk_info.bytes_per_lba = LBA_BYTES;
 	int boot_flags = BOOT_FLAG_RECOVERY;
 
 	/* Parse options */
@@ -186,7 +190,6 @@ int main(int argc, char* argv[])
 	}
 
 	printf("bootflags = %d\n", boot_flags);
-	lkp.boot_flags = boot_flags;
 
 	/* Get image size */
 	printf("Reading from image: %s\n", image_name);
@@ -196,10 +199,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	fseek(image_file, 0, SEEK_END);
-	lkp.streaming_lba_count = (ftell(image_file) / LBA_BYTES);
-	lkp.gpt_lba_count = lkp.streaming_lba_count;
+	disk_info.streaming_lba_count = (ftell(image_file) / LBA_BYTES);
+	disk_info.lba_count = disk_info.streaming_lba_count;
 	rewind(image_file);
-	printf("Streaming LBA count: %" PRIu64 "\n", lkp.streaming_lba_count);
+	printf("Streaming LBA count: %" PRIu64 "\n",
+	       disk_info.streaming_lba_count);
 
 	/* Allocate a buffer for the kernel */
 	lkp.kernel_buffer = malloc(KERNEL_BUFFER_SIZE);
@@ -241,7 +245,7 @@ int main(int argc, char* argv[])
 		ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 
 	/* Call LoadKernel() */
-	rv = LoadKernel(ctx, &lkp);
+	rv = LoadKernel(ctx, &lkp, &disk_info);
 	printf("LoadKernel() returned %d\n", rv);
 
 	if (VB2_SUCCESS == rv) {

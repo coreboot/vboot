@@ -395,14 +395,15 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t LoadKernel(struct vb2_context *c, LoadKernelParams *params)
+vb2_error_t LoadKernel(struct vb2_context *c, LoadKernelParams *params,
+		       VbDiskInfo *disk_info)
 {
 	got_find_disk = (const char *)params->disk_handle;
 	VB2_DEBUG("%s(%d): got_find_disk = %s\n", __FUNCTION__,
 		  load_kernel_calls,
 		  got_find_disk ? got_find_disk : "0");
 	if (t->external_expected[load_kernel_calls] !=
-			!!(params->boot_flags & BOOT_FLAG_EXTERNAL_GPT))
+			!!(disk_info->flags & VB_DISK_FLAG_EXTERNAL_GPT))
 		got_external_mismatch++;
 	return t->loadkernel_return_val[load_kernel_calls++];
 }

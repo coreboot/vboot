@@ -15,26 +15,14 @@ struct vb2_context;
 
 /* Interface provided by verified boot library to BDS */
 
-/* Boot flags for LoadKernel().boot_flags */
-/* GPT is external */
-#define BOOT_FLAG_EXTERNAL_GPT (0x04ULL)
-
 typedef struct LoadKernelParams {
 	/* Inputs to LoadKernel() */
 	/* Disk handle for current device */
 	VbExDiskHandle_t disk_handle;
-	/* Bytes per lba sector on current device */
-	uint64_t bytes_per_lba;
-	/* Number of LBA-addressable sectors on the main device */
-	uint64_t streaming_lba_count;
-	/* Random-access GPT size */
-	uint64_t gpt_lba_count;
 	/* Destination buffer for kernel (normally at 0x100000) */
 	void *kernel_buffer;
 	/* Size of kernel buffer in bytes */
 	uint64_t kernel_buffer_size;
-	/* Boot flags */
-	uint64_t boot_flags;
 
 	/*
 	 * Outputs from LoadKernel(); valid only if LoadKernel() returns
@@ -60,6 +48,7 @@ typedef struct LoadKernelParams {
  *
  * Returns VB2_SUCCESS if successful.  If unsuccessful, returns an error code.
  */
-vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params);
+vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params,
+		       VbDiskInfo *disk_info);
 
 #endif  /* VBOOT_REFERENCE_LOAD_KERNEL_FW_H_ */

@@ -24,15 +24,16 @@ static struct vb2_shared_data *sd;
 static uint8_t *diskbuf;
 
 static LoadKernelParams params;
+static VbDiskInfo disk_info;
 
 vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
 	if (handle != (VbExDiskHandle_t)1)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start >= params.streaming_lba_count)
+	if (lba_start >= disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start + lba_count > params.streaming_lba_count)
+	if (lba_start + lba_count > disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
 
 	memcpy(buffer, diskbuf + lba_start * 512, lba_count * 512);
@@ -44,9 +45,9 @@ vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
 {
 	if (handle != (VbExDiskHandle_t)1)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start >= params.streaming_lba_count)
+	if (lba_start >= disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start + lba_count > params.streaming_lba_count)
+	if (lba_start + lba_count > disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
 
 	memcpy(diskbuf + lba_start * 512, buffer, lba_count * 512);
@@ -87,9 +88,10 @@ int main(int argc, char *argv[])
 
 	/* Set up params */
 	params.disk_handle = (VbExDiskHandle_t)1;
-	params.bytes_per_lba = 512;
-	params.streaming_lba_count = disk_bytes / 512;
-	params.gpt_lba_count = params.streaming_lba_count;
+	disk_info.handle = (VbExDiskHandle_t)1;
+	disk_info.bytes_per_lba = 512;
+	disk_info.streaming_lba_count = disk_bytes / 512;
+	disk_info.lba_count = disk_info.streaming_lba_count;
 
 	params.kernel_buffer_size = 16 * 1024 * 1024;
 	params.kernel_buffer = malloc(params.kernel_buffer_size);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* TODO(chromium:441893): support dev-mode flag and external gpt flag */
-	params.boot_flags = 0;
+	disk_info.flags = 0;
 
 	if (vb2api_init(&workbuf, sizeof(workbuf), &ctx)) {
 		fprintf(stderr, "Can't initialize workbuf\n");
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
 	vb2_secdata_kernel_init(ctx);
 
 	/* Try loading kernel */
-	rv = LoadKernel(ctx, &params);
+	rv = LoadKernel(ctx, &params, &disk_info);
 	if (rv != VB2_SUCCESS) {
 		fprintf(stderr, "LoadKernel() failed with code %d\n", rv);
 		return 1;

@@ -55,6 +55,7 @@ static int gpt_flag_external;
 static struct vb2_gbb_header gbb;
 static VbExDiskHandle_t handle;
 static LoadKernelParams lkp;
+static VbDiskInfo disk_info;
 static struct vb2_keyblock kbh;
 static struct vb2_kernel_preamble kph;
 static struct vb2_secdata_fwmp *fwmp;
@@ -136,12 +137,15 @@ static void ResetMocks(void)
 	gbb.flags = 0;
 
 	memset(&lkp, 0, sizeof(lkp));
-	lkp.bytes_per_lba = 512;
-	lkp.streaming_lba_count = 1024;
-	lkp.gpt_lba_count = 1024;
 	lkp.kernel_buffer = kernel_buffer;
 	lkp.kernel_buffer_size = sizeof(kernel_buffer);
 	lkp.disk_handle = (VbExDiskHandle_t)1;
+
+	memset(&disk_info, 0, sizeof(disk_info));
+	disk_info.bytes_per_lba = 512;
+	disk_info.streaming_lba_count = 1024;
+	disk_info.lba_count = 1024;
+	disk_info.handle = lkp.disk_handle;
 
 	memset(&kbh, 0, sizeof(kbh));
 	kbh.data_key.key_version = 2;
@@ -592,7 +596,7 @@ static void ReadWriteGptTest(void)
 
 static void TestLoadKernel(int expect_retval, const char *test_name)
 {
-	TEST_EQ(LoadKernel(ctx, &lkp), expect_retval, test_name);
+	TEST_EQ(LoadKernel(ctx, &lkp, &disk_info), expect_retval, test_name);
 }
 
 /**
@@ -607,6 +611,7 @@ static void InvalidParamsTest(void)
 	/* This causes the stream open call to fail */
 	ResetMocks();
 	lkp.disk_handle = NULL;
+	disk_info.handle = NULL;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad disk handle");
 }
 
@@ -861,7 +866,7 @@ static void LoadKernelTest(void)
 
 	/* Check that EXTERNAL_GPT flag makes it down */
 	ResetMocks();
-	lkp.boot_flags |= BOOT_FLAG_EXTERNAL_GPT;
+	disk_info.flags |= VB_DISK_FLAG_EXTERNAL_GPT;
 	TestLoadKernel(0, "Succeed external GPT");
 	TEST_EQ(gpt_flag_external, 1, "GPT was external");
 
