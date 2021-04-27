@@ -55,5 +55,5 @@ flashrom_read() {
 }
 
 flashrom_write() {
-  flashrom -p host -i GBB --fast-verify -w "$@"
+  flashrom -p host -i GBB --noverify-all -w "$@"
 }

@@ -267,7 +267,7 @@ int WriteNorFlash(const char *dir) {
     goto out_free;
   }
   const char *const argv1[] = {FLASHROM_PATH, "-i", "RW_GPT_PRIMARY:rw_gpt_1",
-                "-w", "--fast-verify"};
+                "-w", "--noverify-all"};
   // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
   // output.
   if (subprocess_run(argv1, &subprocess_null, &subprocess_null, NULL) != 0) {
@@ -275,7 +275,7 @@ int WriteNorFlash(const char *dir) {
     nr_fails++;
   }
   const char *const argv2[] = {FLASHROM_PATH, "-i", "RW_GPT_SECONDARY:rw_gpt_2",
-                "-w", "--fast-verify"};
+                "-w", "--noverify-all"};
   // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
   // output.
   if (subprocess_run(argv2, &subprocess_null, &subprocess_null, NULL) != 0) {

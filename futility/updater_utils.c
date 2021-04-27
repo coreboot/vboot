@@ -681,7 +681,7 @@ int write_system_firmware(const struct firmware_image *image,
 				diff_image, tempfiles);
 		if (!tmp_diff)
 			return -1;
-		ASPRINTF(&extra, "--noverify --diff=%s", tmp_diff);
+		ASPRINTF(&extra, "--noverify --flash-contents=%s", tmp_diff);
 	}
 
 	r = host_flashrom(FLASHROM_WRITE, tmp_path, programmer, verbosity,

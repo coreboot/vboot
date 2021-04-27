@@ -58,7 +58,7 @@ int subprocess_run(const char *const argv[],
 	int captured_verify_int = FLASHROM_VERIFY_UNSPECIFIED;
 	struct option long_opts[] = {
 		{
-			.name = "fast-verify",
+			.name = "noverify-all",
 			.has_arg = no_argument,
 			.flag = &captured_verify_int,
 			.val = FLASHROM_VERIFY_FAST,
