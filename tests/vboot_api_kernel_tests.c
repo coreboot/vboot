@@ -403,6 +403,7 @@ static uint32_t got_external_mismatch;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
+static struct VbSelectAndLoadKernelParams kparams;
 
 /**
  * Reset mock data (for use before each test)
@@ -412,7 +413,9 @@ static void ResetMocks(int i)
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
 
-	memset(VbApiKernelGetParams(), 0, sizeof(VbSelectAndLoadKernelParams));
+	memset(&kparams, 0, sizeof(VbSelectAndLoadKernelParams));
+	*VbApiKernelGetParamsPtr() = &kparams;
+
 
 	memset(&mock_disks, 0, sizeof(mock_disks));
 	load_kernel_calls = 0;

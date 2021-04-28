@@ -21,13 +21,13 @@
 #include "vboot_test.h"
 
 /* Global variables */
-static VbSelectAndLoadKernelParams lkp;
+static VbSelectAndLoadKernelParams *kparams_ptr;
 
 #ifdef CHROMEOS_ENVIRONMENT
 /* Global variable accessor for unit tests */
-struct VbSelectAndLoadKernelParams *VbApiKernelGetParams(void)
+struct VbSelectAndLoadKernelParams **VbApiKernelGetParamsPtr(void)
 {
-	return &lkp;
+	return &kparams_ptr;
 }
 #endif
 
@@ -71,7 +71,11 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 	uint32_t disk_count = 0;
 	uint32_t i;
 
-	lkp.disk_handle = NULL;
+	/* TODO: Should have been set by VbSelectAndLoadKernel. Remove when
+	   this global is no longer needed. */
+	VB2_ASSERT(kparams_ptr);
+
+	kparams_ptr->disk_handle = NULL;
 
 	/* Find disks */
 	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count, disk_flags))
@@ -90,8 +94,9 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 			continue;
 		}
 
-		lkp.disk_handle = disk_info[i].handle;
-		vb2_error_t new_rv = LoadKernel(ctx, &lkp, &disk_info[i]);
+		kparams_ptr->disk_handle = disk_info[i].handle;
+		vb2_error_t new_rv = LoadKernel(ctx, kparams_ptr,
+						&disk_info[i]);
 		VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
 
 		/* Stop now if we found a kernel. */
@@ -130,51 +135,19 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 	return rv;
 }
 
-static vb2_error_t vb2_kernel_init_kparams(struct vb2_context *ctx,
-					   VbSelectAndLoadKernelParams *kparams)
-{
-	/* Fill in params for calls to LoadKernel() */
-	memset(&lkp, 0, sizeof(lkp));
-	lkp.kernel_buffer = kparams->kernel_buffer;
-	lkp.kernel_buffer_size = kparams->kernel_buffer_size;
-
-	/* Clear output params in case we fail */
-	kparams->disk_handle = NULL;
-	kparams->partition_number = 0;
-	kparams->bootloader_address = 0;
-	kparams->bootloader_size = 0;
-	kparams->flags = 0;
-	memset(kparams->partition_guid, 0, sizeof(kparams->partition_guid));
-
-	return VB2_SUCCESS;
-}
-
-static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
-				    VbSelectAndLoadKernelParams *kparams)
-{
-	/* Save disk parameters */
-	kparams->disk_handle = lkp.disk_handle;
-	kparams->partition_number = lkp.partition_number;
-	kparams->bootloader_address = lkp.bootloader_address;
-	kparams->bootloader_size = lkp.bootloader_size;
-	kparams->flags = lkp.flags;
-	kparams->kernel_buffer = lkp.kernel_buffer;
-	kparams->kernel_buffer_size = lkp.kernel_buffer_size;
-	memcpy(kparams->partition_guid, lkp.partition_guid,
-	       sizeof(kparams->partition_guid));
-}
-
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
 
+	/* TODO: Send this argument through subsequent function calls, rather
+	   than relying on a global to pass it to VbTryLoadKernel. */
+	kparams_ptr = kparams;
+
 	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
 	   to vb2_nv_get and vb2_nv_set. */
 	vb2_nv_init(ctx);
-
-	VB2_TRY(vb2_kernel_init_kparams(ctx, kparams));
 
 	VB2_TRY(vb2api_kernel_phase1(ctx));
 
@@ -262,6 +235,5 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		return VB2_ERROR_ESCAPE_NO_BOOT;
 	}
 
-	vb2_kernel_fill_kparams(ctx, kparams);
 	return VB2_SUCCESS;
 }

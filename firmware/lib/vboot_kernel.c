@@ -465,11 +465,8 @@ vb2_error_t LoadKernel(struct vb2_context *ctx,
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t rv;
 
-	/* Clear output params in case we fail */
+	/* Clear output params */
 	params->partition_number = 0;
-	params->bootloader_address = 0;
-	params->bootloader_size = 0;
-	params->flags = 0;
 
 	/* Read GPT data */
 	GptData gpt;
