@@ -363,49 +363,93 @@ static void LoadKernelTest(void)
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Fail key block dev sig fwmp");
 
-	/* Check keyblock flag mismatches */
+	/* Check keyblock flags */
 	ResetMocks();
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_0 | VB2_KEYBLOCK_FLAG_DEVELOPER_1;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock dev flag mismatch");
 
 	ResetMocks();
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock rec flag mismatch");
 
 	ResetMocks();
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_1;
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock minios flag mismatch");
+
+	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_1;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock recdev flag mismatch");
 
 	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
+	TestLoadKernel(0, "Keyblock rec flag okay");
+
+	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock rec!dev flag mismatch");
 
-	/* Check keyblock flag mismatches (dev mode + signed kernel required) */
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
+	TestLoadKernel(0, "Keyblock recdev flag okay");
+
+	/* Check keyblock flags (dev mode + signed kernel required) */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock dev flag mismatch (signed kernel required)");
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
-	kbh.keyblock_flags =
-		VB2_KEYBLOCK_FLAG_RECOVERY_1 | VB2_KEYBLOCK_FLAG_DEVELOPER_0;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock dev flag mismatch (signed kernel required)");
+
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
+		| VB2_KEYBLOCK_FLAG_MINIOS_1;
+	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		       "Keyblock dev flag mismatch (signed kernel required)");
+
+	ResetMocks();
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
+	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
+		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
+		| VB2_KEYBLOCK_FLAG_MINIOS_0;
+	TestLoadKernel(0, "Keyblock dev flag okay (signed kernel required)");
 
 	/* Check kernel key version */
 	ResetMocks();

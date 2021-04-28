@@ -20,6 +20,7 @@
 
 enum vb2_load_partition_flags {
 	VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY = (1 << 0),
+	VB2_LOAD_PARTITION_FLAG_MINIOS = (1 << 1),
 };
 
 #define KBUF_SIZE 65536  /* Bytes to read at start of kernel partition */
@@ -173,15 +174,17 @@ static vb2_error_t vb2_verify_kernel_dev_key_hash(
 /**
  * Verify a kernel vblock.
  *
+ * @param ctx		Vboot context
  * @param kbuf		Buffer containing the vblock
  * @param kbuf_size	Size of the buffer in bytes
+ * @param lpflags	Flags (one or more of vb2_load_partition_flags)
  * @param wb		Work buffer.  Must be at least
  *			VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t vb2_verify_kernel_vblock(
 	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
-	struct vb2_workbuf *wb)
+	uint32_t lpflags, struct vb2_workbuf *wb)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
@@ -250,6 +253,15 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		if (need_keyblock_valid)
 			return VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG;
 	}
+	if (!(keyblock->keyblock_flags &
+	      ((lpflags & VB2_LOAD_PARTITION_FLAG_MINIOS) ?
+	       VB2_KEYBLOCK_FLAG_MINIOS_1 :
+	       VB2_KEYBLOCK_FLAG_MINIOS_0))) {
+		VB2_DEBUG("Keyblock miniOS flag mismatch.\n");
+		keyblock_valid = 0;
+		if (need_keyblock_valid)
+			return VB2_ERROR_KERNEL_KEYBLOCK_MINIOS_FLAG;
+	}
 
 	/* Check for rollback of key version except in recovery mode. */
 	enum vb2_boot_mode boot_mode = get_boot_mode(ctx);
@@ -309,6 +321,29 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		return rv;
 	}
 
+	/* Rollback check for miniOS */
+	if (need_keyblock_valid && (lpflags & VB2_LOAD_PARTITION_FLAG_MINIOS)) {
+		if (preamble->kernel_version <
+		    (sd->kernel_version_secdata >> 24)) {
+			keyblock_valid = 0;
+			if (need_keyblock_valid) {
+				VB2_DEBUG("miniOS kernel version too old.\n");
+				return VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK;
+			}
+		}
+		if (preamble->kernel_version > 0xff) {
+			/*
+			 * Key version is stored in the top 8 bits of 16 bits
+			 * in the TPM, so key versions greater than 0xFF can't
+			 * be stored properly.
+			 */
+			VB2_DEBUG("Key version > 0xFF.\n");
+			keyblock_valid = 0;
+			if (need_keyblock_valid)
+				return VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE;
+		}
+	}
+
 	/*
 	 * Kernel preamble version is the lower 16 bits of the composite
 	 * kernel version.
@@ -361,9 +396,8 @@ static vb2_error_t vb2_load_partition(
 	}
 	read_ms += vb2ex_mtime() - start_ts;
 
-	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wb)) {
+	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, lpflags, &wb))
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
-	}
 
 	if (lpflags & VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY)
 		return VB2_SUCCESS;
@@ -453,6 +487,143 @@ static vb2_error_t vb2_load_partition(
 	}
 
 	return VB2_SUCCESS;
+}
+
+static vb2_error_t try_minios_kernel(struct vb2_context *ctx,
+				     VbSelectAndLoadKernelParams *params,
+				     VbDiskInfo *disk_info,
+				     uint64_t sector) {
+	VbExStream_t stream;
+	uint64_t sectors_left = disk_info->lba_count - sector;
+	const uint32_t lpflags = VB2_LOAD_PARTITION_FLAG_MINIOS;
+	vb2_error_t rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
+
+	/* Re-open stream at correct offset to pass to vb2_load_partition. */
+	if (VbExStreamOpen(params->disk_handle, sector, sectors_left,
+			   &stream)) {
+		VB2_DEBUG("Unable to open disk handle.\n");
+		return rv;
+	}
+
+	rv = vb2_load_partition(ctx, params, stream, lpflags);
+	VB2_DEBUG("vb2_load_partition returned: %d\n", rv);
+
+	VbExStreamClose(stream);
+
+	if (rv)
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	return rv;
+}
+
+static vb2_error_t try_minios_sectors(struct vb2_context *ctx,
+				      VbSelectAndLoadKernelParams *params,
+				      VbDiskInfo *disk_info,
+				      uint64_t start, uint64_t count)
+{
+	const uint32_t buf_size = count * disk_info->bytes_per_lba;
+	char *buf;
+	VbExStream_t stream;
+	uint64_t isector;
+	vb2_error_t rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
+
+	buf = malloc(buf_size);
+	if (buf == NULL) {
+		VB2_DEBUG("Unable to allocate disk read buffer.\n");
+		return rv;
+	}
+
+	if (VbExStreamOpen(params->disk_handle, start, count, &stream)) {
+		VB2_DEBUG("Unable to open disk handle.\n");
+		free(buf);
+		return rv;
+	}
+	if (VbExStreamRead(stream, buf_size, buf)) {
+		VB2_DEBUG("Unable to read disk.\n");
+		free(buf);
+		VbExStreamClose(stream);
+		return rv;
+	}
+	VbExStreamClose(stream);
+
+	for (isector = 0; isector < count; isector++) {
+		if (memcmp(buf + isector * disk_info->bytes_per_lba,
+			   VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE))
+			continue;
+		VB2_DEBUG("Match on sector %" PRIu64 " / %" PRIu64 "\n",
+			  start + isector,
+			  disk_info->lba_count - 1);
+		rv = try_minios_kernel(ctx, params, disk_info, start + isector);
+		if (rv == VB2_SUCCESS)
+			break;
+	}
+
+	free(buf);
+	return rv;
+}
+
+static vb2_error_t try_minios_sector_region(struct vb2_context *ctx,
+					    VbSelectAndLoadKernelParams *params,
+					    VbDiskInfo *disk_info,
+					    int end_region)
+{
+	const uint64_t disk_count_half = (disk_info->lba_count + 1) / 2;
+	const uint64_t check_count_256 = 256 * 1024
+		* 1024 / disk_info->bytes_per_lba;  // 256 MB
+	const uint64_t batch_count_1 = 1024
+		* 1024 / disk_info->bytes_per_lba;  // 1 MB
+	const uint64_t check_count = VB2_MIN(disk_count_half, check_count_256);
+	const uint64_t batch_count = VB2_MIN(disk_count_half, batch_count_1);
+	uint64_t sector;
+	uint64_t start;
+	uint64_t end;
+	const char *region_name;
+	vb2_error_t rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
+
+	if (!end_region) {
+		start = 0;
+		end = check_count;
+		region_name = "start";
+	} else {
+		start = disk_info->lba_count - check_count;
+		end = disk_info->lba_count;
+		region_name = "end";
+	}
+
+	VB2_DEBUG("Checking %s of disk for kernels...\n", region_name);
+	for (sector = start; sector < end; sector += batch_count) {
+		rv = try_minios_sectors(ctx, params, disk_info, sector,
+					batch_count);
+		if (rv == VB2_SUCCESS)
+			return rv;
+	}
+
+	return rv;
+}
+
+/*
+ * Search for kernels by sector, rather than by partition.  Only sectors near
+ * the start and end of disks are considered, and the kernel must start exactly
+ * at the first byte of the sector.
+ */
+vb2_error_t LoadMiniOsKernel(struct vb2_context *ctx,
+			     VbSelectAndLoadKernelParams *params,
+			     VbDiskInfo *disk_info)
+{
+	vb2_error_t rv;
+	int end_region_first = vb2_nv_get(ctx, VB2_NV_MINIOS_PRIORITY);
+
+	rv = try_minios_sector_region(ctx, params, disk_info, end_region_first);
+	if (rv)
+		rv = try_minios_sector_region(ctx, params, disk_info,
+					      !end_region_first);
+	if (rv)
+		return rv;
+
+	rv = vb2ex_tpm_set_mode(VB2_TPM_MODE_DISABLED);
+	if (rv)
+		VB2_DEBUG("Failed to disable TPM\n");
+
+	return rv;
 }
 
 vb2_error_t LoadKernel(struct vb2_context *ctx,

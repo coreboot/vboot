@@ -61,13 +61,14 @@ static int is_valid_disk(VbDiskInfo *info, uint32_t disk_flags)
 		 ((info->flags & VB_DISK_FLAG_SELECT_MASK) - 1)) == 0;
 }
 
-test_mockable
-vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
+static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
+				       uint32_t disk_flags, int minios)
 {
 	vb2_error_t rv = VB2_ERROR_LK_NO_DISK_FOUND;
 	VbDiskInfo* disk_info = NULL;
 	uint32_t disk_count = 0;
 	uint32_t i;
+	vb2_error_t new_rv;
 
 	/* TODO: Should have been set by VbSelectAndLoadKernel. Remove when
 	   this global is no longer needed. */
@@ -91,11 +92,16 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 				  disk_info[i].flags);
 			continue;
 		}
-
 		kparams_ptr->disk_handle = disk_info[i].handle;
-		vb2_error_t new_rv = LoadKernel(ctx, kparams_ptr,
-						&disk_info[i]);
-		VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
+
+		if (minios) {
+			new_rv = LoadMiniOsKernel(ctx, kparams_ptr,
+						  &disk_info[i]);
+			VB2_DEBUG("LoadMiniOsKernel() = %#x\n", new_rv);
+		} else {
+			new_rv = LoadKernel(ctx, kparams_ptr, &disk_info[i]);
+			VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
+		}
 
 		/* Stop now if we found a kernel. */
 		if (VB2_SUCCESS == new_rv) {
@@ -131,6 +137,18 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 	VbExDiskFreeInfo(disk_info, NULL);
 
 	return rv;
+}
+
+test_mockable
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
+{
+	return VbTryLoadKernelImpl(ctx, disk_flags, 0);
+}
+
+test_mockable
+vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx)
+{
+	return VbTryLoadKernelImpl(ctx, VB_DISK_FLAG_FIXED, 1);
 }
 
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,

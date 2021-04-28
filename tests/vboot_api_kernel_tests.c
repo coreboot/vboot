@@ -50,7 +50,7 @@ typedef struct {
 static const char pickme[] = "correct choice";
 #define DONT_CARE ((const char *)42)
 
-test_case_t test[] = {
+test_case_t normal_tests[] = {
 	{
 		.name = "first drive (removable)",
 		.ctx_flags = 0,
@@ -388,12 +388,52 @@ test_case_t test[] = {
 	},
 };
 
+test_case_t minios_tests[] = {
+	{
+		.name = "pick first fixed drive",
+		.ctx_flags = 0,
+		.disks_to_provide = {
+			{4096, 100, VB_DISK_FLAG_REMOVABLE, 0},
+			{4096, 100, VB_DISK_FLAG_FIXED, pickme},
+			{4096, 100, VB_DISK_FLAG_FIXED, "holygrail"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {0},
+		.external_expected = {0},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = pickme,
+		.expected_to_load_disk = pickme,
+		.expected_return_val = VB2_SUCCESS
+	},
+	{
+		.name = "skip failed fixed drive",
+		.ctx_flags = 0,
+		.disks_to_provide = {
+			{4096, 100, VB_DISK_FLAG_FIXED, "holygrail"},
+			{4096, 100, VB_DISK_FLAG_FIXED, pickme},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND, 0},
+		.external_expected = {0},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = pickme,
+		.expected_to_load_disk = pickme,
+		.expected_return_val = VB2_SUCCESS
+	},
+};
+
 /****************************************************************************/
 
 /* Mock data */
 static VbDiskInfo mock_disks[MAX_TEST_DISKS];
 static test_case_t *t;
 static int load_kernel_calls;
+static int lk_normal_calls;
+static int lk_minios_calls;
 static uint32_t got_recovery_request_val;
 static const char *got_find_disk;
 static const char *got_load_disk;
@@ -407,7 +447,7 @@ static struct VbSelectAndLoadKernelParams kparams;
 /**
  * Reset mock data (for use before each test)
  */
-static void ResetMocks(int i)
+static void ResetMocks(test_case_t *test_case)
 {
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
@@ -418,13 +458,15 @@ static void ResetMocks(int i)
 
 	memset(&mock_disks, 0, sizeof(mock_disks));
 	load_kernel_calls = 0;
+	lk_normal_calls = 0;
+	lk_minios_calls = 0;
 
 	got_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED;
 	got_find_disk = 0;
 	got_load_disk = 0;
 	got_return_val = 0xdeadbeef;
 
-	t = test + i;
+	t = test_case;
 }
 
 static int is_nonzero(const void *vptr, size_t count)
@@ -497,9 +539,9 @@ vb2_error_t VbExDiskFreeInfo(VbDiskInfo *infos,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t LoadKernel(struct vb2_context *c,
-		       VbSelectAndLoadKernelParams *params,
-		       VbDiskInfo *disk_info)
+static vb2_error_t LoadKernelImpl(struct vb2_context *c,
+				  VbSelectAndLoadKernelParams *params,
+				  VbDiskInfo *disk_info)
 {
 	got_find_disk = (const char *)params->disk_handle;
 	VB2_DEBUG("%s(%d): got_find_disk = %s\n", __FUNCTION__,
@@ -509,6 +551,22 @@ vb2_error_t LoadKernel(struct vb2_context *c,
 			!!(disk_info->flags & VB_DISK_FLAG_EXTERNAL_GPT))
 		got_external_mismatch++;
 	return t->loadkernel_return_val[load_kernel_calls++];
+}
+
+vb2_error_t LoadKernel(struct vb2_context *c,
+		       VbSelectAndLoadKernelParams *params,
+		       VbDiskInfo *disk_info)
+{
+	lk_normal_calls++;
+	return LoadKernelImpl(c, params, disk_info);
+}
+
+vb2_error_t LoadMiniOsKernel(struct vb2_context *c,
+			     VbSelectAndLoadKernelParams *params,
+			     VbDiskInfo *disk_info)
+{
+	lk_minios_calls++;
+	return LoadKernelImpl(c, params, disk_info);
 }
 
 void vb2_nv_set(struct vb2_context *c,
@@ -527,11 +585,11 @@ void vb2_nv_set(struct vb2_context *c,
 static void VbTryLoadKernelTest(void)
 {
 	int i;
-	int num_tests =  sizeof(test) / sizeof(test[0]);
+	int num_tests = ARRAY_SIZE(normal_tests);
 
 	for (i = 0; i < num_tests; i++) {
-		printf("Test case: %s ...\n", test[i].name);
-		ResetMocks(i);
+		printf("Test case: %s ...\n", normal_tests[i].name);
+		ResetMocks(&normal_tests[i]);
 		ctx->flags = t->ctx_flags;
 		TEST_EQ(VbTryLoadKernel(ctx, t->want_flags),
 			t->expected_return_val, "  return value");
@@ -545,11 +603,40 @@ static void VbTryLoadKernelTest(void)
 		}
 		TEST_EQ(got_external_mismatch, 0, "  external GPT errors");
 	}
+	TEST_EQ(lk_normal_calls, load_kernel_calls, "  LoadKernel called");
+	TEST_EQ(lk_minios_calls, 0, "  LoadMiniOsKernel not called");
+}
+
+static void VbTryLoadMiniOsKernelTest(void)
+{
+	int i;
+	int num_tests =  ARRAY_SIZE(minios_tests);
+
+	for (i = 0; i < num_tests; i++) {
+		printf("Test case: %s ...\n", minios_tests[i].name);
+		ResetMocks(&minios_tests[i]);
+		ctx->flags = t->ctx_flags;
+		TEST_EQ(VbTryLoadMiniOsKernel(ctx),
+			t->expected_return_val, "  return value");
+		TEST_EQ(got_recovery_request_val,
+			t->expected_recovery_request_val, "  recovery_request");
+		if (t->expected_to_find_disk != DONT_CARE) {
+			TEST_PTR_EQ(got_find_disk, t->expected_to_find_disk,
+				    "  find disk");
+			TEST_PTR_EQ(got_load_disk, t->expected_to_load_disk,
+				    "  load disk");
+		}
+		TEST_EQ(got_external_mismatch, 0, "  external GPT errors");
+	}
+	TEST_EQ(lk_normal_calls, 0, "  LoadKernel not called");
+	TEST_EQ(lk_minios_calls, load_kernel_calls,
+		"  LoadMiniOsKernel called");
 }
 
 int main(void)
 {
 	VbTryLoadKernelTest();
+	VbTryLoadMiniOsKernelTest();
 
 	return gTestSuccess ? 0 : 255;
 }

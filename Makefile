@@ -710,6 +710,7 @@ TEST_NAMES = \
 	tests/vboot_api_kernel4_tests \
 	tests/vboot_api_kernel_tests \
 	tests/vboot_kernel_tests \
+	tests/vboot_kernel2_tests \
 	tests/verify_kernel
 
 ifeq (${MOCK_TPM}${TPM2_MODE},)
@@ -1267,6 +1268,7 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel4_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vboot_kernel2_tests
 
 .PHONY: run2tests
 run2tests: install_for_test
