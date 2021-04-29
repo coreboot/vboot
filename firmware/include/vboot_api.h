@@ -81,13 +81,22 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 /* Disk access (previously in boot_device.h) */
 
 /* Flags for VbDisk APIs */
+
+/*
+ * Disk selection in the lower 16 bits (where the disk lives), and disk
+ * attributes in the higher 16 bits (extra information about the disk
+ * needed to access it correctly).
+ */
+#define VB_DISK_FLAG_SELECT_MASK 0xffff
+#define VB_DISK_FLAG_ATTRIBUTE_MASK (0xffff << 16)
+
 /* Disk is removable.  Example removable disks: SD cards, USB keys.  */
-#define VB_DISK_FLAG_REMOVABLE 0x00000001
+#define VB_DISK_FLAG_REMOVABLE (1 << 0)
 /*
  * Disk is fixed.  If this flag is present, disk is internal to the system and
  * not removable.  Example fixed disks: internal SATA SSD, eMMC.
  */
-#define VB_DISK_FLAG_FIXED     0x00000002
+#define VB_DISK_FLAG_FIXED (1 << 1)
 /*
  * Note that VB_DISK_FLAG_REMOVABLE and VB_DISK_FLAG_FIXED are
  * mutually-exclusive for a single disk.  VbExDiskGetInfo() may specify both
@@ -123,7 +132,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
  * streaming aspects of the disk. If a disk is random-access (i.e.
  * not raw NAND) then these fields are equal.
  */
-#define VB_DISK_FLAG_EXTERNAL_GPT	0x00000004
+#define VB_DISK_FLAG_EXTERNAL_GPT (1 << 16)
 
 /* Information on a single disk */
 typedef struct VbDiskInfo {

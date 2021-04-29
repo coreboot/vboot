@@ -52,6 +52,40 @@ static const char pickme[] = "correct choice";
 
 test_case_t test[] = {
 	{
+		.name = "first drive (removable)",
+		.want_flags = VB_DISK_FLAG_REMOVABLE | VB_DISK_FLAG_FIXED,
+		.disks_to_provide = {
+			{4096, 100, VB_DISK_FLAG_REMOVABLE, pickme},
+			{4096, 100, VB_DISK_FLAG_FIXED, "holygrail"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {0},
+		.external_expected = {0},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = pickme,
+		.expected_to_load_disk = pickme,
+		.expected_return_val = VB2_SUCCESS
+	},
+	{
+		.name = "first drive (fixed)",
+		.want_flags = VB_DISK_FLAG_REMOVABLE | VB_DISK_FLAG_FIXED,
+		.disks_to_provide = {
+			{4096, 100, VB_DISK_FLAG_FIXED, pickme},
+			{4096, 100, VB_DISK_FLAG_REMOVABLE, "holygrail"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {0},
+		.external_expected = {0},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = pickme,
+		.expected_to_load_disk = pickme,
+		.expected_return_val = VB2_SUCCESS
+	},
+	{
 		.name = "first removable drive",
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {

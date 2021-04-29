@@ -120,7 +120,7 @@ void vb2_secdata_kernel_set(struct vb2_context *c,
 	kernel_version = value;
 }
 
-vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 {
 	sd->kernel_version = new_version;
 

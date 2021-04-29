@@ -139,7 +139,7 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 {
 	/*
 	 * TODO: Currently we don't have a good way of testing for an ordered
@@ -150,10 +150,10 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 		return mock_vbtlk_retval;
 
 	TEST_EQ(!!mock_vbtlk_expect_fixed,
-		!!(get_info_flags & VB_DISK_FLAG_FIXED),
+		!!(disk_flags & VB_DISK_FLAG_FIXED),
 		"  VbTryLoadKernel unexpected fixed disk call");
 	TEST_EQ(!!mock_vbtlk_expect_removable,
-		!!(get_info_flags & VB_DISK_FLAG_REMOVABLE),
+		!!(disk_flags & VB_DISK_FLAG_REMOVABLE),
 		"  VbTryLoadKernel unexpected removable disk call");
 
 	return mock_vbtlk_retval;

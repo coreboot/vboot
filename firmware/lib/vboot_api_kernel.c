@@ -53,8 +53,18 @@ static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+static int is_valid_disk(VbDiskInfo *info, uint32_t disk_flags)
+{
+	return info->bytes_per_lba >= 512 &&
+		(info->bytes_per_lba & (info->bytes_per_lba - 1)) == 0 &&
+		info->lba_count >= 16 &&
+		(info->flags & disk_flags & VB_DISK_FLAG_SELECT_MASK) &&
+		((info->flags & VB_DISK_FLAG_SELECT_MASK) &
+		 ((info->flags & VB_DISK_FLAG_SELECT_MASK) - 1)) == 0;
+}
+
 test_mockable
-vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 {
 	vb2_error_t rv = VB2_ERROR_LK_NO_DISK_FOUND;
 	VbDiskInfo* disk_info = NULL;
@@ -64,26 +74,14 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	lkp.disk_handle = NULL;
 
 	/* Find disks */
-	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count,
-					   get_info_flags))
+	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count, disk_flags))
 		disk_count = 0;
 
 	/* Loop over disks */
 	for (i = 0; i < disk_count; i++) {
 		VB2_DEBUG("trying disk %d\n", (int)i);
-		/*
-		 * Validity-check what we can. FWIW, VbTryLoadKernel() is always
-		 * called with only a single bit set in get_info_flags.
-		 *
-		 * Ensure that we got a partition with only the flags we asked
-		 * for.
-		 */
-		if (disk_info[i].bytes_per_lba < 512 ||
-			(disk_info[i].bytes_per_lba &
-				(disk_info[i].bytes_per_lba  - 1)) != 0 ||
-					16 > disk_info[i].lba_count ||
-					get_info_flags != (disk_info[i].flags &
-					~VB_DISK_FLAG_EXTERNAL_GPT)) {
+
+		if (!is_valid_disk(&disk_info[i], disk_flags)) {
 			VB2_DEBUG("  skipping: bytes_per_lba=%" PRIu64
 				  " lba_count=%" PRIu64 " flags=%#x\n",
 				  disk_info[i].bytes_per_lba,
@@ -108,7 +106,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags)
 	}
 
 	/* If we drop out of the loop, we didn't find any usable kernel. */
-	if (get_info_flags & VB_DISK_FLAG_FIXED) {
+	if (disk_flags & VB_DISK_FLAG_FIXED) {
 		switch (rv) {
 		case VB2_ERROR_LK_INVALID_KERNEL_FOUND:
 			vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);

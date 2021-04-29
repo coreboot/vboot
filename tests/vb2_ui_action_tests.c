@@ -235,10 +235,10 @@ static void add_mock_keypress(uint32_t press)
 }
 
 
-static void set_mock_vbtlk(vb2_error_t retval, uint32_t get_info_flags)
+static void set_mock_vbtlk(vb2_error_t retval, uint32_t disk_flags)
 {
 	mock_vbtlk_retval = retval;
-	mock_vbtlk_expected_flag = get_info_flags;
+	mock_vbtlk_expected_flag = disk_flags;
 }
 
 static void displayed_eq(const char *text,
@@ -481,10 +481,10 @@ uint32_t VbExKeyboardReadWithFlags(uint32_t *key_flags)
 	return 0;
 }
 
-vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 {
-	TEST_EQ(mock_vbtlk_expected_flag, get_info_flags,
-		"  unexpected get_info_flags");
+	TEST_EQ(mock_vbtlk_expected_flag, disk_flags,
+		"  unexpected disk_flags");
 	return mock_vbtlk_retval;
 }
 

@@ -120,7 +120,7 @@ static void add_mock_keypress(uint32_t press)
 	add_mock_key(press, 0);
 }
 
-static void add_mock_vbtlk(vb2_error_t retval, uint32_t get_info_flags)
+static void add_mock_vbtlk(vb2_error_t retval, uint32_t disk_flags)
 {
 	if (mock_vbtlk_total >= ARRAY_SIZE(mock_vbtlk_retval) ||
 	    mock_vbtlk_total >= ARRAY_SIZE(mock_vbtlk_expected_flag)) {
@@ -129,7 +129,7 @@ static void add_mock_vbtlk(vb2_error_t retval, uint32_t get_info_flags)
 	}
 
 	mock_vbtlk_retval[mock_vbtlk_total] = retval;
-	mock_vbtlk_expected_flag[mock_vbtlk_total] = get_info_flags;
+	mock_vbtlk_expected_flag[mock_vbtlk_total] = disk_flags;
 	mock_vbtlk_total++;
 }
 
@@ -517,7 +517,7 @@ uint32_t vb2ex_get_altfw_count(void)
 	return mock_altfw_count;
 }
 
-vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 {
 	int i = mock_iters;
 
@@ -525,8 +525,8 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t get_info_flags)
 	if (i >= mock_vbtlk_total)
 		i = mock_vbtlk_total - 1;
 
-	TEST_EQ(mock_vbtlk_expected_flag[i], get_info_flags,
-		"  unexpected get_info_flags");
+	TEST_EQ(mock_vbtlk_expected_flag[i], disk_flags,
+		"  unexpected disk_flags");
 
 	return mock_vbtlk_retval[i];
 }

@@ -23,9 +23,9 @@ struct vb2_context;
  * VB2_SUCCESS.
  *
  * @param ctx			Vboot context
- * @param get_info_flags	Flags to pass to VbExDiskGetInfo()
+ * @param disk_flags		Flags to pass to VbExDiskGetInfo()
  * @return VB2_SUCCESS or the most specific VB2_ERROR_LK error.
  */
-vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t get_info_flags);
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags);
 
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */
