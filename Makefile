@@ -671,7 +671,6 @@ FUTIL_SRCS = \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
 	futility/misc.c \
-	futility/ryu_root_header.c \
 	futility/updater.c \
 	futility/updater_archive.c \
 	futility/updater_quirks.c \
