@@ -578,6 +578,15 @@ uint32_t vb2api_secdata_kernel_create(struct vb2_context *ctx);
 uint32_t vb2api_secdata_kernel_create_v0(struct vb2_context *ctx);
 
 /**
+ * Create an empty Firmware Management Parameters (FWMP) in secure storage
+ * context.
+ *
+ * @param ctx		Context pointer
+ * @return size of created FWMP secure storage data in bytes
+ */
+uint32_t vb2api_secdata_fwmp_create(struct vb2_context *ctx);
+
+/**
  * Check the validity of firmware management parameters (FWMP) space.
  *
  * Checks size, version, and CRC.  If the struct size is larger than the size
