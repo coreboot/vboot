@@ -373,6 +373,9 @@ INCLUDES += \
 ifeq (${FIRMWARE_ARCH},)
 INCLUDES += -Ihost/include -Ihost/lib/include
 INCLUDES += -Ihost/lib21/include
+ifeq ($(shell uname -s), OpenBSD)
+INCLUDES += -I/usr/local/include
+endif
 endif
 
 # Firmware library, used by the other firmware components (depthcharge,
@@ -963,6 +966,8 @@ cgpt: ${CGPT} $(if ${GPT_SPI_NOR},cgpt_wrapper)
 
 # on FreeBSD: install misc/e2fsprogs-libuuid from ports,
 # or e2fsprogs-libuuid from its binary package system.
+# on OpenBSD: install sysutils/e2fsprogs from ports,
+# or e2fsprogs from its binary package system, to install uuid/uid.h
 ${CGPT}: LDLIBS += -luuid
 
 ${CGPT}: ${CGPT_OBJS} ${UTILLIB}
@@ -1137,6 +1142,9 @@ ${UTIL_DEFAULTS}:
 CRYPTO_LIBS := $(shell ${PKG_CONFIG} --libs libcrypto)
 ifeq ($(shell uname -s), FreeBSD)
 CRYPTO_LIBS += -lcrypto
+endif
+ifeq ($(shell uname -s), OpenBSD)
+LDFLAGS += -Wl,-z,notext
 endif
 
 ${BUILD}/utility/dumpRSAPublicKey: LDLIBS += ${CRYPTO_LIBS}

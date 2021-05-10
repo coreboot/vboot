@@ -5,7 +5,7 @@
 
 #include <assert.h>
 #include <errno.h>
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/fs.h>		/* For BLKGETSIZE64 */
 #endif
 #include <stdarg.h>
@@ -272,7 +272,7 @@ enum futil_file_err futil_map_file(int fd, int writeable,
 		return FILE_ERR_STAT;
 	}
 
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 	if (S_ISBLK(sb.st_mode))
 		ioctl(fd, BLKGETSIZE64, &sb.st_size);
 #endif

@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/major.h>
 #include <mtd/mtd-user.h>
 #endif
@@ -295,7 +295,7 @@ static int ObtainDriveSize(int fd, uint64_t* size, uint32_t* sector_bytes) {
   if (fstat(fd, &stat) == -1) {
     return -1;
   }
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
   if ((stat.st_mode & S_IFMT) != S_IFREG) {
     if (ioctl(fd, BLKGETSIZE64, size) < 0) {
       return -1;
@@ -325,7 +325,7 @@ int DriveOpen(const char *drive_path, struct drive *drive, int mode,
   memset(drive, 0, sizeof(struct drive));
 
   drive->fd = open(drive_path, mode |
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 		               O_LARGEFILE |
 #endif
 			       O_NOFOLLOW);

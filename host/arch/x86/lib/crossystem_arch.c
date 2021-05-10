@@ -7,7 +7,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/nvram.h>
 #include <linux/version.h>
 #endif
@@ -100,7 +100,7 @@ typedef struct {
 
 static void VbFixCmosChecksum(FILE* file)
 {
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 	int fd = fileno(file);
 	ioctl(fd, NVRAM_SETCKS);
 #endif
@@ -666,7 +666,7 @@ static int BraswellFindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
 
 	if (uname(&host) == 0) {
 		if (sscanf(host.release, "%u.%u.", &maj, &min) == 2) {
-#if !defined(__FreeBSD__)
+#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
 			if (KERNEL_VERSION(maj, min, 0) >= KERNEL_VERSION(4, 16, 0) &&
 			    *offset > 11)
 				*offset += 3;

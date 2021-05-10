@@ -8,6 +8,9 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#if defined(__OpenBSD__)
+#include <sys/types.h>
+#endif
 #include <fts.h>
 #include <string.h>
 #include <stdio.h>

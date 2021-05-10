@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <getopt.h>
 #include <inttypes.h>		/* For PRIu64 */
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/fs.h>		/* For BLKGETSIZE64 */
 #endif
 #include <stdarg.h>
@@ -173,7 +173,7 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 		FATAL("Unable to stat %s: %s\n", filename, strerror(errno));
 
 	if (S_ISBLK(statbuf.st_mode)) {
-#if !defined(HAVE_MACOS) && !defined(__FreeBSD__)
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 		int fd = open(filename, O_RDONLY);
 		if (fd >= 0) {
 			ioctl(fd, BLKGETSIZE64, &file_size);
