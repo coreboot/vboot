@@ -339,18 +339,19 @@ enum vb2_load_partition_flags {
  * @param stream	Stream to load kernel from
  * @param flags		Flags (one or more of vb2_load_partition_flags)
  * @param params	Load-kernel parameters
- * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t vb2_load_partition(
 	struct vb2_context *ctx, VbExStream_t stream, uint32_t flags,
-	LoadKernelParams *params, struct vb2_workbuf *wb)
+	LoadKernelParams *params)
 {
 	uint32_t read_ms = 0, start_ts;
-	struct vb2_workbuf wblocal = *wb;
+	struct vb2_workbuf wb;
+
+	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Allocate kernel header buffer in workbuf */
-	uint8_t *kbuf = vb2_workbuf_alloc(&wblocal, KBUF_SIZE);
+	uint8_t *kbuf = vb2_workbuf_alloc(&wb, KBUF_SIZE);
 	if (!kbuf)
 		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
 
@@ -361,7 +362,7 @@ static vb2_error_t vb2_load_partition(
 	}
 	read_ms += vb2ex_mtime() - start_ts;
 
-	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wblocal)) {
+	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, &wb)) {
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 
@@ -435,7 +436,7 @@ static vb2_error_t vb2_load_partition(
 
 	/* Verify kernel data */
 	if (vb2_verify_data(kernbuf, kernbuf_size, &preamble->body_signature,
-			    &data_key, &wblocal)) {
+			    &data_key, &wb)) {
 		VB2_DEBUG("Kernel data verification failed.\n");
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_BODY;
 	}
@@ -458,12 +459,9 @@ static vb2_error_t vb2_load_partition(
 vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_workbuf wb;
 	int found_partitions = 0;
 	uint32_t lowest_version = LOWEST_TPM_VERSION;
 	vb2_error_t rv;
-
-	vb2_workbuf_from_ctx(ctx, &wb);
 
 	/* Clear output params in case we fail */
 	params->partition_number = 0;
@@ -520,7 +518,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			lpflags |= VB2_LOAD_PARTITION_VBLOCK_ONLY;
 		}
 
-		rv = vb2_load_partition(ctx, stream, lpflags, params, &wb);
+		rv = vb2_load_partition(ctx, stream, lpflags, params);
 		VbExStreamClose(stream);
 
 		if (rv) {
