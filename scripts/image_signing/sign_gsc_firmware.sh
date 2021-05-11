@@ -25,7 +25,7 @@ set -u
 
 PRE_PVT_BID_FLAG=0x10
 MP_BID_FLAG=0x10000
-CR50_FACTORY_VERSION="0.3.22"
+CR50_NODE_LOCKED_VERSION="0.5.12"
 
 # Convert unsigned 32 bit value into a signed one.
 to_int32() {
@@ -151,9 +151,10 @@ paste_bin() {
 # that the manifest conforms to GSC version numbering and board ID flags
 # conventions for various build images:
 #
-# - only factory version binaries can be converted to node locked images,
-#   board IDs for node locked images come from signing instructions, and the
-#   config1 manifest field value must have the 0x80000000 bit set.
+# - only binaries where version is set to CR50_NODE_LOCKED_VERSION can be
+#   converted to node locked images. Board IDs for node locked images come
+#   from signing instructions, and the config1 manifest field value must have
+#   the 0x80000000 bit set.
 #
 # - when signing pre-pvt binaries (major version number is even) the 0x10
 #   flags bit must be set.
@@ -197,8 +198,9 @@ verify_and_prepare_gsc_manifest() {
       if [[ -z ${INSN_DEVICE_ID:-} ]]; then
         die "Node locked target without Device ID value"
       fi
-      # Case of a node locked image, it must have the fixed factory version.
-      if [[ "${epoch}.${major}.${minor}" != "${CR50_FACTORY_VERSION}" ]];then
+      # Case of a node locked image, it must have the fixed version.
+      if [[ "${epoch}.${major}.${minor}" != "${CR50_NODE_LOCKED_VERSION}" ]]
+      then
         die "Won't create node locked images for version $epoch.$major.$minor"
       fi
 
