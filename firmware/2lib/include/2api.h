@@ -233,6 +233,13 @@ enum vb2_context_flags {
 	 * NO_BOOT means the OS is not allowed to boot. Only relevant for EFS2.
 	 */
 	VB2_CONTEXT_NO_BOOT = (1 << 23),
+
+	/*
+	 * TRUSTED means EC is running an RO copy and PD isn't enabled. At
+	 * least that was last known to the GSC. If EC RO is correctly behaving,
+	 * it doesn't jump to RW when this flag is set.
+	 */
+	VB2_CONTEXT_EC_TRUSTED = (1 << 24),
 };
 
 /* Helper for aligning fields in vb2_context. */
