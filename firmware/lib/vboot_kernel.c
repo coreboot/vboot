@@ -232,14 +232,18 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	       VB2_KEYBLOCK_FLAG_DEVELOPER_1 :
 	       VB2_KEYBLOCK_FLAG_DEVELOPER_0))) {
 		VB2_DEBUG("Keyblock developer flag mismatch.\n");
-		return VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG;
+		keyblock_valid = 0;
+		if (need_keyblock_valid)
+			return VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG;
 	}
 	if (!(keyblock->keyblock_flags &
 	      ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) ?
 	       VB2_KEYBLOCK_FLAG_RECOVERY_1 :
 	       VB2_KEYBLOCK_FLAG_RECOVERY_0))) {
 		VB2_DEBUG("Keyblock recovery flag mismatch.\n");
-		return VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG;
+		keyblock_valid = 0;
+		if (need_keyblock_valid)
+			return VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG;
 	}
 
 	/* Check for rollback of key version except in recovery mode. */
