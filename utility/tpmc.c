@@ -66,10 +66,10 @@ char** args;
  * success, non-zero for failure.
  */
 static int HexStringToUint32(const char* string, uint32_t* value) {
-  char tail[1];
+  char tail;
   /* strtoul is not as good because it overflows silently */
-  const char* format = strncmp(string, "0x", 2) ? "%8x%s" : "0x%8x%s";
-  int n = sscanf(string, format, value, tail);
+  const char* format = strncmp(string, "0x", 2) ? "%8x%c" : "0x%8x%c";
+  int n = sscanf(string, format, value, &tail);
   return n != 1;
 }
 
