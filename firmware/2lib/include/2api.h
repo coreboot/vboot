@@ -1542,4 +1542,19 @@ vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
  */
 uint32_t vb2ex_mtime(void);
 
+/*****************************************************************************/
+/* FW branch only API. */
+
+/**
+ * Prepare for a extra reboot
+ *
+ * To address a firmware bug b/180686277, a mitigation is added which introduces
+ * an additional EC reset. But when both the kernel partitions are corruption,
+ * this mitigiation introduces a reboot loop. To fix the reboot loop, a firmware
+ * branch only vboot API is introduced to prepare for the extra reboot. This
+ * work-around API stores the FW_TRIED and FW_RESULT data into vboot's NV
+ * storage before triggering a reboot.
+ */
+void vb2api_prepare_for_extra_reboot(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */

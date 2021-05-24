@@ -713,3 +713,11 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 	buf[DEBUG_INFO_MAX_LENGTH] = '\0';
 	return buf;
 }
+
+void vb2api_prepare_for_extra_reboot(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, sd->last_fw_slot);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, sd->last_fw_result);
+}
