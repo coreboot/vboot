@@ -577,6 +577,7 @@ uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
 
 vb2_error_t vb2ex_diag_get_storage_test_log(const char **log)
 {
+	*log = "mock";
 	return mock_diag_storage_test_rv;
 }
 
