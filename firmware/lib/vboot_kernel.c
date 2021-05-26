@@ -18,6 +18,16 @@
 #include "load_kernel_fw.h"
 #include "vboot_api.h"
 
+enum vb2_load_partition_flags {
+	VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY = (1 << 0),
+};
+
+#define KBUF_SIZE 65536  /* Bytes to read at start of kernel partition */
+
+/* Minimum context work buffer size needed for vb2_load_partition() */
+#define VB2_LOAD_PARTITION_WORKBUF_BYTES	\
+	(VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES + KBUF_SIZE)
+
 #define LOWEST_TPM_VERSION 0xffffffff
 
 enum vb2_boot_mode {
@@ -321,29 +331,18 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	return VB2_SUCCESS;
 }
 
-enum vb2_load_partition_flags {
-	/* Only check the vblock to */
-	VB2_LOAD_PARTITION_VBLOCK_ONLY = (1 << 0),
-};
-
-#define KBUF_SIZE 65536  /* Bytes to read at start of kernel partition */
-
-/* Minimum context work buffer size needed for vb2_load_partition() */
-#define VB2_LOAD_PARTITION_WORKBUF_BYTES	\
-	(VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES + KBUF_SIZE)
-
 /**
  * Load and verify a partition from the stream.
  *
  * @param ctx		Vboot context
- * @param stream	Stream to load kernel from
- * @param flags		Flags (one or more of vb2_load_partition_flags)
  * @param params	Load-kernel parameters
+ * @param stream	Stream to load kernel from
+ * @param lpflags	Flags (one or more of vb2_load_partition_flags)
  * @return VB2_SUCCESS, or non-zero error code.
  */
 static vb2_error_t vb2_load_partition(
-	struct vb2_context *ctx, VbExStream_t stream, uint32_t flags,
-	VbSelectAndLoadKernelParams *params)
+	struct vb2_context *ctx, VbSelectAndLoadKernelParams *params,
+	VbExStream_t stream, uint32_t lpflags)
 {
 	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wb;
@@ -366,7 +365,7 @@ static vb2_error_t vb2_load_partition(
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 	}
 
-	if (flags & VB2_LOAD_PARTITION_VBLOCK_ONLY)
+	if (lpflags & VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY)
 		return VB2_SUCCESS;
 
 	struct vb2_keyblock *keyblock = get_keyblock(kbuf);
@@ -515,10 +514,10 @@ vb2_error_t LoadKernel(struct vb2_context *ctx,
 			 * If we already have a good kernel, we only needed to
 			 * look at the vblock versions to check for rollback.
 			 */
-			lpflags |= VB2_LOAD_PARTITION_VBLOCK_ONLY;
+			lpflags |= VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY;
 		}
 
-		rv = vb2_load_partition(ctx, stream, lpflags, params);
+		rv = vb2_load_partition(ctx, params, stream, lpflags);
 		VbExStreamClose(stream);
 
 		if (rv) {
@@ -539,7 +538,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx,
 		 * If we're only looking at headers, we're done with this
 		 * partition.
 		 */
-		if (lpflags & VB2_LOAD_PARTITION_VBLOCK_ONLY)
+		if (lpflags & VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY)
 			continue;
 
 		/*
