@@ -106,7 +106,8 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 	}
 
 	/* If we drop out of the loop, we didn't find any usable kernel. */
-	if (disk_flags & VB_DISK_FLAG_FIXED) {
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	    !(ctx->flags & VB2_CONTEXT_DEVELOPER_MODE)) {
 		switch (rv) {
 		case VB2_ERROR_LK_INVALID_KERNEL_FOUND:
 			vb2api_fail(ctx, VB2_RECOVERY_RW_INVALID_OS, rv);

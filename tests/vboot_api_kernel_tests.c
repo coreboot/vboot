@@ -29,6 +29,7 @@ typedef struct {
 	const char *name;
 
 	/* inputs for test case */
+	uint32_t ctx_flags;
 	uint32_t want_flags;
 	vb2_error_t diskgetinfo_return_val;
 	disk_desc_t disks_to_provide[MAX_TEST_DISKS];
@@ -53,6 +54,7 @@ static const char pickme[] = "correct choice";
 test_case_t test[] = {
 	{
 		.name = "first drive (removable)",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_REMOVABLE | VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			{4096, 100, VB_DISK_FLAG_REMOVABLE, pickme},
@@ -70,6 +72,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "first drive (fixed)",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_REMOVABLE | VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			{4096, 100, VB_DISK_FLAG_FIXED, pickme},
@@ -87,6 +90,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "first removable drive",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {
 			/* too small */
@@ -117,6 +121,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "first removable drive (skip external GPT)",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {
 			/* too small */
@@ -149,6 +154,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "second removable drive",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {
 			/* wrong flags */
@@ -167,6 +173,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "first fixed drive",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			/* too small */
@@ -199,6 +206,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "no drives at all",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {},
 		.disk_count_to_return = DEFAULT_COUNT,
@@ -211,6 +219,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "VbExDiskGetInfo() error",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			{512,  10, VB_DISK_FLAG_REMOVABLE, 0},
@@ -226,6 +235,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "invalid kernel",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			/* too small */
@@ -257,6 +267,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "invalid kernel, order flipped",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			{512, 1000, VB_DISK_FLAG_FIXED, "stateful partition"},
@@ -274,6 +285,7 @@ test_case_t test[] = {
 	},
 	{
 		.name = "no Chrome OS partitions",
+		.ctx_flags = 0,
 		.want_flags = VB_DISK_FLAG_FIXED,
 		.disks_to_provide = {
 			{512, 100, VB_DISK_FLAG_FIXED, "stateful partition"},
@@ -291,6 +303,43 @@ test_case_t test[] = {
 	},
 	{
 		.name = "invalid kernel (removable)",
+		.ctx_flags = 0,
+		.want_flags = VB_DISK_FLAG_REMOVABLE,
+		.disks_to_provide = {
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "corrupted"},
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+					  VB2_ERROR_LK_NO_KERNEL_FOUND},
+
+		.expected_recovery_request_val = VB2_RECOVERY_RW_INVALID_OS,
+		.expected_to_find_disk = DONT_CARE,
+		.expected_to_load_disk = 0,
+		.expected_return_val = VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+	},
+	{
+		.name = "invalid kernel (removable, rec mode)",
+		.ctx_flags = VB2_CONTEXT_RECOVERY_MODE,
+		.want_flags = VB_DISK_FLAG_REMOVABLE,
+		.disks_to_provide = {
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "corrupted"},
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+					  VB2_ERROR_LK_NO_KERNEL_FOUND},
+
+		.expected_recovery_request_val = VB2_RECOVERY_NOT_REQUESTED,
+		.expected_to_find_disk = DONT_CARE,
+		.expected_to_load_disk = 0,
+		.expected_return_val = VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+	},
+	{
+		.name = "invalid kernel (removable, dev mode)",
+		.ctx_flags = VB2_CONTEXT_DEVELOPER_MODE,
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {
 			{512,  100,  VB_DISK_FLAG_REMOVABLE, "corrupted"},
@@ -308,6 +357,23 @@ test_case_t test[] = {
 	},
 	{
 		.name = "no kernel (removable)",
+		.ctx_flags = 0,
+		.want_flags = VB_DISK_FLAG_REMOVABLE,
+		.disks_to_provide = {
+			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
+		},
+		.disk_count_to_return = DEFAULT_COUNT,
+		.diskgetinfo_return_val = VB2_SUCCESS,
+		.loadkernel_return_val = {VB2_ERROR_LK_NO_KERNEL_FOUND},
+
+		.expected_recovery_request_val = VB2_RECOVERY_RW_NO_KERNEL,
+		.expected_to_find_disk = DONT_CARE,
+		.expected_to_load_disk = 0,
+		.expected_return_val = VB2_ERROR_LK_NO_KERNEL_FOUND,
+	},
+	{
+		.name = "no kernel (removable, rec mode)",
+		.ctx_flags = VB2_CONTEXT_RECOVERY_MODE,
 		.want_flags = VB_DISK_FLAG_REMOVABLE,
 		.disks_to_provide = {
 			{512,  100,  VB_DISK_FLAG_REMOVABLE, "data"},
@@ -464,7 +530,8 @@ static void VbTryLoadKernelTest(void)
 	for (i = 0; i < num_tests; i++) {
 		printf("Test case: %s ...\n", test[i].name);
 		ResetMocks(i);
-		TEST_EQ(VbTryLoadKernel(ctx, test[i].want_flags),
+		ctx->flags = t->ctx_flags;
+		TEST_EQ(VbTryLoadKernel(ctx, t->want_flags),
 			t->expected_return_val, "  return value");
 		TEST_EQ(got_recovery_request_val,
 			t->expected_recovery_request_val, "  recovery_request");
