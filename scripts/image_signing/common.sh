@@ -10,25 +10,6 @@
 . "$(dirname "$0")/common_minimal.sh"
 CROS_LOG_PREFIX="${PROG}: "
 
-# Array of actions that are executed during the clean up process.
-declare -a cleanup_actions
-
-# Adds an action to be executed during the clean up process.
-# Actions are executed in the reverse order of when they were added.
-# ARGS: ACTION
-add_cleanup_action() {
-  cleanup_actions[${#cleanup_actions[*]}]=$1
-}
-
-# Performs the latest clean up action and removes it from the list.
-perform_latest_cleanup_action() {
-  local num_actions=${#cleanup_actions[*]}
-  if [ "${num_actions}" -gt 0 ]; then
-    eval "${cleanup_actions[$num_actions-1]} || true" > /dev/null 2>&1
-    unset "cleanup_actions[$num_actions-1]"
-  fi
-}
-
 # Performs clean up by executing actions in the cleanup_actions array in
 # reversed order.
 cleanup() {
@@ -36,9 +17,8 @@ cleanup() {
   rv=$?
   set +e
 
-  while [ ${#cleanup_actions[*]} -gt 0 ]; do
-    perform_latest_cleanup_action
-  done
+  cleanup_temps_and_mounts
+  cleanup_loopbacks
 
   set -e
   return $rv
@@ -158,6 +138,3 @@ restore_lsb_selinux() {
 
 # This will override the trap set in common_minmal.sh
 trap "cleanup" INT TERM EXIT
-
-add_cleanup_action "cleanup_temps_and_mounts"
-add_cleanup_action "cleanup_loopbacks"
