@@ -100,9 +100,8 @@ main() {
     #                  which is the install kernel on the recovery image.
     #                  crosbug.com/24274
     local loop_kern="${loopdev}p4"
-    local loop_rootfs="${loopdev}p3"
     local rootfs=$(make_temp_dir)
-    sudo mount -o ro "${loop_rootfs}" "${rootfs}"
+    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
 
     # Pick the right set of test-expectation data to use.
     local boardvar=$(get_boardvar_from_lsb_release "${rootfs}")
