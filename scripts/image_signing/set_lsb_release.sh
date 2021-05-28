@@ -11,15 +11,17 @@
 
 set_lsb_release_keyval() {
   local rootfs=$1
+  local lsb="${rootfs}/etc/lsb-release"
   local key=$2
   local value=$3
-  local temp_lsb_release="$rootfs/etc/temp-lsb-release"
-  echo "$key=$value" | sudo tee "$temp_lsb_release" > /dev/null
-  grep -Ev "^$key=" "$rootfs/etc/lsb-release" \
-    | sudo tee -a "$temp_lsb_release" > /dev/null
-  sudo sort -o "$rootfs/etc/lsb-release" "$temp_lsb_release"
-  sudo rm -f "$temp_lsb_release"
-  restore_lsb_selinux "$rootfs/etc/lsb-release"
+  local data
+  data=$(
+    (
+    grep -Ev "^${key}=" "${lsb}"
+    echo "${key}=${value}"
+    ) | sort
+  )
+  sudo tee "${lsb}" <<<"${data}" >/dev/null
 }
 
 main() {
@@ -45,13 +47,15 @@ EOF
     exit 1
   fi
 
+  # If there are no key/value pairs to process, we don't need write access.
+  local ro=$([[ $# -eq 0 ]] && echo true || echo false)
+
   local image=$1
   shift
   local loopdev=$(loopback_partscan "${image}")
   local rootfs=$(make_temp_dir)
 
-  # If there are no key/value pairs to process, we don't need write access.
-  if [[ $# -eq 0 ]]; then
+  if ${ro}; then
     mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   else
     mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
@@ -65,6 +69,9 @@ EOF
     shift 2
     set_lsb_release_keyval "${rootfs}" "${key}" "${value}"
   done
+  if ! ${ro}; then
+    restore_lsb_selinux "${rootfs}/etc/lsb-release"
+  fi
 
   # Dump the final state.
   cat "${rootfs}/etc/lsb-release"
