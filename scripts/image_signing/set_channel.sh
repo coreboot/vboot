@@ -26,10 +26,14 @@ main() {
   local to=$2
   local loopdev rootfs lsb
 
-  loopdev=$(loopback_partscan "${image}")
-  rootfs=$(make_temp_dir)
+  if [[ -d "${image}" ]]; then
+    rootfs="${image}"
+  else
+    rootfs=$(make_temp_dir)
+    loopdev=$(loopback_partscan "${image}")
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+  fi
   lsb="${rootfs}/etc/lsb-release"
-  mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
   # Get the current channel on the image.
   local from=$(lsbval "${lsb}" 'CHROMEOS_RELEASE_TRACK')
   from=${from%"-channel"}

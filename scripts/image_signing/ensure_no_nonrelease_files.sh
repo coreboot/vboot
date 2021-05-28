@@ -37,9 +37,14 @@ main() {
     # Either way, load test-expectations data from config.
     . "${configfile}" || return 1
 
-    local loopdev=$(loopback_partscan "${image}")
-    local rootfs=$(make_temp_dir)
-    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+    local loopdev rootfs
+    if [[ -d "${image}" ]]; then
+        rootfs="${image}"
+    else
+        rootfs=$(make_temp_dir)
+        loopdev=$(loopback_partscan "${image}")
+        mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+    fi
     # Pick the right set of test-expectation data to use.
     local brdvar=$(get_boardvar_from_lsb_release "${rootfs}")
     eval "release_file_blocklist=(\"\${RELEASE_FILE_BLOCKLIST_${brdvar}[@]}\")"

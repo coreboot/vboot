@@ -196,9 +196,13 @@ if [[ -z "${IMAGE}" || ! -f "${IMAGE}" ]]; then
 fi
 
 # First round, mount as read-only and check if we need any modifications.
-loopdev=$(loopback_partscan "${IMAGE}")
-rootfs=$(make_temp_dir)
-mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+if [[ -d "${IMAGE}" ]]; then
+  rootfs="${IMAGE}"
+else
+  loopdev=$(loopback_partscan "${IMAGE}")
+  rootfs=$(make_temp_dir)
+  mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+fi
 
 # we don't have tags in stateful partition yet...
 # stateful_dir=$(make_temp_dir)
@@ -210,8 +214,10 @@ process_all_lsb_mods "${rootfs}" ${FLAGS_FALSE}
 if [ ${g_modified} = ${FLAGS_TRUE} ]; then
   # Remount as RW.  We can't use `mount -o rw,remount` because of the bits in
   # the ext4 header we've set to block that.  See enable_rw_mount for details.
-  sudo umount "${rootfs}"
-  mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+  if [[ ! -d "${IMAGE}" ]]; then
+    sudo umount "${rootfs}"
+    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+  fi
 
   # second round, apply the modification to image.
   process_all_tags "${rootfs}" ${FLAGS_TRUE}

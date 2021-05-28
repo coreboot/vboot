@@ -52,14 +52,20 @@ EOF
 
   local image=$1
   shift
-  local loopdev=$(loopback_partscan "${image}")
-  local rootfs=$(make_temp_dir)
+  local loopdev rootfs
 
-  if ${ro}; then
-    mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+  if [[ -d "${image}" ]]; then
+    rootfs="${image}"
   else
-    mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
-    touch "${image}"  # Updates the image modification time.
+    rootfs=$(make_temp_dir)
+    loopdev=$(loopback_partscan "${image}")
+
+    if ${ro}; then
+      mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+    else
+      mount_loop_image_partition "${loopdev}" 3 "${rootfs}"
+      touch "${image}"  # Updates the image modification time.
+    fi
   fi
 
   # Process all the key/value pairs.

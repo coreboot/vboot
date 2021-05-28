@@ -11,26 +11,31 @@ set -e
 . "$(dirname "$0")/common.sh"
 
 usage() {
-    echo "Usage $PROG image"
+  echo "Usage $PROG image"
 }
 
 main() {
-    if [ $# -ne 1 ]; then
-        usage
-        exit 1
-    fi
+  if [[ $# -ne 1 ]]; then
+    usage
+    exit 1
+  fi
 
-    local image="$1"
+  local image="$1"
 
-    local loopdev=$(loopback_partscan "${image}")
-    local rootfs=$(make_temp_dir)
+  local loopdev rootfs
+  if [[ -d "${image}" ]]; then
+    rootfs="${image}"
+  else
+    rootfs=$(make_temp_dir)
+    loopdev=$(loopback_partscan "${image}")
     mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
+  fi
 
-    # This mirrors the check performed in the platform_ToolchainOptions
-    # autotest.
-    if readelf -s "$rootfs/opt/google/chrome/chrome" | \
-       grep -q __asan_init; then
-        exit 1
-    fi
+  # This mirrors the check performed in the platform_ToolchainOptions
+  # autotest.
+  if readelf -s "$rootfs/opt/google/chrome/chrome" | \
+     grep -q __asan_init; then
+    exit 1
+  fi
 }
 main "$@"
