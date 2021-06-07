@@ -191,4 +191,19 @@ void vb2_clear_recovery(struct vb2_context *ctx);
  */
 void vb2_fill_dev_boot_flags(struct vb2_context *ctx);
 
+/**
+ * Determine and set a mutually exclusive boot mode in the vboot context.
+ *
+ * Determine the most relevant boot mode for current boot, store into
+ * ctx->boot_mode, which is a ctx field introduced in struct version 3.1.
+ *
+ * This function should be only called by vb2api_fw_phase1.
+ * The vb2api_fw_phase1 should call this function at its end phase once and all
+ * the following steps should directly access ctx->boot_mode to retrieve the
+ * most relevant boot mode.
+ *
+ * @param ctx		Vboot context.
+ */
+void vb2_set_boot_mode(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2MISC_H_ */

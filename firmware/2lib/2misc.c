@@ -734,3 +734,24 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 	buf[DEBUG_INFO_MAX_LENGTH] = '\0';
 	return buf;
 }
+
+void vb2_set_boot_mode(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	/* Cast boot mode to non-constant and assign */
+	enum vb2_boot_mode *boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
+
+	if (sd->recovery_reason) {
+		if (vb2api_allow_recovery(ctx))
+			*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+		else
+			*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
+	} else if (vb2api_diagnostic_ui_enabled(ctx) &&
+		   vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
+		*boot_mode = VB2_BOOT_MODE_DIAGNOSTICS;
+	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
+		*boot_mode = VB2_BOOT_MODE_DEVELOPER;
+	}
+}
