@@ -222,6 +222,10 @@ static int Unpack(const char *infile, const char *datapubkey,
 		printf(" !REC");
 	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_0)
+		printf(" !MINIOS");
+	if (block->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_1)
+		printf(" MINIOS");
 	printf("\n");
 
 	struct vb2_packed_key *data_key = &block->data_key;

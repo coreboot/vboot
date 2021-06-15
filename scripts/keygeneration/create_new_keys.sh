@@ -43,6 +43,7 @@ main() {
   local root_key_algoid=${ROOT_KEY_ALGOID}
   local recovery_key_algoid=${RECOVERY_KEY_ALGOID}
   local recovery_kernel_algoid=${RECOVERY_KERNEL_ALGOID}
+  local minios_kernel_algoid=${MINIOS_KERNEL_ALGOID}
   local installer_kernel_algoid=${INSTALLER_KERNEL_ALGOID}
   local keyname
   local output_dir="${PWD}" setperms="false"
@@ -166,6 +167,7 @@ main() {
   # Create the recovery and factory installer keypairs
   make_pair recovery_key             ${recovery_key_algoid}
   make_pair recovery_kernel_data_key ${recovery_kernel_algoid}
+  make_pair minios_kernel_data_key   ${minios_kernel_algoid}
   make_pair installer_kernel_data_key ${installer_kernel_algoid}
 
   # Create the firmware keyblock for use only in Normal mode. This is redundant,
@@ -181,6 +183,9 @@ main() {
 
   # Create the recovery kernel keyblock for use only in Recovery mode.
   make_keyblock recovery_kernel ${RECOVERY_KERNEL_KEYBLOCK_MODE} recovery_kernel_data_key recovery_key
+
+  # Create the miniOS kernel keyblock for use only in miniOS mode.
+  make_keyblock minios_kernel ${MINIOS_KERNEL_KEYBLOCK_MODE} minios_kernel_data_key recovery_key
 
   # Create the normal kernel keyblock for use only in Normal mode.
   make_keyblock kernel ${KERNEL_KEYBLOCK_MODE} kernel_data_key kernel_subkey

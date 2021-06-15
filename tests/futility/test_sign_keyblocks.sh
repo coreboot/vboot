@@ -18,7 +18,7 @@ SIGNER=${SRCDIR}/tests/external_rsa_signer.sh
 # Create a copy of an existing keyblock, using the old way
 ${FUTILITY} vbutil_keyblock --pack ${TMP}.keyblock0 \
   --datapubkey ${DEVKEYS}/firmware_data_key.vbpubk \
-  --flags 7 \
+  --flags 23 \
   --signprivate ${DEVKEYS}/root_key.vbprivk
 
 # Check it.
@@ -32,7 +32,7 @@ cmp ${DEVKEYS}/firmware.keyblock ${TMP}.keyblock0
 # Now create it the new way
 ${FUTILITY} --debug sign \
   --datapubkey ${DEVKEYS}/firmware_data_key.vbpubk \
-  --flags 7 \
+  --flags 23 \
   --signprivate ${DEVKEYS}/root_key.vbprivk \
   --outfile ${TMP}.keyblock1
 

@@ -31,10 +31,10 @@ ${FUTILITY} vbutil_key --pack datakey.test \
     --key ${TESTKEY_DIR}/key_rsa2048.keyb --algorithm 4
 
 # Keyblock with kernel data key is signed by kernel subkey
-# Flags=5 means dev=0 rec=0
+# Flags=21 means dev=0 rec=0 minios=0
 ${FUTILITY} vbutil_keyblock --pack keyblock.test \
     --datapubkey datakey.test \
-    --flags 5 \
+    --flags 21 \
     --signprivate ${SCRIPT_DIR}/devkeys/kernel_subkey.vbprivk
 
 # Kernel preamble is signed with the kernel data key

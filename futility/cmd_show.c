@@ -72,6 +72,10 @@ static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
 		printf(" !REC");
 	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_0)
+		printf(" !MINIOS");
+	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_1)
+		printf(" MINIOS");
 	printf("\n");
 
 	struct vb2_packed_key *data_key = &keyblock->data_key;

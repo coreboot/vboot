@@ -548,6 +548,10 @@ int VerifyKernelBlob(uint8_t *kernel_blob,
 		printf(" !REC");
 	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_RECOVERY_1)
 		printf(" REC");
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_0)
+		printf(" !MINIOS");
+	if (g_keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_MINIOS_1)
+		printf(" MINIOS");
 	printf("\n");
 	printf("  Data key algorithm:  %u %s\n", data_key->algorithm,
 	       vb2_get_crypto_algorithm_name(data_key->algorithm));

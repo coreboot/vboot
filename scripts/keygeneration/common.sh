@@ -58,18 +58,32 @@ FIRMWARE_DATAKEY_ALGOID=${RSA4096_SHA256_ALGOID}
 DEV_FIRMWARE_DATAKEY_ALGOID=${RSA4096_SHA256_ALGOID}
 
 RECOVERY_KERNEL_ALGOID=${RSA4096_SHA512_ALGOID}
+MINIOS_KERNEL_ALGOID=${RSA4096_SHA512_ALGOID}
 INSTALLER_KERNEL_ALGOID=${RSA4096_SHA512_ALGOID}
 KERNEL_SUBKEY_ALGOID=${RSA4096_SHA256_ALGOID}
 KERNEL_DATAKEY_ALGOID=${RSA2048_SHA256_ALGOID}
 
 # Keyblock modes determine which boot modes a signing key is valid for use
 # in verification.
-EC_KEYBLOCK_MODE=7  # Only allow RW EC firmware in non-recovery.
-FIRMWARE_KEYBLOCK_MODE=7  # Only allow RW firmware in non-recovery.
-DEV_FIRMWARE_KEYBLOCK_MODE=6  # Only allow in dev mode.
-RECOVERY_KERNEL_KEYBLOCK_MODE=11 # Only in recovery mode.
-KERNEL_KEYBLOCK_MODE=7  # Only allow in non-recovery.
-INSTALLER_KERNEL_KEYBLOCK_MODE=10  # Only allow in Dev + Recovery.
+#    !DEV 0x1      DEV 0x2
+#    !REC 0x4      REC 0x8
+# !MINIOS 0x10  MINIOS 0x20
+# Note that firmware keyblock modes are not used.  Consider deprecating.
+
+# Only allow RW EC firmware in non-recovery + non-miniOS.
+EC_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
+# Only allow RW firmware in non-recovery + non-miniOS.
+FIRMWARE_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
+# Only allow in dev mode + non-recovery + non-miniOS.
+DEV_FIRMWARE_KEYBLOCK_MODE=$((0x2 | 0x4 | 0x10))
+# Only allow in recovery mode + non-miniOS.
+RECOVERY_KERNEL_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x8 | 0x10))
+# Only allow in recovery mode + miniOS.
+MINIOS_KERNEL_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x8 | 0x20))
+# Only allow in non-recovery + non-miniOS.
+KERNEL_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
+# Only allow in dev + recovery + non-miniOS.
+INSTALLER_KERNEL_KEYBLOCK_MODE=$((0x2 | 0x8 | 0x10))
 
 # Emit .vbpubk and .vbprivk using given basename and algorithm
 # NOTE: This function also appears in ../../utility/dev_make_keypair. Making
@@ -125,6 +139,8 @@ make_au_payload_key() {
 #   0x02  Developer switch on
 #   0x04  Not recovery mode
 #   0x08  Recovery mode
+#   0x10  Not miniOS mode
+#   0x20  miniOS mode
 make_keyblock() {
   local base=$1
   local flags=$2
