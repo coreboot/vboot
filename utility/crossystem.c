@@ -106,7 +106,7 @@ static const int kNameWidth = 23;
 static void PrintHelp(const char *progname) {
   const Param *p;
 
-  printf("\nUsage:\n"
+  printf("Usage:\n"
          "  %s [--all]\n"
          "    Prints all parameters with descriptions and current values.\n"
          "    If --all is specified, prints even normally hidden fields.\n"
@@ -116,7 +116,7 @@ static void PrintHelp(const char *progname) {
          "    Sets the parameter(s) to the specified value(s).\n"
          "  %s [param1?value1] [param2?value2 [...]]]\n"
          "    Checks if the parameter(s) all contain the specified value(s).\n"
-         "Stops at the first error."
+         "    Stops at the first error.\n"
          "\n"
          "Valid parameters:\n", progname, progname, progname, progname);
   for (p = sys_param_list; p->name; p++) {
@@ -125,6 +125,10 @@ static void PrintHelp(const char *progname) {
            (p->flags & IS_STRING) ? "str" : "int",
            p->desc);
   }
+  printf("\n"
+         "For more information, please see:\n"
+         "https://chromium.googlesource.com/chromiumos/docs/+/HEAD/"
+         "os_config.md#crossystem\n");
 }
 
 
