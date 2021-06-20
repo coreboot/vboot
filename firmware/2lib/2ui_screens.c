@@ -96,7 +96,7 @@ static vb2_error_t log_page_update(struct vb2_ui_context *ui,
 		ui->state->page_count = vb2ex_prepare_log_screen(
 			screen->id, ui->locale_id, new_log_string);
 		if (ui->state->page_count == 0) {
-			VB2_DEBUG("vb2ex_prepare_log_screen failed");
+			VB2_DEBUG("vb2ex_prepare_log_screen failed\n");
 			return VB2_ERROR_UI_LOG_INIT;
 		}
 		if (ui->state->current_page >= ui->state->page_count)
