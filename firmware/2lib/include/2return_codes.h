@@ -454,168 +454,168 @@ enum vb2_return_code {
 	VB2_ERROR_MISC = VB2_ERROR_BASE + 0x080000,
 
 	/* Work buffer too small (see vb2api_init and vb2api_reinit) */
-	VB2_ERROR_WORKBUF_SMALL,
+	VB2_ERROR_WORKBUF_SMALL = 0x10080001,
 
 	/* Work buffer unaligned (see vb2api_init and vb2api_reinit) */
-	VB2_ERROR_WORKBUF_ALIGN,
+	VB2_ERROR_WORKBUF_ALIGN = 0x10080002,
 
 	/* Work buffer too small in GBB-related function */
-	VB2_ERROR_GBB_WORKBUF,
+	VB2_ERROR_GBB_WORKBUF = 0x10080003,
 
 	/* Bad magic number in vb2_read_gbb_header() */
-	VB2_ERROR_GBB_MAGIC,
+	VB2_ERROR_GBB_MAGIC = 0x10080004,
 
 	/* Incompatible version in vb2_read_gbb_header() */
-	VB2_ERROR_GBB_VERSION,
+	VB2_ERROR_GBB_VERSION = 0x10080005,
 
 	/* Old version in vb2_read_gbb_header() */
-	VB2_ERROR_GBB_TOO_OLD,
+	VB2_ERROR_GBB_TOO_OLD = 0x10080006,
 
 	/* Header size too small in vb2_read_gbb_header() */
-	VB2_ERROR_GBB_HEADER_SIZE,
+	VB2_ERROR_GBB_HEADER_SIZE = 0x10080007,
 
 	/* Work buffer too small for root key in vb2_load_fw_keyblock() */
-	VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY,
+	VB2_ERROR_FW_KEYBLOCK_WORKBUF_ROOT_KEY = 0x10080008,
 
 	/* Work buffer too small for header in vb2_load_fw_keyblock() */
-	VB2_ERROR_FW_KEYBLOCK_WORKBUF_HEADER,
+	VB2_ERROR_FW_KEYBLOCK_WORKBUF_HEADER = 0x10080009,
 
 	/* Work buffer too small for keyblock in vb2_load_fw_keyblock() */
-	VB2_ERROR_FW_KEYBLOCK_WORKBUF,
+	VB2_ERROR_FW_KEYBLOCK_WORKBUF = 0x1008000a,
 
 	/* Keyblock version out of range in vb2_load_fw_keyblock() */
-	VB2_ERROR_FW_KEYBLOCK_VERSION_RANGE,
+	VB2_ERROR_FW_KEYBLOCK_VERSION_RANGE = 0x1008000b,
 
 	/* Keyblock version rollback in vb2_load_fw_keyblock() */
-	VB2_ERROR_FW_KEYBLOCK_VERSION_ROLLBACK,
+	VB2_ERROR_FW_KEYBLOCK_VERSION_ROLLBACK = 0x1008000c,
 
 	/* Missing firmware data key in vb2_load_fw_preamble() */
-	VB2_ERROR_FW_PREAMBLE2_DATA_KEY,
+	VB2_ERROR_FW_PREAMBLE2_DATA_KEY = 0x1008000d,
 
 	/* Work buffer too small for header in vb2_load_fw_preamble() */
-	VB2_ERROR_FW_PREAMBLE2_WORKBUF_HEADER,
+	VB2_ERROR_FW_PREAMBLE2_WORKBUF_HEADER = 0x1008000e,
 
 	/* Work buffer too small for preamble in vb2_load_fw_preamble() */
-	VB2_ERROR_FW_PREAMBLE2_WORKBUF,
+	VB2_ERROR_FW_PREAMBLE2_WORKBUF = 0x1008000f,
 
 	/* Firmware version out of range in vb2_load_fw_preamble() */
-	VB2_ERROR_FW_PREAMBLE_VERSION_RANGE,
+	VB2_ERROR_FW_PREAMBLE_VERSION_RANGE = 0x10080010,
 
 	/* Firmware version rollback in vb2_load_fw_preamble() */
-	VB2_ERROR_FW_PREAMBLE_VERSION_ROLLBACK,
+	VB2_ERROR_FW_PREAMBLE_VERSION_ROLLBACK = 0x10080011,
 
 	/* Not enough space in work buffer for resource object */
-	VB2_ERROR_READ_RESOURCE_OBJECT_BUF,
+	VB2_ERROR_READ_RESOURCE_OBJECT_BUF = 0x10080012,
 
 	/* Work buffer too small for header in vb2_load_kernel_keyblock() */
-	VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF_HEADER,
+	VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF_HEADER = 0x10080013,
 
 	/* Work buffer too small for keyblock in vb2_load_kernel_keyblock() */
-	VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF,
+	VB2_ERROR_KERNEL_KEYBLOCK_WORKBUF = 0x10080014,
 
 	/* Keyblock version out of range in vb2_load_kernel_keyblock() */
-	VB2_ERROR_KERNEL_KEYBLOCK_VERSION_RANGE,
+	VB2_ERROR_KERNEL_KEYBLOCK_VERSION_RANGE = 0x10080015,
 
 	/* Keyblock version rollback in vb2_load_kernel_keyblock() */
-	VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK,
+	VB2_ERROR_KERNEL_KEYBLOCK_VERSION_ROLLBACK = 0x10080016,
 
 	/*
 	 * Keyblock flags don't match current mode in
 	 * vb2_load_kernel_keyblock().
 	 */
-	VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG,
-	VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG,
+	VB2_ERROR_KERNEL_KEYBLOCK_DEV_FLAG = 0x10080017,
+	VB2_ERROR_KERNEL_KEYBLOCK_REC_FLAG = 0x10080018,
 
 	/* Missing firmware data key in vb2_load_kernel_preamble() */
-	VB2_ERROR_KERNEL_PREAMBLE2_DATA_KEY,
+	VB2_ERROR_KERNEL_PREAMBLE2_DATA_KEY = 0x10080019,
 
 	/* Work buffer too small for header in vb2_load_kernel_preamble() */
-	VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF_HEADER,
+	VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF_HEADER = 0x1008001a,
 
 	/* Work buffer too small for preamble in vb2_load_kernel_preamble() */
-	VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF,
+	VB2_ERROR_KERNEL_PREAMBLE2_WORKBUF = 0x1008001b,
 
 	/* Kernel version out of range in vb2_load_kernel_preamble() */
-	VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE,
+	VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE = 0x1008001c,
 
 	/* Kernel version rollback in vb2_load_kernel_preamble() */
-	VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK,
+	VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK = 0x1008001d,
 
 	/* Kernel preamble not loaded before calling vb2api_get_kernel_size() */
-	VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE,
+	VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE = 0x1008001e,
 
 	/* Unable to unpack kernel subkey in vb2_verify_vblock();
 	 * deprecated and replaced with VB2_ERROR_UNPACK_KEY_* */
-	VB2_ERROR_DEPRECATED_VBLOCK_KERNEL_SUBKEY,
+	VB2_ERROR_DEPRECATED_VBLOCK_KERNEL_SUBKEY = 0x1008001f,
 
 	/*
 	 * Got a self-signed kernel in vb2_verify_vblock(), but need an
 	 * officially signed one; deprecated and replaced with
 	 * VB2_ERROR_KERNEL_KEYBLOCK_*.
 	 */
-	VB2_ERROR_DEPRECATED_VBLOCK_SELF_SIGNED,
+	VB2_ERROR_DEPRECATED_VBLOCK_SELF_SIGNED = 0x10080020,
 
 	/* Invalid keyblock hash in vb2_verify_vblock();
 	 * deprecated and replaced with VB2_ERROR_KERNEL_KEYBLOCK_* */
-	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK_HASH,
+	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK_HASH = 0x10080021,
 
 	/* Invalid keyblock in vb2_verify_vblock();
 	 * deprecated and replaced with VB2_ERROR_KERNEL_KEYBLOCK_* */
-	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK,
+	VB2_ERROR_DEPRECATED_VBLOCK_KEYBLOCK = 0x10080022,
 
 	/* Wrong dev key hash in vb2_verify_kernel_vblock_dev_key_hash() */
-	VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH,
+	VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH = 0x10080023,
 
 	/* Work buffer too small in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_WORKBUF,
+	VB2_ERROR_LOAD_PARTITION_WORKBUF = 0x10080024,
 
 	/* Unable to read vblock in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_READ_VBLOCK,
+	VB2_ERROR_LOAD_PARTITION_READ_VBLOCK = 0x10080025,
 
 	/* Unable to verify vblock in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK,
+	VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK = 0x10080026,
 
 	/* Kernel body offset too large in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_BODY_OFFSET,
+	VB2_ERROR_LOAD_PARTITION_BODY_OFFSET = 0x10080027,
 
 	/* Kernel body too big in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_BODY_SIZE,
+	VB2_ERROR_LOAD_PARTITION_BODY_SIZE = 0x10080028,
 
 	/* Unable to read kernel body in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_READ_BODY,
+	VB2_ERROR_LOAD_PARTITION_READ_BODY = 0x10080029,
 
 	/* Unable to unpack data key in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_DATA_KEY,
+	VB2_ERROR_LOAD_PARTITION_DATA_KEY = 0x1008002a,
 
 	/* Unable to verify body in vb2_load_partition() */
-	VB2_ERROR_LOAD_PARTITION_VERIFY_BODY,
+	VB2_ERROR_LOAD_PARTITION_VERIFY_BODY = 0x1008002b,
 
 	/* Unable to get EC image hash in ec_sync_phase1() */
-	VB2_ERROR_EC_HASH_IMAGE,
+	VB2_ERROR_EC_HASH_IMAGE = 0x1008002c,
 
 	/* Unable to get expected EC image hash in ec_sync_phase1() */
-	VB2_ERROR_EC_HASH_EXPECTED,
+	VB2_ERROR_EC_HASH_EXPECTED = 0x1008002d,
 
 	/* Expected and image hashes are different size in ec_sync_phase1() */
-	VB2_ERROR_EC_HASH_SIZE,
+	VB2_ERROR_EC_HASH_SIZE = 0x1008002e,
 
 	/* Incompatible version for vb2_shared_data structure being loaded */
-	VB2_ERROR_SHARED_DATA_VERSION,
+	VB2_ERROR_SHARED_DATA_VERSION = 0x1008002f,
 
 	/* Bad magic number in vb2_shared_data structure */
-	VB2_ERROR_SHARED_DATA_MAGIC,
+	VB2_ERROR_SHARED_DATA_MAGIC = 0x10080030,
 
 	/* Some part of GBB data is invalid */
-	VB2_ERROR_GBB_INVALID,
+	VB2_ERROR_GBB_INVALID = 0x10080031,
 
 	/* Invalid parameter */
-	VB2_ERROR_INVALID_PARAMETER,
+	VB2_ERROR_INVALID_PARAMETER = 0x10080032,
 
 	/* Problem with workbuf validity (see vb2api_init and vb2api_reinit) */
-	VB2_ERROR_WORKBUF_INVALID,
+	VB2_ERROR_WORKBUF_INVALID = 0x10080033,
 
-	/* Escape from NO_BOOT mode is detected. */
-	VB2_ERROR_ESCAPE_NO_BOOT,
+	/* Escape from NO_BOOT mode is detected */
+	VB2_ERROR_ESCAPE_NO_BOOT = 0x10080034,
 
 	/**********************************************************************
 	 * API-level errors
