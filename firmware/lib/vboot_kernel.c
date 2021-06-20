@@ -525,7 +525,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx,
 		VbExStreamClose(stream);
 
 		if (rv) {
-			VB2_DEBUG("Marking kernel as invalid.\n");
+			VB2_DEBUG("Marking kernel as invalid (err=%x).\n", rv);
 			GptUpdateKernelEntry(&gpt, GPT_UPDATE_ENTRY_BAD);
 			continue;
 		}
