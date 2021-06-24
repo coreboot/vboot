@@ -123,7 +123,7 @@ endif
 
 # Provide default CC and CFLAGS for firmware builds; if you have any -D flags,
 # please add them after this point (e.g., -DVBOOT_DEBUG).
-DEBUG_FLAGS := $(if ${DEBUG},-g -O0,-g -Os)
+DEBUG_FLAGS := $(if ${DEBUG},-g -Og,-g -Os)
 WERROR := -Werror
 FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
