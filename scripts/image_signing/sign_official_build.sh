@@ -31,8 +31,6 @@ where <type> is one of:
              recovery (sign a USB recovery image)
              factory (sign a factory install image)
              update_payload (sign a delta update hash)
-             kernel (sign a kernel image)
-             recovery_kernel (sign a recovery_kernel image)
              firmware (sign a firmware image)
              verify (verify an image including rootfs hashes)
              accessory_usbpd (sign USB-PD accessory firmware)
@@ -398,52 +396,6 @@ sign_firmware() {
   "${SCRIPT_DIR}/sign_firmware.sh" "${image}" "${key_dir}" "${image}" \
     "${firmware_version}" "${loem_output_dir}"
   info "Signed firmware image output to ${image}"
-}
-
-# Sign a kernel in-place with the given keys.
-# Args: KERNEL_IMAGE KEY_DIR KERNEL_VERSION
-sign_kernel() {
-  local image=$1
-  local key_dir=$2
-  local kernel_version=$3
-
-  # Note: Although vbutil_kernel may correctly handle specifying the same
-  # output file as the input file, we do not want to rely on it correctly
-  # handing that. Hence, the use of a temporary file.
-  local temp_kernel=$(make_temp_file)
-
-  # Resign the kernel with new keys.
-  vbutil_kernel --repack "${temp_kernel}" \
-    --keyblock "${key_dir}/kernel.keyblock" \
-    --signprivate "${key_dir}/kernel_data_key.vbprivk" \
-    --version "${kernel_version}" \
-    --oldblob "${image}"
-
-  mv "${temp_kernel}" "${image}"
-  info "Signed kernel image output to ${image}"
-}
-
-# Sign a recovery kernel in-place with the given keys.
-# Args: KERNEL_IMAGE KEY_DIR KERNEL_VERSION
-sign_recovery_kernel() {
-  local image=$1
-  local key_dir=$2
-  local kernel_version=$3
-
-  # Note: Although vbutil_kernel may correctly handle specifying the same
-  # output file as the input file, we do not want to rely on it correctly
-  # handing that. Hence, the use of a temporary file.
-  local temp_kernel=$(make_temp_file)
-
-  # Resign the kernel with new recovery keys.
-  vbutil_kernel --repack "${temp_kernel}" \
-    --keyblock "${key_dir}/recovery_kernel.keyblock" \
-    --signprivate "${key_dir}/recovery_kernel_data_key.vbprivk" \
-    --version "${kernel_version}" \
-    --oldblob "${image}"
-
-  mv "${temp_kernel}" "${image}"
-  info "Signed recovery_kernel image output to ${image}"
 }
 
 # Sign a delta update payload (usually created by paygen).
@@ -1097,18 +1049,6 @@ elif [[ "${TYPE}" == "firmware" ]]; then
   fi
   cp ${INPUT_IMAGE} ${OUTPUT_IMAGE}
   sign_firmware ${OUTPUT_IMAGE} ${KEY_DIR} ${FIRMWARE_VERSION}
-elif [[ "${TYPE}" == "kernel" ]]; then
-  if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-    die "LOEM signing not implemented yet for kernel images"
-  fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  sign_kernel "${OUTPUT_IMAGE}" "${KEY_DIR}" "${KERNEL_VERSION}"
-elif [[ "${TYPE}" == "recovery_kernel" ]]; then
-  if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-    die "LOEM signing not implemented yet for recovery_kernel images"
-  fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  sign_recovery_kernel "${OUTPUT_IMAGE}" "${KEY_DIR}" "${KERNEL_VERSION}"
 elif [[ "${TYPE}" == "update_payload" ]]; then
   sign_update_payload ${INPUT_IMAGE} ${KEY_DIR} ${OUTPUT_IMAGE}
 elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
