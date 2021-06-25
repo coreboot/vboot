@@ -9,15 +9,11 @@
 # Prerequisite tools needed in the system path:
 #
 #  futility (from src/platform/vboot_reference)
-#  vbutil_kernel (from src/platform/vboot_reference)
-#  vbutil_key (from src/platform/vboot_reference)
-#  cgpt (from src/platform/vboot_reference)
-#  dump_kernel_config (from src/platform/vboot_reference)
 #  verity (from src/platform/verity)
 #  load_kernel_test (from src/platform/vboot_reference)
 #  dumpe2fs
+#  e2fsck
 #  sha1sum
-#  cbfstool (from src/third_party/coreboot)
 
 # Load common constants and variables.
 . "$(dirname "$0")/common.sh"
@@ -80,8 +76,7 @@ set -e
 PATH=$PATH:/usr/sbin:/sbin
 
 # Make sure the tools we need are available.
-for prereqs in ${FUTILITY} vbutil_kernel cgpt dump_kernel_config verity \
-               cbfstool load_kernel_test dumpe2fs sha1sum e2fsck; do
+for prereqs in ${FUTILITY} verity load_kernel_test dumpe2fs e2fsck sha1sum; do
   type -P "${prereqs}" &>/dev/null || \
     die "${prereqs} tool not found."
 done
@@ -210,7 +205,7 @@ update_rootfs_hash() {
   info "Updating rootfs hash and updating config for Kernel partitions"
 
   # If we can't find dm parameters in the kernel config, bail out now.
-  local kernel_config=$(sudo dump_kernel_config "${loop_kern}")
+  local kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
   local dm_config=$(get_dmparams_from_config "${kernel_config}")
   if [ -z "${dm_config}" ]; then
     error "Couldn't grab dm_config from kernel ${loop_kern}"
@@ -261,7 +256,7 @@ update_rootfs_hash() {
   for kernelpart in 2 4; do
     loop_kern="${loopdev}p${kernelpart}"
     if ! new_kernel_config="$(
-         sudo dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
+         sudo ${FUTILITY} dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
        [[ "${kernelpart}" == 4 ]]; then
       # Legacy images don't have partition 4.
       info "Skipping empty kernel partition 4 (legacy images)."
@@ -279,7 +274,7 @@ update_rootfs_hash() {
       keyblock="${kern_b_keyblock}"
       priv_key="${kern_b_privkey}"
     fi
-    sudo vbutil_kernel --repack "${loop_kern}" \
+    sudo ${FUTILITY} vbutil_kernel --repack "${loop_kern}" \
       --keyblock ${keyblock} \
       --signprivate ${priv_key} \
       --version "${KERNEL_VERSION}" \
@@ -298,13 +293,13 @@ update_stateful_partition_vblock() {
   local temp_out_vb="$(make_temp_file)"
 
   local loop_kern="${loopdev}p4"
-  if [[ -z "$(sudo dump_kernel_config "${loop_kern}" 2>/dev/null)" ]]; then
+  if [[ -z "$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}" 2>/dev/null)" ]]; then
     info "Building vmlinuz_hd.vblock from legacy image partition 2."
     loop_kern="${loopdev}p2"
   fi
 
   # vblock should always use kernel keyblock.
-  sudo vbutil_kernel --repack "${temp_out_vb}" \
+  sudo ${FUTILITY} vbutil_kernel --repack "${temp_out_vb}" \
     --keyblock "${KEY_DIR}/kernel.keyblock" \
     --signprivate "${KEY_DIR}/kernel_data_key.vbprivk" \
     --oldblob "${loop_kern}" \
@@ -414,7 +409,7 @@ sign_update_payload() {
     [8192]=10
   )
 
-  key_output=$(futility show "${key_file}")
+  key_output=$(${FUTILITY} show "${key_file}")
   key_size=$(echo "${key_output}" | sed -n '/Key length/s/[^0-9]*//p')
   algo=${algos[${key_size}]}
   if [[ -z ${algo} ]]; then
@@ -631,20 +626,23 @@ resign_firmware_payload() {
   echo "Signed with keyset in $(readlink -f "${KEY_DIR}") ." >>"${signer_notes}"
   # record recovery_key
   key="${KEY_DIR}/recovery_key.vbpubk"
-  sha1=$(vbutil_key --unpack "${key}" | grep sha1sum | cut -d" " -f9)
+  sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+    | grep sha1sum | cut -d" " -f9)
   echo "recovery: ${sha1}" >>"${signer_notes}"
   # record root_key(s)
   if [[ -d "${shellball_keyset_dir}"  ]]; then
     echo "List sha1sum of all loem/model's signatures:" >>"${signer_notes}"
     for key in "${shellball_keyset_dir}"/rootkey.*; do
       model="${key##*.}"
-      sha1=$(vbutil_key --unpack "${key}" | grep sha1sum | cut -d" " -f9)
+      sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+        | grep sha1sum | cut -d" " -f9)
       echo "  ${model}: ${sha1}" >>"${signer_notes}"
     done
   else
     echo "List sha1sum of single key's signature:" >>"${signer_notes}"
     key="${KEY_DIR}/root_key.vbpubk"
-    sha1=$(vbutil_key --unpack "${key}" | grep sha1sum | cut -d" " -f9)
+    sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+      | grep sha1sum | cut -d" " -f9)
     echo "  root: ${sha1}" >>"${signer_notes}"
   fi
 
@@ -793,7 +791,7 @@ verify_image() {
   local partnum
   for partnum in 2 4; do
     info "Considering Kernel partition ${partnum}"
-    kernel_config=$(sudo dump_kernel_config "${loopdev}p${partnum}")
+    kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loopdev}p${partnum}")
     local hash_image=$(make_temp_file)
     if ! calculate_rootfs_hash "${loop_rootfs}" "${kernel_config}" \
       "${hash_image}"; then
@@ -861,7 +859,8 @@ update_recovery_kernel_hash() {
   local loop_kernb="${loopdev}p4"
 
   # Update the Kernel B hash in Kernel A command line
-  local old_kerna_config="$(sudo dump_kernel_config "${loop_kerna}")"
+  local old_kerna_config="$(sudo ${FUTILITY} \
+    dump_kernel_config "${loop_kerna}")"
   local old_kernb_hash="$(echo "$old_kerna_config" |
     sed -nEe "s#.*kern_b_hash=([a-z0-9]*).*#\1#p")"
   if [[ "${#old_kernb_hash}" -lt 64 ]]; then
@@ -878,7 +877,7 @@ update_recovery_kernel_hash() {
   cat ${new_kerna_config}
 
   # Re-calculate kernel partition signature and command line.
-  sudo vbutil_kernel --repack "${loop_kerna}" \
+  sudo ${FUTILITY} vbutil_kernel --repack "${loop_kerna}" \
     --keyblock ${KEY_DIR}/recovery_kernel.keyblock \
     --signprivate ${KEY_DIR}/recovery_kernel_data_key.vbprivk \
     --version "${KERNEL_VERSION}" \
@@ -902,7 +901,7 @@ update_legacy_bootloader() {
   fi
 
   # If we can't find the dm parameter in the kernel config, bail out now.
-  local kernel_config=$(sudo dump_kernel_config "${loop_kern}")
+  local kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
   local root_hexdigest="$(get_hash_from_config "${kernel_config}")"
   if [[ -z "${root_hexdigest}" ]]; then
     error "Couldn't grab root_digest from kernel partition ${loop_kern}"
@@ -970,7 +969,7 @@ sign_image_file() {
   # /boot in rootfs to update kernel.  We infer the BIOS type from the kernel
   # config.
   local loop_kerna="${loopdev}p2"
-  local kerna_config="$(sudo dump_kernel_config "${loop_kerna}")"
+  local kerna_config="$(sudo ${FUTILITY} dump_kernel_config "${loop_kerna}")"
   if [[ "${image_type}" != "factory_install" &&
         " ${kerna_config} " != *" cros_legacy "* &&
         " ${kerna_config} " != *" cros_efi "* ]]; then
@@ -997,7 +996,7 @@ dump_config)
   loopdev=$(loopback_partscan "${INPUT_IMAGE}")
   for partnum in 2 4; do
     info "kernel config in partition number ${partnum}:"
-    sudo dump_kernel_config "${loopdev}p${partnum}"
+    sudo ${FUTILITY} dump_kernel_config "${loopdev}p${partnum}"
     echo
   done
   exit 0
@@ -1057,7 +1056,7 @@ elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
     KEY_NAME="${KEY_DIR}/key"
   fi
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  futility sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
+  ${FUTILITY} sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
   # If one key is present in this container, assume it's the right one.
   # See crbug.com/863464
@@ -1070,7 +1069,7 @@ elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
     fi
   fi
   cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  futility sign --type rwsig --prikey "${KEY_NAME}" \
+  ${FUTILITY} sign --type rwsig --prikey "${KEY_NAME}" \
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "gsc_firmware" ]]; then
   sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
