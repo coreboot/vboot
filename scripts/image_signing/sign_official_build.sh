@@ -27,15 +27,13 @@ usage() {
   cat <<EOF
 Usage: $PROG <type> input_image /path/to/keys/dir [output_image] [version_file]
 where <type> is one of:
-             ssd  (sign an SSD image)
-             base (sign a base image, similar to an SSD image)
+             base (sign a base image)
              recovery (sign a USB recovery image)
              factory (sign a factory install image)
              update_payload (sign a delta update hash)
              kernel (sign a kernel image)
              recovery_kernel (sign a recovery_kernel image)
              firmware (sign a firmware image)
-             usb  (sign an image to boot directly from USB)
              verify (verify an image including rootfs hashes)
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
@@ -1077,16 +1075,10 @@ info "Using firmware version: ${FIRMWARE_VERSION}"
 info "Using kernel version: ${KERNEL_VERSION}"
 
 # Make all modifications on output copy.
-if [[ "${TYPE}" == "ssd" || "${TYPE}" == "base" ]]; then
-  sign_image_file "SSD" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
+if [[ "${TYPE}" == "base" ]]; then
+  sign_image_file "base" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
     "${KEY_DIR}/kernel.keyblock" "${KEY_DIR}/kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" "${KEY_DIR}/kernel_data_key.vbprivk"
-elif [[ "${TYPE}" == "usb" ]]; then
-  sign_image_file "USB" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-    "${KEY_DIR}/recovery_kernel.keyblock" \
-    "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "recovery" ]]; then
   sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
     "${KEY_DIR}/recovery_kernel.keyblock" \
