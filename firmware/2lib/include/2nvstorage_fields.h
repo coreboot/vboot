@@ -79,7 +79,7 @@ enum vb2_nv_offset {
 #define VB2_NV_BOOT_DISABLE_DEV                0x40
 #define VB2_NV_BOOT_DEBUG_RESET                0x80
 
-/* Fields in VB2_NV_OFFS_BOOT2 (unused = 0x00) */
+/* Fields in VB2_NV_OFFS_BOOT2 */
 #define VB2_NV_BOOT2_RESULT_MASK               0x03
 #define VB2_NV_BOOT2_TRIED                     0x04
 #define VB2_NV_BOOT2_TRY_NEXT                  0x08
@@ -102,11 +102,12 @@ enum vb2_nv_offset {
 #define VB2_NV_TPM_CLEAR_OWNER_DONE            0x02
 #define VB2_NV_TPM_REBOOTED                    0x04
 
-/* Fields in VB2_NV_OFFS_MISC (unused = 0x80) */
+/* Fields in VB2_NV_OFFS_MISC (unused = 0xa0) */
 #define VB2_NV_MISC_DEPRECATED_UNLOCK_FASTBOOT            0x01
 #define VB2_NV_MISC_BOOT_ON_AC_DETECT          0x02
 #define VB2_NV_MISC_TRY_RO_SYNC		       0x04
 #define VB2_NV_MISC_BATTERY_CUTOFF             0x08
+#define VB2_NV_MISC_MINIOS_PRIORITY            0x10
 #define VB2_NV_MISC_POST_EC_SYNC_DELAY         0x40
 
 #endif  /* VBOOT_REFERENCE_2NVSTORAGE_FIELDS_H_ */

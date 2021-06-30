@@ -125,6 +125,8 @@ enum vb2_nv_param {
 	VB2_NV_POST_EC_SYNC_DELAY,
 	/* Request booting of diagnostic rom.  0=no, 1=yes. */
 	VB2_NV_DIAG_REQUEST,
+	/* Priority of miniOS partition to load: 0=MINIOS-A, 1=MINIOS-B. */
+	VB2_NV_MINIOS_PRIORITY,
 };
 
 /* Firmware result codes for VB2_NV_FW_RESULT and VB2_NV_FW_PREV_RESULT */

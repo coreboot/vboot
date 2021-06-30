@@ -532,6 +532,8 @@ const char *VbGetSystemPropertyString(const char *name, char *dest,
 			return default_boot[v];
 		else
 			return "unknown";
+	} else if (!strcasecmp(name, "minios_priority")) {
+		return vb2_get_nv_storage(VB2_NV_MINIOS_PRIORITY) ? "B" : "A";
 	}
 
 	return NULL;
@@ -671,7 +673,13 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 			return vb2_set_nv_storage(VB2_NV_TRY_NEXT, 1);
 		else
 			return -1;
-
+	} else if (!strcasecmp(name, "minios_priority")) {
+		if (!strcasecmp(value, "A"))
+			return vb2_set_nv_storage(VB2_NV_MINIOS_PRIORITY, 0);
+		else if (!strcasecmp(value, "B"))
+			return vb2_set_nv_storage(VB2_NV_MINIOS_PRIORITY, 1);
+		else
+			return -1;
 	} else if (!strcasecmp(name, "fw_result")) {
 		int i;
 
