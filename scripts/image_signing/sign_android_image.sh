@@ -262,7 +262,6 @@ main() {
   # Keep this aligned with
   # src/private-overlays/project-cheets-private/scripts/board_specific_setup.sh
   local system_image=""
-  local compression_flags=""
   local selinux_dir="${root_fs_dir}/etc/selinux"
   local file_contexts=""
   local vm_candidate="${root_fs_dir}/opt/google/vms/android/system.raw.img"
@@ -270,11 +269,9 @@ main() {
       "${root_fs_dir}/opt/google/containers/android/system.raw.img")
   if [[ -f "${vm_candidate}" ]]; then
     system_image="${vm_candidate}"
-    compression_flags="-comp lz4 -Xhc -b 256K"
     file_contexts="${selinux_dir}/arc/contexts/files/android_file_contexts_vm"
   elif [[ -f "${container_candidate}" ]]; then
     system_image="${container_candidate}"
-    compression_flags="-comp gzip"
     file_contexts="${selinux_dir}/arc/contexts/files/android_file_contexts"
   else
     die "System image does not exist"
@@ -295,6 +292,19 @@ main() {
 
   if [[ ! -f "${system_img}" ]]; then
     die "System image does not exist: ${system_img}"
+  fi
+
+  # NOTE: Keep compression_flags aligned with
+  # src/private-overlays/project-cheets-private/scripts/board_specific_setup.sh
+  local compression_flags=""
+  local compression=$(sudo "${unsquashfs}" -s "${system_img}" \
+    | grep -e ^"Compression\s")
+  if [[ "${compression}" == "Compression gzip" ]]; then
+    compression_flags="-comp gzip"
+  elif [[ "${compression}" == "Compression lz4" ]]; then
+    compression_flags="-comp lz4 -Xhc -b 256K"
+  else
+    die "Unexpected compression type: ${compression}"
   fi
 
   if ! type -P zipalign &>/dev/null || ! type -P signapk &>/dev/null \
@@ -367,12 +377,10 @@ main() {
     info "Packages cache ${packages_cache} does not exist. Skip regeneration."
   fi
 
-  info "Repacking squashfs image"
+  info "Repacking squashfs image with compression flags '${compression_flags}'"
   local old_size=$(stat -c '%s' "${system_img}")
   # Remove old system image to prevent mksquashfs tries to merge both images.
   sudo rm -rf "${system_img}"
-  # Note, compression_flags is a combination of flags. Keep this aligned with
-  # src/private-overlays/project-cheets-private/scripts/board_specific_setup.sh
   sudo mksquashfs "${system_mnt}" "${system_img}" \
     ${compression_flags} -context-file "${file_contexts}" -mount-point "/" \
     -no-progress
