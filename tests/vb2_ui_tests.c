@@ -1057,18 +1057,15 @@ static void manual_recovery_tests(void)
 	}
 
 	/* Enter diagnostics */
-	if (DIAGNOSTIC_UI) {
-		/* Launch diagnostics is inside manual recovery */
-		reset_common_data(FOR_MANUAL_RECOVERY);
-		add_mock_keypress(VB_KEY_DOWN);
-		add_mock_keypress(VB_KEY_DOWN);
-		add_mock_keypress(VB_KEY_ENTER);
-		TEST_EQ(vb2_manual_recovery_menu(ctx),
-			VB2_REQUEST_REBOOT,
-			"Reboot immediately after request diagnostics");
-		TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 1,
-			"VB2_NV_DIAG_REQUEST is set");
-	}
+	reset_common_data(FOR_MANUAL_RECOVERY);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_ENTER);
+	TEST_EQ(vb2_manual_recovery_menu(ctx),
+		VB2_REQUEST_REBOOT,
+		"Reboot immediately after request diagnostics");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 1,
+		"VB2_NV_DIAG_REQUEST is set");
 
 	VB2_DEBUG("...done.\n");
 }
@@ -1232,8 +1229,7 @@ static void firmware_log_tests(void)
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
@@ -1249,8 +1245,7 @@ static void firmware_log_tests(void)
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
@@ -1270,8 +1265,7 @@ static void firmware_log_tests(void)
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
@@ -1624,12 +1618,9 @@ static void manual_recovery_screen_tests(void)
 	/* Recovery select screen: disabled and hidden item mask */
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		DIAGNOSTIC_UI ?
-			"recovery select screen: no disabled or hidden item" :
-			"recovery select screen: hide `launch diag`");
+		"recovery select screen: no disabled or hidden item");
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-		     MOCK_IGNORE, MOCK_IGNORE, 0x0, DIAGNOSTIC_UI ? 0x0 : 0x8,
-		     MOCK_IGNORE);
+		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x0, MOCK_IGNORE);
 
 	/* Recovery select screen */
 	reset_common_data(FOR_MANUAL_RECOVERY);
@@ -1646,8 +1637,7 @@ static void manual_recovery_screen_tests(void)
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_ESC);
 	/* #3: Launch diagnostics */
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	/* #4: Advanced options */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1682,9 +1672,8 @@ static void manual_recovery_screen_tests(void)
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
 		MOCK_IGNORE, 2, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #3: Launch diagnostics */
-	if (DIAGNOSTIC_UI)
-		DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
-			MOCK_IGNORE, 3, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
+	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
+		     MOCK_IGNORE, 3, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
 	/* #4: Advanced options */
 	DISPLAYED_EQ("recovery select", VB2_SCREEN_RECOVERY_SELECT,
 		     MOCK_IGNORE, 4, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
@@ -1702,15 +1691,13 @@ static void manual_recovery_screen_tests(void)
 	reset_common_data(FOR_MANUAL_RECOVERY);
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	TEST_EQ(vb2_manual_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"advanced options screen: no disabled or hidden item");
 	DISPLAYED_PASS();
 	DISPLAYED_PASS();
-	if (DIAGNOSTIC_UI)
-		DISPLAYED_PASS();
+	DISPLAYED_PASS();
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
 		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x0, MOCK_IGNORE);
@@ -1720,8 +1707,7 @@ static void manual_recovery_screen_tests(void)
 	/* #0: Language menu */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);
-	if (DIAGNOSTIC_UI)
-		add_mock_keypress(VB_KEY_DOWN);
+	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1749,8 +1735,7 @@ static void manual_recovery_screen_tests(void)
 		"advanced options screen");
 	DISPLAYED_PASS();
 	DISPLAYED_PASS();
-	if (DIAGNOSTIC_UI)
-		DISPLAYED_PASS();
+	DISPLAYED_PASS();
 	DISPLAYED_PASS();
 	/* #0: Language menu */
 	DISPLAYED_PASS();

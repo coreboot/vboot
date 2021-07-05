@@ -235,13 +235,6 @@ else
 CFLAGS += -DDETACHABLE=0
 endif
 
-# pass DIAGNOSTIC_UI= (or =0) to make to disable feature
-ifneq ($(filter-out 0,${DIAGNOSTIC_UI}),)
-CFLAGS += -DDIAGNOSTIC_UI=1
-else
-CFLAGS += -DDIAGNOSTIC_UI=0
-endif
-
 # Confirm physical presence using keyboard
 ifneq ($(filter-out 0,${PHYSICAL_PRESENCE_KEYBOARD}),)
 CFLAGS += -DPHYSICAL_PRESENCE_KEYBOARD=1
