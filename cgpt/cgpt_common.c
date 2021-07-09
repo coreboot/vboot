@@ -672,6 +672,7 @@ const Guid guid_linux_data =        GPT_ENT_TYPE_LINUX_FS;
 const Guid guid_chromeos_reserved = GPT_ENT_TYPE_CHROMEOS_RESERVED;
 const Guid guid_efi =               GPT_ENT_TYPE_EFI;
 const Guid guid_unused =            GPT_ENT_TYPE_UNUSED;
+const Guid guid_chromeos_minios =   GPT_ENT_TYPE_CHROMEOS_MINIOS;
 
 const static struct {
   const Guid *type;
@@ -686,6 +687,7 @@ const static struct {
   {&guid_chromeos_reserved, "reserved", "ChromeOS reserved"},
   {&guid_efi, "efi", "EFI System Partition"},
   {&guid_unused, "unused", "Unused (nonexistent) partition"},
+  {&guid_chromeos_minios, "minios", "ChromeOS miniOS"},
 };
 
 /* Resolves human-readable GPT type.
