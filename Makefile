@@ -710,6 +710,7 @@ TEST_OBJS += ${TESTLIB_OBJS}
 TEST_NAMES = \
 	tests/cgptlib_test \
 	tests/chromeos_config_tests \
+	tests/gpt_misc_tests \
 	tests/sha_benchmark \
 	tests/subprocess_tests \
 	tests/vboot_api_kernel4_tests \
@@ -1266,6 +1267,7 @@ runtestscripts: install_for_test genfuzztestcases
 
 .PHONY: runmisctests
 runmisctests: install_for_test
+	${RUNTEST} ${BUILD_RUN}/tests/gpt_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/subprocess_tests
 ifeq (${MOCK_TPM}${TPM2_MODE},)
 # tlcl_tests only works when MOCK_TPM is disabled
