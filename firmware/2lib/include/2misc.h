@@ -210,38 +210,11 @@ int vb2_allow_recovery(struct vb2_context *ctx);
 void vb2_clear_recovery(struct vb2_context *ctx);
 
 /**
- * Determine if developer mode is allowed.
+ * Fill VB2_CONTEXT_DEV_BOOT_ALLOWED, VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED and
+ * VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED flags in ctx->flags.
  *
- * Developer boot is not allowed if and only if FWMP_DEV_DISABLE_BOOT is set and
- * GBB_FORCE_DEV_SWITCH_ON is not set.
- *
- * @param ctx		Vboot context
- * @return 1 if allowed, or 0 otherwise.
+ * @param ctx		Vboot context.
  */
-int vb2_dev_boot_allowed(struct vb2_context *ctx);
-
-/**
- * Determine if booting from legacy BIOS is allowed.
- *
- * Legacy BIOS is allowed if any of these flags are set:
- * VB2_NV_DEV_BOOT_ALTFW, VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW, and
- * VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW.
- *
- * @param ctx		Vboot context
- * @return 1 if allowed, or 0 otherwise.
- */
-int vb2_dev_boot_altfw_allowed(struct vb2_context *ctx);
-
-/**
- * Determine if booting from external disk is allowed.
- *
- * Booting from external disk is allowed if any of these flags are set:
- * VB2_NV_DEV_BOOT_EXTERNAL, VB2_GBB_FLAG_FORCE_DEV_BOOT_USB, and
- * VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL.
- *
- * @param ctx		Vboot context
- * @return 1 if allowed, or 0 otherwise.
- */
-int vb2_dev_boot_external_allowed(struct vb2_context *ctx);
+void vb2_fill_dev_boot_flags(struct vb2_context *ctx);
 
 #endif  /* VBOOT_REFERENCE_2MISC_H_ */

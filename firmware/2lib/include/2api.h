@@ -240,6 +240,23 @@ enum vb2_context_flags {
 	 * it doesn't jump to RW when this flag is set.
 	 */
 	VB2_CONTEXT_EC_TRUSTED = (1 << 24),
+
+	/*
+	 * Boot into developer mode is allowed by FWMP and GBB flags.
+	 */
+	VB2_CONTEXT_DEV_BOOT_ALLOWED = (1 << 25),
+
+	/*
+	 * Boot into developer mode from external disk is allowed by nvdata,
+	 * FWMP and GBB flags.
+	 */
+	VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED = (1 << 26),
+
+	/*
+	 * Boot into developer mode from alternate bootloader is allowed by
+	 * nvdata, FWMP and GBB flags.
+	 */
+	VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED = (1 << 27),
 };
 
 /* Helper for aligning fields in vb2_context. */
@@ -915,7 +932,8 @@ enum vb2_dev_default_boot_target {
 };
 
 /**
- * Get the default boot target in developer mode.
+ * Get the default boot target in developer mode. This function must be called
+ * after vb2api_kernel_phase1.
  *
  * @param ctx		Vboot context
  * @return The developer mode default boot target.

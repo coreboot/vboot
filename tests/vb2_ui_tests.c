@@ -73,9 +73,6 @@ static int mock_beep_count;
 static int mock_beep_total;
 
 static enum vb2_dev_default_boot_target mock_default_boot;
-static int mock_dev_boot_allowed;
-static int mock_dev_boot_altfw_allowed;
-static int mock_dev_boot_external_allowed;
 
 static int mock_run_altfw_called;
 static uint32_t mock_altfw_last;
@@ -281,6 +278,10 @@ static void reset_common_data(enum reset_type t)
 		sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
 	}
 
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
+
 	/* Mock ui_context based on real screens */
 	memset(&mock_ui_context, 0, sizeof(mock_ui_context));
 	mock_ui_context.ctx = ctx;
@@ -318,9 +319,6 @@ static void reset_common_data(enum reset_type t)
 
 	/* For dev_boot* in 2misc.h */
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
-	mock_dev_boot_allowed = 1;
-	mock_dev_boot_altfw_allowed = 0;
-	mock_dev_boot_external_allowed = 1;
 
 	/* For vb2ex_run_altfw */
 	mock_run_altfw_called = 0;
@@ -489,21 +487,6 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	return mock_default_boot;
 }
 
-int vb2_dev_boot_allowed(struct vb2_context *c)
-{
-	return mock_dev_boot_allowed;
-}
-
-int vb2_dev_boot_altfw_allowed(struct vb2_context *c)
-{
-	return mock_dev_boot_altfw_allowed;
-}
-
-int vb2_dev_boot_external_allowed(struct vb2_context *c)
-{
-	return mock_dev_boot_external_allowed;
-}
-
 vb2_error_t vb2ex_run_altfw(uint32_t altfw_id)
 {
 	mock_run_altfw_called++;
@@ -610,7 +593,7 @@ static void developer_tests(void)
 
 	/* Don't proceed to internal disk after timeout (dev mode disallowed) */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_allowed = 0;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
 	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
 		VB2_REQUEST_SHUTDOWN,
 		"do not proceed to internal disk after timeout "
@@ -701,13 +684,13 @@ static void developer_tests(void)
 	/* Default boot from external not allowed, don't boot */
 	reset_common_data(FOR_DEVELOPER);
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
-	mock_dev_boot_external_allowed = 0;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"default boot from external disk not allowed, don't boot");
 
 	/* Don't proceed to external disk after timeout (dev mode disallowed) */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_allowed = 0;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
 	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
 		VB2_REQUEST_SHUTDOWN,
@@ -731,7 +714,7 @@ static void developer_tests(void)
 
 	/* Ctrl+L = boot altfw (allowed) */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	add_mock_keypress(VB_KEY_CTRL('L'));
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"ctrl+l = boot altfw");
@@ -766,7 +749,7 @@ static void developer_tests(void)
 
 	/* Select to_norm in dev menu and confirm (dev mode disallowed) */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_allowed = 0;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_ENTER);
@@ -1307,7 +1290,7 @@ static void developer_screen_tests(void)
 
 	/* Dev mode: disabled and hidden item mask */
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: no disabled or hidden item");
@@ -1315,7 +1298,7 @@ static void developer_screen_tests(void)
 		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x0, MOCK_IGNORE);
 
 	reset_common_data(FOR_DEVELOPER);
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
@@ -1325,8 +1308,8 @@ static void developer_screen_tests(void)
 
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_FIXED);
-	mock_dev_boot_external_allowed = 0;
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	TEST_EQ(vb2_developer_menu(ctx), VB2_SUCCESS,
 		"dev mode screen: hide boot external");
 	DISPLAYED_EQ("dev mode screen", VB2_SCREEN_DEVELOPER_MODE,
@@ -1385,7 +1368,7 @@ static void developer_screen_tests(void)
 	DISPLAYED_NO_EXTRA();
 
 	reset_common_data(FOR_DEVELOPER);  /* Select #2 by default */
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	/* #4: Alternate boot */
 	add_mock_keypress(VB_KEY_DOWN);
 	add_mock_keypress(VB_KEY_DOWN);

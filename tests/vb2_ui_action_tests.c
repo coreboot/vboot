@@ -65,9 +65,6 @@ static int mock_get_screen_info_called;
 static vb2_error_t mock_vbtlk_retval;
 static uint32_t mock_vbtlk_expected_flag;
 
-static int mock_dev_boot_allowed;
-static int mock_dev_boot_altfw_allowed;
-
 static int mock_run_altfw_called;
 static uint32_t mock_altfw_last;
 static uint32_t mock_altfw_count;
@@ -317,6 +314,9 @@ static void reset_common_data(void)
 
 	sd = vb2_get_sd(ctx);
 
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
+
 	/* For check_shutdown_request */
 	mock_calls_until_shutdown = 10;
 
@@ -358,10 +358,6 @@ static void reset_common_data(void)
 	/* For VbTryLoadKernel */
 	mock_vbtlk_retval = VB2_ERROR_MOCK;
 	mock_vbtlk_expected_flag = MOCK_IGNORE;
-
-	/* For dev_boot* in 2misc.h */
-	mock_dev_boot_allowed = 1;
-	mock_dev_boot_altfw_allowed = 0;
 
 	/* For vb2ex_run_altfw */
 	mock_run_altfw_called = 0;
@@ -486,16 +482,6 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 	TEST_EQ(mock_vbtlk_expected_flag, disk_flags,
 		"  unexpected disk_flags");
 	return mock_vbtlk_retval;
-}
-
-int vb2_dev_boot_allowed(struct vb2_context *c)
-{
-	return mock_dev_boot_allowed;
-}
-
-int vb2_dev_boot_altfw_allowed(struct vb2_context *c)
-{
-	return mock_dev_boot_altfw_allowed;
 }
 
 vb2_error_t vb2ex_run_altfw(uint32_t altfw_id)
@@ -755,7 +741,7 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 
 	/* Not allowed: not in dev mode */
 	reset_common_data();
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE, "not allowed: not in dev mode");
 	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
@@ -765,8 +751,8 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	/* Not allowed: dev boot not allowed */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	mock_dev_boot_allowed = 0;
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE, "not allowed: dev boot not allowed");
 	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
@@ -785,7 +771,7 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	/* Allowed */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	mock_ui_context.state->selected_item = 2;
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
 		VB2_REQUEST_UI_CONTINUE, "allowed");
@@ -797,7 +783,7 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	/* CTRL+L = default bootloader */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	mock_dev_boot_altfw_allowed = 1;
+	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	mock_ui_context.key = VB_KEY_CTRL('L');
 	mock_ui_context.state->selected_item = 4;  /* Ignored */
 	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),

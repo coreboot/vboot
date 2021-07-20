@@ -420,7 +420,7 @@ vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 {
 	enum vb2_screen root_screen_id = VB2_SCREEN_DEVELOPER_MODE;
-	if (!vb2_dev_boot_allowed(ctx)) {
+	if (!(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) {
 		VB2_DEBUG("WARNING: Dev boot not allowed; forcing to-norm\n");
 		root_screen_id = VB2_SCREEN_DEVELOPER_TO_NORM;
 	}
@@ -434,7 +434,7 @@ vb2_error_t developer_action(struct vb2_ui_context *ui)
 		return vb2_ui_screen_change(ui, VB2_SCREEN_DEBUG_INFO);
 
 	/* Ignore other shortcuts */
-	if (!vb2_dev_boot_allowed(ui->ctx))
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED))
 		return VB2_REQUEST_UI_CONTINUE;
 
 	if (ui->key == VB_KEY_CTRL('S'))

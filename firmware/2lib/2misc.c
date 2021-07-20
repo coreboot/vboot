@@ -537,12 +537,12 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 
 	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
 		case VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL:
-			if (vb2_dev_boot_external_allowed(ctx))
+			if (ctx->flags & VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED)
 				return VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
 			break;
 
 		case VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW:
-			if (vb2_dev_boot_altfw_allowed(ctx))
+			if (ctx->flags & VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED)
 				return VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW;
 			break;
 	}
@@ -550,33 +550,30 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	return VB2_DEV_DEFAULT_BOOT_TARGET_INTERNAL;
 }
 
-int vb2_dev_boot_allowed(struct vb2_context *ctx)
+void vb2_fill_dev_boot_flags(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
-	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_DISABLE_BOOT))
-		return !!(gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON);
+	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_DISABLE_BOOT) &&
+	    !(gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON))
+		ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
+	else
+		ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
 
-	return 1;
-}
+	if (vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL) ||
+	    (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) ||
+	    vb2_secdata_fwmp_get_flag(ctx,
+				      VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL))
+		ctx->flags |= VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
+	else
+		ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
 
-int vb2_dev_boot_altfw_allowed(struct vb2_context *ctx)
-{
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-
-	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_ALTFW) ||
-	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW) ||
-	       vb2_secdata_fwmp_get_flag(ctx,
-					 VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW);
-}
-
-int vb2_dev_boot_external_allowed(struct vb2_context *ctx)
-{
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-
-	return vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL) ||
-	       (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_USB) ||
-	       vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_EXTERNAL);
+	if (vb2_nv_get(ctx, VB2_NV_DEV_BOOT_ALTFW) ||
+	    (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW) ||
+	    vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW))
+		ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
+	else
+		ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 }
 
 int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)

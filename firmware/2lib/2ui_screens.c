@@ -693,12 +693,12 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 			    DEVELOPER_MODE_ITEM_RETURN_TO_SECURE);
 
 	/* Don't show "Boot from external disk" button if not allowed. */
-	if (!vb2_dev_boot_external_allowed(ui->ctx))
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED))
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DEVELOPER_MODE_ITEM_BOOT_EXTERNAL);
 
 	/* Don't show "Select alternate bootloader" button if not allowed. */
-	if (!vb2_dev_boot_altfw_allowed(ui->ctx))
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED))
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DEVELOPER_MODE_ITEM_SELECT_ALTFW);
 
@@ -725,7 +725,7 @@ vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 	struct vb2_ui_context *ui)
 {
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
-	    !vb2_dev_boot_allowed(ui->ctx)) {
+	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) {
 		VB2_DEBUG("ERROR: Dev mode internal boot not allowed\n");
 		return VB2_SUCCESS;
 	}
@@ -741,8 +741,8 @@ vb2_error_t vb2_ui_developer_mode_boot_external_action(
 
 	/* Validity check, should never happen. */
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
-	    !vb2_dev_boot_allowed(ui->ctx) ||
-	    !vb2_dev_boot_external_allowed(ui->ctx)) {
+	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED) ||
+	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED)) {
 		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
 		ui->error_beep = 1;
 		return set_ui_error(ui, VB2_UI_ERROR_EXTERNAL_BOOT_DISABLED);
@@ -853,7 +853,7 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 	}
 	ui->state->selected_item = DEVELOPER_TO_NORM_ITEM_CONFIRM;
 	/* Hide "Cancel" button if dev boot is not allowed */
-	if (!vb2_dev_boot_allowed(ui->ctx))
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED))
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DEVELOPER_TO_NORM_ITEM_CANCEL);
 	return VB2_SUCCESS;
@@ -953,8 +953,8 @@ vb2_error_t vb2_ui_developer_mode_boot_altfw_action(
 		ARRAY_SIZE(developer_select_bootloader_items_before);
 
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
-	    !vb2_dev_boot_allowed(ui->ctx) ||
-	    !vb2_dev_boot_altfw_allowed(ui->ctx)) {
+	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED) ||
+	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED)) {
 		VB2_DEBUG("ERROR: Dev mode alternate bootloader not allowed\n");
 		return set_ui_error(ui, VB2_UI_ERROR_ALTFW_DISABLED);
 	}
