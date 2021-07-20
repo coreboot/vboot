@@ -21,9 +21,4 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(HAVE_ENDIAN_H) && defined(HAVE_LITTLE_ENDIAN)
-#include <byteswap.h>
-#include <memory.h>
-#endif
-
 #endif  /* VBOOT_REFERENCE_2SYSINCLUDES_H_ */
