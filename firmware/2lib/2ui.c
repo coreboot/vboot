@@ -28,7 +28,6 @@
  */
 vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 {
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ui->ctx);
 	uint32_t shutdown_request = VbExIsShutdownRequested();
 
 	/*
@@ -51,7 +50,7 @@ vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 		shutdown_request |= VB_SHUTDOWN_REQUEST_POWER_BUTTON;
 
 	/* If desired, ignore shutdown request due to lid closure. */
-	if (gbb->flags & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
+	if (vb2api_gbb_get_flags(ui->ctx) & VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN)
 		shutdown_request &= ~VB_SHUTDOWN_REQUEST_LID_CLOSED;
 
 	/*

@@ -688,7 +688,7 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 		vb2api_get_dev_default_boot_target(ui->ctx);
 
 	/* Don't show "Return to secure mode" button if GBB forces dev mode. */
-	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
+	if (vb2api_gbb_get_flags(ui->ctx) & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON)
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    DEVELOPER_MODE_ITEM_RETURN_TO_SECURE);
 
@@ -846,7 +846,7 @@ static const struct vb2_screen_info developer_mode_screen = {
 static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 {
 	/* Don't allow to-norm if GBB forces dev mode */
-	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+	if (vb2api_gbb_get_flags(ui->ctx) & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		VB2_DEBUG("ERROR: to-norm not allowed\n");
 		return set_ui_error_and_go_back(
 			ui, VB2_UI_ERROR_TO_NORM_NOT_ALLOWED);
@@ -861,7 +861,7 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 
 vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui)
 {
-	if (vb2_get_gbb(ui->ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
+	if (vb2api_gbb_get_flags(ui->ctx) & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
 		VB2_DEBUG("ERROR: dev mode forced by GBB flag\n");
 		return VB2_SUCCESS;
 	}
