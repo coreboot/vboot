@@ -459,6 +459,11 @@ uint32_t vb2api_get_locale_id(struct vb2_context *ctx)
 	return vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
 }
 
+void vb2api_set_locale_id(struct vb2_context *ctx, uint32_t locale_id)
+{
+	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, locale_id);
+}
+
 void vb2api_export_vbsd(struct vb2_context *ctx, void *dest)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

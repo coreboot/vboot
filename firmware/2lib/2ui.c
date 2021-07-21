@@ -308,7 +308,7 @@ static vb2_error_t ui_loop_impl(
 	root_info = vb2_get_screen_info(root_screen_id);
 	if (root_info == NULL)
 		VB2_DIE("Root screen not found.\n");
-	ui.locale_id = vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
+	ui.locale_id = vb2api_get_locale_id(ctx);
 
 	rv = vb2_ui_screen_change(&ui, root_screen_id);
 	if (rv && rv != VB2_REQUEST_UI_CONTINUE)

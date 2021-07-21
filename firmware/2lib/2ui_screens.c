@@ -185,7 +185,7 @@ static vb2_error_t language_select_action(struct vb2_ui_context *ui)
 	VB2_DEBUG("Locale changed to %u\n", ui->locale_id);
 
 	/* Write locale id back to nvdata. */
-	vb2_nv_set(ui->ctx, VB2_NV_LOCALIZATION_INDEX, ui->locale_id);
+	vb2api_set_locale_id(ui->ctx, ui->locale_id);
 
 	/* Commit nvdata changes immediately, in case of three-finger salute
 	   reboot.  Ignore commit errors in recovery mode. */

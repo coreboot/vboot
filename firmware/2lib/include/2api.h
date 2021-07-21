@@ -871,6 +871,14 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx);
 uint32_t vb2api_get_locale_id(struct vb2_context *ctx);
 
 /**
+ * Set the locale id in nvdata.
+ *
+ * @param ctx		Vboot context
+ * @param locale_id 	The locale id to be set
+ */
+void vb2api_set_locale_id(struct vb2_context *ctx, uint32_t locale_id);
+
+/**
  * Whether phone recovery functionality is enabled or not.
  *
  * @param ctx		Vboot context
