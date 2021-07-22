@@ -15,8 +15,6 @@
 #  e2fsck
 #  sha1sum
 
-MINIOS_KERNEL_GUID="09845860-705f-4bb5-b16c-8a8a099caf52"
-
 # Load common constants and variables.
 . "$(dirname "$0")/common.sh"
 
@@ -887,49 +885,6 @@ update_recovery_kernel_hash() {
     --config ${new_kerna_config}
 }
 
-# Re-sign miniOS kernels with new keys.
-# Args: LOOPDEV KEYBLOCK PRIVKEY
-resign_minios_kernels() {
-  local loopdev="$1"
-  local keyblock="$2"
-  local priv_key="$3"
-
-  info "Searching for miniOS kernels to resign..."
-
-  local loop_kern
-  for loop_kern in "${loopdev}p"*; do
-    local part_type_guid=$(sudo lsblk -rnb -o PARTTYPE "${loop_kern}")
-    if [[ "${part_type_guid}" != "${MINIOS_KERNEL_GUID}" ]]; then
-      continue
-    fi
-
-    # Delay checking that keyblock and private key exist until we are certain
-    # of a valid miniOS partition.  Images that don't support miniOS might not
-    # provide these.  (This check is repeated twice, but that's okay.)
-    if [[ ! -e "${keyblock}" ]]; then
-      error "Resign miniOS: keyblock doesn't exist: ${keyblock}"
-      return 1
-    fi
-    if [[ ! -e "${priv_key}" ]]; then
-      error "Resign miniOS: private key doesn't exist: ${priv_key}"
-      return 1
-    fi
-
-    # Assume this is a miniOS kernel.
-    local minios_kernel_version=$((KERNEL_VERSION >> 24))
-    if sudo ${FUTILITY} vbutil_kernel --repack "${loop_kern}" \
-        --keyblock "${keyblock}" \
-        --signprivate "${priv_key}" \
-        --version "${minios_kernel_version}" \
-        --oldblob "${loop_kern}"; then
-      info "Resign miniOS ${loop_kern}: done"
-    else
-      error "Resign miniOS ${loop_kern}: failed"
-      return 1
-    fi
-  done
-}
-
 # Update the legacy bootloader templates in EFI partition if available.
 # Args: LOOPDEV KERNEL
 update_legacy_bootloader() {
@@ -977,7 +932,7 @@ update_legacy_bootloader() {
 
 # Sign an image file with proper keys.
 # Args: IMAGE_TYPE INPUT OUTPUT DM_PARTNO KERN_A_KEYBLOCK KERN_A_PRIVKEY \
-#       KERN_B_KEYBLOCK KERN_B_PRIVKEY MINIOS_KEYBLOCK MINIOS_PRIVKEY
+#       KERN_B_KEYBLOCK KERN_B_PRIVKEY
 #
 # A ChromiumOS image file (INPUT) always contains 2 partitions (kernel A & B).
 # This function will rebuild hash data by DM_PARTNO, resign kernel partitions by
@@ -994,8 +949,6 @@ sign_image_file() {
   local kernA_privkey="$6"
   local kernB_keyblock="$7"
   local kernB_privkey="$8"
-  local minios_keyblock="$9"
-  local minios_privkey="${10}"
 
   info "Preparing ${image_type} image..."
   cp --sparse=always "${input}" "${output}"
@@ -1028,10 +981,6 @@ sign_image_file() {
   update_stateful_partition_vblock "${loopdev}"
   if [[ "${image_type}" == "recovery" ]]; then
     update_recovery_kernel_hash "${loopdev}"
-  fi
-  if ! resign_minios_kernels "${loopdev}" "${minios_keyblock}" \
-      "${minios_privkey}"; then
-    return 1
   fi
   if ! update_legacy_bootloader "${loopdev}" "${loop_kern}"; then
     # Error is already logged.
@@ -1079,28 +1028,20 @@ info "Using kernel version: ${KERNEL_VERSION}"
 # Make all modifications on output copy.
 if [[ "${TYPE}" == "base" ]]; then
   sign_image_file "base" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk" \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk" \
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+    "${KEY_DIR}/kernel.keyblock" "${KEY_DIR}/kernel_data_key.vbprivk" \
+    "${KEY_DIR}/kernel.keyblock" "${KEY_DIR}/kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "recovery" ]]; then
   sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
     "${KEY_DIR}/recovery_kernel.keyblock" \
     "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" \
     "${KEY_DIR}/kernel_data_key.vbprivk"
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "factory" ]]; then
   sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
     "${KEY_DIR}/installer_kernel.keyblock" \
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" \
     "${KEY_DIR}/kernel_data_key.vbprivk"
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "firmware" ]]; then
   if [[ -e "${KEY_DIR}/loem.ini" ]]; then
     die "LOEM signing not implemented yet for firmware images"
