@@ -13,7 +13,7 @@
 #include "2ui.h"
 #include "2ui_private.h"
 #include "test_common.h"
-#include "vboot_kernel.h"
+#include "vboot_api.h"
 
 /* Fixed value for ignoring some checks */
 #define MOCK_IGNORE 0xffffu
@@ -514,7 +514,7 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
 	return mock_vbtlk_retval[i];
 }
 
-int vb2_allow_recovery(struct vb2_context *c)
+int vb2api_allow_recovery(struct vb2_context *c)
 {
 	return mock_allow_recovery;
 }
@@ -527,7 +527,7 @@ int vb2ex_physical_presence_pressed(void)
 	return mock_pp_pressed[mock_iters];
 }
 
-void vb2_enable_developer_mode(struct vb2_context *c)
+void vb2api_enable_developer_mode(struct vb2_context *c)
 {
 	mock_enable_dev_mode = 1;
 }

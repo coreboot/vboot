@@ -13,7 +13,6 @@
 #include "2ui.h"
 #include "2ui_private.h"
 #include "vboot_api.h"  /* For VB_SHUTDOWN_REQUEST_POWER_BUTTON */
-#include "vboot_kernel.h"
 
 /*****************************************************************************/
 /* Utility functions */

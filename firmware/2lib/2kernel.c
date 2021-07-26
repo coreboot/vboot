@@ -11,7 +11,7 @@
 #include "2nvstorage.h"
 #include "2rsa.h"
 #include "2secdata.h"
-#include "vboot_kernel.h"
+#include "vboot_api.h"
 
 /**
  * Reset any NVRAM requests.
@@ -164,7 +164,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		/* Load recovery key from GBB. */
 		rv = vb2_gbb_read_recovery_key(ctx, &packed_key, NULL, &wb);
 		if (rv) {
-			if (vb2_allow_recovery(ctx))
+			if (vb2api_allow_recovery(ctx))
 				VB2_DIE("GBB read recovery key failed.\n");
 			else
 				/*

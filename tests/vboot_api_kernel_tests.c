@@ -12,7 +12,6 @@
 #include "load_kernel_fw.h"
 #include "test_common.h"
 #include "vboot_api.h"
-#include "vboot_kernel.h"
 #include "vboot_test.h"
 
 #define MAX_TEST_DISKS 10

@@ -14,7 +14,7 @@
 #include "host_common.h"
 #include "util_misc.h"
 #include "vboot_api.h"
-#include "vboot_kernel.h"
+#include "load_kernel_fw.h"
 
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));

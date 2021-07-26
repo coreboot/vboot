@@ -12,7 +12,6 @@
 #include "2ui.h"
 #include "2ui_private.h"
 #include "vboot_api.h"
-#include "vboot_kernel.h"
 
 #define MENU_ITEMS(a) ((struct vb2_menu){ \
 	.num_items = ARRAY_SIZE(a), \
@@ -277,7 +276,7 @@ vb2_error_t advanced_options_init(struct vb2_ui_context *ui)
 {
 	ui->state->selected_item = ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE;
 	if (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
-	    !vb2_allow_recovery(ui->ctx)) {
+	    !vb2api_allow_recovery(ui->ctx)) {
 		VB2_SET_BIT(ui->state->hidden_item_mask,
 			    ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE);
 		ui->state->selected_item = ADVANCED_OPTIONS_ITEM_DEBUG_INFO;
@@ -420,8 +419,7 @@ static const struct vb2_screen_info firmware_log_screen = {
 /* Set VB2_NV_DIAG_REQUEST and reboot. */
 static vb2_error_t launch_diagnostics_action(struct vb2_ui_context *ui)
 {
-	vb2_nv_set(ui->ctx, VB2_NV_DIAG_REQUEST, 1);
-	VB2_DEBUG("Diagnostics requested, rebooting\n");
+	vb2api_request_diagnostics(ui->ctx);
 	return VB2_REQUEST_REBOOT;
 }
 
@@ -520,13 +518,13 @@ static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 	/* Validity check, should never happen. */
 	if (ui->state->screen->id != VB2_SCREEN_RECOVERY_TO_DEV ||
 	    (vb2_get_sd(ui->ctx)->flags & VB2_SD_FLAG_DEV_MODE_ENABLED) ||
-	    !vb2_allow_recovery(ui->ctx)) {
+	    !vb2api_allow_recovery(ui->ctx)) {
 		VB2_DEBUG("ERROR: Dev transition validity check failed\n");
 		return VB2_SUCCESS;
 	}
 
 	VB2_DEBUG("Enabling dev mode and rebooting...\n");
-	vb2_enable_developer_mode(ui->ctx);
+	vb2api_enable_developer_mode(ui->ctx);
 	return VB2_REQUEST_REBOOT_EC_TO_RO;
 }
 
@@ -861,14 +859,10 @@ static vb2_error_t developer_to_norm_init(struct vb2_ui_context *ui)
 
 vb2_error_t developer_to_norm_action(struct vb2_ui_context *ui)
 {
-	if (vb2api_gbb_get_flags(ui->ctx) & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) {
-		VB2_DEBUG("ERROR: dev mode forced by GBB flag\n");
+	if (vb2api_disable_developer_mode(ui->ctx) == VB2_SUCCESS)
+		return VB2_REQUEST_REBOOT;
+	else
 		return VB2_SUCCESS;
-	}
-
-	VB2_DEBUG("Leaving dev mode\n");
-	vb2_nv_set(ui->ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
-	return VB2_REQUEST_REBOOT;
 }
 
 static const struct vb2_menu_item developer_to_norm_items[] = {

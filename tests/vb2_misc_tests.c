@@ -58,7 +58,7 @@ static void reset_common_data(void)
 
 /* Mocked functions */
 
-int vb2_allow_recovery(struct vb2_context *c)
+int vb2api_allow_recovery(struct vb2_context *c)
 {
 	return allow_recovery_retval;
 }
@@ -640,7 +640,7 @@ static void dev_switch_tests(void)
 static void enable_dev_tests(void)
 {
 	reset_common_data();
-	vb2_enable_developer_mode(ctx);
+	vb2api_enable_developer_mode(ctx);
 	TEST_NEQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
 	         VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE, 0,
 		 "dev mode flag set");
@@ -650,7 +650,7 @@ static void enable_dev_tests(void)
 	/* secdata_firmware not initialized, aborts */
 	reset_common_data();
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
-	TEST_ABORT(vb2_enable_developer_mode(ctx),
+	TEST_ABORT(vb2api_enable_developer_mode(ctx),
 		   "secdata_firmware no init, enable dev mode aborted");
 	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
 	TEST_EQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &

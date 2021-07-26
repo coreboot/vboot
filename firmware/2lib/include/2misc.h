@@ -162,32 +162,6 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx);
 vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
 
 /**
- * Utility function to enable developer mode.
- *
- * Enables the developer flag in vb2_context firmware secdata.  Note that
- * modified secdata must be saved for change to apply on reboot.
- *
- * NOTE: Doesn't update the LAST_BOOT_DEVELOPER secdata flag.  That should be
- * done on the next boot.
- *
- * @param ctx		Vboot context
- */
-void vb2_enable_developer_mode(struct vb2_context *ctx);
-
-/**
- * Check whether recovery is allowed or not.
- *
- * The only way to pass this check and proceed to the recovery process is to
- * physically request a recovery (a.k.a. manual recovery).  All other recovery
- * requests including manual recovery requested by a (compromised) host will
- * end up with 'broken' screen.
- *
- * @param ctx		Vboot context
- * @return 1 if recovery is allowed; 0 if no or uncertain.
- */
-int vb2_allow_recovery(struct vb2_context *ctx);
-
-/**
  * Clear recovery request appropriately.
  *
  * To avoid the recovery request "sticking" and the user being in a permanent

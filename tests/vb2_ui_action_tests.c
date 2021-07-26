@@ -12,7 +12,7 @@
 #include "2ui.h"
 #include "2ui_private.h"
 #include "test_common.h"
-#include "vboot_kernel.h"
+#include "vboot_api.h"
 
 /* Fixed value for ignoring some checks. */
 #define MOCK_IGNORE 0xffffu

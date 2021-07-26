@@ -16,7 +16,6 @@
 #include "2ui.h"
 #include "load_kernel_fw.h"
 #include "vboot_api.h"
-#include "vboot_kernel.h"
 #include "vboot_struct.h"
 #include "vboot_test.h"
 
@@ -195,7 +194,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			VB2_DEBUG("NO_BOOT in RECOVERY mode\n");
 
 		/* Recovery boot.  This has UI. */
-		if (vb2_allow_recovery(ctx))
+		if (vb2api_allow_recovery(ctx))
 			VB2_TRY(vb2_manual_recovery_menu(ctx));
 		else
 			VB2_TRY(vb2_broken_recovery_menu(ctx));

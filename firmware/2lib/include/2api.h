@@ -949,6 +949,48 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
  */
 int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx);
 
+/**
+ * Check whether recovery is allowed or not.
+ *
+ * The only way to pass this check and proceed to the recovery process is to
+ * physically request a recovery (a.k.a. manual recovery).  All other recovery
+ * requests including manual recovery requested by a (compromised) host will
+ * end up with 'broken' screen.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if recovery is allowed; 0 if no or uncertain.
+ */
+int vb2api_allow_recovery(struct vb2_context *ctx);
+
+/**
+ * Request to enable developer mode.
+ *
+ * Enables the developer flag in vb2_context firmware secdata.  Note that
+ * modified secdata must be saved for change to apply on reboot.
+ *
+ * NOTE: Doesn't update the LAST_BOOT_DEVELOPER secdata flag.  That should be
+ * done on the next boot.
+ *
+ * @param ctx		Vboot context
+ */
+void vb2api_enable_developer_mode(struct vb2_context *ctx);
+
+/**
+ * Request to disable developer mode by setting VB2_NV_DIAG_REQUEST.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS if success; other errors if the check of
+ * VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON failed.
+ */
+vb2_error_t vb2api_disable_developer_mode(struct vb2_context *ctx);
+
+/**
+ * Request diagnostics by setting VB2_NV_DIAG_REQUEST.
+ *
+ * @param ctx		Vboot context
+ */
+void vb2api_request_diagnostics(struct vb2_context *ctx);
+
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 
