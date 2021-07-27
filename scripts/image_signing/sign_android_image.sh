@@ -54,8 +54,10 @@ sign_framework_apks() {
 
   info "Start signing framework apks"
 
-  image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                "Prepare apks signing"
+  if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                     "Prepare apks signing"; then
+    return 1
+  fi
 
   # Counters for validity check.
   local counter_platform=0
@@ -120,8 +122,10 @@ build flavor '${flavor_prop}'."
         --in "${temp_apk}" --out "${signed_apk}" \
         ${extra_flags}
     fi
-    image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                  "sign apk ${signed_apk}"
+    if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                       "sign apk ${signed_apk}"; then
+      return 1
+    fi
 
     # Copy the content instead of mv to avoid owner/mode changes.
     sudo cp "${signed_apk}" "${apk}" && rm -f "${signed_apk}"
@@ -133,8 +137,10 @@ build flavor '${flavor_prop}'."
 
     : $(( counter_${keyname} += 1 ))
     : $(( counter_total += 1 ))
-    image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                  "update re-signed apk ${apk}"
+    if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                       "update re-signed apk ${apk}"; then
+      return 1
+    fi
   done < <(find "${system_mnt}/system" -type f -name '*.apk' -print0)
 
   info "Found ${counter_platform} platform APKs."
@@ -149,6 +155,8 @@ build flavor '${flavor_prop}'."
         ${counter_total} -lt 25 ]]; then
     die "Number of re-signed package seems to be wrong"
   fi
+
+  return 0
 }
 
 # Extracts certificate from the provided public key.
@@ -250,11 +258,14 @@ image_content_integrity_check() {
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.new"
   local d
   if ! d=$(diff "${working_dir}"/properties.{orig,new}); then
-    die "Unexpected change of file property, diff due to ${reason}\n${d}"
+    error "Unexpected change of file property, diff due to ${reason}\n${d}"
+    return 1
   fi
+
+  return 0
 }
 
-main() {
+sign_android_internal() {
   local root_fs_dir=$1
   local key_dir=$2
 
@@ -323,17 +334,26 @@ main() {
 
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.orig"
 
-  sign_framework_apks "${system_mnt}" "${key_dir}" "${working_dir}"
-  image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                "sign_framework_apks"
+  if ! sign_framework_apks "${system_mnt}" "${key_dir}" "${working_dir}"; then
+    return 1
+  fi
+
+  if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                     "sign_framework_apks"; then
+    return 1
+  fi
 
   update_sepolicy "${system_mnt}" "${key_dir}"
-  image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                "update_sepolicy"
+  if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                      "update_sepolicy"; then
+    return 1
+  fi
 
   replace_ota_cert "${system_mnt}" "${key_dir}/releasekey.x509.pem"
-  image_content_integrity_check "${system_mnt}" "${working_dir}" \
-                                "replace_ota_cert"
+  if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
+                                     "replace_ota_cert"; then
+    return 1
+  fi
 
   # Packages cache needs to be regenerated when the key and timestamp are
   # changed for apks.
@@ -386,6 +406,24 @@ main() {
     -no-progress
   local new_size=$(stat -c '%s' "${system_img}")
   info "Android system image size change: ${old_size} -> ${new_size}"
+  return 0
+}
+
+main() {
+  # TODO(b/175081695): Remove retries once root problem is fixed.
+  local attempts
+  for (( attempts = 1; attempts <= 3; ++attempts )); do
+    if sign_android_internal "$@"; then
+      exit 0
+    fi
+    warn "Could not sign android image due to recoverable error, will retry," \
+         "attempt # ${attempts}."
+    warn "@@@ALERT@@@"
+    lsof -n
+    dmesg
+    mount
+  done
+  die "Unable to sign Android image; giving up."
 }
 
 main "$@"
