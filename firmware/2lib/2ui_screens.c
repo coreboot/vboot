@@ -524,7 +524,12 @@ static vb2_error_t recovery_to_dev_finalize(struct vb2_ui_context *ui)
 	}
 
 	VB2_DEBUG("Enabling dev mode and rebooting...\n");
-	vb2api_enable_developer_mode(ui->ctx);
+
+	if (vb2api_enable_developer_mode(ui->ctx) != VB2_SUCCESS) {
+		VB2_DEBUG("Enable developer mode failed\n");
+		return VB2_SUCCESS;
+	}
+
 	return VB2_REQUEST_REBOOT_EC_TO_RO;
 }
 

@@ -375,8 +375,14 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-void vb2api_enable_developer_mode(struct vb2_context *ctx)
+vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx)
 {
+	if (!vb2api_allow_recovery(ctx)) {
+		VB2_DEBUG("ERROR: Can only enable developer mode from manual "
+			  "recovery mode\n");
+		return VB2_ERROR_API_ENABLE_DEV_NOT_ALLOWED;
+	}
+
 	uint32_t flags;
 
 	VB2_DEBUG("Enabling developer mode...\n");
@@ -389,6 +395,8 @@ void vb2api_enable_developer_mode(struct vb2_context *ctx)
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 
 	VB2_DEBUG("Mode change will take effect on next reboot\n");
+
+	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2api_disable_developer_mode(struct vb2_context *ctx)

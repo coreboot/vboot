@@ -527,9 +527,10 @@ int vb2ex_physical_presence_pressed(void)
 	return mock_pp_pressed[mock_iters];
 }
 
-void vb2api_enable_developer_mode(struct vb2_context *c)
+vb2_error_t vb2api_enable_developer_mode(struct vb2_context *c)
 {
 	mock_enable_dev_mode = 1;
+	return VB2_SUCCESS;
 }
 
 const char *vb2ex_get_debug_info(struct vb2_context *c)

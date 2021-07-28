@@ -972,8 +972,10 @@ int vb2api_allow_recovery(struct vb2_context *ctx);
  * done on the next boot.
  *
  * @param ctx		Vboot context
+ * @return VB2_SUCCESS if success; error if enabling developer mode is not
+ * allowed.
  */
-void vb2api_enable_developer_mode(struct vb2_context *ctx);
+vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx);
 
 /**
  * Request to disable developer mode by setting VB2_NV_DIAG_REQUEST.
