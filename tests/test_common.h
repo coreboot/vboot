@@ -120,6 +120,17 @@ int test_succ(int result,
 		  #result " == 0", \
 		  comment)
 
+/* Return 1 if result is not 0 (VB2_SUCCESS or other), else return 1.
+ * Also update the global gTestSuccess flag if test fails. */
+int test_fail(int result,
+	      const char *preamble, const char *desc, const char *comment);
+
+#define TEST_FAIL(result, comment) \
+	test_fail(result, \
+		  __FILE__ ":" TOSTRING(__LINE__), \
+		  #result " != 0", \
+		  comment)
+
 /* Return 1 if vb2ex_abort() was called, else return 0.
  * Also update the global gTestSuccess flag if test fails. */
 int test_abort(int aborted,

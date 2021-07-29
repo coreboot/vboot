@@ -147,6 +147,20 @@ int test_succ(int result,
 	return !result;
 }
 
+int test_fail(int result,
+	      const char *preamble, const char *desc, const char *comment)
+{
+	if (result != 0) {
+		print_passed(preamble, desc, comment);
+	} else {
+		print_failed(preamble, desc, comment);
+		fprintf(stderr,
+			"	Didn't expect SUCCESS (0), but got it\n");
+		gTestSuccess = 0;
+	}
+	return result;
+}
+
 int test_true(int result,
 	      const char *preamble, const char *desc, const char *comment)
 {
