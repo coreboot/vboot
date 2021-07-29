@@ -594,7 +594,7 @@ static void developer_tests(void)
 	/* Don't proceed to internal disk after timeout (dev mode disallowed) */
 	reset_common_data(FOR_DEVELOPER);
 	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
-	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
 		VB2_REQUEST_SHUTDOWN,
 		"do not proceed to internal disk after timeout "
 		"(dev mode disallowed)");
@@ -693,7 +693,7 @@ static void developer_tests(void)
 	reset_common_data(FOR_DEVELOPER);
 	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
 	mock_default_boot = VB2_DEV_DEFAULT_BOOT_TARGET_EXTERNAL;
-	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
 		VB2_REQUEST_SHUTDOWN,
 		"do not proceed to external disk after timeout "
 		"(dev mode disallowed)");
@@ -754,7 +754,7 @@ static void developer_tests(void)
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
 	add_mock_keypress(VB_KEY_ENTER);
-	TEST_EQ(ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, VB2_SCREEN_DEVELOPER_MODE, NULL),
 		VB2_REQUEST_REBOOT,
 		"select to_norm in dev menu and confirm (dev mode disallowed)");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISABLE_DEV_REQUEST), 1,

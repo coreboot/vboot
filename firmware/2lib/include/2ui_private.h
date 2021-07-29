@@ -19,19 +19,20 @@
 #define DEV_DELAY_BEEP2_MS (20 * VB2_MSEC_PER_SEC + 500)  /* 20.5 seconds */
 
 /* From 2ui.c */
-vb2_error_t check_shutdown_request(struct vb2_ui_context *ui);
-const struct vb2_menu *get_menu(struct vb2_ui_context *ui);
-vb2_error_t error_exit_action(struct vb2_ui_context *ui);
-vb2_error_t menu_navigation_action(struct vb2_ui_context *ui);
-vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
-		    vb2_error_t (*global_action)(struct vb2_ui_context *ui));
+vb2_error_t vb2_check_shutdown_request(struct vb2_ui_context *ui);
+const struct vb2_menu *vb2_get_menu(struct vb2_ui_context *ui);
+vb2_error_t vb2_error_exit_action(struct vb2_ui_context *ui);
+vb2_error_t vb2_menu_navigation_action(struct vb2_ui_context *ui);
+vb2_error_t
+vb2_ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
+	    vb2_error_t (*global_action)(struct vb2_ui_context *ui));
 vb2_error_t developer_action(struct vb2_ui_context *ui);
 vb2_error_t broken_recovery_action(struct vb2_ui_context *ui);
 vb2_error_t manual_recovery_action(struct vb2_ui_context *ui);
 
 /* From 2ui_screens.c */
-const struct vb2_menu *get_language_menu(struct vb2_ui_context *ui);
-vb2_error_t advanced_options_init(struct vb2_ui_context *ui);
+const struct vb2_menu *vb2_get_language_menu(struct vb2_ui_context *ui);
+vb2_error_t vb2_advanced_options_init(struct vb2_ui_context *ui);
 vb2_error_t recovery_select_init(struct vb2_ui_context *ui);
 vb2_error_t recovery_to_dev_init(struct vb2_ui_context *ui);
 vb2_error_t recovery_to_dev_confirm_action(struct vb2_ui_context *ui);

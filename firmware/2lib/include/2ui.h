@@ -98,7 +98,7 @@ struct vb2_ui_context {
 	uint32_t key;
 	int key_trusted;
 
-	/* For check_shutdown_request. */
+	/* For vb2_check_shutdown_request. */
 	enum vb2_power_button power_button;
 
 	/* For developer mode. */

@@ -25,7 +25,7 @@
  * @param ui		UI context pointer
  * @return VB2_REQUEST_SHUTDOWN if shutdown needed, or VB2_SUCCESS
  */
-vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
+vb2_error_t vb2_check_shutdown_request(struct vb2_ui_context *ui)
 {
 	uint32_t shutdown_request = VbExIsShutdownRequested();
 
@@ -68,7 +68,7 @@ vb2_error_t check_shutdown_request(struct vb2_ui_context *ui)
 /*****************************************************************************/
 /* Error action functions */
 
-vb2_error_t error_exit_action(struct vb2_ui_context *ui)
+vb2_error_t vb2_error_exit_action(struct vb2_ui_context *ui)
 {
 	/*
 	 * If an error message is currently shown on the screen, any
@@ -85,7 +85,7 @@ vb2_error_t error_exit_action(struct vb2_ui_context *ui)
 /*****************************************************************************/
 /* Menu navigation functions */
 
-const struct vb2_menu *get_menu(struct vb2_ui_context *ui)
+const struct vb2_menu *vb2_get_menu(struct vb2_ui_context *ui)
 {
 	const struct vb2_menu *menu;
 	static const struct vb2_menu empty_menu = {
@@ -100,7 +100,7 @@ const struct vb2_menu *get_menu(struct vb2_ui_context *ui)
 	}
 }
 
-vb2_error_t menu_navigation_action(struct vb2_ui_context *ui)
+vb2_error_t vb2_menu_navigation_action(struct vb2_ui_context *ui)
 {
 	uint32_t key = ui->key;
 
@@ -157,7 +157,7 @@ vb2_error_t vb2_ui_menu_next(struct vb2_ui_context *ui)
 	if (!DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_SHORT_PRESS)
 		return VB2_SUCCESS;
 
-	menu = get_menu(ui);
+	menu = vb2_get_menu(ui);
 	item = ui->state->selected_item + 1;
 	while (item < menu->num_items &&
 	       VB2_GET_BIT(ui->state->hidden_item_mask, item))
@@ -177,7 +177,7 @@ vb2_error_t vb2_ui_menu_select(struct vb2_ui_context *ui)
 	if (!DETACHABLE && ui->key == VB_BUTTON_POWER_SHORT_PRESS)
 		return VB2_SUCCESS;
 
-	menu = get_menu(ui);
+	menu = vb2_get_menu(ui);
 	if (menu->num_items == 0)
 		return VB2_SUCCESS;
 
@@ -227,7 +227,7 @@ vb2_error_t vb2_ui_screen_back(struct vb2_ui_context *ui)
 
 static vb2_error_t default_screen_init(struct vb2_ui_context *ui)
 {
-	const struct vb2_menu *menu = get_menu(ui);
+	const struct vb2_menu *menu = vb2_get_menu(ui);
 	ui->state->selected_item = 0;
 	if (menu->num_items > 1 && menu->items[0].is_language_select)
 		ui->state->selected_item = 1;
@@ -331,7 +331,7 @@ static vb2_error_t ui_loop_impl(
 		    /* Redraw on a screen request to refresh. */
 		    ui.force_display) {
 
-			menu = get_menu(&ui);
+			menu = vb2_get_menu(&ui);
 			VB2_DEBUG("<%s> menu item <%s>\n",
 				  ui.state->screen->name,
 				  menu->num_items ?
@@ -365,14 +365,14 @@ static vb2_error_t ui_loop_impl(
 		ui.key_trusted = !!(key_flags & VB_KEY_FLAG_TRUSTED_KEYBOARD);
 
 		/* Check for shutdown request. */
-		rv = check_shutdown_request(&ui);
+		rv = vb2_check_shutdown_request(&ui);
 		if (rv && rv != VB2_REQUEST_UI_CONTINUE) {
 			VB2_DEBUG("Shutdown requested!\n");
 			return rv;
 		}
 
 		/* Check if we need to exit an error box. */
-		rv = error_exit_action(&ui);
+		rv = vb2_error_exit_action(&ui);
 		if (rv && rv != VB2_REQUEST_UI_CONTINUE)
 			return rv;
 
@@ -384,7 +384,7 @@ static vb2_error_t ui_loop_impl(
 		}
 
 		/* Run menu navigation action. */
-		rv = menu_navigation_action(&ui);
+		rv = vb2_menu_navigation_action(&ui);
 		if (rv && rv != VB2_REQUEST_UI_CONTINUE)
 			return rv;
 
@@ -404,8 +404,8 @@ static vb2_error_t ui_loop_impl(
 	return VB2_SUCCESS;
 }
 
-vb2_error_t ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
-		    vb2_error_t (*global_action)(struct vb2_ui_context *ui))
+vb2_error_t vb2_ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
+			vb2_error_t (*global_action)(struct vb2_ui_context *ui))
 {
 	vb2_error_t rv = ui_loop_impl(ctx, root_screen_id, global_action);
 	if (rv == VB2_REQUEST_UI_EXIT)
@@ -423,7 +423,7 @@ vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
 		VB2_DEBUG("WARNING: Dev boot not allowed; forcing to-norm\n");
 		root_screen_id = VB2_SCREEN_DEVELOPER_TO_NORM;
 	}
-	return ui_loop(ctx, root_screen_id, developer_action);
+	return vb2_ui_loop(ctx, root_screen_id, developer_action);
 }
 
 vb2_error_t developer_action(struct vb2_ui_context *ui)
@@ -455,7 +455,8 @@ vb2_error_t developer_action(struct vb2_ui_context *ui)
 
 vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx)
 {
-	return ui_loop(ctx, VB2_SCREEN_RECOVERY_BROKEN, broken_recovery_action);
+	return vb2_ui_loop(ctx, VB2_SCREEN_RECOVERY_BROKEN,
+			   broken_recovery_action);
 }
 
 vb2_error_t broken_recovery_action(struct vb2_ui_context *ui)
@@ -472,7 +473,8 @@ vb2_error_t broken_recovery_action(struct vb2_ui_context *ui)
 
 vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)
 {
-	return ui_loop(ctx, VB2_SCREEN_RECOVERY_SELECT, manual_recovery_action);
+	return vb2_ui_loop(ctx, VB2_SCREEN_RECOVERY_SELECT,
+			   manual_recovery_action);
 }
 
 vb2_error_t manual_recovery_action(struct vb2_ui_context *ui)
@@ -509,5 +511,5 @@ vb2_error_t manual_recovery_action(struct vb2_ui_context *ui)
 
 vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx)
 {
-	return ui_loop(ctx, VB2_SCREEN_DIAGNOSTICS, NULL);
+	return vb2_ui_loop(ctx, VB2_SCREEN_DIAGNOSTICS, NULL);
 }

@@ -869,13 +869,13 @@ static void ui_loop_tests(void)
 
 	/* Die if no root screen */
 	reset_common_data();
-	TEST_ABORT(ui_loop(ctx, MOCK_NO_SCREEN, NULL),
+	TEST_ABORT(vb2_ui_loop(ctx, MOCK_NO_SCREEN, NULL),
 		   "die if no root screen");
 	DISPLAYED_NO_EXTRA();
 
 	/* Shutdown if requested */
 	reset_common_data();
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, NULL),
 		VB2_REQUEST_SHUTDOWN, "shutdown if requested");
 	TEST_EQ(mock_calls_until_shutdown, 0, "  used up shutdown request");
 	DISPLAYED_EQ("mock_screen_base", MOCK_SCREEN_BASE, MOCK_IGNORE,
@@ -886,7 +886,7 @@ static void ui_loop_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = -1;
 	mock_action_countdown_limit = 10;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_ACTION, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_ACTION, NULL),
 		VB2_SUCCESS, "screen action");
 	TEST_EQ(mock_action_called, 10, "  action called");
 
@@ -894,13 +894,13 @@ static void ui_loop_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = -1;
 	mock_action_countdown_limit = 10;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_countdown),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_countdown),
 		VB2_SUCCESS, "global action");
 	TEST_EQ(mock_action_called, 10, "  action called");
 
 	/* Global action can change screen */
 	reset_common_data();
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_screen_change),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BLANK, mock_action_screen_change),
 		VB2_REQUEST_SHUTDOWN, "global action can change screen");
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("change to mock_screen_base", MOCK_SCREEN_BASE,
@@ -918,7 +918,8 @@ static void ui_loop_tests(void)
 		add_mock_keypress(VB_KEY_ENTER);
 		mock_calls_until_shutdown = -1;
 		mock_action_flags |= (1 << i);
-		TEST_EQ(ui_loop(ctx, MOCK_SCREEN_ALL_ACTION, mock_action_flag2),
+		TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_ALL_ACTION,
+				    mock_action_flag2),
 			VB2_SUCCESS, action_interfere_test_names[i]);
 	}
 
@@ -933,7 +934,7 @@ static void ui_loop_tests(void)
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_UP);
 	add_mock_keypress(VB_KEY_ENTER);
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
 		VB2_REQUEST_SHUTDOWN, "KEY_UP, KEY_DOWN, and KEY_ENTER");
 	DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE, 0,
 		     MOCK_IGNORE);
@@ -965,7 +966,7 @@ static void ui_loop_tests(void)
 		add_mock_keypress(VB_BUTTON_VOL_UP_SHORT_PRESS);
 		add_mock_keypress(VB_BUTTON_VOL_UP_SHORT_PRESS);
 		add_mock_keypress(VB_BUTTON_POWER_SHORT_PRESS);
-		TEST_EQ(ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
+		TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_MENU, NULL),
 			VB2_REQUEST_SHUTDOWN, "DETACHABLE");
 		DISPLAYED_EQ("mock_screen_menu", MOCK_SCREEN_MENU, MOCK_IGNORE,
 			     0, MOCK_IGNORE);
@@ -996,7 +997,7 @@ static void ui_loop_delay_tests(void)
 	/* Sleep for 20 ms each iteration */
 	reset_common_data();
 	mock_calls_until_shutdown = 1;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  sleep for 20 ms in each iteration");
 	TEST_EQ(mock_time_ms - mock_time_start_ms, KEY_DELAY_MS,
 		"  delay 20 ms in total");
@@ -1005,7 +1006,7 @@ static void ui_loop_delay_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = 1;
 	mock_action_delay_ms = KEY_DELAY_MS / 2;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  complement to 20 ms");
 	TEST_EQ(mock_time_ms - mock_time_start_ms, KEY_DELAY_MS,
 		"  delay 10 ms in total");
@@ -1014,7 +1015,7 @@ static void ui_loop_delay_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = 1;
 	mock_action_delay_ms = 1234;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  no extra sleep time");
 	TEST_EQ(mock_time_ms - mock_time_start_ms, mock_action_delay_ms,
 		"  no extra delay");
@@ -1023,7 +1024,7 @@ static void ui_loop_delay_tests(void)
 	reset_common_data();
 	mock_calls_until_shutdown = 1;
 	mock_time_ms = UINT32_MAX;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  integer overflow #1");
 	TEST_EQ(mock_time_ms - UINT32_MAX, KEY_DELAY_MS,
 		"  delay 20 ms in total");
@@ -1032,7 +1033,7 @@ static void ui_loop_delay_tests(void)
 	mock_calls_until_shutdown = 1;
 	mock_time_ms = UINT32_MAX;
 	mock_action_delay_ms = KEY_DELAY_MS / 2;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  integer overflow #2");
 	TEST_EQ(mock_time_ms - UINT32_MAX, KEY_DELAY_MS,
 		"  delay 10 ms in total");
@@ -1041,7 +1042,7 @@ static void ui_loop_delay_tests(void)
 	mock_calls_until_shutdown = 1;
 	mock_time_ms = UINT32_MAX;
 	mock_action_delay_ms = 1234;
-	TEST_EQ(ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
+	TEST_EQ(vb2_ui_loop(ctx, MOCK_SCREEN_BASE, mock_action_msleep),
 		VB2_REQUEST_SHUTDOWN, "  integer overflow #3");
 	TEST_EQ(mock_time_ms - UINT32_MAX, mock_action_delay_ms,
 		"  no extra delay");
