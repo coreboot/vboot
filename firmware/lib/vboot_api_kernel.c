@@ -197,7 +197,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		if (vb2api_allow_recovery(ctx))
 			VB2_TRY(vb2_manual_recovery_menu(ctx));
 		else
-			VB2_TRY(vb2_broken_recovery_menu(ctx));
+			VB2_TRY(vb2ex_broken_screen_ui(ctx));
 	} else if (vb2api_diagnostic_ui_enabled(ctx) &&
 		   vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		/*

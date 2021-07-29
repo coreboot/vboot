@@ -804,36 +804,6 @@ static void developer_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void broken_recovery_tests(void)
-{
-	VB2_DEBUG("Testing broken recovery mode...\n");
-
-	/* Power button short pressed = shutdown request */
-	if (!DETACHABLE) {
-		reset_common_data(FOR_BROKEN_RECOVERY);
-		add_mock_keypress(VB_BUTTON_POWER_SHORT_PRESS);
-		mock_calls_until_shutdown = -1;
-		TEST_EQ(vb2_broken_recovery_menu(ctx),
-			VB2_REQUEST_SHUTDOWN,
-			"power button short pressed = shutdown");
-	}
-
-	/* Shortcuts that are always ignored in BROKEN */
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	add_mock_key(VB_KEY_CTRL('D'), 1);
-	add_mock_key(VB_KEY_CTRL('U'), 1);
-	add_mock_key(VB_KEY_CTRL('L'), 1);
-	add_mock_key(VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS, 1);
-	add_mock_key(VB_BUTTON_VOL_UP_LONG_PRESS, 1);
-	add_mock_key(VB_BUTTON_VOL_DOWN_LONG_PRESS, 1);
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"Shortcuts ignored in BROKEN");
-	TEST_EQ(mock_calls_until_shutdown, 0, "  loop forever");
-	TEST_EQ(mock_displayed_count, 1, "  root screen only");
-
-	VB2_DEBUG("...done.\n");
-}
-
 static void manual_recovery_tests(void)
 {
 	VB2_DEBUG("Testing manual recovery mode...\n");
@@ -1115,15 +1085,6 @@ static void debug_info_tests(void)
 	add_mock_keypress('\t');
 	TEST_EQ(vb2_developer_menu(ctx), VB2_REQUEST_SHUTDOWN,
 		"tab = debug info in dev mode");
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("debug info", VB2_SCREEN_DEBUG_INFO, MOCK_IGNORE,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_NO_EXTRA();
-
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	add_mock_keypress('\t');
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"tab = debug info in broken recovery mode");
 	DISPLAYED_PASS();
 	DISPLAYED_EQ("debug info", VB2_SCREEN_DEBUG_INFO, MOCK_IGNORE,
 		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
@@ -1484,119 +1445,6 @@ static void developer_screen_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void broken_recovery_screen_tests(void)
-{
-	/* Broken screen: disabled and hidden item mask */
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"broken screen: no disabled and hidden item mask");
-	DISPLAYED_EQ("broken screen", VB2_SCREEN_RECOVERY_BROKEN,
-		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x0, MOCK_IGNORE);
-
-	/* Broken screen */
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	/* #0: Language menu */
-	add_mock_keypress(VB_KEY_UP);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* #1: Advanced options */
-	add_mock_keypress(VB_KEY_ESC);
-	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* End of menu */
-	add_mock_keypress(VB_KEY_ESC);
-	extend_calls_until_shutdown();
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"broken screen");
-	/* #0: Language menu */
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("broken screen", VB2_SCREEN_RECOVERY_BROKEN,
-		     MOCK_IGNORE, 0, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#0: language menu", VB2_SCREEN_LANGUAGE_SELECT,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* #1: Advanced options */
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("broken screen", VB2_SCREEN_RECOVERY_BROKEN,
-		     MOCK_IGNORE, 1, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#1: advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* End of menu */
-	DISPLAYED_EQ("end of menu", VB2_SCREEN_RECOVERY_BROKEN,
-		     MOCK_IGNORE, 1, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_NO_EXTRA();
-
-	/* Advanced options screen: disabled and hidden item mask */
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	add_mock_keypress(VB_KEY_ENTER);
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"advanced options screen: hide to_dev item");
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, MOCK_IGNORE, 0x0, 0x2, MOCK_IGNORE);
-
-	/* Advanced options screen */
-	reset_common_data(FOR_BROKEN_RECOVERY);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* #0: Language menu */
-	add_mock_keypress(VB_KEY_UP);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* #1: (Hidden) */
-	/* #2: Debug info */
-	add_mock_keypress(VB_KEY_ESC);
-	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* #3: Firmware log */
-	add_mock_keypress(VB_KEY_ESC);
-	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* #4: Back */
-	add_mock_keypress(VB_KEY_ESC);
-	add_mock_keypress(VB_KEY_DOWN);
-	add_mock_keypress(VB_KEY_ENTER);
-	/* End of menu */
-	add_mock_keypress(VB_KEY_ENTER);
-	extend_calls_until_shutdown();
-	TEST_EQ(vb2_broken_recovery_menu(ctx), VB2_REQUEST_SHUTDOWN,
-		"advanced options screen");
-	DISPLAYED_PASS();
-	DISPLAYED_PASS();
-	/* #0: Language menu */
-	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, 0, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#0: language menu", VB2_SCREEN_LANGUAGE_SELECT,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* #1: (Hidden) */
-	/* #2: Debug info */
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, 2, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#2: debug info", VB2_SCREEN_DEBUG_INFO,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* #3: Firmware log */
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, 3, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#3: firmware log", VB2_SCREEN_FIRMWARE_LOG,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* #4: Back */
-	DISPLAYED_PASS();
-	DISPLAYED_EQ("advanced options", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, 4, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_EQ("#4: back", VB2_SCREEN_RECOVERY_BROKEN,
-		     MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE,
-		     MOCK_IGNORE);
-	/* End of menu */
-	DISPLAYED_EQ("end of menu", VB2_SCREEN_ADVANCED_OPTIONS,
-		     MOCK_IGNORE, 2, MOCK_IGNORE, MOCK_IGNORE, MOCK_IGNORE);
-	DISPLAYED_NO_EXTRA();
-
-	VB2_DEBUG("...done.\n");
-}
-
 static void manual_recovery_screen_tests(void)
 {
 	/* Recovery select screen: disabled and hidden item mask */
@@ -1876,7 +1724,6 @@ static void diagnostics_screen_tests(void)
 int main(void)
 {
 	developer_tests();
-	broken_recovery_tests();
 	manual_recovery_tests();
 	language_selection_tests();
 	debug_info_tests();
@@ -1884,7 +1731,6 @@ int main(void)
 
 	/* Screen displayed */
 	developer_screen_tests();
-	broken_recovery_screen_tests();
 	manual_recovery_screen_tests();
 	diagnostics_screen_tests();
 

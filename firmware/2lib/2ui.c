@@ -451,24 +451,6 @@ vb2_error_t developer_action(struct vb2_ui_context *ui)
 }
 
 /*****************************************************************************/
-/* Broken recovery */
-
-vb2_error_t vb2_broken_recovery_menu(struct vb2_context *ctx)
-{
-	return vb2_ui_loop(ctx, VB2_SCREEN_RECOVERY_BROKEN,
-			   broken_recovery_action);
-}
-
-vb2_error_t broken_recovery_action(struct vb2_ui_context *ui)
-{
-	/* Broken recovery keyboard shortcuts */
-	if (ui->key == '\t')
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEBUG_INFO);
-
-	return VB2_SUCCESS;
-}
-
-/*****************************************************************************/
 /* Manual recovery */
 
 vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)

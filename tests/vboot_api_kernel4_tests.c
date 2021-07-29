@@ -157,7 +157,7 @@ vb2_error_t vb2_manual_recovery_menu(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-vb2_error_t vb2_broken_recovery_menu(struct vb2_context *c)
+vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *c)
 {
 	rec_check(c);
 	if (vbboot_retval == -4)

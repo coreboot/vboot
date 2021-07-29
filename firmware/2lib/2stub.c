@@ -256,3 +256,9 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
 	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	return VB2_SUCCESS;
 }
+
+__attribute__((weak))
+vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx)
+{
+	return VB2_SUCCESS;
+}

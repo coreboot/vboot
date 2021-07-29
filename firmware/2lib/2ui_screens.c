@@ -252,21 +252,6 @@ static const struct vb2_screen_info language_select_screen = {
 };
 
 /******************************************************************************/
-/* VB2_SCREEN_RECOVERY_BROKEN */
-
-static const struct vb2_menu_item recovery_broken_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	ADVANCED_OPTIONS_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_broken_screen = {
-	.id = VB2_SCREEN_RECOVERY_BROKEN,
-	.name = "Recover broken device",
-	.menu = MENU_ITEMS(recovery_broken_items),
-};
-
-/******************************************************************************/
 /* VB2_SCREEN_ADVANCED_OPTIONS */
 
 #define ADVANCED_OPTIONS_ITEM_DEVELOPER_MODE 1
@@ -1377,7 +1362,6 @@ static const struct vb2_screen_info diagnostics_memory_full_screen = {
  */
 static const struct vb2_screen_info *screens[] = {
 	&language_select_screen,
-	&recovery_broken_screen,
 	&advanced_options_screen,
 	&debug_info_screen,
 	&firmware_log_screen,
