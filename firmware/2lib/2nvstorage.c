@@ -80,6 +80,11 @@ void vb2_nv_init(struct vb2_context *ctx)
 		sd->status |= VB2_SD_STATUS_NV_REINIT;
 
 		/* TODO: unit test for status flag being set */
+	} else {
+#ifndef CHROMEOS_ENVIRONMENT
+		/* Always clear this on first reboot that didn't need reinit. */
+		vb2_nv_set(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET, 0);
+#endif
 	}
 
 	sd->status |= VB2_SD_STATUS_NV_INIT;
