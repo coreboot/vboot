@@ -314,6 +314,8 @@ sign_android_internal() {
     compression_flags="-comp gzip"
   elif [[ "${compression}" == "Compression lz4" ]]; then
     compression_flags="-comp lz4 -Xhc -b 256K"
+  elif [[ "${compression}" == "Compression zstd" ]]; then
+    compression_flags="-comp zstd"
   else
     die "Unexpected compression type: ${compression}"
   fi
