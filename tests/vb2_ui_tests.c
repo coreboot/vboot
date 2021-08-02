@@ -279,7 +279,6 @@ static void reset_common_data(enum reset_type t)
 	}
 
 	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
-	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 	ctx->flags |= VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED;
 
 	/* Mock ui_context based on real screens */

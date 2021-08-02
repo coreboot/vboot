@@ -242,19 +242,19 @@ enum vb2_context_flags {
 	VB2_CONTEXT_EC_TRUSTED = (1 << 24),
 
 	/*
-	 * Boot into developer mode is allowed by FWMP and GBB flags.
+	 * Boot into developer mode is allowed by FWMP or GBB flags.
 	 */
 	VB2_CONTEXT_DEV_BOOT_ALLOWED = (1 << 25),
 
 	/*
 	 * Boot into developer mode from external disk is allowed by nvdata,
-	 * FWMP and GBB flags.
+	 * FWMP or GBB flags.
 	 */
 	VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED = (1 << 26),
 
 	/*
 	 * Boot into developer mode from alternate bootloader is allowed by
-	 * nvdata, FWMP and GBB flags.
+	 * nvdata, FWMP or GBB flags.
 	 */
 	VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED = (1 << 27),
 };

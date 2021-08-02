@@ -315,7 +315,6 @@ static void reset_common_data(void)
 	sd = vb2_get_sd(ctx);
 
 	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
-	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
 
 	/* For check_shutdown_request */
 	mock_calls_until_shutdown = 10;
