@@ -268,11 +268,11 @@ vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id)
 	} else {
 		/* Allocate the requested screen on top of the stack. */
 		cur_state = malloc(sizeof(*ui->state));
-		memset(cur_state, 0, sizeof(*ui->state));
 		if (cur_state == NULL) {
 			VB2_DEBUG("WARNING: malloc failed; ignoring\n");
 			return VB2_REQUEST_UI_CONTINUE;
 		}
+		memset(cur_state, 0, sizeof(*ui->state));
 		cur_state->prev = ui->state;
 		cur_state->screen = new_screen_info;
 		ui->state = cur_state;
