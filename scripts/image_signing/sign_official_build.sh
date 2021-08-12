@@ -9,7 +9,7 @@
 # Prerequisite tools needed in the system path:
 #
 #  futility (from src/platform/vboot_reference)
-#  verity (from src/platform/verity)
+#  verity (from src/platform2/verity)
 #  load_kernel_test (from src/platform/vboot_reference)
 #  dumpe2fs
 #  e2fsck
