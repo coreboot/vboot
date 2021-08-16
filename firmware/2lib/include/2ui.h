@@ -246,17 +246,6 @@ vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);
 vb2_error_t vb2_developer_menu(struct vb2_context *ctx);
 
 /**
- * UI for a manual recovery-mode boot.
- *
- * Enter the recovery menu, which prompts the user to insert recovery media,
- * navigate the step-by-step recovery, or enter developer mode if allowed.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx);
-
-/**
  * UI for a diagnostic tools boot.
  *
  * Enter the diagnostic tools menu, which provides debug information and

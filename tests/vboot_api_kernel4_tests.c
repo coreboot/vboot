@@ -149,7 +149,7 @@ static void rec_check(struct vb2_context *c)
 	TEST_TRUE(commit_data_called, "  commit data");
 }
 
-vb2_error_t vb2_manual_recovery_menu(struct vb2_context *c)
+vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *c)
 {
 	rec_check(c);
 	if (vbboot_retval == -3)

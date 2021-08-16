@@ -395,76 +395,6 @@ static const struct vb2_screen_info firmware_log_screen = {
 };
 
 /******************************************************************************/
-/* VB2_SCREEN_RECOVERY_SELECT */
-
-#define RECOVERY_SELECT_ITEM_PHONE 1
-#define RECOVERY_SELECT_ITEM_EXTERNAL_DISK 2
-#define RECOVERY_SELECT_ITEM_DIAGNOSTICS 3
-
-/* Set VB2_NV_DIAG_REQUEST and reboot. */
-static vb2_error_t launch_diagnostics_action(struct vb2_ui_context *ui)
-{
-	vb2api_request_diagnostics(ui->ctx);
-	return VB2_REQUEST_REBOOT;
-}
-
-vb2_error_t recovery_select_init(struct vb2_ui_context *ui)
-{
-	ui->state->selected_item = RECOVERY_SELECT_ITEM_PHONE;
-	if (!vb2api_phone_recovery_ui_enabled(ui->ctx)) {
-		VB2_DEBUG("WARNING: Phone recovery not available\n");
-		VB2_SET_BIT(ui->state->hidden_item_mask,
-			    RECOVERY_SELECT_ITEM_PHONE);
-		ui->state->selected_item = RECOVERY_SELECT_ITEM_EXTERNAL_DISK;
-	}
-
-        if (!vb2api_diagnostic_ui_enabled(ui->ctx))
-		VB2_SET_BIT(ui->state->hidden_item_mask,
-			    RECOVERY_SELECT_ITEM_DIAGNOSTICS);
-
-	return VB2_SUCCESS;
-}
-
-static const struct vb2_menu_item recovery_select_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	[RECOVERY_SELECT_ITEM_PHONE] = {
-		.text = "Recovery using phone",
-		.target = VB2_SCREEN_RECOVERY_PHONE_STEP1,
-	},
-	[RECOVERY_SELECT_ITEM_EXTERNAL_DISK] = {
-		.text = "Recovery using external disk",
-		.target = VB2_SCREEN_RECOVERY_DISK_STEP1,
-	},
-	[RECOVERY_SELECT_ITEM_DIAGNOSTICS] = {
-		.text = "Launch diagnostics",
-		.action = launch_diagnostics_action,
-	},
-	ADVANCED_OPTIONS_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_select_screen = {
-	.id = VB2_SCREEN_RECOVERY_SELECT,
-	.name = "Recovery method selection",
-	.init = recovery_select_init,
-	.menu = MENU_ITEMS(recovery_select_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_INVALID */
-
-static const struct vb2_menu_item recovery_invalid_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_invalid_screen = {
-	.id = VB2_SCREEN_RECOVERY_INVALID,
-	.name = "Invalid recovery inserted",
-	.menu = MENU_ITEMS(recovery_invalid_items),
-};
-
-/******************************************************************************/
 /* VB2_SCREEN_RECOVERY_TO_DEV */
 
 #define RECOVERY_TO_DEV_ITEM_CONFIRM 1
@@ -582,84 +512,6 @@ static const struct vb2_screen_info recovery_to_dev_screen = {
 	.init = recovery_to_dev_init,
 	.action = recovery_to_dev_action,
 	.menu = MENU_ITEMS(recovery_to_dev_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_PHONE_STEP1 */
-
-static const struct vb2_menu_item recovery_phone_step1_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	NEXT_ITEM(VB2_SCREEN_RECOVERY_PHONE_STEP2),
-	BACK_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_phone_step1_screen = {
-	.id = VB2_SCREEN_RECOVERY_PHONE_STEP1,
-	.name = "Phone recovery step 1",
-	.menu = MENU_ITEMS(recovery_phone_step1_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_PHONE_STEP2 */
-
-static const struct vb2_menu_item recovery_phone_step2_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	BACK_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_phone_step2_screen = {
-	.id = VB2_SCREEN_RECOVERY_PHONE_STEP2,
-	.name = "Phone recovery step 2",
-	.menu = MENU_ITEMS(recovery_phone_step2_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_DISK_STEP1 */
-
-static const struct vb2_menu_item recovery_disk_step1_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	NEXT_ITEM(VB2_SCREEN_RECOVERY_DISK_STEP2),
-	BACK_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_disk_step1_screen = {
-	.id = VB2_SCREEN_RECOVERY_DISK_STEP1,
-	.name = "Disk recovery step 1",
-	.menu = MENU_ITEMS(recovery_disk_step1_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_DISK_STEP2 */
-
-static const struct vb2_menu_item recovery_disk_step2_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	NEXT_ITEM(VB2_SCREEN_RECOVERY_DISK_STEP3),
-	BACK_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_disk_step2_screen = {
-	.id = VB2_SCREEN_RECOVERY_DISK_STEP2,
-	.name = "Disk recovery step 2",
-	.menu = MENU_ITEMS(recovery_disk_step2_items),
-};
-
-/******************************************************************************/
-/* VB2_SCREEN_RECOVERY_DISK_STEP3 */
-
-static const struct vb2_menu_item recovery_disk_step3_items[] = {
-	LANGUAGE_SELECT_ITEM,
-	BACK_ITEM,
-	POWER_OFF_ITEM,
-};
-
-static const struct vb2_screen_info recovery_disk_step3_screen = {
-	.id = VB2_SCREEN_RECOVERY_DISK_STEP3,
-	.name = "Disk recovery step 3",
-	.menu = MENU_ITEMS(recovery_disk_step3_items),
 };
 
 /******************************************************************************/
@@ -1365,14 +1217,7 @@ static const struct vb2_screen_info *screens[] = {
 	&advanced_options_screen,
 	&debug_info_screen,
 	&firmware_log_screen,
-	&recovery_select_screen,
-	&recovery_invalid_screen,
 	&recovery_to_dev_screen,
-	&recovery_phone_step1_screen,
-	&recovery_phone_step2_screen,
-	&recovery_disk_step1_screen,
-	&recovery_disk_step2_screen,
-	&recovery_disk_step3_screen,
 	&developer_mode_screen,
 	&developer_to_norm_screen,
 	&developer_boot_external_screen,

@@ -1405,6 +1405,17 @@ vb2_error_t vb2ex_ec_battery_cutoff(void);
  */
 vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx);
 
+/**
+ * UI for a manual recovery-mode boot.
+ *
+ * Enter the recovery menu, which prompts the user to insert recovery media,
+ * navigate the step-by-step recovery, or enter developer mode if allowed.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *ctx);
+
 /* Helpers for bitmask operations */
 #define VB2_SET_BIT(mask, index) ((mask) |= ((uint32_t)1 << (index)))
 #define VB2_CLR_BIT(mask, index) ((mask) &= ~((uint32_t)1 << (index)))

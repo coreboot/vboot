@@ -451,44 +451,6 @@ vb2_error_t developer_action(struct vb2_ui_context *ui)
 }
 
 /*****************************************************************************/
-/* Manual recovery */
-
-vb2_error_t vb2_manual_recovery_menu(struct vb2_context *ctx)
-{
-	return vb2_ui_loop(ctx, VB2_SCREEN_RECOVERY_SELECT,
-			   manual_recovery_action);
-}
-
-vb2_error_t manual_recovery_action(struct vb2_ui_context *ui)
-{
-	/* See if we have a recovery kernel available yet. */
-	vb2_error_t rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
-	if (rv == VB2_SUCCESS)
-		return VB2_REQUEST_UI_EXIT;
-
-	/* If disk validity state changed, switch to appropriate screen. */
-	if (ui->recovery_rv != rv) {
-		VB2_DEBUG("Recovery VbTryLoadKernel %#x --> %#x\n",
-			  ui->recovery_rv, rv);
-		ui->recovery_rv = rv;
-		return vb2_ui_screen_change(ui,
-					    rv == VB2_ERROR_LK_NO_DISK_FOUND ?
-					    VB2_SCREEN_RECOVERY_SELECT :
-					    VB2_SCREEN_RECOVERY_INVALID);
-	}
-
-	/* Manual recovery keyboard shortcuts */
-	if (ui->key == VB_KEY_CTRL('D') ||
-	    (DETACHABLE && ui->key == VB_BUTTON_VOL_UP_DOWN_COMBO_PRESS))
-		return vb2_ui_screen_change(ui, VB2_SCREEN_RECOVERY_TO_DEV);
-
-	if (ui->key == '\t')
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEBUG_INFO);
-
-	return VB2_SUCCESS;
-}
-
-/*****************************************************************************/
 /* Diagnostics */
 
 vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx)

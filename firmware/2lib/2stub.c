@@ -262,3 +262,9 @@ vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
 }
+
+__attribute__((weak))
+vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *ctx)
+{
+	return VB2_SUCCESS;
+}

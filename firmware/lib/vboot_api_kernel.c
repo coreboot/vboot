@@ -195,7 +195,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 
 		/* Recovery boot.  This has UI. */
 		if (vb2api_allow_recovery(ctx))
-			VB2_TRY(vb2_manual_recovery_menu(ctx));
+			VB2_TRY(vb2ex_manual_recovery_ui(ctx));
 		else
 			VB2_TRY(vb2ex_broken_screen_ui(ctx));
 	} else if (vb2api_diagnostic_ui_enabled(ctx) &&

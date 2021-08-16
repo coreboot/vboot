@@ -231,13 +231,6 @@ static void add_mock_keypress(uint32_t press)
 	add_mock_key(press, 0);
 }
 
-
-static void set_mock_vbtlk(vb2_error_t retval, uint32_t disk_flags)
-{
-	mock_vbtlk_retval = retval;
-	mock_vbtlk_expected_flag = disk_flags;
-}
-
 static void displayed_eq(const char *text,
 			 enum vb2_screen screen,
 			 uint32_t locale_id,
@@ -795,67 +788,6 @@ static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void manual_recovery_action_tests(void)
-{
-	VB2_DEBUG("Testing manual recovery action...\n");
-
-	/* SUCCESS */
-	reset_common_data();
-	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context), VB2_REQUEST_UI_EXIT,
-		"EXIT");
-	TEST_EQ(mock_get_screen_info_called, 0, "  no change_screen");
-
-	/* NO_DISK_FOUND */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "NO_DISK_FOUND");
-	screen_state_eq(mock_ui_context.state, VB2_SCREEN_RECOVERY_SELECT,
-			MOCK_IGNORE, MOCK_IGNORE);
-
-	/* NO_DISK_FOUND -> INVALID_KERNEL -> SUCCESS */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "NO_DISK_FOUND");
-	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "INVALID_KERNEL");
-	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context), VB2_REQUEST_UI_EXIT,
-		"EXIT");
-	screen_state_eq(mock_ui_context.state, VB2_SCREEN_RECOVERY_INVALID,
-			MOCK_IGNORE, MOCK_IGNORE);
-
-	/* INVALID_KERNEL */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "INVALID_KERNEL");
-	screen_state_eq(mock_ui_context.state, VB2_SCREEN_RECOVERY_INVALID,
-			MOCK_IGNORE, MOCK_IGNORE);
-
-	/* INVALID_KERNEL -> NO_DISK_FOUND -> SUCCESS */
-	reset_common_data();
-	set_mock_vbtlk(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "INVALID_KERNEL");
-	set_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "NO_DISK_FOUND");
-	set_mock_vbtlk(VB2_SUCCESS, VB_DISK_FLAG_REMOVABLE);
-	TEST_EQ(manual_recovery_action(&mock_ui_context), VB2_REQUEST_UI_EXIT,
-		"EXIT");
-	screen_state_eq(mock_ui_context.state, VB2_SCREEN_RECOVERY_SELECT,
-			MOCK_IGNORE, MOCK_IGNORE);
-
-	VB2_DEBUG("...done.\n");
-}
-
 static void ui_loop_tests(void)
 {
 	int i;
@@ -1059,9 +991,6 @@ int main(void)
 
 	/* Screen actions */
 	vb2_ui_developer_mode_boot_altfw_action_tests();
-
-	/* Global actions */
-	manual_recovery_action_tests();
 
 	/* Core UI loop */
 	ui_loop_tests();
