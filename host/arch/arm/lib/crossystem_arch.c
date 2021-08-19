@@ -35,7 +35,9 @@
 #define PLATFORM_DEV_PATH "/sys/devices/platform/chromeos_arm"
 /* These should match the Linux GPIO name (i.e., 'gpio-line-names'). */
 #define GPIO_NAME_RECOVERY_SW_L "RECOVERY_SW_L"
+#define GPIO_NAME_RECOVERY_SW "RECOVERY_SW"
 #define GPIO_NAME_WP_L "AP_FLASH_WP_L"
+#define GPIO_NAME_WP "AP_FLASH_WP"
 /* Device for NVCTX write */
 #define NVCTX_PATH "/dev/mmcblk%d"
 /* Base name for GPIO files */
@@ -481,12 +483,18 @@ int VbGetArchPropertyInt(const char* name)
 		value = gpiod_read(GPIO_NAME_RECOVERY_SW_L, true);
 		if (value != -1)
 			return value;
+		value = gpiod_read(GPIO_NAME_RECOVERY_SW, false);
+		if (value != -1)
+			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
 		return VbGetPlatformGpioStatus("recovery");
 	} else if (!strcasecmp(name, "wpsw_cur")) {
 		int value;
 		/* Try GPIO chardev API first. */
 		value = gpiod_read(GPIO_NAME_WP_L, true);
+		if (value != -1)
+			return value;
+		value = gpiod_read(GPIO_NAME_WP, false);
 		if (value != -1)
 			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
