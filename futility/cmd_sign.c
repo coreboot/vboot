@@ -20,7 +20,6 @@
 #include "2common.h"
 #include "file_type.h"
 #include "file_type_bios.h"
-#include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"
 #include "host_common.h"
