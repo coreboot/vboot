@@ -13,6 +13,7 @@
 #include "2common.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
+#include "chromeos_config.h"
 #include "crossystem_arch.h"
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
@@ -490,7 +491,19 @@ int VbGetSystemPropertyInt(const char *name)
 const char *VbGetSystemPropertyString(const char *name, char *dest,
 				      size_t size)
 {
-	/* Check architecture-dependent properties first */
+	/* Check for HWID override via cros_config */
+	if (!strcasecmp(name, "hwid")) {
+		char *hwid_override;
+
+		if (chromeos_config_get_string("/", "hwid-override",
+					       &hwid_override) == VB2_SUCCESS) {
+			StrCopy(dest, hwid_override, size);
+			free(hwid_override);
+			return dest;
+		}
+	}
+
+	/* Check architecture-dependent properties */
 	if (VbGetArchPropertyString(name, dest, size))
 		return dest;
 
