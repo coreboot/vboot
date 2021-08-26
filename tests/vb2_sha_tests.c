@@ -172,21 +172,27 @@ static void misc_tests(void)
 static void known_value_tests(void)
 {
 	const char sentinel[] = "keepme";
-	struct {
+	union {
 		struct vb2_hash hash;
-		uint8_t overflow[8];
+		char overflow[sizeof(struct vb2_hash) + 8];
 	} test;
+
 
 #define TEST_KNOWN_VALUE(algo, str, value) \
 	TEST_EQ(vb2_digest_size(algo), sizeof(value) - 1, \
 		"Known hash size " #algo ": " #str); \
-	strcpy((char *)&test.hash.raw[sizeof(value) - 1], sentinel); \
-	TEST_SUCC(vb2_hash_calculate(str, sizeof(str) - 1, algo, &test.hash), \
-		  "Calculate known hash " #algo ": " #str); \
-	TEST_EQ(memcmp(test.hash.raw, value, sizeof(value) - 1), 0, \
-		"Known hash " #algo ": " #str); \
-	TEST_EQ(strcmp((char *)&test.hash.raw[sizeof(value) - 1], sentinel), 0,\
-		"Overflow known hash " #algo ": " #str);
+	{								\
+		char *sent_base = test.overflow + \
+			offsetof(struct vb2_hash, raw) + sizeof(value) - 1; \
+		strcpy(sent_base, sentinel);				\
+		TEST_SUCC(vb2_hash_calculate(str, sizeof(str) - 1,	\
+					     algo, &test.hash),		\
+			  "Calculate known hash " #algo ": " #str);	\
+		TEST_EQ(memcmp(test.hash.raw, value, sizeof(value) - 1), 0, \
+			"Known hash " #algo ": " #str);			\
+		TEST_EQ(strcmp(sent_base, sentinel), 0,			\
+			"Overflow known hash " #algo ": " #str);	\
+	}
 
 	TEST_KNOWN_VALUE(VB2_HASH_SHA1, "",
 		"\xda\x39\xa3\xee\x5e\x6b\x4b\x0d\x32\x55\xbf\xef\x95\x60\x18"

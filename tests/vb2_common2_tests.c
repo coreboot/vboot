@@ -41,6 +41,7 @@ static vb2_error_t hwcrypto_mock(enum hwcrypto_state *state)
 			/* shouldn't reach here but added for compiler */
 			return VB2_ERROR_MOCK;
 	}
+	return VB2_ERROR_MOCK;
 }
 
 vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
