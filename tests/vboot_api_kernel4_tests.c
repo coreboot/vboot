@@ -328,7 +328,7 @@ static void select_and_load_kernel_tests(void)
 	reset_common_data();
 	sd->recovery_reason = VB2_RECOVERY_RO_MANUAL;
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
-	sd->flags |= VB2_SD_FLAG_MANUAL_RECOVERY;
+	ctx->flags &= VB2_CONTEXT_FORCE_RECOVERY_MODE;
 	test_slk(0, 0, "Manual recovery");
 	TEST_TRUE(commit_data_called, "  commit data");
 }

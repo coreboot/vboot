@@ -164,7 +164,7 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		/* Load recovery key from GBB. */
 		rv = vb2_gbb_read_recovery_key(ctx, &packed_key, NULL, &wb);
 		if (rv) {
-			if (vb2api_allow_recovery(ctx))
+			if (ctx->boot_mode != VB2_BOOT_MODE_BROKEN_SCREEN)
 				VB2_DIE("GBB read recovery key failed.\n");
 			else
 				/*

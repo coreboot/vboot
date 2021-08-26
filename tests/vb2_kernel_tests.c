@@ -24,6 +24,7 @@ static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_fw_preamble *fwpre;
 static const char fw_kernel_key_data[36] = "Test kernel key data";
+static enum vb2_boot_mode *boot_mode;
 
 /* Mocked function data */
 
@@ -82,6 +83,14 @@ static void reset_common_data(enum reset_type t)
 		mock_gbb.recovery_key.key_offset +
 		mock_gbb.recovery_key.key_size;
 
+	/* For boot_mode */
+	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
+	if (t == FOR_PHASE1)
+		*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
+	else if (t == FOR_NORMAL_BOOT)
+		*boot_mode = VB2_BOOT_MODE_NORMAL;
+	else
+		*boot_mode = VB2_BOOT_MODE_UNDEFINED;
 
 	if (t == FOR_PHASE1) {
 		uint8_t *kdata;
@@ -274,6 +283,7 @@ static void phase1_tests(void)
 	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
 	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
 	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
 
 	reset_common_data(FOR_PHASE1);
@@ -284,6 +294,7 @@ static void phase1_tests(void)
 	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
 	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
 	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	mock_read_res_fail_on_call = 1;
 	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
 

@@ -154,7 +154,6 @@ void vb2_check_recovery(struct vb2_context *ctx)
 		else
 			/* Recovery was forced. Override recovery reason */
 			sd->recovery_reason = VB2_RECOVERY_RO_MANUAL;
-		sd->flags |= VB2_SD_FLAG_MANUAL_RECOVERY;
 	}
 
 	/* If recovery reason is non-zero, tell caller we need recovery mode */
@@ -379,7 +378,7 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 
 vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx)
 {
-	if (!vb2api_allow_recovery(ctx)) {
+	if (ctx->boot_mode != VB2_BOOT_MODE_MANUAL_RECOVERY) {
 		VB2_DEBUG("ERROR: Can only enable developer mode from manual "
 			  "recovery mode\n");
 		return VB2_ERROR_API_ENABLE_DEV_NOT_ALLOWED;
@@ -415,30 +414,6 @@ void vb2api_request_diagnostics(struct vb2_context *ctx) {
 	VB2_DEBUG("Diagnostics requested\n");
 }
 
-test_mockable
-int vb2api_allow_recovery(struct vb2_context *ctx)
-{
-	if (ctx->flags & VB2_CONTEXT_NO_BOOT)
-		return 0;
-
-	/* VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY forces this to always return
-	   true. */
-	if (vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
-		return 1;
-
-	/*
-	 * If EC is in RW, it implies recovery wasn't manually requested.
-	 * On some platforms, EC_IN_RW can't be reset by the EC, thus, this may
-	 * return false (=RW). That's ok because if recovery is manual, we will
-	 * get the right signal and that's the case we care about.
-	 */
-	if (!(ctx->flags & VB2_CONTEXT_EC_TRUSTED))
-		return 0;
-
-	/* Now we confidently check the recovery switch state at boot */
-	return !!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_MANUAL_RECOVERY);
-}
-
 void vb2_clear_recovery(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -450,13 +425,13 @@ void vb2_clear_recovery(struct vb2_context *ctx)
 			  reason, subcode,
 			  vb2_get_recovery_reason_string(reason));
 
-	/* Clear recovery request for both manual and non-manual. */
+	/* Clear recovery request for both the manual recovery and the broken
+	   screen. */
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_NOT_REQUESTED);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 0);
 
-	/* But stow recovery reason as subcode for non-manual recovery. */
-	if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
-	    !vb2api_allow_recovery(ctx)) {
+	/* But stow recovery reason as subcode for the broken screen. */
+	if (ctx->boot_mode == VB2_BOOT_MODE_BROKEN_SCREEN) {
 		VB2_DEBUG("Stow recovery reason as subcode (%#x)\n",
 			  sd->recovery_reason);
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, sd->recovery_reason);
@@ -737,13 +712,24 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 void vb2_set_boot_mode(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Cast boot mode to non-constant and assign */
 	enum vb2_boot_mode *boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
 	*boot_mode = VB2_BOOT_MODE_NORMAL;
 
-	if (sd->recovery_reason) {
-		if (vb2api_allow_recovery(ctx))
+	/*
+	 * The only way to pass this check and proceed to the recovery process
+	 * is to physically request a recovery (a.k.a. manual recovery).  All
+	 * other recovery requests including manual recovery requested by a
+	 * (compromised) host will end up with 'broken' screen.
+	 */
+	if ((ctx->flags & VB2_CONTEXT_FORCE_RECOVERY_MODE) &&
+	    !(ctx->flags & VB2_CONTEXT_NO_BOOT) &&
+	    (ctx->flags & VB2_CONTEXT_EC_TRUSTED)) {
+		*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	} else if (sd->recovery_reason) {
+		if (gbb->flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
 			*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 		else
 			*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;

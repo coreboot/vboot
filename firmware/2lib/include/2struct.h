@@ -23,8 +23,14 @@
 
 /* Flags for vb2_shared_data.flags */
 enum vb2_shared_data_flags {
-	/* User has explicitly and physically requested recovery */
-	VB2_SD_FLAG_MANUAL_RECOVERY = (1 << 0),
+	/*
+	 * VB2_SD_FLAG_MANUAL_RECOVERY (1 << 0) is deprecated. This flag is not
+	 * necessary since the introduction of persistent context (CL:1716351).
+	 * With introducing vb2_boot_mode and differentiating between manual
+	 * recovery and broken screen (CL:3274699), it is suggested to leverage
+	 * the vb2_boot_mode instead to determine if the user has physically
+	 * requested recovery.
+	 */
 
 	/* Developer mode is enabled */
 	VB2_SD_FLAG_DEV_MODE_ENABLED = (1 << 1),

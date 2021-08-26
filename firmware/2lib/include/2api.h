@@ -1012,19 +1012,6 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx);
 
 /**
- * Check whether recovery is allowed or not.
- *
- * The only way to pass this check and proceed to the recovery process is to
- * physically request a recovery (a.k.a. manual recovery).  All other recovery
- * requests including manual recovery requested by a (compromised) host will
- * end up with 'broken' screen.
- *
- * @param ctx		Vboot context
- * @return 1 if recovery is allowed; 0 if no or uncertain.
- */
-int vb2api_allow_recovery(struct vb2_context *ctx);
-
-/**
  * Request to enable developer mode.
  *
  * Enables the developer flag in vb2_context firmware secdata.  Note that
