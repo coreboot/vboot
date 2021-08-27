@@ -1456,6 +1456,8 @@ enum vb2_ui_error {
 	VB2_UI_ERROR_UNTRUSTED_CONFIRMATION,
 	/* To-norm not allowed */
 	VB2_UI_ERROR_TO_NORM_NOT_ALLOWED,
+	/* Internal boot failed */
+	VB2_UI_ERROR_INTERNAL_BOOT_FAILED,
 	/* External boot is disabled */
 	VB2_UI_ERROR_EXTERNAL_BOOT_DISABLED,
 	/* Alternate bootloader is disabled */

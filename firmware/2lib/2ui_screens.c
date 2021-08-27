@@ -727,14 +727,21 @@ vb2_error_t developer_mode_init(struct vb2_ui_context *ui)
 vb2_error_t vb2_ui_developer_mode_boot_internal_action(
 	struct vb2_ui_context *ui)
 {
+	vb2_error_t rv;
+
 	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
 	    !(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) {
 		VB2_DEBUG("ERROR: Dev mode internal boot not allowed\n");
 		return VB2_SUCCESS;
 	}
 
-	VB2_TRY(VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_FIXED));
-	return VB2_REQUEST_UI_EXIT;
+	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_FIXED);
+	if (rv == VB2_SUCCESS)
+		return VB2_REQUEST_UI_EXIT;
+
+	VB2_DEBUG("ERROR: Failed to boot from internal disk: %#x\n", rv);
+	ui->error_beep = 1;
+	return set_ui_error(ui, VB2_UI_ERROR_INTERNAL_BOOT_FAILED);
 }
 
 vb2_error_t vb2_ui_developer_mode_boot_external_action(

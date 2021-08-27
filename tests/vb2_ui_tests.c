@@ -635,8 +635,9 @@ static void developer_tests(void)
 	/* If fail to load internal disk, don't boot */
 	reset_common_data(FOR_DEVELOPER);
 	add_mock_vbtlk(VB2_ERROR_LK_NO_DISK_FOUND, VB_DISK_FLAG_FIXED);
-	TEST_EQ(vb2_developer_menu(ctx), VB2_ERROR_LK_NO_DISK_FOUND,
-		"if fail to load internal disk, don't boot");
+	TEST_NEQ(vb2_developer_menu(ctx), VB2_SUCCESS,
+		 "if fail to load internal disk, don't boot");
+	TEST_EQ(mock_calls_until_shutdown, 0, "  loop forever");
 
 	/* Select boot internal in dev menu */
 	reset_common_data(FOR_DEVELOPER);
