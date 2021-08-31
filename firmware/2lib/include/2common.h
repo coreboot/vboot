@@ -298,7 +298,7 @@ static inline uint8_t *vb2_packed_key_data_mutable(
 static inline const uint8_t *vb2_packed_key_data(
 	const struct vb2_packed_key *key)
 {
-	return (const uint8_t *)key + key->key_offset;
+	return (const uint8_t *)((uintptr_t)key + key->key_offset);
 }
 
 /**
@@ -331,7 +331,7 @@ static inline uint8_t *vb2_signature_data_mutable(
 static inline const uint8_t *vb2_signature_data(
 	const struct vb2_signature *sig)
 {
-	return (const uint8_t *)sig + sig->sig_offset;
+	return (const uint8_t *)((uintptr_t)sig + sig->sig_offset);
 }
 
 /**

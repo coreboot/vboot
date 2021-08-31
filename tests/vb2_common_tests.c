@@ -276,9 +276,11 @@ static void test_helper_functions(void)
 	{
 		struct vb2_packed_key k = {.key_offset = sizeof(k),
 					   .key_size = 128};
+		const void *lower_base;
 		TEST_SUCC(vb2_verify_packed_key_inside(&k, sizeof(k)+128, &k),
 			  "vb2_packed_key_inside() ok 1");
-		TEST_SUCC(vb2_verify_packed_key_inside(&k - 1,
+		lower_base = (const void *)((uintptr_t)&k - sizeof(k));
+		TEST_SUCC(vb2_verify_packed_key_inside(lower_base,
 						       2*sizeof(k)+128, &k),
 			  "vb2_packed_key_inside() ok 2");
 		TEST_EQ(vb2_verify_packed_key_inside(&k, 128, &k),
@@ -297,9 +299,11 @@ static void test_helper_functions(void)
 	{
 		struct vb2_signature s = {.sig_offset = sizeof(s),
 					  .sig_size = 128};
+		const void *lower_base;
 		TEST_SUCC(vb2_verify_signature_inside(&s, sizeof(s)+128, &s),
 			"vb2_verify_signature_inside() ok 1");
-		TEST_SUCC(vb2_verify_signature_inside(&s - 1,
+		lower_base = (const void *)((uintptr_t)&s - sizeof(s));
+		TEST_SUCC(vb2_verify_signature_inside(lower_base,
 						      2*sizeof(s)+128, &s),
 			  "vb2_verify_signature_inside() ok 2");
 		TEST_EQ(vb2_verify_signature_inside(&s, 128, &s),
