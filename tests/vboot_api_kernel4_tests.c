@@ -137,7 +137,7 @@ static vb2_error_t boot_dev(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-vb2_error_t vb2_developer_menu(struct vb2_context *c)
+vb2_error_t vb2ex_developer_ui(struct vb2_context *c)
 {
 	return boot_dev(c);
 }

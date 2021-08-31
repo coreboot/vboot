@@ -414,43 +414,6 @@ vb2_error_t vb2_ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 }
 
 /*****************************************************************************/
-/* Developer mode */
-
-vb2_error_t vb2_developer_menu(struct vb2_context *ctx)
-{
-	enum vb2_screen root_screen_id = VB2_SCREEN_DEVELOPER_MODE;
-	if (!(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) {
-		VB2_DEBUG("WARNING: Dev boot not allowed; forcing to-norm\n");
-		root_screen_id = VB2_SCREEN_DEVELOPER_TO_NORM;
-	}
-	return vb2_ui_loop(ctx, root_screen_id, developer_action);
-}
-
-vb2_error_t developer_action(struct vb2_ui_context *ui)
-{
-	/* Developer mode keyboard shortcuts */
-	if (ui->key == '\t')
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEBUG_INFO);
-
-	/* Ignore other shortcuts */
-	if (!(ui->ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED))
-		return VB2_REQUEST_UI_CONTINUE;
-
-	if (ui->key == VB_KEY_CTRL('S'))
-		return vb2_ui_screen_change(ui, VB2_SCREEN_DEVELOPER_TO_NORM);
-	if (ui->key == VB_KEY_CTRL('U') ||
-	    (DETACHABLE && ui->key == VB_BUTTON_VOL_UP_LONG_PRESS))
-		return vb2_ui_developer_mode_boot_external_action(ui);
-	if (ui->key == VB_KEY_CTRL('D') ||
-	    (DETACHABLE && ui->key == VB_BUTTON_VOL_DOWN_LONG_PRESS))
-		return vb2_ui_developer_mode_boot_internal_action(ui);
-	if (ui->key == VB_KEY_CTRL('L'))  /* L for aLtfw (formerly Legacy) */
-		return vb2_ui_developer_mode_boot_altfw_action(ui);
-
-	return VB2_SUCCESS;
-}
-
-/*****************************************************************************/
 /* Diagnostics */
 
 vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx)

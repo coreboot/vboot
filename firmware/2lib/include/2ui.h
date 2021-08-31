@@ -232,20 +232,6 @@ vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);
 /* UI loops */
 
 /**
- * UI for a developer-mode boot.
- *
- * Enter the developer menu, which provides options to switch out of developer
- * mode, boot from external media, use legacy bootloader, or boot Chrome OS from
- * disk.
- *
- * If a timeout occurs, take the default boot action.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2_developer_menu(struct vb2_context *ctx);
-
-/**
  * UI for a diagnostic tools boot.
  *
  * Enter the diagnostic tools menu, which provides debug information and

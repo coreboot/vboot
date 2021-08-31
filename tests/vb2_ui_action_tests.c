@@ -727,67 +727,6 @@ static void menu_select_tests(void)
 	VB2_DEBUG("...done.\n");
 }
 
-static void vb2_ui_developer_mode_boot_altfw_action_tests(void)
-{
-	VB2_DEBUG("Test developer mode boot alternate action...\n");
-
-	/* Not allowed: not in dev mode */
-	reset_common_data();
-	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
-	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "not allowed: not in dev mode");
-	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
-		"ui_error code is set");
-	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
-
-	/* Not allowed: dev boot not allowed */
-	reset_common_data();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	ctx->flags &= ~(uint64_t)VB2_CONTEXT_DEV_BOOT_ALLOWED;
-	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
-	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "not allowed: dev boot not allowed");
-	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
-		"ui_error code is set");
-	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
-
-	/* Not allowed: boot altfw not allowed */
-	reset_common_data();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "not allowed: boot altfw not allowed");
-	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_DISABLED,
-		"ui_error code is set");
-	TEST_EQ(mock_run_altfw_called, 0, "  vb2ex_run_altfw not called");
-
-	/* Allowed */
-	reset_common_data();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
-	mock_ui_context.state->selected_item = 2;
-	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "allowed");
-	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_FAILED,
-		"ui_error code is set");
-	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called once");
-	TEST_EQ(mock_altfw_last, 2, "  select bootloader #2");
-
-	/* CTRL+L = default bootloader */
-	reset_common_data();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
-	ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
-	mock_ui_context.key = VB_KEY_CTRL('L');
-	mock_ui_context.state->selected_item = 4;  /* Ignored */
-	TEST_EQ(vb2_ui_developer_mode_boot_altfw_action(&mock_ui_context),
-		VB2_REQUEST_UI_CONTINUE, "allowed: ctrl+l");
-	TEST_EQ(mock_ui_context.error_code, VB2_UI_ERROR_ALTFW_FAILED,
-		"ui_error code is set");
-	TEST_EQ(mock_run_altfw_called, 1, "  vb2ex_run_altfw called once");
-	TEST_EQ(mock_altfw_last, 0, "  select bootloader #0");
-
-	VB2_DEBUG("...done.\n");
-}
-
 static void ui_loop_tests(void)
 {
 	int i;
@@ -988,9 +927,6 @@ int main(void)
 	menu_prev_tests();
 	menu_next_tests();
 	menu_select_tests();
-
-	/* Screen actions */
-	vb2_ui_developer_mode_boot_altfw_action_tests();
 
 	/* Core UI loop */
 	ui_loop_tests();

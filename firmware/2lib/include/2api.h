@@ -1416,6 +1416,20 @@ vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx);
  */
 vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *ctx);
 
+/**
+ * UI for a developer-mode boot.
+ *
+ * Enter the developer menu, which provides options to switch out of developer
+ * mode, boot from external media, use legacy bootloader, or boot Chrome OS from
+ * disk.
+ *
+ * If a timeout occurs, take the default boot action.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_developer_ui(struct vb2_context *ctx);
+
 /* Helpers for bitmask operations */
 #define VB2_SET_BIT(mask, index) ((mask) |= ((uint32_t)1 << (index)))
 #define VB2_CLR_BIT(mask, index) ((mask) &= ~((uint32_t)1 << (index)))

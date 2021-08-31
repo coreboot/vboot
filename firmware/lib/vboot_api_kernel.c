@@ -217,7 +217,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		return VB2_REQUEST_REBOOT;
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		/* Developer boot.  This has UI. */
-		VB2_TRY(vb2_developer_menu(ctx));
+		VB2_TRY(vb2ex_developer_ui(ctx));
 	} else {
 		/* Normal boot */
 		VB2_TRY(vb2_normal_boot(ctx));
