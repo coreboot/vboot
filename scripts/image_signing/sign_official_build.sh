@@ -1090,7 +1090,7 @@ elif [[ "${TYPE}" == "recovery" ]]; then
     "${KEY_DIR}/recovery_kernel.keyblock" \
     "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk"
+    "${KEY_DIR}/kernel_data_key.vbprivk" \
     "${KEY_DIR}/minios_kernel.keyblock" \
     "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "factory" ]]; then
@@ -1098,7 +1098,7 @@ elif [[ "${TYPE}" == "factory" ]]; then
     "${KEY_DIR}/installer_kernel.keyblock" \
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
     "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk"
+    "${KEY_DIR}/kernel_data_key.vbprivk" \
     "${KEY_DIR}/minios_kernel.keyblock" \
     "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "firmware" ]]; then
