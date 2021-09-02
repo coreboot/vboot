@@ -412,11 +412,3 @@ vb2_error_t vb2_ui_loop(struct vb2_context *ctx, enum vb2_screen root_screen_id,
 		return VB2_SUCCESS;
 	return rv;
 }
-
-/*****************************************************************************/
-/* Diagnostics */
-
-vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx)
-{
-	return vb2_ui_loop(ctx, VB2_SCREEN_DIAGNOSTICS, NULL);
-}

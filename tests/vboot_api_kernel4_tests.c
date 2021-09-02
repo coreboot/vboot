@@ -11,7 +11,6 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
-#include "2ui.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
 #include "test_common.h"
@@ -165,7 +164,7 @@ vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *c)
 	return vbboot_retval;
 }
 
-vb2_error_t vb2_diagnostic_menu(struct vb2_context *c)
+vb2_error_t vb2ex_diagnostic_ui(struct vb2_context *c)
 {
 	if (vbboot_retval == -5)
 		return VB2_ERROR_MOCK;

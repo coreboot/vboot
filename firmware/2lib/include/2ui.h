@@ -228,18 +228,4 @@ vb2_error_t vb2_ui_screen_back(struct vb2_ui_context *ui);
  */
 vb2_error_t vb2_ui_screen_change(struct vb2_ui_context *ui, enum vb2_screen id);
 
-/*****************************************************************************/
-/* UI loops */
-
-/**
- * UI for a diagnostic tools boot.
- *
- * Enter the diagnostic tools menu, which provides debug information and
- * diagnostic tests of various hardware components.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2_diagnostic_menu(struct vb2_context *ctx);
-
 #endif  /* VBOOT_REFERENCE_2UI_H_ */

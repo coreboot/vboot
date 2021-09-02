@@ -1430,6 +1430,17 @@ vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *ctx);
  */
 vb2_error_t vb2ex_developer_ui(struct vb2_context *ctx);
 
+/**
+ * UI for a diagnostic tools boot.
+ *
+ * Enter the diagnostic tools menu, which provides debug information and
+ * diagnostic tests of various hardware components.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_diagnostic_ui(struct vb2_context *ctx);
+
 /* Helpers for bitmask operations */
 #define VB2_SET_BIT(mask, index) ((mask) |= ((uint32_t)1 << (index)))
 #define VB2_CLR_BIT(mask, index) ((mask) &= ~((uint32_t)1 << (index)))
