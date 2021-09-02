@@ -415,12 +415,6 @@ FWLIB_SRCS = \
 	firmware/lib20/api_kernel.c \
 	firmware/lib20/kernel.c
 
-# Only add these to firmware and test builds,
-# as regular host builds don't need them
-$(if ${FIRMWARE_ARCH},FWLIB_SRCS,TESTLIB_SRCS) += \
-	firmware/2lib/2ui.c \
-	firmware/2lib/2ui_screens.c \
-
 # TPM lightweight command library
 ifeq (${TPM2_MODE},)
 TLCL_SRCS = \
@@ -755,8 +749,6 @@ TEST2X_NAMES = \
 	tests/vb2_secdata_kernel_tests \
 	tests/vb2_sha_api_tests \
 	tests/vb2_sha_tests \
-	tests/vb2_ui_action_tests \
-	tests/vb2_ui_utility_tests \
 	tests/hmac_test
 
 TEST20_NAMES = \
@@ -1297,8 +1289,6 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb2_ui_action_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb2_ui_utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common_tests
