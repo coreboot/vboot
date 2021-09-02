@@ -212,6 +212,10 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
+	/* We no longer trust the EC once it is already in RW or tries to jump
+	   to RW. */
+	ctx->flags &= ~VB2_CONTEXT_EC_TRUSTED;
+
 	/* Tell EC to jump to RW. It should already be in RW for EFS2. */
 	if (!(sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW)) {
 		VB2_DEBUG("jumping to EC-RW\n");

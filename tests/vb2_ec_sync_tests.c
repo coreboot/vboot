@@ -96,6 +96,13 @@ static void ResetMocks(void)
 	memset(hmir, 0, sizeof(hmir));
 	hmir[0] = 42;
 	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
+
+	/*
+	 * This flag should not involve in the steps deciding whether EC is
+	 * running RW. The only concern here is we need to clear this flag after
+	 * attempting a jump to RW.
+	 */
+	ctx->flags |= VB2_CONTEXT_EC_TRUSTED;
 }
 
 /* Mock functions */
@@ -515,6 +522,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 1, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
+		   "  VB2_CONTEXT_EC_TRUSTED is cleared");
 
 	ResetMocks();
 	test_ssync(0, 0, "AP-RW, EC-RO -> EC-RW");
@@ -523,6 +532,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
+		   "  VB2_CONTEXT_EC_TRUSTED is cleared");
 
 	ResetMocks();
 	jump_retval = VB2_ERROR_MOCK;
@@ -533,6 +544,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
+		   "  VB2_CONTEXT_EC_TRUSTED is cleared");
 
 	ResetMocks();
 	jump_retval = VB2_REQUEST_REBOOT_EC_TO_RO;
@@ -543,6 +556,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
+		   "  VB2_CONTEXT_EC_TRUSTED is cleared");
 
 	ResetMocks();
 	protect_retval = VB2_ERROR_MOCK;
@@ -552,6 +567,8 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_ro_protected, 0, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
+		   "  VB2_CONTEXT_EC_TRUSTED is cleared");
 
 	/* No longer check for shutdown requested */
 	ResetMocks();
