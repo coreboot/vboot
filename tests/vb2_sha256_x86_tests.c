@@ -5,6 +5,7 @@
 
 /* FIPS 180-2 Tests for message digest functions. */
 
+#include <cpuid.h>
 #include <stdio.h>
 
 #include "2api.h"
@@ -114,6 +115,14 @@ static void known_value_tests(void)
 
 int main(int argc, char *argv[])
 {
+	uint32_t a, b = 0, c, d;
+	/* EAX = 07H, sub-leaf 0 */
+	__get_cpuid_count(7, 0, &a, &b, &c, &d);
+	if ((b & bit_SHA) == 0) {
+		fprintf(stderr, "SHA-NI not supported.\n");
+		return 254;
+	}
+
 	/* Initialize long_msg with 'a' x 1,000,000 */
 	long_msg = (char *) malloc(1000001);
 	memset(long_msg, 'a', 1000000);
