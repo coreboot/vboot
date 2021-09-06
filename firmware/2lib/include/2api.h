@@ -1708,17 +1708,6 @@ vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out);
 vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
 
 /*****************************************************************************/
-/* Functions for diagnostics control. */
-
-enum vb2_diag_storage_test {
-	VB2_DIAG_STORAGE_TEST_STOP = 0,
-	VB2_DIAG_STORAGE_TEST_SHORT,
-	VB2_DIAG_STORAGE_TEST_EXTENDED,
-};
-
-vb2_error_t vb2ex_diag_storage_test_control(enum vb2_diag_storage_test ops);
-
-/*****************************************************************************/
 /* Timer. */
 
 /**
