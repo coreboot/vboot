@@ -19,18 +19,6 @@
 #include "vboot_test.h"
 
 __attribute__((weak))
-uint32_t VbExKeyboardRead(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
-uint32_t VbExKeyboardReadWithFlags(uint32_t *flags_ptr)
-{
-	return 0;
-}
-
-__attribute__((weak))
 uint32_t VbExIsShutdownRequested(void)
 {
 	return 0;
