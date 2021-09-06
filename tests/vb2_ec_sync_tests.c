@@ -111,16 +111,6 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
-uint32_t VbExIsShutdownRequested(void)
-{
-	if (shutdown_request_calls_left == 0)
-		return 1;
-	else if (shutdown_request_calls_left > 0)
-		shutdown_request_calls_left--;
-
-	return 0;
-}
-
 int vb2ex_ec_trusted(void)
 {
 	return !ec_run_image;

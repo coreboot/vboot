@@ -19,12 +19,6 @@
 #include "vboot_test.h"
 
 __attribute__((weak))
-uint32_t VbExIsShutdownRequested(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
 vb2_error_t vb2ex_run_altfw(uint32_t altfw_id)
 {
 	return VB2_SUCCESS;

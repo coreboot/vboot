@@ -29,7 +29,7 @@ enum vb2_return_code {
 	 */
 	VB2_REQUEST = 0x1000,
 
-	/* Calling firmware requested shutdown via VbExIsShutdownRequested() */
+	/* Calling firmware requested shutdown */
 	VB2_REQUEST_SHUTDOWN = 0x1001,
 
 	/* Calling firmware needs to perform a reboot */
