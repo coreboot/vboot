@@ -896,10 +896,19 @@ resign_minios_kernels() {
 
   info "Searching for miniOS kernels to resign..."
 
-  local loop_kern
-  for loop_kern in "${loopdev}p"*; do
-    local part_type_guid=$(sudo lsblk -rnb -o PARTTYPE "${loop_kern}")
+  local loop_minios
+  for loop_minios in "${loopdev}p"*; do
+    local part_type_guid
+    part_type_guid=$(sudo lsblk -rnb -o PARTTYPE "${loop_minios}")
     if [[ "${part_type_guid}" != "${MINIOS_KERNEL_GUID}" ]]; then
+      continue
+    fi
+
+    # Skip miniOS partitions which are empty. This happens when miniOS
+    # kernels aren't written to the partitions because the feature is not
+    # enabled.
+    if ! sudo "${FUTILITY}" dump_kernel_config "${loop_minios}"; then
+      info "Skipping empty miniOS partition ${partnum}."
       continue
     fi
 
@@ -917,14 +926,14 @@ resign_minios_kernels() {
 
     # Assume this is a miniOS kernel.
     local minios_kernel_version=$((KERNEL_VERSION >> 24))
-    if sudo ${FUTILITY} vbutil_kernel --repack "${loop_kern}" \
+    if sudo ${FUTILITY} vbutil_kernel --repack "${loop_minios}" \
         --keyblock "${keyblock}" \
         --signprivate "${priv_key}" \
         --version "${minios_kernel_version}" \
-        --oldblob "${loop_kern}"; then
-      info "Resign miniOS ${loop_kern}: done"
+        --oldblob "${loop_minios}"; then
+      info "Resign miniOS ${loop_minios}: done"
     else
-      error "Resign miniOS ${loop_kern}: failed"
+      error "Resign miniOS ${loop_minios}: failed"
       return 1
     fi
   done
