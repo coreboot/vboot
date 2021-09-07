@@ -180,13 +180,6 @@ const char *vb2ex_get_firmware_log(int reset)
 }
 
 __attribute__((weak))
-uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
-				  const char *str)
-{
-	return 1;
-}
-
-__attribute__((weak))
 vb2_error_t vb2ex_diag_get_storage_health(const char **out)
 {
 	*out = "mock";

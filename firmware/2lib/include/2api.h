@@ -1524,38 +1524,6 @@ enum vb2_ui_error {
 };
 
 /**
- * Display UI screen.
- *
- * @param screen		Screen to display.
- * @param locale_id		Id of current locale.
- * @param selected_item		Index of the selected menu item. If the screen
- *				doesn't have a menu, this value will be ignored.
- * @param disabled_item_mask	Mask for disabled menu items. Bit (1 << idx)
- *				indicates whether item 'idx' is disabled.
- *				A disabled menu item is visible and selectable,
- *				with a different button style.
- * @param hidden_item_mask	Mask for hidden menu items. Bit (1 << idx)
- *				indicates whether item 'idx' is hidden.
- *				A hidden menu item is neither visible nor
- *				selectable.
- * @param timer_disabled	Whether timer is disabled or not. Some screen
- *				descriptions will depend on this value.
- * @param current_page		Current page number for a log screen. If the
- *				screen doesn't show logs, this value will be
- *				ignored.
- * @param error_code		Error code if an error occurred.
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_display_ui(enum vb2_screen screen,
-			     uint32_t locale_id,
-			     uint32_t selected_item,
-			     uint32_t disabled_item_mask,
-			     uint32_t hidden_item_mask,
-			     int timer_disabled,
-			     uint32_t current_page,
-			     enum vb2_ui_error error_code);
-
-/**
  * Check that physical presence button is currently pressed by the user.
  *
  * @return 1 for pressed, 0 for not.
@@ -1645,22 +1613,6 @@ char *vb2api_get_debug_info(struct vb2_context *ctx);
  * @return The pointer to the full firmware log string.  NULL on error.
  */
 const char *vb2ex_get_firmware_log(int reset);
-
-/**
- * Specify the string to be used for an upcoming log screen display.
- *
- * Before a vb2ex_display_ui() call is made for a screen which displays logs,
- * the log string should be provided via this function.  The total number of
- * pages in the log string is returned.  If the log string ever changes, this
- * function should be called again before the next vb2ex_display_ui() call.
- *
- * @param screen	Screen to display the log.
- * @param locale_id	Id of current locale.
- * @param str		The log string to display.
- * @return The number of pages after pagination.  0 if none or error.
- */
-uint32_t vb2ex_prepare_log_screen(enum vb2_screen screen, uint32_t locale_id,
-				  const char *str);
 
 /**
  * Get the health info of the storage.
