@@ -709,7 +709,6 @@ resign_android_image_if_exists() {
 # Args: LOOPDEV
 sign_uefi_binaries() {
   local loopdev="$1"
-  local kerna_config="$2"
 
   if [[ ! -d "${KEY_DIR}/uefi" ]]; then
     return 0
@@ -722,11 +721,7 @@ sign_uefi_binaries() {
   elif [[ -z "${esp_dir}" ]]; then
     return 0
   fi
-  # The reven board has a special signing flow. If this flag is set, don't
-  # invoke install_gsetup_certs.sh.
-  if " ${kerna_config} " != *" cros_reven "* ]]; then
-    "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
-  fi
+  "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
   "${SCRIPT_DIR}/sign_uefi.sh" "${esp_dir}" "${KEY_DIR}/uefi"
   sudo umount "${esp_dir}"
 
@@ -1021,7 +1016,7 @@ sign_image_file() {
   resign_firmware_payload "${loopdev}"
   remove_old_container_key "${loopdev}"
   resign_android_image_if_exists "${loopdev}"
-  sign_uefi_binaries "${loopdev}" "${kerna_config}"
+  sign_uefi_binaries "${loopdev}"
   # We do NOT strip /boot for factory installer, since some devices need it to
   # boot EFI. crbug.com/260512 would obsolete this requirement.
   #
