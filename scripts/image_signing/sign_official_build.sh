@@ -721,7 +721,11 @@ sign_uefi_binaries() {
   elif [[ -z "${esp_dir}" ]]; then
     return 0
   fi
-  "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
+  # TODO(b/199136347): First class this as an arg and pass from config
+  # in the signing repo. This is a temporary fix to unblock reven-release.
+  if [[ "${KEY_DIR}" != *"Reven"* ]]; then
+    "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
+  fi
   "${SCRIPT_DIR}/sign_uefi.sh" "${esp_dir}" "${KEY_DIR}/uefi"
   sudo umount "${esp_dir}"
 
