@@ -908,7 +908,7 @@ resign_minios_kernels() {
     # kernels aren't written to the partitions because the feature is not
     # enabled.
     if ! sudo "${FUTILITY}" dump_kernel_config "${loop_minios}"; then
-      info "Skipping empty miniOS partition ${partnum}."
+      info "Skipping empty miniOS partition ${loop_minios}."
       continue
     fi
 
