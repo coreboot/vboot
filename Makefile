@@ -171,7 +171,7 @@ COMMON_FLAGS += $(call test_ccflag,-Wno-unknown-warning)
 # Needs -Wl because LD is actually set to CC by default.
 LDFLAGS += -Wl,--gc-sections
 
-ifneq (${DEBUG},)
+ifneq (${DEBUG}$(filter-out 0,${TEST_PRINT}),)
 CFLAGS += -DVBOOT_DEBUG
 endif
 
