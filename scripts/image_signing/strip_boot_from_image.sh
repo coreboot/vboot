@@ -27,7 +27,7 @@ zero_free_space() {
   local rootfs="$1"
 
   info "Zeroing freespace in ${rootfs}"
-  sudo fstrim -v "${rootfs}"
+  sudo sfill -llz "${rootfs}"
 }
 
 
