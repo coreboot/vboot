@@ -384,20 +384,14 @@ static void phase1_tests(void)
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
 
-	/* Dev switch error in normal mode reboots to recovery */
+	/* Dev switch error proceeds to a recovery boot */
 	reset_common_data(FOR_MISC);
-	retval_vb2_check_dev_switch = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_fw_phase1(ctx), VB2_ERROR_MOCK, "phase1 dev switch");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		VB2_RECOVERY_DEV_SWITCH, "  recovery request");
-
-	/* Dev switch error already in recovery mode just proceeds */
-	reset_common_data(FOR_MISC);
-	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, VB2_RECOVERY_RO_UNSPECIFIED);
 	retval_vb2_check_dev_switch = VB2_ERROR_MOCK;
 	TEST_EQ(vb2api_fw_phase1(ctx), VB2_ERROR_API_PHASE1_RECOVERY,
-		"phase1 dev switch error in recovery");
-	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_RO_UNSPECIFIED,
+		"phase1 dev switch error proceeds to recovery");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_DEV_SWITCH, "  recovery request");
+	TEST_EQ(sd->recovery_reason, VB2_RECOVERY_DEV_SWITCH,
 		"  recovery reason");
 	/* Check that DISPLAY_AVAILABLE gets set on recovery mode. */
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_DISPLAY_INIT,
