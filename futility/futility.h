@@ -140,6 +140,12 @@ enum futil_file_err futil_map_file(int fd, int writeable,
 enum futil_file_err futil_unmap_file(int fd, int writeable,
 				     uint8_t *buf, uint32_t len);
 
+/*
+ * Parse input string as a hex representation of size len, exit with error if
+ *  the string is not a valid hex string or is of a wrongs size.
+ */
+void parse_digest_or_die(uint8_t *buf, int len, const char *str);
+
 /* The CPU architecture is occasionally important */
 enum arch_t {
 	ARCH_UNSPECIFIED,

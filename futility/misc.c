@@ -352,3 +352,54 @@ enum futil_file_type ft_recognize_gpt(uint8_t *buf, uint32_t len)
 
 	return FILE_TYPE_CHROMIUMOS_DISK;
 }
+
+static int parse_hex(uint8_t *val, const char *str)
+{
+	uint8_t v = 0;
+	char c;
+	int digit;
+
+	for (digit = 0; digit < 2; digit++) {
+		c = *str;
+		if (!c)
+			return 0;
+		if (!isxdigit(c))
+			return 0;
+		c = tolower(c);
+		if (c >= '0' && c <= '9')
+			v += c - '0';
+		else
+			v += 10 + c - 'a';
+		if (!digit)
+			v <<= 4;
+		str++;
+	}
+
+	*val = v;
+	return 1;
+}
+
+void parse_digest_or_die(uint8_t *buf, int len, const char *str)
+{
+	const char *s = str;
+	int i;
+
+	for (i = 0; i < len; i++) {
+		/* skip whitespace */
+		while (*s && isspace(*s))
+			s++;
+		if (!*s)
+			break;
+		if (!parse_hex(buf, s))
+			break;
+
+		/* on to the next byte */
+		s += 2;
+		buf++;
+	}
+
+	if ((i != len) || *s) {
+		fprintf(stderr, "Invalid DIGEST \"%s\"\n", str);
+		exit(1);
+	}
+}
