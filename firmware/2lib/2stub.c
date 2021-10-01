@@ -50,7 +50,7 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
 				enum vb2_resource_index index, uint32_t offset,
 				void *buf, uint32_t size)
 {
-	fprintf(stderr, "%s: function not implemented\n", __func__);
+	VB2_DEBUG("function not implemented\n");
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 
@@ -60,14 +60,14 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *ctx,
 __attribute__((weak))
 vb2_error_t vb2ex_tpm_clear_owner(struct vb2_context *ctx)
 {
-	fprintf(stderr, "%s: function not implemented\n", __func__);
+	VB2_DEBUG("function not implemented\n");
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 
 __attribute__((weak))
 vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 {
-	fprintf(stderr, "%s: function not implemented\n", __func__);
+	VB2_DEBUG("function not implemented\n");
 	return VB2_ERROR_EX_UNIMPLEMENTED;
 }
 

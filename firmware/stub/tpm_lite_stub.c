@@ -43,15 +43,8 @@ static int tpm_fd = -1;
  */
 static int exit_on_failure = 1;
 
-/* Similar to VbExError, only handle the non-exit case.
- */
-static int DoError(int result, const char* format, ...)
+static inline uint32_t try_exit(uint32_t result)
 {
-	va_list ap;
-	va_start(ap, format);
-	fprintf(stderr, "ERROR: ");
-	vfprintf(stderr, format, ap);
-	va_end(ap);
 	if (exit_on_failure)
 		exit(1);
 	return result;
@@ -62,13 +55,13 @@ static int DoError(int result, const char* format, ...)
 __attribute__((unused)) static void DbgPrintBytes(const uint8_t* a, int n)
 {
 	int i;
-	fprintf(stderr, "DEBUG: ");
+	VB2_DEBUG_RAW("DEBUG: ");
 	for (i = 0; i < n; i++) {
 		if (i && i % 16 == 0)
-			fprintf(stderr, "\nDEBUG: ");
-		fprintf(stderr, "%02x ", a[i]);
+			VB2_DEBUG_RAW("\nDEBUG: ");
+		VB2_DEBUG_RAW("%02x ", a[i]);
 	}
-	fprintf(stderr, "\n");
+	VB2_DEBUG_RAW("\n");
 }
 
 
@@ -79,13 +72,13 @@ static uint32_t TpmExecute(const uint8_t *in, const uint32_t in_len,
 {
 	uint8_t response[TPM_MAX_COMMAND_SIZE];
 	if (in_len <= 0) {
-		return DoError(TPM_E_INPUT_TOO_SMALL,
-			       "invalid command length %d for command %#x\n",
-			       in_len, in[9]);
+		VB2_DEBUG("ERROR: invalid command length %d for command %#x\n",
+			  in_len, in[9]);
+		return try_exit(TPM_E_INPUT_TOO_SMALL);
 	} else if (tpm_fd < 0) {
-		return DoError(TPM_E_NO_DEVICE,
-			       "the TPM device was not opened.  " \
-			       "Forgot to call TlclLibInit?\n");
+		VB2_DEBUG("ERROR: the TPM device was not opened.  "
+			  "Forgot to call TlclLibInit?\n");
+		return try_exit(TPM_E_NO_DEVICE);
 	} else {
 		int n;
 		int retries = 0;
@@ -105,15 +98,15 @@ static uint32_t TpmExecute(const uint8_t *in, const uint32_t in_len,
 				  retries + 1, strerror(errno));
 		}
 		if (n < 0) {
-			return DoError(TPM_E_WRITE_FAILURE,
-				       "write failure to TPM device: %s "
-				       "(first error %d)\n",
-				       strerror(errno), first_errno);
+			VB2_DEBUG("ERROR: write failure to TPM device: %s "
+				  "(first error %d)\n",
+				  strerror(errno), first_errno);
+			return try_exit(TPM_E_WRITE_FAILURE);
 		} else if (n != in_len) {
-			return DoError(TPM_E_WRITE_FAILURE,
-				       "bad write size to TPM device: %d vs %u "
-				       "(%d retries, first error %d)\n",
-				       n, in_len, retries, first_errno);
+			VB2_DEBUG("ERROR: bad write size to TPM device: "
+				  "%d vs %u (%d retries, first error %d)\n",
+				  n, in_len, retries, first_errno);
+			return try_exit(TPM_E_WRITE_FAILURE);
 		}
 
 		/* Read response. Retry in case of communication errors.
@@ -131,18 +124,18 @@ static uint32_t TpmExecute(const uint8_t *in, const uint32_t in_len,
 				  retries + 1, strerror(errno));
 		}
 		if (n == 0) {
-			return DoError(TPM_E_READ_EMPTY,
-				       "null read from TPM device\n");
+			VB2_DEBUG("ERROR: null read from TPM device\n");
+			return try_exit(TPM_E_READ_EMPTY);
 		} else if (n < 0) {
-			return DoError(TPM_E_READ_FAILURE,
-				       "read failure from TPM device: %s "
-				       "(first error %d)\n",
-				       strerror(errno), first_errno);
+			VB2_DEBUG("ERROR: read failure from TPM device: %s "
+				  "(first error %d)\n",
+				  strerror(errno), first_errno);
+			return try_exit(TPM_E_READ_FAILURE);
 		} else {
 			if (n > *pout_len) {
-				return DoError(TPM_E_RESPONSE_TOO_LARGE,
-					       "TPM response too long for "
-					       "output buffer\n");
+				VB2_DEBUG("ERROR: TPM response too long for "
+					  "output buffer\n");
+				return try_exit(TPM_E_RESPONSE_TOO_LARGE);
 			} else {
 				*pout_len = n;
 				memcpy(out, response, n);
@@ -221,9 +214,9 @@ vb2_error_t vb2ex_tpm_open(void)
 		delay.tv_nsec = OPEN_RETRY_DELAY_NS;
 		nanosleep(&delay, NULL);
 	}
-	return DoError(VB2_ERROR_UNKNOWN,
-		       "TPM: Cannot open TPM device %s: %s\n",
-		       device_path, strerror(saved_errno));
+	VB2_DEBUG("ERROR: TPM: Cannot open TPM device %s: %s\n",
+		  device_path, strerror(saved_errno));
+	return try_exit(VB2_ERROR_UNKNOWN);
 }
 
 uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
