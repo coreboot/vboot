@@ -1303,6 +1303,14 @@ enum vb2_firmware_selection {
 vb2_error_t vb2api_ec_sync(struct vb2_context *ctx);
 
 /**
+ * This is called only if the system implements a keyboard-based (virtual)
+ * developer switch. It must return true only if the system has an embedded
+ * controller which is provably running in its RO firmware at the time the
+ * function is called.
+ */
+int vb2ex_ec_trusted(void);
+
+/**
  * Check if the EC is currently running rewritable code.
  *
  * If the EC is in RO code, sets *in_rw=0.

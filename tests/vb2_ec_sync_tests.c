@@ -121,6 +121,11 @@ uint32_t VbExIsShutdownRequested(void)
 	return 0;
 }
 
+int vb2ex_ec_trusted(void)
+{
+	return !ec_run_image;
+}
+
 vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 {
 	*in_rw = ec_run_image;
