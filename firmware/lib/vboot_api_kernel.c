@@ -180,15 +180,13 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 	}
 
 	/*
-	 * If in the broken screen, save the recovery reason as subcode.
+	 * If in non-manual recovery mode, save the recovery reason as subcode.
 	 * Otherwise, clear any leftover recovery requests or subcodes.
 	 */
 	vb2_clear_recovery(ctx);
 
 	/* Select boot path */
-	switch (ctx->boot_mode) {
-	case VB2_BOOT_MODE_MANUAL_RECOVERY:
-	case VB2_BOOT_MODE_BROKEN_SCREEN:
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {
 		/* If we're in recovery mode just to do memory retraining, all
 		   we need to do is reboot. */
 		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
@@ -213,12 +211,12 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 			VB2_DEBUG("NO_BOOT in RECOVERY mode\n");
 
 		/* Recovery boot.  This has UI. */
-		if (ctx->boot_mode == VB2_BOOT_MODE_MANUAL_RECOVERY)
+		if (vb2api_allow_recovery(ctx))
 			VB2_TRY(vb2ex_manual_recovery_ui(ctx));
 		else
 			VB2_TRY(vb2ex_broken_screen_ui(ctx));
-		break;
-	case VB2_BOOT_MODE_DIAGNOSTICS:
+	} else if (vb2api_diagnostic_ui_enabled(ctx) &&
+		   vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
 		/*
 		 * Need to clear the request flag and commit nvdata changes
 		 * immediately to avoid booting back into diagnostic tool when a
@@ -234,16 +232,12 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		 * return either of reboot or shutdown.
 		 */
 		return VB2_REQUEST_REBOOT;
-	case VB2_BOOT_MODE_DEVELOPER:
+	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		/* Developer boot.  This has UI. */
 		VB2_TRY(vb2ex_developer_ui(ctx));
-		break;
-	case VB2_BOOT_MODE_NORMAL:
+	} else {
 		/* Normal boot */
 		VB2_TRY(vb2_normal_boot(ctx));
-		break;
-	default:
-		return VB2_ERROR_ESCAPE_NO_BOOT;
 	}
 
 	/*

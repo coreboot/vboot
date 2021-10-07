@@ -80,9 +80,6 @@ static void test_slk(vb2_error_t retval, int recovery_reason, const char *desc)
 		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 
 	expected_recovery_reason = recovery_reason;
-	/* The VbSelectAndLoadKernel directly leverages the value at
-	   ctx->boot_mode, so we have to call vb2_set_boot_mode first. */
-	vb2_set_boot_mode(ctx);
 	TEST_EQ(VbSelectAndLoadKernel(ctx, &kparams), retval, desc);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		recovery_reason, "  recovery reason");

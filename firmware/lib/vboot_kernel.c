@@ -6,7 +6,6 @@
  * (Firmware portion)
  */
 
-#include "2api.h"
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
@@ -32,6 +31,34 @@ enum vb2_load_partition_flags {
 
 #define LOWEST_TPM_VERSION 0xffffffff
 
+enum vb2_boot_mode {
+	/* Normal boot: kernel must be verified. */
+	VB2_BOOT_MODE_NORMAL = 0,
+
+	/* Recovery boot, regardless of dev mode state. */
+	VB2_BOOT_MODE_RECOVERY = 1,
+
+	/* Developer boot: self-signed kernel okay. */
+	VB2_BOOT_MODE_DEVELOPER = 2,
+};
+
+/**
+ * Return the current boot mode (normal, recovery, or dev).
+ *
+ * @param ctx          Vboot context
+ * @return Current boot mode (see vb2_boot_mode enum).
+ */
+static enum vb2_boot_mode get_boot_mode(struct vb2_context *ctx)
+{
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
+		return VB2_BOOT_MODE_RECOVERY;
+
+	if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE)
+		return VB2_BOOT_MODE_DEVELOPER;
+
+	return VB2_BOOT_MODE_NORMAL;
+}
+
 /**
  * Check if a valid keyblock is required.
  *
@@ -42,7 +69,7 @@ enum vb2_load_partition_flags {
 static int need_valid_keyblock(struct vb2_context *ctx)
 {
 	/* Normal and recovery modes always require official OS */
-	if (ctx->boot_mode != VB2_BOOT_MODE_DEVELOPER)
+	if (get_boot_mode(ctx) != VB2_BOOT_MODE_DEVELOPER)
 		return 1;
 
 	/* FWMP can require developer mode to use signed kernels */
@@ -237,8 +264,9 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	}
 
 	/* Check for rollback of key version except in recovery mode. */
+	enum vb2_boot_mode boot_mode = get_boot_mode(ctx);
 	uint32_t key_version = keyblock->data_key.key_version;
-	if (ctx->boot_mode != VB2_BOOT_MODE_MANUAL_RECOVERY) {
+	if (boot_mode != VB2_BOOT_MODE_RECOVERY) {
 		if (key_version < (sd->kernel_version_secdata >> 16)) {
 			keyblock_valid = 0;
 			if (need_keyblock_valid) {
@@ -260,7 +288,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	}
 
 	/* If in developer mode and using key hash, check it. */
-	if (ctx->boot_mode == VB2_BOOT_MODE_DEVELOPER &&
+	if (boot_mode == VB2_BOOT_MODE_DEVELOPER &&
 	    vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_USE_KEY_HASH)) {
 		VB2_TRY(vb2_verify_kernel_dev_key_hash(ctx, keyblock));
 	}
@@ -328,7 +356,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 
 	/* If not in recovery mode, check for rollback of the kernel version. */
 	if (need_keyblock_valid &&
-	    ctx->boot_mode != VB2_BOOT_MODE_MANUAL_RECOVERY &&
+	    boot_mode != VB2_BOOT_MODE_RECOVERY &&
 	    sd->kernel_version < sd->kernel_version_secdata) {
 		VB2_DEBUG("Kernel version too low.\n");
 		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK;
@@ -711,7 +739,7 @@ vb2_error_t LoadKernel(struct vb2_context *ctx,
 		 * non-officially-signed kernel, there's no rollback
 		 * protection, so we can stop at the first valid kernel.
 		 */
-		if (ctx->boot_mode == VB2_BOOT_MODE_MANUAL_RECOVERY ||
+		if (get_boot_mode(ctx) == VB2_BOOT_MODE_RECOVERY ||
 		    !keyblock_valid) {
 			VB2_DEBUG("In recovery mode or dev-signed kernel\n");
 			break;
