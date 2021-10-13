@@ -563,7 +563,7 @@ vb2_error_t LoadKernel(struct vb2_context *c,
 
 vb2_error_t LoadMiniOsKernel(struct vb2_context *c,
 			     VbSelectAndLoadKernelParams *params,
-			     VbDiskInfo *disk_info)
+			     VbDiskInfo *disk_info, uint32_t minios_flags)
 {
 	lk_minios_calls++;
 	return LoadKernelImpl(c, params, disk_info);
@@ -616,7 +616,7 @@ static void VbTryLoadMiniOsKernelTest(void)
 		printf("Test case: %s ...\n", minios_tests[i].name);
 		ResetMocks(&minios_tests[i]);
 		ctx->flags = t->ctx_flags;
-		TEST_EQ(VbTryLoadMiniOsKernel(ctx),
+		TEST_EQ(VbTryLoadMiniOsKernel(ctx, 0),
 			t->expected_return_val, "  return value");
 		TEST_EQ(got_recovery_request_val,
 			t->expected_recovery_request_val, "  recovery_request");

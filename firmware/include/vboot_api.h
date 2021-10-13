@@ -89,6 +89,11 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
  */
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags);
 
+/* miniOS flags */
+
+/* Boot from non-active miniOS partition only */
+#define VB_MINIOS_FLAG_NON_ACTIVE (1 << 0)
+
 /**
  * Attempt loading a miniOS kernel from internal disk.
  *
@@ -100,9 +105,11 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags);
  * VB2_SUCCESS.
  *
  * @param ctx			Vboot context
+ * @param minios_flags		Flags for miniOS
  * @return VB2_SUCCESS or the most specific VB2_ERROR_LK error.
  */
-vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx);
+vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx,
+				  uint32_t minios_flags);
 
 /*****************************************************************************/
 /* Disk access (previously in boot_device.h) */

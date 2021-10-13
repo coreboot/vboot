@@ -607,12 +607,17 @@ static vb2_error_t try_minios_sector_region(struct vb2_context *ctx,
  */
 vb2_error_t LoadMiniOsKernel(struct vb2_context *ctx,
 			     VbSelectAndLoadKernelParams *params,
-			     VbDiskInfo *disk_info)
+			     VbDiskInfo *disk_info, uint32_t minios_flags)
 {
 	vb2_error_t rv;
 	int end_region_first = vb2_nv_get(ctx, VB2_NV_MINIOS_PRIORITY);
 
-	rv = try_minios_sector_region(ctx, params, disk_info, end_region_first);
+	if (minios_flags & VB_MINIOS_FLAG_NON_ACTIVE)
+		rv = VB2_ERROR_UNKNOWN;  /* Ignore active partition */
+	else
+		rv = try_minios_sector_region(ctx, params, disk_info,
+					      end_region_first);
+
 	if (rv)
 		rv = try_minios_sector_region(ctx, params, disk_info,
 					      !end_region_first);
