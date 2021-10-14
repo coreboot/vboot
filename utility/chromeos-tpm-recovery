@@ -30,9 +30,9 @@ tpm2_target() {
 }
 
 use_v0_secdata_kernel() {
-  local fwid=$(crossystem ro_fwid)
-  local major=$(printf "$fwid" | cut -d. -f2)
-  local minor=$(printf "$fwid" | cut -d. -f3)
+  local fwid="$(crossystem ro_fwid)"
+  local major="$(printf "$fwid" | cut -d. -f2)"
+  local minor="$(printf "$fwid" | cut -d. -f3)"
 
   # TPM1 firmware never supports the v1 kernel space format.
   if ! tpm2_target; then
