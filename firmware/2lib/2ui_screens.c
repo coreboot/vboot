@@ -885,6 +885,32 @@ static const struct vb2_screen_info developer_to_norm_screen = {
 /******************************************************************************/
 /* VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL */
 
+static vb2_error_t developer_boot_external_check(struct vb2_ui_context *ui)
+{
+	if (!(ui->ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ||
+	    !vb2_dev_boot_allowed(ui->ctx) ||
+	    !vb2_dev_boot_external_allowed(ui->ctx)) {
+		VB2_DEBUG("ERROR: Dev mode external boot not allowed\n");
+		ui->error_beep = 1;
+		ui->error_code = VB2_UI_ERROR_EXTERNAL_BOOT_NOT_ENABLED;
+		return vb2_ui_screen_back(ui);
+	}
+	return VB2_SUCCESS;
+}
+
+static vb2_error_t developer_boot_external_init(struct vb2_ui_context *ui)
+{
+	vb2_error_t rv;
+
+	VB2_TRY(developer_boot_external_check(ui));
+	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
+	/* If the status of the external disk doesn't match, skip the screen. */
+	if (rv != VB2_ERROR_LK_NO_DISK_FOUND)
+		return vb2_ui_screen_back(ui);
+
+	return VB2_SUCCESS;
+}
+
 static const struct vb2_menu_item developer_boot_external_items[] = {
 	LANGUAGE_SELECT_ITEM,
 	BACK_ITEM,
@@ -896,6 +922,8 @@ static const struct vb2_screen_info developer_boot_external_screen = {
 	.name = "Developer boot from external disk",
 	.action = vb2_ui_developer_mode_boot_external_action,
 	.menu = MENU_ITEMS(developer_boot_external_items),
+	.init = developer_boot_external_init,
+	.reinit = developer_boot_external_init,
 };
 
 /******************************************************************************/
@@ -907,11 +935,26 @@ static const struct vb2_menu_item developer_invalid_disk_items[] = {
 	POWER_OFF_ITEM,
 };
 
+static vb2_error_t developer_invalid_disk_init(struct vb2_ui_context *ui)
+{
+	vb2_error_t rv;
+
+	VB2_TRY(developer_boot_external_check(ui));
+	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
+	/* If the status of the external disk doesn't match, skip the screen. */
+	if (rv == VB2_SUCCESS || rv == VB2_ERROR_LK_NO_DISK_FOUND)
+		return vb2_ui_screen_back(ui);
+
+	return VB2_SUCCESS;
+}
+
 static const struct vb2_screen_info developer_invalid_disk_screen = {
 	.id = VB2_SCREEN_DEVELOPER_INVALID_DISK,
 	.name = "Invalid external disk in dev mode",
 	.action = vb2_ui_developer_mode_boot_external_action,
 	.menu = MENU_ITEMS(developer_invalid_disk_items),
+	.init = developer_invalid_disk_init,
+	.reinit = developer_invalid_disk_init,
 };
 
 /******************************************************************************/
