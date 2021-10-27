@@ -110,28 +110,30 @@ get_dmparams_from_config() {
 get_hash_from_config() {
   local kernel_config=$1
   local dm_config=$(get_dmparams_from_config "${kernel_config}")
-  local vroot_dev=$(get_dm_slave "${dm_config}" vroot)
+  local vroot_dev=$(get_dm_device "${dm_config}" vroot)
   echo $(get_verity_arg "${vroot_dev}" root_hexdigest)
 }
 
-# Get the slave device and its args
-# get_dm_ags $dm_config [vboot|vroot]
-# Assumes we have only one slave device per device
-get_dm_slave() {
+# Get the mapped device and its args.
+# Usage:
+#   get_dm_device $dm_config [vboot|vroot]
+# Assumes we have only one mapped device per device.
+get_dm_device() {
   local dm=$1
   local device=$2
   echo $(echo "${dm}" | sed -nre "s/.*${device}[^,]*,([^,]*).*/\1/p")
 }
 
-# Set the slave device and its args for a device
-# get_dm_ags $dm_config [vboot|vroot] args
-# Assumes we have only one slave device per device
-set_dm_slave() {
+# Set the mapped device and its args for a device.
+# Usage:
+#   set_dm_device $dm_config [vboot|vroot] args
+# Assumes we have only one mapped device per device.
+set_dm_device() {
   local dm=$1
   local device=$2
-  local slave=$3
+  local args=$3
   echo $(echo "${dm}" |
-    sed -nre "s#(.*${device}[^,]*,)([^,]*)(.*)#\1${slave}\3#p")
+    sed -nre "s#(.*${device}[^,]*,)([^,]*)(.*)#\1${args}\3#p")
 }
 
 CALCULATED_KERNEL_CONFIG=
@@ -154,7 +156,7 @@ calculate_rootfs_hash() {
     warn "Couldn't grab dm_config. Aborting rootfs hash calculation."
     return 1
   fi
-  local vroot_dev=$(get_dm_slave "${dm_config}" vroot)
+  local vroot_dev=$(get_dm_device "${dm_config}" vroot)
 
   # Extract the key-value parameters from the kernel command line.
   local rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
@@ -169,15 +171,15 @@ calculate_rootfs_hash() {
   fi
 
   # Run the verity tool on the rootfs partition.
-  local slave=$(sudo verity mode=create \
+  local table=$(sudo verity mode=create \
     alg=${verity_algorithm} \
     payload="${rootfs_image}" \
     payload_blocks=$((rootfs_sectors / 8)) \
     hashtree="${hash_image}" ${salt_arg})
   # Reconstruct new kernel config command line and replace placeholders.
-  slave="$(echo "${slave}" |
+  table="$(echo "${table}" |
     sed -s "s|ROOT_DEV|${root_dev}|g;s|HASH_DEV|${hash_dev}|")"
-  CALCULATED_DM_ARGS="$(set_dm_slave "${dm_config}" vroot "${slave}")"
+  CALCULATED_DM_ARGS="$(set_dm_device "${dm_config}" vroot "${table}")"
   CALCULATED_KERNEL_CONFIG="$(echo "${kernel_config}" |
     sed -e 's#\(.*dm="\)\([^"]*\)\(".*\)'"#\1${CALCULATED_DM_ARGS}\3#g")"
 }
