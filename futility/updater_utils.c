@@ -172,6 +172,45 @@ static int load_firmware_version(struct firmware_image *image,
 	return 0;
 }
 
+static int parse_firmware_image(struct firmware_image *image)
+{
+	int ret = IMAGE_LOAD_SUCCESS;
+	const char *section_a = NULL, *section_b = NULL;
+
+	VB2_DEBUG("Image size: %d\n", image->size);
+	assert(image->data);
+
+	image->fmap_header = fmap_find(image->data, image->size);
+
+	if (!image->fmap_header) {
+		ERROR("Invalid image file (missing FMAP): %s\n", image->file_name);
+		ret = IMAGE_PARSE_FAILURE;
+	}
+
+	if (load_firmware_version(image, FMAP_RO_FRID, &image->ro_version))
+		ret = IMAGE_PARSE_FAILURE;
+
+	if (firmware_section_exists(image, FMAP_RW_FWID_A)) {
+		section_a = FMAP_RW_FWID_A;
+		section_b = FMAP_RW_FWID_B;
+	} else if (firmware_section_exists(image, FMAP_RW_FWID)) {
+		section_a = FMAP_RW_FWID;
+		section_b = FMAP_RW_FWID;
+	} else if (!ret) {
+		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", image->file_name);
+		ret = IMAGE_PARSE_FAILURE;
+	}
+
+	/*
+	 * Load and initialize both RW A and B sections.
+	 * Note some unit tests will create only RW A.
+	 */
+	load_firmware_version(image, section_a, &image->rw_version_a);
+	load_firmware_version(image, section_b, &image->rw_version_b);
+
+	return ret;
+}
+
 /*
  * Loads a firmware image from file.
  * If archive is provided and file_name is a relative path, read the file from
@@ -182,9 +221,6 @@ static int load_firmware_version(struct firmware_image *image,
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive)
 {
-	int ret = IMAGE_LOAD_SUCCESS;
-	const char *section_a = NULL, *section_b = NULL;
-
 	if (!file_name) {
 		ERROR("No file name given\n");
 		return IMAGE_READ_FAILURE;
@@ -202,38 +238,9 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 		return IMAGE_READ_FAILURE;
 	}
 
-	VB2_DEBUG("Image size: %d\n", image->size);
-	assert(image->data);
 	image->file_name = strdup(file_name);
-	image->fmap_header = fmap_find(image->data, image->size);
 
-	if (!image->fmap_header) {
-		ERROR("Invalid image file (missing FMAP): %s\n", file_name);
-		ret = IMAGE_PARSE_FAILURE;
-	}
-
-	if (load_firmware_version(image, FMAP_RO_FRID, &image->ro_version))
-		ret = IMAGE_PARSE_FAILURE;
-
-	if (firmware_section_exists(image, FMAP_RW_FWID_A)) {
-		section_a = FMAP_RW_FWID_A;
-		section_b = FMAP_RW_FWID_B;
-	} else if (firmware_section_exists(image, FMAP_RW_FWID)) {
-		section_a = FMAP_RW_FWID;
-		section_b = FMAP_RW_FWID;
-	} else if (!ret) {
-		ERROR("Unsupported VBoot firmware (no RW ID): %s\n", file_name);
-		ret = IMAGE_PARSE_FAILURE;
-	}
-
-	/*
-	 * Load and initialize both RW A and B sections.
-	 * Note some unit tests will create only RW A.
-	 */
-	load_firmware_version(image, section_a, &image->rw_version_a);
-	load_firmware_version(image, section_b, &image->rw_version_b);
-
-	return ret;
+	return parse_firmware_image(image);
 }
 
 /*
