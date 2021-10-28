@@ -1497,6 +1497,8 @@ enum vb2_screen {
 enum vb2_ui_error {
 	/* No error */
 	VB2_UI_ERROR_NONE = 0,
+	/* MiniOS boot failed */
+	VB2_UI_ERROR_MINIOS_BOOT_FAILED,
 	/* Dev mode already enabled */
 	VB2_UI_ERROR_DEV_MODE_ALREADY_ENABLED,
 	/* Untrusted confirmation */
