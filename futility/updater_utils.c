@@ -27,7 +27,6 @@
 #define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
 
 enum flashrom_ops {
-	FLASHROM_READ,
 	FLASHROM_WP_STATUS,
 };
 
@@ -562,11 +561,6 @@ static int host_flashrom(enum flashrom_ops op, const char *image_path,
 	}
 
 	switch (op) {
-	case FLASHROM_READ:
-		op_cmd = "-r";
-		assert(image_path);
-		break;
-
 	case FLASHROM_WP_STATUS:
 		op_cmd = "--wp-status";
 		assert(image_path == NULL);
@@ -650,6 +644,37 @@ static char *flashrom_extract_params(const char *str, char **prog, char **params
 	*prog = strtok(tmp, ":");
 	*params = strtok(NULL, "");
 	return tmp;
+}
+
+static int host_flashrom_read(struct firmware_image *image)
+{
+	int r = 0;
+	size_t len = 0;
+
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(image->programmer, &programmer, &params);
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	r |= flashrom_init(1);
+	r |= flashrom_programmer_init(&prog, programmer, params);
+	r |= flashrom_flash_probe(&flashctx, prog, NULL);
+
+	len = flashrom_flash_getsize(flashctx);
+	image->data = calloc(1, len);
+	image->size = len;
+	image->file_name = strdup("<none>");
+
+	r |= flashrom_image_read(flashctx, image->data, len);
+
+	r |= flashrom_programmer_shutdown(prog);
+	flashrom_flash_release(flashctx);
+	free(tmp);
+
+	return r;
 }
 
 static int host_flashrom_write(const struct firmware_image *image,
@@ -750,26 +775,10 @@ int load_system_firmware(struct firmware_image *image,
 			 struct tempfile *tempfiles, int verbosity)
 {
 	int r;
-	const char *tmp_path = create_temp_file(tempfiles);
 
-	if (!tmp_path)
-		return -1;
-
-	r = host_flashrom(FLASHROM_READ, tmp_path, image->programmer,
-			  verbosity, NULL, NULL);
-	/*
-	 * The verbosity for host_flashrom will be translated to
-	 * (verbosity-1)*'-V', and usually 3*'-V' is enough for debugging.
-	 */
-	const int debug_verbosity = 4;
-	if (r && verbosity < debug_verbosity) {
-		/* Read again, with verbose messages for debugging. */
-		WARN("Failed reading system firmware (%d), try again...\n", r);
-		r = host_flashrom(FLASHROM_READ, tmp_path, image->programmer,
-				  debug_verbosity, NULL, NULL);
-	}
+	r = host_flashrom_read(image);
 	if (!r)
-		r = load_firmware_image(image, tmp_path, NULL);
+		r = parse_firmware_image(image);
 	return r;
 }
 
