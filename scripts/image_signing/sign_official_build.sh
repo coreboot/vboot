@@ -711,6 +711,7 @@ resign_android_image_if_exists() {
 # Args: LOOPDEV
 sign_uefi_binaries() {
   local loopdev="$1"
+  local efi_glob="*.efi"
 
   if [[ ! -d "${KEY_DIR}/uefi" ]]; then
     return 0
@@ -727,13 +728,18 @@ sign_uefi_binaries() {
   # in the signing repo. This is a temporary fix to unblock reven-release.
   if [[ "${KEY_DIR}" != *"Reven"* ]]; then
     "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
+  else
+    # b/205145491: the reven board's boot*.efi files are already signed,
+    # change the glob so that they don't get resigned.
+    efi_glob="grub*.efi"
   fi
-  "${SCRIPT_DIR}/sign_uefi.sh" "${esp_dir}" "${KEY_DIR}/uefi"
+  "${SCRIPT_DIR}/sign_uefi.sh" "${esp_dir}" "${KEY_DIR}/uefi" "${efi_glob}"
   sudo umount "${esp_dir}"
 
   local rootfs_dir="$(make_temp_dir)"
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
-  "${SCRIPT_DIR}/sign_uefi.sh" "${rootfs_dir}/boot" "${KEY_DIR}/uefi"
+  "${SCRIPT_DIR}/sign_uefi.sh" "${rootfs_dir}/boot" "${KEY_DIR}/uefi" \
+                               "${efi_glob}"
   sudo umount "${rootfs_dir}"
 
   info "Signed UEFI binaries"

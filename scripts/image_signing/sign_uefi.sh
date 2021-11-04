@@ -9,7 +9,7 @@ set -e
 
 usage() {
   cat <<EOF
-Usage: $PROG /path/to/target/dir /path/to/uefi/keys/dir
+Usage: $PROG /path/to/target/dir /path/to/uefi/keys/dir efi_glob
 
 Sign the UEFI binaries in the target directory.
 The target directory can be either the root of ESP or /boot of root filesystem.
@@ -47,9 +47,10 @@ sign_efi_file() {
 main() {
   local target_dir="$1"
   local key_dir="$2"
+  local efi_glob="$3"
 
-  if [[ $# -ne 2 ]]; then
-    usage "command takes exactly 2 args"
+  if [[ $# -ne 3 ]]; then
+    usage "command takes exactly 3 args"
   fi
 
   if ! type -P sbattach &>/dev/null; then
@@ -84,7 +85,8 @@ main() {
   local working_dir="$(make_temp_dir)"
 
   local efi_file
-  for efi_file in "${bootloader_dir}"/*.efi; do
+  # Leave ${efi_glob} unquoted so that globbing occurs.
+  for efi_file in "${bootloader_dir}"/${efi_glob}; do
     if [[ ! -f "${efi_file}" ]]; then
       continue
     fi
