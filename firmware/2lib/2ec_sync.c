@@ -160,10 +160,10 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	int in_rw = 0;
 	/*
-	 * We don't use vb2ex_ec_trusted, which checks EC_IN_RW. It is
-	 * controlled by cr50 but on some platforms, cr50 can't know when a EC
-	 * resets. So, we trust what EC-RW says. If it lies it's in RO, we'll
-	 * flash RW while it's in RW.
+	 * We don't use VB2_CONTEXT_EC_TRUSTED, which checks if not EC_IN_RW.
+	 * It is controlled by cr50 but on some platforms, cr50 can't know when
+	 * a EC resets. So, we trust what EC-RW says. If it lies it's in RO,
+	 * we'll flash RW while it's in RW.
 	 */
 	/* If we couldn't determine where the EC was, reboot to recovery. */
 	VB2_TRY(vb2ex_ec_running_rw(&in_rw),

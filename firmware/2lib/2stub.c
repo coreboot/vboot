@@ -75,12 +75,6 @@ vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
 /* auxfw and EC-related stubs */
 
 __attribute__((weak))
-int vb2ex_ec_trusted(void)
-{
-	return 1;
-}
-
-__attribute__((weak))
 vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 {
 	*in_rw = 0;
