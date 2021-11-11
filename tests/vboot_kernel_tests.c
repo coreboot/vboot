@@ -51,6 +51,7 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_packed_key mock_key;
+static enum vb2_boot_mode *boot_mode;
 
 /**
  * Reset mock data (for use before each test)
@@ -113,6 +114,9 @@ static void ResetMocks(void)
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
 	fwmp = (struct vb2_secdata_fwmp *)ctx->secdata_fwmp;
 	memcpy(&fwmp->dev_key_hash, mock_digest, sizeof(fwmp->dev_key_hash));
+
+	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
 
 	// TODO: more workbuf fields - flags, secdata_firmware
 
@@ -337,6 +341,7 @@ static void LoadKernelTest(void)
 	/* In dev mode, fail if hash is bad too */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	keyblock_verify_fail = 2;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Fail key block dev hash");
@@ -344,6 +349,7 @@ static void LoadKernelTest(void)
 	/* But just bad sig is ok */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	keyblock_verify_fail = 1;
 	TestLoadKernel(0, "Succeed keyblock dev sig");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  use hash");
@@ -351,6 +357,7 @@ static void LoadKernelTest(void)
 	/* In dev mode and requiring signed kernel, fail if sig is bad */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	keyblock_verify_fail = 1;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
@@ -358,6 +365,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	keyblock_verify_fail = 1;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
@@ -387,6 +395,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
@@ -395,6 +404,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
@@ -402,6 +412,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
@@ -410,6 +421,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE | VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
@@ -418,6 +430,7 @@ static void LoadKernelTest(void)
 	/* Check keyblock flags (dev mode + signed kernel required) */
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
@@ -427,6 +440,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
@@ -436,6 +450,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
@@ -445,6 +460,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
@@ -477,12 +493,12 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	TestLoadKernel(0, "Key version ignored in dev mode");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	TestLoadKernel(0, "Key version ignored in rec mode");
 
 	ResetMocks();
@@ -500,18 +516,18 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	kph.kernel_version = 0;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	TestLoadKernel(0, "Kernel version ignored in dev mode");
 
 	ResetMocks();
 	kph.kernel_version = 0;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	TestLoadKernel(0, "Kernel version ignored in rec mode");
 
 	/* Check kernel version (dev mode + signed kernel required) */
 	ResetMocks();
 	kbh.data_key.key_version = 0;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock key version checked in dev mode "
@@ -519,7 +535,7 @@ static void LoadKernelTest(void)
 
 	ResetMocks();
 	kbh.data_key.key_version = 0;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		       "Keyblock key version checked in dev mode "
@@ -527,7 +543,7 @@ static void LoadKernelTest(void)
 
 	/* Check developer key hash - bad */
 	ResetMocks();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	fwmp->dev_key_hash[0]++;
 	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
@@ -535,15 +551,14 @@ static void LoadKernelTest(void)
 
 	/* Check developer key hash - bad (recovery mode) */
 	ResetMocks();
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	fwmp->dev_key_hash[0]++;
 	TestLoadKernel(0, "Bad keyblock dev fwmp hash ignored in rec mode");
 
 	/* Check developer key hash - good */
 	ResetMocks();
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	TestLoadKernel(0, "Good keyblock dev fwmp hash");
 

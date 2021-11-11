@@ -259,6 +259,58 @@ enum vb2_context_flags {
 	VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED = (1 << 27),
 };
 
+/* Boot mode decided in vb2api_fw_phase1.
+ *
+ * Boot mode is a constant set by verified boot and may be read (but should not
+ * be set or cleared) by the caller.
+ * The boot modes are mutually exclusive. If a boot fulfill more than one
+ * constraints of the listing boot modes, it will be set to the most important
+ * one. The priority is the same as the listing order.
+ */
+enum vb2_boot_mode {
+	/* Undefined, The boot mode is not set. */
+	VB2_BOOT_MODE_UNDEFINED = 0,
+
+	/*
+	 * Manual recovery boot, regardless of dev mode state.
+	 *
+	 * VB2_CONTEXT_RECOVERY_MODE is set and the recovery is physically
+	 * requested (a.k.a. Manual recovery).  All other recovery requests
+	 * including manual recovery requested by a (compromised) host will end
+	 * up with a broken screen.
+	 */
+	VB2_BOOT_MODE_MANUAL_RECOVERY = 1,
+
+	/*
+	 * Broken screen.
+	 *
+	 * If a recovery boot is not a manual recovery (a.k.a. not requested
+	 * physically), the recovery is not allowed and will end up with
+	 * broken screen.
+	 */
+	VB2_BOOT_MODE_BROKEN_SCREEN = 2,
+
+	/*
+	 * Diagnostic boot.
+	 *
+	 * If diagnostic boot is enabled (a.k.a. vb2api_diagnostic_ui_enabled)
+	 * and the nvdata contains VB2_NV_DIAG_REQUEST from previous boot, it
+	 * will boot to diagnostic mode.
+	 */
+	VB2_BOOT_MODE_DIAGNOSTICS = 3,
+
+	/*
+	 * Developer boot: self-signed kernel okay.
+	 *
+	 * The developer mode switch is set (a.k.a. VB2_CONTEXT_DEVELOPER_MODE)
+	 * and we are in the developer boot mode.
+	 */
+	VB2_BOOT_MODE_DEVELOPER = 4,
+
+	/* Normal boot: kernel must be verified. */
+	VB2_BOOT_MODE_NORMAL = 5,
+};
+
 /* Helper for aligning fields in vb2_context. */
 #define VB2_PAD_STRUCT3(size, align, count) \
 	uint8_t _pad##count[align - (((size - 1) % align) + 1)]
@@ -333,6 +385,16 @@ struct vb2_context {
 	 */
 	uint8_t secdata_fwmp[VB2_SECDATA_FWMP_MAX_SIZE];
 	VB2_PAD_STRUCT(VB2_SECDATA_FWMP_MAX_SIZE, 8);
+
+	/**********************************************************************
+	 * Fields below added in struct version 3.1.
+	 */
+
+	/*
+	 * Mutually exclusive boot mode.
+	 * This constant is initialized after calling vb2api_fw_phase1().
+	 */
+	const enum vb2_boot_mode boot_mode;
 };
 
 /* Resource index for vb2ex_read_resource() */
