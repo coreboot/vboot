@@ -654,8 +654,6 @@ static void enable_dev_tests(void)
 	TEST_NEQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
 	         VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE, 0,
 		 "  dev mode flag set");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL), BOOT_EXTERNAL_ON_DEV,
-		"  NV_DEV_BOOT_EXTERNAL set according to compile-time flag");
 
 	/* secdata_firmware not initialized, aborts */
 	reset_common_data();

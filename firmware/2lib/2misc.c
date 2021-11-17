@@ -391,9 +391,6 @@ vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx)
 	flags |= VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE;
 	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS, flags);
 
-	if (BOOT_EXTERNAL_ON_DEV)
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
-
 	VB2_DEBUG("Mode change will take effect on next reboot\n");
 
 	return VB2_SUCCESS;
