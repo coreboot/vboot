@@ -1376,17 +1376,13 @@ static int updater_apply_white_label(struct updater_config *cfg,
 
 	assert(model->is_white_label);
 	if (!signature_id) {
-		if (cfg->image_current.data) {
-			tmp_image = get_firmware_image_temp_file(
-					&cfg->image_current, &cfg->tempfiles);
-			if (!tmp_image)
-				return 1;
-		} else {
+		if (!cfg->image_current.data) {
 			INFO("Loading system firmware for white label...\n");
 			load_system_firmware(&cfg->image_current,
 					     &cfg->tempfiles, cfg->verbosity);
-			tmp_image = cfg->image_current.file_name;
 		}
+		tmp_image = get_firmware_image_temp_file(
+				&cfg->image_current, &cfg->tempfiles);
 		if (!tmp_image) {
 			ERROR("Failed to get system current firmware\n");
 			return 1;
