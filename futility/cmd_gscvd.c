@@ -22,18 +22,18 @@
 
 /*
  * for testing purposes let's use
- * - tests/devkeys/kernel_subkey.vbprivk as the root private key
- * - tests/devkeys/kernel_subkey.vbpubk as the root public key
+ * - tests/devkeys/arv_root.vbprivk as the root private key
+ * - tests/devkeys/arv_root.vbpubk as the root public key
  *   used for signing of the platform public key
- * - tests/devkeys/firmware_data_key.vbprivk signing platform key
- * - tests/devkeys/firmware_data_key.vbpubk - public key used for signature
+ * - tests/devkeys/arv_platform.vbprivk signing platform key
+ * - tests/devkeys/arv_platform.vbpubk - public key used for signature
  *       verification
  *------------
  * Command to create the signed public key block in ~/tmp/packed:
  *
   ./build/futility/futility vbutil_keyblock --pack ~/tmp/packed \
-       --datapubkey tests/devkeys/firmware_data_key.vbpubk	 \
-       --signprivate tests/devkeys/kernel_subkey.vbprivk
+      --datapubkey  tests/devkeys/arv_platform.vbpubk \
+      --signprivate tests/devkeys/arv_root.vbprivk
  *------------
  * Command to fill RO_GSCVD FMAP area in an AP firmware file. The input AP
  *   firmware file is ~/tmp/image-guybrush.serial.bin, the output signed
@@ -41,14 +41,14 @@
  *
   ./build/futility/futility gscvd --outfile ~/tmp/guybrush-signed \
      -R 818100:10000,f00000:100,f80000:2000,f8c000:1000,0x00804000:0x00000800 \
-     -k ~/tmp/packed -p tests/devkeys/firmware_data_key.vbprivk -b 5a5a4352  \
-     -r tests/devkeys/kernel_subkey.vbpubk ~/tmp/image-guybrush.serial.bin
+     -k ~/tmp/packed -p tests/devkeys/arv_platform.vbprivk -b 5a5a4352  \
+     -r tests/devkeys/arv_root.vbpubk ~/tmp/image-guybrush.serial.bin
  *------------
  * Command to validate a previously signed AP firmware file. The hash is the
  *  sha256sum of tests/devkeys/kernel_subkey.vbpubk:
  *
   build/futility/futility gscvd ~/tmp/guybrush-signed \
-   e432f23d811be795af8ddf6001d2a6c3e2675e3290bc024100e2a10d0fd9c6ee
+   3d74429f35be8d34bcb425d4397e2218e6961afed456a78ce30047f5b54ed158
  */
 
 /* Command line options processing support. */
