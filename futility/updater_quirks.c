@@ -116,10 +116,10 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
 		return 1;
 	}
-	ec_ro_path = cbfs_extract_file(tmp_path, FMAP_RO_SECTION, "ecro",
+	ec_ro_path = cbfs_extract_file(tmp_path, FMAP_RO_CBFS, "ecro",
 				       &cfg->tempfiles);
 	if (!ec_ro_path ||
-	    !cbfs_file_exists(tmp_path, FMAP_RO_SECTION, "ecro.hash")) {
+	    !cbfs_file_exists(tmp_path, FMAP_RO_CBFS, "ecro.hash")) {
 		INFO("No valid EC RO for software sync in AP firmware.\n");
 		return 1;
 	}
