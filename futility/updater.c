@@ -1622,7 +1622,7 @@ int updater_setup_config(struct updater_config *cfg,
 		errorcnt += !!setup_config_quirks(arg->quirks, cfg);
 
 	/* Additional checks. */
-	if (check_single_image && (cfg->ec_image.data || cfg->pd_image.data)) {
+	if (check_single_image && !do_output && (cfg->ec_image.data || cfg->pd_image.data)) {
 		errorcnt++;
 		ERROR("EC/PD images are not supported in current mode.\n");
 	}
