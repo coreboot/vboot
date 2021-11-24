@@ -603,6 +603,7 @@ UTIL_SCRIPT_NAMES_BOARD = \
 	utility/tpm-nvsize
 
 UTIL_BIN_NAMES_SDK = \
+	utility/dumpRSAPublicKey \
 	utility/load_kernel_test \
 	utility/pad_digest_utility \
 	utility/signature_digest_utility \
