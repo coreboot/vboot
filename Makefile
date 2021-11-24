@@ -341,7 +341,7 @@ export BUILD_RUN
 # Default target.
 .PHONY: all
 all: fwlib futil utillib hostlib cgpt tlcl \
-	$(if ${SDK_BUILD},utils_sdk,utils_board) \
+	$(if ${SDK_BUILD},${UTIL_FILES_SDK},${UTIL_FILES_BOARD}) \
 	$(if $(filter x86_64,${ARCH}),$(if $(filter clang,${CC}),fuzzers)) \
 	$(if ${COV},coverage)
 
@@ -593,27 +593,31 @@ ALL_OBJS += ${CGPT_WRAPPER_OBJS}
 UTIL_DEFAULTS = ${BUILD}/default/vboot_reference
 
 # Scripts to install directly (not compiled)
-UTIL_SCRIPTS_SDK = \
+UTIL_SCRIPT_NAMES_SDK = \
 	utility/dev_make_keypair \
 	utility/vbutil_what_keys
-UTIL_SCRIPTS_BOARD = \
+UTIL_SCRIPT_NAMES_BOARD = \
 	utility/chromeos-tpm-recovery \
 	utility/dev_debug_vboot \
 	utility/enable_dev_usb_boot \
 	utility/tpm-nvsize
 
-UTIL_NAMES_SDK = \
+UTIL_BIN_NAMES_SDK = \
 	utility/load_kernel_test \
 	utility/pad_digest_utility \
 	utility/signature_digest_utility \
 	utility/verify_data
-UTIL_NAMES_BOARD = \
+UTIL_BIN_NAMES_BOARD = \
 	utility/crossystem \
 	utility/dumpRSAPublicKey \
 	utility/tpmc
 
-UTIL_BINS_SDK = $(addprefix ${BUILD}/,${UTIL_NAMES_SDK})
-UTIL_BINS_BOARD = $(addprefix ${BUILD}/,${UTIL_NAMES_BOARD})
+UTIL_SCRIPTS_SDK = $(addprefix ${BUILD}/,${UTIL_SCRIPT_NAMES_SDK})
+UTIL_SCRIPTS_BOARD = $(addprefix ${BUILD}/,${UTIL_SCRIPT_NAMES_BOARD})
+UTIL_BINS_SDK = $(addprefix ${BUILD}/,${UTIL_BIN_NAMES_SDK})
+UTIL_BINS_BOARD = $(addprefix ${BUILD}/,${UTIL_BIN_NAMES_BOARD})
+UTIL_FILES_SDK = ${UTIL_BINS_SDK} ${UTIL_SCRIPTS_SDK}
+UTIL_FILES_BOARD = ${UTIL_BINS_BOARD} ${UTIL_SCRIPTS_BOARD}
 ALL_OBJS += $(addsuffix .o,${UTIL_BINS_SDK})
 ALL_OBJS += $(addsuffix .o,${UTIL_BINS_BOARD})
 
@@ -831,7 +835,9 @@ clean:
 
 .PHONY: install
 install: cgpt_install signing_install futil_install pc_files_install \
-	lib_install $(if ${SDK_BUILD},utils_install_sdk,utils_install_board)
+	lib_install $(if ${SDK_BUILD},,util_install_defaults) \
+	$(foreach f,$(if ${SDK_BUILD},${UTIL_FILES_SDK},${UTIL_FILES_BOARD}), \
+		util_install-$(patsubst ${BUILD}/%,%,${f}))
 
 .PHONY: install_dev
 install_dev: devkeys_install headers_install
@@ -841,8 +847,9 @@ install_mtd: install cgpt_wrapper_install
 
 .PHONY: install_for_test
 install_for_test: override DESTDIR = ${TEST_INSTALL_DIR}
-install_for_test: test_setup
-install_for_test: install utils_install_sdk utils_install_board
+install_for_test: test_setup install \
+	$(foreach f,${UTIL_FILES_SDK} ${UTIL_FILES_BOARD}, \
+		util_install-$(patsubst ${BUILD}/%,%,${f}))
 
 # Don't delete intermediate object files
 .SECONDARY:
@@ -1000,27 +1007,23 @@ ${UTIL_BINS_SDK}: LIBS = ${UTILLIB}
 ${UTIL_BINS_BOARD}: ${UTILLIB}
 ${UTIL_BINS_BOARD}: LIBS = ${UTILLIB}
 
-.PHONY: utils_sdk
-utils_sdk: ${UTIL_BINS_SDK} ${UTIL_SCRIPTS_SDK}
-	${Q}cp -f ${UTIL_SCRIPTS_SDK} ${BUILD}/utility
-	${Q}chmod a+rx $(patsubst %,${BUILD}/%,${UTIL_SCRIPTS_SDK})
+${UTIL_SCRIPTS_SDK} ${UTIL_SCRIPTS_BOARD}: ${BUILD}/%: %
+	${Q}cp -f $< $@
+	${Q}chmod a+rx $@
 
-.PHONY: utils_board
-utils_board: ${UTIL_BINS_BOARD} ${UTIL_SCRIPTS_BOARD}
-	${Q}cp -f ${UTIL_SCRIPTS_BOARD} ${BUILD}/utility
-	${Q}chmod a+rx $(patsubst %,${BUILD}/%,${UTIL_SCRIPTS_BOARD})
+define UTIL_INSTALL_template
+.PHONY: util_install-$(1)
+util_install-$(1): $$(addprefix $${BUILD}/,$(1))
+	@${PRINTF} "    INSTALL       $(1)\n"
+	${Q}mkdir -p $${UB_DIR}
+	${Q}${INSTALL} -t $${UB_DIR} $$<
+endef
 
-.PHONY: utils_install_sdk
-utils_install_sdk: utils_sdk
-	@${PRINTF} "    INSTALL       UTILS\n"
-	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_BINS_SDK} ${UTIL_SCRIPTS_SDK}
+$(foreach f, $(sort ${UTIL_FILES_SDK} ${UTIL_FILES_BOARD}), \
+	$(eval $(call UTIL_INSTALL_template,$(patsubst ${BUILD}/%,%,${f}))))
 
-.PHONY: utils_install_board
-utils_install_board: utils_board ${UTIL_DEFAULTS}
-	@${PRINTF} "    INSTALL       UTILS\n"
-	${Q}mkdir -p ${UB_DIR}
-	${Q}${INSTALL} -t ${UB_DIR} ${UTIL_BINS_BOARD} ${UTIL_SCRIPTS_BOARD}
+.PHONY: util_install_defaults
+util_install_defaults: ${UTIL_DEFAULTS}
 	${Q}mkdir -p ${DF_DIR}
 	${Q}${INSTALL} -t ${DF_DIR} -m 'u=rw,go=r,a-s' ${UTIL_DEFAULTS}
 
@@ -1218,7 +1221,7 @@ ${FUTIL_CMD_LIST}: ${FUTIL_SRCS}
 # Targets that exist just to run tests
 
 .PHONY: test_setup
-test_setup:: cgpt utils_sdk utils_board futil tests
+test_setup:: cgpt ${UTIL_FILES_SDK} ${UTIL_FILES_BOARD} futil tests
 
 # Qemu setup for cross-compiled tests.  Need to copy qemu binary into the
 # sysroot.
