@@ -895,6 +895,8 @@ static const struct vb2_screen_info developer_to_norm_screen = {
 /******************************************************************************/
 /* VB2_SCREEN_DEVELOPER_BOOT_EXTERNAL */
 
+#define DEVELOPER_BOOT_EXTERNAL_ITEM_BACK 1
+
 static vb2_error_t developer_boot_external_init(struct vb2_ui_context *ui)
 {
 	vb2_error_t rv;
@@ -908,6 +910,7 @@ static vb2_error_t developer_boot_external_init(struct vb2_ui_context *ui)
 		return vb2_ui_screen_back(ui);
 	}
 
+	ui->state->selected_item = DEVELOPER_BOOT_EXTERNAL_ITEM_BACK;
 	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
 	/* If the status of the external disk doesn't match, skip the screen. */
 	if (rv != VB2_ERROR_LK_NO_DISK_FOUND)
@@ -918,7 +921,7 @@ static vb2_error_t developer_boot_external_init(struct vb2_ui_context *ui)
 
 static const struct vb2_menu_item developer_boot_external_items[] = {
 	LANGUAGE_SELECT_ITEM,
-	BACK_ITEM,
+	[DEVELOPER_BOOT_EXTERNAL_ITEM_BACK] = BACK_ITEM,
 	POWER_OFF_ITEM,
 };
 
@@ -934,9 +937,11 @@ static const struct vb2_screen_info developer_boot_external_screen = {
 /******************************************************************************/
 /* VB2_SCREEN_DEVELOPER_INVALID_DISK */
 
+#define DEVELOPER_INVALID_DISK_ITEM_BACK 1
+
 static const struct vb2_menu_item developer_invalid_disk_items[] = {
 	LANGUAGE_SELECT_ITEM,
-	BACK_ITEM,
+	[DEVELOPER_INVALID_DISK_ITEM_BACK] = BACK_ITEM,
 	POWER_OFF_ITEM,
 };
 
@@ -953,6 +958,7 @@ static vb2_error_t developer_invalid_disk_init(struct vb2_ui_context *ui)
 		return vb2_ui_screen_back(ui);
 	}
 
+	ui->state->selected_item = DEVELOPER_INVALID_DISK_ITEM_BACK;
 	rv = VbTryLoadKernel(ui->ctx, VB_DISK_FLAG_REMOVABLE);
 	/* If the status of the external disk doesn't match, skip the screen. */
 	if (rv == VB2_SUCCESS || rv == VB2_ERROR_LK_NO_DISK_FOUND)
