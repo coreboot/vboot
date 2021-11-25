@@ -25,7 +25,8 @@ static void reset_common_data(void)
 		  "vb2api_init failed");
 
 	sd = vb2_get_sd(ctx);
-	sd->status = VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 
 	memset(&gbb, 0, sizeof(gbb));
 
@@ -199,6 +200,13 @@ static void get_flag_test(void)
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FWMP_INIT;
 	TEST_ABORT(vb2_secdata_fwmp_get_flag(ctx, 0),
 		   "non-init in normal mode triggers abort");
+
+	/* FWMP hasn't been initialized (before recovery decision) */
+	reset_common_data();
+	sd->status &= ~VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->status &= ~VB2_SD_STATUS_RECOVERY_DECIDED;
+	TEST_EQ(vb2_secdata_fwmp_get_flag(ctx, 0), 0,
+		"non-init in fw_phase1 forces default flag value");
 }
 
 static void get_dev_key_hash_test(void)
@@ -221,6 +229,13 @@ static void get_dev_key_hash_test(void)
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FWMP_INIT;
 	TEST_ABORT(vb2_secdata_fwmp_get_dev_key_hash(ctx),
 		   "non-init in normal mode triggers abort");
+
+	/* FWMP hasn't been initialized (before recovery decision) */
+	reset_common_data();
+	sd->status &= ~VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->status &= ~VB2_SD_STATUS_RECOVERY_DECIDED;
+	TEST_TRUE(vb2_secdata_fwmp_get_dev_key_hash(ctx) == NULL,
+		  "non-init in fw_phase1 forces NULL pointer");
 
 	/* Success case */
 	reset_common_data();

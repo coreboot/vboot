@@ -40,7 +40,7 @@ static void reset_common_data(void)
 		  "vb2api_init failed");
 
 	sd = vb2_get_sd(ctx);
-	sd->status = VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
 
 	memset(&gbb, 0, sizeof(gbb));
 
@@ -268,12 +268,17 @@ static void misc_tests(void)
 		"vb_workbuf_from_ctx() size");
 
 	reset_common_data();
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 	TEST_ABORT(VB2_REC_OR_DIE(ctx, "die\n"), "REC_OR_DIE in normal mode");
 
 	reset_common_data();
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	VB2_REC_OR_DIE(ctx, "VB2_REC_OR_DIE() test in recovery mode\n");
 	/* Would exit here if it didn't work as intended. */
+
+	reset_common_data();
+	VB2_REC_OR_DIE(ctx, "VB2_REC_OR_DIE() test in fw_phase1\n");
 }
 
 static void gbb_tests(void)
@@ -421,12 +426,16 @@ static void recovery_tests(void)
 {
 	/* No recovery */
 	reset_common_data();
+	TEST_EQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		0, "recovery not yet decided before testing check_recovery()");
 	vb2_check_recovery(ctx);
 	TEST_EQ(sd->recovery_reason, 0, "No recovery reason");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		0, "Not manual recovery");
 	TEST_EQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE,
 		0, "Not recovery mode");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 
 	/* From request */
 	reset_common_data();
@@ -438,6 +447,8 @@ static void recovery_tests(void)
 		0, "Not manual recovery");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE,
 		 0, "Recovery mode");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 
 	/* From request, but already failed */
 	reset_common_data();
@@ -447,6 +458,8 @@ static void recovery_tests(void)
 	TEST_EQ(sd->recovery_reason, 5, "Recovery reason already failed");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		4, "NV not cleared");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 
 	/* Override */
 	reset_common_data();
@@ -457,6 +470,8 @@ static void recovery_tests(void)
 		"Recovery reason forced");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		 0, "SD flag set");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 
 	/* Override subcode TRAIN_AND_REBOOT */
 	reset_common_data();
@@ -467,6 +482,8 @@ static void recovery_tests(void)
 		"Recovery reason forced");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		 0, "SD flag set");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 
 	/* Promote subcode from BROKEN screen*/
 	reset_common_data();
@@ -477,6 +494,8 @@ static void recovery_tests(void)
 		"Recovery reason forced from BROKEN");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_MANUAL_RECOVERY,
 		 0, "SD flag set");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "Recovery decided");
 }
 
 static void dev_switch_tests(void)
@@ -589,13 +608,15 @@ static void dev_switch_tests(void)
 
 	/*
 	 * secdata_firmware failure in normal mode fails and shows dev=0 even
-	 * if dev mode was on in the (inaccessible) secdata_firmware.
+	 * if dev mode was on in the (inaccessible) secdata_firmware. Since this
+	 * happens in fw_phase1, we do not abort -- we know that when secdata
+	 * is uninitialized here, we must be headed for recovery mode.
 	 */
 	reset_common_data();
 	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_FLAGS,
 				 VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE);
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
-	TEST_ABORT(vb2_check_dev_switch(ctx), "secdata_firmware fail normal");
+	TEST_SUCC(vb2_check_dev_switch(ctx), "secdata_firmware fail normal");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED, 0, "  sd not in dev");
 	TEST_EQ(ctx->flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx not in dev");
 
@@ -659,6 +680,7 @@ static void enable_dev_tests(void)
 	reset_common_data();
 	allow_recovery_retval = 1;
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 	TEST_ABORT(vb2api_enable_developer_mode(ctx),
 		   "secdata_firmware no init, enable dev mode aborted");
 	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;

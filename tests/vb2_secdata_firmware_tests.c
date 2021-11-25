@@ -28,6 +28,9 @@ static void reset_common_data(void)
 
 	sd = vb2_get_sd(ctx);
 
+	/* Most tests assume we have passed fw_phase1() */
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
+
 	sec = (struct vb2_secdata_firmware *)ctx->secdata_firmware;
 }
 
@@ -136,6 +139,25 @@ static void secdata_firmware_test(void)
 					    0x123456ff),
 		   "Set uninitialized");
 	test_changed(ctx, 0, "Set uninitialized doesn't change data");
+
+	/* Read/write uninitialized in recovery mode */
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_EQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS), 0,
+		"Get uninitialized (recmode)");
+	test_changed(ctx, 0, "Get uninitialized (recmode) doesn't change data");
+	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
+				 0x123456ff);
+	test_changed(ctx, 0, "Set uninitialized (recmode) doesn't change data");
+
+	/* Read/write early in fw_phase1 */
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	sd->status &= ~VB2_SD_STATUS_RECOVERY_DECIDED;
+	TEST_EQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_VERSIONS), 0,
+		"Get uninitialized (phase1)");
+	test_changed(ctx, 0, "Get uninitialized (phase1) doesn't change data");
+	vb2_secdata_firmware_set(ctx, VB2_SECDATA_FIRMWARE_VERSIONS,
+				 0x123456ff);
+	test_changed(ctx, 0, "Set uninitialized (phase1) doesn't change data");
 }
 
 int main(int argc, char* argv[])

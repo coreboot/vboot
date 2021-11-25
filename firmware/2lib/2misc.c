@@ -164,6 +164,8 @@ void vb2_check_recovery(struct vb2_context *ctx)
 			  sd->recovery_reason,
 			  vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE));
 	}
+
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 }
 
 vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)

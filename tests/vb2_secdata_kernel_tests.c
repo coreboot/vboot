@@ -30,6 +30,9 @@ static void reset_common_data(void)
 
 	sd = vb2_get_sd(ctx);
 
+	/* Most tests assume we have passed fw_phase1() */
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
+
 	sec02 = (struct vb2_secdata_kernel_v0 *)ctx->secdata_kernel;
 	sec10 = (struct vb2_secdata_kernel_v1 *)ctx->secdata_kernel;
 }
@@ -245,7 +248,27 @@ static void secdata_kernel_access_test_v10(void)
 		   "Set uninitialized");
 	test_changed(ctx, 0, "Set uninitialized doesn't change data");
 
+	/* Read/write uninitialized in recovery mode */
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS), 0,
+		"Get uninitialized (recmode)");
+	test_changed(ctx, 0, "Get uninitialized (recmode) doesn't change data");
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
+				 0x123456ff);
+	test_changed(ctx, 0, "Set uninitialized (recmode) doesn't change data");
+
+	/* Read/write early in fw_phase1 */
+	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	sd->status &= ~VB2_SD_STATUS_RECOVERY_DECIDED;
+	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS), 0,
+		"Get uninitialized (phase1)");
+	test_changed(ctx, 0, "Get uninitialized (phase1) doesn't change data");
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
+				 0x123456ff);
+	test_changed(ctx, 0, "Set uninitialized (phase1) doesn't change data");
+
 	/* Test EC hash set */
+	reset_common_data();
 	vb2api_secdata_kernel_create(ctx);
 	vb2_secdata_kernel_init(ctx);
 	memset(ec_hash, 0xaa, sizeof(ec_hash));

@@ -59,6 +59,7 @@ static void reset_common_data(enum reset_type t)
 		  "vb2api_init failed");
 
 	sd = vb2_get_sd(ctx);
+	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 	vb2_nv_init(ctx);
 
 	vb2api_secdata_kernel_create(ctx);

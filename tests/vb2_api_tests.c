@@ -374,6 +374,8 @@ static void phase1_tests(void)
 		 0, "  secdata firmware initialized");
 	TEST_NEQ(sd->status & VB2_SD_STATUS_SECDATA_KERNEL_INIT,
 		 0, "  secdata kernel initialized");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	retval_vb2_fw_init_gbb = VB2_ERROR_GBB_MAGIC;
@@ -383,6 +385,8 @@ static void phase1_tests(void)
 		"  recovery reason");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	/* Dev switch error proceeds to a recovery boot */
 	reset_common_data(FOR_MISC);
@@ -398,6 +402,8 @@ static void phase1_tests(void)
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	ctx->secdata_firmware[0] ^= 0x42;
@@ -407,6 +413,8 @@ static void phase1_tests(void)
 		"  recovery reason");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	/* Bad secdata_kernel causes recovery mode */
 	reset_common_data(FOR_MISC);
@@ -417,6 +425,8 @@ static void phase1_tests(void)
 		"  recovery reason");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_RECOVERY_MODE, 0, "  recovery flag");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_CLEAR_RAM, 0, "  clear ram flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	/* Test secdata_firmware-requested reboot */
 	reset_common_data(FOR_MISC);
@@ -428,6 +438,8 @@ static void phase1_tests(void)
 		1, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
+	TEST_EQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	vb2_nv_set(ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
@@ -438,6 +450,8 @@ static void phase1_tests(void)
 		0, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
@@ -450,6 +464,8 @@ static void phase1_tests(void)
 		1, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  recovery request");
+	TEST_EQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
@@ -462,6 +478,8 @@ static void phase1_tests(void)
 		1, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_TPM_REBOOT, "  recovery request");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
@@ -474,6 +492,8 @@ static void phase1_tests(void)
 		1, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_UNSPECIFIED, "  recovery request");
+	TEST_EQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	vb2_nv_set(ctx, VB2_NV_TPM_REQUESTED_REBOOT, 1);
@@ -486,6 +506,8 @@ static void phase1_tests(void)
 		0, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_UNSPECIFIED, "  recovery request");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	ctx->flags |= VB2_CONTEXT_SECDATA_WANTS_REBOOT;
@@ -499,6 +521,8 @@ static void phase1_tests(void)
 		1, "  tpm reboot request");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_RO_UNSPECIFIED, "  recovery request");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	/* Cases for checking DISPLAY_INIT and DISPLAY_AVAILABLE. */
 	reset_common_data(FOR_MISC);
@@ -508,6 +532,8 @@ static void phase1_tests(void)
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
@@ -516,6 +542,8 @@ static void phase1_tests(void)
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 
 	reset_common_data(FOR_MISC);
 	force_dev_mode = 1;
@@ -524,6 +552,8 @@ static void phase1_tests(void)
 		 0, "  display init context flag");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE,
 		 0, "  display available SD flag");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_RECOVERY_DECIDED,
+		 0, "  recovery decided");
 }
 
 static void phase2_tests(void)

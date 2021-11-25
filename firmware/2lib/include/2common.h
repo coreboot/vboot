@@ -10,6 +10,7 @@
 
 #include "2api.h"
 #include "2gbb.h"
+#include "2misc.h"
 #include "2packed_key.h"
 #include "2return_codes.h"
 #include "2sha.h"
@@ -66,7 +67,8 @@ struct vb2_public_key;
 
 #define VB2_REC_OR_DIE(ctx, format, args...) do { \
 	VB2_DEBUG(format, ## args); \
-	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) { \
+	if ((vb2_get_sd(ctx)->status & VB2_SD_STATUS_RECOVERY_DECIDED) && \
+	    !(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) { \
 		vb2ex_abort(); \
 		for (;;); \
 	} \

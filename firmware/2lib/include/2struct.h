@@ -85,6 +85,8 @@ enum vb2_shared_data_status {
 	/* EC Sync completed successfully */
 	VB2_SD_STATUS_EC_SYNC_COMPLETE = (1 << 6),
 
+	/* Have checked whether we are booting into recovery mode or not. */
+	VB2_SD_STATUS_RECOVERY_DECIDED = (1 << 7),
 };
 
 /* "V2SD" = vb2_shared_data.magic */
