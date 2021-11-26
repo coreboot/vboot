@@ -145,10 +145,11 @@ int subprocess_run(const char *const argv[],
 
 static void test_read_whole_chip(void)
 {
-	uint8_t *buf;
-	uint32_t buf_sz;
+	struct firmware_image image = {
+		.programmer = "someprog",
+	};
 
-	TEST_SUCC(flashrom_read("someprog", NULL, &buf, &buf_sz),
+	TEST_SUCC(flashrom_read(&image, NULL),
 		  "Flashrom read succeeds");
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
@@ -158,19 +159,20 @@ static void test_read_whole_chip(void)
 	TEST_STR_EQ(captured_op_filename, MOCK_TMPFILE_NAME,
 		    "Reading to correct file");
 	TEST_PTR_EQ(captured_region_param, NULL, "Not operating on a region");
-	TEST_EQ(buf_sz, strlen(MOCK_ROM_CONTENTS), "Contents correct size");
-	TEST_SUCC(memcmp(buf, MOCK_ROM_CONTENTS, buf_sz),
+	TEST_EQ(image.size, strlen(MOCK_ROM_CONTENTS), "Contents correct size");
+	TEST_SUCC(memcmp(image.data, MOCK_ROM_CONTENTS, image.size),
 		  "Buffer has correct contents");
 
-	free(buf);
+	free(image.data);
 }
 
 static void test_read_region(void)
 {
-	uint8_t *buf;
-	uint32_t buf_sz;
+	struct firmware_image image = {
+		.programmer = "someprog",
+	};
 
-	TEST_SUCC(flashrom_read("someprog", "SOME_REGION", &buf, &buf_sz),
+	TEST_SUCC(flashrom_read(&image, "SOME_REGION"),
 		  "Flashrom read succeeds");
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
@@ -181,20 +183,21 @@ static void test_read_region(void)
 		    "Not doing a read of the whole ROM");
 	TEST_STR_EQ(captured_region_param, "SOME_REGION:" MOCK_TMPFILE_NAME,
 		    "Reading to correct file and from correct region");
-	TEST_EQ(buf_sz, strlen(MOCK_ROM_CONTENTS), "Contents correct size");
-	TEST_SUCC(memcmp(buf, MOCK_ROM_CONTENTS, buf_sz),
+	TEST_EQ(image.size, strlen(MOCK_ROM_CONTENTS), "Contents correct size");
+	TEST_SUCC(memcmp(image.data, MOCK_ROM_CONTENTS, image.size),
 		  "Buffer has correct contents");
 
-	free(buf);
+	free(image.data);
 }
 
 static void test_read_failure(void)
 {
-	uint8_t *buf;
-	uint32_t buf_sz;
+	struct firmware_image image = {
+		.programmer = "someprog",
+	};
 
 	flashrom_mock_success = false;
-	TEST_NEQ(flashrom_read("someprog", "SOME_REGION", &buf, &buf_sz),
+	TEST_NEQ(flashrom_read(&image, "SOME_REGION"),
 		 VB2_SUCCESS, "Flashrom read fails");
 	flashrom_mock_success = true;
 }
@@ -202,10 +205,15 @@ static void test_read_failure(void)
 static void test_write_whole_chip(void)
 {
 	uint8_t buf[sizeof(MOCK_ROM_CONTENTS) - 1];
+	struct firmware_image image = {
+		.programmer = "someprog",
+		.data = buf,
+		.size = sizeof(buf),
+	};
 
 	memcpy(buf, MOCK_ROM_CONTENTS, sizeof(buf));
 
-	TEST_SUCC(flashrom_write("someprog", NULL, buf, sizeof(buf)),
+	TEST_SUCC(flashrom_write(&image, NULL),
 		  "Flashrom write succeeds");
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
@@ -224,10 +232,15 @@ static void test_write_whole_chip(void)
 static void test_write_region(void)
 {
 	uint8_t buf[sizeof(MOCK_ROM_CONTENTS) - 1];
+	struct firmware_image image = {
+		.programmer = "someprog",
+		.data = buf,
+		.size = sizeof(buf),
+	};
 
 	memcpy(buf, MOCK_ROM_CONTENTS, sizeof(buf));
 
-	TEST_SUCC(flashrom_write("someprog", "SOME_REGION", buf, sizeof(buf)),
+	TEST_SUCC(flashrom_write(&image, "SOME_REGION"),
 		  "Flashrom write succeeds");
 	TEST_STR_EQ(captured_programmer, "someprog",
 		    "Using specified programmer");
@@ -247,9 +260,14 @@ static void test_write_region(void)
 static void test_write_failure(void)
 {
 	uint8_t buf[20] = { 0 };
+	struct firmware_image image = {
+		.programmer = "someprog",
+		.data = buf,
+		.size = sizeof(buf),
+	};
 
 	flashrom_mock_success = false;
-	TEST_NEQ(flashrom_write("someprog", "SOME_REGION", buf, sizeof(buf)),
+	TEST_NEQ(flashrom_write(&image, "SOME_REGION"),
 		 VB2_SUCCESS, "Flashrom write fails");
 	flashrom_mock_success = true;
 }

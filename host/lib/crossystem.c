@@ -821,21 +821,21 @@ int vb2_read_nv_storage_flashrom(struct vb2_context *ctx)
 {
 	int index;
 	int vbnv_size = vb2_nv_get_size(ctx);
-	uint8_t *flash_buf;
-	uint32_t flash_size;
 
-	if (flashrom_read(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
-			  &flash_buf, &flash_size))
+	struct firmware_image image = {
+		.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP,
+	};
+	if (flashrom_read(&image, VBNV_FMAP_REGION))
 		return -1;
 
-	index = vb2_nv_index(flash_buf, flash_size, vbnv_size);
+	index = vb2_nv_index(image.data, image.size, vbnv_size);
 	if (index < 0) {
-		free(flash_buf);
+		free(image.data);
 		return -1;
 	}
 
-	memcpy(ctx->nvdata, &flash_buf[index * vbnv_size], vbnv_size);
-	free(flash_buf);
+	memcpy(ctx->nvdata, &image.data[index * vbnv_size], vbnv_size);
+	free(image.data);
 	return 0;
 }
 
@@ -845,34 +845,33 @@ int vb2_write_nv_storage_flashrom(struct vb2_context *ctx)
 	int current_index;
 	int next_index;
 	int vbnv_size = vb2_nv_get_size(ctx);
-	uint8_t *flash_buf;
-	uint32_t flash_size;
 
-	if (flashrom_read(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
-			  &flash_buf, &flash_size))
+	struct firmware_image image = {
+		.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP,
+	};
+	if (flashrom_read(&image, VBNV_FMAP_REGION))
 		return -1;
 
-	current_index = vb2_nv_index(flash_buf, flash_size, vbnv_size);
+	current_index = vb2_nv_index(image.data, image.size, vbnv_size);
 	if (current_index < 0) {
 		rv = -1;
 		goto exit;
 	}
 
 	next_index = current_index + 1;
-	if (next_index * vbnv_size == flash_size) {
+	if (next_index * vbnv_size == image.size) {
 		/* VBNV is full.  Erase and write at beginning. */
-		memset(flash_buf, 0xff, flash_size);
+		memset(image.data, 0xff, image.size);
 		next_index = 0;
 	}
 
-	memcpy(&flash_buf[next_index * vbnv_size], ctx->nvdata, vbnv_size);
-	if (flashrom_write(FLASHROM_PROGRAMMER_INTERNAL_AP, VBNV_FMAP_REGION,
-			   flash_buf, flash_size)) {
+	memcpy(&image.data[next_index * vbnv_size], ctx->nvdata, vbnv_size);
+	if (flashrom_write(&image, VBNV_FMAP_REGION)) {
 		rv = -1;
 		goto exit;
 	}
 
  exit:
-	free(flash_buf);
+	free(image.data);
 	return rv;
 }

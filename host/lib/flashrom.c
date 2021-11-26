@@ -103,15 +103,14 @@ static vb2_error_t run_flashrom(const char *const argv[])
 	return VB2_SUCCESS;
 }
 
-vb2_error_t flashrom_read(const char *programmer, const char *region,
-			  uint8_t **data_out, uint32_t *size_out)
+vb2_error_t flashrom_read(struct firmware_image *image, const char *region)
 {
 	char *tmpfile;
 	char region_param[PATH_MAX];
 	vb2_error_t rv;
 
-	*data_out = NULL;
-	*size_out = 0;
+	image->data = NULL;
+	image->size = 0;
 
 	VB2_TRY(write_temp_file(NULL, 0, &tmpfile));
 
@@ -122,7 +121,7 @@ vb2_error_t flashrom_read(const char *programmer, const char *region,
 	const char *const argv[] = {
 		FLASHROM_EXEC_NAME,
 		"-p",
-		programmer,
+		image->programmer,
 		"-r",
 		region ? "-i" : tmpfile,
 		region ? region_param : NULL,
@@ -131,21 +130,20 @@ vb2_error_t flashrom_read(const char *programmer, const char *region,
 
 	rv = run_flashrom(argv);
 	if (rv == VB2_SUCCESS)
-		rv = vb2_read_file(tmpfile, data_out, size_out);
+		rv = vb2_read_file(tmpfile, &image->data, &image->size);
 
 	unlink(tmpfile);
 	free(tmpfile);
 	return rv;
 }
 
-vb2_error_t flashrom_write(const char *programmer, const char *region,
-			   uint8_t *data, uint32_t size)
+vb2_error_t flashrom_write(struct firmware_image *image, const char *region)
 {
 	char *tmpfile;
 	char region_param[PATH_MAX];
 	vb2_error_t rv;
 
-	VB2_TRY(write_temp_file(data, size, &tmpfile));
+	VB2_TRY(write_temp_file(image->data, image->size, &tmpfile));
 
 	if (region)
 		snprintf(region_param, sizeof(region_param), "%s:%s", region,
@@ -154,7 +152,7 @@ vb2_error_t flashrom_write(const char *programmer, const char *region,
 	const char *const argv[] = {
 		FLASHROM_EXEC_NAME,
 		"-p",
-		programmer,
+		image->programmer,
 		"--noverify-all",
 		"-w",
 		region ? "-i" : tmpfile,

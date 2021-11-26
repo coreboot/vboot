@@ -81,35 +81,33 @@ static void reset_test_data(struct vb2_context *ctx, int nvdata_size)
 }
 
 /* Mocked flashrom_read for tests. */
-vb2_error_t flashrom_read(const char *programmer, const char *region,
-			  uint8_t **data_out, uint32_t *size_out)
+vb2_error_t flashrom_read(struct firmware_image *image, const char *region)
 {
 	if (mock_flashrom_fail) {
-		*data_out = NULL;
-		*size_out = 0;
+		image->data = NULL;
+		image->size = 0;
 		return VB2_ERROR_FLASHROM;
 	}
 
-	assert_mock_params(programmer, region);
+	assert_mock_params(image->programmer, region);
 
-	*data_out = malloc(sizeof(fake_flash_region));
-	*size_out = sizeof(fake_flash_region);
-	memcpy(*data_out, fake_flash_region, sizeof(fake_flash_region));
+	image->data = malloc(sizeof(fake_flash_region));
+	image->size = sizeof(fake_flash_region);
+	memcpy(image->data, fake_flash_region, sizeof(fake_flash_region));
 	return VB2_SUCCESS;
 }
 
 /* Mocked flashrom_write for tests. */
-vb2_error_t flashrom_write(const char *programmer, const char *region,
-			   uint8_t *data, uint32_t data_size)
+vb2_error_t flashrom_write(struct firmware_image *image, const char *region)
 {
 	if (mock_flashrom_fail)
 		return VB2_ERROR_FLASHROM;
 
-	assert_mock_params(programmer, region);
+	assert_mock_params(image->programmer, region);
 
-	TEST_EQ(data_size, sizeof(fake_flash_region),
+	TEST_EQ(image->size, sizeof(fake_flash_region),
 		"The flash size is correct");
-	memcpy(fake_flash_region, data, data_size);
+	memcpy(fake_flash_region, image->data, image->size);
 	return VB2_SUCCESS;
 }
 
