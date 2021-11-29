@@ -73,12 +73,12 @@ TEST_INSTALL_DIR = ${BUILD}/install_for_test
 SDK_BUILD ?=
 
 # Verbose? Use V=1
-ifeq (${V},)
+ifeq ($(filter-out 0,${V}),)
 Q := @
 endif
 
 # Quiet? Use QUIET=1
-ifeq (${QUIET},)
+ifeq ($(filter-out 0,${QUIET}),)
 PRINTF := printf
 else
 PRINTF := :
@@ -173,25 +173,25 @@ COMMON_FLAGS += $(call test_ccflag,-Wno-unknown-warning)
 # Needs -Wl because LD is actually set to CC by default.
 LDFLAGS += -Wl,--gc-sections
 
-ifneq (${DEBUG}$(filter-out 0,${TEST_PRINT}),)
+ifneq ($(filter-out 0,${DEBUG})$(filter-out 0,${TEST_PRINT}),)
 CFLAGS += -DVBOOT_DEBUG
 endif
 
-ifeq (${DISABLE_NDEBUG},)
+ifeq ($(filter-out 0,${DISABLE_NDEBUG}),)
 CFLAGS += -DNDEBUG
 endif
 
-ifneq (${FORCE_LOGGING_ON},)
+ifneq ($(filter-out 0,${FORCE_LOGGING_ON}),)
 CFLAGS += -DFORCE_LOGGING_ON=${FORCE_LOGGING_ON}
 endif
 
-ifneq (${TPM2_MODE},)
+ifneq ($(filter-out 0,${TPM2_MODE}),)
 CFLAGS += -DTPM2_MODE
 endif
 
 # Support devices with GPT in SPI-NOR (for nand device)
 # TODO(b:184812319): Consider removing this code if nobody uses it.
-ifneq (${GPT_SPI_NOR},)
+ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
 CFLAGS += -DGPT_SPI_NOR
 endif
 
@@ -203,7 +203,7 @@ CFLAGS += -DEC_EFS=0
 endif
 
 # Some tests need to be disabled when using mocked_secdata_tpm.
-ifneq (${MOCK_TPM},)
+ifneq ($(filter-out 0,${MOCK_TPM}),)
 CFLAGS += -DMOCK_TPM
 endif
 
@@ -245,7 +245,7 @@ cflags_use_64bits := $(call test_ccflag,-D_FILE_OFFSET_BITS=64,\#include <fts.h>
 CFLAGS += $(cflags_use_64bits)
 
 # Code coverage
-ifneq (${COV},)
+ifneq ($(filter-out 0,${COV}),)
   COV_FLAGS = -O0 --coverage -DCOVERAGE
   CFLAGS += ${COV_FLAGS}
   LDFLAGS += ${COV_FLAGS}
@@ -267,19 +267,19 @@ CXX ?= g++
 PKG_CONFIG ?= pkg-config
 
 # Static?
-ifneq (${STATIC},)
+ifneq ($(filter-out 0,${STATIC}),)
 LDFLAGS += -static
 PKG_CONFIG += --static
 endif
 
-ifneq (${FUZZ_FLAGS},)
+ifneq ($(filter-out 0,${FUZZ_FLAGS}),)
 CFLAGS += ${FUZZ_FLAGS}
 endif
 
 # Optional Libraries
 LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
 HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
-ifneq (${HAVE_LIBZIP},)
+ifneq ($(filter-out 0,${HAVE_LIBZIP}),)
   CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
 endif
@@ -399,7 +399,7 @@ FWLIB_SRCS = \
 	firmware/lib20/kernel.c
 
 # TPM lightweight command library
-ifeq (${TPM2_MODE},)
+ifeq ($(filter-out 0,${TPM2_MODE}),)
 TLCL_SRCS = \
 	firmware/lib/tpm_lite/tlcl.c
 else
@@ -410,7 +410,7 @@ TLCL_SRCS = \
 endif
 
 # Support real TPM unless MOCK_TPM is set
-ifneq (${MOCK_TPM},)
+ifneq ($(filter-out 0,${MOCK_TPM}),)
 FWLIB_SRCS += \
 	firmware/lib/tpm_lite/mocked_tlcl.c
 endif
@@ -523,7 +523,7 @@ HOSTLIB_SRCS = \
 	host/lib21/host_misc.c \
 	${TLCL_SRCS}
 
-ifneq (${GPT_SPI_NOR},)
+ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
 HOSTLIB_SRCS += cgpt/cgpt_nor.c
 endif
 
@@ -557,7 +557,7 @@ CGPT_SRCS = \
 	cgpt/cmd_repair.c \
 	cgpt/cmd_show.c
 
-ifneq (${GPT_SPI_NOR},)
+ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
 CGPT_SRCS += cgpt/cgpt_nor.c
 endif
 
@@ -701,7 +701,7 @@ TEST_NAMES = \
 	tests/vboot_kernel2_tests \
 	tests/verify_kernel
 
-ifeq (${MOCK_TPM}${TPM2_MODE},)
+ifeq ($(filter-out 0,${MOCK_TPM})$(filter-out 0,${TPM2_MODE}),)
 # tlcl_tests only works when MOCK_TPM is disabled
 # TODO(apronin): tests for TPM2 case?
 TEST_NAMES += \
@@ -764,7 +764,7 @@ endif
 TEST_NAMES += ${DUT_TEST_NAMES}
 
 # And a few more...
-ifeq (${TPM2_MODE},)
+ifeq ($(filter-out 0,${TPM2_MODE}),)
 TLCL_TEST_NAMES = \
 	tests/tpm_lite/tpmtest_earlyextend \
 	tests/tpm_lite/tpmtest_earlynvram \
@@ -1171,7 +1171,7 @@ ${BUILD}/tests/%: LDFLAGS += -Xlinker --allow-multiple-definition
 ${BUILD}/tests/%: LDLIBS += -lrt -luuid
 ${BUILD}/tests/%: LIBS += ${TESTLIB}
 
-ifeq (${TPM2_MODE},)
+ifeq ($(filter-out 0,${TPM2_MODE}),)
 # TODO(apronin): tests for TPM2 case?
 TLCL_TEST_BINS = $(addprefix ${BUILD}/,${TLCL_TEST_NAMES})
 ${TLCL_TEST_BINS}: OBJS += ${BUILD}/tests/tpm_lite/tlcl_tests.o
@@ -1261,7 +1261,7 @@ runtestscripts: install_for_test genfuzztestcases
 runmisctests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/gpt_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/subprocess_tests
-ifeq (${MOCK_TPM}${TPM2_MODE},)
+ifeq ($(filter-out 0,${MOCK_TPM})$(filter-out 0,${TPM2_MODE}),)
 # tlcl_tests only works when MOCK_TPM is disabled
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
 endif
@@ -1345,7 +1345,7 @@ coverage_html:
 		-o ${COV_INFO}.firmware
 
 .PHONY: coverage
-ifeq (${COV},)
+ifeq ($(filter-out 0,${COV}),)
 coverage:
 	$(error Build coverage like this: make clean && COV=1 make coverage)
 else
