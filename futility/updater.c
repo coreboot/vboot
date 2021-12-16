@@ -275,7 +275,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
 static int set_try_cookies(struct updater_config *cfg, const char *target,
 			   int has_update, int is_vboot2)
 {
-	int tries = 6;
+	int tries = 8;
 	const char *slot;
 
 	/* EC Software Sync needs few more reboots. */
