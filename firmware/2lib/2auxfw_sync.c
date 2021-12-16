@@ -28,40 +28,6 @@ static int auxfw_sync_allowed(struct vb2_context *ctx)
 }
 
 /**
- * Update the specified auxfw and verify the update succeeded.
- *
- * @param ctx		Vboot2 context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-static vb2_error_t update_auxfw(struct vb2_context *ctx)
-{
-	vb2_error_t rv;
-
-	VB2_DEBUG("Updating auxfw\n");
-
-	/*
-	 * The underlying platform is expected to know how and where to find the
-	 * firmware image for all auxfw devices.
-	 */
-	rv = vb2ex_auxfw_update();
-	if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("vb2ex_auxfw_update() returned %d\n", rv);
-
-		/*
-		 * The device may need a reboot.  It may need to unprotect the
-		 * region before updating, or may need to reboot after updating.
-		 * Either way, it's not an error requiring recovery mode.
-		 *
-		 * If we fail for any other reason, trigger recovery mode.
-		 */
-		if (rv != VB2_REQUEST_REBOOT_EC_TO_RO)
-			vb2api_fail(ctx, VB2_RECOVERY_AUXFW_UPDATE, rv);
-	}
-
-	return rv;
-}
-
-/**
  * Decides if auxfw sync is allowed to be performed.
  *
  * If sync is allowed, invokes the external callback,
@@ -90,7 +56,8 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update));
 
 	if (fw_update > VB2_AUXFW_NO_UPDATE) {
-		VB2_TRY(update_auxfw(ctx));
+		VB2_DEBUG("Updating auxfw\n");
+		VB2_TRY(vb2ex_auxfw_update(), ctx, VB2_RECOVERY_AUXFW_UPDATE);
 		/*
 		 * auxfw update is applied successfully. Request EC reboot to
 		 * RO, so that the chips that had FW update get reset to a
