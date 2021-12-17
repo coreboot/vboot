@@ -65,14 +65,15 @@ vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = auxfw_mock_severity;
 	auxfw_update_severity = auxfw_mock_severity;
-	if (*severity == VB2_AUXFW_SLOW_UPDATE)
-		if (!auxfw_mock_display_available)
-			return VB2_REQUEST_REBOOT;
 	return VB2_SUCCESS;
 }
 
 vb2_error_t vb2ex_auxfw_update(void)
 {
+	if (auxfw_update_severity == VB2_AUXFW_SLOW_UPDATE)
+		if (!auxfw_mock_display_available)
+			return VB2_REQUEST_REBOOT;
+
 	if (auxfw_update_severity != VB2_AUXFW_NO_DEVICE &&
 	    auxfw_update_severity != VB2_AUXFW_NO_UPDATE)
 		auxfw_update_req = 1;
