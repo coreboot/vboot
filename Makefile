@@ -125,7 +125,7 @@ endif
 
 # Provide default CC and CFLAGS for firmware builds; if you have any -D flags,
 # please add them after this point (e.g., -DVBOOT_DEBUG).
-DEBUG_FLAGS := $(if ${DEBUG},-g -Og,-g -Os)
+DEBUG_FLAGS := $(if $(filter-out 0,${DEBUG}),-g -Og,-g -Os)
 WERROR := -Werror
 FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
@@ -272,7 +272,7 @@ LDFLAGS += -static
 PKG_CONFIG += --static
 endif
 
-ifneq ($(filter-out 0,${FUZZ_FLAGS}),)
+ifneq (${FUZZ_FLAGS},)
 CFLAGS += ${FUZZ_FLAGS}
 endif
 
@@ -327,7 +327,7 @@ export BUILD_RUN
 all: fwlib futil utillib hostlib cgpt tlcl \
 	$(if ${SDK_BUILD},${UTIL_FILES_SDK},${UTIL_FILES_BOARD}) \
 	$(if $(filter x86_64,${ARCH}),$(if $(filter clang,${CC}),fuzzers)) \
-	$(if ${COV},coverage)
+	$(if $(filter-out 0,${COV}),coverage)
 
 ##############################################################################
 # Now we need to describe everything we might want or need to build
@@ -965,7 +965,7 @@ ${CGPT_WRAPPER}: ${CGPT_WRAPPER_OBJS} ${UTILLIB}
 	${Q}${LD} -o ${CGPT_WRAPPER} ${LDFLAGS} $^ ${LDLIBS}
 
 .PHONY: cgpt
-cgpt: ${CGPT} $(if ${GPT_SPI_NOR},cgpt_wrapper)
+cgpt: ${CGPT} $(if $(filter-out 0,${GPT_SPI_NOR}),cgpt_wrapper)
 
 # on FreeBSD: install misc/e2fsprogs-libuuid from ports,
 # or e2fsprogs-libuuid from its binary package system.
