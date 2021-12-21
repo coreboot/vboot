@@ -665,7 +665,8 @@ FUTIL_SRCS = \
 	futility/updater_quirks.c \
 	futility/updater_utils.c \
 	futility/vb1_helper.c \
-	futility/vb2_helper.c
+	futility/vb2_helper.c \
+	futility/flashrom_drv.c
 
 # List of commands built in futility.
 FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c

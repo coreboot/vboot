@@ -1,0 +1,197 @@
+/* Copyright 2021 The Chromium OS Authors. All rights reserved.
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ *
+ * The utility functions for firmware updater.
+ */
+
+#include <libflashrom.h>
+
+#include "2common.h"
+#include "crossystem.h"
+#include "host_misc.h"
+#include "util_misc.h"
+#include "updater.h"
+
+#define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
+
+/* System environment values. */
+static const char * const FLASHROM_OUTPUT_WP_ENABLED =
+			  FLASHROM_OUTPUT_WP_PATTERN "enabled",
+		  * const FLASHROM_OUTPUT_WP_DISABLED =
+			  FLASHROM_OUTPUT_WP_PATTERN "disabled";
+
+// global to allow verbosity level to be injected into callback.
+static enum flashrom_log_level g_verbose_screen = FLASHROM_MSG_INFO;
+
+static int flashrom_print_cb(enum flashrom_log_level level, const char *fmt,
+			     va_list ap)
+{
+	int ret = 0;
+	FILE *output_type = (level < FLASHROM_MSG_INFO) ? stderr : stdout;
+
+	if (level > g_verbose_screen)
+		return ret;
+
+	ret = vfprintf(output_type, fmt, ap);
+	/* msg_*spew often happens inside chip accessors
+	 * in possibly time-critical operations.
+	 * Don't slow them down by flushing.
+	 */
+	if (level != FLASHROM_MSG_SPEW)
+		fflush(output_type);
+
+	return ret;
+}
+
+static char *flashrom_extract_params(const char *str, char **prog, char **params)
+{
+	char *tmp = strdup(str);
+	*prog = strtok(tmp, ":");
+	*params = strtok(NULL, "");
+	return tmp;
+}
+
+int flashrom_read_image(struct firmware_image *image, int verbosity)
+{
+	int r = 0;
+	size_t len = 0;
+
+	g_verbose_screen = verbosity;
+
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(image->programmer, &programmer, &params);
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	r |= flashrom_init(1);
+	r |= flashrom_programmer_init(&prog, programmer, params);
+	r |= flashrom_flash_probe(&flashctx, prog, NULL);
+
+	len = flashrom_flash_getsize(flashctx);
+	image->data = calloc(1, len);
+	image->size = len;
+	image->file_name = strdup("<none>");
+
+	r |= flashrom_image_read(flashctx, image->data, len);
+
+	r |= flashrom_programmer_shutdown(prog);
+	flashrom_flash_release(flashctx);
+	free(tmp);
+
+	return r;
+}
+
+int flashrom_write_image(const struct firmware_image *image,
+			const char *region,
+			const struct firmware_image *diff_image,
+			int verbosity)
+{
+	int r = 0;
+	size_t len = 0;
+
+	g_verbose_screen = verbosity;
+
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(image->programmer, &programmer, &params);
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+	struct flashrom_layout *layout = NULL;
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	r |= flashrom_init(1);
+	r |= flashrom_programmer_init(&prog, programmer, params);
+	r |= flashrom_flash_probe(&flashctx, prog, NULL);
+
+	len = flashrom_flash_getsize(flashctx);
+	if (len == 0) {
+		ERROR("zero sized flash detected\n");
+		r = -1;
+		goto err_cleanup;
+	}
+
+	if (diff_image) {
+		if (diff_image->size != image->size) {
+			ERROR("diff_image->size != image->size");
+			r = -1;
+			goto err_cleanup;
+		}
+	}
+
+	if (region) {
+		r = flashrom_layout_read_fmap_from_buffer(
+			&layout, flashctx, (const uint8_t *)image->data,
+			image->size);
+		if (r > 0) {
+			WARN("could not read fmap from image, r=%d, "
+				"falling back to read from rom\n", r);
+			r = flashrom_layout_read_fmap_from_rom(
+				&layout, flashctx, 0, len);
+			if (r > 0) {
+				ERROR("could not read fmap from rom, r=%d\n", r);
+				r = -1;
+				goto err_cleanup;
+			}
+		}
+		// empty region causes seg fault in API.
+		r |= flashrom_layout_include_region(layout, region);
+		if (r > 0) {
+			ERROR("could not include region = '%s'\n", region);
+			r = -1;
+			goto err_cleanup;
+		}
+		flashrom_layout_set(flashctx, layout);
+	}
+
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, true);
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, true);
+	if (diff_image) /* equiv --noverify --flash-contents=diff_image at cli */
+		flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, false);
+
+	r |= flashrom_image_write(flashctx, image->data, image->size,
+				  diff_image ? diff_image->data : NULL);
+
+err_cleanup:
+	r |= flashrom_programmer_shutdown(prog);
+	flashrom_layout_release(layout);
+	flashrom_flash_release(flashctx);
+	free(tmp);
+
+	return r;
+}
+
+/* Helper function to return write protection status via given programmer. */
+enum wp_state flashrom_get_wp(const char *programmer)
+{
+	char *command, *result;
+	const char *postfix;
+	int r;
+
+	/* grep is needed because host_shell only returns 1 line. */
+	postfix = " 2>/dev/null | grep \"" FLASHROM_OUTPUT_WP_PATTERN "\"";
+
+
+	/* TODO(b/203715651): link with flashrom directly. */
+	ASPRINTF(&command, "flashrom --wp-status -p %s %s", programmer, postfix);
+
+	/* invokes flashrom(8) with non-zero result if error. */
+	result = host_shell(command);
+	strip_string(result, NULL);
+	free(command);
+	VB2_DEBUG("wp-status: %s\n", result);
+
+	if (strstr(result, FLASHROM_OUTPUT_WP_ENABLED))
+		r = WP_ENABLED;
+	else if (strstr(result, FLASHROM_OUTPUT_WP_DISABLED))
+		r = WP_DISABLED;
+	else
+		r = WP_ERROR;
+	free(result);
+
+	return r;
+}

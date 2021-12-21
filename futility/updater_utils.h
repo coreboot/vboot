@@ -175,7 +175,7 @@ enum wp_state {
 };
 
 /* Helper function to return write protection status via given programmer. */
-enum wp_state host_get_wp(const char *programmer);
+enum wp_state flashrom_get_wp(const char *programmer);
 
 /* The environment variable name for setting servod port. */
 #define ENV_SERVOD_PORT	"SERVOD_PORT"
@@ -227,5 +227,11 @@ void init_system_properties(struct system_property *props, int num);
  * Returns rootkey hash of firmware image, or NULL on failure.
  */
 const char *get_firmware_rootkey_hash(const struct firmware_image *image);
+
+int flashrom_read_image(struct firmware_image *image, int verbosity);
+int flashrom_write_image(const struct firmware_image *image,
+			const char *region,
+			const struct firmware_image *diff_image,
+			int verbosity);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */
