@@ -13,6 +13,8 @@
 #include "futility.h"
 #include "updater.h"
 
+#ifdef USE_FLASHROM
+
 enum {
 	OPT_DUMMY = 0x100,
 
@@ -358,6 +360,17 @@ static int do_update(int argc, char *argv[])
 	updater_delete_config(cfg);
 	return !!errorcnt;
 }
+#define CMD_HELP_STR "Update system firmware"
 
-DECLARE_FUTIL_COMMAND(update, do_update, VBOOT_VERSION_ALL,
-		      "Update system firmware");
+#else /* USE_FLASHROM */
+
+static int do_update(int argc, char *argv[])
+{
+	FATAL(MYNAME " was built without flashrom support, `update` command unavailable!\n");
+	return -1;
+}
+#define CMD_HELP_STR "Update system firmware (unavailable in this build)"
+
+#endif /* !USE_FLASHROM */
+
+DECLARE_FUTIL_COMMAND(update, do_update, VBOOT_VERSION_ALL, CMD_HELP_STR);
