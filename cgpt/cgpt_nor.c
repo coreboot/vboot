@@ -70,7 +70,7 @@ int ForkExecV(const char *cwd, const char *const argv[]) {
   return status;
 }
 
-int ForkExecL(const char *cwd, const char *cmd, ...) {
+static int ForkExecL(const char *cwd, const char *cmd, ...) {
   int argc;
   va_list ap;
   va_start(ap, cmd);
