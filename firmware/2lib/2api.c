@@ -67,8 +67,8 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 	/*
 	 * Check for recovery.  Note that this function returns void, since any
 	 * errors result in requesting recovery.  That's also why we don't
-	 * return error from failures in the preceding two steps; those
-	 * failures simply cause us to detect recovery mode here.
+	 * return error from failures in the preceding steps; those failures
+	 * simply cause us to detect recovery mode here.
 	 */
 	vb2_check_recovery(ctx);
 
