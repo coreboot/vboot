@@ -4,9 +4,11 @@
  */
 
 #include <ctype.h>
+#include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/file.h>
 #include <unistd.h>
 
 #include "2api.h"
@@ -21,6 +23,9 @@
 #include "flashrom.h"
 #include "subprocess.h"
 #include "vboot_struct.h"
+
+/* Filename for crossystem lock */
+#define CROSSYSTEM_LOCK_PATH "/run/lock/crossystem.lock"
 
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"
@@ -90,6 +95,32 @@ int FwidStartsWith(const char *start)
 		return 0;
 
 	return 0 == strncmp(fwid, start, strlen(start));
+}
+
+/* Acquire the lock for crossystem SetSystemProperty call. */
+static int AcquireCrossystemLock(void)
+{
+	int lock_fd;
+
+	lock_fd = open(CROSSYSTEM_LOCK_PATH, O_RDWR | O_CREAT, 0600);
+	if (lock_fd < 0)
+		return -1;
+
+	if (flock(lock_fd, LOCK_EX) < 0)
+		return -1;
+
+	return lock_fd;
+}
+
+/* Release the lock for crossystem SetSystemProperty call. */
+static int ReleaseCrossystemLock(int lock_fd)
+{
+	if (flock(lock_fd, F_UNLCK) < 0)
+		return -1;
+
+	close(lock_fd);
+
+	return 0;
 }
 
 static struct vb2_context *get_fake_context(void)
@@ -488,8 +519,7 @@ int VbGetSystemPropertyInt(const char *name)
 	return value;
 }
 
-const char *VbGetSystemPropertyString(const char *name, char *dest,
-				      size_t size)
+const char *VbGetSystemPropertyString(const char *name, char *dest, size_t size)
 {
 	/* Check for HWID override via cros_config */
 	if (!strcasecmp(name, "hwid")) {
@@ -552,8 +582,7 @@ const char *VbGetSystemPropertyString(const char *name, char *dest,
 	return NULL;
 }
 
-
-int VbSetSystemPropertyInt(const char *name, int value)
+static int VbSetSystemPropertyIntInternal(const char *name, int value)
 {
 	/* Check architecture-dependent properties first */
 
@@ -673,7 +702,25 @@ int VbSetSystemPropertyInt(const char *name, int value)
 	return -1;
 }
 
-int VbSetSystemPropertyString(const char* name, const char* value)
+int VbSetSystemPropertyInt(const char *name, int value)
+{
+	int result = -1;
+	int lock_fd;
+
+	lock_fd = AcquireCrossystemLock();
+	if (lock_fd < 0)
+		return -1;
+
+	result = VbSetSystemPropertyIntInternal(name, value);
+
+	if (ReleaseCrossystemLock(lock_fd) < 0)
+		return -1;
+
+	return result;
+}
+
+static int VbSetSystemPropertyStringInternal(const char *name,
+					     const char *value)
 {
 	/* Chain to architecture-dependent properties */
 	if (0 == VbSetArchPropertyString(name, value))
@@ -723,6 +770,23 @@ int VbSetSystemPropertyString(const char* name, const char* value)
 	}
 
 	return -1;
+}
+
+int VbSetSystemPropertyString(const char *name, const char *value)
+{
+	int result = -1;
+	int lock_fd;
+
+	lock_fd = AcquireCrossystemLock();
+	if (lock_fd < 0)
+		return -1;
+
+	result = VbSetSystemPropertyStringInternal(name, value);
+
+	if (ReleaseCrossystemLock(lock_fd) < 0)
+		return -1;
+
+	return result;
 }
 
 /**
