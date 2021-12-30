@@ -228,7 +228,8 @@ void init_system_properties(struct system_property *props, int num);
  */
 const char *get_firmware_rootkey_hash(const struct firmware_image *image);
 
-int flashrom_read_image(struct firmware_image *image, int verbosity);
+int flashrom_read_image(struct firmware_image *image, const char *region,
+			 int verbosity);
 int flashrom_write_image(const struct firmware_image *image,
 			const char *region,
 			const struct firmware_image *diff_image,

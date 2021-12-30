@@ -524,7 +524,7 @@ int load_system_firmware(struct firmware_image *image,
 {
 	int r;
 
-	r = flashrom_read_image(image, (verbosity + 1));
+	r = flashrom_read_image(image, NULL, (verbosity + 1));
 	if (!r)
 		r = parse_firmware_image(image);
 	return r;
