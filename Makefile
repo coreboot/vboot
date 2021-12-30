@@ -214,15 +214,6 @@ else
 CFLAGS += -DTPM2_SIMULATOR=0
 endif
 
-# VTPM_PROXY indicates whether the TPM driver simulator feature
-# is enable or not.
-# This flag only takes effect when TPM2_SIMULATOR is enabled.
-ifneq ($(filter-out 0,${VTPM_PROXY}),)
-CFLAGS += -DVTPM_PROXY=1
-else
-CFLAGS += -DVTPM_PROXY=0
-endif
-
 # NOTE: We don't use these files but they are useful for other packages to
 # query about required compiling/linking flags.
 PC_IN_FILES = vboot_host.pc.in
