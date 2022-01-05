@@ -488,8 +488,9 @@ char *host_detect_servo(int *need_prepare_ptr)
 		VB2_DEBUG("Selected Servo Micro.\n");
 		programmer = "raiden_debug_spi";
 		need_prepare = 1;
-	} else if (strstr(servo_type, "ccd_cr50")) {
-		VB2_DEBUG("Selected CCD CR50.\n");
+	} else if (strstr(servo_type, "ccd_cr50") ||
+		   strstr(servo_type, "ccd_gsc")) {
+		VB2_DEBUG("Selected CCD.\n");
 		programmer = "raiden_debug_spi:target=AP";
 	} else {
 		VB2_DEBUG("Selected Servo V2.\n");
