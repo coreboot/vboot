@@ -459,6 +459,7 @@ static int host_get_platform_version(void)
 char *host_detect_servo(int *need_prepare_ptr)
 {
 	const char *servo_port = getenv(ENV_SERVOD_PORT);
+	const char *servo_name = getenv(ENV_SERVOD_NAME);
 	char *servo_type = host_shell("dut-control -o servo_type 2>/dev/null");
 	const char *programmer = NULL;
 	char *ret = NULL;
@@ -466,10 +467,11 @@ char *host_detect_servo(int *need_prepare_ptr)
 	char *servo_serial = NULL;
 
 	/* Get serial name if servo port is provided. */
-	if (servo_port && *servo_port) {
+	if ((servo_port && *servo_port) || (servo_name && *servo_name)) {
 		const char *cmd = "dut-control -o serialname 2>/dev/null";
 
-		VB2_DEBUG("Select servod using port: %s\n", servo_port);
+		VB2_DEBUG("Select servod using port: %s or name: %s\n",
+			  servo_port, servo_name);
 		if (strstr(servo_type, "with_servo_micro"))
 			cmd = ("dut-control -o servo_micro_serialname"
 			       " 2>/dev/null");

@@ -180,6 +180,9 @@ enum wp_state flashrom_get_wp(const char *programmer);
 /* The environment variable name for setting servod port. */
 #define ENV_SERVOD_PORT	"SERVOD_PORT"
 
+/* The environment variable name for setting servod name. */
+#define ENV_SERVOD_NAME	"SERVOD_NAME"
+
 /*
  * Helper function to detect type of Servo board attached to host.
  * Returns a string as programmer parameter on success, otherwise NULL.
