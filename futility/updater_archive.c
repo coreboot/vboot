@@ -30,6 +30,10 @@
 #include <zip.h>
 #endif
 
+#ifdef HAVE_CROSID
+#include <crosid.h>
+#endif
+
 #include "host_misc.h"
 #include "updater.h"
 #include "util_misc.h"
@@ -815,6 +819,30 @@ static int manifest_scan_entries(const char *name, void *arg)
 	return !manifest_add_model(manifest, &model);
 }
 
+/**
+ * get_manifest_key() - Wrapper to get the firmware manifest key from crosid
+ *
+ * @manifest_key_out - Output parameter of the firmware manifest key.
+ *
+ * Returns:
+ * - <0 if libcrosid is unavailable or there was an error reading
+ *   device data
+ * - >=0 (the matched device index) success
+ */
+static int get_manifest_key(char **manifest_key_out)
+{
+#ifdef HAVE_CROSID
+	return crosid_get_firmware_manifest_key(manifest_key_out);
+#else
+	ERROR("This version of futility was compiled without libcrosid "
+	      "(perhaps compiled outside of the Chrome OS build system?) and "
+	      "the update command is not fully supported.  Either compile "
+	      "from the Chrome OS build, or pass --model to manually specify "
+	      "the machine model.\n");
+	return -1;
+#endif
+}
+
 /*
  * Finds the existing model_config from manifest that best matches current
  * system (as defined by model_name).
@@ -823,9 +851,10 @@ static int manifest_scan_entries(const char *name, void *arg)
 const struct model_config *manifest_find_model(const struct manifest *manifest,
 					       const char *model_name)
 {
-	char *sys_model_name = NULL;
+	char *manifest_key = NULL;
 	const struct model_config *model = NULL;
 	int i;
+	int matched_index;
 
 	/*
 	 * For manifest with single model defined, we should just return because
@@ -836,9 +865,16 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 		return &manifest->models[0];
 
 	if (!model_name) {
-		sys_model_name = host_shell("mosys platform model");
-		VB2_DEBUG("System model name: '%s'\n", sys_model_name);
-		model_name = sys_model_name;
+		matched_index = get_manifest_key(&manifest_key);
+		if (matched_index < 0) {
+			ERROR("Failed to get device identity.  "
+			      "Run \"crosid -v\" for explanation.\n");
+			return NULL;
+		}
+
+		VB2_DEBUG("Matched chromeos-config index: %d\n", matched_index);
+		VB2_DEBUG("Manifest key (model): '%s'\n", manifest_key);
+		model_name = manifest_key;
 	}
 
 	for (i = 0; !model && i < manifest->num; i++) {
@@ -846,27 +882,27 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 			model = &manifest->models[i];
 	}
 	if (!model) {
-		if (!*model_name)
-			ERROR("Cannot get model name.\n");
-		else
-			ERROR("Unsupported model: '%s'.\n", model_name);
+		ERROR("Unsupported model: '%s'.\n", model_name);
 
 		fprintf(stderr,
-			"You are probably running an image for wrong board, or "
-			"a device in early stage that 'mosys' command is not "
-			"ready, or image from old (or factory) branches that "
-			"Unified Build config is not updated yet for 'mosys'.\n"
-			"Please check command 'mosys platform model', "
-			"which should output one of the supported models below:"
-			"\n");
+			"The firmware manifest key '%s' is not present in this "
+			"updater archive. The known keys to this updater "
+			"archive are:\n", model_name);
 
 		for (i = 0; i < manifest->num; i++)
 			fprintf(stderr, " %s", manifest->models[i].name);
-		fprintf(stderr, "\n");
+		fprintf(stderr, "\n\n");
+		fprintf(stderr,
+			"Perhaps you are trying to use an updater archive for "
+			"the wrong board, or designed for an older OS version "
+			"before this model was supported.\n");
+		fprintf(stderr,
+			"Hint: Read the FIRMWARE_MANIFEST_KEY from the output "
+			"of the crosid command.\n");
 	}
 
 
-	free(sys_model_name);
+	free(manifest_key);
 	return model;
 }
 
