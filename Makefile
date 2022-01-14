@@ -284,8 +284,6 @@ ifneq ($(filter-out 0,${HAVE_LIBZIP}),)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
 endif
 
-FLASHROM_LIBS := $(shell ${PKG_CONFIG} --libs flashrom)
-
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
@@ -1029,7 +1027,7 @@ signing_install: $(if ${SDK_BUILD},\
 futil: ${FUTIL_BIN}
 
 # FUTIL_LIBS is shared by FUTIL_BIN and TEST_FUTIL_BINS.
-FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS} ${FLASHROM_LIBS}
+FUTIL_LIBS = ${CRYPTO_LIBS} ${LIBZIP_LIBS}
 
 ${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB}
