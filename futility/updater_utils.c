@@ -709,7 +709,6 @@ static int host_flashrom_write(const struct firmware_image *image,
 			r = -1;
 			goto err_cleanup;
 		}
-		flashrom_layout_set(flashctx, layout);
 	}
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, true);
