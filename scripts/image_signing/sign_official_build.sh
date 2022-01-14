@@ -1153,6 +1153,9 @@ elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
            --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "gsc_firmware" ]]; then
   sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+elif [[ "${TYPE}" == "hps_firmware" ]]; then
+  hps-sign-rom --input "${INPUT_IMAGE}" --output "${OUTPUT_IMAGE}" \
+    --private-key "${KEY_DIR}/key_hps.priv.pem"
 else
   die "Invalid type ${TYPE}"
 fi
