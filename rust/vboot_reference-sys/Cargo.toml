@@ -1,0 +1,17 @@
+[package]
+name = "vboot_reference-sys"
+version = "1.0.0"
+description = "Provides raw (unsafe) bindings to the vboot_reference C library."
+authors = ["The Chromium OS Authors"]
+edition = "2018"
+build = "build.rs"
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+libc = "0.2.44"
+
+[build-dependencies]
+pkg-config = "0.3"
+which = "4.0.0"

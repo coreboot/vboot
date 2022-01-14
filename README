@@ -48,6 +48,9 @@ scripts/
   Tools and scripts used to generate and use new signing keypairs. These are
   typically used only on a secure machine.
 
+rust/
+
+  Rust bindings for vboot_reference. See rust/README.md for more details.
 
 --------------------
 Building and testing
