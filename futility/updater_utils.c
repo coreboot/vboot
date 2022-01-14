@@ -26,6 +26,10 @@
 #define COMMAND_BUFFER_SIZE 256
 #define FLASHROM_OUTPUT_WP_PATTERN "write protect is "
 
+enum flashrom_ops {
+	FLASHROM_WP_STATUS,
+};
+
 /* System environment values. */
 static const char * const STR_REV = "rev",
 		  * const FLASHROM_OUTPUT_WP_ENABLED =
@@ -522,6 +526,89 @@ char *host_detect_servo(int *need_prepare_ptr)
 	return ret;
 }
 
+/*
+ * A helper function to invoke flashrom(8) command.
+ * Returns 0 if success, non-zero if error.
+ */
+static int host_flashrom(enum flashrom_ops op, const char *image_path,
+			 const char *programmer, int verbose,
+			 const char *section_name, const char *extra)
+{
+	char *command, *result;
+	const char *op_cmd, *dash_i = "-i", *postfix = "";
+	int r;
+
+	switch (verbose) {
+	case 0:
+		postfix = " >/dev/null 2>&1";
+		break;
+	case 1:
+		break;
+	case 2:
+		postfix = "-V";
+		break;
+	case 3:
+		postfix = "-V -V";
+		break;
+	default:
+		postfix = "-V -V -V";
+		break;
+	}
+
+	if (!section_name || !*section_name) {
+		dash_i = "";
+		section_name = "";
+	}
+
+	switch (op) {
+	case FLASHROM_WP_STATUS:
+		op_cmd = "--wp-status";
+		assert(image_path == NULL);
+		image_path = "";
+		/* grep is needed because host_shell only returns 1 line. */
+		postfix = " 2>/dev/null | grep \"" \
+			   FLASHROM_OUTPUT_WP_PATTERN "\"";
+		break;
+
+	default:
+		assert(0);
+		return -1;
+	}
+
+	if (!extra)
+		extra = "";
+
+	/* TODO(b/203715651): link with flashrom directly. */
+	ASPRINTF(&command, "flashrom %s %s -p %s %s %s %s %s", op_cmd,
+		 image_path, programmer, dash_i, section_name, extra,
+		 postfix);
+
+	if (verbose)
+		INFO("Executing: %s\n", command);
+
+	if (op != FLASHROM_WP_STATUS) {
+		r = system(command);
+		free(command);
+		if (r)
+			ERROR("Error code: %d\n", r);
+		return r;
+	}
+
+	result = host_shell(command);
+	strip_string(result, NULL);
+	free(command);
+	VB2_DEBUG("wp-status: %s\n", result);
+
+	if (strstr(result, FLASHROM_OUTPUT_WP_ENABLED))
+		r = WP_ENABLED;
+	else if (strstr(result, FLASHROM_OUTPUT_WP_DISABLED))
+		r = WP_DISABLED;
+	else
+		r = WP_ERROR;
+	free(result);
+	return r;
+}
+
 // global to allow verbosity level to be injected into callback.
 static enum flashrom_log_level g_verbose_screen = FLASHROM_MSG_INFO;
 
@@ -664,32 +751,8 @@ err_cleanup:
 /* Helper function to return write protection status via given programmer. */
 enum wp_state host_get_wp(const char *programmer)
 {
-	char *command, *result;
-	const char *postfix;
-	int r;
-
-	/* grep is needed because host_shell only returns 1 line. */
-	postfix = " 2>/dev/null | grep \"" FLASHROM_OUTPUT_WP_PATTERN "\"";
-
-
-	/* TODO(b/203715651): link with flashrom directly. */
-	ASPRINTF(&command, "flashrom --wp-status -p %s %s", programmer, postfix);
-
-	/* invokes flashrom(8) with non-zero result if error. */
-	result = host_shell(command);
-	strip_string(result, NULL);
-	free(command);
-	VB2_DEBUG("wp-status: %s\n", result);
-
-	if (strstr(result, FLASHROM_OUTPUT_WP_ENABLED))
-		r = WP_ENABLED;
-	else if (strstr(result, FLASHROM_OUTPUT_WP_DISABLED))
-		r = WP_DISABLED;
-	else
-		r = WP_ERROR;
-	free(result);
-
-	return r;
+	return host_flashrom(FLASHROM_WP_STATUS, NULL, programmer, 0, NULL,
+			     NULL);
 }
 
 /* Helper function to return host software write protection status. */
