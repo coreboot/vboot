@@ -7,13 +7,27 @@
 # Load common constants and functions.
 . "$(dirname "$0")/../common.sh"
 
+: "${HAS_ARG_KEYNAME:=}"
+
 usage() {
-  cat <<EOF
+  if [[ -n "${HAS_ARG_KEYNAME}" ]]; then
+    cat <<EOF
+Usage: ${PROG} <keyname> [options]
+
+Arguments:
+  keyname:                   Name of the hammer device (e.g. Staff, Wand).
+
+Options:
+  -o, --output_dir <dir>:    Where to write the keys (default is cwd)
+EOF
+  else
+    cat <<EOF
 Usage: ${PROG} [options]
 
 Options:
   -o, --output_dir <dir>:    Where to write the keys (default is cwd)
 EOF
+  fi
 
   if [[ $# -ne 0 ]]; then
     die "$*"
@@ -40,8 +54,7 @@ generate_rsa3072_exp3_key() {
 # to specific accessory's name.
 leverage_hammer_to_create_key() {
   local output_dir="${PWD}"
-  local key_name="$1"
-  shift
+  local key_name=""
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -51,19 +64,26 @@ leverage_hammer_to_create_key() {
     -o|--output_dir)
       output_dir="$2"
       if [[ ! -d "${output_dir}" ]]; then
-        die "output dir ("${output_dir}") doesn't exist."
+        die "output dir (\"${output_dir}\") doesn't exist."
       fi
       shift
       ;;
     -*)
-      usage "Unknown option: "$1""
+      usage "Unknown option: \"$1\""
       ;;
     *)
-      usage "Unknown argument "$1""
+      if [[ -n "${key_name}" ]]; then
+        usage "Unknown argument \"$1\""
+      fi
+      key_name="$1"
       ;;
     esac
     shift
   done
+
+  if [[ -z "${key_name}" ]]; then
+    usage "Missing key name"
+  fi
 
   generate_rsa3072_exp3_key "${output_dir}" "${key_name}"
 }

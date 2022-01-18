@@ -5,12 +5,13 @@
 # found in the LICENSE file.
 
 # Load common constants and functions.
+export HAS_ARG_KEYNAME=1
 . "$(dirname "$0")/common_leverage_hammer.sh"
 
 main() {
   set -e
 
-  leverage_hammer_to_create_key "hammerlike" "$@"
+  leverage_hammer_to_create_key "$@"
 }
 
 main "$@"
