@@ -877,16 +877,18 @@ static int legacy_needs_update(struct updater_config *cfg)
 	int has_from, has_to;
 	const char * const tag = "cros_allow_auto_update";
 	const char *section = FMAP_RW_LEGACY;
-	const char *tmp_path;
+	const char *tmp_to, *tmp_from;
 
 	VB2_DEBUG("Checking %s contents...\n", FMAP_RW_LEGACY);
 
-	tmp_path = get_firmware_image_temp_file(&cfg->image, &cfg->tempfiles);
-	if (!tmp_path)
+	tmp_to = get_firmware_image_temp_file(&cfg->image, &cfg->tempfiles);
+	tmp_from = get_firmware_image_temp_file(&cfg->image_current,
+						&cfg->tempfiles);
+	if (!tmp_from || !tmp_to)
 		return 0;
 
-	has_to = cbfs_file_exists(tmp_path, section, tag);
-	has_from = cbfs_file_exists(tmp_path, section, tag);
+	has_to = cbfs_file_exists(tmp_to, section, tag);
+	has_from = cbfs_file_exists(tmp_from, section, tag);
 
 	if (!has_from || !has_to) {
 		VB2_DEBUG("Current legacy firmware has%s updater tag (%s) and "
