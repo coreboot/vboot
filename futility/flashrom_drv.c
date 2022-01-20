@@ -118,7 +118,7 @@ err_cleanup:
 int flashrom_write_image(const struct firmware_image *image,
 			const char *region,
 			const struct firmware_image *diff_image,
-			int verbosity)
+			int do_verify, int verbosity)
 {
 	int r = 0;
 	size_t len = 0;
@@ -180,7 +180,7 @@ int flashrom_write_image(const struct firmware_image *image,
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, true);
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, true);
-	if (diff_image) /* equiv --noverify --flash-contents=diff_image at cli */
+	if (!do_verify)
 		flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, false);
 
 	r |= flashrom_image_write(flashctx, image->data, image->size,

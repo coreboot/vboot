@@ -542,9 +542,10 @@ int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
 			  const char *section_name,
 			  struct tempfile *tempfiles,
-			  int verbosity)
+			  int do_verify, int verbosity)
 {
-	return flashrom_write_image(image, section_name, diff_image, (verbosity + 1));
+	return flashrom_write_image(image, section_name, diff_image,
+				    do_verify, (verbosity + 1));
 }
 
 /* Helper function to return host software write protection status. */

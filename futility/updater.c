@@ -403,11 +403,14 @@ static int write_firmware(struct updater_config *cfg,
 				cfg->emulation, image, section_name);
 	}
 
-	if (cfg->fast_update && image == &cfg->image && cfg->image_current.data)
+	if (cfg->use_diff_image && image == &cfg->image &&
+	    cfg->image_current.data) {
 		diff_image = &cfg->image_current;
+	}
 
 	return write_system_firmware(image, diff_image, section_name,
-				     &cfg->tempfiles, cfg->verbosity + 1);
+				     &cfg->tempfiles, cfg->do_verify,
+				     cfg->verbosity + 1);
 }
 
 /*
@@ -1272,6 +1275,7 @@ struct updater_config *updater_new_config()
 	cfg->pd_image.programmer = PROG_PD;
 
 	cfg->check_platform = 1;
+	cfg->do_verify = 1;
 
 	init_system_properties(&cfg->system_properties[0],
 			       ARRAY_SIZE(cfg->system_properties));
@@ -1471,7 +1475,8 @@ int updater_setup_config(struct updater_config *cfg,
 
 	/* Setup values that may change output or decision of other argument. */
 	cfg->verbosity = arg->verbosity;
-	cfg->fast_update = arg->fast_update;
+	cfg->use_diff_image = arg->fast_update;
+	cfg->do_verify = !arg->fast_update;
 	cfg->factory_update = arg->is_factory;
 	if (arg->force_update)
 		cfg->force_update = 1;

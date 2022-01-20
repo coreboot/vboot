@@ -107,7 +107,7 @@ int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
 			  const char *section_name,
 			  struct tempfile *tempfiles,
-			  int verbosity);
+			  int do_verify, int verbosity);
 
 struct firmware_section {
 	uint8_t *data;
@@ -236,6 +236,6 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
 int flashrom_write_image(const struct firmware_image *image,
 			const char *region,
 			const struct firmware_image *diff_image,
-			int verbosity);
+			int do_verify, int verbosity);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */

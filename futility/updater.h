@@ -69,7 +69,8 @@ struct updater_config {
 	int legacy_update;
 	int factory_update;
 	int check_platform;
-	int fast_update;
+	int use_diff_image;
+	int do_verify;
 	int verbosity;
 	const char *emulation;
 	int override_gbb_flags;
