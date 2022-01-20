@@ -411,6 +411,15 @@ static int quirk_preserve_me(struct updater_config *cfg)
 		return 0;
 	}
 
+	/*
+	 * b/213706510: subratabanik@ confirmed CSE may modify itself while we
+	 * are doing system update, and currently the 'preserve' is done by
+	 * flashing the same (e.g., "previously read") contents to skip erasing
+	 * and writing; so we have to use the diff image to prevent contents
+	 * being changed when writing.
+	 */
+	cfg->use_diff_image = 1;
+
 	return 1;
 }
 
