@@ -733,6 +733,7 @@ static const struct GpioChipset chipsets_supported[] = {
 	/* INTC105x are for Alderlake */
 	{ "INTC1055:00", FindGpioChipOffsetByLabel },
 	{ "INTC1056:00", FindGpioChipOffsetByLabel },
+	{ "INTC1057:00", FindGpioChipOffsetByLabel },
 	/* INT3453 are for GLK */
 	{ "INT3453:00", FindGpioChipOffsetByLabel },
 	{ "INT3453:01", FindGpioChipOffsetByLabel },
