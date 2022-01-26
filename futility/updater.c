@@ -484,18 +484,26 @@ static int preserve_gbb(const struct firmware_image *image_from,
 	const struct vb2_gbb_header *gbb_from;
 	struct vb2_gbb_header *gbb_to;
 
-	gbb_from = find_gbb(image_from);
-	/* We do want to change GBB contents later. */
+	/* Cast to non-const because we do want to change GBB contents later. */
 	gbb_to = (struct vb2_gbb_header *)find_gbb(image_to);
 
-	if (!gbb_from || !gbb_to)
+	/*
+	 * For all cases, we need a valid gbb_to. Note for 'override GBB flags
+	 * on a erased device', we only need gbb_to, not gbb_from.
+	 */
+	if (!gbb_to)
 		return -1;
+
+	gbb_from = find_gbb(image_from);
 
 	/* Preserve (for non-factory mode) or override flags. */
 	if (override_flags)
 		gbb_to->flags = override_value;
-	else if (preserve_flags)
+	else if (preserve_flags && gbb_from)
 		gbb_to->flags = gbb_from->flags;
+
+	if (!gbb_from)
+		return -1;
 
 	/* Preserve HWID. */
 	return futil_set_gbb_hwid(
