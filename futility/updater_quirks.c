@@ -434,6 +434,16 @@ static int quirk_no_check_platform(struct updater_config *cfg)
 }
 
 /*
+ * Disable verifying contents after flashing.
+ */
+static int quirk_no_verify(struct updater_config *cfg)
+{
+	WARN("Disabled verifying flashed contents. You are on your own.\n");
+	cfg->do_verify = 0;
+	return 0;
+}
+
+/*
  * Registers known quirks to a updater_config object.
  */
 void updater_register_quirks(struct updater_config *cfg)
@@ -497,6 +507,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "no_check_platform";
 	quirks->help = "Do not check platform name.";
 	quirks->apply = quirk_no_check_platform;
+
+	quirks = &cfg->quirks[QUIRK_NO_VERIFY];
+	quirks->name = "no_verify";
+	quirks->help = "Do not verify when flashing.";
+	quirks->apply = quirk_no_verify;
 }
 
 /*

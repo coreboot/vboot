@@ -1198,6 +1198,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	     image_to->file_name, image_to->ro_version,
 	     image_to->rw_version_a, image_to->rw_version_b);
 
+	try_apply_quirk(QUIRK_NO_VERIFY, cfg);
 	if (try_apply_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg)) {
 		if (!cfg->force_update) {
 			ERROR("Add --force to waive checking the version.\n");
