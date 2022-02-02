@@ -262,12 +262,14 @@ static void select_and_load_kernel_tests(void)
 	/* Recovery - VB2_ERROR_ESCAPE_NO_BOOT */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	test_slk(VB2_ERROR_ESCAPE_NO_BOOT,
 		 VB2_RECOVERY_ESCAPE_NO_BOOT, "Recovery for NO_BOOT escape");
 
 	/* Boot normal - VB2_ERROR_ESCAPE_NO_BOOT */
 	reset_common_data();
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
 	gbb.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
 	test_slk(VB2_SUCCESS, 0, "DISABLE_EC_SOFTWARE_SYNC ignores NO_BOOT");
 
