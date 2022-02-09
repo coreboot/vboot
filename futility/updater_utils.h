@@ -54,15 +54,8 @@ const char *create_temp_file(struct tempfile *head);
  */
 void remove_all_temp_files(struct tempfile *head);
 
-/* Utilities for firmware images and (FMAP) sections */
-struct firmware_image {
-	const char *programmer;
-	uint32_t size;
-	uint8_t *data;
-	char *file_name;
-	char *ro_version, *rw_version_a, *rw_version_b;
-	FmapHeader *fmap_header;
-};
+/* Include definition of 'struct firmware_image;' */
+#include "flashrom.h"
 
 enum {
 	IMAGE_LOAD_SUCCESS = 0,
