@@ -539,11 +539,16 @@ static int preserve_management_engine(struct updater_config *cfg,
 				image_from, image_to, FMAP_SI_DESC);
 	}
 
-	if (try_apply_quirk(QUIRK_PRESERVE_ME, cfg) > 0) {
-		VB2_DEBUG("ME needs to be preserved - preserving %s.\n",
-			  FMAP_SI_ME);
-		return preserve_firmware_section(
-				image_from, image_to, FMAP_SI_ME);
+	if (!strcmp(image_from->programmer, PROG_HOST)) {
+		if (try_apply_quirk(QUIRK_PRESERVE_ME, cfg) > 0) {
+			VB2_DEBUG("ME needs to be preserved - preserving %s.\n",
+				  FMAP_SI_ME);
+			return preserve_firmware_section(image_from, image_to,
+							 FMAP_SI_ME);
+		}
+	} else {
+		VB2_DEBUG("Flashing via non-host programmer %s - no need to "
+			  "preserve ME.\n", image_from->programmer);
 	}
 
 	return try_apply_quirk(QUIRK_UNLOCK_ME_FOR_UPDATE, cfg);
