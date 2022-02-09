@@ -23,6 +23,14 @@ struct firmware_image {
 	const char *programmer;
 	uint32_t size; /* buffer size. */
 	uint8_t *data; /* data allocated buffer to read/write with. */
+	/*
+	 * TODO(quasisec b/207808292): Merge with other instance in vboot_ref
+	 * such that the code becomes common.
+	 *
+	char *file_name;
+	char *ro_version, *rw_version_a, *rw_version_b;
+	FmapHeader *fmap_header;
+	*/
 };
 
 /**
