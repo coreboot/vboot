@@ -199,6 +199,10 @@ int RemoveDir(const char *dir) {
   return nftw(dir, remove_file_or_dir, 20, FTW_DEPTH | FTW_PHYS);
 }
 
+#define FLASHROM_RW_GPT_PRI "RW_GPT_PRIMARY:rw_gpt_1",
+#define FLASHROM_RW_GPT_SEC "RW_GPT_SECONDARY:rw_gpt_2"
+#define FLASHROM_RW_GPT "RW_GPT:rw_gpt"
+
 // Read RW_GPT from NOR flash to "rw_gpt" in a temp dir |temp_dir_template|.
 // |temp_dir_template| is passed to mkdtemp() so it must satisfy all
 // requirements by mkdtemp.
@@ -225,7 +229,7 @@ int ReadNorFlash(char *temp_dir_template) {
     Error("Cannot change directory.\n");
     goto out_free;
   }
-  const char *const argv[] = {FLASHROM_PATH, "-i", "RW_GPT:rw_gpt", "-r"};
+  const char *const argv[] = {FLASHROM_PATH, "-i", FLASHROM_RW_GPT, "-r"};
   // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
   // output.
   if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL) != 0) {
@@ -266,7 +270,7 @@ int WriteNorFlash(const char *dir) {
     Error("Cannot change directory.\n");
     goto out_free;
   }
-  const char *const argv1[] = {FLASHROM_PATH, "-i", "RW_GPT_PRIMARY:rw_gpt_1",
+  const char *const argv1[] = {FLASHROM_PATH, "-i", FLASHROM_RW_GPT_PRI,
                 "-w", "--noverify-all"};
   // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
   // output.
@@ -274,7 +278,7 @@ int WriteNorFlash(const char *dir) {
     Warning("Cannot write the 1st half of rw_gpt back with flashrom.\n");
     nr_fails++;
   }
-  const char *const argv2[] = {FLASHROM_PATH, "-i", "RW_GPT_SECONDARY:rw_gpt_2",
+  const char *const argv2[] = {FLASHROM_PATH, "-i", FLASHROM_RW_GPT_SEC,
                 "-w", "--noverify-all"};
   // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
   // output.
