@@ -40,6 +40,8 @@ struct firmware_image {
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
+int flashrom_read_image(struct firmware_image *image, const char *region,
+			 int verbosity);
 
 /**
  * Write using flashrom from a buffer.
@@ -52,3 +54,7 @@ vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_write(struct firmware_image *image, const char *region);
+int flashrom_write_image(const struct firmware_image *image,
+			const char *region,
+			const struct firmware_image *diff_image,
+			int do_verify, int verbosity);
