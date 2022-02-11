@@ -512,6 +512,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "no_verify";
 	quirks->help = "Do not verify when flashing.";
 	quirks->apply = quirk_no_verify;
+
+	quirks = &cfg->quirks[QUIRK_EXTRA_RETRIES];
+	quirks->name = "extra_retries";
+	quirks->help = "Extra retries when writing to system firmware.";
+	quirks->apply = NULL;  /* Simple config. */
 }
 
 /*

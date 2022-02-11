@@ -384,6 +384,14 @@ static int emulate_write_firmware(const char *filename,
 }
 
 /*
+ * Returns the number of retries when reading or writing to flash.
+ */
+static int get_io_retries(struct updater_config *cfg)
+{
+	return 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
+}
+
+/*
  * Writes a section from given firmware image to system firmware.
  * If section_name is NULL, write whole image.
  * Returns 0 if success, non-zero if error.
@@ -410,7 +418,7 @@ static int write_firmware(struct updater_config *cfg,
 
 	return write_system_firmware(image, diff_image, section_name,
 				     &cfg->tempfiles, cfg->do_verify,
-				     cfg->verbosity + 1);
+				     get_io_retries(cfg), cfg->verbosity + 1);
 }
 
 /*
@@ -1209,9 +1217,10 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	}
 	if (!image_from->data) {
 		int ret;
+
 		INFO("Loading current system firmware...\n");
 		ret = load_system_firmware(image_from, &cfg->tempfiles,
-					   cfg->verbosity);
+					   get_io_retries(cfg), cfg->verbosity);
 		if (ret == IMAGE_PARSE_FAILURE && cfg->force_update) {
 			WARN("No compatible firmware in system.\n");
 			cfg->check_platform = 0;
@@ -1394,7 +1403,9 @@ static int updater_apply_white_label(struct updater_config *cfg,
 		if (!cfg->image_current.data) {
 			INFO("Loading system firmware for white label...\n");
 			load_system_firmware(&cfg->image_current,
-					     &cfg->tempfiles, cfg->verbosity);
+					     &cfg->tempfiles,
+					     get_io_retries(cfg),
+					     cfg->verbosity);
 		}
 		tmp_image = get_firmware_image_temp_file(
 				&cfg->image_current, &cfg->tempfiles);
