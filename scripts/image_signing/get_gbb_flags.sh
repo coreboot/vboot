@@ -13,6 +13,8 @@ SCRIPT_BASE="$(dirname "$0")"
 # DEFINE_string name default_value description flag
 DEFINE_string file "" "Path to firmware image. Default to system firmware." "f"
 DEFINE_boolean explicit ${FLAGS_FALSE} "Print list of what flags are set." "e"
+DEFINE_string programmer "host" "Programmer to use when setting GBB flags" "p"
+DEFINE_boolean servo "${FLAGS_FALSE}"  "Determine programmer using servo" ""
 
 set -e
 
@@ -23,10 +25,14 @@ main() {
   fi
 
   local image_file="${FLAGS_file}"
+  local programmer="${FLAGS_programmer}"
 
   if [ -z "${FLAGS_file}" ]; then
     image_file="$(make_temp_file)"
-    flashrom_read "${image_file}"
+    if [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
+      programmer=$(get_programmer_for_servo)
+    fi
+    flashrom_read "${image_file}" "${programmer}"
   fi
 
   # Process file.
