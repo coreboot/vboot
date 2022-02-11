@@ -523,11 +523,16 @@ char *host_detect_servo(int *need_prepare_ptr)
  * Returns 0 if success, non-zero if error.
  */
 int load_system_firmware(struct firmware_image *image,
-			 struct tempfile *tempfiles, int verbosity)
+			 struct tempfile *tempfiles,
+			 int retries, int verbosity)
 {
-	int r;
+	int r, i;
 
-	r = flashrom_read_image(image, NULL, (verbosity + 1));
+	for (i = 1, r = -1; i <= retries && r != 0; i++) {
+		if (i > 1)
+			WARN("Retry reading firmware (%d/%d)...\n", i, retries);
+		r = flashrom_read_image(image, NULL, verbosity + 1);
+	}
 	if (!r)
 		r = parse_firmware_image(image);
 	return r;
@@ -542,10 +547,17 @@ int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
 			  const char *section_name,
 			  struct tempfile *tempfiles,
-			  int do_verify, int verbosity)
+			  int do_verify, int retries, int verbosity)
 {
-	return flashrom_write_image(image, section_name, diff_image,
-				    do_verify, (verbosity + 1));
+	int r, i;
+
+	for (i = 1, r = -1; i <= retries && r != 0; i++) {
+		if (i > 1)
+			WARN("Retry writing firmware (%d/%d)...\n", i, retries);
+		r = flashrom_write_image(image, section_name, diff_image,
+					 do_verify, verbosity + 1);
+	}
+	return r;
 }
 
 /* Helper function to return host software write protection status. */
