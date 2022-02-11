@@ -85,7 +85,8 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
  * Returns 0 if success, non-zero if error.
  */
 int load_system_firmware(struct firmware_image *image,
-			 struct tempfile *tempfiles, int verbosity);
+			 struct tempfile *tempfiles,
+			 int retries, int verbosity);
 
 /* Frees the allocated resource from a firmware image object. */
 void free_firmware_image(struct firmware_image *image);
@@ -107,7 +108,7 @@ int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
 			  const char *section_name,
 			  struct tempfile *tempfiles,
-			  int do_verify, int verbosity);
+			  int do_verify, int retries, int verbosity);
 
 struct firmware_section {
 	uint8_t *data;
