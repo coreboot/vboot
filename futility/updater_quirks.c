@@ -331,6 +331,11 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
  * only RO and expect EC software sync to update RW later, or perform EC RO
  * software sync.
  *
+ * Note: EC RO software sync was not fully tested and may cause problems
+ *       (b/218612817, b/187789991).
+ *       RO-update (without extra sysjump) needs support from flashrom and is
+ *       currently disabled.
+ *
  * Returns:
  *  EC_RECOVERY_FULL to indicate a full recovery is needed.
  *  EC_RECOVERY_RO to indicate partial update (WP_RO) is needed.
@@ -345,23 +350,10 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
 	 */
 	const char *ec_ro = "WP_RO";
 	struct firmware_image *ec_image = &cfg->ec_image;
-
 	int do_partial = get_config_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg);
-	if (do_partial == -1) {
-		char arch[VB_MAX_STRING_PROPERTY];
-		/*
-		 * Don't do partial update if can't decide arch (usually implies
-		 * running outside DUT).
-		 */
-		do_partial = 0;
-		if (VbGetSystemPropertyString("arch", arch, sizeof(arch)) > 0) {
-			/* By default disabled for x86, otherwise enabled. */
-			do_partial = !!strcmp(arch, "x86");
-		}
-	}
 
 	if (!do_partial) {
-		return EC_RECOVERY_FULL;
+		/* Need full update. */
 	} else if (!firmware_section_exists(ec_image, ec_ro)) {
 		INFO("EC image does not have section '%s'.\n", ec_ro);
 		/* Need full update. */
@@ -489,7 +481,6 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "ec_partial_recovery";
 	quirks->help = "chromium/1024401; recover EC by partial RO update.";
 	quirks->apply = quirk_ec_partial_recovery;
-	quirks->value = -1;  /* Decide at runtime. */
 
 	quirks = &cfg->quirks[QUIRK_OVERRIDE_SIGNATURE_ID];
 	quirks->name = "override_signature_id";
