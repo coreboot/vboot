@@ -21,6 +21,14 @@ struct quirks_record {
 	const char * const quirks;
 };
 
+/*
+ * The 'match by firmware name' is now deprecated. Please do not add any
+ * new records below. We now support reading quirks from CBFS, which is
+ * easier and more reliable. To do that, create a text file 'updater_quirks'
+ * and install to the CBFS.
+ *
+ * Examples: CL:*3365287, CL:*3351831, CL:*4441527
+ */
 static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Whirlwind.", .quirks = "enlarge_image" },
 	{ .match = "Google_Arkham.", .quirks = "enlarge_image" },
