@@ -102,7 +102,7 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
 
 	image->data = calloc(1, len);
 	image->size = len;
-	image->file_name = strdup("<none>");
+	image->file_name = strdup("<sys-flash>");
 
 	r |= flashrom_image_read(flashctx, image->data, len);
 

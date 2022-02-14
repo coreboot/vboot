@@ -872,8 +872,10 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 			return NULL;
 		}
 
-		VB2_DEBUG("Matched chromeos-config index: %d\n", matched_index);
-		VB2_DEBUG("Manifest key (model): '%s'\n", manifest_key);
+		INFO("Identified the device using libcrosid, "
+		     "matched chromeos-config index: %d, "
+		     "manifest key (model): %s\n",
+		     matched_index, manifest_key);
 		model_name = manifest_key;
 	}
 
