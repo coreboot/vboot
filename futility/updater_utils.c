@@ -475,6 +475,9 @@ char *host_detect_servo(int *need_prepare_ptr)
 		if (strstr(servo_type, "with_servo_micro"))
 			cmd = ("dut-control -o servo_micro_serialname"
 			       " 2>/dev/null");
+		else if (strstr(servo_type, "with_c2d2"))
+			cmd = ("dut-control -o c2d2_serialname"
+			       " 2>/dev/null");
 		else if (strstr(servo_type, "with_ccd"))
 			cmd = "dut-control -o ccd_serialname 2>/dev/null";
 
@@ -488,6 +491,10 @@ char *host_detect_servo(int *need_prepare_ptr)
 		ERROR("Failed to get serial at servo port %s.\n", servo_port);
 	} else if (strstr(servo_type, "servo_micro")) {
 		VB2_DEBUG("Selected Servo Micro.\n");
+		programmer = "raiden_debug_spi";
+		need_prepare = 1;
+	} else if (strstr(servo_type, "c2d2")) {
+		VB2_DEBUG("Selected C2D2.\n");
 		programmer = "raiden_debug_spi";
 		need_prepare = 1;
 	} else if (strstr(servo_type, "ccd_cr50") ||
