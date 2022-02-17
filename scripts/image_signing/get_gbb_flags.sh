@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2017 The Chromium OS Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -30,7 +30,7 @@ main() {
   if [ -z "${FLAGS_file}" ]; then
     image_file="$(make_temp_file)"
     if [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
-      programmer=$(get_programmer_for_servo)
+      update_programmer_for_servo
     fi
     flashrom_read "${image_file}" "${programmer}"
   fi

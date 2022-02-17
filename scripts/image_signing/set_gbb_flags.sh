@@ -55,7 +55,7 @@ main() {
   if [ -z "${FLAGS_file}" ]; then
     image_file="$(make_temp_file)"
     if [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
-      programmer=$(get_programmer_for_servo)
+      update_programmer_for_servo
     fi
 
     flashrom_read "${image_file}" "${programmer}"

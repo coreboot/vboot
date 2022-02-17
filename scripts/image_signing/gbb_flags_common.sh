@@ -62,10 +62,23 @@ flashrom_write() {
   flashrom -p "${programmer}"  -i GBB --noverify-all -w "${file}"
 }
 
-get_programmer_for_servo() {
+CPU_FW_SPI="${FLAGS_FALSE}"
+
+enable_cpu_fw_spi() {
+  dut-control cpu_fw_spi:on >/dev/null
+  CPU_FW_SPI="${FLAGS_TRUE}"
+}
+
+maybe_disable_cpu_fw_spi() {
+  if [ "${CPU_FW_SPI}" = "${FLAGS_TRUE}" ]; then
+    dut-control cpu_fw_spi:off >/dev/null
+  fi
+}
+trap "maybe_disable_cpu_fw_spi" EXIT
+
+update_programmer_for_servo() {
   local servo_type
   local serial
-  local programmer
   servo_type=$(dut-control -o servo_type 2>/dev/null) || \
     die "Failed to get servo information. Is servod running?"
   case "${servo_type}" in
@@ -84,10 +97,8 @@ get_programmer_for_servo() {
   esac
   case "${servo_type}" in
     *servo_micro*|*c2d2*)
-      # TODO(sammc): Support servo micro, servo v2 and C2D2. This requires
-      # toggling cpu_fw_spi via dut-control before and after running flashrom.
-      # C2D2 additionally requires a working cpu_fw_spi implementation.
-      die "Unsupported servo type ${servo_type}"
+      programmer="raiden_debug_spi:serial=${serial}"
+      enable_cpu_fw_spi
       ;;
     *ccd_cr50*|*ccd_gsc*)
       programmer="raiden_debug_spi:target=AP,serial=${serial}"
@@ -96,5 +107,4 @@ get_programmer_for_servo() {
       die "Unsupported servo type ${servo_type}"
       ;;
   esac
-  echo "${programmer}"
 }
