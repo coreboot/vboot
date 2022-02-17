@@ -248,6 +248,18 @@ out_free:
   return ret;
 }
 
+static int FlashromWriteRegion(const char *region)
+{
+  const char *const argv[] = {FLASHROM_PATH, "-i", region, "-w", "--noverify-all"};
+  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
+  // output.
+  if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL) != 0) {
+    Warning("Cannot write '%s' back with flashrom.\n", region);
+    return 1;
+  }
+  return 0;
+}
+
 // Write "rw_gpt" back to NOR flash. We write the file in two parts for safety.
 // TODO(b:184812319): Replace this function with flashrom_write.
 int WriteNorFlash(const char *dir) {
@@ -270,22 +282,11 @@ int WriteNorFlash(const char *dir) {
     Error("Cannot change directory.\n");
     goto out_free;
   }
-  const char *const argv1[] = {FLASHROM_PATH, "-i", FLASHROM_RW_GPT_PRI,
-                "-w", "--noverify-all"};
-  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
-  // output.
-  if (subprocess_run(argv1, &subprocess_null, &subprocess_null, NULL) != 0) {
-    Warning("Cannot write the 1st half of rw_gpt back with flashrom.\n");
+  if (FlashromWriteRegion(FLASHROM_RW_GPT_PRI))
     nr_fails++;
-  }
-  const char *const argv2[] = {FLASHROM_PATH, "-i", FLASHROM_RW_GPT_SEC,
-                "-w", "--noverify-all"};
-  // Redirect stdout to /dev/null so that flashrom does not muck up cgpt's
-  // output.
-  if (subprocess_run(argv2, &subprocess_null, &subprocess_null, NULL) != 0) {
-    Warning("Cannot write the 2nd half of rw_gpt back with flashrom.\n");
+  if (FlashromWriteRegion(FLASHROM_RW_GPT_SEC))
     nr_fails++;
-  }
+
   if (chdir(cwd) < 0) {
     Error("Cannot change directory back to original.\n");
     goto out_free;
