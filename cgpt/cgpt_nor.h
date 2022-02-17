@@ -23,10 +23,8 @@ int ForkExecL(const char *cwd, const char *cmd, ...);
 // Exec "rm" to remove |dir|.
 int RemoveDir(const char *dir);
 
-// Read RW_GPT from NOR flash to "rw_gpt" in a temp dir |temp_dir_template|.
-// |temp_dir_template| is passed to mkdtemp() so it must satisfy all
-// requirements by mkdtemp().
-int ReadNorFlash(char *temp_dir_template);
+// Read RW_GPT from NOR flash to "rw_gpt" in dir.
+int ReadNorFlash(const char *dir);
 
 // Write "rw_gpt" back to NOR flash. We write the file in two parts for safety.
 int WriteNorFlash(const char *dir);

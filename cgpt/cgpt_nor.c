@@ -203,19 +203,10 @@ int RemoveDir(const char *dir) {
 #define FLASHROM_RW_GPT_SEC "RW_GPT_SECONDARY:rw_gpt_2"
 #define FLASHROM_RW_GPT "RW_GPT:rw_gpt"
 
-// Read RW_GPT from NOR flash to "rw_gpt" in a temp dir |temp_dir_template|.
-// |temp_dir_template| is passed to mkdtemp() so it must satisfy all
-// requirements by mkdtemp.
+// Read RW_GPT from NOR flash to "rw_gpt" in a dir.
 // TODO(b:184812319): Replace this function with flashrom_read.
-int ReadNorFlash(char *temp_dir_template) {
+int ReadNorFlash(const char *dir) {
   int ret = 0;
-
-  // Create a temp dir to work in.
-  ret++;
-  if (mkdtemp(temp_dir_template) == NULL) {
-    Error("Cannot create a temporary directory.\n");
-    return ret;
-  }
 
   // Read RW_GPT section from NOR flash to "rw_gpt".
   ret++;
@@ -225,7 +216,7 @@ int ReadNorFlash(char *temp_dir_template) {
     Error("Cannot get current directory.\n");
     return ret;
   }
-  if (chdir(temp_dir_template) < 0) {
+  if (chdir(dir) < 0) {
     Error("Cannot change directory.\n");
     goto out_free;
   }
@@ -234,7 +225,6 @@ int ReadNorFlash(char *temp_dir_template) {
   // output.
   if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL) != 0) {
     Error("Cannot exec flashrom to read from RW_GPT section.\n");
-    RemoveDir(temp_dir_template);
   } else {
     ret = 0;
   }

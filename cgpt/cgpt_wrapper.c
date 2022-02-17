@@ -82,8 +82,12 @@ static int wrap_cgpt(int argc,
   // Create a temp dir to work in.
   ret++;
   char temp_dir[] = "/tmp/cgpt_wrapper.XXXXXX";
-  if (ReadNorFlash(temp_dir) != 0) {
+  if (mkdtemp(temp_dir_template) == NULL) {
+    Error("Cannot create a temporary directory.\n");
     return ret;
+  }
+  if (ReadNorFlash(temp_dir) != 0) {
+    goto cleanup;
   }
   char rw_gpt_path[PATH_MAX];
   if (snprintf(rw_gpt_path, sizeof(rw_gpt_path), "%s/rw_gpt", temp_dir) < 0) {

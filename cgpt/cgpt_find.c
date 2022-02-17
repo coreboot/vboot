@@ -243,8 +243,14 @@ static int scan_spi_gpt(CgptFindParams *params) {
           goto cleanup;
         }
       }
+      // Create a temp dir to work in.
+      if (mkdtemp(temp_dir) == NULL) {
+        perror("Cannot create a temporary directory.\n");
+        goto cleanup;
+      }
       if (ReadNorFlash(temp_dir) != 0) {
         perror("ReadNorFlash");
+        RemoveDir(temp_dir);
         goto cleanup;
       }
       char nor_file[64];
