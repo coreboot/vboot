@@ -63,9 +63,15 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
 
 	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
 
-	r |= flashrom_init(1);
-	r |= flashrom_programmer_init(&prog, programmer, params);
-	r |= flashrom_flash_probe(&flashctx, prog, NULL);
+	if (flashrom_init(1)
+		|| flashrom_programmer_init(&prog, programmer, params)) {
+		r = -1;
+		goto err_init;
+	}
+	if (flashrom_flash_probe(&flashctx, prog, NULL)) {
+		r = -1;
+		goto err_probe;
+	}
 
 	len = flashrom_flash_getsize(flashctx);
 
@@ -101,11 +107,14 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
 	r |= flashrom_image_read(flashctx, image->data, len);
 
 err_cleanup:
-	r |= flashrom_programmer_shutdown(prog);
 	flashrom_layout_release(layout);
 	flashrom_flash_release(flashctx);
-	free(tmp);
 
+err_probe:
+	r |= flashrom_programmer_shutdown(prog);
+
+err_init:
+	free(tmp);
 	return r;
 }
 
@@ -128,9 +137,15 @@ int flashrom_write_image(const struct firmware_image *image,
 
 	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
 
-	r |= flashrom_init(1);
-	r |= flashrom_programmer_init(&prog, programmer, params);
-	r |= flashrom_flash_probe(&flashctx, prog, NULL);
+	if (flashrom_init(1)
+		|| flashrom_programmer_init(&prog, programmer, params)) {
+		r = -1;
+		goto err_init;
+	}
+	if (flashrom_flash_probe(&flashctx, prog, NULL)) {
+		r = -1;
+		goto err_probe;
+	}
 
 	len = flashrom_flash_getsize(flashctx);
 	if (len == 0) {
@@ -181,10 +196,13 @@ int flashrom_write_image(const struct firmware_image *image,
 				  diff_image ? diff_image->data : NULL);
 
 err_cleanup:
-	r |= flashrom_programmer_shutdown(prog);
 	flashrom_layout_release(layout);
 	flashrom_flash_release(flashctx);
-	free(tmp);
 
+err_probe:
+	r |= flashrom_programmer_shutdown(prog);
+
+err_init:
+	free(tmp);
 	return r;
 }
