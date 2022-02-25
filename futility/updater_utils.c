@@ -543,31 +543,49 @@ int load_system_firmware(struct firmware_image *image,
 }
 
 /*
- * Writes a section from given firmware image to system firmware.
- * If section_name is NULL, write whole image.
+ * Writes sections from a given firmware image to the system firmware.
+ * Regions should be NULL for writing the whole image, or a list of
+ * FMAP section names (and ended with a NULL).
  * Returns 0 if success, non-zero if error.
  */
 int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
-			  const char *section_name,
+			  const char * const sections[],
 			  struct tempfile *tempfiles,
 			  int do_verify, int retries, int verbosity)
 {
-	int r, i;
+	int r, i, len = 0;
+	char *partial = NULL;
 
-	INFO("flashrom -w <IMAGE> -p %s%s%s%s%s%s\n",
+	for (i = 0; sections && sections[i]; i++)
+		len += strlen(sections[i]) + strlen(" -i ");
+	if (len) {
+		partial = (char *)malloc(len + 1);
+		if (!partial) {
+			ERROR("Failed to allocate a string buffer.\n");
+			return -1;
+		}
+		partial[0] = '\0';
+		for (i = 0; sections[i]; i++) {
+			strcat(partial, " -i ");
+			strcat(partial, sections[i]);
+		}
+		assert(strlen(partial) == len);
+	}
+
+	INFO("flashrom -w <IMAGE> -p %s%s%s%s%s\n",
 	     image->programmer,
 	     diff_image ? " --flash-contents <DIFF_IMAGE>" : "",
 	     do_verify ? "" : " --noverify",
 	     verbosity > 1 ? " -V" : "",
-	     section_name ? " -i " : "",
-	     section_name ? section_name : "");
+	     partial ? partial : "");
+	free(partial);
 
 	for (i = 1, r = -1; i <= retries && r != 0; i++) {
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, retries);
-		r = flashrom_write_image(image, section_name, diff_image,
-					 do_verify, verbosity + 1);
+		r = flashrom_write_image(image, sections, diff_image, do_verify,
+					 verbosity + 1);
 		/*
 		 * Force a newline to flush stdout in case if
 		 * flashrom_write_image left some messages in the buffer.

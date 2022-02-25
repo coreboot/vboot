@@ -420,6 +420,9 @@ static int write_firmware(struct updater_config *cfg,
 			  const char *section_name)
 {
 	struct firmware_image *diff_image = NULL;
+	const char *sections[2] = {0};
+
+	sections[0] = section_name;
 
 	if (cfg->emulation) {
 		INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
@@ -434,7 +437,8 @@ static int write_firmware(struct updater_config *cfg,
 	    is_the_same_programmer(&cfg->image_current, image))
 		diff_image = &cfg->image_current;
 
-	return write_system_firmware(image, diff_image, section_name,
+	return write_system_firmware(image, diff_image,
+				     section_name ? sections : NULL,
 				     &cfg->tempfiles, cfg->do_verify,
 				     get_io_retries(cfg), cfg->verbosity + 1);
 }

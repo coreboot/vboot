@@ -93,13 +93,14 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 					 struct tempfile *tempfiles);
 
 /*
- * Writes a section from given firmware image to system firmware.
- * If section_name is NULL, write whole image.
+ * Writes sections from a given firmware image to the system firmware.
+ * Regions should be NULL for writing the whole image, or a list of
+ * FMAP section names (and ended with a NULL).
  * Returns 0 if success, non-zero if error.
  */
 int write_system_firmware(const struct firmware_image *image,
 			  const struct firmware_image *diff_image,
-			  const char *section_name,
+			  const char * const sections[],
 			  struct tempfile *tempfiles,
 			  int do_verify, int retries, int verbosity);
 

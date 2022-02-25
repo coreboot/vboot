@@ -48,13 +48,14 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
  *
  * @param image		The parameter that contains the programmer, buffer and
  *			size to use in the write operation.
- * @param region	The name of the fmap region to write, or NULL to
- *			write the entire flash chip.
+ * @param regions	A list of the names of the fmap regions to write, or
+ *			NULL to write the entire flash chip. The list must be
+ *			ended with a NULL pointer.
  *
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_write(struct firmware_image *image, const char *region);
 int flashrom_write_image(const struct firmware_image *image,
-			const char *region,
+			const char * const regions[],
 			const struct firmware_image *diff_image,
 			int do_verify, int verbosity);
