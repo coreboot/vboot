@@ -1144,6 +1144,15 @@ static enum updater_error_codes update_rw_firmware(
 		struct firmware_image *image_from,
 		struct firmware_image *image_to)
 {
+	int sections_start = 0;
+	static const char * const sections[] = {
+		FMAP_RW_LEGACY,
+		FMAP_RW_SECTION_A,
+		FMAP_RW_SECTION_B,
+		FMAP_RW_SHARED,
+		NULL,
+	};
+
 	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
 	       FMAP_RW_LEGACY);
@@ -1153,14 +1162,18 @@ static enum updater_error_codes update_rw_firmware(
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
+
 	/*
-	 * TODO(hungte) Speed up by flashing multiple sections in one
-	 * command, or provide diff file.
+	 * We may also consider only updating legacy if legacy_needs_update()
+	 * returns true. However, given this is for 'recovery', it is probably
+	 * better to restore everything to the default states. We may revisit
+	 * this if a new scenario is found.
 	 */
-	if (write_firmware(cfg, image_to, FMAP_RW_SECTION_A) ||
-	    write_firmware(cfg, image_to, FMAP_RW_SECTION_B) ||
-	    write_firmware(cfg, image_to, FMAP_RW_SHARED) ||
-	    write_optional_firmware(cfg, image_to, FMAP_RW_LEGACY, 0, 1))
+	if (!firmware_section_exists(image_from, sections[sections_start]) ||
+	    !firmware_section_exists(image_to, sections[sections_start]))
+		sections_start++;
+
+	if (write_firmware_sections(cfg, image_to, &sections[sections_start]))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
