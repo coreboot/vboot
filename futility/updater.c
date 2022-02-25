@@ -334,6 +334,10 @@ static int emulate_write_firmware(const char *filename,
 	struct firmware_section from, to;
 	int errorcnt = 0;
 
+	INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
+	     section_name ? section_name : "the whole image",
+	     image->file_name, image->programmer, filename);
+
 	from.data = image->data;
 	from.size = image->size;
 
@@ -411,36 +415,53 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 }
 
 /*
- * Writes a section from given firmware image to system firmware.
- * If section_name is NULL, write whole image.
+ * Writes multiple sections from the given firmware image to the system.
+ * The 'sections' should be NULL (write the whole image) or a list of section
+ * names to write, and ended with NULL.
  * Returns 0 if success, non-zero if error.
  */
-static int write_firmware(struct updater_config *cfg,
-			  const struct firmware_image *image,
-			  const char *section_name)
+static int write_firmware_sections(struct updater_config *cfg,
+				   const struct firmware_image *image,
+				   const char * const sections[])
 {
+	int r = 0;
 	struct firmware_image *diff_image = NULL;
-	const char *sections[2] = {0};
-
-	sections[0] = section_name;
 
 	if (cfg->emulation) {
-		INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
-		     section_name ? section_name : "whole image",
-		     image->file_name, image->programmer, cfg->emulation);
-
-		return emulate_write_firmware(
-				cfg->emulation, image, section_name);
+		int i;
+		if (!sections)
+			return emulate_write_firmware(
+					cfg->emulation, image, NULL);
+		for (i = 0; sections[i] && !r; i++) {
+			r |= emulate_write_firmware(
+					cfg->emulation, image, sections[i]);
+		}
+		return r;
 	}
 
 	if (cfg->use_diff_image && cfg->image_current.data &&
 	    is_the_same_programmer(&cfg->image_current, image))
 		diff_image = &cfg->image_current;
 
-	return write_system_firmware(image, diff_image,
-				     section_name ? sections : NULL,
+	return write_system_firmware(image, diff_image, sections,
 				     &cfg->tempfiles, cfg->do_verify,
 				     get_io_retries(cfg), cfg->verbosity + 1);
+}
+
+/*
+ * Writes a single section from the given firmware image to the system.
+ * Writes the whole firmware image if the section_name is NULL.
+ * Returns 0 if success, non-zero if error.
+ */
+static int write_firmware(struct updater_config *cfg,
+			  const struct firmware_image *image,
+			  const char *section_name)
+{
+	const char *sections[2] = {0};
+
+	sections[0] = section_name;
+	return write_firmware_sections(cfg, image,
+				       section_name ? sections : NULL);
 }
 
 /*
