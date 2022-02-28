@@ -433,11 +433,18 @@ FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
 
+# Maintain behaviour of default on.
+USE_FLASHROM ?= 1
+
+ifneq ($(filter-out 0,${USE_FLASHROM}),)
+$(info building with libflashrom support)
+FLASHROM_LIBS := $(shell ${PKG_CONFIG} --libs flashrom)
 COMMONLIB_SRCS = \
-	host/lib/fmap.c \
 	host/lib/flashrom.c \
 	host/lib/flashrom_drv.c \
 	host/lib/subprocess.c
+CFLAGS += -DUSE_FLASHROM
+endif
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
@@ -458,6 +465,7 @@ UTILLIB_SRCS = \
 	host/lib/crypto.c \
 	host/lib/file_keys.c \
 	$(COMMONLIB_SRCS) \
+	host/lib/fmap.c \
 	host/lib/host_common.c \
 	host/lib/host_key2.c \
 	host/lib/host_keyblock.c \
@@ -516,6 +524,7 @@ HOSTLIB_SRCS = \
 	host/lib/crypto.c \
 	host/lib/extract_vmlinuz.c \
 	$(COMMONLIB_SRCS) \
+	host/lib/fmap.c \
 	host/lib/host_misc.c \
 	host/lib21/host_misc.c \
 	${TLCL_SRCS}
@@ -659,19 +668,13 @@ FUTIL_SRCS = \
 	futility/vb1_helper.c \
 	futility/vb2_helper.c
 
-# Maintain behaviour of default on.
-USE_FLASHROM ?= 1
-
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
-$(info building with libflashrom support)
-FLASHROM_LIBS := $(shell ${PKG_CONFIG} --libs flashrom)
 FUTIL_SRCS += host/lib/flashrom_drv.c \
 	futility/flashrom_wp_drv.c \
 	futility/updater_archive.c \
 	futility/updater_quirks.c \
 	futility/updater_utils.c \
 	futility/updater.c
-CFLAGS += -DUSE_FLASHROM
 endif
 
 # List of commands built in futility.
