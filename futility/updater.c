@@ -1144,14 +1144,17 @@ static enum updater_error_codes update_rw_firmware(
 		struct firmware_image *image_from,
 		struct firmware_image *image_to)
 {
-	int sections_start = 0;
-	static const char * const sections[] = {
-		FMAP_RW_LEGACY,
+	int i, num = 0;
+	static const char * const required_sections[] = {
 		FMAP_RW_SECTION_A,
 		FMAP_RW_SECTION_B,
-		FMAP_RW_SHARED,
-		NULL,
 	};
+	static const char * const optional_sections[] = {
+		FMAP_RW_LEGACY,
+		FMAP_RW_SHARED,
+	};
+	const char *sections[ARRAY_SIZE(required_sections) +
+			     ARRAY_SIZE(optional_sections) + 1];
 
 	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
@@ -1163,17 +1166,29 @@ static enum updater_error_codes update_rw_firmware(
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 
+	for (i = 0; i < ARRAY_SIZE(required_sections); i++)
+		sections[num++] = required_sections[i];
+
 	/*
+	 * The FMAP_RW_LEGACY is a special optional section.
 	 * We may also consider only updating legacy if legacy_needs_update()
 	 * returns true. However, given this is for 'recovery', it is probably
 	 * better to restore everything to the default states. We may revisit
 	 * this if a new scenario is found.
 	 */
-	if (!firmware_section_exists(image_from, sections[sections_start]) ||
-	    !firmware_section_exists(image_to, sections[sections_start]))
-		sections_start++;
+	for (i = 0; i < ARRAY_SIZE(optional_sections); i++) {
+		const char *name = optional_sections[i];
+		if (!firmware_section_exists(image_from, name) ||
+		    !firmware_section_exists(image_to, name)) {
+			VB2_DEBUG("Skipped optional section: %s\n", name);
+			continue;
+		}
+		sections[num++] = name;
+	}
+	assert(num < ARRAY_SIZE(sections));
+	sections[num] = NULL;
 
-	if (write_firmware_sections(cfg, image_to, &sections[sections_start]))
+	if (write_firmware_sections(cfg, image_to, sections))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
