@@ -535,7 +535,7 @@ int load_system_firmware(struct firmware_image *image,
 	for (i = 1, r = -1; i <= retries && r != 0; i++) {
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, retries);
-		r = flashrom_read_image(image, NULL, verbosity + 1);
+		r = flashrom_read_image(image, NULL, verbosity + i);
 	}
 	if (!r)
 		r = parse_firmware_image(image);
@@ -585,7 +585,7 @@ int write_system_firmware(const struct firmware_image *image,
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, retries);
 		r = flashrom_write_image(image, sections, diff_image, do_verify,
-					 verbosity + 1);
+					 verbosity + i);
 		/*
 		 * Force a newline to flush stdout in case if
 		 * flashrom_write_image left some messages in the buffer.
