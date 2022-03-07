@@ -191,10 +191,9 @@ int flashrom_write_image(const struct firmware_image *image,
 		flashrom_layout_set(flashctx, layout);
 	}
 
-	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, true);
-	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, true);
-	if (!do_verify)
-		flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, false);
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, false);
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE,
+			  do_verify);
 
 	r |= flashrom_image_write(flashctx, image->data, image->size,
 				  diff_image ? diff_image->data : NULL);
