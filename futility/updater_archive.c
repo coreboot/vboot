@@ -48,27 +48,28 @@
  *  - host: 'image.bin' (or 'bios.bin' as legacy name before CL:1318712)
  *  - ec: 'ec.bin'
  *  - pd: 'pd.bin'
- * If white label is supported, a 'keyset/' folder will be available, with key
+ * If custom label is supported, a 'keyset/' folder will be available, with key
  * files in it:
- *  - rootkey.$WLTAG
- *  - vblock_A.$WLTAG
- *  - vblock_B.$WLTAG
- * The $WLTAG should come from VPD value 'whitelabel_tag', or the
- * 'customization_id'. Note 'customization_id' is in format LOEM[-VARIANT] and
- * we can only take LOEM as $WLTAG, for example A-B => $WLTAG=A.
+ *  - rootkey.$CLTAG
+ *  - vblock_A.$CLTAG
+ *  - vblock_B.$CLTAG
+ * The $CLTAG should come from VPD value 'customlabel_tag'. For legacy devices,
+ * the VPD name may be 'whitelabel_tag', or 'customization_id'.
+ * The 'customization_id' has a different format: LOEM[-VARIANT] and we can only
+ * take LOEM as $CLTAG, for example A-B => $CLTAG=A.
  *
  * A package for Unified Build is more complicated. There will be a models/
  * folder, and each model (by $(mosys platform model) ) should appear as a sub
  * folder, with a 'setvars.sh' file inside. The 'setvars.sh' is a shell script
  * describing what files should be used and the signature ID ($SIGID) to use.
  *
- * Similar to write label in non-Unified-Build, the keys and vblock files will
+ * Similar to custom label in non-Unified-Build, the keys and vblock files will
  * be in 'keyset/' folder:
  *  - rootkey.$SIGID
  *  - vblock_A.$SIGID
  *  - vblock_B.$SIGID
  * If $SIGID starts with 'sig-id-in-*' then we have to replace it by VPD value
- * 'whitelabel_tag' as '$MODEL-$WLTAG'.
+ * 'customlabel_tag' as '$MODEL-$CLTAG'.
  */
 
 static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
@@ -79,7 +80,8 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const DIR_KEYSET = "keyset",
 		  * const DIR_MODELS = "models",
 		  * const DEFAULT_MODEL_NAME = "default",
-		  * const VPD_WHITELABEL_TAG = "whitelabel_tag",
+		  * const VPD_CUSTOMLABEL_TAG = "customlabel_tag",
+		  * const VPD_CUSTOMLABEL_TAG_LEGACY = "whitelabel_tag",
 		  * const VPD_CUSTOMIZATION_ID = "customization_id",
 		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
@@ -606,7 +608,7 @@ static int model_config_parse_setvars_file(
 		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0) {
 			cfg->signature_id = strdup(v);
 			if (str_startswith(v, SIG_ID_IN_VPD_PREFIX))
-				cfg->is_white_label = 1;
+				cfg->is_custom_label = 1;
 		} else
 			found_valid = 0;
 		free(expand_path);
@@ -909,53 +911,56 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 }
 
 /*
- * Determines the signature ID to use for white label.
+ * Determines the signature ID to use for custom label.
  * Returns the signature ID for looking up rootkey and vblock files.
  * Caller must free the returned string.
  */
 static char *resolve_signature_id(struct model_config *model, const char *image)
 {
 	int is_unibuild = model->signature_id ? 1 : 0;
-	char *wl_tag = vpd_get_value(image, VPD_WHITELABEL_TAG);
+	char *tag = vpd_get_value(image, VPD_CUSTOMLABEL_TAG);
 	char *sig_id = NULL;
 
-	/* Unified build: $model.$wl_tag, or $model (b/126800200). */
+	if (tag == NULL)
+		tag = vpd_get_value(image, VPD_CUSTOMLABEL_TAG_LEGACY);
+
+	/* Unified build: $model.$tag, or $model (b/126800200). */
 	if (is_unibuild) {
-		if (!wl_tag) {
-			WARN("No VPD '%s' set for white label - use model name "
-			     "'%s' as default.\n", VPD_WHITELABEL_TAG,
-			     model->name);
+		if (!tag) {
+			WARN("No VPD '%s' set for custom label. "
+			     "Use model name '%s' as default.\n",
+			     VPD_CUSTOMLABEL_TAG, model->name);
 			return strdup(model->name);
 		}
 
-		ASPRINTF(&sig_id, "%s-%s", model->name, wl_tag);
-		free(wl_tag);
+		ASPRINTF(&sig_id, "%s-%s", model->name, tag);
+		free(tag);
 		return sig_id;
 	}
 
-	/* Non-Unibuild: Upper($wl_tag), or Upper(${cid%%-*}). */
-	if (!wl_tag) {
+	/* Non-Unibuild: Upper($tag), or Upper(${cid%%-*}). */
+	if (!tag) {
 		char *cid = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
 		if (cid) {
 			/* customization_id in format LOEM[-VARIANT]. */
 			char *dash = strchr(cid, '-');
 			if (dash)
 				*dash = '\0';
-			wl_tag = cid;
+			tag = cid;
 		}
 	}
-	if (wl_tag)
-		str_convert(wl_tag, toupper);
-	return wl_tag;
+	if (tag)
+		str_convert(tag, toupper);
+	return tag;
 }
 
 /*
- * Applies white label information to an existing model configuration.
+ * Applies custom label information to an existing model configuration.
  * Collects signature ID information from either parameter signature_id or
  * image file (via VPD) and updates model.patches for key files.
  * Returns 0 on success, otherwise failure.
  */
-int model_apply_white_label(
+int model_apply_custom_label(
 		struct model_config *model,
 		struct archive *archive,
 		const char *signature_id,
@@ -970,19 +975,19 @@ int model_apply_white_label(
 	}
 
 	if (signature_id) {
-		VB2_DEBUG("Find white label patches by signature ID: '%s'.\n",
+		VB2_DEBUG("Find custom label patches by signature ID: '%s'.\n",
 		      signature_id);
 		find_patches_for_model(model, archive, signature_id);
 	} else {
 		signature_id = "";
-		WARN("No VPD '%s' set for white label - use default keys.\n",
-		     VPD_WHITELABEL_TAG);
+		WARN("No VPD '%s' set for custom label - use default keys.\n",
+		     VPD_CUSTOMLABEL_TAG);
 	}
 	if (!model->patches.rootkey) {
 		ERROR("No keys found for signature_id: '%s'\n", signature_id);
 		r = 1;
 	} else {
-		INFO("Applied for white label: %s\n", signature_id);
+		INFO("Applied for custom label: %s\n", signature_id);
 	}
 	free(sig_id);
 	return r;
@@ -1035,7 +1040,7 @@ struct manifest *new_manifest_from_archive(struct archive *archive)
 		if (!model.name)
 			model.name = strdup(DEFAULT_MODEL_NAME);
 		if (manifest.has_keyset)
-			model.is_white_label = 1;
+			model.is_custom_label = 1;
 		manifest_add_model(&manifest, &model);
 		manifest.default_model = manifest.num - 1;
 	}

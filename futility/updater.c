@@ -1450,19 +1450,19 @@ static int updater_output_image(const struct firmware_image *image,
 }
 
 /*
- * Applies white label information to an existing model config.
+ * Applies custom label information to an existing model config.
  * Returns 0 on success, otherwise failure.
  */
-static int updater_apply_white_label(struct updater_config *cfg,
+static int updater_apply_custom_label(struct updater_config *cfg,
 				     struct model_config *model,
 				     const char *signature_id)
 {
 	const char *tmp_image = NULL;
 
-	assert(model->is_white_label);
+	assert(model->is_custom_label);
 	if (!signature_id) {
 		if (!cfg->image_current.data) {
-			INFO("Loading system firmware for white label...\n");
+			INFO("Loading system firmware for custom label...\n");
 			load_system_firmware(&cfg->image_current,
 					     &cfg->tempfiles,
 					     get_io_retries(cfg),
@@ -1479,7 +1479,7 @@ static int updater_apply_white_label(struct updater_config *cfg,
 			quirk_override_signature_id(
 					cfg, model, &signature_id);
 	}
-	return !!model_apply_white_label(
+	return !!model_apply_custom_label(
 			model, cfg->archive, signature_id, tmp_image);
 }
 
@@ -1508,33 +1508,34 @@ static int updater_setup_archive(
 	if (!model)
 		return ++errorcnt;
 
-	/* Load images now so we can get quirks in WL checks. */
+	/* Load images now so we can get quirks in custom label checks. */
 	errorcnt += updater_load_images(
 			cfg, arg, model->image, model->ec_image,
 			model->pd_image);
 
-	if (model->is_white_label && !manifest->has_keyset) {
+	if (model->is_custom_label && !manifest->has_keyset) {
 		/*
 		 * Developers running unsigned updaters (usually local build)
-		 * won't be able match any white label tags.
+		 * won't be able match any custom label tags.
 		 */
 		WARN("No keysets found - this is probably a local build of \n"
-		     "unsigned firmware updater. Skip applying white label.");
-	} else if (model->is_white_label) {
+		     "unsigned firmware updater. Skip applying custom label.");
+	} else if (model->is_custom_label) {
 		/*
-		 * It is fine to fail in updater_apply_white_label for factory
+		 * It is fine to fail in updater_apply_custom_label for factory
 		 * mode so we are not checking the return value; instead we
 		 * verify if the patches do contain new root key.
 		 */
-		updater_apply_white_label(cfg, (struct model_config *)model,
+		updater_apply_custom_label(cfg, (struct model_config *)model,
 					  arg->signature_id);
 		if (!model->patches.rootkey) {
 			if (is_factory ||
 			    is_write_protection_enabled(cfg) ||
-			    get_config_quirk(QUIRK_ALLOW_EMPTY_WLTAG, cfg)) {
-				WARN("No VPD for white label.\n");
+			    get_config_quirk(QUIRK_ALLOW_EMPTY_CUSTOMLABEL_TAG,
+					     cfg)) {
+				WARN("No VPD for custom label.\n");
 			} else {
-				ERROR("Need VPD set for white label.\n");
+				ERROR("Need VPD set for custom label.\n");
 				return ++errorcnt;
 			}
 		}

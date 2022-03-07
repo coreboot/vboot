@@ -7,14 +7,14 @@
 # particular model. The pack_firmware.py script uses this to create a working
 # setvars-model.sh script.
 
-# Version information for model whitetip
+# Version information for model customtip
 TARGET_RO_FWID="Google_Coral.10068.45.0"
 TARGET_FWID="Google_Coral.10068.45.0"
 TARGET_ECID="coral_v1.1.7272-0b44fba22"
 TARGET_PDID=""
 TARGET_PLATFORM="Google_Coral"
 
-# Image and key files for model whitetip
+# Image and key files for model customtip
 IMAGE_MAIN="images/bios_coral.bin"
 IMAGE_EC=""
 IMAGE_PD=""

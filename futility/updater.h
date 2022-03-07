@@ -42,7 +42,7 @@ enum quirk_types {
 	QUIRK_UNLOCK_ME_FOR_UPDATE,
 	QUIRK_UNLOCK_WILCO_ME_FOR_UPDATE,
 	QUIRK_EVE_SMM_STORE,
-	QUIRK_ALLOW_EMPTY_WLTAG,
+	QUIRK_ALLOW_EMPTY_CUSTOMLABEL_TAG,
 	QUIRK_EC_PARTIAL_RECOVERY,
 	QUIRK_OVERRIDE_SIGNATURE_ID,
 	QUIRK_PRESERVE_ME,
@@ -105,7 +105,7 @@ struct model_config {
 	char *image, *ec_image, *pd_image;
 	struct patch_config patches;
 	char *signature_id;
-	int is_white_label;
+	int is_custom_label;
 };
 
 struct manifest {
@@ -273,12 +273,12 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 					       const char *model_name);
 
 /*
- * Applies white label information to an existing model configuration.
+ * Applies custom label information to an existing model configuration.
  * Collects signature ID information from either parameter signature_id or
  * image file (via VPD) and updates model.patches for key files.
  * Returns 0 on success, otherwise failure.
  */
-int model_apply_white_label(
+int model_apply_custom_label(
 		struct model_config *model,
 		struct archive *archive,
 		const char *signature_id,

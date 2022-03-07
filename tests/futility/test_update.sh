@@ -371,10 +371,10 @@ test_update "Full update (--quirks preserve_me)" \
 	--quirks preserve_me \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
-# Test archive and manifest.
+# Test archive and manifest. CL_TAG is for customlabel_tag.
 A="${TMP}.archive"
 mkdir -p "${A}/bin"
-echo 'echo "${WL_TAG}"' >"${A}/bin/vpd"
+echo 'echo "${CL_TAG}"' >"${A}/bin/vpd"
 chmod +x "${A}/bin/vpd"
 
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
@@ -400,38 +400,39 @@ cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/image.bin"
-cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.WL"
-cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.WL"
-cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.WL"
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.CL"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.CL"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.CL"
 ${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/image.bin"
 ${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
 ${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
 
-test_update "Full update (--archive, whitelabel, no VPD)" \
-	"${A}/image.bin" "!Need VPD set for white" \
+test_update "Full update (--archive, custom label, no VPD)" \
+	"${A}/image.bin" "!Need VPD set for custom" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
-test_update "Full update (--archive, whitelabel, no VPD - factory mode)" \
+test_update "Full update (--archive, custom label, no VPD - factory mode)" \
 	"${LINK_BIOS}" "${A}/image.bin" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --mode=factory
 
-test_update "Full update (--archive, whitelabel, no VPD - quirk mode)" \
+test_update "Full update (--archive, custom label, no VPD - quirk mode)" \
 	"${LINK_BIOS}" "${A}/image.bin" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --quirks=allow_empty_wltag
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 \
+	--quirks=allow_empty_customlabel_tag
 
-test_update "Full update (--archive, WL, single package)" \
+test_update "Full update (--archive, custom label, single package)" \
 	"${A}/image.bin" "${LINK_BIOS}" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=WL
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --signature_id=CL
 
-WL_TAG="WL" PATH="${A}/bin:${PATH}" \
-	test_update "Full update (--archive, WL, fake vpd)" \
+CL_TAG="CL" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (--archive, custom label, fake vpd)" \
 	"${A}/image.bin" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3
 
 echo "TEST: Output (-a, --mode=output)"
 mkdir -p "${TMP}.outa"
 cp -f "${A}/image.bin" "${TMP}.emu"
-WL_TAG="WL" PATH="${A}/bin:${PATH}" \
+CL_TAG="CL" PATH="${A}/bin:${PATH}" \
 	${FUTILITY} update -a "${A}" --mode=output --emu="${TMP}.emu" \
 	--output_dir="${TMP}.outa"
 cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
@@ -442,9 +443,9 @@ mkdir -p "${A}/images"
 mv "${A}/image.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
 cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
-cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip-wl"
-cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.whitetip-wl"
-cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.whitetip-wl"
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.customtip-cl"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.customtip-cl"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.customtip-cl"
 cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
 cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
 patch_file ${FROM_IMAGE}.ap FW_MAIN_A 0 "corrupted"
@@ -458,28 +459,28 @@ test_update "Full update (--archive, model=peppy)" \
 test_update "Full update (--archive, model=unknown)" \
 	"${FROM_IMAGE}.ap" "!Unsupported model: 'unknown'" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=unknown
-test_update "Full update (--archive, model=whitetip, signature_id=WL)" \
+test_update "Full update (--archive, model=customtip, signature_id=CL)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip \
-	--signature_id=whitetip-wl
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=customtip \
+	--signature_id=customtip-cl
 
-WL_TAG="wl" PATH="${A}/bin:${PATH}" \
-	test_update "Full update (-a, model=WL, fake VPD)" \
+CL_TAG="cl" PATH="${A}/bin:${PATH}" \
+	test_update "Full update (-a, model=customtip, fake VPD)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=customtip
 
-# WL-Unibuild without default keys
-test_update "Full update (--a, model=WL, no VPD, no default keys)" \
-	"${FROM_IMAGE}.al" "!Need VPD set for white" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+# Custom label + Unibuild without default keys
+test_update "Full update (--a, model=customtip, no VPD, no default keys)" \
+	"${FROM_IMAGE}.al" "!Need VPD set for custom" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=customtip
 
-# WL-Unibuild with default keys as model name
-cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.whitetip"
-cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.whitetip"
-cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.whitetip"
-test_update "Full update (-a, model=WL, no VPD, default keys)" \
+# Custom label + Unibuild with default keys as model name
+cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.customtip"
+cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.customtip"
+cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.customtip"
+test_update "Full update (-a, model=customtip, no VPD, default keys)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
-	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=whitetip
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=customtip
 
 # Test special programmer
 if type flashrom >/dev/null 2>&1; then

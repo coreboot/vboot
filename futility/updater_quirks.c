@@ -56,18 +56,23 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Scarlet.", .quirks = "min_platform_version=1" },
 	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=2" },
 
-        /* Legacy white label units. */
-        { .match = "Google_Enguarde.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Expresso.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Hana.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Veyron_Jaq.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Veyron_Jerry.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Veyron_Mighty.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Reks.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Relm.", .quirks = "allow_empty_wltag" },
-        { .match = "Google_Wizpig.", .quirks = "allow_empty_wltag" },
+        /* Legacy custom label units. */
+	{ .match = "Google_Hana.", .quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Reks.", .quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Relm.", .quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Wizpig.", .quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Enguarde.",
+		.quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Expresso.",
+		.quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Veyron_Jaq.",
+		.quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Veyron_Jerry.",
+		.quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Veyron_Mighty.",
+		.quirks = "allow_empty_customlabel_tag" },
 
-        { .match = "Google_Phaser.", .quirks = "override_signature_id" },
+	{ .match = "Google_Phaser.", .quirks = "override_signature_id" },
 };
 
 /* Preserves meta data and reload image contents from given file path. */
@@ -479,9 +484,9 @@ void updater_register_quirks(struct updater_config *cfg)
 		       "dedicated FMAP section.";
 	quirks->apply = quirk_eve_smm_store;
 
-	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_WLTAG];
-	quirks->name = "allow_empty_wltag";
-	quirks->help = "chromium/906962; allow devices without white label "
+	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_CUSTOMLABEL_TAG];
+	quirks->name = "allow_empty_customlabel_tag";
+	quirks->help = "chromium/906962; allow devices without custom label "
 		       "tags set to use default keys.";
 	quirks->apply = NULL;  /* Simple config. */
 
