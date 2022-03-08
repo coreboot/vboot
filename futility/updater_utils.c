@@ -543,6 +543,72 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 	return strcmp(image1->programmer, image2->programmer) == 0;
 }
 
+enum flash_command {
+	FLASH_READ = 0,
+	FLASH_WRITE,
+};
+
+/* Converts the flashrom_params to an equivalent flashrom command. */
+static char *get_flashrom_command(enum flash_command flash_cmd,
+				  struct flashrom_params *params,
+				  const char *image_name,
+				  const char *contents_name)
+{
+	int i, len = 0;
+	char *partial = NULL;
+	char *cmd = NULL;
+
+	if (!image_name)
+		image_name = "<IMAGE>";
+	if (!contents_name)
+		contents_name = "<OLD-IMAGE>";
+
+	for (i = 0; params->regions && params->regions[i]; i++)
+		len += strlen(params->regions[i]) + strlen(" -i ");
+
+	if (len) {
+		partial = (char *)malloc(len + 1);
+		if (!partial) {
+			ERROR("Failed to allocate a string buffer.\n");
+			return NULL;
+		}
+
+		partial[0] = '\0';
+		for (i = 0; params->regions[i]; i++) {
+			strcat(partial, " -i ");
+			strcat(partial, params->regions[i]);
+		}
+		assert(strlen(partial) == len);
+	}
+
+	switch (flash_cmd) {
+	case FLASH_READ:
+		ASPRINTF(&cmd, "flashrom -r %s -p %s%s%s",
+			 image_name,
+			 params->image->programmer,
+			 params->verbose > 1 ? " -V" : "",
+			 partial ? partial : "");
+		break;
+
+	case FLASH_WRITE:
+		ASPRINTF(&cmd, "flashrom -w %s -p %s%s%s%s%s%s",
+			 image_name,
+			 params->image->programmer,
+			 params->flash_contents ? " --flash-contents " : "",
+			 params->flash_contents ? contents_name : "",
+			 params->noverify ? " --noverify" : "",
+			 params->verbose > 1 ? " -V" : "",
+			 partial ? partial : "");
+		break;
+
+	default:
+		ERROR("Unknown command: %d.\n", flash_cmd);
+		break;
+	}
+	free(partial);
+	return cmd;
+}
+
 /*
  * Emulates writing a firmware image to the system.
  * Returns 0 if success, non-zero if error.
@@ -598,6 +664,86 @@ exit:
 	return errorcnt;
 }
 
+static int external_flashrom(enum flash_command flash_cmd,
+			     struct flashrom_params *params,
+			     struct tempfile *tempfiles)
+{
+	int r;
+	char *cmd;
+	const char *image_name = NULL, *contents_name = NULL;
+
+	switch (flash_cmd) {
+	case FLASH_READ:
+		image_name = create_temp_file(tempfiles);
+		break;
+
+	case FLASH_WRITE:
+		image_name = get_firmware_image_temp_file(
+				params->image, tempfiles);
+		if (params->flash_contents)
+			contents_name = get_firmware_image_temp_file(
+					params->flash_contents, tempfiles);
+		break;
+
+	default:
+		ERROR("Unknown command: %d\n", flash_cmd);
+		return -1;
+	}
+
+	cmd = get_flashrom_command(flash_cmd, params, image_name,
+				   contents_name);
+	if (!cmd)
+		return -1;
+
+	VB2_DEBUG(cmd);
+	r = system(cmd);
+	free(cmd);
+	if (r)
+		return r;
+
+	switch (flash_cmd) {
+	case FLASH_READ:
+		r = load_firmware_image(params->image, image_name, NULL);
+		break;
+	default:
+		break;
+	}
+
+	return r;
+}
+
+static int read_flash(struct flashrom_params *params,
+		      struct updater_config *cfg)
+{
+	/* TODO(hungte): Add a quirk to allow switching to external flashrom. */
+	if (0)
+		return external_flashrom(FLASH_READ, params, &cfg->tempfiles);
+
+	return flashrom_read_image(params->image, NULL, params->verbose);
+}
+
+static int write_flash(struct flashrom_params *params,
+		       struct updater_config *cfg)
+{
+	int r;
+
+	/* TODO(hungte): Add a quirk to allow switching to external flashrom. */
+	if (0)
+		return external_flashrom(FLASH_WRITE, params, &cfg->tempfiles);
+
+	r = flashrom_write_image(params->image,
+				 params->regions,
+				 params->flash_contents,
+				 !params->noverify,
+				 params->verbose);
+	/*
+	 * Force a newline to flush stdout in case if
+	 * flashrom_write_image left some messages in the buffer.
+	 */
+	fprintf(stdout, "\n");
+	return r;
+}
+
 /*
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
@@ -606,20 +752,21 @@ int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
 	int r, i;
+	char *cmd;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
 	struct flashrom_params params = {0};
 
 	params.image = image;
 	params.verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
 
-	INFO("flashrom -r <IMAGE> -p %s%s\n",
-	     params.image->programmer,
-	     params.verbose > 1 ? " -V" : "");
+	cmd = get_flashrom_command(FLASH_READ, &params, NULL, NULL);
+	INFO("%s\n", cmd);
+	free(cmd);
 
 	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
-		r = flashrom_read_image(params.image, NULL, params.verbose);
+		r = read_flash(&params, cfg);
 	}
 	if (!r)
 		r = parse_firmware_image(image);
@@ -637,6 +784,7 @@ int write_system_firmware(struct updater_config *cfg,
 			  const char * const sections[])
 {
 	int r = 0, i;
+	char *cmd;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
 	struct flashrom_params params = {0};
 	struct firmware_image *flash_contents = NULL;
@@ -655,28 +803,14 @@ int write_system_firmware(struct updater_config *cfg,
 	params.noverify_all = true;
 	params.verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
 
-	INFO("flashrom -w <IMAGE> -p %s%s%s%s%s%s%s\n",
-	     params.image->programmer,
-	     params.flash_contents ? " --flash-contents" : "",
-	     params.flash_contents ? "<OLD-IMAGE>" : "",
-	     params.regions ? " -i <REGIONS>" : "",
-	     params.noverify ? " --noverify" : "",
-	     params.noverify_all ? " --noverify-all" : "",
-	     params.verbose > 1 ? " -V" : "");
+	cmd = get_flashrom_command(FLASH_WRITE, &params, NULL, NULL);
+	INFO("%s\n", cmd);
+	free(cmd);
 
 	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
-		r = flashrom_write_image(params.image,
-					 params.regions,
-					 params.flash_contents,
-					 !params.noverify,
-					 params.verbose);
-		/*
-		 * Force a newline to flush stdout in case if
-		 * flashrom_write_image left some messages in the buffer.
-		 */
-		fprintf(stdout, "\n");
+		r = write_flash(&params, cfg);
 	}
 	return r;
 }
