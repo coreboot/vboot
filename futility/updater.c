@@ -323,132 +323,6 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 }
 
 /*
- * Emulates writing to firmware.
- * Returns 0 if success, non-zero if error.
- */
-static int emulate_write_firmware(const char *filename,
-				  const struct firmware_image *image,
-				  const char *section_name)
-{
-	struct firmware_image to_image = {0};
-	struct firmware_section from, to;
-	int errorcnt = 0;
-
-	INFO("(emulation) Writing %s from %s to %s (emu=%s).\n",
-	     section_name ? section_name : "the whole image",
-	     image->file_name, image->programmer, filename);
-
-	from.data = image->data;
-	from.size = image->size;
-
-	if (load_firmware_image(&to_image, filename, NULL)) {
-		ERROR("Cannot load image from %s.\n", filename);
-		return -1;
-	}
-
-	if (section_name) {
-		find_firmware_section(&from, image, section_name);
-		if (!from.data) {
-			ERROR("No section %s in source image %s.\n",
-			      section_name, image->file_name);
-			errorcnt++;
-		}
-		find_firmware_section(&to, &to_image, section_name);
-		if (!to.data) {
-			ERROR("No section %s in destination image %s.\n",
-			      section_name, filename);
-			errorcnt++;
-		}
-	} else if (image->size != to_image.size) {
-		ERROR("Image size is different (%s:%d != %s:%d)\n",
-		      image->file_name, image->size, to_image.file_name,
-		      to_image.size);
-		errorcnt++;
-	} else {
-		to.data = to_image.data;
-		to.size = to_image.size;
-	}
-
-	if (!errorcnt) {
-		size_t to_write = VB2_MIN(to.size, from.size);
-
-		assert(from.data && to.data);
-		VB2_DEBUG("Writing %zu bytes\n", to_write);
-		memcpy(to.data, from.data, to_write);
-	}
-
-	if (!errorcnt && vb2_write_file(
-			filename, to_image.data, to_image.size)) {
-		ERROR("Failed writing to file: %s\n", filename);
-		errorcnt++;
-	}
-
-	free_firmware_image(&to_image);
-	return errorcnt;
-}
-
-/*
- * Returns the number of retries when reading or writing to flash.
- */
-static int get_io_retries(struct updater_config *cfg)
-{
-	return 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
-}
-
-/*
- * Returns 1 if the programmers in image1 and image2 are the same.
- */
-static int is_the_same_programmer(const struct firmware_image *image1,
-				  const struct firmware_image *image2)
-{
-	assert(image1 && image2);
-
-	/* Including if both are NULL. */
-	if (image1->programmer == image2->programmer)
-		return 1;
-
-	/* Not the same if either one is NULL. */
-	if (!image1->programmer || !image2->programmer)
-		return 0;
-
-	return strcmp(image1->programmer, image2->programmer) == 0;
-}
-
-/*
- * Writes multiple sections from the given firmware image to the system.
- * The 'sections' should be NULL (write the whole image) or a list of section
- * names to write, and ended with NULL.
- * Returns 0 if success, non-zero if error.
- */
-static int write_firmware_sections(struct updater_config *cfg,
-				   const struct firmware_image *image,
-				   const char * const sections[])
-{
-	int r = 0;
-	struct firmware_image *diff_image = NULL;
-
-	if (cfg->emulation) {
-		int i;
-		if (!sections)
-			return emulate_write_firmware(
-					cfg->emulation, image, NULL);
-		for (i = 0; sections[i] && !r; i++) {
-			r |= emulate_write_firmware(
-					cfg->emulation, image, sections[i]);
-		}
-		return r;
-	}
-
-	if (cfg->use_diff_image && cfg->image_current.data &&
-	    is_the_same_programmer(&cfg->image_current, image))
-		diff_image = &cfg->image_current;
-
-	return write_system_firmware(image, diff_image, sections,
-				     &cfg->tempfiles, cfg->do_verify,
-				     get_io_retries(cfg), cfg->verbosity + 1);
-}
-
-/*
  * Writes a single section from the given firmware image to the system.
  * Writes the whole firmware image if the section_name is NULL.
  * Returns 0 if success, non-zero if error.
@@ -460,8 +334,8 @@ static int write_firmware(struct updater_config *cfg,
 	const char *sections[2] = {0};
 
 	sections[0] = section_name;
-	return write_firmware_sections(cfg, image,
-				       section_name ? sections : NULL);
+	return write_system_firmware(
+			cfg, image, section_name ? sections : NULL);
 }
 
 /*
@@ -1188,7 +1062,7 @@ static enum updater_error_codes update_rw_firmware(
 	assert(num < ARRAY_SIZE(sections));
 	sections[num] = NULL;
 
-	if (write_firmware_sections(cfg, image_to, sections))
+	if (write_system_firmware(cfg, image_to, sections))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1295,8 +1169,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		int ret;
 
 		INFO("Loading current system firmware...\n");
-		ret = load_system_firmware(image_from, &cfg->tempfiles,
-					   get_io_retries(cfg), cfg->verbosity);
+		ret = load_system_firmware(cfg, image_from);
 		if (ret == IMAGE_PARSE_FAILURE && cfg->force_update) {
 			WARN("No compatible firmware in system.\n");
 			cfg->check_platform = 0;
@@ -1478,10 +1351,7 @@ static int updater_apply_custom_label(struct updater_config *cfg,
 	if (!signature_id) {
 		if (!cfg->image_current.data) {
 			INFO("Loading system firmware for custom label...\n");
-			load_system_firmware(&cfg->image_current,
-					     &cfg->tempfiles,
-					     get_io_retries(cfg),
-					     cfg->verbosity);
+			load_system_firmware(cfg, &cfg->image_current);
 		}
 		tmp_image = get_firmware_image_temp_file(
 				&cfg->image_current, &cfg->tempfiles);

@@ -8,6 +8,7 @@
 #ifndef VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_
 #define VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_
 
+#include <stdbool.h>
 #include <stdio.h>
 #include "fmap.h"
 
@@ -57,6 +58,23 @@ void remove_all_temp_files(struct tempfile *head);
 /* Include definition of 'struct firmware_image;' */
 #include "flashrom.h"
 
+/* Parameters when invoking flashrom. */
+struct flashrom_params {
+	struct firmware_image *image; /* The firmware image to read/write. */
+	const struct firmware_image *flash_contents; /* --flash-contents */
+	const char *const *regions; /* -i: only read/write <region> */
+	bool noverify; /* -n: don't auto-verify */
+	bool noverify_all; /* -N: verify included regions only */
+	int verbose; /* -V: more verbose output */
+	/* Supported by libflashrom but no exported by flashrom_drv:
+	 *  - force
+	 *  - noverify_all
+	 * Not supported by libflashrom:
+	 *  - do_not_diff
+	 *  - ignore_lock
+	 */
+};
+
 enum {
 	IMAGE_LOAD_SUCCESS = 0,
 	IMAGE_READ_FAILURE = -1,
@@ -73,13 +91,15 @@ enum {
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct archive *archive);
 
+/* Structure(s) declared in updater.h */
+struct updater_config;
+
 /*
  * Loads the active system firmware image (usually from SPI flash chip).
  * Returns 0 if success, non-zero if error.
  */
-int load_system_firmware(struct firmware_image *image,
-			 struct tempfile *tempfiles,
-			 int retries, int verbosity);
+int load_system_firmware(struct updater_config *cfg,
+			 struct firmware_image *image);
 
 /* Frees the allocated resource from a firmware image object. */
 void free_firmware_image(struct firmware_image *image);
@@ -98,11 +118,9 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
  * FMAP section names (and ended with a NULL).
  * Returns 0 if success, non-zero if error.
  */
-int write_system_firmware(const struct firmware_image *image,
-			  const struct firmware_image *diff_image,
-			  const char * const sections[],
-			  struct tempfile *tempfiles,
-			  int do_verify, int retries, int verbosity);
+int write_system_firmware(struct updater_config *cfg,
+			  const struct firmware_image *image,
+			  const char * const sections[]);
 
 struct firmware_section {
 	uint8_t *data;
