@@ -189,6 +189,9 @@ int flashrom_write_image(const struct firmware_image *image,
 			}
 		}
 		flashrom_layout_set(flashctx, layout);
+	} else if (image->size != len) {
+		r = -1;
+		goto err_cleanup;
 	}
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, false);
