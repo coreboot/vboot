@@ -535,7 +535,7 @@ int load_system_firmware(struct firmware_image *image,
 {
 	int r, i;
 
-	INFO("flasrhom -r <IMAGE> -p %s%s\n",
+	INFO("flashrom -r <IMAGE> -p %s%s\n",
 	     image->programmer,
 	     verbosity ? " -V" : "");
 
