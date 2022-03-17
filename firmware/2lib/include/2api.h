@@ -1027,7 +1027,7 @@ int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx);
 vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx);
 
 /**
- * Request to disable developer mode by setting VB2_NV_DIAG_REQUEST.
+ * Request to disable developer mode by setting VB2_NV_DISABLE_DEV_REQUEST.
  *
  * @param ctx		Vboot context
  * @return VB2_SUCCESS if success; other errors if the check of
