@@ -430,7 +430,6 @@ ifeq (${FIRMWARE_ARCH},)
 # TODO: split out other stub funcs too
 FWLIB_SRCS += \
 	firmware/stub/tpm_lite_stub.c \
-	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
 	firmware/stub/vboot_api_stub_stream.c \
 	firmware/2lib/2stub.c
@@ -522,7 +521,6 @@ HOSTLIB_SRCS = \
 	firmware/lib/cgptlib/crc32.c \
 	firmware/lib/gpt_misc.c \
 	firmware/stub/tpm_lite_stub.c \
-	firmware/stub/vboot_api_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
 	futility/dump_kernel_config_lib.c \
 	$(CROSSYSTEM_ARCH_C) \

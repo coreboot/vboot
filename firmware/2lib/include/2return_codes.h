@@ -754,14 +754,17 @@ enum vb2_return_code {
 	 * Deprecated: functionality removed with legacy UI (b/167643628) */
 	VB2_ERROR_DEPRECATED_EX_SET_VENDOR_DATA,
 
-	/* The memory test is running but the output buffer was unchanged. */
-	VB2_ERROR_EX_DIAG_TEST_RUNNING,
+	/* The memory test is running but the output buffer was unchanged.
+	   Deprecated with b/172339016. */
+	VB2_ERROR_DEPRECATED_EX_DIAG_TEST_RUNNING,
 
-	/* The memory test is running and the output buffer was updated. */
-	VB2_ERROR_EX_DIAG_TEST_UPDATED,
+	/* The memory test is running and the output buffer was updated.
+	   Deprecated with b/172339016. */
+	VB2_ERROR_DEPRECATED_EX_DIAG_TEST_UPDATED,
 
-	/* The memory test initialization failed. */
-	VB2_ERROR_EX_DIAG_TEST_INIT_FAILED,
+	/* The memory test initialization failed.
+	   Deprecated with b/172339016. */
+	VB2_ERROR_DEPRECATED_EX_DIAG_TEST_INIT_FAILED,
 
 	/**********************************************************************
 	 * LoadKernel errors

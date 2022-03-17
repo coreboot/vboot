@@ -38,11 +38,12 @@ void vb2ex_abort(void)
 }
 
 __attribute__((weak))
-uint32_t vb2ex_mtime(void)
+vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
 {
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec * VB2_MSEC_PER_SEC + tv.tv_usec / VB2_USEC_PER_MSEC;
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
+	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
+	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
+	return VB2_SUCCESS;
 }
 
 __attribute__((weak))
@@ -162,83 +163,6 @@ vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *ctx)
 /* UI-related stubs */
 
 __attribute__((weak))
-const char *vb2ex_get_debug_info(struct vb2_context *ctx)
-{
-	return NULL;
-}
-
-__attribute__((weak))
-const char *vb2ex_get_firmware_log(int reset)
-{
-	return NULL;
-}
-
-__attribute__((weak))
-vb2_error_t vb2ex_diag_get_storage_health(const char **out)
-{
-	*out = "mock";
-	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
-vb2_error_t vb2ex_diag_get_storage_test_log(const char **out)
-{
-	*out = "mock";
-	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
-vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out)
-{
-	*out = "mock";
-	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
-vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out)
-{
-	*out = "mock";
-	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
-void vb2ex_msleep(uint32_t msec)
-{
-}
-
-__attribute__((weak))
-void vb2ex_beep(uint32_t msec, uint32_t frequency)
-{
-}
-
-__attribute__((weak))
-uint32_t vb2ex_get_locale_count(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
-uint32_t vb2ex_get_altfw_count(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
-int vb2ex_physical_presence_pressed(void)
-{
-	return 0;
-}
-
-__attribute__((weak))
-vb2_error_t vb2ex_commit_data(struct vb2_context *ctx)
-{
-	ctx->flags &= ~VB2_CONTEXT_SECDATA_FIRMWARE_CHANGED;
-	ctx->flags &= ~VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
-	ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
-	return VB2_SUCCESS;
-}
-
-__attribute__((weak))
 vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
@@ -260,4 +184,20 @@ __attribute__((weak))
 vb2_error_t vb2ex_diagnostic_ui(struct vb2_context *ctx)
 {
 	return VB2_SUCCESS;
+}
+
+/*****************************************************************************/
+/* Timer-related stubs */
+
+__attribute__((weak))
+uint32_t vb2ex_mtime(void)
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * VB2_MSEC_PER_SEC + tv.tv_usec / VB2_USEC_PER_MSEC;
+}
+
+__attribute__((weak))
+void vb2ex_msleep(uint32_t msec)
+{
 }

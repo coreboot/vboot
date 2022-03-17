@@ -1439,7 +1439,8 @@ vb2_error_t vb2ex_ec_vboot_done(struct vb2_context *ctx);
 vb2_error_t vb2ex_ec_battery_cutoff(void);
 
 /*****************************************************************************/
-/* Functions for UI display. */
+/* Functions for firmware UI. */
+/* TODO(b/172339016): Remove vb2ex_*_ui(). */
 
 /**
  * UI for a non-manual recovery ("BROKEN").
@@ -1488,76 +1489,6 @@ vb2_error_t vb2ex_developer_ui(struct vb2_context *ctx);
  */
 vb2_error_t vb2ex_diagnostic_ui(struct vb2_context *ctx);
 
-/* Helpers for bitmask operations */
-#define VB2_SET_BIT(mask, index) ((mask) |= ((uint32_t)1 << (index)))
-#define VB2_CLR_BIT(mask, index) ((mask) &= ~((uint32_t)1 << (index)))
-#define VB2_GET_BIT(mask, index) ((mask) & ((uint32_t)1 << (index)))
-
-/**
- * Check that physical presence button is currently pressed by the user.
- *
- * @return 1 for pressed, 0 for not.
- */
-int vb2ex_physical_presence_pressed(void);
-
-/**
- * Get the number of supported locales.
- *
- * @return Number of locales.  0 if none or on error.
- */
-uint32_t vb2ex_get_locale_count(void);
-
-/**
- * Return the number of available alternate bootloaders.
- *
- * @return Number of alternate bootloaders.  0 if none or on error.
- */
-uint32_t vb2ex_get_altfw_count(void);
-
-/**
- * Run alternate bootloader.
- *
- * @param altfw_id	ID of alternate bootloader to run, where
- *                      altfw_id <= vb2ex_get_altfw_count().  0 for default,
- *                      which corresponds to an alternate bootloader in
- *                      the range 1 <= altfw_id <= vb2ex_getfw_count().
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_run_altfw(uint32_t altfw_id);
-
-/**
- * Delay for at least the specified number of milliseconds.
- *
- * @param msec			Duration in milliseconds.
- */
-void vb2ex_msleep(uint32_t msec);
-
-/**
- * Play a beep tone of the specified frequency in Hz for the duration msec.
- *
- * This is effectively a sleep call that makes noise.  The implementation may
- * beep at a fixed frequency if frequency support is not available.  Regardless
- * of whether any errors occur, the callback is expected to delay for the
- * specified duration before returning.
- *
- * @param msec			Duration of beep in milliseconds.
- * @param frequency		Sound frequency in Hz.
- */
-void vb2ex_beep(uint32_t msec, uint32_t frequency);
-
-/**
- * Get the full debug info string.
- *
- * Return a pointer to the full debug info string which is guaranteed to be
- * null-terminated.  The function implementation should manage string memory
- * internally.  Subsequent calls may update the string and return the same
- * pointer, or return a new pointer if necessary.
- *
- * @param ctx		Vboot context
- * @return The pointer to the full debug info string.  NULL on error.
- */
-const char *vb2ex_get_debug_info(struct vb2_context *ctx);
-
 /**
  * Get the vboot debug info.
  *
@@ -1569,67 +1500,6 @@ const char *vb2ex_get_debug_info(struct vb2_context *ctx);
  * @return The pointer to the vboot debug info string.  NULL on error.
  */
 char *vb2api_get_debug_info(struct vb2_context *ctx);
-
-/**
- * Get the full firmware log string.
- *
- * Return a pointer to the full firmware log string which is guaranteed to be
- * null-terminated.  The function implementation should snapshot the full
- * firmware log when it is called.  If `reset` is not zero, it will reset the
- * firmware log snapshot.
- *
- * @param reset		Discard the current firmware log snapshot and
- *			reacquire a new one.
- * @return The pointer to the full firmware log string.  NULL on error.
- */
-const char *vb2ex_get_firmware_log(int reset);
-
-/**
- * Get the health info of the storage.
- *
- * @param out	For returning a read-only pointer of full log string which is
- *		guaranteed to be null-terminated. The function will manage
- *		memory internally, so the returned pointer will only be valid
- *		until next call.
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2ex_diag_get_storage_health(const char **out);
-
-/**
- * Get the storage self-test log.
- *
- * @param out	For returning a read-only pointer of full log string which is
- *		guaranteed to be null-terminated. The function will manage
- *		memory internally, so the returned pointer will only be valid
- *		until next call.
- * @return The status of storage test. VB2_SUCCESS means the test is finished,
- * regardless of passing or failing. VB2_ERROR_EX_DIAG_TEST_RUNNING means
- * the test is still running. VB2_ERROR_EX_UNIMPLEMENTED means the storage
- * self-test is not supported on this device. Other non-zero codes for internal
- * errors.
- */
-vb2_error_t vb2ex_diag_get_storage_test_log(const char **out);
-
-/**
- * Get the memory diagnostic status. When it is called, it will take over the
- * control for a short period of time running memory test, and then return the
- * result of current status. If `reset` is not zero, it will reset the memory
- * test state.
- *
- * @param reset	Discard the current memory test result and re-initialize
- *		a new test.
- * @param out	For returning a read-only pointer of full log string which is
- *		guaranteed to be null-terminated. The function will manage
- *		memory internally, so the returned pointer will only be valid
- *		until next call.
- * @return The status of memory test. VB2_SUCCESS means the test is finished,
- * regardless of passing or failing. VB2_ERROR_EX_DIAG_TEST_RUNNING means
- * the test is still running but the output buffer was unchanged.
- * VB2_ERROR_EX_DIAG_TEST_UPDATED means the test is still running and the output
- * buffer was updated. Other non-zero codes for internal errors.
- */
-vb2_error_t vb2ex_diag_memory_quick_test(int reset, const char **out);
-vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
 
 /*****************************************************************************/
 /* Timer. */
@@ -1643,5 +1513,12 @@ vb2_error_t vb2ex_diag_memory_full_test(int reset, const char **out);
  * @return Current timer value in milliseconds.
  */
 uint32_t vb2ex_mtime(void);
+
+/**
+ * Delay for at least the specified number of milliseconds.
+ *
+ * @param msec			Duration in milliseconds.
+ */
+void vb2ex_msleep(uint32_t msec);
 
 #endif  /* VBOOT_REFERENCE_2API_H_ */
