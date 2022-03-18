@@ -521,6 +521,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "extra_retries";
 	quirks->help = "Extra retries when writing to system firmware.";
 	quirks->apply = NULL;  /* Simple config. */
+
+	quirks = &cfg->quirks[QUIRK_EXTERNAL_FLASHROM];
+	quirks->name = "external_flashrom";
+	quirks->help = "Use external flashrom to access the system firmware.";
+	quirks->apply = NULL;  /* Simple config. */
 }
 
 /*

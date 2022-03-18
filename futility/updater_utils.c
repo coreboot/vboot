@@ -715,8 +715,7 @@ static int external_flashrom(enum flash_command flash_cmd,
 static int read_flash(struct flashrom_params *params,
 		      struct updater_config *cfg)
 {
-	/* TODO(hungte): Add a quirk to allow switching to external flashrom. */
-	if (0)
+	if (get_config_quirk(QUIRK_EXTERNAL_FLASHROM, cfg))
 		return external_flashrom(FLASH_READ, params, &cfg->tempfiles);
 
 	return flashrom_read_image(params->image, NULL, params->verbose);
@@ -727,8 +726,7 @@ static int write_flash(struct flashrom_params *params,
 {
 	int r;
 
-	/* TODO(hungte): Add a quirk to allow switching to external flashrom. */
-	if (0)
+	if (get_config_quirk(QUIRK_EXTERNAL_FLASHROM, cfg))
 		return external_flashrom(FLASH_WRITE, params, &cfg->tempfiles);
 
 	r = flashrom_write_image(params->image,
