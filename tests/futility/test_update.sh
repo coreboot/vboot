@@ -371,7 +371,7 @@ test_update "Full update (--quirks preserve_me)" \
 	--quirks preserve_me \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
-# Test archive and manifest. CL_TAG is for customlabel_tag.
+# Test archive and manifest. CL_TAG is for custom_label_tag.
 A="${TMP}.archive"
 mkdir -p "${A}/bin"
 echo 'echo "${CL_TAG}"' >"${A}/bin/vpd"
@@ -418,7 +418,7 @@ test_update "Full update (--archive, custom label, no VPD - factory mode)" \
 test_update "Full update (--archive, custom label, no VPD - quirk mode)" \
 	"${LINK_BIOS}" "${A}/image.bin" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 \
-	--quirks=allow_empty_customlabel_tag
+	--quirks=allow_empty_custom_label_tag
 
 test_update "Full update (--archive, custom label, single package)" \
 	"${A}/image.bin" "${LINK_BIOS}" \

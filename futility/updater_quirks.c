@@ -57,20 +57,20 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=2" },
 
         /* Legacy custom label units. */
-	{ .match = "Google_Hana.", .quirks = "allow_empty_customlabel_tag" },
-	{ .match = "Google_Reks.", .quirks = "allow_empty_customlabel_tag" },
-	{ .match = "Google_Relm.", .quirks = "allow_empty_customlabel_tag" },
-	{ .match = "Google_Wizpig.", .quirks = "allow_empty_customlabel_tag" },
+	{ .match = "Google_Hana.", .quirks = "allow_empty_custom_label_tag" },
+	{ .match = "Google_Reks.", .quirks = "allow_empty_custom_label_tag" },
+	{ .match = "Google_Relm.", .quirks = "allow_empty_custom_label_tag" },
+	{ .match = "Google_Wizpig.", .quirks = "allow_empty_custom_label_tag" },
 	{ .match = "Google_Enguarde.",
-		.quirks = "allow_empty_customlabel_tag" },
+		.quirks = "allow_empty_custom_label_tag" },
 	{ .match = "Google_Expresso.",
-		.quirks = "allow_empty_customlabel_tag" },
+		.quirks = "allow_empty_custom_label_tag" },
 	{ .match = "Google_Veyron_Jaq.",
-		.quirks = "allow_empty_customlabel_tag" },
+		.quirks = "allow_empty_custom_label_tag" },
 	{ .match = "Google_Veyron_Jerry.",
-		.quirks = "allow_empty_customlabel_tag" },
+		.quirks = "allow_empty_custom_label_tag" },
 	{ .match = "Google_Veyron_Mighty.",
-		.quirks = "allow_empty_customlabel_tag" },
+		.quirks = "allow_empty_custom_label_tag" },
 
 	{ .match = "Google_Phaser.", .quirks = "override_signature_id" },
 };
@@ -484,8 +484,8 @@ void updater_register_quirks(struct updater_config *cfg)
 		       "dedicated FMAP section.";
 	quirks->apply = quirk_eve_smm_store;
 
-	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_CUSTOMLABEL_TAG];
-	quirks->name = "allow_empty_customlabel_tag";
+	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_CUSTOM_LABEL_TAG];
+	quirks->name = "allow_empty_custom_label_tag";
 	quirks->help = "chromium/906962; allow devices without custom label "
 		       "tags set to use default keys.";
 	quirks->apply = NULL;  /* Simple config. */

@@ -1546,7 +1546,7 @@ static int updater_setup_archive(
 		if (!model->patches.rootkey) {
 			if (is_factory ||
 			    is_write_protection_enabled(cfg) ||
-			    get_config_quirk(QUIRK_ALLOW_EMPTY_CUSTOMLABEL_TAG,
+			    get_config_quirk(QUIRK_ALLOW_EMPTY_CUSTOM_LABEL_TAG,
 					     cfg)) {
 				WARN("No VPD for custom label.\n");
 			} else {

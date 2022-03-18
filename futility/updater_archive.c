@@ -53,7 +53,7 @@
  *  - rootkey.$CLTAG
  *  - vblock_A.$CLTAG
  *  - vblock_B.$CLTAG
- * The $CLTAG should come from VPD value 'customlabel_tag'. For legacy devices,
+ * The $CLTAG should come from VPD value 'custom_label_tag'. For legacy devices,
  * the VPD name may be 'whitelabel_tag', or 'customization_id'.
  * The 'customization_id' has a different format: LOEM[-VARIANT] and we can only
  * take LOEM as $CLTAG, for example A-B => $CLTAG=A.
@@ -69,7 +69,7 @@
  *  - vblock_A.$SIGID
  *  - vblock_B.$SIGID
  * If $SIGID starts with 'sig-id-in-*' then we have to replace it by VPD value
- * 'customlabel_tag' as '$MODEL-$CLTAG'.
+ * 'custom_label_tag' as '$MODEL-$CLTAG'.
  */
 
 static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
@@ -80,8 +80,8 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const DIR_KEYSET = "keyset",
 		  * const DIR_MODELS = "models",
 		  * const DEFAULT_MODEL_NAME = "default",
-		  * const VPD_CUSTOMLABEL_TAG = "customlabel_tag",
-		  * const VPD_CUSTOMLABEL_TAG_LEGACY = "whitelabel_tag",
+		  * const VPD_CUSTOM_LABEL_TAG = "custom_label_tag",
+		  * const VPD_CUSTOM_LABEL_TAG_LEGACY = "whitelabel_tag",
 		  * const VPD_CUSTOMIZATION_ID = "customization_id",
 		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
@@ -918,18 +918,18 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 static char *resolve_signature_id(struct model_config *model, const char *image)
 {
 	int is_unibuild = model->signature_id ? 1 : 0;
-	char *tag = vpd_get_value(image, VPD_CUSTOMLABEL_TAG);
+	char *tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG);
 	char *sig_id = NULL;
 
 	if (tag == NULL)
-		tag = vpd_get_value(image, VPD_CUSTOMLABEL_TAG_LEGACY);
+		tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG_LEGACY);
 
 	/* Unified build: $model.$tag, or $model (b/126800200). */
 	if (is_unibuild) {
 		if (!tag) {
 			WARN("No VPD '%s' set for custom label. "
 			     "Use model name '%s' as default.\n",
-			     VPD_CUSTOMLABEL_TAG, model->name);
+			     VPD_CUSTOM_LABEL_TAG, model->name);
 			return strdup(model->name);
 		}
 
@@ -981,7 +981,7 @@ int model_apply_custom_label(
 	} else {
 		signature_id = "";
 		WARN("No VPD '%s' set for custom label - use default keys.\n",
-		     VPD_CUSTOMLABEL_TAG);
+		     VPD_CUSTOM_LABEL_TAG);
 	}
 	if (!model->patches.rootkey) {
 		ERROR("No keys found for signature_id: '%s'\n", signature_id);
