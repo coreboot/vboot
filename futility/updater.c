@@ -393,7 +393,7 @@ static int write_optional_firmware(struct updater_config *cfg,
 	 */
 	if (check_programmer_wp &&
 	    get_system_property(SYS_PROP_WP_HW, cfg) == WP_ENABLED &&
-	    flashrom_get_wp(image->programmer) == WP_ENABLED) {
+	    flashrom_get_wp(image->programmer, -1) == WP_ENABLED) {
 		ERROR("Target %s is write protected, skip updating.\n",
 		      image->programmer);
 		return 0;

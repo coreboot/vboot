@@ -181,15 +181,6 @@ int save_file_from_stdin(const char *output);
  */
 char *host_shell(const char *command);
 
-enum wp_state {
-	WP_ERROR = -1,
-	WP_DISABLED = 0,
-	WP_ENABLED,
-};
-
-/* Helper function to return write protection status via given programmer. */
-enum wp_state flashrom_get_wp(const char *programmer);
-
 /* The environment variable name for setting servod port. */
 #define ENV_SERVOD_PORT	"SERVOD_PORT"
 

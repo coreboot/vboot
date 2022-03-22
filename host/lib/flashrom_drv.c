@@ -212,3 +212,54 @@ err_init:
 	free(tmp);
 	return r;
 }
+
+enum wp_state flashrom_get_wp(const char *programmer, int verbosity)
+{
+	enum wp_state r = WP_ERROR;
+
+	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+
+	struct flashrom_wp_cfg *cfg = NULL;
+
+	char *tmp_programmer, *params;
+	char *tmp = flashrom_extract_params(programmer, &tmp_programmer,
+					    &params);
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	if (flashrom_init(1)
+		|| flashrom_programmer_init(&prog, programmer, params))
+		goto err_init;
+
+	if (flashrom_flash_probe(&flashctx, prog, NULL))
+		goto err_probe;
+
+	if (flashrom_wp_cfg_new(&cfg) != FLASHROM_WP_OK)
+		goto err_cleanup;
+
+	if (flashrom_wp_read_cfg(cfg, flashctx) != FLASHROM_WP_OK)
+		goto err_read_cfg;
+
+	if (flashrom_wp_get_mode(cfg) == FLASHROM_WP_MODE_DISABLED)
+		r = WP_DISABLED;
+	else
+		r = WP_ENABLED;
+
+err_read_cfg:
+	flashrom_wp_cfg_release(cfg);
+
+err_cleanup:
+	flashrom_flash_release(flashctx);
+
+err_probe:
+	if (flashrom_programmer_shutdown(prog))
+		r = WP_ERROR;
+
+err_init:
+	free(tmp);
+
+	return r;
+}
