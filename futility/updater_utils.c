@@ -419,7 +419,7 @@ static int host_get_tpm_fwver(void)
 static int host_get_wp_hw(void)
 {
 	/* wpsw refers to write protection 'switch', not 'software'. */
-	return VbGetSystemPropertyInt("wpsw_cur");
+	return VbGetSystemPropertyInt("wpsw_cur") ? WP_ENABLED : WP_DISABLED;
 }
 
 /* A helper function to return "fw_vboot2" system property. */
