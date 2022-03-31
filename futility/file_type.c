@@ -24,8 +24,8 @@ struct futil_file_type_s {
 	const char *desc;
 	/* Functions to identify, display, and sign this type of file. */
 	enum futil_file_type (*recognize)(uint8_t *buf, uint32_t len);
-	int (*show)(const char *name, uint8_t *buf, uint32_t len, void *data);
-	int (*sign)(const char *name, uint8_t *buf, uint32_t len, void *data);
+	int (*show)(const char *name, void *data);
+	int (*sign)(const char *name, void *data);
 };
 
 /* Populate a list of file types and operator functions. */
@@ -99,42 +99,29 @@ enum futil_file_type futil_file_type_buf(uint8_t *buf, uint32_t len)
 enum futil_file_err futil_file_type(const char *filename,
 				    enum futil_file_type *type)
 {
-	int ifd;
-	uint8_t *buf;
-	uint32_t buf_len;
+	int ifd = -1;
+	uint8_t *buf = NULL;
+	uint32_t buf_len = 0;
 	struct stat sb;
 	enum futil_file_err err = FILE_ERR_NONE;
 
 	*type = FILE_TYPE_UNKNOWN;
 
-	ifd = open(filename, O_RDONLY);
-	if (ifd < 0) {
-		fprintf(stderr, "Can't open %s: %s\n",
-			filename, strerror(errno));
-		return FILE_ERR_OPEN;
-	}
+	err = futil_open_file(filename, &ifd, FILE_RO);
+	if (err != FILE_ERR_NONE)
+		goto done;
 
 	if (0 != fstat(ifd, &sb)) {
-		fprintf(stderr, "Can't stat input file: %s\n",
-			strerror(errno));
-		close(ifd);
-		return FILE_ERR_STAT;
+		fprintf(stderr, "Can't stat input file: %s\n", strerror(errno));
+		err = FILE_ERR_STAT;
+		goto done;
 	}
 
 	if (S_ISREG(sb.st_mode) || S_ISBLK(sb.st_mode)) {
-		err = futil_map_file(ifd, MAP_RO, &buf, &buf_len);
-		if (err) {
-			close(ifd);
-			return err;
-		}
-
+		err = futil_map_file(ifd, FILE_RO, &buf, &buf_len);
+		if (err)
+			goto done;
 		*type = futil_file_type_buf(buf, buf_len);
-
-		err = futil_unmap_file(ifd, MAP_RO, buf, buf_len);
-		if (err) {
-			close(ifd);
-			return err;
-		}
 	} else if (S_ISDIR(sb.st_mode)) {
 		err = FILE_ERR_DIR;
 	} else if (S_ISCHR(sb.st_mode)) {
@@ -144,37 +131,27 @@ enum futil_file_err futil_file_type(const char *filename,
 	} else if (S_ISSOCK(sb.st_mode)) {
 		err = FILE_ERR_SOCK;
 	}
-
-	if (close(ifd)) {
-		fprintf(stderr, "Error when closing %s: %s\n",
-			filename, strerror(errno));
-		return FILE_ERR_CLOSE;
-	}
-
+done:
+	futil_unmap_and_close_file(ifd, FILE_RO, buf, buf_len);
 	return err;
 }
 
-int futil_file_type_show(enum futil_file_type type,
-			 const char *filename,
-			 uint8_t *buf, uint32_t len)
+int futil_file_type_show(enum futil_file_type type, const char *filename)
 {
 	if (futil_file_types[type].show)
-		return futil_file_types[type].show(filename, buf, len, 0);
+		return futil_file_types[type].show(filename, 0);
 
 	fprintf(stderr, "Don't know how to show %s (type %s)\n",
 		filename, futil_file_type_name(type));
 	return 1;
 }
 
-int futil_file_type_sign(enum futil_file_type type,
-			 const char *filename,
-			 uint8_t *buf, uint32_t len)
+int futil_file_type_sign(enum futil_file_type type, const char *filename)
 {
 	if (futil_file_types[type].sign)
-		return futil_file_types[type].sign(filename, buf, len, 0);
+		return futil_file_types[type].sign(filename, 0);
 
 	fprintf(stderr, "Don't know how to sign %s (type %s)\n",
 		filename, futil_file_type_name(type));
 	return 1;
 }
-

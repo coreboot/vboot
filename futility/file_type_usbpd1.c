@@ -78,7 +78,7 @@ static int parse_size_opts(uint32_t len,
 	return 1;
 }
 
-int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_sign_usbpd1(const char *name, void *data)
 {
 	struct vb2_private_key *key_ptr = 0;
 	struct vb21_signature *sig_ptr = 0;
@@ -94,6 +94,13 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t ro_offset;
 	uint32_t rw_offset;
 	uint32_t r;
+	uint8_t *buf = NULL;
+	uint32_t len;
+	int fd = -1;
+
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+					 &buf, &len))
+		return 1;
 
 	VB2_DEBUG("name %s len  %#.8x (%d)\n", name, len, len);
 
@@ -237,6 +244,7 @@ int ft_sign_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
 	/* Finally */
 	retval = 0;
 done:
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), buf, len);
 	if (key_ptr)
 		vb2_private_key_free(key_ptr);
 	if (keyb_data)
@@ -425,35 +433,47 @@ static vb2_error_t check_self_consistency(const uint8_t *buf, const char *name,
 }
 
 
-int ft_show_usbpd1(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_usbpd1(const char *name, void *data)
 {
 	uint32_t ro_size, rw_size, ro_offset, rw_offset;
 	int s, h;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+	int rv = 1;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
 
 	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* Get image locations */
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))
-		return 1;
+		goto done;
 
 	/* TODO: If we don't have a RO image, ask for a public key
 	 * TODO: If we're given an external public key, use it (and its alg) */
 	if (!ro_size) {
 		printf("Can't find the public key\n");
-		return 1;
+		goto done;
 	}
 
 	/* TODO: Only loop through the numbers we haven't been given */
-	for (s = 0; s < ARRAY_SIZE(sigs); s++)
-		for (h = 0; h < ARRAY_SIZE(hashes); h++)
-			if (!check_self_consistency(buf, name,
-						    ro_size, rw_size,
+	for (s = 0; s < ARRAY_SIZE(sigs); s++) {
+		for (h = 0; h < ARRAY_SIZE(hashes); h++) {
+			if (!check_self_consistency(buf, name, ro_size, rw_size,
 						    ro_offset, rw_offset,
-						    sigs[s], hashes[h]))
-				return 0;
+						    sigs[s], hashes[h])) {
+				rv = 0;
+				goto done;
+			}
+		}
+	}
 
 	printf("This doesn't appear to be a complete usbpd1 image\n");
-	return 1;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
 }
 
 enum futil_file_type ft_recognize_usbpd1(uint8_t *buf, uint32_t len)

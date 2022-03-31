@@ -55,14 +55,21 @@ static int no_opt_if(int expr, const char *optname)
 }
 
 /* This wraps/signs a public key, producing a keyblock. */
-int ft_sign_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_sign_pubkey(const char *name, void *data)
 {
-	struct vb2_packed_key *data_key = (struct vb2_packed_key *)buf;
+	struct vb2_packed_key *data_key;
+	uint32_t data_len;
 	struct vb2_keyblock *block;
+	int rv = 1;
+	int fd = -1;
 
-	if (vb2_packed_key_looks_ok(data_key, len)) {
-		fprintf(stderr, "Public key looks bad.\n");
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+				    (uint8_t **)&data_key, &data_len))
 		return 1;
+
+	if (vb2_packed_key_looks_ok(data_key, data_len)) {
+		fprintf(stderr, "Public key looks bad.\n");
+		goto done;
 	}
 
 	if (sign_option.pem_signpriv) {
@@ -82,7 +89,7 @@ int ft_sign_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 				fprintf(stderr,
 					"Unable to read PEM signing key: %s\n",
 					strerror(errno));
-				return 1;
+				goto done;
 			}
 			block = vb2_create_keyblock(data_key,
 						    sign_option.signprivate,
@@ -95,20 +102,24 @@ int ft_sign_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 	}
 
 	/* Write it out */
-	return WriteSomeParts(sign_option.outfile,
-			      block, block->keyblock_size,
-			      NULL, 0);
+	rv = WriteSomeParts(sign_option.outfile, block, block->keyblock_size,
+			    NULL, 0);
+done:
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option),
+				   (uint8_t *)data_key, data_len);
+	return rv;
 }
 
-int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
-		       void *data)
+int ft_sign_raw_kernel(const char *name, void *data)
 {
-	uint8_t *vmlinuz_data, *kblob_data, *vblock_data;
+	uint8_t *vmlinuz_data = NULL, *kblob_data = NULL, *vblock_data = NULL;
 	uint32_t vmlinuz_size, kblob_size, vblock_size;
-	int rv;
+	int rv = 1;
+	int fd = -1;
 
-	vmlinuz_data = buf;
-	vmlinuz_size = len;
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+				    &vmlinuz_data, &vmlinuz_size))
+		return 1;
 
 	kblob_data = CreateKernelBlob(
 		vmlinuz_data, vmlinuz_size,
@@ -118,7 +129,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 		&kblob_size);
 	if (!kblob_data) {
 		fprintf(stderr, "Unable to create kernel blob\n");
-		return 1;
+		goto done;
 	}
 	VB2_DEBUG("kblob_size = %#x\n", kblob_size);
 
@@ -131,8 +142,7 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 				     sign_option.flags, &vblock_size);
 	if (!vblock_data) {
 		fprintf(stderr, "Unable to sign kernel blob\n");
-		free(kblob_data);
-		return 1;
+		goto done;
 	}
 	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
 
@@ -150,22 +160,26 @@ int ft_sign_raw_kernel(const char *name, uint8_t *buf, uint32_t len,
 				    vblock_data, vblock_size,
 				    kblob_data, kblob_size);
 
+done:
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option),
+				   vmlinuz_data, vmlinuz_size);
 	free(vblock_data);
 	free(kblob_data);
 	return rv;
 }
 
-int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
-			  void *data)
+int ft_sign_kern_preamble(const char *name, void *data)
 {
-	uint8_t *kpart_data, *kblob_data, *vblock_data;
+	uint8_t *kpart_data = NULL, *kblob_data = NULL, *vblock_data = NULL;
 	uint32_t kpart_size, kblob_size, vblock_size;
 	struct vb2_keyblock *keyblock = NULL;
 	struct vb2_kernel_preamble *preamble = NULL;
-	int rv = 0;
+	int rv = 1;
+	int fd = -1;
 
-	kpart_data = buf;
-	kpart_size = len;
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+				    &kpart_data, &kpart_size))
+		return 1;
 
 	/* Note: This just sets some static pointers. It doesn't malloc. */
 	kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
@@ -174,7 +188,7 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 
 	if (!kblob_data) {
 		fprintf(stderr, "Unable to unpack kernel partition\n");
-		return 1;
+		goto done;
 	}
 
 	/*
@@ -192,7 +206,7 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 					sign_option.config_data,
 					sign_option.config_size)) {
 		fprintf(stderr, "Unable to update config\n");
-		return 1;
+		goto done;
 	}
 
 	/* Preserve the version unless a new one is given */
@@ -219,7 +233,7 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 				     &vblock_size);
 	if (!vblock_data) {
 		fprintf(stderr, "Unable to sign kernel blob\n");
-		return 1;
+		goto done;
 	}
 	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
 
@@ -238,24 +252,33 @@ int ft_sign_kern_preamble(const char *name, uint8_t *buf, uint32_t len,
 		 * all our modifications to the buffer will get flushed to
 		 * disk when we close it. */
 		memcpy(kpart_data, vblock_data, vblock_size);
+		rv = 0;
 	}
-
+done:
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), kpart_data,
+				   kpart_size);
 	free(vblock_data);
 	return rv;
 }
 
 
-int ft_sign_raw_firmware(const char *name, uint8_t *buf, uint32_t len,
-			 void *data)
+int ft_sign_raw_firmware(const char *name, void *data)
 {
-	struct vb2_signature *body_sig;
-	struct vb2_fw_preamble *preamble;
-	int rv;
+	struct vb2_signature *body_sig = NULL;
+	struct vb2_fw_preamble *preamble = NULL;
+	uint8_t *buf;
+	uint32_t len;
+	int rv = 1;
+	int fd = -1;
+
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+				    &buf, &len))
+		return 1;
 
 	body_sig = vb2_calculate_signature(buf, len, sign_option.signprivate);
 	if (!body_sig) {
 		fprintf(stderr, "Error calculating body signature\n");
-		return 1;
+		goto done;
 	}
 
 	preamble = vb2_create_fw_preamble(
@@ -267,7 +290,7 @@ int ft_sign_raw_firmware(const char *name, uint8_t *buf, uint32_t len,
 	if (!preamble) {
 		fprintf(stderr, "Error creating firmware preamble.\n");
 		free(body_sig);
-		return 1;
+		goto done;
 	}
 
 	rv = WriteSomeParts(sign_option.outfile,
@@ -275,6 +298,8 @@ int ft_sign_raw_firmware(const char *name, uint8_t *buf, uint32_t len,
 			    sign_option.keyblock->keyblock_size,
 			    preamble, preamble->preamble_size);
 
+done:
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), buf, len);
 	free(preamble);
 	free(body_sig);
 
@@ -648,12 +673,8 @@ static int do_sign(int argc, char *argv[])
 {
 	char *infile = 0;
 	int i;
-	int ifd = -1;
 	int errorcnt = 0;
-	uint8_t *buf;
-	uint32_t buf_len;
 	char *e = 0;
-	int mapping;
 	int helpind = 0;
 	int longindex;
 
@@ -1009,56 +1030,18 @@ static int do_sign(int argc, char *argv[])
 	if (errorcnt)
 		goto done;
 
-	if (sign_option.create_new_outfile) {
-		/* The input is read-only, the output is write-only. */
-		mapping = MAP_RO;
-		VB2_DEBUG("open RO %s\n", infile);
-		ifd = open(infile, O_RDONLY);
-		if (ifd < 0) {
-			errorcnt++;
-			fprintf(stderr, "Can't open %s for reading: %s\n",
-				infile, strerror(errno));
-			goto done;
-		}
-	} else {
+	if (!sign_option.create_new_outfile) {
 		/* We'll read-modify-write the output file */
-		mapping = MAP_RW;
 		if (sign_option.inout_file_count > 1)
 			futil_copy_file_or_die(infile, sign_option.outfile);
-		VB2_DEBUG("open RW %s\n", sign_option.outfile);
 		infile = sign_option.outfile;
-		ifd = open(sign_option.outfile, O_RDWR);
-		if (ifd < 0) {
-			errorcnt++;
-			fprintf(stderr, "Can't open %s for writing: %s\n",
-				sign_option.outfile, strerror(errno));
-			goto done;
-		}
 	}
 
-	if (0 != futil_map_file(ifd, mapping, &buf, &buf_len)) {
-		errorcnt++;
-		goto done;
-	}
-
-	errorcnt += futil_file_type_sign(sign_option.type, infile,
-					 buf, buf_len);
-
-	errorcnt += futil_unmap_file(ifd, mapping, buf, buf_len);
-
+	errorcnt += futil_file_type_sign(sign_option.type, infile);
 done:
-	if (ifd >= 0 && close(ifd)) {
-		errorcnt++;
-		fprintf(stderr, "Error when closing ifd: %s\n",
-			strerror(errno));
-	}
-
-	if (sign_option.signprivate)
-		free(sign_option.signprivate);
-	if (sign_option.keyblock)
-		free(sign_option.keyblock);
-	if (sign_option.kernel_subkey)
-		free(sign_option.kernel_subkey);
+	free(sign_option.signprivate);
+	free(sign_option.keyblock);
+	free(sign_option.kernel_subkey);
 	if (sign_option.prikey)
 		vb2_private_key_free(sign_option.prikey);
 

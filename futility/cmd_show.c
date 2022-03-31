@@ -86,31 +86,49 @@ static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
 	       packed_key_sha1_string(data_key));
 }
 
-int ft_show_pubkey(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_pubkey(const char *name, void *data)
 {
-	struct vb2_packed_key *pubkey = (struct vb2_packed_key *)buf;
+	int fd = -1;
+	struct vb2_packed_key *pubkey;
+	uint32_t len;
+	int rv = 0;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&pubkey,
+				     &len))
+		return 1;
 
 	if (vb2_packed_key_looks_ok(pubkey, len)) {
 		printf("%s looks bogus\n", name);
-		return 1;
+		rv = 1;
+		goto done;
 	}
 
 	printf("Public Key file:       %s\n", name);
 	show_pubkey(pubkey, "  ");
 
-	return 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, (uint8_t *)pubkey, len);
+	return rv;
 }
 
-int ft_show_privkey(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_privkey(const char *name, void *data)
 {
-	struct vb2_packed_private_key *pkey =
-		(struct vb2_packed_private_key *)buf;
+	int fd = -1;
+	int rv = 0;
+	struct vb2_packed_private_key *pkey = NULL;
+	uint32_t len;
 	struct vb2_private_key key;
-	const unsigned char *start = pkey->key_data;
+	const unsigned char *start;
 
+	if (futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&pkey,
+				     &len))
+		return 1;
+
+	start = pkey->key_data;
 	if (len <= sizeof(*pkey)) {
 		printf("%s looks bogus\n", name);
-		return 1;
+		rv = 1;
+		goto done;
 	}
 	len -= sizeof(*pkey);
 	key.rsa_private_key = d2i_RSAPrivateKey(NULL, &start, len);
@@ -122,20 +140,30 @@ int ft_show_privkey(const char *name, uint8_t *buf, uint32_t len, void *data)
 	printf("  Key sha1sum:         %s\n",
 	       private_key_sha1_string(&key));
 
-	return 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, (uint8_t *)pkey, len);
+	return rv;
 }
 
-int ft_show_keyblock(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_keyblock(const char *name, void *data)
 {
-	struct vb2_keyblock *block = (struct vb2_keyblock *)buf;
+	struct vb2_keyblock *block;
 	struct vb2_public_key *sign_key = show_option.k;
 	int good_sig = 0;
 	int retval = 0;
+	int fd = -1;
+	uint32_t len;
+
+	retval = futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&block,
+					 &len);
+	if (retval)
+		return 1;
 
 	/* Check the hash only first */
 	if (0 != vb2_verify_keyblock_hash(block, len, &wb)) {
 		printf("%s is invalid\n", name);
-		return 1;
+		retval = 1;
+		goto done;
 	}
 
 	/* Check the signature if we have one */
@@ -148,11 +176,13 @@ int ft_show_keyblock(const char *name, uint8_t *buf, uint32_t len, void *data)
 
 	show_keyblock(block, name, !!sign_key, good_sig);
 
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, (uint8_t *)block, len);
 	return retval;
 }
 
-int ft_show_fw_preamble(const char *name, uint8_t *buf, uint32_t len,
-			void *data)
+int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
+			 void *data)
 {
 	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)buf;
 	struct bios_state_s *state = (struct bios_state_s *)data;
@@ -282,17 +312,40 @@ done:
 	return retval;
 }
 
-int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
-			    void *data)
+int ft_show_fw_preamble(const char *name, void *data)
 {
-	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)buf;
+	int rv = 0;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
+
+	rv = show_fw_preamble_buf(name, buf, len, data);
+
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
+}
+
+int ft_show_kernel_preamble(const char *name, void *data)
+{
+	struct vb2_keyblock *keyblock;
 	struct vb2_public_key *sign_key = show_option.k;
-	int retval = 0;
+	int retval = 1;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
+
+	keyblock = (struct vb2_keyblock *)buf;
 
 	/* Check the hash... */
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(keyblock, len, &wb)) {
 		printf("%s keyblock component is invalid\n", name);
-		return 1;
+		goto done;
 	}
 
 	/* If we have a key, check the signature too */
@@ -304,13 +357,10 @@ int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
 	printf("Kernel partition:        %s\n", name);
 	show_keyblock(keyblock, NULL, !!sign_key, good_sig);
 
-	if (show_option.strict && (!sign_key || !good_sig))
-		retval = 1;
-
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
 		fprintf(stderr, "Error parsing data key in %s\n", name);
-		return 1;
+		goto done;
 	}
 
 	uint32_t more = keyblock->keyblock_size;
@@ -320,7 +370,7 @@ int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
 	if (VB2_SUCCESS != vb2_verify_kernel_preamble(pre2, len - more,
 						      &data_key, &wb)) {
 		printf("%s is invalid\n", name);
-		return 1;
+		goto done;
 	}
 
 	printf("Kernel Preamble:\n");
@@ -367,20 +417,24 @@ int ft_show_kernel_preamble(const char *name, uint8_t *buf, uint32_t len,
 	if (!kernel_blob) {
 		/* TODO: Is this always a failure? The preamble is okay. */
 		fprintf(stderr, "No kernel blob available to verify.\n");
-		return 1;
+		goto done;
 	}
 
 	if (VB2_SUCCESS !=
 	    vb2_verify_data(kernel_blob, kernel_size, &pre2->body_signature,
 			    &data_key, &wb)) {
 		fprintf(stderr, "Error verifying kernel body.\n");
-		return 1;
+		goto done;
 	}
 
 	printf("Body verification succeeded.\n");
 
 	printf("Config:\n%s\n", kernel_blob + kernel_cmd_line_offset(pre2));
 
+	if (!show_option.strict || (sign_key && good_sig))
+		retval = 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return retval;
 }
 
@@ -476,9 +530,8 @@ static int do_show(int argc, char *argv[])
 	uint8_t *pubkbuf = NULL;
 	struct vb2_public_key pubk2;
 	char *infile = 0;
-	int ifd, i;
+	int i;
 	int errorcnt = 0;
-	uint8_t *buf;
 	uint32_t len;
 	char *e = 0;
 	int type_override = 0;
@@ -585,34 +638,14 @@ static int do_show(int argc, char *argv[])
 
 	for (i = optind; i < argc; i++) {
 		infile = argv[i];
-		ifd = open(infile, O_RDONLY);
-		if (ifd < 0) {
-			errorcnt++;
-			fprintf(stderr, "Can't open %s: %s\n",
-				infile, strerror(errno));
-			continue;
-		}
-
-		if (0 != futil_map_file(ifd, MAP_RO, &buf, &len)) {
-			errorcnt++;
-			goto boo;
-		}
 
 		/* Allow the user to override the type */
 		if (type_override)
 			type = show_option.type;
 		else
-			type = futil_file_type_buf(buf, len);
+			futil_file_type(infile, &type);
 
-		errorcnt += futil_file_type_show(type, infile, buf, len);
-
-		errorcnt += futil_unmap_file(ifd, MAP_RO, buf, len);
-boo:
-		if (close(ifd)) {
-			errorcnt++;
-			fprintf(stderr, "Error when closing %s: %s\n",
-				infile, strerror(errno));
-		}
+		errorcnt += futil_file_type_show(type, infile);
 	}
 
 done:

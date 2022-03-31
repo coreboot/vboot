@@ -222,31 +222,21 @@ static int do_validate_rec_mrc(int argc, char *argv[])
 
 	infile = argv[optind++];
 
-	fd = open(infile, O_RDONLY);
-	if (fd < 0) {
-		fprintf(stderr, "Cannot open %s:%s\n", infile, strerror(errno));
+	if (futil_open_and_map_file(infile, &fd, FILE_RO, &buff, &file_size) !=
+	    FILE_ERR_NONE)
 		return 1;
-	}
-
-	if (futil_map_file(fd, MAP_RO, &buff, &file_size) != FILE_ERR_NONE) {
-		fprintf(stderr, "Cannot map file %s\n", infile);
-		close(fd);
-		return 1;
-	}
 
 	if (offset > file_size) {
 		fprintf(stderr, "File size(%#x) smaller than offset(%#x)\n",
 			file_size, offset);
-		futil_unmap_file(fd, MAP_RO, buff, file_size);
-		close(fd);
+		futil_unmap_and_close_file(fd, FILE_RO, buff, file_size);
 		return 1;
 	}
 
 	if (get_mrc_data_slot((uint16_t *)(buff + offset), &data_offset,
 			      &data_size)) {
 		fprintf(stderr, "Metadata block error\n");
-		futil_unmap_file(fd, MAP_RO, buff, file_size);
-		close(fd);
+		futil_unmap_and_close_file(fd, FILE_RO, buff, file_size);
 		return 1;
 	}
 	offset += data_offset;
@@ -259,12 +249,10 @@ static int do_validate_rec_mrc(int argc, char *argv[])
 			"offset=%#x, file size=%#x, data_size=%#x\n",
 			offset, file_size, data_size);
 
-	if (futil_unmap_file(fd, MAP_RO, buff, file_size) != FILE_ERR_NONE) {
-		fprintf(stderr, "Failed to unmap file %s\n", infile);
-		ret = 1;
-	}
+	if (futil_unmap_and_close_file(fd, FILE_RO, buff, file_size) !=
+	    FILE_ERR_NONE)
+		return 1;
 
-	close(fd);
 	return ret;
 }
 

@@ -40,7 +40,8 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 
 /** Show functions **/
 
-int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
+static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
+			void *data)
 {
 	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)buf;
 	struct bios_state_s *state = (struct bios_state_s *)data;
@@ -75,7 +76,7 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 
 	if (retval) {
 		printf("GBB header is invalid, ignoring content\n");
-		return 1;
+		return retval;
 	}
 
 	printf("GBB content:\n");
@@ -125,6 +126,23 @@ int ft_show_gbb(const char *name, uint8_t *buf, uint32_t len, void *data)
 	return retval;
 }
 
+int ft_show_gbb(const char *name, void *data)
+{
+	int retval = 0;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+
+	retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
+	if (retval)
+		return 1;
+
+	retval = show_gbb_buf(name, buf, len, data);
+
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return retval;
+}
+
 /*
  * This handles FW_MAIN_A and FW_MAIN_B while processing a BIOS image.
  *
@@ -155,16 +173,16 @@ static int fmap_show_fw_main(const char *name, uint8_t *buf, uint32_t len,
 /* Functions to call to show the bios components */
 static int (*fmap_show_fn[])(const char *name, uint8_t *buf, uint32_t len,
 			       void *data) = {
-	ft_show_gbb,
+	show_gbb_buf,
 	fmap_show_fw_main,
 	fmap_show_fw_main,
-	ft_show_fw_preamble,
-	ft_show_fw_preamble,
+	show_fw_preamble_buf,
+	show_fw_preamble_buf,
 };
 _Static_assert(ARRAY_SIZE(fmap_show_fn) == NUM_BIOS_COMPONENTS,
 	       "Size of fmap_show_fn[] should match NUM_BIOS_COMPONENTS");
 
-int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_bios(const char *name, void *data)
 {
 	FmapHeader *fmap;
 	FmapAreaHeader *ah = 0;
@@ -172,6 +190,13 @@ int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 	enum bios_component c;
 	int retval = 0;
 	struct bios_state_s state;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+
+	retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
+	if (retval)
+		return 1;
 
 	memset(&state, 0, sizeof(state));
 
@@ -206,6 +231,7 @@ int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 		}
 	}
 
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return retval;
 }
 
@@ -428,7 +454,7 @@ static int (*fmap_sign_fn[])(const char *name, uint8_t *buf, uint32_t len,
 _Static_assert(ARRAY_SIZE(fmap_sign_fn) == NUM_BIOS_COMPONENTS,
 	       "Size of fmap_sign_fn[] should match NUM_BIOS_COMPONENTS");
 
-int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_sign_bios(const char *name, void *data)
 {
 	FmapHeader *fmap;
 	FmapAreaHeader *ah = 0;
@@ -436,6 +462,14 @@ int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 	enum bios_component c;
 	int retval = 0;
 	struct bios_state_s state;
+	int fd = -1;
+	uint8_t *buf = NULL;
+	uint32_t len = 0;
+
+	retval = futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+					 &buf, &len);
+	if (retval)
+		return 1;
 
 	memset(&state, 0, sizeof(state));
 
@@ -469,6 +503,7 @@ int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 
 	retval += sign_bios_at_end(&state);
 
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), buf, len);
 	return retval;
 }
 

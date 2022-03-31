@@ -149,22 +149,16 @@ static int do_load_fmap(int argc, char *argv[])
 	else
 		outfile = infile;
 
-	fd = open(outfile, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "Can't open %s: %s\n",
-			outfile, strerror(errno));
-		return 1;
-	}
+	errorcnt |= futil_open_and_map_file(outfile, &fd, FILE_RW, &buf, &len);
 
-	errorcnt |= futil_map_file(fd, MAP_RW, &buf, &len);
 	if (errorcnt)
-		goto done_file;
+		goto done;
 
 	fmap = fmap_find(buf, len);
 	if (!fmap) {
 		fprintf(stderr, "Can't find an FMAP in %s\n", infile);
 		errorcnt++;
-		goto done_map;
+		goto done;
 	}
 
 	for (i = optind; i < argc; i++) {
@@ -190,20 +184,10 @@ static int do_load_fmap(int argc, char *argv[])
 		}
 	}
 
-done_map:
-	errorcnt |= futil_unmap_file(fd, 1, buf, len);
-
-done_file:
-
-	if (0 != close(fd)) {
-		fprintf(stderr, "Error closing %s: %s\n",
-			outfile, strerror(errno));
-		errorcnt++;
-	}
-
+done:
+	errorcnt |= futil_unmap_and_close_file(fd, FILE_RW, buf, len);
 	return !!errorcnt;
 }
 
 DECLARE_FUTIL_COMMAND(load_fmap, do_load_fmap, VBOOT_VERSION_ALL,
 		      "Replace the contents of specified FMAP areas");
-

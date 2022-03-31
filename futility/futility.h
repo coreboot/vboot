@@ -132,13 +132,26 @@ enum futil_file_err {
 	FILE_ERR_SOCK,
 };
 
+enum file_mode {
+	FILE_RO,
+	FILE_RW,
+};
+
+enum futil_file_err futil_open_file(const char *infile, int *fd,
+				    enum file_mode mode);
+enum futil_file_err futil_close_file(int fd);
+
 /* Wrapper for mmap/munmap. Skips stupidly large files. */
-#define MAP_RO 0
-#define MAP_RW 1
-enum futil_file_err futil_map_file(int fd, int writeable,
-				   uint8_t **buf, uint32_t *len);
-enum futil_file_err futil_unmap_file(int fd, int writeable,
-				     uint8_t *buf, uint32_t len);
+enum futil_file_err futil_map_file(int fd, enum file_mode mode, uint8_t **buf,
+				   uint32_t *len);
+enum futil_file_err futil_unmap_file(int fd, enum file_mode mode, uint8_t *buf,
+				     uint32_t len);
+
+enum futil_file_err futil_open_and_map_file(const char *infile, int *fd,
+					    enum file_mode mode, uint8_t **buf,
+					    uint32_t *len);
+enum futil_file_err futil_unmap_and_close_file(int fd, enum file_mode mode,
+					       uint8_t *buf, uint32_t len);
 
 /*
  * Parse input string as a hex representation of size len, exit with error if

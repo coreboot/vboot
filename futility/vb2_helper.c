@@ -60,7 +60,7 @@ static int vb2_public_key_sha1sum(struct vb2_public_key *key, uint8_t *digest)
 	return 1;
 }
 
-int ft_show_vb21_pubkey(const char *name, uint8_t *buf, uint32_t len,
+int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 			void *data)
 {
 	struct vb2_public_key key;
@@ -91,6 +91,22 @@ int ft_show_vb21_pubkey(const char *name, uint8_t *buf, uint32_t len,
 	return 0;
 }
 
+int ft_show_vb21_pubkey(const char *name, void *data)
+{
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+	int rv;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
+
+	rv = show_vb21_pubkey_buf(name, buf, len, data);
+
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
+}
+
 static int vb2_private_key_sha1sum(struct vb2_private_key *key, uint8_t *digest)
 {
 	uint8_t *buf;
@@ -106,14 +122,22 @@ static int vb2_private_key_sha1sum(struct vb2_private_key *key, uint8_t *digest)
 	return 1;
 }
 
-int ft_show_vb21_privkey(const char *name, uint8_t *buf, uint32_t len,
-			 void *data)
+int ft_show_vb21_privkey(const char *name, void *data)
 {
 	struct vb2_private_key *key = 0;
 	uint8_t sha1sum[VB2_SHA1_DIGEST_SIZE];
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+	int rv = 0;
 
-	if (VB2_SUCCESS != vb21_private_key_unpack(&key, buf, len))
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
 		return 1;
+
+	if (VB2_SUCCESS != vb21_private_key_unpack(&key, buf, len)) {
+		rv = 1;
+		goto done;
+	}
 
 	printf("Private key file:      %s\n", name);
 	printf("  Vboot API:           2.1\n");
@@ -132,7 +156,9 @@ int ft_show_vb21_privkey(const char *name, uint8_t *buf, uint32_t len,
 		printf("\n");
 	}
 	vb2_private_key_free(key);
-	return 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
 }
 
 static RSA *rsa_from_buffer(uint8_t *buf, uint32_t len)
@@ -172,7 +198,7 @@ enum futil_file_type ft_recognize_pem(uint8_t *buf, uint32_t len)
 	return FILE_TYPE_UNKNOWN;
 }
 
-int ft_show_pem(const char *name, uint8_t *buf, uint32_t len, void *data)
+int ft_show_pem(const char *name, void *data)
 {
 	RSA *rsa_key;
 	uint8_t *keyb;
@@ -180,6 +206,13 @@ int ft_show_pem(const char *name, uint8_t *buf, uint32_t len, void *data)
 	uint32_t keyb_len;
 	int i, bits;
 	const BIGNUM *rsa_key_n, *rsa_key_d;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+	int rv = 0;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
 
 	/* We're called only after ft_recognize_pem, so this should work. */
 	rsa_key = rsa_from_buffer(buf, len);
@@ -197,7 +230,8 @@ int ft_show_pem(const char *name, uint8_t *buf, uint32_t len, void *data)
 	if (vb_keyb_from_rsa(rsa_key, &keyb, &keyb_len)) {
 		printf("  Key sha1sum:         <error>");
 		RSA_free(rsa_key);
-		return 1;
+		rv = 1;
+		goto done;
 	}
 
 	printf("  Key sha1sum:         ");
@@ -209,5 +243,7 @@ int ft_show_pem(const char *name, uint8_t *buf, uint32_t len, void *data)
 
 	free(keyb);
 	RSA_free(rsa_key);
-	return 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
 }

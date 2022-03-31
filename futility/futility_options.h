@@ -67,4 +67,7 @@ struct sign_option_s {
 };
 extern struct sign_option_s sign_option;
 
+#define FILE_MODE_SIGN(sign_options)                                           \
+	(sign_options.create_new_outfile ? FILE_RO : FILE_RW)
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_OPTIONS_H_ */

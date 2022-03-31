@@ -58,7 +58,7 @@ static void show_sig(const char *name, const struct vb21_signature *sig)
 	       sig->data_size);
 }
 
-int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
+int ft_show_rwsig(const char *name, void *nuthin)
 {
 	const struct vb21_signature *sig = 0;
 	const struct vb21_packed_key *pkey = show_option.pkey;
@@ -71,6 +71,15 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	uint8_t *data;
 	FmapHeader *fmap;
 	int i;
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+	int rv;
+
+	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+		return 1;
+
+	rv = 1;
 
 	VB2_DEBUG("name %s len 0x%08x (%d)\n", name, len, len);
 
@@ -81,7 +90,8 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 		show_sig(name, sig);
 		if (!show_option.fv) {
 			printf("No data available to verify\n");
-			return show_option.strict;
+			rv = show_option.strict;
+			goto done;
 		}
 		data = show_option.fv;
 		data_size = show_option.fv_size;
@@ -99,15 +109,15 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 				fmap_find_by_name(buf, len, fmap, "KEY_RO", 0);
 
 			if (pkey)
-				ft_show_vb21_pubkey(name, (uint8_t *)pkey,
-						pkey->c.total_size, NULL);
+				show_vb21_pubkey_buf(name, (uint8_t *)pkey,
+						     pkey->c.total_size, NULL);
 		}
 
 		sig = (const struct vb21_signature *)
 			fmap_find_by_name(buf, len, fmap, "SIG_RW", &fmaparea);
 		if (!sig) {
 			VB2_DEBUG("No SIG_RW in FMAP.\n");
-			return 1;
+			goto done;
 		}
 
 		sig_size = fmaparea->area_size;
@@ -116,7 +126,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			  (uint8_t*)sig - buf, sig_size);
 
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
-			return 1;
+			goto done;
 
 		show_sig(name, sig);
 		data = fmap_find_by_name(buf, len, fmap, "EC_RW", &fmaparea);
@@ -129,7 +139,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 		if (!data) {
 			VB2_DEBUG("No EC_RW in FMAP.\n");
-			return 1;
+			goto done;
 		}
 	} else {
 		/* Or maybe this is just the RW portion, that does not
@@ -141,7 +151,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 
 		if (len < sig_size) {
 			VB2_DEBUG("File is too small\n");
-			return 1;
+			goto done;
 		}
 
 		sig = (const struct vb21_signature *)(buf + len - sig_size);
@@ -151,13 +161,14 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			data_size = sig->data_size;
 			total_data_size = len - sig_size;
 		} else {
-			return 1;
+			goto done;
 		}
 	}
 
 	if (!pkey) {
 		printf("No public key available to verify with\n");
-		return show_option.strict;
+		rv = show_option.strict;
+		goto done;
 	}
 
 	/* We already did this once, so it should work again */
@@ -165,12 +176,12 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 			    (const uint8_t *)pkey,
 			    pkey->c.total_size)) {
 		VB2_DEBUG("Can't unpack pubkey\n");
-		return 1;
+		goto done;
 	}
 
 	if (data_size > total_data_size) {
 		VB2_DEBUG("Invalid signature data_size: bigger than total area size.\n");
-		return 1;
+		goto done;
 	}
 
 	/* The sig is destroyed by the verify operation, so make a copy */
@@ -185,7 +196,7 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 				     (const struct vb2_public_key *)&key,
 				     &wb)) {
 			fprintf(stderr, "Signature verification failed\n");
-			return 1;
+			goto done;
 		}
 	}
 
@@ -193,33 +204,46 @@ int ft_show_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	for (i = data_size; i < total_data_size; i++) {
 		if (data[i] != 0xff) {
 			fprintf(stderr, "Padding verification failed\n");
-			return 1;
+			goto done;
 		}
 	}
 
 	printf("Signature verification succeeded.\n");
-	return 0;
+	rv = 0;
+done:
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return rv;
 }
 
-int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
+int ft_sign_rwsig(const char *name, void *nuthin)
 {
 	struct vb21_signature *tmp_sig = 0;
 	struct vb2_public_key *pubkey = 0;
 	struct vb21_packed_key *packedkey = 0;
 	uint8_t *keyb_data = 0;
 	uint32_t keyb_size;
-	uint8_t* data = buf; /* data to be signed */
-	uint32_t r, data_size = len, sig_size = SIGNATURE_RSVD_SIZE;
+	uint8_t *data; /* data to be signed */
+	uint32_t r, data_size, sig_size = SIGNATURE_RSVD_SIZE;
 	int retval = 1;
 	FmapHeader *fmap = NULL;
 	FmapAreaHeader *fmaparea;
 	struct vb21_signature *old_sig = 0;
+	uint8_t *buf = NULL;
+	uint32_t len;
+	int fd = -1;
+
+	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+				    &buf, &len))
+		return 1;
+
+	data = buf;
+	data_size = len;
 
 	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* If we don't have a distinct OUTFILE, look for an existing sig */
 	if (sign_option.inout_file_count < 2) {
-		fmap = fmap_find(buf, len);
+		fmap = fmap_find(data, len);
 
 		if (fmap) {
 			/* This looks like a full image. */
@@ -395,14 +419,12 @@ int ft_sign_rwsig(const char *name, uint8_t *buf, uint32_t len, void *nuthin)
 	/* Finally */
 	retval = 0;
 done:
-	if (tmp_sig)
-		free(tmp_sig);
+	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), buf, len);
+	free(tmp_sig);
 	if (pubkey)
 		vb2_public_key_free(pubkey);
-	if (packedkey)
-		free(packedkey);
-	if (keyb_data)
-		free(keyb_data);
+	free(packedkey);
+	free(keyb_data);
 
 	return retval;
 }
