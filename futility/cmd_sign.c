@@ -938,7 +938,6 @@ static int do_sign(int argc, char *argv[])
 		 * may want to read it instead. */
 		break;
 	case FILE_TYPE_BIOS_IMAGE:
-	case FILE_TYPE_OLD_BIOS_IMAGE:
 		errorcnt += no_opt_if(!sign_option.signprivate, "signprivate");
 		errorcnt += no_opt_if(!sign_option.keyblock, "keyblock");
 		errorcnt += no_opt_if(!sign_option.kernel_subkey, "kernelkey");

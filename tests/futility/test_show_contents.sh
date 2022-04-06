@@ -17,7 +17,6 @@ SHOW_FILES="
   tests/futility/data/fw_vblock.bin
   tests/futility/data/fw_gbb.bin
   tests/futility/data/bios_zgb_mp.bin
-  tests/futility/data/bios_mario_mp.bin
   tests/futility/data/kern_preamble.bin
   tests/futility/data/sample.vbpubk2
   tests/futility/data/sample.vbprik2

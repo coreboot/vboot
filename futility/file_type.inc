@@ -19,10 +19,6 @@ FILE_TYPE(BIOS_IMAGE,       "bios",          "Chrome OS BIOS image",
 	  R_(ft_recognize_bios_image),
 	  S_(ft_show_bios),
 	  S_(ft_sign_bios))
-FILE_TYPE(OLD_BIOS_IMAGE,   "oldbios",       "Cr-48 Chrome OS BIOS image",
-	  R_(ft_recognize_bios_image),
-	  S_(ft_show_bios),
-	  S_(ft_sign_bios))
 FILE_TYPE(GBB,              "gbb",           "GBB",
 	  R_(ft_recognize_gbb),
 	  S_(ft_show_gbb),

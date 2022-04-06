@@ -16,7 +16,6 @@ KEYDIR=${SRCDIR}/tests/devkeys
 # script does not change the root or recovery keys in the GBB.
 INFILES="
 ${SCRIPT_DIR}/futility/data/bios_link_mp.bin
-${SCRIPT_DIR}/futility/data/bios_mario_mp.bin
 ${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin
 "
 

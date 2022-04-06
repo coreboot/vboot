@@ -27,16 +27,6 @@ static const char * const fmap_name[] = {
 _Static_assert(ARRAY_SIZE(fmap_name) == NUM_BIOS_COMPONENTS,
 	       "Size of fmap_name[] should match NUM_BIOS_COMPONENTS");
 
-static const char * const fmap_oldname[] = {
-	"GBB Area",	  			/* BIOS_FMAP_GBB */
-	"Firmware A Data", 			/* BIOS_FMAP_FW_MAIN_A */
-	"Firmware B Data", 			/* BIOS_FMAP_FW_MAIN_B */
-	"Firmware A Key",  			/* BIOS_FMAP_VBLOCK_A */
-	"Firmware B Key",  			/* BIOS_FMAP_VBLOCK_B */
-};
-_Static_assert(ARRAY_SIZE(fmap_oldname) == NUM_BIOS_COMPONENTS,
-	       "Size of fmap_oldname[] should match NUM_BIOS_COMPONENTS");
-
 static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 {
 	uint32_t sum = ah->area_offset + ah->area_size;
@@ -191,8 +181,7 @@ int ft_show_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 	fmap = fmap_find(buf, len);
 	for (c = 0; c < NUM_BIOS_COMPONENTS; c++) {
 		/* We know one of these will work, too */
-		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah) ||
-		    fmap_find_by_name(buf, len, fmap, fmap_oldname[c], &ah)) {
+		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah)) {
 			/* But the file might be truncated */
 			fmap_limit_area(ah, len);
 			/* The name is not necessarily null-terminated */
@@ -454,8 +443,7 @@ int ft_sign_bios(const char *name, uint8_t *buf, uint32_t len, void *data)
 	fmap = fmap_find(buf, len);
 	for (c = 0; c < NUM_BIOS_COMPONENTS; c++) {
 		/* We know one of these will work, too */
-		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah) ||
-		    fmap_find_by_name(buf, len, fmap, fmap_oldname[c], &ah)) {
+		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah)) {
 			/* But the file might be truncated */
 			fmap_limit_area(ah, len);
 			/* The name is not necessarily null-terminated */
@@ -498,12 +486,6 @@ enum futil_file_type ft_recognize_bios_image(uint8_t *buf, uint32_t len)
 			break;
 	if (c == NUM_BIOS_COMPONENTS)
 		return FILE_TYPE_BIOS_IMAGE;
-
-	for (c = 0; c < NUM_BIOS_COMPONENTS; c++)
-		if (!fmap_find_by_name(buf, len, fmap, fmap_oldname[c], 0))
-			break;
-	if (c == NUM_BIOS_COMPONENTS)
-		return FILE_TYPE_OLD_BIOS_IMAGE;
 
 	return FILE_TYPE_UNKNOWN;
 }
