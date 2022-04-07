@@ -28,6 +28,10 @@ struct bios_area_s {
 	uint8_t *buf;
 	uint32_t len;
 	uint32_t is_valid;
+
+	/* VBLOCK only */
+	uint32_t flags;
+	uint32_t version;
 };
 
 /* State to track as we visit all components */

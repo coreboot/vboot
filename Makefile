@@ -445,12 +445,14 @@ USE_FLASHROM ?= 1
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
 $(info building with libflashrom support)
 FLASHROM_LIBS := $(shell ${PKG_CONFIG} --libs flashrom)
-COMMONLIB_SRCS = \
+COMMONLIB_SRCS += \
 	host/lib/flashrom.c \
 	host/lib/flashrom_drv.c
 CFLAGS += -DUSE_FLASHROM
 endif
-COMMONLIB_SRCS += host/lib/subprocess.c
+COMMONLIB_SRCS += \
+	host/lib/subprocess.c \
+	host/lib/cbfstool.c
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
