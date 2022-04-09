@@ -200,7 +200,7 @@ enum wp_state flashrom_get_wp(const char *programmer);
  * Helper function to detect type of Servo board attached to host.
  * Returns a string as programmer parameter on success, otherwise NULL.
  */
-char *host_detect_servo(int *need_prepare_ptr);
+char *host_detect_servo(const char **prepare_ctrl_name);
 
 /*
  * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS

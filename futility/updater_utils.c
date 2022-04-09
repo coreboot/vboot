@@ -456,15 +456,20 @@ static int host_get_platform_version(void)
  * Helper function to detect type of Servo board attached to host.
  * Returns a string as programmer parameter on success, otherwise NULL.
  */
-char *host_detect_servo(int *need_prepare_ptr)
+char *host_detect_servo(const char **prepare_ctrl_name)
 {
 	const char *servo_port = getenv(ENV_SERVOD_PORT);
 	const char *servo_name = getenv(ENV_SERVOD_NAME);
 	char *servo_type = host_shell("dut-control -o servo_type 2>/dev/null");
 	const char *programmer = NULL;
 	char *ret = NULL;
-	int need_prepare = 0;  /* To prepare by dut-control cpu_fw_spi:on */
 	char *servo_serial = NULL;
+
+	static const char * const cpu_fw_spi = "cpu_fw_spi";
+	static const char * const ccd_cpu_fw_spi = "ccd_cpu_fw_spi";
+
+	/* By default, no control is needed. */
+	*prepare_ctrl_name = NULL;
 
 	/* Get serial name if servo port is provided. */
 	if ((servo_port && *servo_port) || (servo_name && *servo_name)) {
@@ -492,19 +497,20 @@ char *host_detect_servo(int *need_prepare_ptr)
 	} else if (strstr(servo_type, "servo_micro")) {
 		VB2_DEBUG("Selected Servo Micro.\n");
 		programmer = "raiden_debug_spi";
-		need_prepare = 1;
+		*prepare_ctrl_name = cpu_fw_spi;
 	} else if (strstr(servo_type, "c2d2")) {
 		VB2_DEBUG("Selected C2D2.\n");
 		programmer = "raiden_debug_spi";
-		need_prepare = 1;
+		*prepare_ctrl_name = cpu_fw_spi;
 	} else if (strstr(servo_type, "ccd_cr50") ||
 		   strstr(servo_type, "ccd_gsc")) {
 		VB2_DEBUG("Selected CCD.\n");
-		programmer = "raiden_debug_spi:target=AP";
+		programmer = "raiden_debug_spi:target=AP,custom_rst=true";
+		*prepare_ctrl_name = ccd_cpu_fw_spi;
 	} else {
 		VB2_DEBUG("Selected Servo V2.\n");
 		programmer = "ft2232_spi:type=google-servo-v2";
-		need_prepare = 1;
+		*prepare_ctrl_name = cpu_fw_spi;
 	}
 
 	if (programmer) {
@@ -520,7 +526,6 @@ char *host_detect_servo(int *need_prepare_ptr)
 
 	free(servo_type);
 	free(servo_serial);
-	*need_prepare_ptr = need_prepare;
 
 	return ret;
 }

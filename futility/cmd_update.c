@@ -57,7 +57,6 @@ static struct option const long_opts[] = {
 
 	{"ccd", 0, NULL, OPT_CCD},
 	{"servo", 0, NULL, OPT_SERVO},
-	{"servo_noreset", 0, NULL, OPT_SERVO_NORESET},
 	{"servo_port", 1, NULL, OPT_SERVO_PORT},
 	{"emulate", 1, NULL, OPT_EMULATE},
 	{"factory", 0, NULL, OPT_FACTORY},
@@ -134,7 +133,6 @@ static void print_help(int argc, char *argv[])
 		"    --gbb_flags=FLAG\tOverride new GBB flags\n"
 		"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"
 		"    --servo         \tFlash using Servo (v2, v4, micro, ...)\n"
-		"    --servo_noreset \tLike servo but with 'custom_rst=true'\n"
 		"    --servo_port=PRT\tOverride servod port, implies --servo\n"
 		"    --signature_id=S\tOverride signature ID for key files\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
@@ -144,21 +142,15 @@ static void print_help(int argc, char *argv[])
 		argv[0]);
 }
 
-static char *add_servo_noreset(char *programmer)
+static void prepare_servo_control(const char *control_name, int on)
 {
-	char *ret;
+	char *cmd;
+	if (!control_name)
+		return;
 
-	if (strstr(programmer, "raiden_debug_spi:target=AP") == NULL) {
-		ERROR("servo_noreset only works for AP flashing over CCD.\n");
-		free(programmer);
-
-		return NULL;
-	}
-
-	ASPRINTF(&ret, "%s,custom_rst=true", programmer);
-	free(programmer);
-
-	return ret;
+	ASPRINTF(&cmd, "dut-control %s:%s", control_name, on ? "on" : "off");
+	free(host_shell(cmd));
+	free(cmd);
 }
 
 static int do_update(int argc, char *argv[])
@@ -166,7 +158,8 @@ static int do_update(int argc, char *argv[])
 	struct updater_config *cfg;
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0, do_update = 1;
-	int detect_servo = 0, do_servo_cpu_fw_spi = 0, servo_noreset = 0;
+	int detect_servo = 0;
+	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
 	char *endptr;
 
@@ -277,14 +270,6 @@ static int do_update(int argc, char *argv[])
 			args.host_only = 1;
 			detect_servo = 1;
 			break;
-		case OPT_SERVO_NORESET:
-			args.fast_update = 1;
-			args.force_update = 1;
-			args.write_protection = "0";
-			args.host_only = 1;
-			detect_servo = 1;
-			servo_noreset = 1;
-			break;
 		case OPT_SERVO_PORT:
 			setenv(ENV_SERVOD_PORT, optarg, 1);
 			args.fast_update = 1;
@@ -318,10 +303,7 @@ static int do_update(int argc, char *argv[])
 	}
 
 	if (!errorcnt && detect_servo) {
-		servo_programmer = host_detect_servo(&do_servo_cpu_fw_spi);
-
-		if (servo_programmer && servo_noreset)
-			servo_programmer = add_servo_noreset(servo_programmer);
+		servo_programmer = host_detect_servo(&prepare_ctrl_name);
 
 		if (!servo_programmer)
 			errorcnt++;
@@ -333,8 +315,7 @@ static int do_update(int argc, char *argv[])
 	 * update (i.e., in updater_setup_config) so we want to turn on
 	 * cpu_fw_spi mode now.
 	 */
-	if (do_servo_cpu_fw_spi)
-		free(host_shell("dut-control cpu_fw_spi:on"));
+	prepare_servo_control(prepare_ctrl_name, 1);
 
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &do_update);
@@ -353,8 +334,7 @@ static int do_update(int argc, char *argv[])
 			errorcnt ? "aborted" : "exits successfully");
 	}
 
-	if (do_servo_cpu_fw_spi)
-		free(host_shell("dut-control cpu_fw_spi:off"));
+	prepare_servo_control(prepare_ctrl_name, 0);
 	free(servo_programmer);
 
 	updater_delete_config(cfg);
