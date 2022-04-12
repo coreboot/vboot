@@ -515,14 +515,6 @@ resign_firmware_payload() {
 
         local signprivate="${KEY_DIR}/firmware_data_key${key_suffix}.vbprivk"
         local keyblock="${KEY_DIR}/firmware${key_suffix}.keyblock"
-        local devsign="${KEY_DIR}/dev_firmware_data_key${key_suffix}.vbprivk"
-        local devkeyblock="${KEY_DIR}/dev_firmware${key_suffix}.keyblock"
-
-        if [ ! -e "${devsign}" ] || [ ! -e "${devkeyblock}" ] ; then
-          echo "No dev firmware keyblock/datakey found. Reusing normal keys."
-          devsign="${signprivate}"
-          devkeyblock="${keyblock}"
-        fi
 
         # Path to bios.bin.
         local bios_path="${shellball_dir}/${bios_image}"
@@ -566,8 +558,6 @@ resign_firmware_payload() {
         echo "Signing Bios with:" ${FUTILITY} sign \
           --signprivate "${signprivate}" \
           --keyblock "${keyblock}" \
-          --devsign "${devsign}" \
-          --devkeyblock "${devkeyblock}" \
           --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk" \
           --version "${FIRMWARE_VERSION}" \
           "${extra_args[@]}" \
@@ -576,8 +566,6 @@ resign_firmware_payload() {
         ${FUTILITY} sign \
           --signprivate "${signprivate}" \
           --keyblock "${keyblock}" \
-          --devsign "${devsign}" \
-          --devkeyblock "${devkeyblock}" \
           --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk" \
           --version "${FIRMWARE_VERSION}" \
           "${extra_args[@]}" \

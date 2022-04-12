@@ -167,8 +167,6 @@ main() {
   local recovery_pubkey="${FLAGS_keys}/recovery_key.vbpubk"
   local firmware_keyblock="${FLAGS_keys}/firmware.keyblock"
   local firmware_prvkey="${FLAGS_keys}/firmware_data_key.vbprivk"
-  local dev_firmware_keyblock="${FLAGS_keys}/dev_firmware.keyblock"
-  local dev_firmware_prvkey="${FLAGS_keys}/dev_firmware_data_key.vbprivk"
   local kernel_sub_pubkey="${FLAGS_keys}/kernel_subkey.vbpubk"
   local ec_efs_pubkey="${FLAGS_keys}/key_ec_efs.vbpubk2"
   local ec_efs_prvkey="${FLAGS_keys}/key_ec_efs.vbprik2"
@@ -281,8 +279,6 @@ main() {
     echo "Using keyblocks (developer, normal)..."
   else
     echo "Using keyblocks (normal, normal)..."
-    dev_firmware_prvkey="$firmware_prvkey"
-    dev_firmware_keyblock="$firmware_keyblock"
   fi
 
   debug_msg "Extract firmware version and data key version"
@@ -351,8 +347,6 @@ main() {
     "${IMAGE_BIOS}" \
     "${firmware_prvkey}" \
     "${firmware_keyblock}" \
-    "${dev_firmware_prvkey}" \
-    "${dev_firmware_keyblock}" \
     "${kernel_sub_pubkey}" \
     "${firmware_version}" \
     ${optional_opts} ||

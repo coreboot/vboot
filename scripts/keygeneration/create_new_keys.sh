@@ -14,7 +14,6 @@ usage() {
 Usage: ${PROG} [options]
 
 Options:
-  --devkeyblock          Also generate developer firmware keyblock and data key
   --android              Also generate android keys
   --uefi                 Also generate UEFI keys
   --8k                   Use 8k keys instead of 4k (enables options below)
@@ -36,8 +35,6 @@ EOF
 main() {
   set -e
 
-  # Flag to indicate whether we should be generating a developer keyblock flag.
-  local dev_keyblock="false"
   local android_keys="false"
   local uefi_keys="false"
   local root_key_algoid=${ROOT_KEY_ALGOID}
@@ -50,11 +47,6 @@ main() {
 
   while [[ $# -gt 0 ]]; do
     case $1 in
-    --devkeyblock)
-      echo "Will also generate developer firmware keyblock and data key."
-      dev_keyblock="true"
-      ;;
-
     --android)
       echo "Will also generate Android keys."
       android_keys="true"
@@ -158,9 +150,6 @@ main() {
   make_pair ec_data_key              ${EC_DATAKEY_ALGOID} ${eckey_version}
   make_pair root_key                 ${root_key_algoid}
   make_pair firmware_data_key        ${FIRMWARE_DATAKEY_ALGOID} ${fkey_version}
-  if [[ "${dev_keyblock}" == "true" ]]; then
-    make_pair dev_firmware_data_key    ${DEV_FIRMWARE_DATAKEY_ALGOID} ${fkey_version}
-  fi
   make_pair kernel_subkey            ${KERNEL_SUBKEY_ALGOID} ${ksubkey_version}
   make_pair kernel_data_key          ${KERNEL_DATAKEY_ALGOID} ${kdatakey_version}
 
@@ -177,11 +166,6 @@ main() {
   make_keyblock firmware ${FIRMWARE_KEYBLOCK_MODE} firmware_data_key root_key
   # Ditto EC keyblock
   make_keyblock ec ${EC_KEYBLOCK_MODE} ec_data_key ec_root_key
-
-  if [[ "${dev_keyblock}" == "true" ]]; then
-    # Create the dev firmware keyblock for use only in Developer mode.
-    make_keyblock dev_firmware ${DEV_FIRMWARE_KEYBLOCK_MODE} dev_firmware_data_key root_key
-  fi
 
   # Create the recovery kernel keyblock for use only in Recovery mode.
   make_keyblock recovery_kernel ${RECOVERY_KERNEL_KEYBLOCK_MODE} recovery_kernel_data_key recovery_key

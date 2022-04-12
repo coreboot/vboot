@@ -30,17 +30,6 @@ INFILES="${INFILES} ${ONEMORE}"
 
 set -o pipefail
 
-# We've removed dev_firmware keyblock and private keys from ToT test key dir.
-# It's currently only available on few legacy (alex, zgb) devices' key folders
-# on signer bot. Add them to ${KEYDIR} if you need to test that.
-DEV_FIRMWARE_PARAMS=""
-if [ -f "${KEYDIR}/dev_firmware.keyblock" ]; then
-  DEV_FIRMWARE_PARAMS="
-    -S ${KEYDIR}/dev_firmware_data_key.vbprivk
-    -B ${KEYDIR}/dev_firmware.keyblock"
-  INFILES="${INFILES} ${SCRIPT_DIR}/futility/data/bios_zgb_mp.bin"
-fi
-
 count=0
 for infile in $INFILES; do
 
@@ -85,7 +74,6 @@ for infile in $INFILES; do
   ${FUTILITY} sign \
     -s ${KEYDIR}/firmware_data_key.vbprivk \
     -b ${KEYDIR}/firmware.keyblock \
-    ${DEV_FIRMWARE_PARAMS} \
     -k ${KEYDIR}/kernel_subkey.vbpubk \
     -v 14 \
     -f 8 \
@@ -155,7 +143,6 @@ echo -n "$count " 1>&3
 ${FUTILITY} sign \
   -s ${KEYDIR}/firmware_data_key.vbprivk \
   -b ${KEYDIR}/firmware.keyblock \
-  ${DEV_FIRMWARE_PARAMS} \
   -k ${KEYDIR}/kernel_subkey.vbpubk \
   ${MORE_OUT} ${MORE_OUT}.2
 
@@ -172,7 +159,6 @@ ${FUTILITY} load_fmap ${MORE_OUT} VBLOCK_A:/dev/urandom VBLOCK_B:/dev/zero
 ${FUTILITY} sign \
   -s ${KEYDIR}/firmware_data_key.vbprivk \
   -b ${KEYDIR}/firmware.keyblock \
-  ${DEV_FIRMWARE_PARAMS} \
   -k ${KEYDIR}/kernel_subkey.vbpubk \
   ${MORE_OUT} ${MORE_OUT}.3
 

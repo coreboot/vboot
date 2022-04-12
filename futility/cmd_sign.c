@@ -367,11 +367,6 @@ static const char usage_bios[] = "\n"
 	"  [--infile]       INFILE          Input firmware image (modified\n"
 	"                                     in place if no OUTFILE given)\n"
 	"\n"
-	"These are required if the A and B firmware differ:\n"
-	"  -S|--devsign     FILE.vbprivk    The DEV private firmware data key\n"
-	"  -B|--devkeyblock FILE.keyblock   The keyblock containing the\n"
-	"                                     DEV public firmware data key\n"
-	"\n"
 	"Optional PARAMS:\n"
 	"  -v|--version     NUM             The firmware version number"
 	" (default %d)\n"
@@ -620,8 +615,6 @@ static const struct option long_opts[] = {
 	{"signprivate",  1, NULL, 's'},
 	{"keyblock",     1, NULL, 'b'},
 	{"kernelkey",    1, NULL, 'k'},
-	{"devsign",      1, NULL, 'S'},
-	{"devkeyblock",  1, NULL, 'B'},
 	{"version",      1, NULL, 'v'},
 	{"flags",        1, NULL, 'f'},
 	{"loemdir",      1, NULL, 'd'},
@@ -699,21 +692,6 @@ static int do_sign(int argc, char *argv[])
 		case 'k':
 			sign_option.kernel_subkey = vb2_read_packed_key(optarg);
 			if (!sign_option.kernel_subkey) {
-				fprintf(stderr, "Error reading %s\n", optarg);
-				errorcnt++;
-			}
-			break;
-		case 'S':
-			sign_option.devsignprivate =
-				vb2_read_private_key(optarg);
-			if (!sign_option.devsignprivate) {
-				fprintf(stderr, "Error reading %s\n", optarg);
-				errorcnt++;
-			}
-			break;
-		case 'B':
-			sign_option.devkeyblock = vb2_read_keyblock(optarg);
-			if (!sign_option.devkeyblock) {
 				fprintf(stderr, "Error reading %s\n", optarg);
 				errorcnt++;
 			}

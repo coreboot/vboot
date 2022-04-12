@@ -408,31 +408,11 @@ static int sign_bios_at_end(struct bios_state_s *state)
 		return 1;
 	}
 
-	/* Do A & B differ ? */
-	if (fw_a->len != fw_b->len ||
-	    memcmp(fw_a->buf, fw_b->buf, fw_a->len)) {
-		/* Yes, must use DEV keys for A */
-		if (!sign_option.devsignprivate || !sign_option.devkeyblock) {
-			fprintf(stderr,
-				"FW A & B differ. DEV keys are required.\n");
-			return 1;
-		}
-		retval |= write_new_preamble(vblock_a, fw_a,
-					     sign_option.devsignprivate,
-					     sign_option.devkeyblock);
-	} else {
-		retval |= write_new_preamble(vblock_a, fw_a,
-					     sign_option.signprivate,
-					     sign_option.keyblock);
-	}
-
-	/* FW B is always normal keys */
-	retval |= write_new_preamble(vblock_b, fw_b,
-				     sign_option.signprivate,
+	retval |= write_new_preamble(vblock_a, fw_a, sign_option.signprivate,
 				     sign_option.keyblock);
 
-
-
+	retval |= write_new_preamble(vblock_b, fw_b, sign_option.signprivate,
+				     sign_option.keyblock);
 
 	if (sign_option.loemid) {
 		retval |= write_loem("A", vblock_a);

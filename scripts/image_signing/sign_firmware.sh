@@ -57,8 +57,6 @@ sign_one() {
     "${temp_fw}" \
     "${key_dir}/firmware_data_key${loem_key}.vbprivk" \
     "${key_dir}/firmware${loem_key}.keyblock" \
-    "${key_dir}/dev_firmware_data_key${loem_key}.vbprivk" \
-    "${key_dir}/dev_firmware${loem_key}.keyblock" \
     "${key_dir}/kernel_subkey.vbpubk" \
     "${firmware_version}" \
     "" \
