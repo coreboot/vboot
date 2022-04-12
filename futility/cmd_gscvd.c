@@ -40,9 +40,9 @@
  *   AP firmware file is ~/tmp/guybrush-signed:
  *
   ./build/futility/futility gscvd --outfile ~/tmp/guybrush-signed \
-     -R 818100:10000,f00000:100,f80000:2000,f8c000:1000,0x00804000:0x00000800 \
-     -k ~/tmp/packed -p tests/devkeys/arv_platform.vbprivk -b 5a5a4352  \
-     -r tests/devkeys/arv_root.vbpubk ~/tmp/image-guybrush.serial.bin
+    -R 818100:10000,f00000:100,f80000:2000,f8c000:1000,0x00804000:0x00000800 \
+    -k ~/tmp/packed -p tests/devkeys/arv_platform.vbprivk -b 5a5a4352  \
+    -r tests/devkeys/arv_root.vbpubk ~/tmp/image-guybrush.serial.bin
  *------------
  * Command to validate a previously signed AP firmware file. The hash is the
  *  sha256sum of tests/devkeys/kernel_subkey.vbpubk:
@@ -140,12 +140,13 @@ struct gscvd_ro_ranges {
  *
  * @return 0 on success 1 on failure.
  */
-static int load_ap_firmware(const char *file_name, struct file_buf *file)
+static int load_ap_firmware(const char *file_name, struct file_buf *file,
+			int mode)
 {
 	int fd;
 	int rv;
 
-	fd = open(file_name, O_RDWR);
+	fd = open(file_name, mode);
 	if (fd < 0) {
 		ERROR("Can't open %s: %s\n", file_name,
 		      strerror(errno));
@@ -156,7 +157,8 @@ static int load_ap_firmware(const char *file_name, struct file_buf *file)
 	do {
 		rv = 1;
 
-		if (futil_map_file(fd, MAP_RW, &file->data, &file->len)) {
+		if (futil_map_file(fd, mode == O_RDWR ? MAP_RW : MAP_RO,
+				   &file->data, &file->len)) {
 			file->data = NULL;
 			break;
 		}
@@ -807,7 +809,7 @@ static int validate_gscvd(int argc, char *argv[])
 
 		rv = -1; /* Speculative, will be cleared on success. */
 
-		if (load_ap_firmware(file_name, &ap_firmware_file))
+		if (load_ap_firmware(file_name, &ap_firmware_file, O_RDONLY))
 			break;
 
 		/* Copy ranges from gscvd to local structure. */
@@ -842,12 +844,15 @@ static int validate_gscvd(int argc, char *argv[])
 			break;
 		}
 
-		if (validate_pubk_signature(&gvd->root_key_header,
-					    kblock))
+		if (validate_pubk_signature(&gvd->root_key_header, kblock)) {
+			ERROR("Keyblock not signed by root key\n");
 			break;
+		}
 
-		if (validate_gvd_signature(gvd, &kblock->data_key))
+		if (validate_gvd_signature(gvd, &kblock->data_key)) {
+			ERROR("GVD not signed by platform key\n");
 			break;
+		}
 
 		rv = 0;
 	} while (false);
@@ -1009,7 +1014,7 @@ static int do_gscvd(int argc, char *argv[])
 		if (validate_privk(kblock, plat_privk))
 			break;
 
-		if (load_ap_firmware(work_file, &ap_firmware_file))
+		if (load_ap_firmware(work_file, &ap_firmware_file, O_RDWR))
 			break;
 
 		if (verify_ranges(&ranges, &ap_firmware_file))

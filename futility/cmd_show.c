@@ -635,4 +635,5 @@ static int do_verify(int argc, char *argv[])
 
 DECLARE_FUTIL_COMMAND(verify, do_verify,
 		      VBOOT_VERSION_ALL,
-		      "Verify the signatures of various binary components");
+		      "Verify the signatures of various binary components. "
+		      "This does not verify GSCVD contents.");
