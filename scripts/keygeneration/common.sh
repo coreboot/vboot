@@ -43,15 +43,8 @@ RSA4096_SHA512_ALGOID=8
 RSA8192_SHA1_ALGOID=9
 RSA8192_SHA256_ALGOID=10
 RSA8192_SHA512_ALGOID=11
-RSA3070_NOSIG_ALGOID=12
 alg_to_keylen() {
-  local alg="$1"
-
-  # GSC RW signing key does not fit the pattern, return its size explicitly.
-  case ${alg} in
-    (${RSA3070_NOSIG_ALGOID}) echo 3070;;
-    (*) echo $(( 1 << (10 + (alg / 3)) ));;
-  esac
+  echo $(( 1 << (10 + ($1 / 3)) ))
 }
 
 # Default algorithms.
@@ -73,9 +66,6 @@ KERNEL_DATAKEY_ALGOID=${RSA2048_SHA256_ALGOID}
 # AP RO Verification.
 ARV_ROOT_ALGOID=${RSA4096_SHA256_ALGOID}
 ARV_PLATFORM_ALGOID=${RSA4096_SHA256_ALGOID}
-
-# GSC signing.
-GSC_RW_KEY_ALGOID=${RSA3070_NOSIG_ALGOID}
 
 # Keyblock modes determine which boot modes a signing key is valid for use
 # in verification.
@@ -136,27 +126,6 @@ make_pair() {
 
   # remove intermediate files
   rm -f "${base}_${len}.pem" "${base}_${len}.crt" "${base}_${len}.keyb"
-}
-
-# Emit .pem and .pem.pub using given basename and algorithm
-# This is a special case for GSC signing where vboot reference format keys are
-# not being used.
-make_gsc_pair() {
-  local base=$1
-  local alg=$2
-  local key_version=${3:-1}
-  local len="$(alg_to_keylen "${alg}")"
-  local base_name="${base}_${len}"
-
-  echo "creating ${base} key pair (version = ${key_version})..."
-
-  # Make the RSA key pair.
-  openssl genrsa -F4 -out "${base_name}.pem" "${len}"
-
-  echo "skipping wrapping of ${base_name} keys"
-  echo "Preserving ${base_name}.pem and generating ${base_name}.pem.pub"
-  openssl rsa -in "${base_name}.pem" -outform PEM \
-    -pubout -out "${base_name}.pem.pub"
 }
 
 # Used to generate keys for signing update payloads.

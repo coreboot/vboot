@@ -172,8 +172,6 @@ main() {
   make_pair arv_root ${ARV_ROOT_ALGOID}
   make_pair arv_platform ${ARV_PLATFORM_ALGOID}
 
-  make_gsc_pair gsc_rw ${GSC_RW_KEY_ALGOID}
-
   # Create the firmware keyblock for use only in Normal mode. This is redundant,
   # since it's never even checked during Recovery mode.
   make_keyblock firmware ${FIRMWARE_KEYBLOCK_MODE} firmware_data_key root_key
