@@ -1232,7 +1232,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
  * Allocates and initializes a updater_config object with default values.
  * Returns the newly allocated object, or NULL on error.
  */
-struct updater_config *updater_new_config()
+struct updater_config *updater_new_config(void)
 {
 	struct updater_config *cfg = (struct updater_config *)calloc(
 			1, sizeof(struct updater_config));
