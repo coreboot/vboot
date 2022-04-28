@@ -183,6 +183,7 @@ static int archive_fallback_read_file(void *handle, const char *fname,
 	VB2_DEBUG("Reading %s\n", path);
 	*data = NULL;
 	*size = 0;
+	/* vb2_read_file already has an extra '\0' in the end. */
 	r = vb2_read_file(path, data, size) != VB2_SUCCESS;
 	if (mtime) {
 		if (stat(path, &st) == 0)
@@ -297,12 +298,13 @@ static int archive_zip_read_file(void *handle, const char *fname,
 		ERROR("Failed to open entry in ZIP: %s\n", fname);
 		return 1;
 	}
-	*data = (uint8_t *)malloc(stat.size);
+	*data = (uint8_t *)malloc(stat.size + 1);
 	if (*data) {
 		if (zip_fread(fp, *data, stat.size) == stat.size) {
 			if (mtime)
 				*mtime = stat.mtime;
 			*size = stat.size;
+			(*data)[stat.size] = '\0';
 		} else {
 			ERROR("Failed to read entry in zip: %s\n", fname);
 			free(*data);
@@ -440,6 +442,8 @@ static int archive_walk(struct archive *ar, void *arg,
  * Reads a file from archive.
  * If entry name (fname) is an absolute path (/file), always read
  * from real file system.
+ * The returned data must always have one extra (not included by size) '\0' in
+ * the end of the allocated buffer for C string processing.
  * Returns 0 on success (data and size reflects the file content),
  * otherwise non-zero as failure.
  */
