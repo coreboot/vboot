@@ -77,7 +77,7 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const VPD_CUSTOMIZATION_ID = "customization_id",
 		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
-		  * const PATH_ENDSWITH_SERVARS = "/setvars.sh";
+		  * const PATH_ENDSWITH_SETVARS = "/setvars.sh";
 
 struct archive {
 	void *handle;
@@ -783,7 +783,7 @@ static int manifest_scan_entries(const char *name, void *arg)
 
 	if (str_startswith(name, PATH_STARTSWITH_KEYSET))
 		manifest->has_keyset = 1;
-	if (!str_endswith(name, PATH_ENDSWITH_SERVARS))
+	if (!str_endswith(name, PATH_ENDSWITH_SETVARS))
 		return 0;
 
 	/* name: models/$MODEL/setvars.sh */
