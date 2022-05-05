@@ -9,7 +9,7 @@
 
 usage() {
   cat <<EOF
-Usage: ${PROG} [options]
+Usage: ${PROG} [options] <key_file_base_name>
 
 Options:
   -o, --output_dir <dir>:    Where to write the keys (default is cwd)
@@ -23,8 +23,7 @@ EOF
 }
 
 generate_rsa3070_key() {
-  local output_dir="$1"
-  local base_name="gsc_3070"
+  local base_name="$1"
   local len="3070"
 
   echo "creating ${base_name} key pair..."
@@ -38,8 +37,10 @@ generate_rsa3070_key() {
 main() {
   set -euo pipefail
 
+  local base_name
   local output_dir="${PWD}"
 
+  base_name=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
     -h|--help)
@@ -56,13 +57,21 @@ main() {
       usage "Unknown option: $1"
       ;;
     *)
-      usage "Unknown argument $1"
+      if [[ -z ${base_name} ]]; then
+        base_name="$1"
+      else
+        usage "Unknown argument $1"
+      fi
       ;;
     esac
     shift
   done
 
-  generate_rsa3070_key "${output_dir}"
+  if [[ -z ${base_name} ]]; then
+    usage "Key file base name missing"
+  fi
+
+  generate_rsa3070_key "${output_dir}/${base_name}"
 }
 
 main "$@"
