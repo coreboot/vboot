@@ -16,7 +16,7 @@
 	ERROR("Failed to allocate memory, abort.\n"); exit(1); } while (0)
 
 /* Structure(s) declared in updater_archive */
-struct archive;
+struct u_archive;
 
 /* flashrom programmers. */
 static const char * const PROG_HOST = "host",
@@ -89,7 +89,7 @@ enum {
  * failure, or IMAGE_PARSE_FAILURE for non-vboot images.
  */
 int load_firmware_image(struct firmware_image *image, const char *file_name,
-			struct archive *archive);
+			struct u_archive *archive);
 
 /* Structure(s) declared in updater.h */
 struct updater_config;

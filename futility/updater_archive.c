@@ -88,7 +88,7 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const PATH_SIGNER_CONFIG = "signer_config.csv",
 		  * const PATH_ENDSWITH_SETVARS = "/setvars.sh";
 
-struct archive {
+struct u_archive {
 	void *handle;
 
 	void * (*open)(const char *name);
@@ -358,17 +358,17 @@ static int archive_zip_write_file(void *handle, const char *fname,
  * Returns a pointer to reference to archive (must be released by archive_close
  * when not used), otherwise NULL on error.
  */
-struct archive *archive_open(const char *path)
+struct u_archive *archive_open(const char *path)
 {
 	struct stat path_stat;
-	struct archive *ar;
+	struct u_archive *ar;
 
 	if (stat(path, &path_stat) != 0) {
 		ERROR("Cannot identify type of path: %s\n", path);
 		return NULL;
 	}
 
-	ar = (struct archive *)malloc(sizeof(*ar));
+	ar = (struct u_archive *)malloc(sizeof(*ar));
 	if (!ar) {
 		ERROR("Internal error: allocation failure.\n");
 		return NULL;
@@ -412,7 +412,7 @@ struct archive *archive_open(const char *path)
  * Closes an archive reference.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_close(struct archive *ar)
+int archive_close(struct u_archive *ar)
 {
 	int r = ar->close(ar->handle);
 	free(ar);
@@ -425,7 +425,7 @@ int archive_close(struct archive *ar)
  * with real file system.
  * Returns 1 if exists, otherwise 0
  */
-int archive_has_entry(struct archive *ar, const char *name)
+int archive_has_entry(struct u_archive *ar, const char *name)
 {
 	if (!ar || *name == '/')
 		return archive_fallback_has_entry(NULL, name);
@@ -439,7 +439,7 @@ int archive_has_entry(struct archive *ar, const char *name)
  * The arg argument will also be passed to callback.
  * Returns 0 on success otherwise non-zero as failure.
  */
-static int archive_walk(struct archive *ar, void *arg,
+static int archive_walk(struct u_archive *ar, void *arg,
 			int (*callback)(const char *path, void *arg))
 {
 	if (!ar)
@@ -456,7 +456,7 @@ static int archive_walk(struct archive *ar, void *arg,
  * Returns 0 on success (data and size reflects the file content),
  * otherwise non-zero as failure.
  */
-int archive_read_file(struct archive *ar, const char *fname,
+int archive_read_file(struct u_archive *ar, const char *fname,
 		      uint8_t **data, uint32_t *size, int64_t *mtime)
 {
 	if (!ar || *fname == '/')
@@ -470,7 +470,7 @@ int archive_read_file(struct archive *ar, const char *fname,
  * file system.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_write_file(struct archive *ar, const char *fname,
+int archive_write_file(struct u_archive *ar, const char *fname,
 		       uint8_t *data, uint32_t size, int64_t mtime)
 {
 	if (!ar || *fname == '/')
@@ -479,7 +479,7 @@ int archive_write_file(struct archive *ar, const char *fname,
 }
 
 struct _copy_arg {
-	struct archive *from, *to;
+	struct u_archive *from, *to;
 };
 
 /* Callback for archive_copy. */
@@ -506,7 +506,7 @@ static int archive_copy_callback(const char *path, void *_arg)
  * Copies all entries from one archive to another.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_copy(struct archive *from, struct archive *to)
+int archive_copy(struct u_archive *from, struct u_archive *to)
 {
 	struct _copy_arg arg = { .from = from, .to = to };
 	return archive_walk(from, &arg, archive_copy_callback);
@@ -566,7 +566,7 @@ static char *vpd_get_value(const char *fpath, const char *key)
  * Returns 0 on success (at least one entry found), otherwise failure.
  */
 static int model_config_parse_setvars_file(
-		struct model_config *cfg, struct archive *archive,
+		struct model_config *cfg, struct u_archive *archive,
 		const char *fpath)
 {
 	uint8_t *data;
@@ -680,7 +680,7 @@ static int change_vblock(struct firmware_image *image, const char *section_name,
  */
 static int apply_key_file(
 		struct firmware_image *image, const char *path,
-		struct archive *archive, const char *section_name,
+		struct u_archive *archive, const char *section_name,
 		int (*apply)(struct firmware_image *image, const char *section,
 			     const uint8_t *data, uint32_t len))
 {
@@ -707,7 +707,7 @@ static int apply_key_file(
  */
 int patch_image_by_model(
 		struct firmware_image *image, const struct model_config *model,
-		struct archive *archive)
+		struct u_archive *archive)
 {
 	int err = 0;
 	if (model->patches.rootkey)
@@ -730,7 +730,7 @@ int patch_image_by_model(
  * Updates `model` argument with path of patch files.
  */
 static void find_patches_for_model(struct model_config *model,
-				   struct archive *archive,
+				   struct u_archive *archive,
 				   const char *signature_id)
 {
 	char *path;
@@ -786,7 +786,7 @@ static struct model_config *manifest_add_model(
 static int manifest_scan_entries(const char *name, void *arg)
 {
 	struct manifest *manifest = (struct manifest *)arg;
-	struct archive *archive = manifest->archive;
+	struct u_archive *archive = manifest->archive;
 	struct model_config model = {0};
 	char *slash;
 
@@ -833,7 +833,7 @@ static int manifest_scan_entries(const char *name, void *arg)
 static int manifest_scan_raw_entries(const char *name, void *arg)
 {
 	struct manifest *manifest = (struct manifest *)arg;
-	struct archive *archive = manifest->archive;
+	struct u_archive *archive = manifest->archive;
 	struct model_config model = {0};
 	char *ec_name = NULL, *zephyr_name = NULL;
 	int chars_read = 0;
@@ -887,7 +887,7 @@ static struct model_config *manifest_get_model_config(
  */
 static int manifest_from_signer_config(struct manifest *manifest)
 {
-	struct archive *archive = manifest->archive;
+	struct u_archive *archive = manifest->archive;
 	uint32_t size;
 	uint8_t *data;
 	char *s, *tok_ptr = NULL;
@@ -991,7 +991,7 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 		   * const old_host_image_name = "bios.bin",
 		   * const ec_name = "ec.bin",
 		   * const pd_name = "pd.bin";
-	struct archive *archive = manifest->archive;
+	struct u_archive *archive = manifest->archive;
 	const char *image_name = NULL;
 	struct firmware_image image = {0};
 	struct model_config model = {0};
@@ -1169,7 +1169,7 @@ static char *resolve_signature_id(struct model_config *model, const char *image)
  */
 int model_apply_custom_label(
 		struct model_config *model,
-		struct archive *archive,
+		struct u_archive *archive,
 		const char *signature_id,
 		const char *image)
 {
@@ -1204,7 +1204,7 @@ int model_apply_custom_label(
  * Creates a new manifest object by scanning files in archive.
  * Returns the manifest on success, otherwise NULL for failure.
  */
-struct manifest *new_manifest_from_archive(struct archive *archive)
+struct manifest *new_manifest_from_archive(struct u_archive *archive)
 {
 	struct manifest manifest = {0}, *new_manifest;
 
@@ -1279,7 +1279,7 @@ static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
 /* Prints the information of given image file in JSON format. */
 static void print_json_image(
 		const char *name, const char *fpath, struct model_config *m,
-		struct archive *archive, int indent, int is_host)
+		struct u_archive *archive, int indent, int is_host)
 {
 	struct firmware_image image = {0};
 	const struct vb2_gbb_header *gbb = NULL;
@@ -1313,7 +1313,7 @@ static void print_json_image(
 void print_json_manifest(const struct manifest *manifest)
 {
 	int i, indent;
-	struct archive *ar = manifest->archive;
+	struct u_archive *ar = manifest->archive;
 
 	printf("{\n");
 	for (i = 0, indent = 2; i < manifest->num; i++) {

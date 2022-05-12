@@ -1290,7 +1290,7 @@ static int updater_load_images(struct updater_config *cfg,
 			       const char *pd_image)
 {
 	int errorcnt = 0;
-	struct archive *ar = cfg->archive;
+	struct u_archive *ar = cfg->archive;
 
 	if (!cfg->image.data && image) {
 		if (image && strcmp(image, "-") == 0) {
@@ -1379,7 +1379,7 @@ static int updater_setup_archive(
 		int is_factory)
 {
 	int errorcnt = 0;
-	struct archive *ar = cfg->archive;
+	struct u_archive *ar = cfg->archive;
 	const struct model_config *model;
 
 	if (arg->do_manifest) {
@@ -1540,7 +1540,7 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Process archives which may not have valid contents. */
 	if (arg->repack || arg->unpack) {
 		const char *work_name = arg->repack ? arg->repack : arg->unpack;
-		struct archive *from, *to, *work;
+		struct u_archive *from, *to, *work;
 
 		work = archive_open(work_name);
 		if (arg->repack) {

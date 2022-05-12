@@ -209,7 +209,7 @@ static int parse_firmware_image(struct firmware_image *image)
  * failure, or IMAGE_PARSE_FAILURE for non-vboot images.
  */
 int load_firmware_image(struct firmware_image *image, const char *file_name,
-			struct archive *archive)
+			struct u_archive *archive)
 {
 	if (!file_name) {
 		ERROR("No file name given\n");

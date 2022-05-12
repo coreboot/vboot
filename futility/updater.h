@@ -65,7 +65,7 @@ struct updater_config {
 	struct firmware_image ec_image, pd_image;
 	struct system_property system_properties[SYS_PROP_MAX];
 	struct quirk_entry quirks[QUIRK_MAX];
-	struct archive *archive;
+	struct u_archive *archive;
 	struct tempfile tempfiles;
 	int try_update;
 	int force_update;
@@ -112,7 +112,7 @@ struct model_config {
 struct manifest {
 	int num;
 	struct model_config *models;
-	struct archive *archive;
+	struct u_archive *archive;
 	int default_model;
 	int has_keyset;
 };
@@ -208,26 +208,26 @@ int quirk_override_signature_id(struct updater_config *cfg,
  * Returns a pointer to reference to archive (must be released by archive_close
  * when not used), otherwise NULL on error.
  */
-struct archive *archive_open(const char *path);
+struct u_archive *archive_open(const char *path);
 
 /*
  * Closes an archive reference.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_close(struct archive *ar);
+int archive_close(struct u_archive *ar);
 
 /*
  * Checks if an entry (either file or directory) exists in archive.
  * Returns 1 if exists, otherwise 0
  */
-int archive_has_entry(struct archive *ar, const char *name);
+int archive_has_entry(struct u_archive *ar, const char *name);
 
 /*
  * Reads a file from archive.
  * Returns 0 on success (data and size reflects the file content),
  * otherwise non-zero as failure.
  */
-int archive_read_file(struct archive *ar, const char *fname,
+int archive_read_file(struct u_archive *ar, const char *fname,
 		      uint8_t **data, uint32_t *size, int64_t *mtime);
 
 /*
@@ -236,20 +236,20 @@ int archive_read_file(struct archive *ar, const char *fname,
  * file system.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_write_file(struct archive *ar, const char *fname,
+int archive_write_file(struct u_archive *ar, const char *fname,
 		       uint8_t *data, uint32_t size, int64_t mtime);
 
 /*
  * Copies all entries from one archive to another.
  * Returns 0 on success, otherwise non-zero as failure.
  */
-int archive_copy(struct archive *from, struct archive *to);
+int archive_copy(struct u_archive *from, struct u_archive *to);
 
 /*
  * Creates a new manifest object by scanning files in archive.
  * Returns the manifest on success, otherwise NULL for failure.
  */
-struct manifest *new_manifest_from_archive(struct archive *archive);
+struct manifest *new_manifest_from_archive(struct u_archive *archive);
 
 /* Releases all resources allocated by given manifest object. */
 void delete_manifest(struct manifest *manifest);
@@ -263,7 +263,7 @@ void print_json_manifest(const struct manifest *manifest);
  */
 int patch_image_by_model(
 		struct firmware_image *image, const struct model_config *model,
-		struct archive *archive);
+		struct u_archive *archive);
 
 /*
  * Finds the existing model_config from manifest that best matches current
@@ -281,7 +281,7 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
  */
 int model_apply_custom_label(
 		struct model_config *model,
-		struct archive *archive,
+		struct u_archive *archive,
 		const char *signature_id,
 		const char *image);
 
