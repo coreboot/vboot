@@ -240,6 +240,16 @@ int archive_write_file(struct u_archive *ar, const char *fname,
 		       uint8_t *data, uint32_t size, int64_t mtime);
 
 /*
+ * Traverses all files within archive (directories are ignored).
+ * For every entry, the path (relative the archive root) will be passed to
+ * callback function, until the callback returns non-zero.
+ * The arg argument will also be passed to callback.
+ * Returns 0 on success otherwise non-zero as failure.
+ */
+int archive_walk(struct u_archive *ar, void *arg,
+		 int (*callback)(const char *path, void *arg));
+
+/*
  * Copies all entries from one archive to another.
  * Returns 0 on success, otherwise non-zero as failure.
  */
