@@ -275,6 +275,13 @@ ifneq ($(filter-out 0,${HAVE_LIBZIP}),)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
 endif
 
+LIBARCHIVE_VERSION := $(shell ${PKG_CONFIG} --modversion libarchive 2>/dev/null)
+HAVE_LIBARCHIVE := $(if ${LIBARCHIVE_VERSION},1)
+ifneq ($(filter-out 0,${HAVE_LIBARCHIVE}),)
+  CFLAGS += -DHAVE_LIBARCHIVE $(shell ${PKG_CONFIG} --cflags libarchive)
+  LIBARCHIVE_LIBS := $(shell ${PKG_CONFIG} --libs libarchive)
+endif
+
 HAVE_CROSID := $(shell ${PKG_CONFIG} --exists crosid && echo 1)
 ifeq ($(HAVE_CROSID),1)
   CFLAGS += -DHAVE_CROSID $(shell ${PKG_CONFIG} --cflags crosid)
@@ -1040,7 +1047,8 @@ signing_install: $(if ${SDK_BUILD},\
 futil: ${FUTIL_BIN}
 
 # FUTIL_LIBS is shared by FUTIL_BIN and TEST_FUTIL_BINS.
-FUTIL_LIBS = ${CROSID_LIBS} ${CRYPTO_LIBS} ${LIBZIP_LIBS} ${FLASHROM_LIBS}
+FUTIL_LIBS = ${CROSID_LIBS} ${CRYPTO_LIBS} ${LIBZIP_LIBS} ${LIBARCHIVE_LIBS} \
+	${FLASHROM_LIBS}
 
 ${FUTIL_BIN}: LDLIBS += ${FUTIL_LIBS}
 ${FUTIL_BIN}: ${FUTIL_OBJS} ${UTILLIB} ${FWLIB}
