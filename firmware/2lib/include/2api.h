@@ -257,6 +257,12 @@ enum vb2_context_flags {
 	 * nvdata, FWMP or GBB flags.
 	 */
 	VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED = (1 << 27),
+
+	/*
+	 * If this is set after kernel verification, caller should disable the
+	 * TPM before jumping to kernel.
+	 */
+	VB2_CONTEXT_DISABLE_TPM = (1 << 28),
 };
 
 /* Boot mode decided in vb2api_fw_phase1.

@@ -593,12 +593,6 @@ vb2_error_t LoadMiniOsKernel(struct vb2_context *ctx,
 	if (rv)
 		rv = try_minios_sector_region(ctx, params, disk_info,
 					      !end_region_first);
-	if (rv)
-		return rv;
-
-	rv = vb2ex_tpm_set_mode(VB2_TPM_MODE_DISABLED);
-	if (rv)
-		VB2_DEBUG("Failed to disable TPM\n");
 
 	return rv;
 }
