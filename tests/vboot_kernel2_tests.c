@@ -59,8 +59,6 @@ static struct mock_kernel kernels[MAX_MOCK_KERNELS];
 static int kernel_count;
 static struct mock_kernel *cur_kernel;
 
-static int mock_tpm_set_mode_calls;
-
 static void add_mock_kernel(uint64_t sector, vb2_error_t rv)
 {
 	if (kernel_count >= ARRAY_SIZE(kernels)) {
@@ -118,8 +116,6 @@ static void reset_common_data(void)
 	memset(&kernels, 0, sizeof(kernels));
 	kernel_count = 0;
 	cur_kernel = NULL;
-
-	mock_tpm_set_mode_calls = 0;
 }
 
 /* Mocks */
@@ -248,12 +244,6 @@ vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 	return cur_kernel->rv;
 }
 
-vb2_error_t vb2ex_tpm_set_mode(enum vb2_tpm_mode mode_val)
-{
-	mock_tpm_set_mode_calls++;
-	return VB2_SUCCESS;
-}
-
 /* Make sure nothing tested here ever calls this directly. */
 void vb2api_fail(struct vb2_context *c, uint8_t reason, uint8_t subcode)
 {
@@ -270,16 +260,12 @@ static void load_minios_kernel_tests(void)
 	add_mock_kernel(0, VB2_SUCCESS);
 	TEST_SUCC(LoadMiniOsKernel(ctx, &lkp, &disk_info, 0),
 		  "{valid kernel}");
-	TEST_EQ(mock_tpm_set_mode_calls, 1,
-		"  TPM disabled");
 
 	reset_common_data();
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 1;
 	TEST_EQ(LoadMiniOsKernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND, "{no kernel}");
-	TEST_EQ(mock_tpm_set_mode_calls, 0,
-		"  TPM not disabled");
 
 	reset_common_data();
 	disk_info.bytes_per_lba = KBUF_SIZE;
@@ -306,8 +292,6 @@ static void load_minios_kernel_tests(void)
 	TEST_EQ(LoadMiniOsKernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"{invalid kernel, invalid kernel}");
-	TEST_EQ(mock_tpm_set_mode_calls, 0,
-		"  TPM not disabled");
 
 	reset_common_data();
 	disk_info.bytes_per_lba = KBUF_SIZE;

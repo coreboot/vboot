@@ -143,6 +143,7 @@ static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
 test_mockable
 vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
 {
+	ctx->flags &= ~VB2_CONTEXT_DISABLE_TPM;
 	return VbTryLoadKernelImpl(ctx, disk_flags, 0, 0);
 }
 
@@ -150,7 +151,9 @@ test_mockable
 vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx,
 				  uint32_t minios_flags)
 {
-	return VbTryLoadKernelImpl(ctx, VB_DISK_FLAG_FIXED, 1, minios_flags);
+	VB2_TRY(VbTryLoadKernelImpl(ctx, VB_DISK_FLAG_FIXED, 1, minios_flags));
+	ctx->flags |= VB2_CONTEXT_DISABLE_TPM;
+	return VB2_SUCCESS;
 }
 
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,

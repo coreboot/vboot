@@ -602,6 +602,8 @@ static void VbTryLoadKernelTest(void)
 				    "  load disk");
 		}
 		TEST_EQ(got_external_mismatch, 0, "  external GPT errors");
+		TEST_EQ(!!(ctx->flags & VB2_CONTEXT_DISABLE_TPM), 0,
+			"  ctx flag disable_tpm");
 	}
 	TEST_EQ(lk_normal_calls, load_kernel_calls, "  LoadKernel called");
 	TEST_EQ(lk_minios_calls, 0, "  LoadMiniOsKernel not called");
@@ -627,6 +629,8 @@ static void VbTryLoadMiniOsKernelTest(void)
 				    "  load disk");
 		}
 		TEST_EQ(got_external_mismatch, 0, "  external GPT errors");
+		TEST_EQ(!!(ctx->flags & VB2_CONTEXT_DISABLE_TPM), 1,
+			"  ctx flag disable_tpm");
 	}
 	TEST_EQ(lk_normal_calls, 0, "  LoadKernel not called");
 	TEST_EQ(lk_minios_calls, load_kernel_calls,
