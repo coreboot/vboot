@@ -60,6 +60,7 @@ static const struct option long_opts[] = {
 	/* name       hasarg *flag  val */
 	{"outfile",       1, NULL, OPT_OUTFILE},
 	{"ranges",        1, NULL, 'R'},
+	{"add_gbb",       0, NULL, 'G'},
 	{"board_id",      1, NULL, 'b'},
 	{"root_pub_key",  1, NULL, 'r'},
 	{"keyblock",      1, NULL, 'k'},
@@ -68,7 +69,7 @@ static const struct option long_opts[] = {
 	{}
 };
 
-static const char *short_opts = "R:b:hk:p:r:";
+static const char *short_opts = "R:Gb:hk:p:r:";
 
 static const char usage[] =
 	"\n"
@@ -82,6 +83,11 @@ static const char usage[] =
 	"                                     hex tuples <offset>:<size>, the\n"
 	"                                     areas of the RO covered by the\n"
 	"                                     signature\n"
+	"  -G|--add_gbb                     Add the `GBB` FMAP section to the\n"
+	"                                     ranges covered by the signature.\n"
+	"                                     This option takes special care\n"
+	"                                     to exclude the HWID (and its\n"
+	"                                     digest) from this range.\n"
 	"  -b|--board_id  <hex value>      The Board ID of the board for which\n"
 	"                                     the image is being signed\n"
 	"  -r|--root_pub_key  <file>        The main public key, in .vbpubk\n"
@@ -285,7 +291,6 @@ static int parse_ranges(const char *input, struct gscvd_ro_ranges *output)
 		return -1;
 	}
 
-	output->range_count = 0;
 	cursor = str;
 	do {
 		char *colon;
@@ -332,6 +337,71 @@ static int parse_ranges(const char *input, struct gscvd_ro_ranges *output)
 		ERROR("Misformatted ranges string\n");
 
 	return rv;
+}
+
+/**
+ * Add GBB to ranges.
+ *
+ * Splits the `GBB` FMAP section into separate ranges to exclude the HWID string
+ * and the `hwid_digest` field in the header. Will also exclude the empty area
+ * behind the end of the actual GBB data.
+ *
+ * @param ranges pointer to the ranges container
+ * @param file   pointer to the AP firmware file layout descriptor
+ */
+static int add_gbb(struct gscvd_ro_ranges *ranges, const struct file_buf *file)
+{
+	FmapAreaHeader *area;
+
+	if (!fmap_find_by_name(file->data, file->len, NULL, "GBB", &area)) {
+		ERROR("Could not find a GBB area in the FMAP.\n");
+		return 1;
+	}
+
+	struct vb2_gbb_header *gbb = (void *)file->data + area->area_offset;
+	uint32_t maxlen;
+
+	if (!futil_valid_gbb_header(gbb, area->area_size, &maxlen)) {
+		ERROR("GBB is invalid.\n");
+		return 1;
+	}
+
+	/*
+	 * This implementation relies on the fact that no meaningful fields come
+	 * after the `hwid_digest` field in the header. If we ever make new GBB
+	 * versions that add more fields, the code below needs to be adapted.
+	 * Older versions than 1.2 or GBBs with a bmpblk are not expected with
+	 * GSCVD images.
+	 */
+	if (gbb->major_version != 1 || gbb->minor_version != 2 ||
+	    gbb->bmpfv_size != 0) {
+		ERROR("Unsupported GBB version.\n");
+		return 1;
+	}
+
+	uint32_t lower_key_offset = VB2_MIN(gbb->rootkey_offset,
+					    gbb->recovery_key_offset);
+	if (gbb->hwid_offset > lower_key_offset) {
+		ERROR("Weird GBB layout (HWID should come first)\n");
+		return 1;
+	}
+
+	if (ranges->range_count >= ARRAY_SIZE(ranges->ranges) - 2) {
+		ERROR("Too many ranges, can't fit GBB!\n");
+		return 1;
+	}
+
+	ranges->ranges[ranges->range_count].offset = area->area_offset;
+	ranges->ranges[ranges->range_count].size =
+				offsetof(struct vb2_gbb_header, hwid_digest);
+	ranges->range_count++;
+
+	ranges->ranges[ranges->range_count].offset = area->area_offset +
+						     lower_key_offset;
+	ranges->ranges[ranges->range_count].size = maxlen - lower_key_offset;
+	ranges->range_count++;
+
+	return 0;
 }
 
 /**
@@ -887,6 +957,7 @@ static int do_gscvd(int argc, char *argv[])
 {
 	int i;
 	int longindex;
+	bool do_gbb = false;
 	char *infile = NULL;
 	char *outfile = NULL;
 	char *work_file = NULL;
@@ -914,6 +985,9 @@ static int do_gscvd(int argc, char *argv[])
 				/* Error message has been already printed. */
 				errorcount++;
 			}
+			break;
+		case 'G':
+			do_gbb = true;
 			break;
 		case 'b': {
 			char *e;
@@ -977,15 +1051,36 @@ static int do_gscvd(int argc, char *argv[])
 		return validate_gscvd(argc - 1, argv + 1);
 
 	if (optind != (argc - 1)) {
-		ERROR("Misformatted command line\n%s\n", usage);
-		return 1;
+		ERROR("Misformatted command line\n");
+		goto usage_out;
 	}
 
-	if (errorcount || !ranges.range_count || !root_pubk || !kblock ||
-	    !plat_privk || (board_id == UINT32_MAX)) {
-		/* Error message(s) should have been printed by now. */
-		ERROR("%s\n", usage);
-		return 1;
+	if (errorcount) /* Error message(s) should have been printed by now. */
+		goto usage_out;
+
+	if (!root_pubk) {
+		ERROR("Missing --root_pub_key argument\n");
+		goto usage_out;
+	}
+
+	if (!kblock) {
+		ERROR("Missing --keyblock argument\n");
+		goto usage_out;
+	}
+
+	if (!plat_privk) {
+		ERROR("Missing --platform_priv argument\n");
+		goto usage_out;
+	}
+
+	if (board_id == UINT32_MAX) {
+		ERROR("Missing --board_id argument\n");
+		goto usage_out;
+	}
+
+	if (!ranges.range_count && !do_gbb) {
+		ERROR("Missing --ranges argument\n");
+		goto usage_out;
 	}
 
 	infile = argv[optind];
@@ -1007,6 +1102,9 @@ static int do_gscvd(int argc, char *argv[])
 			break;
 
 		if (load_ap_firmware(work_file, &ap_firmware_file, FILE_RW))
+			break;
+
+		if (do_gbb && add_gbb(&ranges, &ap_firmware_file))
 			break;
 
 		if (verify_ranges(&ranges, &ap_firmware_file))
@@ -1036,6 +1134,10 @@ static int do_gscvd(int argc, char *argv[])
 					   ap_firmware_file.len);
 
 	return rv;
+
+usage_out:
+	fputs(usage, stderr);
+	return 1;
 }
 
 DECLARE_FUTIL_COMMAND(gscvd, do_gscvd, VBOOT_VERSION_2_1,
