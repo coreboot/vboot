@@ -88,8 +88,10 @@ static const char usage[] =
 	"                                     This option takes special care\n"
 	"                                     to exclude the HWID (and its\n"
 	"                                     digest) from this range.\n"
-	"  -b|--board_id  <hex value>      The Board ID of the board for which\n"
-	"                                     the image is being signed\n"
+	"  -b|--board_id  <string|hex>      The Board ID of the board for\n"
+	"                                     which the image is signed.\n"
+	"                                     Can be passed as a 4-letter\n"
+	"                                     string or a hexadecimal number.\n"
 	"  -r|--root_pub_key  <file>        The main public key, in .vbpubk\n"
 	"                                     format, used to verify platform\n"
 	"                                     key\n"
@@ -993,9 +995,17 @@ static int do_gscvd(int argc, char *argv[])
 			char *e;
 			long long bid;
 
+			if (strlen(optarg) == 4) {
+				board_id = optarg[0] << 24 |
+					   optarg[1] << 16 |
+					   optarg[2] << 8 |
+					   optarg[3];
+				break;
+			}
+
 			bid = strtoull(optarg, &e, 16);
 			if (*e || (bid >= UINT32_MAX)) {
-				ERROR("Board ID value '%s' is invalid\n",
+				ERROR("Cannot parse Board ID '%s'\n",
 				      optarg);
 				errorcount++;
 			} else {
