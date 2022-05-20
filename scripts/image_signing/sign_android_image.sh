@@ -265,6 +265,12 @@ image_content_integrity_check() {
   return 0
 }
 
+list_image_files() {
+  local unsquashfs=$1
+  local system_img=$2
+  "${unsquashfs}" -l "${system_img}" | grep ^squashfs-root
+}
+
 sign_android_internal() {
   local root_fs_dir=$1
   local key_dir=$2
@@ -332,6 +338,8 @@ sign_android_internal() {
   local system_mnt="${working_dir}/mnt"
 
   info "Unpacking squashfs system image to ${system_mnt}"
+  list_image_files "${unsquashfs}" "${system_img}" > \
+      "${working_dir}/image_file_list.orig"
   sudo "${unsquashfs}" -no-xattrs -f -no-progress -d "${system_mnt}" "${system_img}"
 
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.orig"
@@ -408,6 +416,17 @@ sign_android_internal() {
     -no-progress
   local new_size=$(stat -c '%s' "${system_img}")
   info "Android system image size change: ${old_size} -> ${new_size}"
+
+  list_image_files "${unsquashfs}" "${system_img}" > \
+      "${working_dir}/image_file_list.new"
+  if d=$(grep -v -F -x -f "${working_dir}"/image_file_list.{new,orig}); then
+    # If we have a line in image_file_list.orig which does not appear in
+    # image_file_list.new, it means some files are removed during signing
+    # process. Here we have already deleted the original Android image so
+    # cannot retry.
+    die "Unexpected change of file list\n${d}"
+  fi
+
   return 0
 }
 
