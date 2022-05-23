@@ -20,6 +20,13 @@
 static const char ROOTKEY_HASH_DEV[] =
 		"b11d74edd286c144e1135b49e7f0bc20cf041f10";
 
+enum try_update_type {
+	TRY_UPDATE_OFF = 0,
+	TRY_UPDATE_AUTO,
+	TRY_UPDATE_DEFERRED_HOLD,
+	TRY_UPDATE_DEFERRED_APPLY,
+};
+
 enum target_type {
 	TARGET_SELF,
 	TARGET_UPDATE,
@@ -951,7 +958,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		struct firmware_image *image_to,
 		int wp_enabled)
 {
-	const char *target;
+	const char *target, *self_target;
 	int has_update = 1;
 	int is_vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
 
@@ -967,7 +974,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		return UPDATE_ERR_TPM_ROLLBACK;
 
 	VB2_DEBUG("Firmware %s vboot2.\n", is_vboot2 ?  "is" : "is NOT");
-	target = decide_rw_target(cfg, TARGET_SELF, is_vboot2);
+	self_target = target = decide_rw_target(cfg, TARGET_SELF, is_vboot2);
 	if (target == NULL) {
 		ERROR("TRY-RW update needs system to boot in RW firmware.\n");
 		return UPDATE_ERR_TARGET;
@@ -979,7 +986,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		      target, image_to->file_name);
 		return UPDATE_ERR_INVALID_IMAGE;
 	}
-	if (!cfg->force_update)
+	if (!(cfg->force_update || cfg->try_update == TRY_UPDATE_DEFERRED_HOLD))
 		has_update = section_needs_update(image_from, image_to, target);
 
 	if (has_update) {
@@ -989,6 +996,24 @@ static enum updater_error_codes update_try_rw_firmware(
 
 		if (write_firmware(cfg, image_to, target))
 			return UPDATE_ERR_WRITE_FIRMWARE;
+
+		/*
+		 * If the firmware update requested is part of a deferred update
+		 * HOLD action, the autoupdater/postinstall will later call
+		 * defer update APPLY action to set the correct cookies. So here
+		 * it is valid to keep the self slot as the active firmware even
+		 * though the target slot is always updated (whether the current
+		 * active firmware is the same version or not).
+		 */
+		if (cfg->try_update == TRY_UPDATE_DEFERRED_HOLD) {
+			STATUS(
+			    "DEFERRED UPDATE: Defer setting cookies for %s\n",
+			    target);
+			target = self_target;
+			has_update = 0;
+		}
+	} else {
+		STATUS("NO RW UPDATE: No update for RW firmware.\n");
 	}
 
 	/* Always set right cookies for next boot. */
@@ -1001,9 +1026,6 @@ static enum updater_error_codes update_try_rw_firmware(
 		STATUS("LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
 		write_firmware(cfg, image_to, FMAP_RW_LEGACY);
 	}
-
-	if (!has_update)
-		STATUS("NO UPDATE: No need to update.\n");
 
 	return UPDATE_ERR_DONE;
 }
@@ -1148,6 +1170,23 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 {
 	int wp_enabled, done = 0;
 	enum updater_error_codes r = UPDATE_ERR_UNKNOWN;
+
+	/*
+	 * For deferred update APPLY action, the only requirement is to set the
+	 * correct cookies to the update target slot.
+	 */
+	if (cfg->try_update == TRY_UPDATE_DEFERRED_APPLY) {
+		INFO("Apply deferred updates, only setting cookies for the "
+		     "next boot slot.\n");
+		int vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
+		if (set_try_cookies(
+			cfg,
+			decide_rw_target(cfg, TARGET_UPDATE, vboot2),
+			/*has_update=*/1,
+			vboot2))
+			return UPDATE_ERR_SET_COOKIES;
+		return UPDATE_ERR_DONE;
+	}
 
 	struct firmware_image *image_from = &cfg->image_current,
 			      *image_to = &cfg->image;
@@ -1473,12 +1512,16 @@ int updater_setup_config(struct updater_config *cfg,
 
 	/* Setup update mode. */
 	if (arg->try_update)
-		cfg->try_update = 1;
+		cfg->try_update = TRY_UPDATE_AUTO;
 	if (arg->mode) {
 		if (strcmp(arg->mode, "autoupdate") == 0) {
-			cfg->try_update = 1;
+			cfg->try_update = TRY_UPDATE_AUTO;
+		} else if (strcmp(arg->mode, "deferupdate_hold") == 0) {
+			cfg->try_update = TRY_UPDATE_DEFERRED_HOLD;
+		} else if (strcmp(arg->mode, "deferupdate_apply") == 0) {
+			cfg->try_update = TRY_UPDATE_DEFERRED_APPLY;
 		} else if (strcmp(arg->mode, "recovery") == 0) {
-			cfg->try_update = 0;
+			cfg->try_update = TRY_UPDATE_OFF;
 		} else if (strcmp(arg->mode, "legacy") == 0) {
 			cfg->legacy_update = 1;
 		} else if (strcmp(arg->mode, "factory") == 0 ||
@@ -1494,7 +1537,7 @@ int updater_setup_config(struct updater_config *cfg,
 	if (cfg->factory_update) {
 		/* factory_update must be processed after arg->mode. */
 		check_wp_disabled = 1;
-		cfg->try_update = 0;
+		cfg->try_update = TRY_UPDATE_OFF;
 	}
 	cfg->gbb_flags = arg->gbb_flags;
 	cfg->override_gbb_flags = arg->override_gbb_flags;
