@@ -50,34 +50,41 @@ run_test()
 	local fw_algo=$2
 	local kern_algo=$3
 
-	local root_rsa="$(algo_to_rsa ${root_algo})"
-	local fw_rsa="$(algo_to_rsa ${fw_algo})"
-	local kern_rsa="$(algo_to_rsa ${kern_algo})"
+	local root_rsa
+	local fw_rsa
+	local kern_rsa
+	root_rsa="$(algo_to_rsa "${root_algo}")"
+	fw_rsa="$(algo_to_rsa "${fw_algo}")"
+	kern_rsa="$(algo_to_rsa "${kern_algo}")"
 
-	local root_sha="$(algo_to_sha ${root_algo})"
-	local fw_sha="$(algo_to_sha ${fw_algo})"
-	local kern_sha="$(algo_to_sha ${kern_algo})"
+	local root_sha
+	local fw_sha
+	root_sha="$(algo_to_sha "${root_algo}")"
+	fw_sha="$(algo_to_sha "${fw_algo}")"
 
 	# Pack keys using original vboot utilities
-	${FUTILITY} vbutil_key --pack rootkey.test \
-	    --key "${TESTKEY_DIR}/key_${root_rsa}.keyb" --algorithm ${root_algo}
-	${FUTILITY} vbutil_key --pack fwsubkey.test \
-	    --key "${TESTKEY_DIR}/key_${fw_rsa}.keyb" --algorithm ${fw_algo}
-	${FUTILITY} vbutil_key --pack kernkey.test \
-	    --key "${TESTKEY_DIR}/key_${kern_rsa}.keyb" --algorithm ${kern_algo}
+	"${FUTILITY}" vbutil_key --pack rootkey.test \
+	    --key "${TESTKEY_DIR}/key_${root_rsa}.keyb" \
+	    --algorithm "${root_algo}"
+	"${FUTILITY}" vbutil_key --pack fwsubkey.test \
+	    --key "${TESTKEY_DIR}/key_${fw_rsa}.keyb" \
+	    --algorithm "${fw_algo}"
+	"${FUTILITY}" vbutil_key --pack kernkey.test \
+	    --key "${TESTKEY_DIR}/key_${kern_rsa}.keyb" \
+	    --algorithm "${kern_algo}"
 
 	# Create a GBB with the root key
-	${FUTILITY} gbb -c 128,2400,0,0 gbb.test
-	${FUTILITY} gbb gbb.test -s --hwid='Test GBB' \
+	"${FUTILITY}" gbb -c 128,2400,0,0 gbb.test
+	"${FUTILITY}" gbb gbb.test -s --hwid='Test GBB' \
 	  --rootkey=rootkey.test
 
 	# Keyblock with firmware subkey is signed by root key
-	${FUTILITY} vbutil_keyblock --pack keyblock.test \
+	"${FUTILITY}" vbutil_keyblock --pack keyblock.test \
 	    --datapubkey fwsubkey.test \
 	    --signprivate "${TESTKEY_DIR}/key_${root_rsa}.${root_sha}.vbprivk"
 
 	# Firmware preamble is signed with the firmware subkey
-	${FUTILITY} vbutil_firmware \
+	"${FUTILITY}" vbutil_firmware \
 	    --vblock vblock.test \
 	    --keyblock keyblock.test \
 	    --signprivate "${TESTKEY_DIR}/key_${fw_rsa}.${fw_sha}.vbprivk" \
@@ -89,7 +96,7 @@ run_test()
 		"(root=${root_algo}, fw=${fw_algo}, kernel=${kern_algo})"
 
 	# Verify the firmware using vboot2 checks
-	${BUILD_RUN}/tests/vb20_verify_fw gbb.test vblock.test body.test
+	"${BUILD_RUN}/tests/vb20_verify_fw" gbb.test vblock.test body.test
 
 	happy 'vb2_verify_fw succeeded'
 }

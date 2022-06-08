@@ -18,21 +18,19 @@ function test_vbutil_key_single {
 
     echo -e "For signing key ${COL_YELLOW}RSA-$keylen/$hashalgo${COL_STOP}:"
     # Pack the key
-    ${FUTILITY} vbutil_key \
-        --pack ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk \
-        --key ${TESTKEY_DIR}/key_rsa${keylen}.keyb \
+    if ! "${FUTILITY}" vbutil_key \
+        --pack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk" \
+        --key "${TESTKEY_DIR}/key_rsa${keylen}.keyb" \
         --version 1 \
-        --algorithm $algonum
-    if [ $? -ne 0 ]
+        --algorithm "${algonum}"
     then
         return_code=255
     fi
 
     # Unpack the key
     # TODO: should verify we get the same key back out?
-    ${FUTILITY} vbutil_key \
-        --unpack ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk
-    if [ $? -ne 0 ]
+    if ! "${FUTILITY}" vbutil_key \
+        --unpack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk"
     then
         return_code=255
     fi
@@ -40,12 +38,12 @@ function test_vbutil_key_single {
 
 function test_vbutil_key_all {
   algorithmcounter=0
-  for keylen in ${key_lengths[@]}
+  for keylen in "${key_lengths[@]}"
   do
-      for hashalgo in ${hash_algos[@]}
+      for hashalgo in "${hash_algos[@]}"
       do
-          test_vbutil_key_single $algorithmcounter $keylen $hashalgo
-          let algorithmcounter=algorithmcounter+1
+          test_vbutil_key_single "$algorithmcounter" "$keylen" "$hashalgo"
+          algorithmcounter=$((algorithmcounter + 1))
       done
   done
 }
@@ -72,49 +70,45 @@ ${datahashalgo}${COL_STOP}"
           keyblockfile="${TESTKEY_SCRATCH_DIR}/"
           keyblockfile+="sign${signing_algonum}_data"
           keyblockfile+="${data_algonum}.keyblock"
-          rm -f ${keyblockfile}
+          rm -f "${keyblockfile}"
 
           # Wrap private key
-          ${FUTILITY} vbutil_key \
-            --pack ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbprivk \
-            --key ${TESTKEY_DIR}/key_rsa${signing_keylen}.pem \
-            --algorithm $signing_algonum
-          if [ $? -ne 0 ]
+          if ! "${FUTILITY}" vbutil_key \
+            --pack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbprivk" \
+            --key "${TESTKEY_DIR}/key_rsa${signing_keylen}.pem" \
+            --algorithm "${signing_algonum}"
           then
             echo -e "${COL_RED}Wrap vbprivk${COL_STOP}"
             return_code=255
           fi
 
           # Wrap public key
-          ${FUTILITY} vbutil_key \
-            --pack ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk \
-            --key ${TESTKEY_DIR}/key_rsa${signing_keylen}.keyb \
-            --algorithm $signing_algonum
-          if [ $? -ne 0 ]
+          if ! "${FUTILITY}" vbutil_key \
+            --pack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk" \
+            --key "${TESTKEY_DIR}/key_rsa${signing_keylen}.keyb" \
+            --algorithm "${signing_algonum}"
           then
             echo -e "${COL_RED}Wrap vbpubk${COL_STOP}"
             return_code=255
           fi
 
           # Pack
-          ${FUTILITY} vbutil_keyblock --pack ${keyblockfile} \
+          if ! "${FUTILITY}" vbutil_keyblock --pack "${keyblockfile}" \
             --datapubkey \
-              ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk \
+              "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk" \
             --signprivate \
-              ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbprivk
-          if [ $? -ne 0 ]
+              "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbprivk"
           then
             echo -e "${COL_RED}Pack${COL_STOP}"
             return_code=255
           fi
 
           # Unpack
-          ${FUTILITY} vbutil_keyblock --unpack ${keyblockfile} \
+          if ! "${FUTILITY}" vbutil_keyblock --unpack "${keyblockfile}" \
             --datapubkey \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2 \
+              "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2" \
             --signpubkey \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk
-          if [ $? -ne 0 ]
+              "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk"
           then
             echo -e "${COL_RED}Unpack${COL_STOP}"
             return_code=255
@@ -122,8 +116,8 @@ ${datahashalgo}${COL_STOP}"
 
           # Check
           if ! cmp -s \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2
+            "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk" \
+            "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2"
           then
             echo -e "${COL_RED}Check${COL_STOP}"
             return_code=255
@@ -134,27 +128,24 @@ ${datahashalgo}${COL_STOP}"
 external signer.${COL_STOP}"
           # Pack using external signer
           # Pack
-          ${FUTILITY} vbutil_keyblock --pack ${keyblockfile} \
+          if ! "${FUTILITY}" vbutil_keyblock --pack "${keyblockfile}" \
             --datapubkey \
-              ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk \
+              "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk" \
             --signprivate_pem \
-              ${TESTKEY_DIR}/key_rsa${signing_keylen}.pem \
+              "${TESTKEY_DIR}/key_rsa${signing_keylen}.pem" \
             --pem_algorithm "${signing_algonum}" \
             --externalsigner "${SCRIPT_DIR}/external_rsa_signer.sh"
-
-          if [ $? -ne 0 ]
           then
             echo -e "${COL_RED}Pack${COL_STOP}"
             return_code=255
           fi
 
           # Unpack
-          ${FUTILITY} vbutil_keyblock --unpack ${keyblockfile} \
+          if ! "${FUTILITY}" vbutil_keyblock --unpack "${keyblockfile}" \
             --datapubkey \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2 \
+            "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2" \
             --signpubkey \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${signing_algonum}.vbpubk
-          if [ $? -ne 0 ]
+            "${TESTKEY_SCRATCH_DIR}/key_alg${signing_algonum}.vbpubk"
           then
             echo -e "${COL_RED}Unpack${COL_STOP}"
             return_code=255
@@ -162,8 +153,8 @@ external signer.${COL_STOP}"
 
           # Check
           if ! cmp -s \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk \
-            ${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2
+            "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk" \
+            "${TESTKEY_SCRATCH_DIR}/key_alg${data_algonum}.vbpubk2"
           then
             echo -e "${COL_RED}Check${COL_STOP}"
             return_code=255
@@ -177,22 +168,22 @@ function test_vbutil_keyblock_all {
 # kernel signing algorithm
   signing_algorithmcounter=0
   data_algorithmcounter=0
-  for signing_keylen in ${key_lengths[@]}
+  for signing_keylen in "${key_lengths[@]}"
   do
-    for signing_hashalgo in ${hash_algos[@]}
+    for signing_hashalgo in "${hash_algos[@]}"
     do
-      let data_algorithmcounter=0
-      for datakeylen in ${key_lengths[@]}
+      data_algorithmcounter=0
+      for datakeylen in "${key_lengths[@]}"
       do
-        for datahashalgo in ${hash_algos[@]}
+        for datahashalgo in "${hash_algos[@]}"
         do
           test_vbutil_keyblock_single \
-                $signing_algorithmcounter $signing_keylen $signing_hashalgo \
-                $data_algorithmcounter $data_keylen $data_hashalgo
-          let data_algorithmcounter=data_algorithmcounter+1
+            "$signing_algorithmcounter" "$signing_keylen" "$signing_hashalgo" \
+            "$data_algorithmcounter" "$data_keylen" "$data_hashalgo"
+          data_algorithmcounter=$((data_algorithmcounter + 1))
         done
       done
-      let signing_algorithmcounter=signing_algorithmcounter+1
+      signing_algorithmcounter=$((signing_algorithmcounter + 1))
     done
   done
 }
@@ -223,4 +214,3 @@ else
 fi
 
 exit $return_code
-

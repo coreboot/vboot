@@ -10,34 +10,34 @@ TMP="$me.tmp"
 cd "$OUTDIR"
 
 
-IN=${SCRIPT_DIR}/futility/data/bios_link_mp.bin
-BIOS=${TMP}.bios.bin
+IN="${SCRIPT_DIR}/futility/data/bios_link_mp.bin"
+BIOS="${TMP}.bios.bin"
 
-cp ${IN} ${BIOS}
+cp "${IN}" "${BIOS}"
 
-AREAS="RW_SECTION_A VBLOCK_B BOOT_STUB"
-
+AREAS=(RW_SECTION_A VBLOCK_B BOOT_STUB)
+set -x
 # Extract good blobs first
-${FUTILITY} dump_fmap -x ${BIOS} ${AREAS}
+"${FUTILITY}" dump_fmap -x "${BIOS}" "${AREAS[@]}"
 
 # Save the good blobs, make same-size random blobs, create command
-CMDS=""
-for a in ${AREAS}; do
-  size=$(stat -c '%s' $a)
-  mv $a $a.good
-  dd if=/dev/urandom of=$a.rand bs=$size count=1
-  CMDS="$CMDS $a:$a.rand"
+CMDS=( )
+for a in "${AREAS[@]}"; do
+  size=$(stat -c '%s' "$a")
+  mv "$a" "$a.good"
+  dd if=/dev/urandom of="$a.rand" bs="$size" count=1
+  CMDS+=("$a:$a.rand")
 done
 
 # Poke the new blobs in
-${FUTILITY} load_fmap ${BIOS} ${CMDS}
+"${FUTILITY}" load_fmap "${BIOS}" "${CMDS[@]}"
 
 # Pull them back out and see if they match
-${FUTILITY} dump_fmap -x ${BIOS} ${AREAS}
-for a in ${AREAS}; do
-  cmp $a $a.rand
+"${FUTILITY}" dump_fmap -x "${BIOS}" "${AREAS[@]}"
+for a in "${AREAS[@]}"; do
+  cmp "$a" "$a.rand"
 done
 
 # cleanup
-rm -f ${TMP}* ${AREAS} *.rand *.good
+rm -f "${TMP}"* "${AREAS[@]}" ./*.rand ./*.good
 exit 0

@@ -44,7 +44,7 @@ while [ "$k" -lt "${#KERN_VALS[*]}" ]; do
   while [ "$b" -lt "${#BOOT_VALS[*]}" ]; do
     echo -n "pack kern_${k}_${b}.vblock ... "
     : $(( tests++ ))
-      "${FUTILITY}" vbutil_kernel \
+      if ! "${FUTILITY}" vbutil_kernel \
         --pack "${TMPDIR}/kern_${k}_${b}.vblock" \
         --keyblock "${KEYBLOCK}" \
         --signprivate "${SIGNPRIVATE}" \
@@ -53,7 +53,7 @@ while [ "$k" -lt "${#KERN_VALS[*]}" ]; do
         --config "${CONFIG}" \
         "${KERN_VALS[$k]}" \
         "${BOOT_VALS[$k]}" >/dev/null
-      if [ "$?" -ne 0 ]; then
+      then
         echo -e "${COL_RED}FAILED${COL_STOP}"
         : $(( errs++ ))
       else
@@ -65,12 +65,12 @@ while [ "$k" -lt "${#KERN_VALS[*]}" ]; do
 done
 
 # Now unpack it
-for v in ${TMPDIR}/kern_*.vblock; do
+for v in "${TMPDIR}"/kern_*.vblock; do
   : $(( tests++ ))
   vv=$(basename "$v")
   echo -n "verify $vv ... "
-  "${FUTILITY}" vbutil_kernel --verify "$v" >/dev/null
-  if [ "$?" -ne 0 ]; then
+  if ! "${FUTILITY}" vbutil_kernel --verify "$v" >/dev/null
+  then
     echo -e "${COL_RED}FAILED${COL_STOP}"
     : $(( errs++ ))
   else
@@ -78,9 +78,9 @@ for v in ${TMPDIR}/kern_*.vblock; do
   fi
   : $(( tests++ ))
   echo -n "verify $vv signed ... "
-  "${FUTILITY}" vbutil_kernel --verify "$v" \
+  if ! "${FUTILITY}" vbutil_kernel --verify "$v" \
     --signpubkey "${SIGNPUBLIC}" >/dev/null
-  if [ "$?" -ne 0 ]; then
+  then
     echo -e "${COL_RED}FAILED${COL_STOP}"
     : $(( errs++ ))
   else
@@ -100,7 +100,7 @@ USB_SIGNPRIVATE="${DEVKEYS}/recovery_kernel_data_key.vbprivk"
 USB_SIGNPUBKEY="${DEVKEYS}/recovery_key.vbpubk"
 echo -n "pack USB kernel ... "
 : $(( tests++ ))
-"${FUTILITY}" vbutil_kernel \
+if ! "${FUTILITY}" vbutil_kernel \
   --pack "${USB_KERN}" \
   --keyblock "${USB_KEYBLOCK}" \
   --signprivate "${USB_SIGNPRIVATE}" \
@@ -109,7 +109,7 @@ echo -n "pack USB kernel ... "
   --bootloader "${BIG}" \
   --vmlinuz "${BIG}" \
   --arch arm
-if [ "$?" -ne 0 ]; then
+then
   echo -e "${COL_RED}FAILED${COL_STOP}"
   : $(( errs++ ))
 else
@@ -119,10 +119,10 @@ fi
 # And verify it.
 echo -n "verify USB kernel ... "
 : $(( tests++ ))
-"${FUTILITY}" vbutil_kernel \
+if ! "${FUTILITY}" vbutil_kernel \
   --verify "${USB_KERN}" \
   --signpubkey "${USB_SIGNPUBKEY}" >/dev/null
-if [ "$?" -ne 0 ]; then
+then
   echo -e "${COL_RED}FAILED${COL_STOP}"
   : $(( errs++ ))
 else
@@ -139,13 +139,13 @@ SSD_SIGNPRIVATE="${DEVKEYS}/kernel_data_key.vbprivk"
 SSD_SIGNPUBKEY="${DEVKEYS}/kernel_subkey.vbpubk"
 echo -n "repack to SSD kernel ... "
 : $(( tests++ ))
-"${FUTILITY}" vbutil_kernel \
+if ! "${FUTILITY}" vbutil_kernel \
   --repack "${SSD_KERN}" \
   --vblockonly \
   --keyblock "${SSD_KEYBLOCK}" \
   --signprivate "${SSD_SIGNPRIVATE}" \
   --oldblob "${TMPDIR}/usb_kern.bin" >/dev/null
-if [ "$?" -ne 0 ]; then
+then
   echo -e "${COL_RED}FAILED${COL_STOP}"
   : $(( errs++ ))
 else
@@ -155,14 +155,14 @@ fi
 # To verify it, we have to replace the vblock from the original image.
 tempfile="${TMPDIR}/foo.bin"
 cat "${SSD_KERN}" > "$tempfile"
-dd if="${USB_KERN}" bs=65536 skip=1 >> $tempfile 2>/dev/null
+dd if="${USB_KERN}" bs=65536 skip=1 >> "$tempfile" 2>/dev/null
 
 echo -n "verify SSD kernel ... "
 : $(( tests++ ))
-"${FUTILITY}" vbutil_kernel \
+if ! "${FUTILITY}" vbutil_kernel \
   --verify "$tempfile" \
   --signpubkey "${SSD_SIGNPUBKEY}" >/dev/null
-if [ "$?" -ne 0 ]; then
+then
   echo -e "${COL_RED}FAILED${COL_STOP}"
   : $(( errs++ ))
 else
@@ -170,7 +170,7 @@ else
 fi
 
 # Finally make sure that the kernel command line stays good.
-orig=$(cat "${CONFIG}" | tr '\012' ' ')
+orig=$(tr '\012' ' ' < "${CONFIG}")
 packed=$("${FUTILITY}" dump_kernel_config "${USB_KERN}")
 echo -n "check USB kernel config ..."
 : $(( tests++ ))
@@ -184,7 +184,7 @@ fi
 repacked=$("${FUTILITY}" dump_kernel_config "${tempfile}")
 echo -n "check SSD kernel config ..."
 : $(( tests++ ))
-if [ "$orig" != "$packed" ]; then
+if [ "$orig" != "$repacked" ]; then
   echo -e "${COL_RED}FAILED${COL_STOP}"
   : $(( errs++ ))
 else

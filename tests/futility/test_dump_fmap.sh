@@ -51,5 +51,5 @@ cmp "${SCRIPT_DIR}/futility/data_fmap2_expect_hhH.txt" "$TMP"
 
 
 # cleanup
-rm -f ${TMP}* FMAP SI_DESC FOO
+rm -f "${TMP}"* FMAP SI_DESC FOO
 exit 0

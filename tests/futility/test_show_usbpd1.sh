@@ -24,23 +24,24 @@ for s in $SIGS; do
 
     for test in $TESTS; do
 
-        infile=${DATADIR}/${test}.unsigned
+        infile="${DATADIR}/${test}.unsigned"
 
         for h in $HASHES; do
 
-            pemfile=${TESTKEYS}/key_rsa${s}.pem
-            outfile=${TMP}.${test}_${s}_${h}.new
+            pemfile="${TESTKEYS}/key_rsa${s}.pem"
+            outfile="${TMP}.${test}_${s}_${h}.new"
 
             # sign it
-            ${FUTILITY} sign --type usbpd1 --pem ${pemfile} ${infile} ${outfile}
+            "${FUTILITY}" sign --type usbpd1 --pem "${pemfile}" "${infile}" \
+                          "${outfile}"
 
             # make sure it identifies correctly
-            ${FUTILITY} verify ${outfile}
+            "${FUTILITY}" verify "${outfile}"
 
         done
     done
 done
 
 # cleanup
-rm -rf ${TMP}*
+rm -rf "${TMP}"*
 exit 0

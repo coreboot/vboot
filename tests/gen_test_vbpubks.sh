@@ -11,16 +11,16 @@
 
 function generate_vpubks {
   algorithmcounter=0
-  for keylen in ${key_lengths[@]}
+  for keylen in "${key_lengths[@]}"
   do
-    for hashalgo in ${hash_algos[@]}
+    for hashalgo in "${hash_algos[@]}"
     do
-      ${FUTILITY} vbutil_key --pack \
-        --in ${TESTKEY_DIR}/key_rsa${keylen}.keyb \
-        --out ${TESTKEY_DIR}/key_rsa${keylen}.${hashalgo}.vbpubk \
+      "${FUTILITY}" vbutil_key --pack \
+        --in "${TESTKEY_DIR}/key_rsa${keylen}.keyb" \
+        --out "${TESTKEY_DIR}/key_rsa${keylen}.${hashalgo}.vbpubk" \
         --version 1 \
-        --algorithm ${algorithmcounter}
-      let algorithmcounter=algorithmcounter+1
+        --algorithm "${algorithmcounter}"
+      algorithmcounter=$((algorithmcounter + 1))
     done
   done
 }

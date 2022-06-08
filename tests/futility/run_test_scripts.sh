@@ -62,11 +62,11 @@ for i in $TESTS; do
   if [ ! "$rc" ]; then
     echo -e "${COL_GREEN}PASSED${COL_STOP}"
     : $(( pass++ ))
-    rm -f ${OUTDIR}/$j.{stdout,stderr,return}
+    rm -f "${OUTDIR}/$j".{stdout,stderr,return}
   else
     echo -e "${COL_RED}FAILED (${rc:-0}). Stdout is recorded in" \
       "${OUTDIR}/$j.stdout${COL_STOP}"
-    cat ${OUTDIR}/$j.stderr
+    cat "${OUTDIR}/$j.stderr"
   fi
 done
 

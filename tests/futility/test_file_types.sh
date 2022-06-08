@@ -16,13 +16,13 @@ cd "$OUTDIR"
 # Args are <expected_type>, <file_to_probe>
 test_case() {
     local result
-    result=$(${FUTILITY} show -t "${SRCDIR}/$2" | awk '{print $NF}')
+    result=$("${FUTILITY}" show -t "${SRCDIR}/$2" | awk '{print $NF}')
     [ "$1" = "$result" ]
 }
 
 # Arg is <file_to_probe>
 fail_case() {
-    if ${FUTILITY} show -t "$1" ; then false; else true; fi
+    if "${FUTILITY}" show -t "$1" ; then false; else true; fi
 }
 
 # Known types
@@ -54,22 +54,23 @@ fail_case "/dev/zero"
 # often won't work, but it certainly shouldn't core dump.
 
 # We'll ask futility to tell us what types it supports
-TYPES=$(${FUTILITY} show --type help | awk '/^ +/ {print $1}')
+TYPES=$("${FUTILITY}" show --type help | awk '/^ +/ {print $1}')
 
 # And we'll just reuse the same files above.
-FILES=$(awk '/^test_case / {print $NF}' $0 | tr -d '"')
+FILES=$(awk '/^test_case / {print $NF}' "$0" | tr -d '"')
 
 # futility should normally exit with either 0 or 1. Make sure that happens.
 # NOTE: /bin/bash returns values > 125 for special problems like signals.
 # I welcome patches to do this more portably.
 for type in $TYPES; do
     for file in $FILES; do
-        ${FUTILITY} show --type ${type} "${SRCDIR}/${file}" && rc=$? || rc=$?
+        "${FUTILITY}" show --type "${type}" "${SRCDIR}/${file}" && \
+          rc=$? || rc=$?
         [ "$rc" -le 2 ]
     done
 done
 
 
 # cleanup
-rm -rf ${TMP}*
+rm -rf "${TMP}"*
 exit 0

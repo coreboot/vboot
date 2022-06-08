@@ -12,7 +12,7 @@ set -e
 . "$(dirname "$0")/common.sh"
 
 # Use a different directory for fuzzing test cases.
-TESTKEY_DIR=${TESTKEY_DIR:-$(realpath  ${SCRIPT_DIR}/../tests/testkeys)}
+TESTKEY_DIR=${TESTKEY_DIR:-$(realpath  "${SCRIPT_DIR}"/../tests/testkeys)}
 TESTCASE_DIR=${BUILD_DIR}/fuzz_testcases
 TEST_IMAGE_FILE=${TESTCASE_DIR}/testimage
 TEST_IMAGE_SIZE=500000
@@ -26,42 +26,43 @@ function generate_fuzzing_images {
   echo "Generating keyblocks..."
   # Firmware keyblock - RSA8192/SHA512 root key, RSA4096/SHA512 firmware
   # signing key.
-  ${FUTILITY} vbutil_keyblock \
-    --pack ${TESTCASE_DIR}/firmware.keyblock \
-    --datapubkey ${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk \
-    --signprivate ${TESTKEY_DIR}/key_rsa8192.sha1.vbprivk
+  "${FUTILITY}" vbutil_keyblock \
+    --pack "${TESTCASE_DIR}/firmware.keyblock" \
+    --datapubkey "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk" \
+    --signprivate "${TESTKEY_DIR}/key_rsa8192.sha1.vbprivk"
 
   # Kernel keyblock - RSA4096/SHA512 kernel signing subkey, RSA4096/SHA512
   # kernel signing key.
-  ${FUTILITY} vbutil_keyblock \
-    --pack ${TESTCASE_DIR}/kernel.keyblock \
-    --datapubkey ${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk \
-    --signprivate ${TESTKEY_DIR}/key_rsa4096.sha1.vbprivk \
+  "${FUTILITY}" vbutil_keyblock \
+    --pack "${TESTCASE_DIR}/kernel.keyblock" \
+    --datapubkey "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk" \
+    --signprivate "${TESTKEY_DIR}/key_rsa4096.sha1.vbprivk" \
     --flags 15
 
   echo "Generating signed firmware test image..."
-  ${FUTILITY} vbutil_firmware \
-    --vblock ${TESTCASE_DIR}/firmware.vblock \
-    --keyblock ${TESTCASE_DIR}/firmware.keyblock\
-    --signprivate ${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk \
+  "${FUTILITY}" vbutil_firmware \
+    --vblock "${TESTCASE_DIR}/firmware.vblock" \
+    --keyblock "${TESTCASE_DIR}/firmware.keyblock" \
+    --signprivate "${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk" \
     --version 1 \
-    --fv  $1 \
-    --kernelkey ${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk
+    --fv  "$1" \
+    --kernelkey "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk"
   # TODO(gauravsh): ALso test with (optional) flags.
-  cp ${TESTKEY_DIR}/key_rsa8192.sha512.vbpubk ${TESTCASE_DIR}/root_key.vbpubk
+  cp "${TESTKEY_DIR}/key_rsa8192.sha512.vbpubk" \
+    "${TESTCASE_DIR}/root_key.vbpubk"
 
   echo "Generating signed kernel test image..."
-  ${FUTILITY} vbutil_kernel \
-    --pack ${TESTCASE_DIR}/kernel.vblock.image \
-    --keyblock ${TESTCASE_DIR}/kernel.keyblock \
-    --signprivate ${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk \
+  "${FUTILITY}" vbutil_kernel \
+    --pack "${TESTCASE_DIR}/kernel.vblock.image" \
+    --keyblock "${TESTCASE_DIR}/kernel.keyblock" \
+    --signprivate "${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk" \
     --version 1 \
-    --vmlinuz ${TEST_IMAGE_FILE} \
-    --bootloader ${TEST_BOOTLOADER_FILE} \
-    --config ${TEST_CONFIG_FILE}
+    --vmlinuz "${TEST_IMAGE_FILE}" \
+    --bootloader "${TEST_BOOTLOADER_FILE}" \
+    --config "${TEST_CONFIG_FILE}"
   # TODO(gauravsh): Also test with (optional) padding.
-  cp ${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk \
-    ${TESTCASE_DIR}/firmware_key.vbpubk
+  cp "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk" \
+    "${TESTCASE_DIR}/firmware_key.vbpubk"
 }
 
 function pre_work {
@@ -69,18 +70,17 @@ function pre_work {
   # NOTE: The kernel and config file can't really be random, but the bootloader
   # can. That's probably close enough.
   echo "Generating test image file..."
-  dd if=/dev/urandom of=${TEST_IMAGE_FILE} bs=${TEST_IMAGE_SIZE} count=1
+  dd if=/dev/urandom of="${TEST_IMAGE_FILE}" bs="${TEST_IMAGE_SIZE}" count=1
   echo "Generating test bootloader file..."
   # TODO(gauravsh): Use a valid bootloader here?
-  dd if=/dev/urandom of=${TEST_BOOTLOADER_FILE} bs=${TEST_BOOTLOADER_SIZE} \
+  dd if=/dev/urandom of="${TEST_BOOTLOADER_FILE}" bs="${TEST_BOOTLOADER_SIZE}" \
     count=1
   echo "Generating test config file..."
   # TODO(gauravsh): Use a valid config file here?
-  dd if=/dev/urandom of=${TEST_CONFIG_FILE} bs=${TEST_CONFIG_SIZE} count=1
+  dd if=/dev/urandom of="${TEST_CONFIG_FILE}" bs="${TEST_CONFIG_SIZE}" count=1
 }
 
-mkdir -p ${TESTCASE_DIR}
+mkdir -p "${TESTCASE_DIR}"
 pre_work
 check_test_keys
-generate_fuzzing_images ${TEST_IMAGE_FILE}
-
+generate_fuzzing_images "${TEST_IMAGE_FILE}"

@@ -5,7 +5,7 @@
 # found in the LICENSE file.
 
 # Determine script directory.
-SCRIPT_DIR="$(dirname $(realpath "${BASH_SOURCE[0]}"))"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 ROOT_DIR="$(dirname "${SCRIPT_DIR}")"
 SRCDIR="${SRCDIR:-${ROOT_DIR}}"
 BUILD="${BUILD:-${ROOT_DIR}/build}"
@@ -19,8 +19,8 @@ TESTKEY_DIR="${SCRIPT_DIR}/testkeys"
 TESTCASE_DIR="${SCRIPT_DIR}/testcases"
 TESTKEY_SCRATCH_DIR="${TEST_DIR}/testkeys"
 
-if [ ! -d ${TESTKEY_SCRATCH_DIR} ]; then
-  mkdir -p ${TESTKEY_SCRATCH_DIR}
+if [ ! -d "${TESTKEY_SCRATCH_DIR}" ]; then
+  mkdir -p "${TESTKEY_SCRATCH_DIR}"
 fi
 
 # Color output encodings.
@@ -53,7 +53,8 @@ function error {
     *) lev=0
       ;;
   esac
-  local x=$(caller $lev)
+  local x
+  x=$(caller $lev)
   local cline=${x%% *}
   local cfunc=${x#* }
   cfunc=${cfunc##*/}
@@ -65,7 +66,6 @@ function error {
 }
 
 function check_test_keys {
-  [ -d ${TESTKEY_DIR} ] || \
+  [ -d "${TESTKEY_DIR}" ] || \
     error 1 "You must run gen_test_keys.sh to generate test keys first."
 }
-

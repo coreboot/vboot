@@ -17,17 +17,17 @@ TEST_FILE_SIZE=1000000
 function generate_test_signatures {
   echo "Generating test signatures..."
   algorithmcounter=0
-  for keylen in ${key_lengths[@]}
+  for keylen in "${key_lengths[@]}"
   do
-    for hashalgo in ${hash_algos[@]}
+    for hashalgo in "${hash_algos[@]}"
     do
-      openssl dgst -${hashalgo} -binary ${TEST_FILE} > \
-        ${TEST_FILE}.${hashalgo}.digest
-      ${BIN_DIR}/signature_digest_utility $algorithmcounter  \
-        ${TEST_FILE} | openssl rsautl \
-        -sign -pkcs -inkey ${TESTKEY_DIR}/key_rsa${keylen}.pem \
-        > ${TEST_FILE}.rsa${keylen}_${hashalgo}.sig
-      let algorithmcounter=algorithmcounter+1
+      openssl dgst "-${hashalgo}" -binary "${TEST_FILE}" > \
+        "${TEST_FILE}.${hashalgo}.digest"
+      "${BIN_DIR}/signature_digest_utility" "$algorithmcounter"  \
+        "${TEST_FILE}" | openssl rsautl \
+        -sign -pkcs -inkey "${TESTKEY_DIR}/key_rsa${keylen}.pem" \
+        > "${TEST_FILE}.rsa${keylen}_${hashalgo}.sig"
+      algorithmcounter=$((algorithmcounter + 1))
     done
   done
 }
@@ -39,10 +39,10 @@ function generate_test_file {
     echo "(skipping, file already exists)"
     return
   fi
-  dd if=/dev/urandom of=${TEST_FILE} bs=${TEST_FILE_SIZE} count=1
+  dd if=/dev/urandom of="${TEST_FILE}" bs="${TEST_FILE_SIZE}" count=1
 }
 
-mkdir -p ${TESTCASE_DIR}
+mkdir -p "${TESTCASE_DIR}"
 check_test_keys
 generate_test_file
 generate_test_signatures

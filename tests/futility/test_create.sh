@@ -15,7 +15,7 @@ TESTKEYS=${SRCDIR}/tests/testkeys
 # Demonstrate that we can recreate the same vb1 keys without the .keyb files
 for sig in rsa1024 rsa2048 rsa4096 rsa8192; do
   for hash in sha1 sha256 sha512; do
-    ${FUTILITY} --vb1 create --hash_alg "${hash}" \
+    "${FUTILITY}" --vb1 create --hash_alg "${hash}" \
       "${TESTKEYS}/key_${sig}.pem" "${TMP}_key_${sig}.${hash}"
     cmp "${TESTKEYS}/key_${sig}.${hash}.vbprivk" \
       "${TMP}_key_${sig}.${hash}.vbprivk"
@@ -29,7 +29,7 @@ done
 # prove anything until we've used them to sign some stuff, though.
 for sig in rsa1024 rsa2048 rsa4096 rsa8192; do
   for hash in sha1 sha256 sha512; do
-    ${FUTILITY} --vb21 create --hash_alg "${hash}" \
+    "${FUTILITY}" --vb21 create --hash_alg "${hash}" \
       "${TESTKEYS}/key_${sig}.pem" "${TMP}_key_${sig}.${hash}"
   done
 done
@@ -37,12 +37,12 @@ done
 # Demonstrate that the sha1sums are the same for all the keys created from the
 # same .pem files, both public and private, vb1 and vb21.
 for sig in rsa1024 rsa2048 rsa4096 rsa8192; do
-  pem_sum=$(${FUTILITY} show "${TESTKEYS}/key_${sig}.pem" |
+  pem_sum=$("${FUTILITY}" show "${TESTKEYS}/key_${sig}.pem" |
     awk '/sha1sum/ {print $3}')
   # expect only one
-  [ $(echo "$pem_sum" | wc -w) = 1 ]
-  num_keys=$(echo ${TMP}_key_${sig}.* | wc -w)
-  key_sums=$(${FUTILITY} show ${TMP}_key_${sig}.* |
+  [ "$(echo "$pem_sum" | wc -w)" = 1 ]
+  num_keys=$(echo "${TMP}_key_${sig}".* | wc -w)
+  key_sums=$("${FUTILITY}" show "${TMP}_key_${sig}".* |
     awk '/sha1sum:|ID:/ {print $NF}')
   num_sums=$(echo "$key_sums" | wc -w)
   # expect one sha1sum (or ID) line per file
@@ -57,7 +57,7 @@ done
 # the private key.
 for sig in rsa1024 rsa2048 rsa4096 rsa8192; do
   for hash in sha1 sha256 sha512; do
-    ${FUTILITY} --vb21 create --hash_alg "${hash}" \
+    "${FUTILITY}" --vb21 create --hash_alg "${hash}" \
       "${TESTKEYS}/key_${sig}.pub.pem" "${TMP}_key_${sig}.pubonly.${hash}"
     cmp "${TMP}_key_${sig}.pubonly.${hash}.vbpubk2" \
       "${TMP}_key_${sig}.${hash}.vbpubk2"
@@ -65,5 +65,5 @@ for sig in rsa1024 rsa2048 rsa4096 rsa8192; do
 done
 
 # cleanup
-rm -rf ${TMP}*
+rm -rf "${TMP}"*
 exit 0

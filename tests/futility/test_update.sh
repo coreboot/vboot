@@ -40,12 +40,12 @@ cd "$OUTDIR"
 set -o pipefail
 
 # In all the test scenario, we want to test "updating from PEPPY to LINK".
-TO_IMAGE=${TMP}.src.link
-FROM_IMAGE=${TMP}.src.peppy
+TO_IMAGE="${TMP}.src.link"
+FROM_IMAGE="${TMP}.src.peppy"
 TO_HWID="X86 LINK TEST 6638"
 FROM_HWID="X86 PEPPY TEST 4211"
-cp -f ${LINK_BIOS} ${TO_IMAGE}
-cp -f ${PEPPY_BIOS} ${FROM_IMAGE}
+cp -f "${LINK_BIOS}" "${TO_IMAGE}"
+cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}"
 "${FUTILITY}" load_fmap "${FROM_IMAGE}" \
 	RO_VPD:"${RO_VPD_BLOB}" RW_VPD:"${RO_VPD_BLOB}"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}".unpatched
@@ -57,29 +57,34 @@ patch_file() {
 	local data="$4"
 
 	# NAME OFFSET SIZE
-	local fmap_info="$(${FUTILITY} dump_fmap -p ${file} ${section})"
-	local base="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
-	local offset=$((base + section_offset))
+	local fmap_info
+	local base
+	local offset
+
+	fmap_info="$("${FUTILITY}" dump_fmap -p "${file}" "${section}")"
+	base="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
+	offset=$((base + section_offset))
 	echo "offset: ${offset}"
-	printf "${data}" | dd of="${file}" bs=1 seek="${offset}" conv=notrunc
+	printf "%b" "${data}" | dd of="${file}" bs=1 seek="${offset}" \
+		conv=notrunc
 }
 
 # PEPPY and LINK have different platform element ("Google_Link" and
 # "Google_Peppy") in firmware ID so we want to hack them by changing
 # "Google_" to "Google.".
-patch_file ${TO_IMAGE} RW_FWID_A 0 Google.
-patch_file ${TO_IMAGE} RW_FWID_B 0 Google.
-patch_file ${TO_IMAGE} RO_FRID 0 Google.
-patch_file ${FROM_IMAGE} RW_FWID_A 0 Google.
-patch_file ${FROM_IMAGE} RW_FWID_B 0 Google.
-patch_file ${FROM_IMAGE} RO_FRID 0 Google.
+patch_file "${TO_IMAGE}" RW_FWID_A 0 Google.
+patch_file "${TO_IMAGE}" RW_FWID_B 0 Google.
+patch_file "${TO_IMAGE}" RO_FRID 0 Google.
+patch_file "${FROM_IMAGE}" RW_FWID_A 0 Google.
+patch_file "${FROM_IMAGE}" RW_FWID_B 0 Google.
+patch_file "${FROM_IMAGE}" RO_FRID 0 Google.
 
 unpack_image() {
 	local folder="${TMP}.$1"
 	local image="$2"
 	mkdir -p "${folder}"
-	(cd "${folder}" && ${FUTILITY} dump_fmap -x "../${image}")
-	${FUTILITY} gbb -g --rootkey="${folder}/rootkey" "${image}"
+	(cd "${folder}" && "${FUTILITY}" dump_fmap -x "../${image}")
+	"${FUTILITY}" gbb -g --rootkey="${folder}/rootkey" "${image}"
 }
 
 # Unpack images so we can prepare expected results by individual sections.
@@ -114,19 +119,19 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 "${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full"
 "${FUTILITY}" load_fmap "${TMP}.expected.full" \
-	RW_VPD:${TMP}.from/RW_VPD \
-	RO_VPD:${TMP}.from/RO_VPD
+	"RW_VPD:${TMP}.from/RW_VPD" \
+	"RO_VPD:${TMP}.from/RO_VPD"
 "${FUTILITY}" load_fmap "${TMP}.expected.rw" \
-	RW_SECTION_A:${TMP}.to/RW_SECTION_A \
-	RW_SECTION_B:${TMP}.to/RW_SECTION_B \
-	RW_SHARED:${TMP}.to/RW_SHARED \
-	RW_LEGACY:${TMP}.to/RW_LEGACY
+	"RW_SECTION_A:${TMP}.to/RW_SECTION_A" \
+	"RW_SECTION_B:${TMP}.to/RW_SECTION_B" \
+	"RW_SHARED:${TMP}.to/RW_SHARED" \
+	"RW_LEGACY:${TMP}.to/RW_LEGACY"
 "${FUTILITY}" load_fmap "${TMP}.expected.a" \
-	RW_SECTION_A:${TMP}.to/RW_SECTION_A
+	"RW_SECTION_A:${TMP}.to/RW_SECTION_A"
 "${FUTILITY}" load_fmap "${TMP}.expected.b" \
-	RW_SECTION_B:${TMP}.to/RW_SECTION_B
+	"RW_SECTION_B:${TMP}.to/RW_SECTION_B"
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
-	RW_LEGACY:${TMP}.to/RW_LEGACY
+	"RW_LEGACY:${TMP}.to/RW_LEGACY"
 cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb12"
 patch_file "${TMP}.expected.full.gbb12" GBB 6 "\x02"
 "${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full.gbb12"
@@ -149,7 +154,7 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.me_preserved"
 # FMAP_AREA_PRESERVE (\010=0x08).
 TO_IMAGE_WIPE_RW_VPD="${TO_IMAGE}.wipe_rw_vpd"
 cp -f "${TO_IMAGE}" "${TO_IMAGE_WIPE_RW_VPD}"
-patch_file ${TO_IMAGE_WIPE_RW_VPD} FMAP 0x3fc "$(printf '\010')"
+patch_file "${TO_IMAGE_WIPE_RW_VPD}" FMAP 0x3fc "$(printf '\010')"
 cp -f "${TMP}.expected.full" "${TMP}.expected.full.empty_rw_vpd"
 "${FUTILITY}" load_fmap "${TMP}.expected.full.empty_rw_vpd" \
 	RW_VPD:"${TMP}.to/RW_VPD"
@@ -374,17 +379,17 @@ test_update "Full update (--quirks preserve_me)" \
 # Test archive and manifest. CL_TAG is for custom_label_tag.
 A="${TMP}.archive"
 mkdir -p "${A}/bin"
-echo 'echo "${CL_TAG}"' >"${A}/bin/vpd"
+echo "echo \"\${CL_TAG}\"" >"${A}/bin/vpd"
 chmod +x "${A}/bin/vpd"
 
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
 echo "TEST: Manifest (--manifest, bios.bin)"
-${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
+"${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
 cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_bios.manifest.json"
 
 mv -f "${A}/bios.bin" "${A}/image.bin"
 echo "TEST: Manifest (--manifest, image.bin)"
-${FUTILITY} update -a "${A}" --manifest >"${TMP}.json.out"
+"${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
 cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_image.manifest.json"
 
 
@@ -395,7 +400,8 @@ test_update "Full update (--archive, single package)" \
 
 echo "TEST: Output (--mode=output)"
 mkdir -p "${TMP}.output"
-${FUTILITY} update -i "${LINK_BIOS}" --mode=output --output_dir="${TMP}.output"
+"${FUTILITY}" update -i "${LINK_BIOS}" --mode=output \
+	--output_dir="${TMP}.output"
 cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
@@ -403,9 +409,9 @@ cp -f "${LINK_BIOS}" "${A}/image.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.CL"
 cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.CL"
 cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.CL"
-${FUTILITY} gbb -s --rootkey="${TMP}.from/rootkey" "${A}/image.bin"
-${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
-${FUTILITY} load_fmap "${A}/image.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
+"${FUTILITY}" gbb -s --rootkey="${TMP}.from/rootkey" "${A}/image.bin"
+"${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
+"${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
 
 test_update "Full update (--archive, custom label, no VPD)" \
 	"${A}/image.bin" "!Need VPD set for custom" \
@@ -433,7 +439,7 @@ echo "TEST: Output (-a, --mode=output)"
 mkdir -p "${TMP}.outa"
 cp -f "${A}/image.bin" "${TMP}.emu"
 CL_TAG="CL" PATH="${A}/bin:${PATH}" \
-	${FUTILITY} update -a "${A}" --mode=output --emu="${TMP}.emu" \
+	"${FUTILITY}" update -a "${A}" --mode=output --emu="${TMP}.emu" \
 	--output_dir="${TMP}.outa"
 cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
 
@@ -448,8 +454,8 @@ cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.customtip-cl"
 cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.customtip-cl"
 cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
 cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
-patch_file ${FROM_IMAGE}.ap FW_MAIN_A 0 "corrupted"
-patch_file ${FROM_IMAGE}.al FW_MAIN_A 0 "corrupted"
+patch_file "${FROM_IMAGE}.ap" FW_MAIN_A 0 "corrupted"
+patch_file "${FROM_IMAGE}.al" FW_MAIN_A 0 "corrupted"
 test_update "Full update (--archive, model=link)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=link
@@ -508,13 +514,16 @@ if type cbfstool >/dev/null 2>&1; then
 
 	echo "min_platform_version=3" >"${TMP}.quirk"
 	cp -f "${TO_IMAGE}" "${TO_IMAGE}.quirk"
-	${FUTILITY} dump_fmap -x "${TO_IMAGE}" "BOOT_STUB:${TMP}.cbfs"
+	"${FUTILITY}" dump_fmap -x "${TO_IMAGE}" "BOOT_STUB:${TMP}.cbfs"
 	# Create a fake CBFS using FW_MAIN_A size.
 	truncate -s $((0x000dffc0)) "${TMP}.cbfs"
-	${FUTILITY} load_fmap "${TO_IMAGE}.quirk" "FW_MAIN_A:${TMP}.cbfs"
+	"${FUTILITY}" load_fmap "${TO_IMAGE}.quirk" "FW_MAIN_A:${TMP}.cbfs"
 	cbfstool "${TO_IMAGE}.quirk" add -r FW_MAIN_A -n updater_quirks \
 		-f "${TMP}.quirk" -t raw
 	test_update "Full update (failure by CBFS quirks)" \
 		"${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
 		-i "${TO_IMAGE}.quirk" --wp=0 --sys_props 0,0x10001,1,2
 fi
+
+rm -rf "${TMP}"*
+exit 0

@@ -24,11 +24,11 @@ sudo mount --bind /dev "${SYSROOT}/dev"
 
 # Don't exit on error, so we can capture the error code
 set +e
-sudo chroot ${SYSROOT} ${QEMU_RUN} \
+sudo chroot "${SYSROOT}" "${QEMU_RUN}" \
     -E LD_LIBRARY_PATH=/lib64:/lib:/usr/lib64:/usr/lib \
-    -E HOME=${HOME} \
-    -E BUILD=${BUILD_RUN} \
-    -- $*
+    -E HOME="${HOME}" \
+    -E BUILD="${BUILD_RUN}" \
+    -- "$@"
 exit_code=$?
 set -e
 
