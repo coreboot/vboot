@@ -197,3 +197,22 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 
 	return VB2_SUCCESS;
 }
+
+vb2_error_t vb2api_kernel_finalize(struct vb2_context *ctx)
+{
+	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
+
+	/*
+	 * Disallow booting to kernel when NO_BOOT flag is set, except when
+	 * GBB flag disables software sync.
+	 */
+	if (!(gbb_flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
+	    && (ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED)
+	    && (ctx->flags & VB2_CONTEXT_NO_BOOT)) {
+		VB2_DEBUG("Blocking escape from NO_BOOT mode.\n");
+		vb2api_fail(ctx, VB2_RECOVERY_ESCAPE_NO_BOOT, 0);
+		return VB2_ERROR_ESCAPE_NO_BOOT;
+	}
+
+	return VB2_SUCCESS;
+}
