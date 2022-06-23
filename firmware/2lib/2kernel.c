@@ -6,7 +6,6 @@
  */
 
 #include "2common.h"
-#include "2kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
@@ -38,7 +37,7 @@ static int vb2_reset_nv_requests(struct vb2_context *ctx)
 	return need_reboot;
 }
 
-vb2_error_t vb2_normal_boot(struct vb2_context *ctx)
+vb2_error_t vb2api_normal_boot(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint32_t max_rollforward = vb2_nv_get(ctx,
@@ -194,6 +193,87 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 
 	if (vb2api_is_developer_signed(ctx))
 		VB2_DEBUG("This is developer-signed firmware.\n");
+
+	return VB2_SUCCESS;
+}
+
+static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
+{
+	/*
+	 * Check if we need to cut-off battery. This should be done after EC
+	 * FW and auxfw are updated, and before the kernel is started.  This
+	 * is to make sure all firmware is up-to-date before shipping (which
+	 * is the typical use-case for cutoff).
+	 */
+	if (vb2_nv_get(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST)) {
+		VB2_DEBUG("Request to cut-off battery\n");
+		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);
+
+		/* May lose power immediately, so commit our update now. */
+		VB2_TRY(vb2ex_commit_data(ctx));
+
+		vb2ex_ec_battery_cutoff();
+		return VB2_REQUEST_SHUTDOWN;
+	}
+
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
+
+	VB2_DEBUG("GBB flags are %#x\n", gbb_flags);
+
+	/*
+	 * Do EC and auxfw software sync unless we're in recovery mode. This
+	 * has UI but it's just a single non-interactive WAIT screen.
+	 */
+	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
+		VB2_TRY(vb2api_ec_sync(ctx));
+		VB2_TRY(vb2api_auxfw_sync(ctx));
+		VB2_TRY(handle_battery_cutoff(ctx));
+	}
+
+	/*
+	 * If in the broken screen, save the recovery reason as subcode.
+	 * Otherwise, clear any leftover recovery requests or subcodes.
+	 */
+	vb2_clear_recovery(ctx);
+
+	/* Select boot path */
+	switch (ctx->boot_mode) {
+	case VB2_BOOT_MODE_MANUAL_RECOVERY:
+	case VB2_BOOT_MODE_BROKEN_SCREEN:
+		/* If we're in recovery mode just to do memory retraining, all
+		   we need to do is reboot. */
+		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
+			VB2_DEBUG("Reboot after retraining in recovery\n");
+			return VB2_REQUEST_REBOOT;
+		}
+
+		/*
+		 * Need to commit nvdata changes immediately, since we will be
+		 * entering either manual recovery UI or BROKEN screen shortly.
+		 */
+		vb2ex_commit_data(ctx);
+		break;
+	case VB2_BOOT_MODE_DIAGNOSTICS:
+		/*
+		 * Need to clear the request flag and commit nvdata changes
+		 * immediately to avoid booting back into diagnostic tool when a
+		 * forced system reset occurs.
+		 */
+		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
+		vb2ex_commit_data(ctx);
+		break;
+	case VB2_BOOT_MODE_DEVELOPER:
+	case VB2_BOOT_MODE_NORMAL:
+		break;
+	default:
+		return VB2_ERROR_ESCAPE_NO_BOOT;
+	}
 
 	return VB2_SUCCESS;
 }

@@ -512,7 +512,8 @@ enum vb2_pcr_digest {
  *	use to verify kernel data - the recovery key from the GBB, or the
  *	kernel subkey from the firmware verification stage.
  *
- *	Kernel phase 2 is finding loading, and verifying the kernel partition.
+ *	Call vb2api_kernel_phase2().  Do EC and auxfw software sync, clear
+ *	recovery and commit nvdata if needed.
  *
  *	Find a boot device (you're on your own here).
  *
@@ -816,6 +817,24 @@ vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
  * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx);
+
+/**
+ * Do kernel verification.
+ *
+ * Must be called after vb2api_kernel_phase1.
+ *
+ * @param ctx		Vboot context
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx);
+
+/**
+ * Handle a normal boot.
+ *
+ * @param ctx		Vboot context.
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2api_normal_boot(struct vb2_context *ctx);
 
 /**
  * Finalize for kernel verification stage.

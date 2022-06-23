@@ -7,7 +7,6 @@
 
 #include "2api.h"
 #include "2common.h"
-#include "2kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2rsa.h"
@@ -28,28 +27,6 @@ struct VbSelectAndLoadKernelParams **VbApiKernelGetParamsPtr(void)
 	return &kparams_ptr;
 }
 #endif
-
-static vb2_error_t handle_battery_cutoff(struct vb2_context *ctx)
-{
-	/*
-	 * Check if we need to cut-off battery. This should be done after EC
-	 * FW and auxfw are updated, and before the kernel is started.  This
-	 * is to make sure all firmware is up-to-date before shipping (which
-	 * is the typical use-case for cutoff).
-	 */
-	if (vb2_nv_get(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST)) {
-		VB2_DEBUG("Request to cut-off battery\n");
-		vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 0);
-
-		/* May lose power immediately, so commit our update now. */
-		VB2_TRY(vb2ex_commit_data(ctx));
-
-		vb2ex_ec_battery_cutoff();
-		return VB2_REQUEST_SHUTDOWN;
-	}
-
-	return VB2_SUCCESS;
-}
 
 static int is_valid_disk(VbDiskInfo *info, uint32_t disk_flags)
 {
@@ -159,54 +136,19 @@ vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx,
 vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 				  VbSelectAndLoadKernelParams *kparams)
 {
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
-
 	/* TODO: Send this argument through subsequent function calls, rather
 	   than relying on a global to pass it to VbTryLoadKernel. */
 	kparams_ptr = kparams;
 
-	/* Init nvstorage space. TODO(kitching): Remove once we add assertions
-	   to vb2_nv_get and vb2_nv_set. */
-	vb2_nv_init(ctx);
-
 	VB2_TRY(vb2api_kernel_phase1(ctx));
+	VB2_TRY(vb2api_kernel_phase2(ctx));
 
-	VB2_DEBUG("GBB flags are %#x\n", gbb_flags);
-
-	/*
-	 * Do EC and auxfw software sync unless we're in recovery mode. This
-	 * has UI but it's just a single non-interactive WAIT screen.
-	 */
-	if (!(ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
-		VB2_TRY(vb2api_ec_sync(ctx));
-		VB2_TRY(vb2api_auxfw_sync(ctx));
-		VB2_TRY(handle_battery_cutoff(ctx));
-	}
-
-	/*
-	 * If in the broken screen, save the recovery reason as subcode.
-	 * Otherwise, clear any leftover recovery requests or subcodes.
-	 */
-	vb2_clear_recovery(ctx);
-
-	/* Select boot path */
 	switch (ctx->boot_mode) {
 	case VB2_BOOT_MODE_MANUAL_RECOVERY:
+		/* Manual recovery boot.  This has UI. */
+		VB2_TRY(vb2ex_manual_recovery_ui(ctx));
+		break;
 	case VB2_BOOT_MODE_BROKEN_SCREEN:
-		/* If we're in recovery mode just to do memory retraining, all
-		   we need to do is reboot. */
-		if (sd->recovery_reason == VB2_RECOVERY_TRAIN_AND_REBOOT) {
-			VB2_DEBUG("Reboot after retraining in recovery\n");
-			return VB2_REQUEST_REBOOT;
-		}
-
-		/*
-		 * Need to commit nvdata changes immediately, since we will be
-		 * entering either manual recovery UI or BROKEN screen shortly.
-		 */
-		vb2ex_commit_data(ctx);
-
 		/*
 		 * In EFS2, recovery mode can be entered even when battery is
 		 * drained or damaged. EC-RO sets NO_BOOT flag in such case and
@@ -217,21 +159,10 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		if (ctx->flags & VB2_CONTEXT_NO_BOOT)
 			VB2_DEBUG("NO_BOOT in RECOVERY mode\n");
 
-		/* Recovery boot.  This has UI. */
-		if (ctx->boot_mode == VB2_BOOT_MODE_MANUAL_RECOVERY)
-			VB2_TRY(vb2ex_manual_recovery_ui(ctx));
-		else
-			VB2_TRY(vb2ex_broken_screen_ui(ctx));
+		/* Broken screen.  This has UI. */
+		VB2_TRY(vb2ex_broken_screen_ui(ctx));
 		break;
 	case VB2_BOOT_MODE_DIAGNOSTICS:
-		/*
-		 * Need to clear the request flag and commit nvdata changes
-		 * immediately to avoid booting back into diagnostic tool when a
-		 * forced system reset occurs.
-		 */
-		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
-		vb2ex_commit_data(ctx);
-
 		/* Diagnostic boot.  This has UI. */
 		VB2_TRY(vb2ex_diagnostic_ui(ctx));
 		/*
@@ -245,7 +176,7 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
 		break;
 	case VB2_BOOT_MODE_NORMAL:
 		/* Normal boot */
-		VB2_TRY(vb2_normal_boot(ctx));
+		VB2_TRY(vb2api_normal_boot(ctx));
 		break;
 	default:
 		return VB2_ERROR_ESCAPE_NO_BOOT;
