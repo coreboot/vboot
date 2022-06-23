@@ -250,6 +250,48 @@ snapshot_file_properties() {
   sudo find "${dir}" -exec stat -c '%n:%u:%g:%a' {} + | sort
 }
 
+# Snapshot capabilities in a directory recursively.
+snapshot_capabilities() {
+  local dir=$1
+  sudo find "${dir}" -exec getcap {} + | sort
+}
+
+# Apply capabilities to files in |dir| as specified by |capabilities_list|.
+# See b/179170462.
+apply_capabilities() {
+  local dir=$1
+  local capabilities_list=$2
+  local entry
+
+  while read -ra entry; do
+    if [[ ${#entry[@]} -lt 2 ]]; then
+      error "Unexpected output in capabilities_list of '${entry[*]}'"
+      return 1
+    fi
+    # Output of getcap is either |{file} {capabilities}| or
+    # |{file} = {capabilities}|, so take the first and last element of each
+    # line.
+    info "Setting capabilities ${entry[${#entry[@]}-1]} for ${entry[0]}"
+    sudo setcap "${entry[${#entry[@]}-1]}" "${entry[0]}"
+  done < "${capabilities_list}"
+
+  return 0
+}
+
+# Integrity check that capabilities are unchanged.
+capabilities_integrity_check() {
+  local system_mnt=$1
+  local working_dir=$2
+  snapshot_capabilities "${system_mnt}" > "${working_dir}/capabilities.new"
+  local d
+  if ! d=$(diff "${working_dir}"/capabilities.{orig,new}); then
+    error "Unexpected change of capabilities, diff \n${d}"
+    return 1
+  fi
+
+  return 0
+}
+
 # Integrity check that image content is unchanged.
 image_content_integrity_check() {
   local system_mnt=$1
@@ -336,8 +378,15 @@ sign_android_internal() {
 
   local working_dir=$(make_temp_dir)
   local system_mnt="${working_dir}/mnt"
+  local system_capabilities_orig="${working_dir}/capabilities.orig"
 
-  info "Unpacking squashfs system image to ${system_mnt}"
+  # Extract with xattrs so we can read and audit capabilities. See b/179170462.
+  info "Unpacking squashfs system image with xattrs to ${system_mnt}"
+  sudo "${unsquashfs}" -x -f -no-progress -d "${system_mnt}" "${system_img}"
+  snapshot_capabilities "${system_mnt}" > "${system_capabilities_orig}"
+  sudo rm -rf "${system_mnt}"
+
+  info "Unpacking squashfs system image without xattrs to ${system_mnt}"
   list_image_files "${unsquashfs}" "${system_img}" > \
       "${working_dir}/image_file_list.orig"
   sudo "${unsquashfs}" -no-xattrs -f -no-progress -d "${system_mnt}" "${system_img}"
@@ -405,6 +454,14 @@ sign_android_internal() {
     fi
   else
     info "Packages cache ${packages_cache} does not exist. Skip regeneration."
+  fi
+
+  # Apply original capabilities to system image and verify correctness.
+  if ! apply_capabilities "${system_mnt}" "${system_capabilities_orig}"; then
+    return 1
+  fi
+  if ! capabilities_integrity_check "${system_mnt}" "${working_dir}"; then
+    return 1
   fi
 
   info "Repacking squashfs image with compression flags '${compression_flags}'"
