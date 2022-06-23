@@ -11,3 +11,4 @@ scripts/newbitmaps/strings/*.png
 scripts/newbitmaps/strings/localized_text/*/*.png
 target
 .idea
+*.swp
