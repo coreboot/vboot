@@ -112,7 +112,6 @@ static void print_help(int argc, char *argv[])
 		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"-a, --archive=PATH  \tRead resources from archive\n"
 		"    --manifest      \tPrint out a JSON manifest and exit\n"
-		"    --repack=DIR    \tUpdates archive from DIR\n"
 		"    --unpack=DIR    \tExtracts archive to DIR\n"
 		"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"
 		"    --fast          \tReduce read cycles and do not verify\n"
@@ -204,6 +203,8 @@ static int do_update(int argc, char *argv[])
 			break;
 		case OPT_REPACK:
 			args.repack = optarg;
+			ERROR("Sorry, --repack is only for the script.\n");
+			errorcnt ++;
 			break;
 		case OPT_UNPACK:
 			args.unpack = optarg;
