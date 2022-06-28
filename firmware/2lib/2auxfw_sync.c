@@ -48,6 +48,7 @@ static vb2_error_t auxfw_sync_check_update(struct vb2_context *ctx,
 	return vb2ex_auxfw_check(severity);
 }
 
+test_mockable
 vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 {
 	enum vb2_auxfw_update_severity fw_update = VB2_AUXFW_NO_UPDATE;

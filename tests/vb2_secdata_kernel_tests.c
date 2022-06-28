@@ -13,7 +13,6 @@
 #include "2secdata_struct.h"
 #include "2sysincludes.h"
 #include "test_common.h"
-#include "vboot_test.h"
 
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));

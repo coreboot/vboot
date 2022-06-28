@@ -28,6 +28,7 @@
 #include "2return_codes.h"
 #include "2rsa.h"
 #include "2secdata_struct.h"
+#include "vboot_api.h"
 
 #define _VB2_TRY_IMPL(expr, ctx, recovery_reason, ...) do { \
 	vb2_error_t _vb2_try_rv = (expr); \
@@ -165,14 +166,14 @@ enum vb2_context_flags {
 
 	/*
 	 * System supports EC software sync.  Caller may set this flag at any
-	 * time before calling VbSelectAndLoadKernel().
+	 * time before calling vb2api_kernel_phase2().
 	 */
 	VB2_CONTEXT_EC_SYNC_SUPPORTED = (1 << 15),
 
 	/*
 	 * EC software sync is slow to update; warning screen should be
 	 * displayed.  Caller may set this flag at any time before calling
-	 * VbSelectAndLoadKernel().  Deprecated as part of chromium:1038259.
+	 * vb2api_kernel_phase2().  Deprecated as part of chromium:1038259.
 	 */
 	VB2_CONTEXT_DEPRECATED_EC_SYNC_SLOW = (1 << 16),
 
@@ -847,9 +848,11 @@ vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx);
  * Handle a normal boot.
  *
  * @param ctx		Vboot context.
+ * @param kparams	Params specific to loading the kernel
  * @return VB2_SUCCESS, or error code on error.
  */
-vb2_error_t vb2api_normal_boot(struct vb2_context *ctx);
+vb2_error_t vb2api_normal_boot(struct vb2_context *ctx,
+			       VbSelectAndLoadKernelParams *kparams);
 
 /**
  * Finalize for kernel verification stage.
@@ -1484,54 +1487,6 @@ vb2_error_t vb2ex_ec_battery_cutoff(void);
 
 /*****************************************************************************/
 /* Functions for firmware UI. */
-/* TODO(b/172339016): Remove vb2ex_*_ui(). */
-
-/**
- * UI for a non-manual recovery ("BROKEN").
- *
- * Enter the broken screen UI, which shows that an unrecoverable error was
- * encountered last boot. Wait for the user to physically reset or shut down.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2ex_broken_screen_ui(struct vb2_context *ctx);
-
-/**
- * UI for a manual recovery-mode boot.
- *
- * Enter the recovery menu, which prompts the user to insert recovery media,
- * navigate the step-by-step recovery, or enter developer mode if allowed.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2ex_manual_recovery_ui(struct vb2_context *ctx);
-
-/**
- * UI for a developer-mode boot.
- *
- * Enter the developer menu, which provides options to switch out of developer
- * mode, boot from external media, use legacy bootloader, or boot Chrome OS from
- * disk.
- *
- * If a timeout occurs, take the default boot action.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2ex_developer_ui(struct vb2_context *ctx);
-
-/**
- * UI for a diagnostic tools boot.
- *
- * Enter the diagnostic tools menu, which provides debug information and
- * diagnostic tests of various hardware components.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or non-zero error code.
- */
-vb2_error_t vb2ex_diagnostic_ui(struct vb2_context *ctx);
 
 /**
  * Get the vboot debug info.

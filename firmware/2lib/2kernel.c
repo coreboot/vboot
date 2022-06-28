@@ -37,7 +37,8 @@ static int vb2_reset_nv_requests(struct vb2_context *ctx)
 	return need_reboot;
 }
 
-vb2_error_t vb2api_normal_boot(struct vb2_context *ctx)
+vb2_error_t vb2api_normal_boot(struct vb2_context *ctx,
+			       VbSelectAndLoadKernelParams *kparams)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint32_t max_rollforward = vb2_nv_get(ctx,
@@ -51,7 +52,7 @@ vb2_error_t vb2api_normal_boot(struct vb2_context *ctx)
 		return VB2_REQUEST_REBOOT;
 	}
 
-	vb2_error_t rv = VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED);
+	vb2_error_t rv = VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED, kparams);
 
 	VB2_DEBUG("Checking if TPM kernel version needs advancing\n");
 

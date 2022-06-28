@@ -14,7 +14,6 @@
 #include "2rsa_private.h"
 #include "2sha.h"
 #include "2sysincludes.h"
-#include "vboot_test.h"
 
 /**
  * a[] -= mod

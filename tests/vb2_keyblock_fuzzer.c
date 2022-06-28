@@ -9,7 +9,6 @@
 #include "2rsa.h"
 #include "2rsa_private.h"
 #include "2secdata.h"
-#include "vboot_test.h"
 
 static struct vb2_context *ctx;
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]

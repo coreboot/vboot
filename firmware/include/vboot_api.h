@@ -45,15 +45,14 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 typedef void *VbExDiskHandle_t;
 
 typedef struct VbSelectAndLoadKernelParams {
-	/* Inputs to VbSelectAndLoadKernel() */
+	/* Inputs to VbTryLoadKernel() */
 	/* Destination buffer for kernel (normally at 0x100000 on x86) */
 	void *kernel_buffer;
 	/* Size of kernel buffer in bytes */
 	uint32_t kernel_buffer_size;
 
 	/*
-	 * Outputs from VbSelectAndLoadKernel(); valid only if it returns
-	 * success.
+	 * Outputs from VbTryLoadKernel(); valid only if it returns success.
 	 */
 	/* Handle of disk containing loaded kernel */
 	VbExDiskHandle_t disk_handle;
@@ -70,14 +69,6 @@ typedef struct VbSelectAndLoadKernelParams {
 } VbSelectAndLoadKernelParams;
 
 /**
- * Select and loads the kernel.
- *
- * Returns VB2_SUCCESS if success, non-zero if error; on error, caller
- * should reboot. */
-vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
-				  VbSelectAndLoadKernelParams *kparams);
-
-/**
  * Attempt loading a kernel from the specified type(s) of disks.
  *
  * If successful, sets kparams.disk_handle to the disk for the kernel and
@@ -85,9 +76,11 @@ vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
  *
  * @param ctx			Vboot context
  * @param disk_flags		Flags to pass to VbExDiskGetInfo()
+ * @param kparams               Params specific to loading the kernel
  * @return VB2_SUCCESS or the most specific VB2_ERROR_LK error.
  */
-vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags);
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags,
+			    VbSelectAndLoadKernelParams *kparams);
 
 /* miniOS flags */
 
@@ -106,10 +99,12 @@ vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags);
  *
  * @param ctx			Vboot context
  * @param minios_flags		Flags for miniOS
+ * @param kparams               Params specific to loading the kernel
  * @return VB2_SUCCESS or the most specific VB2_ERROR_LK error.
  */
 vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx,
-				  uint32_t minios_flags);
+				  uint32_t minios_flags,
+				  VbSelectAndLoadKernelParams *kparams);
 
 /*****************************************************************************/
 /* Disk access (previously in boot_device.h) */

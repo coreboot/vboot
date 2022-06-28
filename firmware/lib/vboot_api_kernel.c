@@ -15,18 +15,6 @@
 #include "load_kernel_fw.h"
 #include "vboot_api.h"
 #include "vboot_struct.h"
-#include "vboot_test.h"
-
-/* Global variables */
-static VbSelectAndLoadKernelParams *kparams_ptr;
-
-#ifdef CHROMEOS_ENVIRONMENT
-/* Global variable accessor for unit tests */
-struct VbSelectAndLoadKernelParams **VbApiKernelGetParamsPtr(void)
-{
-	return &kparams_ptr;
-}
-#endif
 
 static int is_valid_disk(VbDiskInfo *info, uint32_t disk_flags)
 {
@@ -40,7 +28,8 @@ static int is_valid_disk(VbDiskInfo *info, uint32_t disk_flags)
 
 static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
 				       uint32_t disk_flags, int minios,
-				       uint32_t minios_flags)
+				       uint32_t minios_flags,
+				       VbSelectAndLoadKernelParams *kparams)
 {
 	vb2_error_t rv = VB2_ERROR_LK_NO_DISK_FOUND;
 	VbDiskInfo* disk_info = NULL;
@@ -48,11 +37,8 @@ static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
 	uint32_t i;
 	vb2_error_t new_rv;
 
-	/* TODO: Should have been set by VbSelectAndLoadKernel. Remove when
-	   this global is no longer needed. */
-	VB2_ASSERT(kparams_ptr);
-
-	kparams_ptr->disk_handle = NULL;
+	VB2_ASSERT(kparams);
+	kparams->disk_handle = NULL;
 
 	/* Find disks */
 	if (VB2_SUCCESS != VbExDiskGetInfo(&disk_info, &disk_count, disk_flags))
@@ -70,14 +56,14 @@ static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
 				  disk_info[i].flags);
 			continue;
 		}
-		kparams_ptr->disk_handle = disk_info[i].handle;
+		kparams->disk_handle = disk_info[i].handle;
 
 		if (minios) {
-			new_rv = LoadMiniOsKernel(ctx, kparams_ptr,
+			new_rv = LoadMiniOsKernel(ctx, kparams,
 						  &disk_info[i], minios_flags);
 			VB2_DEBUG("LoadMiniOsKernel() = %#x\n", new_rv);
 		} else {
-			new_rv = LoadKernel(ctx, kparams_ptr, &disk_info[i]);
+			new_rv = LoadKernel(ctx, kparams, &disk_info[i]);
 			VB2_DEBUG("LoadKernel() = %#x\n", new_rv);
 		}
 
@@ -118,69 +104,20 @@ static vb2_error_t VbTryLoadKernelImpl(struct vb2_context *ctx,
 }
 
 test_mockable
-vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags)
+vb2_error_t VbTryLoadKernel(struct vb2_context *ctx, uint32_t disk_flags,
+			    VbSelectAndLoadKernelParams *kparams)
 {
 	ctx->flags &= ~VB2_CONTEXT_DISABLE_TPM;
-	return VbTryLoadKernelImpl(ctx, disk_flags, 0, 0);
+	return VbTryLoadKernelImpl(ctx, disk_flags, 0, 0, kparams);
 }
 
 test_mockable
 vb2_error_t VbTryLoadMiniOsKernel(struct vb2_context *ctx,
-				  uint32_t minios_flags)
-{
-	VB2_TRY(VbTryLoadKernelImpl(ctx, VB_DISK_FLAG_FIXED, 1, minios_flags));
-	ctx->flags |= VB2_CONTEXT_DISABLE_TPM;
-	return VB2_SUCCESS;
-}
-
-vb2_error_t VbSelectAndLoadKernel(struct vb2_context *ctx,
+				  uint32_t minios_flags,
 				  VbSelectAndLoadKernelParams *kparams)
 {
-	/* TODO: Send this argument through subsequent function calls, rather
-	   than relying on a global to pass it to VbTryLoadKernel. */
-	kparams_ptr = kparams;
-
-	VB2_TRY(vb2api_kernel_phase1(ctx));
-	VB2_TRY(vb2api_kernel_phase2(ctx));
-
-	switch (ctx->boot_mode) {
-	case VB2_BOOT_MODE_MANUAL_RECOVERY:
-		/* Manual recovery boot.  This has UI. */
-		VB2_TRY(vb2ex_manual_recovery_ui(ctx));
-		break;
-	case VB2_BOOT_MODE_BROKEN_SCREEN:
-		/*
-		 * In EFS2, recovery mode can be entered even when battery is
-		 * drained or damaged. EC-RO sets NO_BOOT flag in such case and
-		 * uses PD power to boot AP.
-		 *
-		 * TODO: Inform user why recovery failed to start.
-		 */
-		if (ctx->flags & VB2_CONTEXT_NO_BOOT)
-			VB2_DEBUG("NO_BOOT in RECOVERY mode\n");
-
-		/* Broken screen.  This has UI. */
-		VB2_TRY(vb2ex_broken_screen_ui(ctx));
-		break;
-	case VB2_BOOT_MODE_DIAGNOSTICS:
-		/* Diagnostic boot.  This has UI. */
-		VB2_TRY(vb2ex_diagnostic_ui(ctx));
-		/*
-		 * The diagnostic menu should either boot a rom, or
-		 * return either of reboot or shutdown.
-		 */
-		return VB2_REQUEST_REBOOT;
-	case VB2_BOOT_MODE_DEVELOPER:
-		/* Developer boot.  This has UI. */
-		VB2_TRY(vb2ex_developer_ui(ctx));
-		break;
-	case VB2_BOOT_MODE_NORMAL:
-		/* Normal boot */
-		VB2_TRY(vb2api_normal_boot(ctx));
-		break;
-	default:
-		return VB2_ERROR_ESCAPE_NO_BOOT;
-	}
-
-	return vb2api_kernel_finalize(ctx);
+	VB2_TRY(VbTryLoadKernelImpl(ctx, VB_DISK_FLAG_FIXED, 1, minios_flags,
+				    kparams));
+	ctx->flags |= VB2_CONTEXT_DISABLE_TPM;
+	return VB2_SUCCESS;
 }

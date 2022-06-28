@@ -24,6 +24,7 @@ static struct vb2_shared_data *sd;
 static struct vb2_fw_preamble *fwpre;
 static const char fw_kernel_key_data[36] = "Test kernel key data";
 static enum vb2_boot_mode *boot_mode;
+static VbSelectAndLoadKernelParams kparams;
 
 /* Mocked function data */
 
@@ -35,14 +36,16 @@ static struct {
 
 static int mock_read_res_fail_on_call;
 static int mock_secdata_fwmp_check_retval;
-static int mock_vbtlk_expect_fixed;
-static int mock_vbtlk_expect_removable;
-static vb2_error_t mock_vbtlk_retval;
+static int mock_commit_data_called;
+static int mock_ec_sync_called;
+static int mock_ec_sync_retval;
+static int mock_battery_cutoff_called;
 
 /* Type of test to reset for */
 enum reset_type {
 	FOR_PHASE1,
-	FOR_NORMAL_BOOT,
+	FOR_PHASE2,
+	FOR_FINALIZE,
 };
 
 static void reset_common_data(enum reset_type t)
@@ -50,6 +53,8 @@ static void reset_common_data(enum reset_type t)
 	struct vb2_packed_key *k;
 
 	memset(workbuf, 0xaa, sizeof(workbuf));
+
+	memset(&kparams, 0, sizeof(kparams));
 
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
@@ -63,10 +68,10 @@ static void reset_common_data(enum reset_type t)
 
 	mock_read_res_fail_on_call = 0;
 	mock_secdata_fwmp_check_retval = VB2_SUCCESS;
-	mock_vbtlk_expect_fixed = 0;
-	mock_vbtlk_expect_removable = 0;
-	mock_vbtlk_retval = VB2_SUCCESS;
-
+	mock_commit_data_called = 0;
+	mock_ec_sync_called = 0;
+	mock_ec_sync_retval = VB2_SUCCESS;
+	mock_battery_cutoff_called = 0;
 
 	/* Recovery key in mock GBB */
 	memset(&mock_gbb, 0, sizeof(mock_gbb));
@@ -86,8 +91,6 @@ static void reset_common_data(enum reset_type t)
 	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
 	if (t == FOR_PHASE1)
 		*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
-	else if (t == FOR_NORMAL_BOOT)
-		*boot_mode = VB2_BOOT_MODE_NORMAL;
 	else
 		*boot_mode = VB2_BOOT_MODE_UNDEFINED;
 
@@ -115,6 +118,34 @@ static void reset_common_data(enum reset_type t)
 vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *c, uint8_t *size)
 {
 	return mock_secdata_fwmp_check_retval;
+}
+
+vb2_error_t vb2api_ec_sync(struct vb2_context *c)
+{
+	mock_ec_sync_called = 1;
+	return mock_ec_sync_retval;
+}
+
+vb2_error_t vb2api_auxfw_sync(struct vb2_context *c)
+{
+	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2ex_ec_battery_cutoff(void)
+{
+	TEST_EQ(mock_ec_sync_called, 1,
+		"  battery cutoff must happen after EC sync");
+	mock_battery_cutoff_called = 1;
+	return VB2_SUCCESS;
+}
+
+const uint8_t *vb2_secdata_kernel_get_ec_hash(struct vb2_context *c)
+{
+	/*
+	 * Return NULL to prevent EC reboot due to
+	 * VB2_SD_FLAG_ECSYNC_HMIR_UPDATED.
+	 */
+	return NULL;
 }
 
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
@@ -148,24 +179,10 @@ vb2_error_t vb2ex_read_resource(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbTryLoadKernel(struct vb2_context *c, uint32_t disk_flags)
+vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 {
-	/*
-	 * TODO: Currently we don't have a good way of testing for an ordered
-	 * sequence of VB_DISK_FLAG_FIXED and then VB_DISK_FLAG_REMOVABLE.  If
-	 * both are set, then just assume success.
-	 */
-	if (mock_vbtlk_expect_fixed && mock_vbtlk_expect_removable)
-		return mock_vbtlk_retval;
-
-	TEST_EQ(!!mock_vbtlk_expect_fixed,
-		!!(disk_flags & VB_DISK_FLAG_FIXED),
-		"  VbTryLoadKernel unexpected fixed disk call");
-	TEST_EQ(!!mock_vbtlk_expect_removable,
-		!!(disk_flags & VB_DISK_FLAG_REMOVABLE),
-		"  VbTryLoadKernel unexpected removable disk call");
-
-	return mock_vbtlk_retval;
+	mock_commit_data_called = 1;
+	return VB2_SUCCESS;
 }
 
 /* Tests */
@@ -304,37 +321,125 @@ static void phase1_tests(void)
 		"phase1 fw preamble");
 }
 
-static void normal_boot_tests(void)
+static void phase2_tests(void)
 {
-	reset_common_data(FOR_NORMAL_BOOT);
-	mock_vbtlk_expect_fixed = 1;
-	TEST_EQ(vb2api_normal_boot(ctx), VB2_SUCCESS,
-		"vb2api_normal_boot() returns VB2_SUCCESS");
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Normal mode");
+	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
-	reset_common_data(FOR_NORMAL_BOOT);
-	mock_vbtlk_expect_fixed = 1;
-	mock_vbtlk_retval = VB2_ERROR_MOCK;
-	TEST_EQ(vb2api_normal_boot(ctx), VB2_ERROR_MOCK,
-		"vb2api_normal_boot() returns VB2_ERROR_MOCK");
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
+	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Developer mode");
+	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
-	reset_common_data(FOR_NORMAL_BOOT);
-	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-	TEST_EQ(vb2api_normal_boot(ctx), VB2_REQUEST_REBOOT,
-		"vb2api_normal_boot() reboot to reset NVRAM display request");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
-		"  display request reset");
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_DIAGNOSTICS;
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Diagnostics mode");
+	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
-	reset_common_data(FOR_NORMAL_BOOT);
+	/* Commit data for recovery mode */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	sd->recovery_reason = VB2_RECOVERY_RO_MANUAL;
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Manual recovery mode");
+	TEST_EQ(mock_commit_data_called, 1, "  commit data");
+	TEST_EQ(mock_ec_sync_called, 0, "  EC sync");
+
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	sd->recovery_reason = 123;
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Broken screen mode");
+	TEST_EQ(mock_commit_data_called, 1, "  commit data");
+	TEST_EQ(mock_ec_sync_called, 0, "  EC sync");
+
+	/* Boot recovery - memory retraining */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
+	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_REQUEST_REBOOT,
+		"Recovery train and reboot");
+
+	/* Clear VB2_NV_DIAG_REQUEST */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
 	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-	TEST_EQ(vb2api_normal_boot(ctx), VB2_REQUEST_REBOOT,
-		"vb2api_normal_boot() reboot to reset NVRAM diag request");
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Normal mode with DIAG_REQUEST");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
-		"  diag request reset");}
+		"  clear VB2_NV_DIAG_REQUEST");
+	TEST_EQ(mock_commit_data_called, 1, "  commit data");
+
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_DIAGNOSTICS;
+	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
+	TEST_SUCC(vb2api_kernel_phase2(ctx), "Diagnostics mode");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
+		"  clear VB2_NV_DIAG_REQUEST");
+	TEST_EQ(mock_commit_data_called, 1, "  commit data");
+
+	/* Battery cutoff called after EC sync */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 1);
+	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_REQUEST_SHUTDOWN,
+		"Set VB2_NV_BATTERY_CUTOFF_REQUEST");
+	TEST_EQ(mock_battery_cutoff_called, 1,
+		"  battery_cutoff called after EC sync");
+
+	/* Return EC sync error */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	mock_ec_sync_retval = VB2_ERROR_MOCK;
+	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_ERROR_MOCK,
+		"Return EC sync error");
+
+	/* Undefined boot mode */
+	reset_common_data(FOR_PHASE2);
+	*boot_mode = VB2_BOOT_MODE_UNDEFINED;
+	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_ERROR_ESCAPE_NO_BOOT,
+		"Undefined boot mode");
+}
+
+static void finalize_tests(void)
+{
+	/* NO_BOOT with EC sync support */
+	reset_common_data(FOR_FINALIZE);
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_ERROR_ESCAPE_NO_BOOT,
+		"Recovery for NO_BOOT escape");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		VB2_RECOVERY_ESCAPE_NO_BOOT, "  recovery_reason");
+
+	/* NO_BOOT with EC sync disabled */
+	reset_common_data(FOR_FINALIZE);
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	mock_gbb.h.flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+	TEST_SUCC(vb2api_kernel_finalize(ctx),
+		  "NO_BOOT ignored with gbb DISABLE_EC_SOFTWARE_SYNC");
+
+	/* Normal case with EC sync support */
+	reset_common_data(FOR_FINALIZE);
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SUPPORTED;
+	TEST_SUCC(vb2api_kernel_finalize(ctx), "Disable VB2_CONTEXT_NO_BOOT");
+
+	/* NO_BOOT without EC sync support */
+	reset_common_data(FOR_FINALIZE);
+	ctx->flags |= VB2_CONTEXT_NO_BOOT;
+	TEST_SUCC(vb2api_kernel_finalize(ctx),
+		  "Disable VB2_CONTEXT_EC_SYNC_SUPPORTED");
+}
 
 int main(int argc, char* argv[])
 {
 	phase1_tests();
-	normal_boot_tests();
+	phase2_tests();
+	finalize_tests();
 
 	return gTestSuccess ? 0 : 255;
 }

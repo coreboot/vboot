@@ -137,7 +137,7 @@ typedef struct VbSharedDataHeader {
 	uint8_t reserved4[7];
 	/* Flags from firmware keyblock */
 	uint64_t fw_keyblock_flags;
-	/* Kernel TPM version at start of VbSelectAndLoadKernel() */
+	/* Kernel TPM version at start of vb2api_kernel_phase1 */
 	uint32_t kernel_version_tpm_start;
 	/* Kernel lowest version found */
 	uint32_t kernel_version_lowest;

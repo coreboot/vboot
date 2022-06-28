@@ -338,6 +338,7 @@ static vb2_error_t ec_sync_phase2(struct vb2_context *ctx)
 	return sync_ec(ctx);
 }
 
+test_mockable
 vb2_error_t vb2api_ec_sync(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
