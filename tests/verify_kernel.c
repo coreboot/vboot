@@ -18,7 +18,6 @@
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 static struct vb2_context *ctx;
-static struct vb2_shared_data *sd;
 
 static uint8_t *diskbuf;
 
@@ -61,7 +60,8 @@ static void print_help(const char *progname)
 
 int main(int argc, char *argv[])
 {
-	struct vb2_packed_key *kernkey;
+	uint8_t *kernkey = NULL;
+	uint64_t kernkey_size = 0;
 	uint64_t disk_bytes = 0;
 	vb2_error_t rv;
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Read public key */
-	kernkey = vb2_read_packed_key(argv[2]);
+	kernkey = ReadFile(argv[2], &kernkey_size);
 	if (!kernkey) {
 		fprintf(stderr, "Can't read key file %s\n", argv[2]);
 		return 1;
@@ -105,36 +105,18 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;
 	}
-	sd = vb2_get_sd(ctx);
 
-	/* Copy kernel subkey to workbuf */
-	{
-		struct vb2_workbuf wb;
-		struct vb2_packed_key *dst;
-		uint32_t kernkey_size = kernkey->key_offset + kernkey->key_size;
-		vb2_workbuf_from_ctx(ctx, &wb);
-		dst = vb2_workbuf_alloc(&wb, kernkey_size);
-		memcpy(dst, kernkey, kernkey_size);
-		vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
-		sd->kernel_key_offset = vb2_offset_of(sd, dst);
-		sd->kernel_key_size = kernkey_size;
+	rv = vb2api_inject_kernel_subkey(ctx, kernkey, kernkey_size);
+	if (rv != VB2_SUCCESS) {
+		fprintf(stderr, "vb2api_inject_kernel_subkey failed: %x\n",
+			rv);
+		return 1;
 	}
-
-	/*
-	 * vb2api_load_kernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and
-	 * only in dev mode.  So just use defaults for nv storage.
-	 */
-	vb2_nv_init(ctx);
-	/* We need to init kernel secdata for
-	 * VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED.
-	 */
-	vb2api_secdata_kernel_create(ctx);
-	vb2_secdata_kernel_init(ctx);
 
 	/* Try loading kernel */
 	rv = vb2api_load_kernel(ctx, &params, &disk_info);
 	if (rv != VB2_SUCCESS) {
-		fprintf(stderr, "vb2api_load_kernel() failed with code %d\n",
+		fprintf(stderr, "vb2api_load_kernel() failed with code %x\n",
 			rv);
 		return 1;
 	}

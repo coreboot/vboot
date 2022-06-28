@@ -386,6 +386,22 @@ vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size);
 void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode);
 
 /**
+ * Entry point for setting up a context that can only load and verify a kernel.
+ *
+ * The only allowed usage is to call vb2api_init, then this entry point,
+ * then vb2api_load_kernel.
+ *
+ * @param ctx				Vboot context
+ * @param kernel_packed_key_data	Packed public key for kernel
+ *					verification
+ * @param kernel_packed_key_data_size	Size in bytes of kernel_packed_key_data
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2api_inject_kernel_subkey(struct vb2_context *ctx,
+					const uint8_t *kernel_packed_key_data,
+					uint32_t kernel_packed_key_data_size);
+
+/**
  * Firmware selection, phase 1.
  *
  * If the returned error is VB2_ERROR_API_PHASE1_RECOVERY, the calling firmware

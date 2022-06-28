@@ -16,6 +16,67 @@
 #include "2sysincludes.h"
 #include "2tpm_bootmode.h"
 
+vb2_error_t vb2api_inject_kernel_subkey(
+	struct vb2_context *ctx,
+	const uint8_t *kernel_packed_key_data,
+	uint32_t kernel_packed_key_data_size)
+{
+	struct vb2_shared_data *sd;
+	enum vb2_boot_mode *boot_mode;
+	struct vb2_workbuf wb;
+	struct vb2_packed_key *kernel_packed_key;
+	uint32_t kernel_packed_key_size;
+	void *dst_packed_key;
+
+	sd = vb2_get_sd(ctx);
+	vb2_workbuf_from_ctx(ctx, &wb);
+
+	/* Fully initialize the context and shared data. */
+	sd->flags = 0;
+	/* Not in recovery. */
+	sd->recovery_reason = 0;
+	/* FW not used. */
+	sd->last_fw_slot = VB2_FW_SLOT_A;
+	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
+	sd->fw_slot = VB2_FW_SLOT_A;
+	sd->fw_version = 0;
+	sd->fw_version_secdata = 0;
+	/* Clear status field. */
+	sd->status = 0;
+	/* Invalid offset indicating GBB data is not available. */
+	sd->gbb_offset = 0;
+	sd->kernel_version = 0;
+	sd->kernel_version_secdata = 0;
+	ctx->flags = 0;
+	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
+	*boot_mode = VB2_BOOT_MODE_NORMAL;
+
+	/* Make sure passed buffer is big enough for the packed key. */
+	kernel_packed_key = (struct vb2_packed_key *)kernel_packed_key_data;
+	VB2_TRY(vb2_verify_packed_key_inside(kernel_packed_key_data,
+					     kernel_packed_key_data_size,
+					     kernel_packed_key));
+
+	/* Allocate space in the workbuf in which to copy the key. */
+	kernel_packed_key_size =
+		kernel_packed_key->key_offset + kernel_packed_key->key_size;
+	dst_packed_key = vb2_workbuf_alloc(&wb, kernel_packed_key_size);
+	if (!dst_packed_key)
+		return VB2_ERROR_WORKBUF_SMALL;
+
+	/* Copy the packed key data into the workbuf. */
+	memcpy(dst_packed_key, kernel_packed_key_data, kernel_packed_key_size);
+
+	/* Set the location of the kernel key data in the context. */
+	sd->kernel_key_offset = vb2_offset_of(sd, dst_packed_key);
+	sd->kernel_key_size = kernel_packed_key_size;
+
+	vb2_set_workbuf_used(ctx,
+			     sd->kernel_key_offset + kernel_packed_key_size);
+
+	return VB2_SUCCESS;
+}
+
 vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 {
 	vb2_error_t rv;
