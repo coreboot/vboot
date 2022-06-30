@@ -129,21 +129,6 @@ enum vb2_nv_param {
 	VB2_NV_MINIOS_PRIORITY,
 };
 
-/* Firmware result codes for VB2_NV_FW_RESULT and VB2_NV_FW_PREV_RESULT */
-enum vb2_fw_result {
-	/* Unknown */
-	VB2_FW_RESULT_UNKNOWN = 0,
-
-	/* Trying a new slot, but haven't reached success/failure */
-	VB2_FW_RESULT_TRYING = 1,
-
-	/* Successfully booted to the OS */
-	VB2_FW_RESULT_SUCCESS = 2,
-
-	/* Known failure */
-	VB2_FW_RESULT_FAILURE = 3,
-};
-
 /*
  * Default value for VB2_NV_FIRMWARE_MAX_ROLLFORWARD on V1.  This preserves the
  * existing behavior that V1 systems will always roll forward the firmware

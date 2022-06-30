@@ -317,6 +317,21 @@ enum vb2_boot_mode {
 	VB2_BOOT_MODE_NORMAL = 5,
 };
 
+/* Firmware result codes for VB2_NV_FW_RESULT and VB2_NV_FW_PREV_RESULT */
+enum vb2_fw_result {
+	/* Unknown */
+	VB2_FW_RESULT_UNKNOWN = 0,
+
+	/* Trying a new slot, but haven't reached success/failure */
+	VB2_FW_RESULT_TRYING = 1,
+
+	/* Successfully booted to the OS */
+	VB2_FW_RESULT_SUCCESS = 2,
+
+	/* Known failure */
+	VB2_FW_RESULT_FAILURE = 3,
+};
+
 /* Helper for aligning fields in vb2_context. */
 #define VB2_PAD_STRUCT3(size, align, count) \
 	uint8_t _pad##count[align - (((size - 1) % align) + 1)]
