@@ -251,8 +251,7 @@ static void select_and_load_kernel_tests(void)
 
 	reset_common_data();
 	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-	test_slk(VB2_REQUEST_REBOOT, 0,
-		 "Normal boot with diag disabled (reboot to unset)");
+	test_slk(0, 0, "Normal boot with diag disabled (reboot to unset)");
 
 	/* Boot normal - phase1 failure */
 	reset_common_data();

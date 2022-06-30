@@ -520,6 +520,7 @@ int vb2api_phone_recovery_ui_enabled(struct vb2_context *ctx)
 		 VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED);
 }
 
+test_mockable
 int vb2api_diagnostic_ui_enabled(struct vb2_context *ctx)
 {
 	return !(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS) &
