@@ -72,25 +72,20 @@ vb2_error_t vb2api_fw_phase1(struct vb2_context *ctx)
 	 */
 	vb2_check_recovery(ctx);
 
+	/* Decide the boot mode */
+	vb2_set_boot_mode(ctx);
+
 	/*
-	 * Check for possible reasons to ask the firmware to make display
-	 * available.  VB2_CONTEXT_RECOVERY_MODE may have been set above by
-	 * vb2_check_recovery.  VB2_SD_FLAG_DEV_MODE_ENABLED may have been set
-	 * above by vb2_check_dev_switch.  VB2_NV_DIAG_REQUEST may have been
-	 * set during the last boot in recovery mode.
+	 * Initialize display if VB2_NV_DISPLAY_REQUEST is set or in non-normal
+	 * boot mode.
 	 */
-	if (!(ctx->flags & VB2_CONTEXT_DISPLAY_INIT) &&
-	    (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) ||
-	     sd->flags & VB2_SD_FLAG_DEV_MODE_ENABLED ||
-	     ctx->flags & VB2_CONTEXT_RECOVERY_MODE ||
-	     vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)))
+	if (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST) ||
+	    ctx->boot_mode != VB2_BOOT_MODE_NORMAL)
 		ctx->flags |= VB2_CONTEXT_DISPLAY_INIT;
+
 	/* Mark display as available for downstream vboot and vboot callers. */
 	if (ctx->flags & VB2_CONTEXT_DISPLAY_INIT)
 		sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
-
-	/* Decide the boot mode */
-	vb2_set_boot_mode(ctx);
 
 	/* Return error if recovery is needed */
 	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) {

@@ -135,8 +135,10 @@ vb2_error_t vb2_fw_init_gbb(struct vb2_context *c)
 
 vb2_error_t vb2_check_dev_switch(struct vb2_context *c)
 {
-	if (force_dev_mode)
+	if (force_dev_mode) {
+		c->flags |= VB2_CONTEXT_DEVELOPER_MODE;
 		sd->flags |= VB2_SD_FLAG_DEV_MODE_ENABLED;
+	}
 	return retval_vb2_check_dev_switch;
 }
 
