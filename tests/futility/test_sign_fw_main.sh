@@ -30,9 +30,7 @@ dd bs=1024 count=16 if=/dev/urandom of="${TMP}.fw_main"
 
 # and the new way
 "${FUTILITY}" --debug sign \
-  --signprivate "${KEYDIR}/firmware_data_key.vbprivk" \
-  --keyblock "${KEYDIR}/firmware.keyblock" \
-  --kernelkey "${KEYDIR}/kernel_subkey.vbpubk" \
+  --keyset "${KEYDIR}" \
   --version 12 \
   --fv "${TMP}.fw_main" \
   --flags 42 \

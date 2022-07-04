@@ -45,8 +45,7 @@ try_arch () {
 
   # pack it up the new way
   "${FUTILITY}" --debug sign \
-    --keyblock "${DEVKEYS}/recovery_kernel.keyblock" \
-    --signprivate "${DEVKEYS}/recovery_kernel_data_key.vbprivk" \
+    --keyset "${DEVKEYS}/recovery_" \
     --version 1 \
     --config "${TMP}.config.txt" \
     --bootloader "${TMP}.bootloader.bin" \
@@ -84,7 +83,7 @@ try_arch () {
 
   # repack it the new way
   "${FUTILITY}" --debug sign \
-    --signprivate "${DEVKEYS}/kernel_data_key.vbprivk" \
+    --keyset "${DEVKEYS}" \
     --keyblock "${DEVKEYS}/kernel.keyblock" \
     --version 2 \
     --pad "${padding}" \

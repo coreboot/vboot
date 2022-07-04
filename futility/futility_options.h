@@ -34,6 +34,7 @@ struct sign_option_s {
 	struct vb2_private_key *signprivate;
 	struct vb2_keyblock *keyblock;
 	struct vb2_packed_key *kernel_subkey;
+	const char *keysetdir;
 	uint32_t version;
 	int version_specified;
 	uint32_t flags;

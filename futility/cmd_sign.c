@@ -29,8 +29,11 @@
 #include "util_misc.h"
 #include "vb1_helper.h"
 
+#define DEFAULT_KEYSETDIR "/usr/share/vboot/devkeys"
+
 /* Options */
 struct sign_option_s sign_option = {
+	.keysetdir = DEFAULT_KEYSETDIR,
 	.version = 1,
 	.arch = ARCH_UNSPECIFIED,
 	.kloadaddr = CROS_32BIT_ENTRY_ADDR,
@@ -306,6 +309,86 @@ done:
 	return rv;
 }
 
+static int load_keyset(void)
+{
+	char *buf = NULL;
+	int errorcnt = 0;
+	const char *s = NULL;
+	const char *b = NULL;
+	const char *k = NULL;
+	const char *format;
+	struct stat sb;
+
+	if (!sign_option.keysetdir)
+		FATAL("Keyset should never be NULL. Aborting\n");
+
+	/* Failure means this is not a directory */
+	if (stat(sign_option.keysetdir, &sb) == -1 ||
+	    (sb.st_mode & S_IFMT) != S_IFDIR)
+		format = "%s%s.%s";
+	else
+		format = "%s/%s.%s";
+
+	switch (sign_option.type) {
+	case FILE_TYPE_BIOS_IMAGE:
+	case FILE_TYPE_RAW_FIRMWARE:
+		s = "firmware_data_key";
+		b = "firmware";
+		k = "kernel_subkey";
+		break;
+	case FILE_TYPE_RAW_KERNEL:
+		s = "kernel_data_key";
+		b = "kernel";
+		break;
+	case FILE_TYPE_KERN_PREAMBLE:
+		s = "kernel_data_key";
+		break;
+	default:
+		return 0;
+	}
+
+	if (s && !sign_option.signprivate) {
+		if (asprintf(&buf, format, sign_option.keysetdir, s,
+			     "vbprivk") <= 0)
+			FATAL("Failed to allocate string\n");
+		INFO("Loading private data key from default keyset: %s\n", buf);
+		sign_option.signprivate = vb2_read_private_key(buf);
+		if (!sign_option.signprivate) {
+			ERROR("Error reading %s\n", buf);
+			errorcnt++;
+		}
+		free(buf);
+	}
+
+	if (b && !sign_option.keyblock) {
+		if (asprintf(&buf, format, sign_option.keysetdir, b,
+			     "keyblock") <= 0)
+			FATAL("Failed to allocate string\n");
+		INFO("Loading keyblock from default keyset: %s\n", buf);
+		sign_option.keyblock = vb2_read_keyblock(buf);
+		if (!sign_option.keyblock) {
+			ERROR("Error reading %s\n", buf);
+			errorcnt++;
+		}
+		free(buf);
+	}
+
+	if (k && !sign_option.kernel_subkey) {
+		if (asprintf(&buf, format, sign_option.keysetdir, k,
+			     "vbpubk") <= 0)
+			FATAL("Failed to allocate string\n");
+		INFO("Loading kernel subkey from default keyset: %s\n", buf);
+		sign_option.kernel_subkey = vb2_read_packed_key(buf);
+		if (!sign_option.kernel_subkey) {
+			ERROR("Error reading %s\n", buf);
+			errorcnt++;
+		}
+		free(buf);
+	}
+
+	return errorcnt;
+}
+
 static const char usage_pubkey[] = "\n"
 	"To sign a public key / create a new keyblock:\n"
 	"\n"
@@ -338,36 +421,46 @@ static const char usage_fw_main[] = "\n"
 	"To sign a raw firmware blob (FW_MAIN_A/B):\n"
 	"\n"
 	"Required PARAMS:\n"
-	"  -s|--signprivate FILE.vbprivk    The private firmware data key\n"
-	"  -b|--keyblock    FILE.keyblock   The keyblock containing the\n"
-	"                                     public firmware data key\n"
-	"  -k|--kernelkey   FILE.vbpubk     The public kernel subkey\n"
 	"  -v|--version     NUM             The firmware version number\n"
 	"  [--fv]           INFILE"
 	"          The raw firmware blob (FW_MAIN_A/B)\n"
 	"  [--outfile]      OUTFILE         Output VBLOCK_A/B\n"
 	"\n"
 	"Optional PARAMS:\n"
+	"  -s|--signprivate FILE.vbprivk    The private firmware data key\n"
+	"  -b|--keyblock    FILE.keyblock   The keyblock containing the\n"
+	"                                     public firmware data key\n"
+	"  -k|--kernelkey   FILE.vbpubk     The public kernel subkey\n"
 	"  -f|--flags       NUM             The preamble flags value"
 	" (default is 0)\n"
+	"  -K|--keyset      PATH            Prefix of private firmware data"
+	" key,\n"
+	"                                   keyblock and public kernel"
+	" subkey.\n"
+	"                                   Prefix must be valid path with\n"
+	"                                   optional file name prefix.\n"
+	"                                   Used as defaults for -s, -b and"
+	" -k,\n"
+	"                                   if not passed expliticly\n"
+	"                                   (default is '%s')\n"
 	"\n";
 static void print_help_raw_firmware(int argc, char *argv[])
 {
-	puts(usage_fw_main);
+	printf(usage_fw_main, DEFAULT_KEYSETDIR);
 }
 
 static const char usage_bios[] = "\n"
 	"To sign a complete firmware image (bios.bin):\n"
 	"\n"
 	"Required PARAMS:\n"
-	"  -s|--signprivate FILE.vbprivk    The private firmware data key\n"
-	"  -b|--keyblock    FILE.keyblock   The keyblock containing the\n"
-	"                                     public firmware data key\n"
-	"  -k|--kernelkey   FILE.vbpubk     The public kernel subkey\n"
 	"  [--infile]       INFILE          Input firmware image (modified\n"
 	"                                     in place if no OUTFILE given)\n"
 	"\n"
 	"Optional PARAMS:\n"
+	"  -s|--signprivate FILE.vbprivk    The private firmware data key\n"
+	"  -b|--keyblock    FILE.keyblock   The keyblock containing the\n"
+	"                                     public firmware data key\n"
+	"  -k|--kernelkey   FILE.vbpubk     The public kernel subkey\n"
 	"  -v|--version     NUM             The firmware version number"
 	" (default %d)\n"
 	"  -f|--flags       NUM             The preamble flags value"
@@ -375,21 +468,27 @@ static const char usage_bios[] = "\n"
 	"                                     unchanged, or 0 if unknown)\n"
 	"  -d|--loemdir     DIR             Local OEM output vblock directory\n"
 	"  -l|--loemid      STRING          Local OEM vblock suffix\n"
+	"  -K|--keyset      PATH            Prefix of private firmware data"
+	" key,\n"
+	"                                   keyblock and public kernel"
+	" subkey.\n"
+	"                                   Prefix must be valid path with\n"
+	"                                   optional file name prefix.\n"
+	"                                   Used as defaults for -s, -b and"
+	" -k,\n"
+	"                                   if not passed expliticly\n"
+	"                                   (default is '%s')\n"
 	"  [--outfile]      OUTFILE         Output firmware image\n"
 	"\n";
 static void print_help_bios_image(int argc, char *argv[])
 {
-	printf(usage_bios, sign_option.version);
+	printf(usage_bios, sign_option.version, DEFAULT_KEYSETDIR);
 }
 
 static const char usage_new_kpart[] = "\n"
 	"To create a new kernel partition image (/dev/sda2, /dev/mmcblk0p2):\n"
 	"\n"
 	"Required PARAMS:\n"
-	"  -s|--signprivate FILE.vbprivk"
-	"    The private key to sign the kernel blob\n"
-	"  -b|--keyblock    FILE.keyblock   Keyblock containing the public\n"
-	"                                     key to verify the kernel blob\n"
 	"  -v|--version     NUM             The kernel version number\n"
 	"  --bootloader     FILE            Bootloader stub\n"
 	"  --config         FILE            The kernel commandline file\n"
@@ -399,6 +498,10 @@ static const char usage_new_kpart[] = "\n"
 	"  [--outfile]      OUTFILE         Output kernel partition or vblock\n"
 	"\n"
 	"Optional PARAMS:\n"
+	"  -s|--signprivate FILE.vbprivk"
+	"    The private key to sign the kernel blob\n"
+	"  -b|--keyblock    FILE.keyblock   Keyblock containing the public\n"
+	"                                     key to verify the kernel blob\n"
 	"  --kloadaddr      NUM"
 	"             RAM address to load the kernel body\n"
 	"                                     (default %#x)\n"
@@ -407,22 +510,33 @@ static const char usage_new_kpart[] = "\n"
 	" --vblockonly                      Emit just the vblock (requires a\n"
 	"                                     distinct outfile)\n"
 	"  -f|--flags       NUM             The preamble flags value\n"
+	"  -K|--keyset      DIR             Path to directory containing"
+	" private\n"
+	"                                   kernel data key, and keyblock\n"
+	"  -K|--keyset      PATH            Prefix of private kernel data key\n"
+	"                                   and keyblock.\n"
+	"                                   Prefix must be valid path with\n"
+	"                                   optional file name prefix.\n"
+	"                                   Used as defaults for -s and -b,\n"
+	"                                   if not passed expliticly\n"
+	"                                   (default is '%s')\n"
 	"\n";
 static void print_help_raw_kernel(int argc, char *argv[])
 {
-	printf(usage_new_kpart, sign_option.kloadaddr, sign_option.padding);
+	printf(usage_new_kpart, sign_option.kloadaddr, sign_option.padding,
+	       DEFAULT_KEYSETDIR);
 }
 
 static const char usage_old_kpart[] = "\n"
 	"To resign an existing kernel partition (/dev/sda2, /dev/mmcblk0p2):\n"
 	"\n"
 	"Required PARAMS:\n"
-	"  -s|--signprivate FILE.vbprivk"
-	"    The private key to sign the kernel blob\n"
 	"  [--infile]       INFILE          Input kernel partition (modified\n"
 	"                                     in place if no OUTFILE given)\n"
 	"\n"
 	"Optional PARAMS:\n"
+	"  -s|--signprivate FILE.vbprivk"
+	"    The private key to sign the kernel blob\n"
 	"  -b|--keyblock    FILE.keyblock   Keyblock containing the public\n"
 	"                                     key to verify the kernel blob\n"
 	"  -v|--version     NUM             The kernel version number\n"
@@ -433,10 +547,17 @@ static const char usage_old_kpart[] = "\n"
 	"  --vblockonly                     Emit just the vblock (requires a\n"
 	"                                     distinct OUTFILE)\n"
 	"  -f|--flags       NUM             The preamble flags value\n"
+	"  -K|--keyset      PATH            Prefix of private kernel data"
+	" key.\n"
+	"                                   Prefix must be valid path with\n"
+	"                                   optional file name prefix.\n"
+	"                                   Used as default for -s,\n"
+	"                                   if not passed expliticly\n"
+	"                                   (default is '%s')\n"
 	"\n";
 static void print_help_kern_preamble(int argc, char *argv[])
 {
-	printf(usage_old_kpart, sign_option.padding);
+	printf(usage_old_kpart, sign_option.padding, DEFAULT_KEYSETDIR);
 }
 
 static void print_help_usbpd1(int argc, char *argv[])
@@ -619,6 +740,7 @@ static const struct option long_opts[] = {
 	{"flags",        1, NULL, 'f'},
 	{"loemdir",      1, NULL, 'd'},
 	{"loemid",       1, NULL, 'l'},
+	{"keyset",       1, NULL, 'K'},
 	{"fv",           1, NULL, OPT_FV},
 	{"infile",       1, NULL, OPT_INFILE},
 	{"datapubkey",   1, NULL, OPT_INFILE},	/* alias */
@@ -647,7 +769,7 @@ static const struct option long_opts[] = {
 	{"help",         0, NULL, OPT_HELP},
 	{NULL,           0, NULL, 0},
 };
-static const char *short_opts = ":s:b:k:S:B:v:f:d:l:";
+static const char *short_opts = ":s:b:k:v:f:d:l:K:";
 
 /* Return zero on success */
 static int parse_number_opt(const char *arg, const char *name, uint32_t *dest)
@@ -716,6 +838,9 @@ static int do_sign(int argc, char *argv[])
 			break;
 		case 'l':
 			sign_option.loemid = optarg;
+			break;
+		case 'K':
+			sign_option.keysetdir = optarg;
 			break;
 		case OPT_FV:
 			sign_option.fv_specified = 1;
@@ -907,6 +1032,10 @@ static int do_sign(int argc, char *argv[])
 		else if (sign_option.kernel_subkey || sign_option.fv_specified)
 			sign_option.type = FILE_TYPE_RAW_FIRMWARE;
 	}
+
+	/* Load keys and keyblocks from keyset path, if they were not provided
+	   earlier. */
+	errorcnt += load_keyset();
 
 	VB2_DEBUG("type=%s\n", futil_file_type_name(sign_option.type));
 

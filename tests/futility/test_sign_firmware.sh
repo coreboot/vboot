@@ -111,9 +111,7 @@ for infile in $INFILES; do
   mkdir -p "${loemdir}"
 
   "${FUTILITY}" sign \
-    -s "${KEYDIR}/firmware_data_key.vbprivk" \
-    -b "${KEYDIR}/firmware.keyblock" \
-    -k "${KEYDIR}/kernel_subkey.vbpubk" \
+    -K "${KEYDIR}" \
     -v 14 \
     -f 8 \
     -d "${loemdir}" \
@@ -193,8 +191,7 @@ cbfstool "${GOOD_CBFS_OUT}.1" add \
 
 "${FUTILITY}" sign \
   -s "${KEYDIR}/firmware_data_key.vbprivk" \
-  -b "${KEYDIR}/firmware.keyblock" \
-  -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   "${GOOD_CBFS_OUT}.1"
 
 "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
@@ -222,9 +219,8 @@ cbfstool "${GOOD_CBFS_OUT}.1" add \
 echo -n "${count} " 1>&3
 
 "${FUTILITY}" sign \
-  -s "${KEYDIR}/firmware_data_key.vbprivk" \
   -b "${KEYDIR}/firmware.keyblock" \
-  -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   "${MORE_OUT}" "${MORE_OUT}.2"
 
 m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
@@ -238,9 +234,8 @@ echo -n "${count} " 1>&3
 
 "${FUTILITY}" load_fmap "${MORE_OUT}" VBLOCK_A:/dev/urandom VBLOCK_B:/dev/zero
 "${FUTILITY}" sign \
-  -s "${KEYDIR}/firmware_data_key.vbprivk" \
-  -b "${KEYDIR}/firmware.keyblock" \
   -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   "${MORE_OUT}" "${MORE_OUT}.3"
 
 m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
@@ -256,7 +251,7 @@ echo -n "${count} " 1>&3
 "${FUTILITY}" sign \
   -s "${KEYDIR}/firmware_data_key.vbprivk" \
   -b "${KEYDIR}/firmware.keyblock" \
-  -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   "${CLEAN_B}" "${CLEAN_B}.1"
 
 "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${CLEAN_B}.1" \
@@ -291,8 +286,8 @@ apply_xxd_patch "${NO_B_SLOT_PATCH}" "${NO_B_SLOT}"
 
 "${FUTILITY}" sign \
   -s "${KEYDIR}/firmware_data_key.vbprivk" \
-  -b "${KEYDIR}/firmware.keyblock" \
   -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   -v 1 \
   "${NO_B_SLOT}" "${NO_B_SLOT_SIGNED_IMG}"
 
@@ -321,9 +316,9 @@ echo -en 'echo "0xFFEEDD0"; exit 0;' > "${CBFSTOOL_STUB}"
 chmod +x "${CBFSTOOL_STUB}"
 
 if CBFSTOOL="${CBFSTOOL_STUB}" "${FUTILITY}" sign \
-  -s "${KEYDIR}/firmware_data_key.vbprivk" \
   -b "${KEYDIR}/firmware.keyblock" \
   -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   -v 1 \
   "${GOOD_CBFS}" "${TMP}.1.${GOOD_CBFS##*/}"
 then
@@ -351,9 +346,7 @@ exit 0;
 EOF
 
 if CBFSTOOL="${CBFSTOOL_STUB}" "${FUTILITY}" sign \
-  -s "${KEYDIR}/firmware_data_key.vbprivk" \
-  -b "${KEYDIR}/firmware.keyblock" \
-  -k "${KEYDIR}/kernel_subkey.vbpubk" \
+  -K "${KEYDIR}" \
   -v 1 \
   "${GOOD_CBFS}" "${TMP}.2.${GOOD_CBFS##*/}"
 then
@@ -379,9 +372,7 @@ for keyblock_patch in "${BAD_KEYBLOCK_PATCHES[@]}"; do
   grep -q 'VBLOCK_A keyblock component is invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$("${FUTILITY}" sign \
-    -s "${KEYDIR}/firmware_data_key.vbprivk" \
-    -b "${KEYDIR}/firmware.keyblock" \
-    -k "${KEYDIR}/kernel_subkey.vbpubk" \
+    -K "${KEYDIR}" \
     "${BAD_IN}" "${BAD_OUT}" 2>&1)"
    grep -q 'VBLOCK_A keyblock is invalid' <<< "${FUTIL_OUTPUT}"
 
@@ -410,9 +401,7 @@ for vblock_patch in "${BAD_PREAMBLE_PATCHES[@]}"; do
   grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$("${FUTILITY}" sign \
-    -s "${KEYDIR}/firmware_data_key.vbprivk" \
-    -b "${KEYDIR}/firmware.keyblock" \
-    -k "${KEYDIR}/kernel_subkey.vbpubk" \
+    -K "${KEYDIR}" \
     "${BAD_IN}" "${BAD_OUT}" 2>&1)"
   grep -q 'VBLOCK_A preamble is invalid' <<< "${FUTIL_OUTPUT}"
 
@@ -441,9 +430,7 @@ for vblock_patch in "${BAD_FMAP_KEYBLOCK_PATCHES[@]}"; do
   grep -q 'VBLOCK_A keyblock component is invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
-                       -s "${KEYDIR}/firmware_data_key.vbprivk" \
-                       -b "${KEYDIR}/firmware.keyblock" \
-                       -k "${KEYDIR}/kernel_subkey.vbpubk" \
+                       -K "${KEYDIR}" \
                        "${BAD_IN}" "${BAD_OUT}" 2>&1; \
                   then false; fi)"
   m="$(grep -c -E \
@@ -466,9 +453,7 @@ FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
 grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
 
 FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
-                     -s "${KEYDIR}/firmware_data_key.vbprivk" \
-                     -b "${KEYDIR}/firmware.keyblock" \
-                     -k "${KEYDIR}/kernel_subkey.vbpubk" \
+                     -K "${KEYDIR}" \
                      "${BAD_IN}" "${BAD_OUT}" 2>&1; \
                 then false; fi)"
 m="$(grep -c -E \
@@ -490,9 +475,7 @@ FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
 grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
 
 FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
-                     -s "${KEYDIR}/firmware_data_key.vbprivk" \
-                     -b "${KEYDIR}/firmware.keyblock" \
-                     -k "${KEYDIR}/kernel_subkey.vbpubk" \
+                     -K "${KEYDIR}" \
                      "${BAD_IN}" "${BAD_OUT}" 2>&1; \
                 then false; fi)"
 m="$(grep -c -E \
