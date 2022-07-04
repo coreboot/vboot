@@ -54,7 +54,8 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 	enum vb2_auxfw_update_severity fw_update = VB2_AUXFW_NO_UPDATE;
 
 	/* Check for update severity */
-	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update));
+	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update), ctx,
+		VB2_RECOVERY_AUXFW_UPDATE);
 
 	if (fw_update > VB2_AUXFW_NO_UPDATE) {
 		VB2_DEBUG("Updating auxfw\n");

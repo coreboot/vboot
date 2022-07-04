@@ -25,7 +25,8 @@ static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 
-static vb2_error_t auxfw_retval;
+static vb2_error_t auxfw_check_retval;
+static vb2_error_t auxfw_update_retval;
 static int auxfw_update_req;
 static enum vb2_auxfw_update_severity auxfw_mock_severity;
 static enum vb2_auxfw_update_severity auxfw_update_severity;
@@ -46,7 +47,8 @@ static void ResetMocks(void)
 
 	memset(&gbb, 0, sizeof(gbb));
 
-	auxfw_retval = VB2_SUCCESS;
+	auxfw_check_retval = VB2_SUCCESS;
+	auxfw_update_retval = VB2_SUCCESS;
 	auxfw_mock_severity = VB2_AUXFW_NO_UPDATE;
 	auxfw_update_severity = VB2_AUXFW_NO_UPDATE;
 	auxfw_mock_display_available = 1;
@@ -65,7 +67,7 @@ vb2_error_t vb2ex_auxfw_check(enum vb2_auxfw_update_severity *severity)
 {
 	*severity = auxfw_mock_severity;
 	auxfw_update_severity = auxfw_mock_severity;
-	return VB2_SUCCESS;
+	return auxfw_check_retval;
 }
 
 vb2_error_t vb2ex_auxfw_update(void)
@@ -77,7 +79,7 @@ vb2_error_t vb2ex_auxfw_update(void)
 	if (auxfw_update_severity != VB2_AUXFW_NO_DEVICE &&
 	    auxfw_update_severity != VB2_AUXFW_NO_UPDATE)
 		auxfw_update_req = 1;
-	return auxfw_retval;
+	return auxfw_update_retval;
 }
 
 vb2_error_t vb2ex_auxfw_finalize(struct vb2_context *c)
@@ -152,7 +154,13 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	auxfw_mock_severity = VB2_AUXFW_FAST_UPDATE;
-	auxfw_retval = VB2_ERROR_UNKNOWN;
+	auxfw_check_retval = VB2_ERROR_UNKNOWN;
+	test_auxsync(VB2_ERROR_UNKNOWN, VB2_RECOVERY_AUXFW_UPDATE,
+		     "Error checking auxfw");
+
+	ResetMocks();
+	auxfw_mock_severity = VB2_AUXFW_FAST_UPDATE;
+	auxfw_update_retval = VB2_ERROR_UNKNOWN;
 	test_auxsync(VB2_ERROR_UNKNOWN, VB2_RECOVERY_AUXFW_UPDATE,
 		     "Error updating auxfw");
 }
