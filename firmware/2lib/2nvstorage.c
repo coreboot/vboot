@@ -237,6 +237,7 @@ uint32_t vb2_nv_get(struct vb2_context *ctx, enum vb2_nv_param param)
 #define SETBIT(offs, mask)					\
 	{ if (value) p[offs] |= mask; else p[offs] &= ~mask; }
 
+test_mockable
 void vb2_nv_set(struct vb2_context *ctx,
 		enum vb2_nv_param param,
 		uint32_t value)

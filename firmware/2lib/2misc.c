@@ -169,6 +169,7 @@ void vb2_check_recovery(struct vb2_context *ctx)
 	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
 }
 
+test_mockable
 vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -195,6 +196,7 @@ vb2_error_t vb2_fw_init_gbb(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -295,6 +297,7 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx)
 {
 	vb2_error_t rv;
@@ -323,6 +326,7 @@ vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

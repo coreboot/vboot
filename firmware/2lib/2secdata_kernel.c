@@ -292,6 +292,7 @@ const uint8_t *vb2_secdata_kernel_get_ec_hash(struct vb2_context *ctx)
 	return sec->ec_hash;
 }
 
+test_mockable
 void vb2_secdata_kernel_set_ec_hash(struct vb2_context *ctx,
 				    const uint8_t *sha256)
 {

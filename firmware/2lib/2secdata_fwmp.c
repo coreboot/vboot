@@ -79,6 +79,7 @@ uint32_t vb2api_secdata_fwmp_create(struct vb2_context *ctx)
 	return sizeof(*sec);
 }
 
+test_mockable
 vb2_error_t vb2_secdata_fwmp_init(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

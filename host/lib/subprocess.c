@@ -290,6 +290,7 @@ struct subprocess_target subprocess_stderr = {
 	.fd = STDERR_FILENO,
 };
 
+test_mockable
 int subprocess_run(const char *const argv[],
 		   struct subprocess_target *input,
 		   struct subprocess_target *output,

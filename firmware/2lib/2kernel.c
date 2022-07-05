@@ -38,6 +38,7 @@ int vb2api_is_developer_signed(struct vb2_context *ctx)
 	return 0;
 }
 
+test_mockable
 vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

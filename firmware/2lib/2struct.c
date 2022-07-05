@@ -63,6 +63,7 @@ vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_verify_keyblock(struct vb2_keyblock *block, uint32_t size,
 				const struct vb2_public_key *key,
 				const struct vb2_workbuf *wb)

@@ -294,6 +294,7 @@ static char *simple_basename(char *str)
 
 /* Here we go */
 #define OPT_HELP 1000
+test_mockable
 int main(int argc, char *argv[], char *envp[])
 {
 	char *progname;

@@ -49,6 +49,7 @@ static vb2_error_t vb2_gbb_read_key(struct vb2_context *ctx, uint32_t offset,
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_gbb_read_root_key(struct vb2_context *ctx,
 				  struct vb2_packed_key **keyp, uint32_t *size,
 				  struct vb2_workbuf *wb)
@@ -62,6 +63,7 @@ vb2_error_t vb2_gbb_read_root_key(struct vb2_context *ctx,
 	return ret;
 }
 
+test_mockable
 vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *ctx,
 				      struct vb2_packed_key **keyp,
 				      uint32_t *size, struct vb2_workbuf *wb)

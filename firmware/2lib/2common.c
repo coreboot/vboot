@@ -9,6 +9,7 @@
 #include "2common.h"
 #include "2rsa.h"
 
+test_mockable
 vb2_error_t vb2_safe_memcmp(const void *s1, const void *s2, size_t size)
 {
 	const unsigned char *us1 = s1;
@@ -147,6 +148,7 @@ vb2_error_t vb2_verify_member_inside(const void *parent, size_t parent_size,
 	return VB2_SUCCESS;
 }
 
+test_mockable
 vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 			      struct vb2_signature *sig, const uint8_t *digest,
 			      const struct vb2_workbuf *wb)
@@ -182,6 +184,7 @@ vb2_error_t vb2_verify_digest(const struct vb2_public_key *key,
 	return vb2_rsa_verify_digest(key, sig_data, digest, wb);
 }
 
+test_mockable
 vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 			    struct vb2_signature *sig,
 			    const struct vb2_public_key *key,
