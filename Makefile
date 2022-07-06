@@ -1348,6 +1348,11 @@ runtests: rununittests runtestscripts runfutiltests
 	${Q}echo -e "\nruntests: \E[32;1mALL TESTS PASSED SUCCESSFULLY!\E[0;m\n"
 
 # Code coverage
+.PHONY: coverage
+ifeq ($(filter-out 0,${COV}),)
+coverage:
+	$(error Build coverage like this: make clean && COV=1 make coverage)
+else
 .PHONY: coverage_init
 coverage_init: install_for_test
 	rm -f ${COV_INFO}*
@@ -1366,11 +1371,6 @@ coverage_html: coverage_init runtests
 	lcov -e ${COV_INFO}.nostub '${SRCDIR}/firmware/*' \
 		-o ${COV_INFO}.firmware
 
-.PHONY: coverage
-ifeq ($(filter-out 0,${COV}),)
-coverage:
-	$(error Build coverage like this: make clean && COV=1 make coverage)
-else
 coverage: coverage_init runtests coverage_html
 endif
 
