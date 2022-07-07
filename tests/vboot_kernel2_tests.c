@@ -10,6 +10,7 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"
+#include "common/boot_mode.h"
 #include "common/tests.h"
 #include "load_kernel_fw.h"
 #include "vboot_api.h"
@@ -47,7 +48,6 @@ static struct vb2_shared_data *sd;
 static struct vb2_workbuf wb;
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
-static enum vb2_boot_mode *boot_mode;
 
 static VbSelectAndLoadKernelParams lkp;
 static VbDiskInfo disk_info;
@@ -81,8 +81,8 @@ static void reset_common_data(void)
 	vb2_secdata_kernel_init(ctx);
 	ctx->flags = VB2_CONTEXT_RECOVERY_MODE;
 
-	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 
 	sd = vb2_get_sd(ctx);
 	sd->kernel_version_secdata = 0xabcdef | (1 << 24);

@@ -12,6 +12,7 @@
 #include "2rsa.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
+#include "common/boot_mode.h"
 #include "common/tests.h"
 #include "vboot_struct.h"
 #include "vboot_api.h"
@@ -23,7 +24,6 @@ static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_fw_preamble *fwpre;
 static const char fw_kernel_key_data[36] = "Test kernel key data";
-static enum vb2_boot_mode *boot_mode;
 static VbSelectAndLoadKernelParams kparams;
 
 /* Mocked function data */
@@ -86,13 +86,6 @@ static void reset_common_data(enum reset_type t)
 	mock_gbb.h.recovery_key_size =
 		mock_gbb.recovery_key.key_offset +
 		mock_gbb.recovery_key.key_size;
-
-	/* For boot_mode */
-	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
-	if (t == FOR_PHASE1)
-		*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
-	else
-		*boot_mode = VB2_BOOT_MODE_UNDEFINED;
 
 	if (t == FOR_PHASE1) {
 		uint8_t *kdata;
@@ -194,6 +187,7 @@ static void phase1_tests(void)
 
 	/* Test successful call */
 	reset_common_data(FOR_PHASE1);
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 good");
 	/* Make sure normal key was loaded */
 	TEST_EQ(sd->kernel_key_offset, sd->preamble_offset +
@@ -215,7 +209,7 @@ static void phase1_tests(void)
 
 	/* Test successful call in recovery mode */
 	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	/* No preamble needed in recovery mode */
 	sd->workbuf_used = sd->preamble_offset;
 	sd->preamble_offset = sd->preamble_size = 0;
@@ -241,7 +235,7 @@ static void phase1_tests(void)
 
 	/* Test flags for experimental features in non-recovery path */
 	reset_common_data(FOR_PHASE1);
-	ctx->flags &= ~VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 non-rec good");
 	/* Make sure phone recovery functionality is enabled, but UI disabled */
 	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
@@ -258,7 +252,7 @@ static void phase1_tests(void)
 
 	/* Set 8 bits to 0 */
 	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, 0);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
 	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS), 0,
@@ -266,7 +260,7 @@ static void phase1_tests(void)
 
 	/* Set 8 bits to 1 */
 	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, UINT8_MAX);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
 	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS),
@@ -275,6 +269,7 @@ static void phase1_tests(void)
 
 	/* Bad secdata_fwmp causes failure in normal mode only */
 	reset_common_data(FOR_PHASE1);
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	mock_secdata_fwmp_check_retval = VB2_ERROR_SECDATA_FWMP_CRC;
 	TEST_EQ(vb2api_kernel_phase1(ctx), mock_secdata_fwmp_check_retval,
 		"phase1 bad secdata_fwmp");
@@ -282,15 +277,15 @@ static void phase1_tests(void)
 		VB2_RECOVERY_SECDATA_FWMP_INIT, "  recovery reason");
 
 	reset_common_data(FOR_PHASE1);
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	mock_secdata_fwmp_check_retval = VB2_ERROR_SECDATA_FWMP_CRC;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 bad secdata_fwmp rec");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		VB2_RECOVERY_NOT_REQUESTED, "  no recovery");
 
 	/* Failures while reading recovery key */
 	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	mock_gbb.h.recovery_key_size = sd->workbuf_size - 1;
 	mock_gbb.recovery_key.key_size =
 		mock_gbb.h.recovery_key_size - sizeof(mock_gbb.recovery_key);
@@ -298,24 +293,25 @@ static void phase1_tests(void)
 		"phase1 rec workbuf key");
 	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
 	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
-	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
 
 	reset_common_data(FOR_PHASE1);
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	mock_read_res_fail_on_call = 1;
 	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_SUCCESS,
 		"phase1 rec gbb read key");
 	TEST_EQ(sd->kernel_key_offset, 0, "  workbuf key offset");
 	TEST_EQ(sd->kernel_key_size, 0, "  workbuf key size");
-	mock_gbb.h.flags |= VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY;
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 	mock_read_res_fail_on_call = 1;
 	TEST_ABORT(vb2api_kernel_phase1(ctx), "  fatal for manual recovery");
 
 	/* Failures while parsing subkey from firmware preamble */
 	reset_common_data(FOR_PHASE1);
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	sd->preamble_size = 0;
 	TEST_EQ(vb2api_kernel_phase1(ctx), VB2_ERROR_API_KPHASE1_PREAMBLE,
 		"phase1 fw preamble");
@@ -324,49 +320,44 @@ static void phase1_tests(void)
 static void phase2_tests(void)
 {
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Normal mode");
 	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_DEVELOPER;
-	ctx->flags |= VB2_CONTEXT_DEVELOPER_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Developer mode");
 	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_DIAGNOSTICS;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DIAGNOSTICS);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Diagnostics mode");
 	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
 	/* Commit data for recovery mode */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	sd->recovery_reason = VB2_RECOVERY_RO_MANUAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Manual recovery mode");
 	TEST_EQ(mock_commit_data_called, 1, "  commit data");
 	TEST_EQ(mock_ec_sync_called, 0, "  EC sync");
 
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	sd->recovery_reason = 123;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Broken screen mode");
 	TEST_EQ(mock_commit_data_called, 1, "  commit data");
 	TEST_EQ(mock_ec_sync_called, 0, "  EC sync");
 
 	/* Boot recovery - memory retraining */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-	sd->recovery_reason = VB2_RECOVERY_TRAIN_AND_REBOOT;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_TRAIN_AND_REBOOT);
 	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_REQUEST_REBOOT,
 		"Recovery train and reboot");
 
 	/* Clear VB2_NV_DIAG_REQUEST */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Normal mode with DIAG_REQUEST");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
@@ -374,7 +365,7 @@ static void phase2_tests(void)
 	TEST_EQ(mock_commit_data_called, 1, "  commit data");
 
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_DIAGNOSTICS;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DIAGNOSTICS);
 	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Diagnostics mode");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST), 0,
@@ -383,7 +374,7 @@ static void phase2_tests(void)
 
 	/* Battery cutoff called after EC sync */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	vb2_nv_set(ctx, VB2_NV_BATTERY_CUTOFF_REQUEST, 1);
 	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_REQUEST_SHUTDOWN,
 		"Set VB2_NV_BATTERY_CUTOFF_REQUEST");
@@ -392,14 +383,13 @@ static void phase2_tests(void)
 
 	/* Return EC sync error */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	mock_ec_sync_retval = VB2_ERROR_MOCK;
 	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_ERROR_MOCK,
 		"Return EC sync error");
 
 	/* Undefined boot mode */
 	reset_common_data(FOR_PHASE2);
-	*boot_mode = VB2_BOOT_MODE_UNDEFINED;
 	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_ERROR_ESCAPE_NO_BOOT,
 		"Undefined boot mode");
 }

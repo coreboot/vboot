@@ -11,6 +11,7 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
+#include "common/boot_mode.h"
 #include "common/tests.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
@@ -25,7 +26,6 @@ static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static uint32_t kernel_version;
 static uint32_t new_version;
-static enum vb2_boot_mode *boot_mode;
 static VbSelectAndLoadKernelParams kparams;
 
 /* Mocked function data */
@@ -50,8 +50,7 @@ static void reset_common_data(void)
 	TEST_SUCC(vb2api_init(workbuf, sizeof(workbuf), &ctx),
 		  "vb2api_init failed");
 
-	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 
 	sd = vb2_get_sd(ctx);
 

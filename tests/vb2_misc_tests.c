@@ -11,6 +11,7 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
+#include "common/boot_mode.h"
 #include "common/tests.h"
 
 /* Common context for tests */
@@ -22,7 +23,6 @@ static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_gbb_header gbb;
 static struct vb2_secdata_fwmp *fwmp;
-static enum vb2_boot_mode *boot_mode;
 
 /* Mocked function data */
 static enum vb2_resource_index mock_resource_index;
@@ -54,8 +54,7 @@ static void reset_common_data(void)
 	mock_tpm_clear_called = 0;
 	mock_tpm_clear_retval = VB2_SUCCESS;
 
-	boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
-	*boot_mode = VB2_BOOT_MODE_NORMAL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 };
 
 /* Mocked functions */
@@ -655,7 +654,8 @@ static void enable_dev_tests(void)
 		"  dev mode flag not set");
 
 	reset_common_data();
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 	TEST_SUCC(vb2api_enable_developer_mode(ctx),
 		  "vb2api_enable_developer_mode - success");
 	TEST_NEQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
@@ -664,17 +664,16 @@ static void enable_dev_tests(void)
 
 	/* secdata_firmware not initialized, aborts */
 	reset_common_data();
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
+		      VB2_RECOVERY_RO_MANUAL);
 	sd->status &= ~VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
 	sd->status |= VB2_SD_STATUS_RECOVERY_DECIDED;
-	TEST_ABORT(vb2api_enable_developer_mode(ctx),
-		   "secdata_firmware no init, enable dev mode aborted");
+	TEST_SUCC(vb2api_enable_developer_mode(ctx),
+		  "secdata_firmware no init, enable dev mode ignored");
 	sd->status |= VB2_SD_STATUS_SECDATA_FIRMWARE_INIT;
 	TEST_EQ(vb2_secdata_firmware_get(ctx, VB2_SECDATA_FIRMWARE_FLAGS) &
 	        VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE, 0,
 		"  dev mode flag not set");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL), 0,
-		"  NV_DEV_BOOT_EXTERNAL not set");
 }
 
 static void tpm_clear_tests(void)
@@ -816,9 +815,7 @@ static void clear_recovery_tests(void)
 
 	/* Manual recovery */
 	reset_common_data();
-	*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
-	sd->recovery_reason = 4;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY, 4);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	vb2_clear_recovery(ctx);
@@ -829,9 +826,7 @@ static void clear_recovery_tests(void)
 
 	/* Broken screen */
 	reset_common_data();
-	*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
-	sd->recovery_reason = 4;
-	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 4);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
 	vb2_clear_recovery(ctx);
