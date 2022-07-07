@@ -412,10 +412,10 @@ struct vb2_context {
 	 */
 
 	/*
-	 * Mutually exclusive boot mode.
+	 * Mutually exclusive boot mode (from enum vb2_boot_mode).
 	 * This constant is initialized after calling vb2api_fw_phase1().
 	 */
-	const enum vb2_boot_mode boot_mode;
+	const uint8_t boot_mode;
 };
 
 /* Resource index for vb2ex_read_resource() */
