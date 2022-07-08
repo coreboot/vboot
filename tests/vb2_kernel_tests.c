@@ -325,6 +325,14 @@ static void phase2_tests(void)
 	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");
 
 	reset_common_data(FOR_PHASE2);
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
+	TEST_EQ(vb2api_kernel_phase2(ctx), VB2_REQUEST_REBOOT,
+		"Normal mode with display request: rebooting");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 0,
+		"  display request reset");
+
+	reset_common_data(FOR_PHASE2);
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	TEST_SUCC(vb2api_kernel_phase2(ctx), "Developer mode");
 	TEST_EQ(mock_ec_sync_called, 1, "  EC sync");

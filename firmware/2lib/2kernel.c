@@ -12,31 +12,6 @@
 #include "2secdata.h"
 #include "vboot_api.h"
 
-/**
- * Reset any NVRAM requests.
- *
- * @param ctx		Vboot context
- * @return 1 if a reboot is required, 0 otherwise.
- */
-static int vb2_reset_nv_requests(struct vb2_context *ctx)
-{
-	int need_reboot = 0;
-
-	if (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST)) {
-		VB2_DEBUG("Unset display request (undo display init)\n");
-		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
-		need_reboot = 1;
-	}
-
-	if (vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST)) {
-		VB2_DEBUG("Unset diagnostic request (undo display init)\n");
-		vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 0);
-		need_reboot = 1;
-	}
-
-	return need_reboot;
-}
-
 vb2_error_t vb2api_normal_boot(struct vb2_context *ctx,
 			       VbSelectAndLoadKernelParams *kparams)
 {
@@ -46,11 +21,6 @@ vb2_error_t vb2api_normal_boot(struct vb2_context *ctx,
 
 	/* Boot from fixed disk only */
 	VB2_DEBUG("Entering\n");
-
-	if (vb2_reset_nv_requests(ctx)) {
-		VB2_DEBUG("Normal mode: reboot to reset NVRAM requests\n");
-		return VB2_REQUEST_REBOOT;
-	}
 
 	vb2_error_t rv = VbTryLoadKernel(ctx, VB_DISK_FLAG_FIXED, kparams);
 
@@ -277,7 +247,14 @@ vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx)
 		break;
 	case VB2_BOOT_MODE_DIAGNOSTICS:
 	case VB2_BOOT_MODE_DEVELOPER:
+		break;
 	case VB2_BOOT_MODE_NORMAL:
+		if (vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST)) {
+			vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
+			VB2_DEBUG("Normal mode: "
+				  "reboot to unset display request\n");
+			return VB2_REQUEST_REBOOT;
+		}
 		break;
 	default:
 		return VB2_ERROR_ESCAPE_NO_BOOT;
