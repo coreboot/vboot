@@ -11,8 +11,8 @@
 #include "2common.h"
 #include "2return_codes.h"
 #include "chromeos_config.h"
+#include "common/tests.h"
 #include "host_misc.h"
-#include "test_common.h"
 
 static struct {
 	const char *path;

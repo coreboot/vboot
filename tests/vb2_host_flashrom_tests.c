@@ -18,10 +18,10 @@
 
 #include "2common.h"
 #include "2return_codes.h"
+#include "common/tests.h"
 #include "host_misc.h"
 #include "flashrom.h"
 #include "subprocess.h"
-#include "test_common.h"
 
 #define MOCK_TMPFILE_NAME "/tmp/vb2_unittest"
 #define MOCK_ROM_CONTENTS "bloop123"

@@ -10,8 +10,8 @@
 
 #include "2api.h"
 #include "2sha.h"
+#include "common/tests.h"
 #include "sha_test_vectors.h"
-#include "test_common.h"
 
 vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
 			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,

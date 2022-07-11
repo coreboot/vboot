@@ -6,7 +6,7 @@
  */
 
 #include "2recovery_reasons.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 static void get_recovery_reason_string_tests(void)
 {

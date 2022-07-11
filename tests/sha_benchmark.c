@@ -10,8 +10,8 @@
 #include "2common.h"
 #include "2sha.h"
 #include "2sysincludes.h"
+#include "common/timer_utils.h"
 #include "host_common.h"
-#include "timer_utils.h"
 
 #define TEST_BUFFER_SIZE 4000000
 

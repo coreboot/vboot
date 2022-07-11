@@ -7,7 +7,7 @@
 
 #include "2common.h"
 #include "2misc.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Mock data */
 static char gbb_data[4096 + sizeof(struct vb2_gbb_header)];

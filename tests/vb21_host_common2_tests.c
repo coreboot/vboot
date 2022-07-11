@@ -12,11 +12,11 @@
 #include "2common.h"
 #include "2rsa.h"
 #include "2sysincludes.h"
+#include "common/tests.h"
 #include "host_common.h"
 #include "host_common21.h"
 #include "host_key21.h"
 #include "host_signature21.h"
-#include "test_common.h"
 #include "util_misc.h"
 
 static const uint8_t test_data[] = "This is some test data to sign.";

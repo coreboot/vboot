@@ -10,7 +10,7 @@
 
 #include "file_type.h"
 #include "futility.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /*
  * Files that exemplify each type.

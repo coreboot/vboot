@@ -17,9 +17,9 @@
 #include "2constants.h"
 #include "2nvstorage.h"
 #include "2return_codes.h"
+#include "common/tests.h"
 #include "crossystem_vbnv.h"
 #include "flashrom.h"
-#include "test_common.h"
 
 /* Mocked flashrom only supports host programmer, and RW_NVRAM
    region. */

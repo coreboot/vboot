@@ -11,8 +11,8 @@
 #include <string.h>
 
 #include "2api.h"
+#include "common/tests.h"
 #include "host_common.h"
-#include "test_common.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
 

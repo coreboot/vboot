@@ -10,9 +10,9 @@
 #include "2rsa.h"
 #include "2rsa_private.h"
 #include "2sysincludes.h"
+#include "common/tests.h"
 #include "file_keys.h"
 #include "rsa_padding_test.h"
-#include "test_common.h"
 #include "vboot_api.h"
 
 /**

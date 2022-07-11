@@ -10,10 +10,10 @@
 
 #include "2common.h"
 #include "2sysincludes.h"
+#include "common/tests.h"
 #include "host_common.h"
 #include "host_common21.h"
 #include "host_misc.h"
-#include "test_common.h"
 
 static void misc_tests(void)
 {

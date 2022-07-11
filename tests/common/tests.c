@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "2common.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Global test success flag. */
 int gTestSuccess = 1;

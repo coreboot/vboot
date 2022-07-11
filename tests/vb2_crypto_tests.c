@@ -12,7 +12,7 @@
 #include "2rsa.h"
 #include "2sha.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 #include "vboot_host.h"
 
 static void hash_algorithm_name_tests(void)

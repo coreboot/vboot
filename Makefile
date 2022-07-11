@@ -698,10 +698,10 @@ ALL_OBJS += ${FUTIL_OBJS}
 # Library of handy test functions.
 TESTLIB = ${BUILD}/tests/test.a
 
-TESTLIB_SRCS += \
-	tests/test_common.c \
-	tests/timer_utils.c \
-	tests/crc32_test.c
+TEST_COMMON_DIR = tests/common
+
+TESTLIB_SRCS += $(wildcard $(TEST_COMMON_DIR)/*.c)
+TESTLIB_SRCS += tests/crc32_test.c
 
 TESTLIB_OBJS = ${TESTLIB_SRCS:%.c=${BUILD}/%.o}
 TEST_OBJS += ${TESTLIB_OBJS}

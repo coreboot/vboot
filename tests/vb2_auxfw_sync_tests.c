@@ -13,9 +13,9 @@
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
+#include "common/tests.h"
 #include "host_common.h"
 #include "load_kernel_fw.h"
-#include "test_common.h"
 #include "vboot_struct.h"
 
 /* Mock data */

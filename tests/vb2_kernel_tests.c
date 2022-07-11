@@ -12,7 +12,7 @@
 #include "2rsa.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 #include "vboot_struct.h"
 #include "vboot_api.h"
 

@@ -11,8 +11,8 @@
 #include "2rsa.h"
 #include "2sha.h"
 #include "2sysincludes.h"
+#include "common/tests.h"
 #include "sha_test_vectors.h"
-#include "test_common.h"
 
 static void sha1_tests(void)
 {

@@ -15,7 +15,7 @@
 #include <stdio.h>
 
 #include "host_common.h"
-#include "test_common.h"
+#include "common/tests.h"
 #include "tlcl.h"
 #include "tlcl_tests.h"
 

@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "2struct.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 int main(int argc, char *argv[])
 {

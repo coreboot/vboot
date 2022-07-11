@@ -14,7 +14,7 @@
 #include "2rsa.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Common context for tests */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]

@@ -13,9 +13,9 @@
 #include "2secdata_struct.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
+#include "common/tests.h"
 #include "gpt.h"
 #include "load_kernel_fw.h"
-#include "test_common.h"
 #include "vboot_api.h"
 
 /* Mock kernel partition */

@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "subprocess.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 #define TEST_STRING "hello world"
 #define TEST_STRING_LN TEST_STRING "\n"

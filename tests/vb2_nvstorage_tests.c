@@ -16,7 +16,7 @@
 #include "2nvstorage_fields.h"
 #include "2nvstorage.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Single NV storage field to test */
 struct nv_field {

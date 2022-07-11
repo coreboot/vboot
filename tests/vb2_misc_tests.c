@@ -11,7 +11,7 @@
 #include "2nvstorage.h"
 #include "2secdata.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Common context for tests */
 static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]

@@ -9,7 +9,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 /* Mock data */
 

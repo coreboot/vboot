@@ -10,7 +10,7 @@
 
 #include "2sha.h"
 #include "2hmac.h"
-#include "test_common.h"
+#include "common/tests.h"
 
 const char short_key[] = "key";
 const char message[] = "The quick brown fox jumps over the lazy dog";

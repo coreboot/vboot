@@ -7,7 +7,7 @@
 
 #include "2common.h"
 #include "2sysincludes.h"
-#include "test_common.h"
+#include "common/tests.h"
 #include "vboot_struct.h"  /* For old struct sizes */
 
 /* Mock data */
