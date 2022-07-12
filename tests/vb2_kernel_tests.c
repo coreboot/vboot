@@ -14,8 +14,6 @@
 #include "2sysincludes.h"
 #include "common/boot_mode.h"
 #include "common/tests.h"
-#include "vboot_struct.h"
-#include "vboot_api.h"
 
 /* Common context for tests */
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
@@ -24,7 +22,7 @@ static struct vb2_context *ctx;
 static struct vb2_shared_data *sd;
 static struct vb2_fw_preamble *fwpre;
 static const char fw_kernel_key_data[36] = "Test kernel key data";
-static VbSelectAndLoadKernelParams kparams;
+static struct vb2_kernel_params kparams;
 
 /* Mocked function data */
 
@@ -40,6 +38,9 @@ static int mock_commit_data_called;
 static int mock_ec_sync_called;
 static int mock_ec_sync_retval;
 static int mock_battery_cutoff_called;
+static int mock_kernel_flag;
+static int mock_kernel_flag_set;
+static int mock_kernel_version;
 
 /* Type of test to reset for */
 enum reset_type {
@@ -62,16 +63,15 @@ static void reset_common_data(enum reset_type t)
 	sd = vb2_get_sd(ctx);
 	vb2_nv_init(ctx);
 
-	vb2api_secdata_kernel_create(ctx);
-	vb2_secdata_kernel_init(ctx);
-	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS, 0x20002);
-
 	mock_read_res_fail_on_call = 0;
 	mock_secdata_fwmp_check_retval = VB2_SUCCESS;
 	mock_commit_data_called = 0;
 	mock_ec_sync_called = 0;
 	mock_ec_sync_retval = VB2_SUCCESS;
 	mock_battery_cutoff_called = 0;
+	mock_kernel_flag = 0;
+	mock_kernel_flag_set = 0;
+	mock_kernel_version = 0x10002;
 
 	/* Recovery key in mock GBB */
 	memset(&mock_gbb, 0, sizeof(mock_gbb));
@@ -86,6 +86,8 @@ static void reset_common_data(enum reset_type t)
 	mock_gbb.h.recovery_key_size =
 		mock_gbb.recovery_key.key_offset +
 		mock_gbb.recovery_key.key_size;
+	mock_gbb.h.major_version = VB2_GBB_MAJOR_VER;
+	mock_gbb.h.minor_version = VB2_GBB_MINOR_VER;
 
 	if (t == FOR_PHASE1) {
 		uint8_t *kdata;
@@ -103,6 +105,11 @@ static void reset_common_data(enum reset_type t)
 		sd->preamble_size = sizeof(*fwpre) + k->key_size;
 		vb2_set_workbuf_used(ctx,
 				     sd->preamble_offset + sd->preamble_size);
+	} else if (t == FOR_FINALIZE) {
+		SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
+		vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0xffffffff);
+		sd->kernel_version_secdata = mock_kernel_version;
+		sd->kernel_version = mock_kernel_version;
 	}
 };
 
@@ -178,6 +185,37 @@ vb2_error_t vb2ex_commit_data(struct vb2_context *c)
 	return VB2_SUCCESS;
 }
 
+void vb2_secdata_kernel_set(struct vb2_context *c,
+			    enum vb2_secdata_kernel_param param,
+			    uint32_t value)
+{
+	switch (param) {
+	case VB2_SECDATA_KERNEL_FLAGS:
+		mock_kernel_flag = value;
+		mock_kernel_flag_set = 1;
+		break;
+	case VB2_SECDATA_KERNEL_VERSIONS:
+		mock_kernel_version = value;
+		break;
+	default:
+		vb2ex_abort();
+	}
+}
+
+uint32_t vb2_secdata_kernel_get(struct vb2_context *c,
+				enum vb2_secdata_kernel_param param)
+{
+	switch (param) {
+	case VB2_SECDATA_KERNEL_FLAGS:
+		return mock_kernel_flag;
+	case VB2_SECDATA_KERNEL_VERSIONS:
+		return mock_kernel_version;
+	default:
+		vb2ex_abort();
+	}
+	return 0;
+}
+
 /* Tests */
 
 static void phase1_tests(void)
@@ -204,7 +242,7 @@ static void phase1_tests(void)
 	TEST_EQ(k->key_size, sizeof(fw_kernel_key_data), "  key_size");
 	TEST_EQ(memcmp((uint8_t *)k + k->key_offset, fw_kernel_key_data,
 		       k->key_size), 0, "  key data");
-	TEST_EQ(sd->kernel_version_secdata, 0x20002,
+	TEST_EQ(sd->kernel_version_secdata, 0x10002,
 		"  secdata_kernel version");
 
 	/* Test successful call in recovery mode */
@@ -230,7 +268,7 @@ static void phase1_tests(void)
 	TEST_EQ(memcmp((uint8_t *)k + k->key_offset,
 		       mock_gbb.recovery_key_data, k->key_size), 0,
 		"  key data");
-	TEST_EQ(sd->kernel_version_secdata, 0x20002,
+	TEST_EQ(sd->kernel_version_secdata, 0x10002,
 		"  secdata_kernel version");
 
 	/* Test flags for experimental features in non-recovery path */
@@ -249,22 +287,10 @@ static void phase1_tests(void)
 	/*
 	 * Test flags are unchanged for experimental features in recovery path
 	 */
-
-	/* Set 8 bits to 0 */
 	reset_common_data(FOR_PHASE1);
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
-	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, 0);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
-	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS), 0,
-		"VB2_SECDATA_KERNEL_FLAGS remains unchanged in recovery path");
-
-	/* Set 8 bits to 1 */
-	reset_common_data(FOR_PHASE1);
-	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 123);
-	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS, UINT8_MAX);
-	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 rec good");
-	TEST_EQ(vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS),
-	        UINT8_MAX,
+	TEST_EQ(mock_kernel_flag_set, 0,
 		"VB2_SECDATA_KERNEL_FLAGS remains unchanged in recovery path");
 
 	/* Bad secdata_fwmp causes failure in normal mode only */
@@ -404,6 +430,34 @@ static void phase2_tests(void)
 
 static void finalize_tests(void)
 {
+	/* Kernel version roll forward */
+	reset_common_data(FOR_FINALIZE);
+	sd->kernel_version = 0x20003;
+	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
+		"Kernel version roll forward");
+	TEST_EQ(mock_kernel_version, 0x20003, "  kernel version");
+
+	reset_common_data(FOR_FINALIZE);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
+	sd->kernel_version = 0x20003;
+	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
+		"Don't roll forward kernel when trying new FW");
+	TEST_EQ(mock_kernel_version, 0x10002, "  kernel version");
+
+	reset_common_data(FOR_FINALIZE);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
+	sd->kernel_version = 0x40006;
+	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
+		"Limit max roll forward");
+	TEST_EQ(mock_kernel_version, 0x30005, "  kernel version");
+
+	reset_common_data(FOR_FINALIZE);
+	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
+	sd->kernel_version = 0x40006;
+	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
+		"Max roll forward can't rollback");
+	TEST_EQ(mock_kernel_version, 0x10002, "  kernel version");
+
 	/* NO_BOOT with EC sync support */
 	reset_common_data(FOR_FINALIZE);
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;

@@ -76,9 +76,8 @@ enum {
  * depthcharge does not have logic to properly setup stored_on_device and
  * gpt_drive_sectors, but it does do a memset(gpt, 0, sizeof(GptData)). And so,
  * GPT_STORED_ON_DEVICE should be 0 to make stored_on_device compatible with
- * present behavior. At the same time, in vboot_kernel:LoadKernel(), and
- * cgpt_common:GptLoad(), we need to have simple shims to set gpt_drive_sectors
- * to drive_sectors.
+ * present behavior. At the same time, in vb2api_load_kernel() and GptLoad(),
+ * we need to have simple shims to set gpt_drive_sectors to drive_sectors.
  *
  * TODO(namnguyen): Remove those shims when the firmware can set these fields.
  */
@@ -157,12 +156,12 @@ GptEntry *GptFindNthEntry(GptData *gpt, const Guid *guid, unsigned int n);
  *
  * Returns 0 if successful, 1 if error.
  */
-int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata);
+int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata);
 
 /**
  * Write any changes for the GPT data back to the drive, then free the buffers.
  */
-int WriteAndFreeGptData(VbExDiskHandle_t disk_handle, GptData *gptdata);
+int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata);
 
 /**
  * Return 1 if the entry is unused, 0 if it is used.

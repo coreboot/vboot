@@ -80,6 +80,14 @@
 #ifndef __ASSEMBLER__
 #include <stdint.h>
 typedef uint32_t vb2_gbb_flags_t;
+/*
+ * We use disk handles rather than indices.  Using indices causes problems if
+ * a disk is removed/inserted in the middle of processing.
+ *
+ * TODO(b/181739551): move this to 2api.h when the VbExDisk* functions are
+ * removed from vboot_api.h.
+ */
+typedef void *vb2ex_disk_handle_t;
 #endif
 
 /* Size of legacy VbSharedDataHeader struct.  Defined here to avoid including

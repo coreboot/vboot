@@ -35,9 +35,9 @@ extern "C" {
    Deprecated as part of chromium:1010389. */
 #define VBSD_FWB_TRIED        0x00000001
 /*
- * LoadKernel() verified the good kernel keyblock using the kernel subkey from
- * the firmware.  If this flag is not present, it just used the hash of the
- * kernel keyblock.
+ * vb2api_load_kernel() verified the good kernel keyblock using the kernel
+ * subkey from the firmware.  If this flag is not present, it just used the
+ * hash of the kernel keyblock.
  */
 #define VBSD_KERNEL_KEY_VERIFIED         0x00000002
 /* Developer switch was enabled at boot time */
@@ -111,21 +111,8 @@ typedef struct VbSharedDataHeader {
 	/* Firmware lowest version found */
 	uint32_t fw_version_lowest;
 
-	/* Debugging information from LoadKernel() */
-	/* Number of times LoadKernel() called */
-	uint32_t lk_call_count;
 	/* Reserved for padding */
-	uint8_t reserved3[896];
-
-	/*
-	 * Offset and size of supplemental kernel data.  Reserve space for
-	 * these fields now, so that future LoadKernel() versions can store
-	 * information there without needing to shift down whatever data the
-	 * original LoadFirmware() might have put immediately following its
-	 * VbSharedDataHeader.
-	 */
-	uint64_t kernel_supplemental_offset;
-	uint64_t kernel_supplemental_size;
+	uint8_t reserved3[916];
 
 	/*
 	 * Fields added in version 2.  Before accessing, make sure that

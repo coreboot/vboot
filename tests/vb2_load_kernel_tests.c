@@ -16,7 +16,6 @@
 #include "common/boot_mode.h"
 #include "common/tests.h"
 #include "gpt.h"
-#include "load_kernel_fw.h"
 #include "vboot_api.h"
 
 /* Mock kernel partition */
@@ -41,8 +40,8 @@ static int unpack_key_fail;
 static int gpt_flag_external;
 
 static struct vb2_gbb_header gbb;
-static VbSelectAndLoadKernelParams lkp;
-static VbDiskInfo disk_info;
+static struct vb2_kernel_params lkp;
+static struct vb2_disk_info disk_info;
 static struct vb2_keyblock kbh;
 static struct vb2_kernel_preamble kph;
 static struct vb2_secdata_fwmp *fwmp;
@@ -76,13 +75,12 @@ static void ResetMocks(void)
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.kernel_buffer = kernel_buffer;
 	lkp.kernel_buffer_size = sizeof(kernel_buffer);
-	lkp.disk_handle = (VbExDiskHandle_t)1;
 
 	memset(&disk_info, 0, sizeof(disk_info));
 	disk_info.bytes_per_lba = 512;
 	disk_info.streaming_lba_count = 1024;
 	disk_info.lba_count = 1024;
-	disk_info.handle = lkp.disk_handle;
+	disk_info.handle = (vb2ex_disk_handle_t)1;
 
 	memset(&kbh, 0, sizeof(kbh));
 	kbh.data_key.key_version = 2;
@@ -155,7 +153,7 @@ vb2_error_t vb2_gbb_read_recovery_key(struct vb2_context *c,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskRead(vb2ex_disk_handle_t h, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
 	if ((int)lba_start == disk_read_to_fail)
@@ -164,7 +162,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 	return VB2_SUCCESS;
 }
 
-int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
+int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	return GPT_SUCCESS;
 }
@@ -196,7 +194,7 @@ int GptUpdateKernelEntry(GptData *gpt, uint32_t update_type)
 	return GPT_SUCCESS;
 }
 
-int WriteAndFreeGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
+int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	return GPT_SUCCESS;
 }
@@ -278,31 +276,34 @@ void vb2api_fail(struct vb2_context *c, uint8_t reason, uint8_t subcode)
 	TEST_TRUE(0, "  called vb2api_fail()");
 }
 
-static void TestLoadKernel(int expect_retval, const char *test_name)
+static void test_load_kernel(vb2_error_t expect_retval, const char *test_name)
 {
-	TEST_EQ(LoadKernel(ctx, &lkp, &disk_info), expect_retval, test_name);
+	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), expect_retval,
+		test_name);
+	if (expect_retval == VB2_SUCCESS)
+		TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
+			    "  fill disk_handle when success");
 }
 
 /**
- * Trivial invalid calls to LoadKernel()
+ * Trivial invalid calls to vb2api_load_kernel()
  */
-static void InvalidParamsTest(void)
+static void invalid_params_tests(void)
 {
 	ResetMocks();
 	gpt_init_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_NO_KERNEL_FOUND, "Bad GPT");
+	test_load_kernel(VB2_ERROR_LK_NO_KERNEL_FOUND, "Bad GPT");
 
 	/* This causes the stream open call to fail */
 	ResetMocks();
-	lkp.disk_handle = NULL;
 	disk_info.handle = NULL;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad disk handle");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad disk handle");
 }
 
-static void LoadKernelTest(void)
+static void load_kernel_tests(void)
 {
 	ResetMocks();
-	TestLoadKernel(0, "First kernel good");
+	test_load_kernel(VB2_SUCCESS, "First kernel good");
 	TEST_EQ(lkp.partition_number, 1, "  part num");
 	TEST_EQ(lkp.bootloader_address, 0xbeadd008, "  bootloader addr");
 	TEST_EQ(lkp.bootloader_size, 0x1234, "  bootloader size");
@@ -313,42 +314,42 @@ static void LoadKernelTest(void)
 	ResetMocks();
 	mock_parts[1].start = 300;
 	mock_parts[1].size = 150;
-	TestLoadKernel(0, "Two good kernels");
+	test_load_kernel(VB2_SUCCESS, "Two good kernels");
 	TEST_EQ(lkp.partition_number, 1, "  part num");
 	TEST_EQ(mock_part_next, 1, "  didn't read second one");
 
 	/* Fail if no kernels found */
 	ResetMocks();
 	mock_parts[0].size = 0;
-	TestLoadKernel(VB2_ERROR_LK_NO_KERNEL_FOUND, "No kernels");
+	test_load_kernel(VB2_ERROR_LK_NO_KERNEL_FOUND, "No kernels");
 
 	/* Skip kernels which are too small */
 	ResetMocks();
 	mock_parts[0].size = 10;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Too small");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Too small");
 
 	ResetMocks();
 	disk_read_to_fail = 100;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail reading kernel start");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail reading kernel start");
 
 	ResetMocks();
 	keyblock_verify_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail key block sig");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail key block sig");
 
 	/* In dev mode, fail if hash is bad too */
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	keyblock_verify_fail = 2;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail key block dev hash");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail key block dev hash");
 
 	/* But just bad sig is ok */
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	keyblock_verify_fail = 1;
-	TestLoadKernel(0, "Succeed keyblock dev sig");
+	test_load_kernel(VB2_SUCCESS, "Succeed keyblock dev sig");
 	TEST_EQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  use hash");
 
 	/* In dev mode and requiring signed kernel, fail if sig is bad */
@@ -356,37 +357,37 @@ static void LoadKernelTest(void)
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	keyblock_verify_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail key block dev sig");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail key block dev sig");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
 	keyblock_verify_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail key block dev sig fwmp");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail key block dev sig fwmp");
 
 	/* Check keyblock flags */
 	ResetMocks();
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock dev flag mismatch");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock dev flag mismatch");
 
 	ResetMocks();
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock rec flag mismatch");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock rec flag mismatch");
 
 	ResetMocks();
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock minios flag mismatch");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock minios flag mismatch");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
@@ -394,8 +395,8 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock recdev flag mismatch");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock recdev flag mismatch");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
@@ -403,7 +404,7 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(0, "Keyblock rec flag okay");
+	test_load_kernel(VB2_SUCCESS, "Keyblock rec flag okay");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
@@ -412,8 +413,8 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock rec!dev flag mismatch");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock rec!dev flag mismatch");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
@@ -422,7 +423,7 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(0, "Keyblock recdev flag okay");
+	test_load_kernel(VB2_SUCCESS, "Keyblock recdev flag okay");
 
 	/* Check keyblock flags (dev mode + signed kernel required) */
 	ResetMocks();
@@ -431,8 +432,8 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock dev flag mismatch (signed kernel required)");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock dev flag mismatch (signed kernel required)");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
@@ -440,8 +441,8 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_1
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock dev flag mismatch (signed kernel required)");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock dev flag mismatch (signed kernel required)");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
@@ -449,8 +450,8 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_0
 		| VB2_KEYBLOCK_FLAG_MINIOS_1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock dev flag mismatch (signed kernel required)");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock dev flag mismatch (signed kernel required)");
 
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
@@ -458,91 +459,92 @@ static void LoadKernelTest(void)
 	kbh.keyblock_flags = VB2_KEYBLOCK_FLAG_RECOVERY_0
 		| VB2_KEYBLOCK_FLAG_DEVELOPER_1
 		| VB2_KEYBLOCK_FLAG_MINIOS_0;
-	TestLoadKernel(0, "Keyblock dev flag okay (signed kernel required)");
+	test_load_kernel(VB2_SUCCESS,
+			 "Keyblock dev flag okay (signed kernel required)");
 
 	/* Check kernel key version */
 	ResetMocks();
 	kbh.data_key.key_version = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock kernel key rollback");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock kernel key rollback");
 
 	ResetMocks();
 	kbh.data_key.key_version = 0x10000;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock kernel key version too big");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock kernel key version too big");
 
 	ResetMocks();
 	kbh.data_key.key_version = 3;
-	TestLoadKernel(0, "Keyblock version roll forward");
+	test_load_kernel(VB2_SUCCESS, "Keyblock version roll forward");
 	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
 
 	ResetMocks();
 	kbh.data_key.key_version = 3;
 	mock_parts[1].start = 300;
 	mock_parts[1].size = 150;
-	TestLoadKernel(0, "Two kernels roll forward");
+	test_load_kernel(VB2_SUCCESS, "Two kernels roll forward");
 	TEST_EQ(mock_part_next, 2, "  read both");
 	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
-	TestLoadKernel(0, "Key version ignored in dev mode");
+	test_load_kernel(VB2_SUCCESS, "Key version ignored in dev mode");
 
 	ResetMocks();
 	kbh.data_key.key_version = 1;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
 		      VB2_RECOVERY_RO_MANUAL);
-	TestLoadKernel(0, "Key version ignored in rec mode");
+	test_load_kernel(VB2_SUCCESS, "Key version ignored in rec mode");
 
 	ResetMocks();
 	unpack_key_fail = 2;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data key");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data key");
 
 	ResetMocks();
 	preamble_verify_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad preamble");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad preamble");
 
 	ResetMocks();
 	kph.kernel_version = 0;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Kernel version rollback");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Kernel version rollback");
 
 	ResetMocks();
 	kph.kernel_version = 0;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
-	TestLoadKernel(0, "Kernel version ignored in dev mode");
+	test_load_kernel(VB2_SUCCESS, "Kernel version ignored in dev mode");
 
 	ResetMocks();
 	kph.kernel_version = 0;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY,
 		      VB2_RECOVERY_RO_MANUAL);
-	TestLoadKernel(0, "Kernel version ignored in rec mode");
+	test_load_kernel(VB2_SUCCESS, "Kernel version ignored in rec mode");
 
 	/* Check kernel version (dev mode + signed kernel required) */
 	ResetMocks();
 	kbh.data_key.key_version = 0;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock key version checked in dev mode "
-		       "(signed kernel required)");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock key version checked in dev mode "
+			 "(signed kernel required)");
 
 	ResetMocks();
 	kbh.data_key.key_version = 0;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Keyblock key version checked in dev mode "
-		       "(signed kernel required)");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Keyblock key version checked in dev mode "
+			 "(signed kernel required)");
 
 	/* Check developer key hash - bad */
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	fwmp->dev_key_hash[0]++;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail keyblock dev fwmp hash");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail keyblock dev fwmp hash");
 
 	/* Check developer key hash - bad (recovery mode) */
 	ResetMocks();
@@ -550,72 +552,73 @@ static void LoadKernelTest(void)
 		      VB2_RECOVERY_RO_MANUAL);
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
 	fwmp->dev_key_hash[0]++;
-	TestLoadKernel(0, "Bad keyblock dev fwmp hash ignored in rec mode");
+	test_load_kernel(VB2_SUCCESS,
+			 "Bad keyblock dev fwmp hash ignored in rec mode");
 
 	/* Check developer key hash - good */
 	ResetMocks();
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	fwmp->flags |= VB2_SECDATA_FWMP_DEV_USE_KEY_HASH;
-	TestLoadKernel(0, "Good keyblock dev fwmp hash");
+	test_load_kernel(VB2_SUCCESS, "Good keyblock dev fwmp hash");
 
 	ResetMocks();
 	kph.preamble_size |= 0x07;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Kernel body offset");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Kernel body offset");
 
 	ResetMocks();
 	kph.preamble_size += 65536;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Kernel body offset huge");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Kernel body offset huge");
 
 	/* Check getting kernel load address from header */
 	ResetMocks();
 	kph.body_load_address = (size_t)kernel_buffer;
 	lkp.kernel_buffer = NULL;
-	TestLoadKernel(0, "Get load address from preamble");
+	test_load_kernel(VB2_SUCCESS, "Get load address from preamble");
 	TEST_PTR_EQ(lkp.kernel_buffer, kernel_buffer, "  address");
 	/* Size is rounded up to nearest sector */
 	TEST_EQ(lkp.kernel_buffer_size, 70144, "  size");
 
 	ResetMocks();
 	lkp.kernel_buffer_size = 8192;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Kernel too big for buffer");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Kernel too big for buffer");
 
 	ResetMocks();
 	mock_parts[0].size = 130;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Kernel too big for partition");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Kernel too big for partition");
 
 	ResetMocks();
 	kph.body_signature.data_size = 8192;
-	TestLoadKernel(0, "Kernel tiny");
+	test_load_kernel(VB2_SUCCESS, "Kernel tiny");
 
 	ResetMocks();
 	disk_read_to_fail = 228;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
-		       "Fail reading kernel data");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+			 "Fail reading kernel data");
 
 	ResetMocks();
 	verify_data_fail = 1;
-	TestLoadKernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data");
+	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data");
 
 	/* Check that EXTERNAL_GPT flag makes it down */
 	ResetMocks();
-	disk_info.flags |= VB_DISK_FLAG_EXTERNAL_GPT;
-	TestLoadKernel(0, "Succeed external GPT");
+	disk_info.flags |= VB2_DISK_FLAG_EXTERNAL_GPT;
+	test_load_kernel(VB2_SUCCESS, "Succeed external GPT");
 	TEST_EQ(gpt_flag_external, 1, "GPT was external");
 
 	/* Check recovery from unreadble primary GPT */
 	ResetMocks();
 	disk_read_to_fail = 1;
-	TestLoadKernel(0, "Can't read disk");
+	test_load_kernel(VB2_SUCCESS, "Can't read disk");
 }
 
 int main(void)
 {
-	InvalidParamsTest();
-	LoadKernelTest();
+	invalid_params_tests();
+	load_kernel_tests();
 
 	return gTestSuccess ? 0 : 255;
 }

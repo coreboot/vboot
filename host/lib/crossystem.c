@@ -38,7 +38,8 @@
 typedef enum VdatStringField {
 	VDAT_STRING_DEPRECATED_TIMERS = 0,  /* Timer values */
 	VDAT_STRING_LOAD_FIRMWARE_DEBUG,  /* LoadFirmware() debug info */
-	VDAT_STRING_DEPRECATED_LOAD_KERNEL_DEBUG,  /* LoadKernel() debug info */
+	VDAT_STRING_DEPRECATED_LOAD_KERNEL_DEBUG,  /* vb2api_load_kernel()
+						      debug info */
 	VDAT_STRING_MAINFW_ACT  /* Active main firmware */
 } VdatStringField;
 

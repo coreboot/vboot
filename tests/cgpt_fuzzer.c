@@ -25,7 +25,7 @@ struct GptDataParams {
 
 static struct MockDisk mock_disk;
 
-vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskRead(vb2ex_disk_handle_t h, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
 	size_t lba_size = mock_disk.size >> mock_disk.sector_shift;

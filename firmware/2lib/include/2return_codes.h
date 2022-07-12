@@ -767,19 +767,19 @@ enum vb2_return_code {
 	VB2_ERROR_DEPRECATED_EX_DIAG_TEST_INIT_FAILED,
 
 	/**********************************************************************
-	 * LoadKernel errors
+	 * Kernel loading errors
 	 *
 	 * Should be ordered by specificity -- lower number means more specific.
 	 */
 	VB2_ERROR_LK = 0x100b0000,
 
-	/* Only an invalid kernel was found in LoadKernel() */
+	/* Only an invalid kernel was found in vb2api_load_kernel() */
 	VB2_ERROR_LK_INVALID_KERNEL_FOUND = 0x100b1000,
 
-	/* No kernel partitions were found in LoadKernel() */
+	/* No kernel partitions were found in vb2api_load_kernel() */
 	VB2_ERROR_LK_NO_KERNEL_FOUND = 0x100b2000,
 
-	/* No working block devices were found in VbTryLoadKernel() */
+	/* No working block devices were found */
 	VB2_ERROR_LK_NO_DISK_FOUND = 0x100b3000,
 
 	/**********************************************************************

@@ -113,7 +113,7 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 	/* 0x46 */ case VB2_RECOVERY_RW_SHARED_DATA:
 		return "Shared data error in rewritable firmware";
 	/* 0x47 */ case VB2_RECOVERY_DEPRECATED_RW_TEST_LK:
-		return "Test error from LoadKernel()";
+		return "Test error from vb2api_load_kernel()";
 	/* 0x48 */ case VB2_RECOVERY_DEPRECATED_RW_NO_DISK:
 		return "No bootable storage device in system";
 	/* 0x49 */ case VB2_RECOVERY_TPM_E_FAIL:

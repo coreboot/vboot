@@ -15,7 +15,6 @@
 #include "2sysincludes.h"
 #include "common/tests.h"
 #include "host_common.h"
-#include "load_kernel_fw.h"
 #include "vboot_struct.h"
 
 /* Mock data */

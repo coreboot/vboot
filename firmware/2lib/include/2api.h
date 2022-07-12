@@ -29,7 +29,6 @@
 #include "2return_codes.h"
 #include "2rsa.h"
 #include "2secdata_struct.h"
-#include "vboot_api.h"
 
 #define _VB2_TRY_IMPL(expr, ctx, recovery_reason, ...) do { \
 	vb2_error_t _vb2_try_rv = (expr); \
@@ -779,24 +778,155 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx);
 vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx);
 
 /**
- * Handle a normal boot.
- *
- * @param ctx		Vboot context.
- * @param kparams	Params specific to loading the kernel
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2api_normal_boot(struct vb2_context *ctx,
-			       VbSelectAndLoadKernelParams *kparams);
-
-/**
  * Finalize for kernel verification stage.
  *
- * Handle NO_BOOT flag.
+ * Handle NO_BOOT flag. Also, check and roll forward kernel version.
  *
  * @param ctx		Vboot context
  * @return VB2_SUCCESS, or error code on error.
  */
 vb2_error_t vb2api_kernel_finalize(struct vb2_context *ctx);
+
+struct vb2_kernel_params {
+	/* Inputs to vb2api_load_kernel(). */
+	/* Destination buffer for kernel (normally at 0x100000 on x86). */
+	void *kernel_buffer;
+	/* Size of kernel buffer in bytes. */
+	uint32_t kernel_buffer_size;
+
+	/*
+	 * Outputs from vb2api_load_kernel(); valid only if it returns success.
+	 */
+	/* Handle of disk containing loaded kernel. */
+	vb2ex_disk_handle_t disk_handle;
+	/* Partition number on disk to boot (1...M). */
+	uint32_t partition_number;
+	/* Address of bootloader image in RAM. */
+	uint64_t bootloader_address;
+	/* Size of bootloader image in bytes. */
+	uint32_t bootloader_size;
+	/* UniquePartitionGuid for boot partition. */
+	uint8_t partition_guid[16];
+	/* Flags set by signer. */
+	uint32_t flags;
+};
+
+/*****************************************************************************/
+/* Disk access */
+
+/* Flags for vb2_disk_info */
+
+/*
+ * Disk selection in the lower 16 bits (where the disk lives), and disk
+ * attributes in the higher 16 bits (extra information about the disk
+ * needed to access it correctly).
+ */
+#define VB2_DISK_FLAG_SELECT_MASK 0xffff
+#define VB2_DISK_FLAG_ATTRIBUTE_MASK (0xffff << 16)
+
+/* Disk is removable.  Example removable disks: SD cards, USB keys.  */
+#define VB2_DISK_FLAG_REMOVABLE (1 << 0)
+/*
+ * Disk is fixed.  If this flag is present, disk is internal to the system and
+ * not removable.  Example fixed disks: internal SATA SSD, eMMC.
+ */
+#define VB2_DISK_FLAG_FIXED (1 << 1)
+/*
+ * Note that VB2_DISK_FLAG_REMOVABLE and VB2_DISK_FLAG_FIXED are
+ * mutually-exclusive for a single disk.  VbExDiskGetInfo() may specify both
+ * flags to request disks of both types in a single call.
+ *
+ * At some point we could specify additional flags, but we don't currently
+ * have a way to make use of these:
+ *
+ * USB              Device is known to be attached to USB.  Note that the SD
+ *                  card reader inside x86 systems is attached to USB so this
+ *                  isn't super useful.
+ * SD               Device is known to be a SD card.  Note that external card
+ *                  readers might not return this information, so also of
+ *                  questionable use.
+ * READ_ONLY        Device is known to be read-only.  Could be used by recovery
+ *                  when processing read-only recovery image.
+ */
+
+/*
+ * Disks are used in two ways:
+ * - As a random-access device to read and write the GPT
+ * - As a streaming device to read the kernel
+ * These are implemented differently on raw NAND vs eMMC/SATA/USB
+ * - On eMMC/SATA/USB, both of these refer to the same underlying
+ *   storage, so they have the same size and LBA size. In this case,
+ *   the GPT should not point to the same address as itself.
+ * - On raw NAND, the GPT is held on a portion of the SPI flash.
+ *   Random access GPT operations refer to the SPI and streaming
+ *   operations refer to NAND. The GPT may therefore point into
+ *   the same offsets as itself.
+ * These types are distinguished by the following flag and vb2_disk_info
+ * has separate fields to describe the random-access ("GPT") and
+ * streaming aspects of the disk. If a disk is random-access (i.e.
+ * not raw NAND) then these fields are equal.
+ */
+#define VB2_DISK_FLAG_EXTERNAL_GPT (1 << 16)
+
+/* Information on a single disk. */
+struct vb2_disk_info {
+	/* Disk handle. */
+	vb2ex_disk_handle_t handle;
+	/* Size of a random-access LBA sector in bytes. */
+	uint64_t bytes_per_lba;
+	/* Number of random-access LBA sectors on the device.
+	 * If streaming_lba_count is 0, this stands in for the size of the
+	 * randomly accessed portion as well as the streaming portion.
+	 * Otherwise, this is only the randomly-accessed portion. */
+	uint64_t lba_count;
+	/* Number of streaming sectors on the device. */
+	uint64_t streaming_lba_count;
+	/* Flags (see VB2_DISK_FLAG_* constants). */
+	uint32_t flags;
+	/*
+	 * Optional name string, for use in debugging.  May be empty or null if
+	 * not available.
+	 */
+	const char *name;
+};
+
+/**
+ * Attempt to load kernel from the specified device. On success, the output
+ * fields of params will be filled. The caller should set the input fields of
+ * params.
+ *
+ *
+ * @param ctx		Vboot context
+ * @param params	Params specific to loading the kernel
+ * @param disk_info	Disk from which to read kernel
+ *
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
+			       struct vb2_kernel_params *params,
+			       struct vb2_disk_info *disk_info);
+
+/* miniOS flags */
+
+/* Boot from non-active miniOS partition only. */
+#define VB2_MINIOS_FLAG_NON_ACTIVE (1 << 0)
+
+/**
+ * Attempt to load miniOS kernel from the specified device. On success, the
+ * output fields of params will be filled. The caller should set the input
+ * fields of params.
+ *
+ * @param ctx		Vboot context
+ * @param params	Params specific to loading the kernel
+ * @param disk_info	Disk from which to read kernel
+ * @param minios_flags	Flags for miniOS
+ *
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2api_load_minios_kernel(struct vb2_context *ctx,
+				      struct vb2_kernel_params *params,
+				      struct vb2_disk_info *disk_info,
+				      uint32_t minios_flags);
 
 /**
  * Load the verified boot block (vblock) for a kernel.

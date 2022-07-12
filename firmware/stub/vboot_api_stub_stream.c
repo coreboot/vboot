@@ -16,7 +16,7 @@
 /* Internal struct to simulate a stream for sector-based disks */
 struct disk_stream {
 	/* Disk handle */
-	VbExDiskHandle_t handle;
+	vb2ex_disk_handle_t handle;
 
 	/* Next sector to read */
 	uint64_t sector;
@@ -26,7 +26,7 @@ struct disk_stream {
 };
 
 __attribute__((weak))
-vb2_error_t VbExStreamOpen(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			   uint64_t lba_count, VbExStream_t *stream)
 {
 	struct disk_stream *s;

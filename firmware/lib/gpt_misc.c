@@ -19,7 +19,7 @@
  *
  * Returns 0 if successful, 1 if error.
  */
-int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
+int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	int primary_valid = 0, secondary_valid = 0;
 
@@ -126,7 +126,7 @@ int AllocAndReadGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
  *
  * Returns 0 if successful, 1 if error.
  */
-int WriteAndFreeGptData(VbExDiskHandle_t disk_handle, GptData *gptdata)
+int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	int skip_primary = 0;
 	GptHeader *header;

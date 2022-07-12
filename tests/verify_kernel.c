@@ -14,7 +14,6 @@
 #include "host_common.h"
 #include "util_misc.h"
 #include "vboot_api.h"
-#include "load_kernel_fw.h"
 
 static uint8_t workbuf[VB2_KERNEL_WORKBUF_RECOMMENDED_SIZE]
 	__attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -23,13 +22,13 @@ static struct vb2_shared_data *sd;
 
 static uint8_t *diskbuf;
 
-static VbSelectAndLoadKernelParams params;
-static VbDiskInfo disk_info;
+static struct vb2_kernel_params params;
+static struct vb2_disk_info disk_info;
 
-vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskRead(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
-	if (handle != (VbExDiskHandle_t)1)
+	if (handle != (vb2ex_disk_handle_t)1)
 		return VB2_ERROR_UNKNOWN;
 	if (lba_start >= disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
@@ -40,10 +39,10 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t handle, uint64_t lba_start,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExDiskWrite(VbExDiskHandle_t handle, uint64_t lba_start,
+vb2_error_t VbExDiskWrite(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			  uint64_t lba_count, const void *buffer)
 {
-	if (handle != (VbExDiskHandle_t)1)
+	if (handle != (vb2ex_disk_handle_t)1)
 		return VB2_ERROR_UNKNOWN;
 	if (lba_start >= disk_info.streaming_lba_count)
 		return VB2_ERROR_UNKNOWN;
@@ -87,8 +86,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Set up params */
-	params.disk_handle = (VbExDiskHandle_t)1;
-	disk_info.handle = (VbExDiskHandle_t)1;
+	disk_info.handle = (vb2ex_disk_handle_t)1;
 	disk_info.bytes_per_lba = 512;
 	disk_info.streaming_lba_count = disk_bytes / 512;
 	disk_info.lba_count = disk_info.streaming_lba_count;
@@ -123,8 +121,8 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * LoadKernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and only in
-	 * dev mode.  So just use defaults for nv storage.
+	 * vb2api_load_kernel() cares only about VBNV_DEV_BOOT_SIGNED_ONLY, and
+	 * only in dev mode.  So just use defaults for nv storage.
 	 */
 	vb2_nv_init(ctx);
 	/* We need to init kernel secdata for
@@ -134,9 +132,10 @@ int main(int argc, char *argv[])
 	vb2_secdata_kernel_init(ctx);
 
 	/* Try loading kernel */
-	rv = LoadKernel(ctx, &params, &disk_info);
+	rv = vb2api_load_kernel(ctx, &params, &disk_info);
 	if (rv != VB2_SUCCESS) {
-		fprintf(stderr, "LoadKernel() failed with code %d\n", rv);
+		fprintf(stderr, "vb2api_load_kernel() failed with code %d\n",
+			rv);
 		return 1;
 	}
 

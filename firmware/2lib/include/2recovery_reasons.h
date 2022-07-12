@@ -205,7 +205,7 @@ enum vb2_nv_recovery {
 	/* Shared data error in rewritable firmware */
 	VB2_RECOVERY_RW_SHARED_DATA = 0x46,
 
-	/* Test error from LoadKernel() (deprecated) */
+	/* Test error from vb2api_load_kernel() (deprecated) */
 	VB2_RECOVERY_DEPRECATED_RW_TEST_LK = 0x47,
 
 	/* No bootable disk found (deprecated, see 0x5a) */

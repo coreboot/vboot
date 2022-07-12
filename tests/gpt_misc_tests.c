@@ -29,7 +29,7 @@ static char call_log[4096];
 static int disk_read_to_fail;
 static int disk_write_to_fail;
 
-static VbExDiskHandle_t handle;
+static vb2ex_disk_handle_t handle;
 static uint8_t mock_disk[MOCK_SECTOR_SIZE * MOCK_SECTOR_COUNT];
 static GptHeader *mock_gpt_primary =
 	(GptHeader*)&mock_disk[MOCK_SECTOR_SIZE * 1];
@@ -91,7 +91,7 @@ static void ResetMocks(void)
 
 /* Mocks */
 
-vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskRead(vb2ex_disk_handle_t h, uint64_t lba_start,
 			 uint64_t lba_count, void *buffer)
 {
 	LOGCALL("VbExDiskRead(h, %d, %d)\n", (int)lba_start, (int)lba_count);
@@ -105,7 +105,7 @@ vb2_error_t VbExDiskRead(VbExDiskHandle_t h, uint64_t lba_start,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t VbExDiskWrite(VbExDiskHandle_t h, uint64_t lba_start,
+vb2_error_t VbExDiskWrite(vb2ex_disk_handle_t h, uint64_t lba_start,
 			  uint64_t lba_count, const void *buffer)
 {
 	LOGCALL("VbExDiskWrite(h, %d, %d)\n", (int)lba_start, (int)lba_count);
@@ -207,7 +207,7 @@ static void ReadWriteGptTest(void)
 	 * Invalidate primary GPT header and check that it is
 	 * repaired by GptRepair().
 	 *
-	 * This would normally be called by LoadKernel()->GptInit()
+	 * This would normally be called by vb2api_load_kernel()->GptInit()
 	 * but this callback is mocked in these tests.
 	 */
 	ResetMocks();
@@ -232,7 +232,7 @@ static void ReadWriteGptTest(void)
 	 * Invalidate secondary GPT header and check that it can be
 	 * repaired by GptRepair().
 	 *
-	 * This would normally be called by LoadKernel()->GptInit()
+	 * This would normally be called by vb2api_load_kernel()->GptInit()
 	 * but this callback is mocked in these tests.
 	 */
 	ResetMocks();

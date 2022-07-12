@@ -180,6 +180,7 @@ vb2_error_t vb2_secdata_kernel_init(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+test_mockable
 uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
 				enum vb2_secdata_kernel_param param)
 {
