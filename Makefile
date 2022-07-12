@@ -237,7 +237,7 @@ CFLAGS += $(cflags_use_64bits)
 
 # Code coverage
 ifneq ($(filter-out 0,${COV}),)
-  COV_FLAGS = -O0 --coverage -DCOVERAGE
+  COV_FLAGS = -Og --coverage -DCOVERAGE
   CFLAGS += ${COV_FLAGS}
   LDFLAGS += ${COV_FLAGS}
   COV_INFO = ${BUILD}/coverage.info
@@ -1354,7 +1354,7 @@ coverage_init: install_for_test
 	lcov -c -i -d . -b . -o ${COV_INFO}.initial
 
 .PHONY: coverage_html
-coverage_html:
+coverage_html: coverage_init runtests
 	lcov -c -d . -b . -o ${COV_INFO}.tests
 	lcov -a ${COV_INFO}.initial -a ${COV_INFO}.tests -o ${COV_INFO}.total
 	lcov -r ${COV_INFO}.total '/usr/*' -o ${COV_INFO}.local
