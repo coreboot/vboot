@@ -24,6 +24,7 @@
 #include "2fw_hash_tags.h"
 #include "2gbb_flags.h"
 #include "2id.h"
+#include "2info.h"
 #include "2recovery_reasons.h"
 #include "2return_codes.h"
 #include "2rsa.h"
@@ -264,73 +265,6 @@ enum vb2_context_flags {
 	 * TPM before jumping to kernel.
 	 */
 	VB2_CONTEXT_DISABLE_TPM = (1 << 28),
-};
-
-/* Boot mode decided in vb2api_fw_phase1.
- *
- * Boot mode is a constant set by verified boot and may be read (but should not
- * be set or cleared) by the caller.
- * The boot modes are mutually exclusive. If a boot fulfill more than one
- * constraints of the listing boot modes, it will be set to the most important
- * one. The priority is the same as the listing order.
- */
-enum vb2_boot_mode {
-	/* Undefined, The boot mode is not set. */
-	VB2_BOOT_MODE_UNDEFINED = 0,
-
-	/*
-	 * Manual recovery boot, regardless of dev mode state.
-	 *
-	 * VB2_CONTEXT_RECOVERY_MODE is set and the recovery is physically
-	 * requested (a.k.a. Manual recovery).  All other recovery requests
-	 * including manual recovery requested by a (compromised) host will end
-	 * up with a broken screen.
-	 */
-	VB2_BOOT_MODE_MANUAL_RECOVERY = 1,
-
-	/*
-	 * Broken screen.
-	 *
-	 * If a recovery boot is not a manual recovery (a.k.a. not requested
-	 * physically), the recovery is not allowed and will end up with
-	 * broken screen.
-	 */
-	VB2_BOOT_MODE_BROKEN_SCREEN = 2,
-
-	/*
-	 * Diagnostic boot.
-	 *
-	 * If diagnostic boot is enabled (a.k.a. vb2api_diagnostic_ui_enabled)
-	 * and the nvdata contains VB2_NV_DIAG_REQUEST from previous boot, it
-	 * will boot to diagnostic mode.
-	 */
-	VB2_BOOT_MODE_DIAGNOSTICS = 3,
-
-	/*
-	 * Developer boot: self-signed kernel okay.
-	 *
-	 * The developer mode switch is set (a.k.a. VB2_CONTEXT_DEVELOPER_MODE)
-	 * and we are in the developer boot mode.
-	 */
-	VB2_BOOT_MODE_DEVELOPER = 4,
-
-	/* Normal boot: kernel must be verified. */
-	VB2_BOOT_MODE_NORMAL = 5,
-};
-
-/* Firmware result codes for VB2_NV_FW_RESULT and VB2_NV_FW_PREV_RESULT */
-enum vb2_fw_result {
-	/* Unknown */
-	VB2_FW_RESULT_UNKNOWN = 0,
-
-	/* Trying a new slot, but haven't reached success/failure */
-	VB2_FW_RESULT_TRYING = 1,
-
-	/* Successfully booted to the OS */
-	VB2_FW_RESULT_SUCCESS = 2,
-
-	/* Known failure */
-	VB2_FW_RESULT_FAILURE = 3,
 };
 
 /* Helper for aligning fields in vb2_context. */
@@ -1519,5 +1453,31 @@ uint32_t vb2ex_mtime(void);
  * @param msec			Duration in milliseconds.
  */
 void vb2ex_msleep(uint32_t msec);
+
+union vb2_fw_boot_info {
+	uint8_t raw[4];
+	struct {
+		uint8_t tries       : 4;
+		uint8_t slot        : 1;
+		uint8_t prev_slot   : 1;
+		uint8_t prev_result : 2;
+		uint8_t boot_mode;
+		/* The following 2 bytes only exist for recovery mode */
+		uint8_t recovery_reason;
+		uint8_t recovery_subcode;
+	};
+};
+
+/**
+ * Return `vb2_fw_boot_info` and can be used
+ * to log information about the current boot in a compact format.
+ *
+ * Note: Only call this API at minimum after `vb2api_fw_phase2` function
+ * returns.
+ *
+ * @param ctx          Vboot context
+ * @return filled out vb2 info as per `union vb2_fw_boot_info`.
+ */
+union vb2_fw_boot_info vb2api_get_fw_boot_info(struct vb2_context *ctx);
 
 #endif  /* VBOOT_REFERENCE_2API_H_ */
