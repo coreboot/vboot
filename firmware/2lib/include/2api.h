@@ -824,31 +824,6 @@ struct vb2_kernel_params {
 #define VB2_DISK_FLAG_SELECT_MASK 0xffff
 #define VB2_DISK_FLAG_ATTRIBUTE_MASK (0xffff << 16)
 
-/* Disk is removable.  Example removable disks: SD cards, USB keys.  */
-#define VB2_DISK_FLAG_REMOVABLE (1 << 0)
-/*
- * Disk is fixed.  If this flag is present, disk is internal to the system and
- * not removable.  Example fixed disks: internal SATA SSD, eMMC.
- */
-#define VB2_DISK_FLAG_FIXED (1 << 1)
-/*
- * Note that VB2_DISK_FLAG_REMOVABLE and VB2_DISK_FLAG_FIXED are
- * mutually-exclusive for a single disk.  VbExDiskGetInfo() may specify both
- * flags to request disks of both types in a single call.
- *
- * At some point we could specify additional flags, but we don't currently
- * have a way to make use of these:
- *
- * USB              Device is known to be attached to USB.  Note that the SD
- *                  card reader inside x86 systems is attached to USB so this
- *                  isn't super useful.
- * SD               Device is known to be a SD card.  Note that external card
- *                  readers might not return this information, so also of
- *                  questionable use.
- * READ_ONLY        Device is known to be read-only.  Could be used by recovery
- *                  when processing read-only recovery image.
- */
-
 /*
  * Disks are used in two ways:
  * - As a random-access device to read and write the GPT

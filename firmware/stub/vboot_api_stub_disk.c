@@ -15,32 +15,12 @@
 #include "2common.h"
 #include "vboot_api.h"
 
-
-__attribute__((weak))
-vb2_error_t VbExDiskGetInfo(struct vb2_disk_info **infos_ptr, uint32_t *count,
-			    uint32_t disk_flags)
-{
-	*infos_ptr = NULL;
-	*count = 0;
-	return VB2_SUCCESS;
-}
-
-
-__attribute__((weak))
-vb2_error_t VbExDiskFreeInfo(struct vb2_disk_info *infos_ptr,
-			     vb2ex_disk_handle_t preserve_handle)
-{
-	return VB2_SUCCESS;
-}
-
-
 __attribute__((weak))
 vb2_error_t VbExDiskRead(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			 uint64_t lba_count, void* buffer)
 {
 	return VB2_SUCCESS;
 }
-
 
 __attribute__((weak))
 vb2_error_t VbExDiskWrite(vb2ex_disk_handle_t handle, uint64_t lba_start,

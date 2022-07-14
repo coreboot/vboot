@@ -40,34 +40,6 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
 /* Disk access (previously in boot_device.h) */
 
 /**
- * Store information into [info] for all disks (storage devices) attached to
- * the system which match all of the disk_flags.
- *
- * On output, count indicates how many disks are present, and [infos_ptr]
- * points to a [count]-sized array of vb2_disk_info structs with the information
- * on those disks; this pointer must be freed by calling VbExDiskFreeInfo().
- * If count=0, infos_ptr may point to NULL.  If [infos_ptr] points to NULL
- * because count=0 or error, it is not necessary to call VbExDiskFreeInfo().
- *
- * A multi-function device (such as a 4-in-1 card reader) should provide
- * multiple disk handles.
- *
- * The firmware must not alter or free the list pointed to by [infos_ptr] until
- * VbExDiskFreeInfo() is called.
- */
-vb2_error_t VbExDiskGetInfo(struct vb2_disk_info **infos_ptr, uint32_t *count,
-			    uint32_t disk_flags);
-
-/**
- * Free a disk information list [infos] previously returned by
- * VbExDiskGetInfo().  If [preserve_handle] != NULL, the firmware must ensure
- * that handle remains valid after this call; all other handles from the info
- * list need not remain valid after this call.
- */
-vb2_error_t VbExDiskFreeInfo(struct vb2_disk_info *infos,
-			     vb2ex_disk_handle_t preserve_handle);
-
-/**
  * Read lba_count LBA sectors, starting at sector lba_start, from the disk,
  * into the buffer.
  *
