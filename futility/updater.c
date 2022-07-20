@@ -1603,8 +1603,25 @@ int updater_setup_config(struct updater_config *cfg,
 		return errorcnt;
 	}
 
-	/* Load images from archive. */
-	if (arg->archive) {
+	/* Process the manifest and load images from the archive. */
+	if (arg->archive && arg->do_manifest && arg->fast_update) {
+		/* Quickly load and dump the manifest file from the archive. */
+		const char *manifest_name = "manifest.json";
+		uint8_t *data = NULL;
+		uint32_t size = 0;
+
+		if (archive_has_entry(cfg->archive, manifest_name) &&
+		    archive_read_file(cfg->archive, manifest_name, &data, &size,
+				      NULL) == 0) {
+			/* data is NUL-terminated. */
+			printf("%s\n", data);
+			free(data);
+		} else {
+			ERROR("Failed to read the cached manifest: %s\n",
+			      manifest_name);
+			errorcnt++;
+		}
+	} else if (arg->archive) {
 		struct manifest *m = new_manifest_from_archive(cfg->archive);
 		if (m) {
 			errorcnt += updater_setup_archive(
