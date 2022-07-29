@@ -188,9 +188,6 @@ static bool range_fits(const struct gscvd_ro_range *range,
 	    in_range(range->offset + range->size, ah))
 		return true;
 
-	ERROR("Range %#x..+%#x does not fit in %s\n", range->offset,
-	      range->size, ah->area_name);
-
 	return false;
 }
 
@@ -234,6 +231,7 @@ static int verify_ranges(const struct gscvd_ro_ranges *ranges,
 {
 	size_t i;
 	FmapAreaHeader *wp_ro;
+	FmapAreaHeader *si_all;
 	int errorcount;
 
 	if (!fmap_find_by_name(file->data, file->len, NULL, "WP_RO", &wp_ro)) {
@@ -241,13 +239,24 @@ static int verify_ranges(const struct gscvd_ro_ranges *ranges,
 		return 1;
 	}
 
+	/* Intel boards can have an SI_ALL region that's not in WP_RO but is
+	   protected by platform-specific mechanisms, and may still contain
+	   components that we want to protect from physical attack. */
+	if (!fmap_find_by_name(file->data, file->len, NULL, "SI_ALL", &si_all))
+		si_all = NULL;
+
 	errorcount = 0;
 	for (i = 0; i < ranges->range_count; i++) {
 		size_t j;
 
-		/* Must fit into WP_RO. */
-		if (!range_fits(ranges->ranges + i, wp_ro))
+		/* Must fit into WP_RO or SI_ALL. */
+		if (!range_fits(ranges->ranges + i, wp_ro) &&
+		    (!si_all || !range_fits(ranges->ranges + i, si_all))) {
+			ERROR("Range %#x..+%#x does not fit in WP_RO/SI_ALL\n",
+				ranges->ranges[i].offset,
+				ranges->ranges[i].size);
 			errorcount++;
+		}
 
 		/* Must not overlap with RO_GSCVD. */
 		if (range_overlaps(ranges->ranges + i,
