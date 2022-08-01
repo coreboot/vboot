@@ -386,13 +386,13 @@ static int manifest_scan_raw_entries(const char *name, void *arg)
 	struct manifest *manifest = (struct manifest *)arg;
 	struct u_archive *archive = manifest->archive;
 	struct model_config model = {0};
-	char *ec_name = NULL, *zephyr_name = NULL;
+	char *ec_name = NULL;
 	int chars_read = 0;
 
 	/*
 	 * /build/$BOARD/firmware (or CPFE firmware archives) layout:
 	 * - image-${MODEL}{,.serial,.dev...}.bin
-	 * - ${MODEL}/ec.bin or ${MODEL}/zephyr.bin
+	 * - ${MODEL}/ec.bin
 	 */
 
 	if (sscanf(name, "image-%m[^.].bin%n", &model.name, &chars_read) != 1)
@@ -408,13 +408,9 @@ static int manifest_scan_raw_entries(const char *name, void *arg)
 	model.image = strdup(name);
 
 	ASPRINTF(&ec_name, "%s/ec.bin", model.name);
-	ASPRINTF(&zephyr_name, "%s/zephyr.bin", model.name);
 	if (archive_has_entry(archive, ec_name))
 		model.ec_image = strdup(ec_name);
-	else if (archive_has_entry(archive, zephyr_name))
-		model.ec_image = strdup(zephyr_name);
 	free(ec_name);
-	free(zephyr_name);
 
 	return !manifest_add_model(manifest, &model);
 }
