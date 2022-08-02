@@ -48,8 +48,11 @@ vb2_error_t cbfstool_truncate(const char *file, const char *region,
 	status = subprocess_run(argv, &subprocess_null, &output,
 				&subprocess_null);
 
-	if (status < 0)
-		return VB2_ERROR_CBFSTOOL;
+	if (status < 0) {
+		fprintf(stderr, "%s(): cbfstool invocation failed: %m\n",
+			__func__);
+		exit(1);
+	}
 
 	/* Positive exit code means something is wrong with image. Return zero
 	   as new size, because it might be problem with missing CBFS.*/
