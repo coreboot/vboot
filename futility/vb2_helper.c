@@ -38,14 +38,6 @@ enum futil_file_type ft_recognize_vb21_key(uint8_t *buf, uint32_t len)
 	return FILE_TYPE_UNKNOWN;
 }
 
-static inline void vb2_print_bytes(const void *ptr, uint32_t len)
-{
-	const uint8_t *buf = (const uint8_t *)ptr;
-	int i;
-	for (i = 0; i < len; i++)
-		printf("%02x", *buf++);
-}
-
 static int vb2_public_key_sha1sum(struct vb2_public_key *key,
 				  struct vb2_hash *hash)
 {
@@ -81,12 +73,12 @@ int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 	       vb2_get_hash_algorithm_name(key.hash_alg));
 	printf("  Version:             0x%08x\n", key.version);
 	printf("  ID:                  ");
-	vb2_print_bytes(key.id, sizeof(*key.id));
+	print_bytes(key.id, sizeof(*key.id));
 	printf("\n");
 	if (vb2_public_key_sha1sum(&key, &hash) &&
 	    memcmp(key.id, hash.sha1, sizeof(*key.id))) {
 		printf("  Key sha1sum:         ");
-		vb2_print_bytes(hash.sha1, sizeof(hash.sha1));
+		print_bytes(hash.sha1, sizeof(hash.sha1));
 		printf("\n");
 	}
 	return 0;
@@ -148,12 +140,12 @@ int ft_show_vb21_privkey(const char *name, void *data)
 	printf("  Hash Algorithm:      %d %s\n", key->hash_alg,
 	       vb2_get_hash_algorithm_name(key->hash_alg));
 	printf("  ID:                  ");
-	vb2_print_bytes(&key->id, sizeof(key->id));
+	print_bytes(&key->id, sizeof(key->id));
 	printf("\n");
 	if (vb2_private_key_sha1sum(key, &hash) &&
 	    memcmp(&key->id, hash.sha1, sizeof(key->id))) {
 		printf("  Key sha1sum:         ");
-		vb2_print_bytes(hash.sha1, sizeof(hash.sha1));
+		print_bytes(hash.sha1, sizeof(hash.sha1));
 		printf("\n");
 	}
 	vb2_private_key_free(key);

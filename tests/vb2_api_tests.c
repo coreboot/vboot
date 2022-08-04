@@ -38,6 +38,16 @@ const int mock_sig_size = 64;
 static uint8_t digest_result[VB2_SHA256_DIGEST_SIZE];
 static const uint32_t digest_result_size = sizeof(digest_result);
 
+static const struct vb2_hash mock_mhash = {
+	.algo = VB2_HASH_SHA256,
+	.sha256 = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+		0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+		0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	},
+};
+
 /* Mocked function data */
 
 static int force_dev_mode;
@@ -56,6 +66,7 @@ enum reset_type {
 	FOR_MISC,
 	FOR_EXTEND_HASH,
 	FOR_CHECK_HASH,
+	FOR_METADATA_HASH,
 };
 
 static void reset_common_data(enum reset_type t)
@@ -93,15 +104,31 @@ static void reset_common_data(enum reset_type t)
 	sd->preamble_size = sizeof(*pre);
 	vb2_set_workbuf_used(ctx, sd->preamble_offset + sd->preamble_size);
 	pre = vb2_member_of(sd, sd->preamble_offset);
-	pre->body_signature.data_size = mock_body_size;
-	pre->body_signature.sig_size = mock_sig_size;
-	pre->flags = 0;
 
-	sd->data_key_offset = sd->workbuf_used;
-	sd->data_key_size = sizeof(*k) + 8;
-	vb2_set_workbuf_used(ctx, sd->data_key_offset + sd->data_key_size);
-	k = vb2_member_of(sd, sd->data_key_offset);
-	k->algorithm = mock_algorithm;
+	if (t == FOR_METADATA_HASH) {
+		struct vb2_hash *mhash;
+		pre->body_signature.data_size = 0;
+		pre->body_signature.sig_size = offsetof(struct vb2_hash, raw) +
+					       vb2_digest_size(mock_mhash.algo);
+		pre->body_signature.sig_offset =
+			vb2_offset_of(&pre->body_signature,
+				      vb2_member_of(sd, sd->workbuf_used));
+		pre->flags = 0;
+		mhash = vb2_member_of(sd, sd->workbuf_used);
+		vb2_set_workbuf_used(ctx, pre->body_signature.sig_size);
+		memcpy(mhash, &mock_mhash, pre->body_signature.sig_size);
+	} else {
+		pre->body_signature.data_size = mock_body_size;
+		pre->body_signature.sig_size = mock_sig_size;
+		pre->flags = 0;
+
+		sd->data_key_offset = sd->workbuf_used;
+		sd->data_key_size = sizeof(*k) + 8;
+		vb2_set_workbuf_used(ctx,
+				     sd->data_key_offset + sd->data_key_size);
+		k = vb2_member_of(sd, sd->data_key_offset);
+		k->algorithm = mock_algorithm;
+	}
 
 	if (t == FOR_EXTEND_HASH || t == FOR_CHECK_HASH)
 		vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY);
@@ -604,6 +631,7 @@ static void init_hash_tests(void)
 {
 	struct vb2_packed_key *k;
 	int wb_used_before;
+	struct vb2_fw_preamble *pre;
 
 	/* For now, all we support is body signature hash */
 	reset_common_data(FOR_MISC);
@@ -647,6 +675,12 @@ static void init_hash_tests(void)
 	sd->data_key_size = 0;
 	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
 		VB2_ERROR_API_INIT_HASH_DATA_KEY, "init hash data key");
+
+	reset_common_data(FOR_MISC);
+	pre = vb2_member_of(sd, sd->preamble_offset);
+	pre->body_signature.data_size = 0;
+	TEST_EQ(vb2api_init_hash(ctx, VB2_HASH_TAG_FW_BODY),
+		VB2_ERROR_API_INIT_HASH_DATA_KEY, "init hash data size");
 
 	reset_common_data(FOR_MISC);
 	sd->data_key_size--;
@@ -792,6 +826,50 @@ static void check_hash_tests(void)
 		VB2_ERROR_RSA_VERIFY_DIGEST, "check hash finalize");
 }
 
+static void get_metadata_hash_test(void)
+{
+	struct vb2_hash *hash;
+	struct vb2_fw_preamble *pre;
+
+	reset_common_data(FOR_MISC);
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_INIT_HASH_DATA_KEY, "check body sig data size");
+
+	reset_common_data(FOR_MISC);
+	sd->preamble_size = 0;
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_CHECK_HASH_PREAMBLE, "check preamble size");
+
+	reset_common_data(FOR_METADATA_HASH);
+	pre = vb2_member_of(sd, sd->preamble_offset);
+	pre->body_signature.sig_size = 8;
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_CHECK_HASH_SIG_SIZE, "check too small sig size");
+
+	reset_common_data(FOR_METADATA_HASH);
+	pre = vb2_member_of(sd, sd->preamble_offset);
+	pre->body_signature.data_size = mock_body_size;
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_INIT_HASH_DATA_KEY, "check incorrect data size");
+
+	reset_common_data(FOR_METADATA_HASH);
+	pre = vb2_member_of(sd, sd->preamble_offset);
+	hash = (struct vb2_hash *)vb2_signature_data_mutable(
+		&pre->body_signature);
+	hash->algo = VB2_HASH_INVALID;
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_CHECK_HASH_SIG_SIZE, "check unsupported algo");
+
+	reset_common_data(FOR_METADATA_HASH);
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash), VB2_SUCCESS,
+		"check metadata hash get");
+	TEST_PTR_NEQ(hash, NULL, "check metadata hash not null");
+	TEST_EQ(hash->algo, mock_mhash.algo, "check metadata hash algo");
+	TEST_EQ(memcmp(hash->raw, mock_mhash.raw,
+		       vb2_digest_size(mock_mhash.algo)),
+		0, "check metadata hash digest");
+}
+
 int main(int argc, char* argv[])
 {
 	misc_tests();
@@ -802,6 +880,8 @@ int main(int argc, char* argv[])
 	init_hash_tests();
 	extend_hash_tests();
 	check_hash_tests();
+
+	get_metadata_hash_test();
 
 	get_pcr_digest_tests();
 

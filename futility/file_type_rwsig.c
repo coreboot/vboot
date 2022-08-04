@@ -32,14 +32,6 @@
 #define SIGNATURE_RSVD_SIZE 1024
 #define EC_RW_FILENAME "EC_RW.bin"
 
-static inline void vb2_print_bytes(const void *ptr, uint32_t len)
-{
-	const uint8_t *buf = (const uint8_t *)ptr;
-	int i;
-	for (i = 0; i < len; i++)
-		printf("%02x", *buf++);
-}
-
 static void show_sig(const char *name, const struct vb21_signature *sig)
 {
 	printf("Signature:             %s\n", name);
@@ -52,7 +44,7 @@ static void show_sig(const char *name, const struct vb21_signature *sig)
 	printf("  Total size:          %#x (%d)\n", sig->c.total_size,
 	       sig->c.total_size);
 	printf("  ID:                  ");
-	vb2_print_bytes(&sig->id, sizeof(sig->id));
+	print_bytes(&sig->id, sizeof(sig->id));
 	printf("\n");
 	printf("  Data size:           %#x (%d)\n", sig->data_size,
 	       sig->data_size);

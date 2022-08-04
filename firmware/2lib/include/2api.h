@@ -150,18 +150,36 @@ enum vb2_pcr_digest {
  *	Verify the hash of each section of code/data you need to boot the RW
  *	firmware.  For each section:
  *
- *		Call vb2_init_hash() to see if the hash exists.
+ *	1) Normal verification:
  *
- *		Load the data for the section.  Call vb2_extend_hash() on the
+ *		Call vb2api_init_hash() to see if the hash exists.
+ *
+ *		Load the data for the section.  Call vb2api_extend_hash() on the
  *		data as you load it.  You can load it all at once and make one
  *		call, or load and hash-extend a block at a time.
  *
- *		Call vb2_check_hash() to see if the hash is valid.
+ *		Call vb2api_check_hash() to see if the hash is valid.
  *
  *			If it is valid, you may use the data and/or execute
  *			code from that section.
  *
  *			If the hash was invalid, you must reboot.
+ *
+ *	2) Verification with CBFS integration:
+ *
+ *		Call vb2api_get_metadata_hash() to get hash of CBFS metadata.
+ *
+ *		Initialize CBFS using stored hash as correct metadata hash.
+ *
+ *			If CBFS initialization fails because of metadata hash
+ *			mismatch, you must reboot.
+ *
+ *			If CBFS initialization succeeds, you may use the data
+ *			and/or execute code from that section.
+ *			IMPORTANT: Be aware, that to have full section
+ *			verification, the CBFS_VERIFICATION has to be enabled.
+ *			Initialization of CBFS volume only checks hash of files
+ *			metadata, not their contents!
  *
  * At this point, firmware verification is done, and vb2_context contains the
  * kernel key needed to verify the kernel.  That context should be preserved
@@ -442,6 +460,9 @@ vb2_error_t vb2api_fw_phase3(struct vb2_context *ctx);
 
 /**
  * Initialize hashing data for the specified tag.
+ * This function is not legal when running from a coreboot image that has
+ * CONFIG_VBOOT_CBFS_INTEGRATION=y set. In that case, vb2api_get_metadata_hash()
+ * must be used instead.
  *
  * @param ctx		Vboot context
  * @param tag		Tag to start hashing (enum vb2_hash_tag)
@@ -482,6 +503,23 @@ int vb2api_check_hash(struct vb2_context *ctx);
 vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 					 void *digest_out,
 					 uint32_t digest_out_size);
+
+/**
+ * Get pointer to metadata hash from body signature in preamble.
+ * Body signature data size has to be zero to indicate that it contains
+ * metadata hash. This is only legal to call after vb2api_fw_phase3() has
+ * returned successfully, and will return with error otherwise.
+ * This function is only legal to call from coreboot with
+ * CONFIG_VBOOT_CBFS_INTEGRATION=y. `futility sign` will automatically detect
+ * the presence of that option in an image and prepare the correct kind
+ * of signature.
+ *
+ * @param ctx			Vboot context
+ * @param hash_ptr_out		pointer to output hash to
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2api_get_metadata_hash(struct vb2_context *ctx,
+				     struct vb2_hash **hash_ptr_out);
 
 /**
  * Get a PCR digest
@@ -726,6 +764,8 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 /**
  * Get the size of the signed firmware body. This is only legal to call after
  * vb2api_fw_phase3() has returned successfully, and will return 0 otherwise.
+ * It will also return 0 when body signature contains metadata hash instead
+ * of body hash.
  *
  * @param ctx		Vboot context
  *

@@ -132,3 +132,28 @@ struct vb2_signature *vb2_calculate_signature(
 	/* Return the signature */
 	return sig;
 }
+
+struct vb2_signature *
+vb2_create_signature_from_hash(const struct vb2_hash *hash)
+{
+	const uint32_t hsize = vb2_digest_size(hash->algo);
+
+	/* Unsupported algorithm */
+	if (!hsize)
+		return NULL;
+
+	const uint32_t full_hsize = offsetof(struct vb2_hash, raw) + hsize;
+
+	/* The body size is unknown, so set it to zero */
+	struct vb2_signature *sig =
+		(struct vb2_signature *)vb2_alloc_signature(full_hsize, 0);
+	if (!sig)
+		return NULL;
+
+	if (!memcpy(vb2_signature_data_mutable(sig), hash, full_hsize)) {
+		free(sig);
+		return NULL;
+	}
+
+	return sig;
+}

@@ -85,4 +85,15 @@ struct vb2_signature *vb2_external_signature(const uint8_t *data, uint32_t size,
 					     uint32_t key_algorithm,
 					     const char *external_signer);
 
+/**
+ * Create signature using the provided hash as its body. Created signature
+ * contains vb2_hash trimmed to fit digest of its algorithm and nothing more.
+ *
+ * @param hash		Hash to create signature from
+ *
+ * @return The signature, or NULL if error. Caller must free() it.
+ */
+struct vb2_signature *
+vb2_create_signature_from_hash(const struct vb2_hash *hash);
+
 #endif  /* VBOOT_REFERENCE_HOST_SIGNATURE_H_ */

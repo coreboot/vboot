@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#include "futility.h"
+
 /*
  * The Chrome OS BIOS must contain specific FMAP areas, which we want to look
  * at in a certain order.
@@ -22,6 +24,16 @@ enum bios_component {
 	NUM_BIOS_COMPONENTS
 };
 
+static const char * const fmap_name[] = {
+	"GBB",					/* BIOS_FMAP_GBB */
+	"FW_MAIN_A",				/* BIOS_FMAP_FW_MAIN_A */
+	"FW_MAIN_B",				/* BIOS_FMAP_FW_MAIN_B */
+	"VBLOCK_A",				/* BIOS_FMAP_VBLOCK_A */
+	"VBLOCK_B",				/* BIOS_FMAP_VBLOCK_B */
+};
+_Static_assert(ARRAY_SIZE(fmap_name) == NUM_BIOS_COMPONENTS,
+	       "Size of fmap_name[] should match NUM_BIOS_COMPONENTS");
+
 /* Location information for each component */
 struct bios_area_s {
 	uint32_t offset;			/* to avoid pointer math */
@@ -32,6 +44,10 @@ struct bios_area_s {
 	/* VBLOCK only */
 	uint32_t flags;
 	uint32_t version;
+
+	/* FW_MAIN only */
+	size_t fw_size; /* effective size from cbfstool (if available) */
+	struct vb2_hash metadata_hash;
 };
 
 /* State to track as we visit all components */

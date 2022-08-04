@@ -159,6 +159,11 @@ enum futil_file_err futil_unmap_and_close_file(int fd, enum file_mode mode,
  */
 void parse_digest_or_die(uint8_t *buf, int len, const char *str);
 
+/*
+ * Print provided buffer as hex string
+ */
+void print_bytes(const void *ptr, size_t len);
+
 /* The CPU architecture is occasionally important */
 enum arch_t {
 	ARCH_UNSPECIFIED,

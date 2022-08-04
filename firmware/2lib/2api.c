@@ -305,14 +305,10 @@ vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag)
 
 	/*
 	 * Unpack the firmware data key to see which hashing algorithm we
-	 * should use.
-	 *
-	 * TODO: really, the firmware body should be hashed, and not signed,
-	 * because the signature we're checking is already signed as part of
-	 * the firmware preamble.  But until we can change the signing scripts,
-	 * we're stuck with a signature here instead of a hash.
+	 * should use. Zero body data size means, that signature contains
+	 * metadata hash, so vb2api_get_metadata_hash() should be used instead.
 	 */
-	if (!sd->data_key_size)
+	if (!sd->data_key_size || !pre->body_signature.data_size)
 		return VB2_ERROR_API_INIT_HASH_DATA_KEY;
 
 	VB2_TRY(vb2_unpack_key_buffer(&key,
@@ -369,8 +365,9 @@ vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 		return VB2_ERROR_API_CHECK_HASH_TAG;
 
 	/*
-	 * The body signature is currently a *signature* of the body data, not
-	 * just its hash.  So we need to verify the signature.
+	 * In case of verifying a whole memory region the body signature
+	 * is a *signature* of the body data, not just its hash.
+	 * So we need to verify the signature.
 	 */
 
 	/* Unpack the data key */
@@ -432,4 +429,34 @@ union vb2_fw_boot_info vb2api_get_fw_boot_info(struct vb2_context *ctx)
 		  vb2_result_string(info.prev_result));
 
 	return info;
+}
+
+vb2_error_t vb2api_get_metadata_hash(struct vb2_context *ctx,
+				     struct vb2_hash **hash_ptr_out)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_workbuf wb;
+	struct vb2_fw_preamble *pre;
+
+	vb2_workbuf_from_ctx(ctx, &wb);
+
+	if (!sd->preamble_size)
+		return VB2_ERROR_API_CHECK_HASH_PREAMBLE;
+	pre = vb2_member_of(sd, sd->preamble_offset);
+
+	/* Zero size of body signature indicates, that signature holds
+	   vb2_hash inside. */
+	if (pre->body_signature.data_size)
+		return VB2_ERROR_API_INIT_HASH_DATA_KEY;
+
+	struct vb2_hash *hash =
+		(struct vb2_hash *)vb2_signature_data(&pre->body_signature);
+	const uint32_t hsize = vb2_digest_size(hash->algo);
+	if (!hsize || pre->body_signature.sig_size <
+			      offsetof(struct vb2_hash, raw) + hsize)
+		return VB2_ERROR_API_CHECK_HASH_SIG_SIZE;
+
+	*hash_ptr_out = hash;
+
+	return VB2_SUCCESS;
 }

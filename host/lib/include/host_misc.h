@@ -8,6 +8,8 @@
 #ifndef VBOOT_REFERENCE_HOST_MISC_H_
 #define VBOOT_REFERENCE_HOST_MISC_H_
 
+#include <stdbool.h>
+
 #include "vboot_struct.h"
 #include "vboot_api.h"
 
@@ -98,5 +100,26 @@ static inline const uint32_t roundup32(uint32_t v)
  * @return The buffer size in bytes.
  */
 uint32_t vb2_desc_size(const char *desc);
+
+/**
+ * Parse byte from hex string.
+ *
+ * @param val		Pointer to the value buffer
+ * @param str		String to parse
+ * @return true on success, false otherwise.
+ * */
+bool parse_hex(uint8_t *val, const char *str);
+
+
+/**
+ * Parse hash from string.
+ *
+ * @param buf		Output buffer. Has to be at least `len` bytes long
+ * @param len		Hash length in bytes
+ * @param str		Hash string form. Has to be at least 2 * `len` long
+ *			Whitespaces are ignored
+ * @return true on success, false otherwise.
+ */
+bool parse_hash(uint8_t *buf, size_t len, const char *str);
 
 #endif  /* VBOOT_REFERENCE_HOST_MISC_H_ */
