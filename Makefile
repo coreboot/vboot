@@ -738,6 +738,7 @@ TEST2X_NAMES = \
 	tests/vb2_crypto_tests \
 	tests/vb2_ec_sync_tests \
 	tests/vb2_firmware_tests \
+	tests/vb2_gbb_init_tests \
 	tests/vb2_gbb_tests \
 	tests/vb2_host_flashrom_tests \
 	tests/vb2_host_key_tests \
@@ -1294,6 +1295,7 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_crypto_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_ec_sync_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_firmware_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_init_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_host_key_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_load_kernel_tests

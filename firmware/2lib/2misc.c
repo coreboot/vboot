@@ -34,6 +34,8 @@ test_mockable
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	if (sd->gbb_offset == 0)
+		VB2_DIE("gbb_offset is not initialized\n");
 	return (struct vb2_gbb_header *)((void *)sd + sd->gbb_offset);
 }
 
@@ -530,9 +532,7 @@ int vb2api_diagnostic_ui_enabled(struct vb2_context *ctx)
 enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	struct vb2_context *ctx)
 {
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-
-	if (gbb->flags & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW)
+	if (vb2api_gbb_get_flags(ctx) & VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW)
 		return VB2_DEV_DEFAULT_BOOT_TARGET_ALTFW;
 
 	switch (vb2_nv_get(ctx, VB2_NV_DEV_DEFAULT_BOOT)) {
@@ -608,7 +608,7 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 	uint32_t used = 0;
 
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+	struct vb2_gbb_header *gbb = NULL;
 	struct vb2_workbuf wb;
 	char sha1sum[VB2_SHA1_DIGEST_SIZE * 2 + 1];
 
@@ -621,8 +621,14 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 
 	vb2_workbuf_from_ctx(ctx, &wb);
 
+	if (sd->gbb_offset == 0) {
+		DEBUG_INFO_APPEND("GBB: {INVALID}");
+	} else {
+		gbb = vb2_get_gbb(ctx);
+	}
+
 	/* Add hardware ID */
-	{
+	if (gbb) {
 		char hwid[VB2_GBB_HWID_MAX_SIZE];
 		uint32_t size = sizeof(hwid);
 		rv = vb2api_gbb_read_hwid(ctx, hwid, &size);
@@ -674,10 +680,12 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 			  sd->fw_version_secdata, sd->kernel_version_secdata);
 
 	/* Add GBB flags */
-	DEBUG_INFO_APPEND("\ngbb.flags: %#.8x", gbb->flags);
+	if (gbb) {
+		DEBUG_INFO_APPEND("\ngbb.flags: %#.8x", gbb->flags);
+	}
 
 	/* Add sha1sum for Root & Recovery keys */
-	{
+	if (gbb) {
 		struct vb2_packed_key *key;
 		struct vb2_workbuf wblocal = wb;
 		rv = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
@@ -687,7 +695,7 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 		}
 	}
 
-	{
+	if (gbb) {
 		struct vb2_packed_key *key;
 		struct vb2_workbuf wblocal = wb;
 		rv = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
@@ -713,7 +721,6 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 void vb2_set_boot_mode(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Cast boot mode to non-constant and assign */
 	enum vb2_boot_mode *boot_mode = (enum vb2_boot_mode *)&ctx->boot_mode;
@@ -730,7 +737,8 @@ void vb2_set_boot_mode(struct vb2_context *ctx)
 	    (ctx->flags & VB2_CONTEXT_EC_TRUSTED)) {
 		*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 	} else if (sd->recovery_reason) {
-		if (gbb->flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
+		vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
+		if (gbb_flags & VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY)
 			*boot_mode = VB2_BOOT_MODE_MANUAL_RECOVERY;
 		else
 			*boot_mode = VB2_BOOT_MODE_BROKEN_SCREEN;
