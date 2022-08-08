@@ -28,7 +28,7 @@ BOARD_IGNORE_LIST=(grunt skyrim)
 usage() {
   echo "$0: Validate AMD PSP soft-fuse flags contained in a ChromeOS image." \
     "These flags can have security implications and control debug features."
-  echo "Usage $0 <board> <image>"
+  echo "Usage $0 <image> <board>"
 }
 
 main() {
@@ -37,8 +37,8 @@ main() {
     exit 1
   fi
 
-  local board="$1"
-  local image="$2"
+  local image="$1"
+  local board="$2"
 
   # Check the ignore list.
   if [[ " ${BOARD_IGNORE_LIST[*]} " == *" ${board} "* ]]; then
