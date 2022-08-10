@@ -285,7 +285,7 @@ vb2_error_t vb21_verify_data(const void *data, uint32_t size,
 	if (!dc)
 		return VB2_ERROR_VDATA_WORKBUF_HASHING;
 
-	rv = vb2_digest_init(dc, key->hash_alg);
+	rv = vb2_digest_init(dc, false, key->hash_alg, 0);
 	if (rv)
 		return rv;
 

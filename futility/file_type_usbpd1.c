@@ -345,7 +345,7 @@ static void show_usbpd1_stuff(const char *name,
 {
 	struct vb2_public_key key;
 	struct vb21_packed_key *pkey;
-	uint8_t sha1sum[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	int i;
 
 	vb2_pubkey_from_usbpd1(&key, sig_alg, hash_alg,
@@ -354,16 +354,16 @@ static void show_usbpd1_stuff(const char *name,
 	if (vb21_public_key_pack(&pkey, &key))
 		return;
 
-	vb2_digest_buffer((uint8_t *)pkey + pkey->key_offset, pkey->key_size,
-			  VB2_HASH_SHA1, sha1sum, sizeof(sha1sum));
+	vb2_hash_calculate(false, (uint8_t *)pkey + pkey->key_offset,
+			   pkey->key_size, VB2_HASH_SHA1, &hash);
 
 	printf("USB-PD v1 image:       %s\n", name);
 	printf("  Algorithm:           %s %s\n",
 	       vb2_get_sig_algorithm_name(sig_alg),
 	       vb2_get_hash_algorithm_name(hash_alg));
 	printf("  Key sha1sum:         ");
-	for (i = 0; i < VB2_SHA1_DIGEST_SIZE; i++)
-		printf("%02x", sha1sum[i]);
+	for (i = 0; i < sizeof(hash.sha1); i++)
+		printf("%02x", hash.sha1[i]);
 	printf("\n");
 
 	free(pkey);

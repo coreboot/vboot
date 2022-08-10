@@ -129,12 +129,14 @@ static int do_pcr(int argc, char *argv[])
 		print_digest(accum + digest_size, digest_size);
 		printf("\n");
 
-		if (VB2_SUCCESS != vb2_digest_buffer(accum, digest_size * 2,
-						     digest_alg,
-						     pcr, digest_size)) {
+		struct vb2_hash hash;
+		if (VB2_SUCCESS != vb2_hash_calculate(false, accum,
+						      digest_size * 2,
+						      digest_alg, &hash)) {
 			fprintf(stderr, "Error computing digest!\n");
 			return 1;
 		}
+		memcpy(pcr, hash.raw, digest_size);
 
 		printf("PCR: ");
 		print_digest(pcr, digest_size);

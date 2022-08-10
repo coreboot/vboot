@@ -46,15 +46,16 @@ static inline void vb2_print_bytes(const void *ptr, uint32_t len)
 		printf("%02x", *buf++);
 }
 
-static int vb2_public_key_sha1sum(struct vb2_public_key *key, uint8_t *digest)
+static int vb2_public_key_sha1sum(struct vb2_public_key *key,
+				  struct vb2_hash *hash)
 {
 	struct vb21_packed_key *pkey;
 
 	if (vb21_public_key_pack(&pkey, key))
 		return 0;
 
-	vb2_digest_buffer((uint8_t *)pkey + pkey->key_offset, pkey->key_size,
-			  VB2_HASH_SHA1, digest, VB2_SHA1_DIGEST_SIZE);
+	vb2_hash_calculate(false, (uint8_t *)pkey + pkey->key_offset,
+			   pkey->key_size, VB2_HASH_SHA1, hash);
 
 	free(pkey);
 	return 1;
@@ -64,7 +65,7 @@ int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 			void *data)
 {
 	struct vb2_public_key key;
-	uint8_t sha1sum[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 
 	/* The key's members will point into the state buffer after this. Don't
 	 * free anything. */
@@ -82,10 +83,10 @@ int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 	printf("  ID:                  ");
 	vb2_print_bytes(key.id, sizeof(*key.id));
 	printf("\n");
-	if (vb2_public_key_sha1sum(&key, sha1sum) &&
-	    memcmp(key.id, sha1sum, sizeof(*key.id))) {
+	if (vb2_public_key_sha1sum(&key, &hash) &&
+	    memcmp(key.id, hash.sha1, sizeof(*key.id))) {
 		printf("  Key sha1sum:         ");
-		vb2_print_bytes(sha1sum, sizeof(sha1sum));
+		vb2_print_bytes(hash.sha1, sizeof(hash.sha1));
 		printf("\n");
 	}
 	return 0;
@@ -107,7 +108,8 @@ int ft_show_vb21_pubkey(const char *name, void *data)
 	return rv;
 }
 
-static int vb2_private_key_sha1sum(struct vb2_private_key *key, uint8_t *digest)
+static int vb2_private_key_sha1sum(struct vb2_private_key *key,
+				   struct vb2_hash *hash)
 {
 	uint8_t *buf;
 	uint32_t buflen;
@@ -115,8 +117,7 @@ static int vb2_private_key_sha1sum(struct vb2_private_key *key, uint8_t *digest)
 	if (vb_keyb_from_rsa(key->rsa_private_key, &buf, &buflen))
 		return 0;
 
-	vb2_digest_buffer(buf, buflen, VB2_HASH_SHA1, digest,
-			  VB2_SHA1_DIGEST_SIZE);
+	vb2_hash_calculate(false, buf, buflen, VB2_HASH_SHA1, hash);
 
 	free(buf);
 	return 1;
@@ -125,7 +126,7 @@ static int vb2_private_key_sha1sum(struct vb2_private_key *key, uint8_t *digest)
 int ft_show_vb21_privkey(const char *name, void *data)
 {
 	struct vb2_private_key *key = 0;
-	uint8_t sha1sum[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
@@ -149,10 +150,10 @@ int ft_show_vb21_privkey(const char *name, void *data)
 	printf("  ID:                  ");
 	vb2_print_bytes(&key->id, sizeof(key->id));
 	printf("\n");
-	if (vb2_private_key_sha1sum(key, sha1sum) &&
-	    memcmp(&key->id, sha1sum, sizeof(key->id))) {
+	if (vb2_private_key_sha1sum(key, &hash) &&
+	    memcmp(&key->id, hash.sha1, sizeof(key->id))) {
 		printf("  Key sha1sum:         ");
-		vb2_print_bytes(sha1sum, sizeof(sha1sum));
+		vb2_print_bytes(hash.sha1, sizeof(hash.sha1));
 		printf("\n");
 	}
 	vb2_private_key_free(key);
@@ -202,8 +203,8 @@ int ft_show_pem(const char *name, void *data)
 {
 	RSA *rsa_key;
 	uint8_t *keyb;
-	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
 	uint32_t keyb_len;
+	struct vb2_hash hash;
 	int i, bits;
 	const BIGNUM *rsa_key_n, *rsa_key_d;
 	int fd = -1;
@@ -235,10 +236,9 @@ int ft_show_pem(const char *name, void *data)
 	}
 
 	printf("  Key sha1sum:         ");
-	vb2_digest_buffer(keyb, keyb_len, VB2_HASH_SHA1,
-			  digest, sizeof(digest));
-	for (i = 0; i < sizeof(digest); i++)
-		printf("%02x", digest[i]);
+	vb2_hash_calculate(false, keyb, keyb_len, VB2_HASH_SHA1, &hash);
+	for (i = 0; i < sizeof(hash.sha1); i++)
+		printf("%02x", hash.sha1[i]);
 	printf("\n");
 
 	free(keyb);

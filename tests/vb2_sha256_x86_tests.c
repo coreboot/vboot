@@ -13,9 +13,9 @@
 #include "common/tests.h"
 #include "sha_test_vectors.h"
 
-vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
-			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
-			      uint32_t digest_size)
+static vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
+				     enum vb2_hash_algorithm hash_alg,
+				     uint8_t *digest, uint32_t digest_size)
 {
 	VB2_TRY(vb2ex_hwcrypto_digest_init(hash_alg, size));
 	VB2_TRY(vb2ex_hwcrypto_digest_extend(buf, size));

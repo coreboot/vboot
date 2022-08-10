@@ -102,8 +102,8 @@ struct vb2_digest_context {
 	/* Current hash algorithm */
 	enum vb2_hash_algorithm hash_alg;
 
-	/* 1 if digest is computed with vb2ex_hwcrypto routines, else 0 */
-	int using_hwcrypto;
+	/* `true` if digest is computed with vb2ex_hwcrypto routines */
+	bool using_hwcrypto;
 };
 
 /*
@@ -206,14 +206,18 @@ size_t vb2_digest_size(enum vb2_hash_algorithm hash_alg);
 size_t vb2_hash_block_size(enum vb2_hash_algorithm alg);
 
 /**
- * Initialize a digest context for doing block-style digesting.
+ * Initialize a digest context for doing block-style digesting, potentially
+ * making use of the vb2ex_hwcrypto APIs. Whether HW crypto is allowed by policy
+ * in the current context depends on the caller and can be passed in. If HW
+ * crypto is not allowed or not supported, will automatically fall back to SW.
  *
  * @param dc		Digest context
- * @param hash_alg	Hash algorithm
+ * @param allow_hwcrypto  false to forbid HW crypto by policy; true to allow.
+ * @param algo		Hash algorithm
  * @return VB2_SUCCESS, or non-zero on error.
  */
-vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
-			    enum vb2_hash_algorithm hash_alg);
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc, bool allow_hwcrypto,
+			    enum vb2_hash_algorithm algo, uint32_t data_size);
 
 /**
  * Extend a digest's hash with another block of data.
@@ -240,47 +244,30 @@ vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc,
 				uint8_t *digest, uint32_t digest_size);
 
 /**
- * Calculate the digest of a buffer and store the result.
- *
- * @param buf		Data to hash
- * @param size		Length of data in bytes
- * @param hash_alg	Hash algorithm
- * @param digest	Destination for digest
- * @param digest_size	Length of digest buffer in bytes.
- * @return VB2_SUCCESS, or non-zero on error.
- */
-vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
-			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
-			      uint32_t digest_size);
-
-/**
  * Fill a vb2_hash structure with the hash of a buffer.
  *
+ * @param allow_hwcrypto  false to forbid HW crypto by policy; true to allow.
  * @param buf		Buffer to hash
  * @param size		Size of |buf| in bytes
  * @param algo		The hash algorithm to use (and store in |hash|)
  * @param hash		vb2_hash structure to fill with the hash of |buf|
  * @return VB2_SUCCESS, or non-zero on error.
  */
-static inline vb2_error_t vb2_hash_calculate(const void *buf, uint32_t size,
-					     enum vb2_hash_algorithm algo,
-					     struct vb2_hash *hash)
-{
-	hash->algo = algo;
-	return vb2_digest_buffer(buf, size, algo, hash->raw,
-				 vb2_digest_size(algo));
-}
+vb2_error_t vb2_hash_calculate(bool allow_hwcrypto, const void *buf,
+			       uint32_t size, enum vb2_hash_algorithm algo,
+			       struct vb2_hash *hash);
 
 /**
  * Verify that a vb2_hash matches a buffer.
  *
+ * @param allow_hwcrypto  false to forbid HW crypto by policy; true to allow.
  * @param buf		Buffer to hash and match to |hash|
  * @param size		Size of |buf| in bytes
  * @param hash		Hash to compare to the buffer
  * @return VB2_SUCCESS if hash matches, VB2_ERROR_SHA_MISMATCH if hash doesn't
  *  match, or non-zero on other error.
  */
-vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
+vb2_error_t vb2_hash_verify(bool allow_hwcrypto, const void *buf, uint32_t size,
 			    const struct vb2_hash *hash);
 
 #endif  /* VBOOT_REFERENCE_2SHA_H_ */

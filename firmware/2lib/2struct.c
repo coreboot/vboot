@@ -170,35 +170,19 @@ vb2_error_t vb2_verify_keyblock_hash(const struct vb2_keyblock *block,
 				     const struct vb2_workbuf *wb)
 {
 	const struct vb2_signature *sig = &block->keyblock_hash;
-	struct vb2_workbuf wblocal = *wb;
-	struct vb2_digest_context *dc;
-	uint8_t *digest;
-	uint32_t digest_size;
+	struct vb2_hash hash;
 
 	/* Validity check keyblock before attempting hash check of data */
 	VB2_TRY(vb2_check_keyblock(block, size, sig));
 
 	VB2_DEBUG("Checking keyblock hash...\n");
 
-	/* Digest goes at start of work buffer */
-	digest_size = vb2_digest_size(VB2_HASH_SHA512);
-	digest = vb2_workbuf_alloc(&wblocal, digest_size);
-	if (!digest)
-		return VB2_ERROR_VDATA_WORKBUF_DIGEST;
+	/* This is only used in developer mode, so hwcrypto not important. */
+	VB2_TRY(vb2_hash_calculate(false, block, sig->data_size,
+				   VB2_HASH_SHA512, &hash));
 
-	/* Hashing requires temp space for the context */
-	dc = vb2_workbuf_alloc(&wblocal, sizeof(*dc));
-	if (!dc)
-		return VB2_ERROR_VDATA_WORKBUF_HASHING;
-
-	VB2_TRY(vb2_digest_init(dc, VB2_HASH_SHA512));
-
-	VB2_TRY(vb2_digest_extend(dc, (const uint8_t *)block, sig->data_size));
-
-	VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
-
-	if (vb2_safe_memcmp(vb2_signature_data(sig), digest,
-			    digest_size) != 0) {
+	if (vb2_safe_memcmp(vb2_signature_data(sig), hash.sha512,
+			    sizeof(hash.sha512)) != 0) {
 		VB2_DEBUG("Invalid keyblock hash.\n");
 		return VB2_ERROR_KEYBLOCK_HASH_INVALID_IN_DEV_MODE;
 	}

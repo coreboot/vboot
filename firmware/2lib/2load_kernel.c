@@ -110,11 +110,11 @@ static vb2_error_t vb2_verify_kernel_dev_key_hash(
 	struct vb2_packed_key *key = &keyblock->data_key;
 	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
 	uint32_t buflen = key->key_size;
-	uint8_t digest[VB2_SHA256_DIGEST_SIZE];
+	struct vb2_hash hash;
 
 	VB2_DEBUG("Checking developer key hash.\n");
-	VB2_TRY(vb2_digest_buffer(buf, buflen, VB2_HASH_SHA256, digest,
-				  sizeof(digest)));
+	VB2_TRY(vb2_hash_calculate(vb2api_hwcrypto_allowed(ctx), buf, buflen,
+				   VB2_HASH_SHA256, &hash));
 
 	uint8_t *fwmp_dev_key_hash =
 		vb2_secdata_fwmp_get_dev_key_hash(ctx);
@@ -123,8 +123,8 @@ static vb2_error_t vb2_verify_kernel_dev_key_hash(
 		return VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH;
 	}
 
-	if (vb2_safe_memcmp(digest, fwmp_dev_key_hash,
-			    VB2_SHA256_DIGEST_SIZE)) {
+	if (vb2_safe_memcmp(hash.sha256, fwmp_dev_key_hash,
+			    sizeof(hash.sha256))) {
 		int i;
 
 		VB2_DEBUG("Wrong developer key hash.\n");
@@ -134,7 +134,7 @@ static vb2_error_t vb2_verify_kernel_dev_key_hash(
 		VB2_DEBUG_RAW("\n");
 		VB2_DEBUG("Got:  ");
 		for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++)
-			VB2_DEBUG_RAW("%02x ", digest[i]);
+			VB2_DEBUG_RAW("%02x ", hash.sha256[i]);
 		VB2_DEBUG_RAW("\n");
 
 		return VB2_ERROR_KERNEL_KEYBLOCK_DEV_KEY_HASH;
@@ -175,8 +175,7 @@ static vb2_error_t vb2_verify_kernel_vblock(
 	key_size = sd->kernel_key_size;
 	VB2_TRY(vb2_unpack_key_buffer(&kernel_key, key_data, key_size));
 
-	if (vb2_hwcrypto_allowed(ctx))
-		kernel_key.allow_hwcrypto = 1;
+	kernel_key.allow_hwcrypto = vb2api_hwcrypto_allowed(ctx);
 
 	/*
 	 * Clear any previous keyblock-valid flag (for example, from a previous
@@ -435,8 +434,7 @@ static vb2_error_t vb2_load_partition(
 		return VB2_ERROR_LOAD_PARTITION_DATA_KEY;
 	}
 
-	if (vb2_hwcrypto_allowed(ctx))
-		data_key.allow_hwcrypto = 1;
+	data_key.allow_hwcrypto = vb2api_hwcrypto_allowed(ctx);
 
 	/* Verify kernel data */
 	if (vb2_verify_data(kernbuf, kernbuf_size, &preamble->body_signature,

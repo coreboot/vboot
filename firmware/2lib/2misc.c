@@ -577,20 +577,22 @@ int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)
 	return gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
 }
 
-static void snprint_sha1_sum(struct vb2_packed_key *key,
+static void snprint_sha1_sum(struct vb2_context *ctx,
+			     struct vb2_packed_key *key,
 			     char *dest, size_t dest_size)
 {
 	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
 	uint64_t buflen = key->key_size;
-	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	int32_t used = 0;
 	int i;
 
-	vb2_digest_buffer(buf, buflen, VB2_HASH_SHA1, digest, sizeof(digest));
-	for (i = 0; i < sizeof(digest); i++)
+	vb2_hash_calculate(vb2api_hwcrypto_allowed(ctx), buf, buflen,
+			   VB2_HASH_SHA1, &hash);
+	for (i = 0; i < sizeof(hash.sha1); i++)
 		if (used < dest_size)
 			used += snprintf(dest + used, dest_size - used,
-					 "%02x", digest[i]);
+					 "%02x", hash.sha1[i]);
 	dest[dest_size - 1] = '\0';
 }
 
@@ -690,7 +692,7 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 		struct vb2_workbuf wblocal = wb;
 		rv = vb2_gbb_read_root_key(ctx, &key, NULL, &wblocal);
 		if (rv == VB2_SUCCESS) {
-			snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+			snprint_sha1_sum(ctx, key, sha1sum, sizeof(sha1sum));
 			DEBUG_INFO_APPEND("\ngbb.rootkey: %s", sha1sum);
 		}
 	}
@@ -700,7 +702,7 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 		struct vb2_workbuf wblocal = wb;
 		rv = vb2_gbb_read_recovery_key(ctx, &key, NULL, &wblocal);
 		if (rv == VB2_SUCCESS) {
-			snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+			snprint_sha1_sum(ctx, key, sha1sum, sizeof(sha1sum));
 			DEBUG_INFO_APPEND("\ngbb.recovery_key: %s", sha1sum);
 		}
 	}
@@ -710,7 +712,7 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 	    sd->kernel_key_offset) {
 		struct vb2_packed_key *key =
 			vb2_member_of(sd, sd->kernel_key_offset);
-		snprint_sha1_sum(key, sha1sum, sizeof(sha1sum));
+		snprint_sha1_sum(ctx, key, sha1sum, sizeof(sha1sum));
 		DEBUG_INFO_APPEND("\nkernel_subkey: %s", sha1sum);
 	}
 
@@ -748,4 +750,15 @@ void vb2_set_boot_mode(struct vb2_context *ctx)
 	} else if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
 		*boot_mode = VB2_BOOT_MODE_DEVELOPER;
 	}
+}
+
+bool vb2api_hwcrypto_allowed(struct vb2_context *ctx)
+{
+	/* disable hwcrypto in recovery mode */
+	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
+		return 0;
+
+	/* enable hwcrypto only if RW firmware set the flag */
+	return vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS) &
+		VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED;
 }

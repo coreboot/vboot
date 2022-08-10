@@ -146,17 +146,17 @@ int print_hwid_digest(struct vb2_gbb_header *gbb,
 	uint8_t *buf = (uint8_t *)gbb;
 	char *hwid_str = (char *)(buf + gbb->hwid_offset);
 	int is_valid = 0;
-	uint8_t digest[VB2_SHA256_DIGEST_SIZE];
+	struct vb2_hash hash;
 
-	if (VB2_SUCCESS == vb2_digest_buffer(buf + gbb->hwid_offset,
-					     strlen(hwid_str), VB2_HASH_SHA256,
-					     digest, sizeof(digest))) {
+	if (VB2_SUCCESS == vb2_hash_calculate(false, buf + gbb->hwid_offset,
+					      strlen(hwid_str), VB2_HASH_SHA256,
+					      &hash)) {
 		int i;
 		is_valid = 1;
 		/* print it, comparing as we go */
-		for (i = 0; i < VB2_SHA256_DIGEST_SIZE; i++) {
+		for (i = 0; i < sizeof(hash.sha256); i++) {
 			printf("%02x", gbb->hwid_digest[i]);
-			if (gbb->hwid_digest[i] != digest[i])
+			if (gbb->hwid_digest[i] != hash.sha256[i])
 				is_valid = 0;
 		}
 	}
@@ -176,16 +176,18 @@ void update_hwid_digest(struct vb2_gbb_header *gbb)
 
 	uint8_t *buf = (uint8_t *)gbb;
 	char *hwid_str = (char *)(buf + gbb->hwid_offset);
+	struct vb2_hash hash;
 
-	vb2_digest_buffer(buf + gbb->hwid_offset, strlen(hwid_str),
-			  VB2_HASH_SHA256,
-			  gbb->hwid_digest, sizeof(gbb->hwid_digest));
+	vb2_hash_calculate(false, buf + gbb->hwid_offset, strlen(hwid_str),
+			   VB2_HASH_SHA256, &hash);
+	memcpy(gbb->hwid_digest, hash.raw, sizeof(gbb->hwid_digest));
 }
 
 /* Sets the HWID string field inside a GBB header. */
 int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid)
 {
 	uint8_t *to = (uint8_t *)gbb + gbb->hwid_offset;
+	struct vb2_hash hash;
 	size_t len;
 
 	assert(hwid);
@@ -201,8 +203,9 @@ int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid)
 	if (gbb->major_version == 1 && gbb->minor_version < 2)
 		return 0;
 
-	return vb2_digest_buffer(to, len, VB2_HASH_SHA256, gbb->hwid_digest,
-				 sizeof(gbb->hwid_digest));
+	VB2_TRY(vb2_hash_calculate(false, to, len, VB2_HASH_SHA256, &hash));
+	memcpy(gbb->hwid_digest, hash.raw, sizeof(gbb->hwid_digest));
+	return VB2_SUCCESS;
 }
 
 /*

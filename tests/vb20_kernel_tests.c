@@ -67,7 +67,7 @@ static void rehash_keyblock(void)
 	hashsig->sig_offset = vb2_offset_of(hashsig, mock_vblock.k.hash);
 	hashsig->sig_size = sizeof(mock_vblock.k.hash);
 	hashsig->data_size = hashsig->sig_offset;
-	vb2_digest_init(&dc, VB2_HASH_SHA512);
+	vb2_digest_init(&dc, false, VB2_HASH_SHA512, 0);
 	vb2_digest_extend(&dc, (const uint8_t *)kb, hashsig->data_size);
 	vb2_digest_finalize(&dc, mock_vblock.k.hash, hashsig->sig_size);
 }
@@ -210,19 +210,6 @@ static void verify_keyblock_hash_tests(void)
 	TEST_EQ(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
 		VB2_ERROR_KEYBLOCK_SIGNED_TOO_LITTLE,
 		"Keyblock check hash sig");
-
-	reset_common_data(FOR_KEYBLOCK);
-	wb.size = VB2_SHA512_DIGEST_SIZE - 1;
-	TEST_EQ(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
-		VB2_ERROR_VDATA_WORKBUF_DIGEST,
-		"Keyblock check hash workbuf digest");
-
-	reset_common_data(FOR_KEYBLOCK);
-	wb.size = VB2_SHA512_DIGEST_SIZE +
-		sizeof(struct vb2_digest_context) - 1;
-	TEST_EQ(vb2_verify_keyblock_hash(kb, kb->keyblock_size, &wb),
-		VB2_ERROR_VDATA_WORKBUF_HASHING,
-		"Keyblock check hash workbuf hashing");
 
 	reset_common_data(FOR_KEYBLOCK);
 	mock_vblock.k.data_key_data[0] ^= 0xa0;

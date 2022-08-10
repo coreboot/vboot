@@ -40,12 +40,6 @@ static const uint32_t digest_result_size = sizeof(digest_result);
 
 /* Mocked function data */
 
-static enum {
-	HWCRYPTO_DISABLED,
-	HWCRYPTO_ENABLED,
-	HWCRYPTO_FORBIDDEN,
-} hwcrypto_state;
-
 static int force_dev_mode;
 static vb2_error_t retval_vb2_fw_init_gbb;
 static vb2_error_t retval_vb2_check_dev_switch;
@@ -81,9 +75,6 @@ static void reset_common_data(enum reset_type t)
 
 	vb2api_secdata_kernel_create(ctx);
 	vb2_secdata_kernel_init(ctx);
-	if (hwcrypto_state != HWCRYPTO_FORBIDDEN)
-		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
-				VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
 
 	force_dev_mode = 0;
 	retval_vb2_fw_init_gbb = VB2_SUCCESS;
@@ -176,59 +167,19 @@ vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
-				       uint32_t data_size)
-{
-	switch (hwcrypto_state) {
-	case HWCRYPTO_DISABLED:
-		return VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
-	case HWCRYPTO_ENABLED:
-		if (hash_alg != mock_hash_alg)
-			return VB2_ERROR_SHA_INIT_ALGORITHM;
-		else
-			return VB2_SUCCESS;
-	case HWCRYPTO_FORBIDDEN:
-	default:
-		return VB2_ERROR_UNKNOWN;
-	}
-}
-
-vb2_error_t vb2ex_hwcrypto_digest_extend(const uint8_t *buf,
-					 uint32_t size)
-{
-	if (hwcrypto_state != HWCRYPTO_ENABLED)
-		return VB2_ERROR_UNKNOWN;
-
-	return VB2_SUCCESS;
-}
-
 static void fill_digest(uint8_t *digest, uint32_t digest_size)
 {
 	/* Set the result to a known value. */
 	memset(digest, 0x0a, digest_size);
 }
 
-vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
-				   uint32_t digest_size)
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc, bool allow_hwcrypto,
+			    enum vb2_hash_algorithm algo, uint32_t data_size)
 {
-	if (hwcrypto_state != HWCRYPTO_ENABLED)
-		return VB2_ERROR_UNKNOWN;
-
-	if (retval_vb2_digest_finalize == VB2_SUCCESS)
-		fill_digest(digest, digest_size);
-
-	return retval_vb2_digest_finalize;
-}
-
-vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
-		    enum vb2_hash_algorithm hash_alg)
-{
-	if (hwcrypto_state == HWCRYPTO_ENABLED)
-		return VB2_ERROR_UNKNOWN;
-	if (hash_alg != mock_hash_alg)
+	if (algo != mock_hash_alg)
 		return VB2_ERROR_SHA_INIT_ALGORITHM;
 
-	dc->hash_alg = hash_alg;
+	dc->hash_alg = algo;
 	dc->using_hwcrypto = 0;
 
 	return VB2_SUCCESS;
@@ -237,8 +188,6 @@ vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
 vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
 			      uint32_t size)
 {
-	if (hwcrypto_state == HWCRYPTO_ENABLED)
-		return VB2_ERROR_UNKNOWN;
 	if (dc->hash_alg != mock_hash_alg)
 		return VB2_ERROR_SHA_EXTEND_ALGORITHM;
 
@@ -248,9 +197,6 @@ vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
 vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 				uint32_t digest_size)
 {
-	if (hwcrypto_state == HWCRYPTO_ENABLED)
-		return VB2_ERROR_UNKNOWN;
-
 	if (retval_vb2_digest_finalize == VB2_SUCCESS)
 		fill_digest(digest, digest_size);
 
@@ -740,14 +686,11 @@ static void extend_hash_tests(void)
 	TEST_EQ(vb2api_extend_hash(ctx, mock_body, 0),
 		VB2_ERROR_API_EXTEND_HASH_SIZE, "hash extend empty");
 
-	if (hwcrypto_state != HWCRYPTO_ENABLED) {
-		reset_common_data(FOR_EXTEND_HASH);
-		dc = (struct vb2_digest_context *)
-			vb2_member_of(sd, sd->hash_offset);
-		dc->hash_alg = mock_hash_alg + 1;
-		TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size),
-			VB2_ERROR_SHA_EXTEND_ALGORITHM, "hash extend fail");
-	}
+	reset_common_data(FOR_EXTEND_HASH);
+	dc = (struct vb2_digest_context *)vb2_member_of(sd, sd->hash_offset);
+	dc->hash_alg = mock_hash_alg + 1;
+	TEST_EQ(vb2api_extend_hash(ctx, mock_body, mock_body_size),
+		VB2_ERROR_SHA_EXTEND_ALGORITHM, "hash extend fail");
 }
 
 static void check_hash_tests(void)
@@ -766,28 +709,30 @@ static void check_hash_tests(void)
 		"check digest value");
 
 	/* Test hwcrypto conditions */
-	if (hwcrypto_state == HWCRYPTO_FORBIDDEN) {
-		reset_common_data(FOR_CHECK_HASH);
-		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-		TEST_EQ(last_used_key.allow_hwcrypto, 0,
-			"hwcrypto is forbidden by TPM flag");
+	reset_common_data(FOR_CHECK_HASH);
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag");
 
-		reset_common_data(FOR_CHECK_HASH);
-		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-		TEST_EQ(last_used_key.allow_hwcrypto, 0,
-			"hwcrypto is forbidden by TPM flag on recovery mode");
-	} else {
-		reset_common_data(FOR_CHECK_HASH);
-		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-		TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
+	reset_common_data(FOR_CHECK_HASH);
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden by TPM flag on recovery mode");
 
-		reset_common_data(FOR_CHECK_HASH);
-		ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
-		TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
-		TEST_EQ(last_used_key.allow_hwcrypto, 0,
-			"hwcrypto is forbidden on recovery mode");
-	}
+	reset_common_data(FOR_CHECK_HASH);
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			       VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 1, "hwcrypto is allowed");
+
+	reset_common_data(FOR_CHECK_HASH);
+	ctx->flags |= VB2_CONTEXT_RECOVERY_MODE;
+	vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_FLAGS,
+			       VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED);
+	TEST_SUCC(vb2api_check_hash(ctx), "check hash good");
+	TEST_EQ(last_used_key.allow_hwcrypto, 0,
+		"hwcrypto is forbidden on recovery mode");
 
 	reset_common_data(FOR_CHECK_HASH);
 	TEST_EQ(vb2api_check_hash_get_digest(ctx, digest_result,
@@ -854,20 +799,6 @@ int main(int argc, char* argv[])
 	phase2_tests();
 	phase3_tests();
 
-	fprintf(stderr, "Running hash API tests without hwcrypto support...\n");
-	hwcrypto_state = HWCRYPTO_DISABLED;
-	init_hash_tests();
-	extend_hash_tests();
-	check_hash_tests();
-
-	fprintf(stderr, "Running hash API tests with hwcrypto support...\n");
-	hwcrypto_state = HWCRYPTO_ENABLED;
-	init_hash_tests();
-	extend_hash_tests();
-	check_hash_tests();
-
-	fprintf(stderr, "Running hash API tests with forbidden hwcrypto...\n");
-	hwcrypto_state = HWCRYPTO_FORBIDDEN;
 	init_hash_tests();
 	extend_hash_tests();
 	check_hash_tests();

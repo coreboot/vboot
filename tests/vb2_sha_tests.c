@@ -16,7 +16,7 @@
 
 static void sha1_tests(void)
 {
-	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	uint8_t *test_inputs[3];
 	int i;
 
@@ -25,20 +25,21 @@ static void sha1_tests(void)
 	test_inputs[2] = (uint8_t *) long_msg;
 
 	for (i = 0; i < 3; i++) {
-		TEST_SUCC(vb2_digest_buffer(test_inputs[i],
-					    strlen((char *)test_inputs[i]),
-					    VB2_HASH_SHA1,
-					    digest, sizeof(digest)),
-			  "vb2_digest_buffer() SHA1");
-		TEST_EQ(memcmp(digest, sha1_results[i], sizeof(digest)),
-			0, "SHA1 digest");
+		TEST_SUCC(vb2_hash_calculate(false, test_inputs[i],
+					     strlen((const char *)test_inputs[i]),
+					     VB2_HASH_SHA1, &hash),
+			  "vb2_hash_calculate() SHA-1");
+		TEST_EQ(memcmp(hash.sha1, sha1_results[i],
+			sizeof(sha1_results[i])), 0, "  SHA-1 digest");
 	}
 
-	TEST_EQ(vb2_digest_buffer(test_inputs[0],
-				  strlen((char *)test_inputs[0]),
-				  VB2_HASH_SHA1, digest, sizeof(digest) - 1),
+	struct vb2_digest_context dc;
+	vb2_digest_init(&dc, false, VB2_HASH_SHA1, 0);
+	vb2_digest_extend(&dc, test_inputs[0],
+			  strlen((const char *)test_inputs[0]));
+	TEST_EQ(vb2_digest_finalize(&dc, hash.sha1, sizeof(hash.sha1) - 1),
 		VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE,
-		"vb2_digest_buffer() too small");
+		"vb2_digest_finalize() SHA-1 too small");
 
 	TEST_EQ(vb2_hash_block_size(VB2_HASH_SHA1), VB2_SHA1_BLOCK_SIZE,
 		"vb2_hash_block_size(VB2_HASH_SHA1)");
@@ -46,7 +47,7 @@ static void sha1_tests(void)
 
 static void sha256_tests(void)
 {
-	uint8_t digest[VB2_SHA256_DIGEST_SIZE];
+	struct vb2_hash hash;
 	uint8_t *test_inputs[3];
 	struct vb2_sha256_context ctx;
 	const uint8_t expect_multiple[VB2_SHA256_DIGEST_SIZE] = {
@@ -68,41 +69,41 @@ static void sha256_tests(void)
 	test_inputs[2] = (uint8_t *) long_msg;
 
 	for (i = 0; i < 3; i++) {
-		TEST_SUCC(vb2_digest_buffer(test_inputs[i],
-					    strlen((char *)test_inputs[i]),
-					    VB2_HASH_SHA256,
-					    digest, sizeof(digest)),
-			  "vb2_digest_buffer() SHA256");
-		TEST_EQ(memcmp(digest, sha256_results[i], sizeof(digest)),
-			0, "SHA-256 digest");
+		TEST_SUCC(vb2_hash_calculate(false, test_inputs[i],
+					    strlen((const char *)test_inputs[i]),
+					    VB2_HASH_SHA256, &hash),
+			  "vb2_hash_calculate() SHA-256");
+		TEST_EQ(memcmp(hash.sha256, sha256_results[i],
+			sizeof(sha256_results[i])), 0, "  SHA-256 digest");
 	}
 
-	TEST_EQ(vb2_digest_buffer(test_inputs[0],
-				  strlen((char *)test_inputs[0]),
-				  VB2_HASH_SHA256, digest, sizeof(digest) - 1),
+	struct vb2_digest_context dc;
+	vb2_digest_init(&dc, false, VB2_HASH_SHA256, 0);
+	vb2_digest_extend(&dc, test_inputs[0], strlen((const char *)test_inputs[0]));
+	TEST_EQ(vb2_digest_finalize(&dc, hash.sha256, sizeof(hash.sha256) - 1),
 		VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE,
-		"vb2_digest_buffer() too small");
+		"vb2_digest_finalize() SHA-256 too small");
 
 	/* Test multiple small extends */
 	vb2_sha256_init(&ctx, VB2_HASH_SHA256);
 	vb2_sha256_update(&ctx, (uint8_t *)"test1", 5);
 	vb2_sha256_update(&ctx, (uint8_t *)"test2", 5);
 	vb2_sha256_update(&ctx, (uint8_t *)"test3", 5);
-	vb2_sha256_finalize(&ctx, digest, VB2_HASH_SHA256);
-	TEST_EQ(memcmp(digest, expect_multiple, sizeof(digest)), 0,
+	vb2_sha256_finalize(&ctx, hash.sha256, VB2_HASH_SHA256);
+	TEST_EQ(memcmp(hash.sha256, expect_multiple, sizeof(hash.sha256)), 0,
 		"SHA-256 multiple extends");
 
 	TEST_EQ(vb2_hash_block_size(VB2_HASH_SHA256), VB2_SHA256_BLOCK_SIZE,
 		"vb2_hash_block_size(VB2_HASH_SHA256)");
 
 	/* Test SHA256 hash extend */
-	vb2_sha256_extend(extend_from, extend_by, digest);
-	TEST_SUCC(memcmp(digest, expected_extend, sizeof(digest)), NULL);
+	vb2_sha256_extend(extend_from, extend_by, hash.sha256);
+	TEST_SUCC(memcmp(hash.sha256, expected_extend, sizeof(hash.sha256)), NULL);
 }
 
 static void sha512_tests(void)
 {
-	uint8_t digest[VB2_SHA512_DIGEST_SIZE];
+	struct vb2_hash hash;
 	uint8_t *test_inputs[3];
 	int i;
 
@@ -111,20 +112,20 @@ static void sha512_tests(void)
 	test_inputs[2] = (uint8_t *) long_msg;
 
 	for (i = 0; i < 3; i++) {
-		TEST_SUCC(vb2_digest_buffer(test_inputs[i],
-					    strlen((char *)test_inputs[i]),
-					    VB2_HASH_SHA512,
-					    digest, sizeof(digest)),
-			  "vb2_digest_buffer() SHA512");
-		TEST_EQ(memcmp(digest, sha512_results[i], sizeof(digest)),
-			0, "SHA-512 digest");
+		TEST_SUCC(vb2_hash_calculate(false, test_inputs[i],
+					     strlen((const char *)test_inputs[i]),
+					     VB2_HASH_SHA512, &hash),
+			  "vb2_hash_calculate() SHA512");
+		TEST_EQ(memcmp(hash.sha512, sha512_results[i],
+			sizeof(sha512_results[i])), 0, "  SHA-512 digest");
 	}
 
-	TEST_EQ(vb2_digest_buffer(test_inputs[0],
-				  strlen((char *)test_inputs[0]),
-				  VB2_HASH_SHA512, digest, sizeof(digest) - 1),
+	struct vb2_digest_context dc;
+	vb2_digest_init(&dc, false, VB2_HASH_SHA512, 0);
+	vb2_digest_extend(&dc, test_inputs[0], strlen((const char *)test_inputs[0]));
+	TEST_EQ(vb2_digest_finalize(&dc, hash.sha512, sizeof(hash.sha512) - 1),
 		VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE,
-		"vb2_digest_buffer() too small");
+		"vb2_digest_finalize() SHA-512 too small");
 
 	TEST_EQ(vb2_hash_block_size(VB2_HASH_SHA512), VB2_SHA512_BLOCK_SIZE,
 		"vb2_hash_block_size(VB2_HASH_SHA512)");
@@ -153,13 +154,8 @@ static void misc_tests(void)
 	TEST_EQ(vb2_hash_block_size(VB2_HASH_INVALID), 0,
 		"vb2_hash_block_size(VB2_HASH_INVALID)");
 
-	TEST_EQ(vb2_digest_buffer((uint8_t *)oneblock_msg, strlen(oneblock_msg),
-				  VB2_HASH_INVALID, digest, sizeof(digest)),
-		VB2_ERROR_SHA_INIT_ALGORITHM,
-		"vb2_digest_buffer() invalid alg");
-
 	/* Test bad algorithm inside extend and finalize */
-	vb2_digest_init(&dc, VB2_HASH_SHA256);
+	vb2_digest_init(&dc, false, VB2_HASH_SHA256, 0);
 	dc.hash_alg = VB2_HASH_INVALID;
 	TEST_EQ(vb2_digest_extend(&dc, digest, sizeof(digest)),
 		VB2_ERROR_SHA_EXTEND_ALGORITHM,
@@ -185,7 +181,7 @@ static void known_value_tests(void)
 		char *sent_base = test.overflow + \
 			offsetof(struct vb2_hash, raw) + sizeof(value) - 1; \
 		strcpy(sent_base, sentinel);				\
-		TEST_SUCC(vb2_hash_calculate(str, sizeof(str) - 1,	\
+		TEST_SUCC(vb2_hash_calculate(false, str, sizeof(str) - 1, \
 					     algo, &test.hash),		\
 			  "Calculate known hash " #algo ": " #str);	\
 		TEST_EQ(memcmp(test.hash.raw, value, sizeof(value) - 1), 0, \

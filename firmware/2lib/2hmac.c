@@ -33,7 +33,9 @@ int hmac(enum vb2_hash_algorithm alg,
 		return -1;
 
 	if (key_size > block_size) {
-		vb2_digest_buffer((uint8_t *)key, key_size, alg, k, block_size);
+		vb2_digest_init(&dc, false, alg, 0);
+		vb2_digest_extend(&dc, (uint8_t *)key, key_size);
+		vb2_digest_finalize(&dc, k, block_size);
 		key_size = digest_size;
 	} else {
 		memcpy(k, key, key_size);
@@ -46,12 +48,12 @@ int hmac(enum vb2_hash_algorithm alg,
 		i_pad[i] = 0x36 ^ k[i];
 	}
 
-	vb2_digest_init(&dc, alg);
+	vb2_digest_init(&dc, false, alg, 0);
 	vb2_digest_extend(&dc, i_pad, block_size);
 	vb2_digest_extend(&dc, msg, msg_size);
 	vb2_digest_finalize(&dc, b, digest_size);
 
-	vb2_digest_init(&dc, alg);
+	vb2_digest_init(&dc, false, alg, 0);
 	vb2_digest_extend(&dc, o_pad, block_size);
 	vb2_digest_extend(&dc, b, digest_size);
 	vb2_digest_finalize(&dc, mac, mac_size);

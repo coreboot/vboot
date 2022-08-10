@@ -133,7 +133,7 @@ static void reset_common_data(enum reset_type t)
 		sig->sig_offset = vb2_offset_of(sig, sdata);
 		sig->sig_size = VB2_SHA512_DIGEST_SIZE;
 
-		vb2_digest_init(&dc, VB2_HASH_SHA256);
+		vb2_digest_init(&dc, false, VB2_HASH_SHA256, 0);
 		vb2_digest_extend(&dc, (const uint8_t *)kernel_data,
 				  sizeof(kernel_data));
 		vb2_digest_finalize(&dc, sdata, sig->sig_size);

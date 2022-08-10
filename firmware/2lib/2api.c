@@ -148,10 +148,7 @@ vb2_error_t vb2api_extend_hash(struct vb2_context *ctx,
 
 	sd->hash_remaining_size -= size;
 
-	if (dc->using_hwcrypto)
-		return vb2ex_hwcrypto_digest_extend(buf, size);
-	else
-		return vb2_digest_extend(dc, buf, size);
+	return vb2_digest_extend(dc, buf, size);
 }
 
 vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
@@ -264,25 +261,8 @@ vb2_error_t vb2api_init_hash(struct vb2_context *ctx, uint32_t tag)
 	sd->hash_tag = tag;
 	sd->hash_remaining_size = pre->body_signature.data_size;
 
-	if (vb2_hwcrypto_allowed(ctx)) {
-		vb2_error_t rv = vb2ex_hwcrypto_digest_init(
-			key.hash_alg, pre->body_signature.data_size);
-		if (!rv) {
-			VB2_DEBUG("Using HW crypto engine for hash_alg %d\n",
-				  key.hash_alg);
-			dc->hash_alg = key.hash_alg;
-			dc->using_hwcrypto = 1;
-			return VB2_SUCCESS;
-		}
-		if (rv != VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED)
-			return rv;
-		VB2_DEBUG("HW crypto for hash_alg %d not supported, using SW\n",
-			  key.hash_alg);
-	} else {
-		VB2_DEBUG("HW crypto forbidden by TPM flag, using SW\n");
-	}
-
-	return vb2_digest_init(dc, key.hash_alg);
+	return vb2_digest_init(dc, vb2api_hwcrypto_allowed(ctx),
+			       key.hash_alg, pre->body_signature.data_size);
 }
 
 vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
@@ -321,10 +301,7 @@ vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 		return VB2_ERROR_API_CHECK_HASH_WORKBUF_DIGEST;
 
 	/* Finalize the digest */
-	if (dc->using_hwcrypto)
-		VB2_TRY(vb2ex_hwcrypto_digest_finalize(digest, digest_size));
-	else
-		VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
+	VB2_TRY(vb2_digest_finalize(dc, digest, digest_size));
 
 	/* The code below is specific to the body signature */
 	if (sd->hash_tag != VB2_HASH_TAG_FW_BODY)
@@ -343,7 +320,7 @@ vb2_error_t vb2api_check_hash_get_digest(struct vb2_context *ctx,
 				      vb2_member_of(sd, sd->data_key_offset),
 				      sd->data_key_size));
 
-	key.allow_hwcrypto = vb2_hwcrypto_allowed(ctx);
+	key.allow_hwcrypto = vb2api_hwcrypto_allowed(ctx);
 
 	/*
 	 * Check digest vs. signature.  Note that this destroys the signature.

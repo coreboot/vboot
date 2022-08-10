@@ -125,7 +125,7 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 		memcpy(sig_digest, info, info_size);
 
 	/* Calculate hash digest */
-	if (vb2_digest_init(&dc, s.hash_alg)) {
+	if (vb2_digest_init(&dc, false, s.hash_alg, 0)) {
 		free(sig_digest);
 		return VB2_SIGN_DATA_DIGEST_INIT;
 	}

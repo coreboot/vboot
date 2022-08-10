@@ -262,8 +262,10 @@ static int vb2_make_keypair(void)
 
 	/* Update the IDs */
 	if (!force_id) {
-		vb2_digest_buffer(keyb_data, keyb_size, VB2_HASH_SHA1,
-				  opt_id.raw, sizeof(opt_id.raw));
+		struct vb2_hash hash;
+		vb2_hash_calculate(false, keyb_data, keyb_size, VB2_HASH_SHA1,
+				   &hash);
+		memcpy(opt_id.raw, hash.raw, sizeof(opt_id.raw));
 	}
 
 	memcpy((struct vb2_id *)pubkey->id, &opt_id, sizeof(opt_id));

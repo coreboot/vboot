@@ -56,13 +56,32 @@ size_t vb2_hash_block_size(enum vb2_hash_algorithm alg)
 }
 
 test_mockable
-vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
-			    enum vb2_hash_algorithm hash_alg)
+vb2_error_t vb2_digest_init(struct vb2_digest_context *dc, bool allow_hwcrypto,
+			    enum vb2_hash_algorithm algo, uint32_t data_size)
 {
-	dc->hash_alg = hash_alg;
+	const char msg[] = "%u bytes, hash algo %d, HW acceleration %s";
+
+	dc->hash_alg = algo;
 	dc->using_hwcrypto = 0;
 
-	switch (dc->hash_alg) {
+	if (allow_hwcrypto) {
+		vb2_error_t rv = vb2ex_hwcrypto_digest_init(algo, data_size);
+		if (rv == VB2_SUCCESS) {
+			VB2_DEBUG(msg, data_size, algo, "enabled\n");
+			dc->using_hwcrypto = 1;
+			return VB2_SUCCESS;
+		}
+		if (rv != VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED) {
+			VB2_DEBUG(msg, data_size, algo, "initialization error");
+			VB2_DEBUG_RAW(": %#x\n", rv);
+			return rv;
+		}
+		VB2_DEBUG(msg, data_size, algo, "unsupported\n");
+	} else {
+		VB2_DEBUG(msg, data_size, algo, "forbidden\n");
+	}
+
+	switch (algo) {
 #if VB2_SUPPORT_SHA1
 	case VB2_HASH_SHA1:
 		vb2_sha1_init(&dc->sha1);
@@ -71,13 +90,13 @@ vb2_error_t vb2_digest_init(struct vb2_digest_context *dc,
 #if VB2_SUPPORT_SHA256
 	case VB2_HASH_SHA224:
 	case VB2_HASH_SHA256:
-		vb2_sha256_init(&dc->sha256, hash_alg);
+		vb2_sha256_init(&dc->sha256, algo);
 		return VB2_SUCCESS;
 #endif
 #if VB2_SUPPORT_SHA512
 	case VB2_HASH_SHA384:
 	case VB2_HASH_SHA512:
-		vb2_sha512_init(&dc->sha512, hash_alg);
+		vb2_sha512_init(&dc->sha512, algo);
 		return VB2_SUCCESS;
 #endif
 	default:
@@ -89,6 +108,9 @@ test_mockable
 vb2_error_t vb2_digest_extend(struct vb2_digest_context *dc, const uint8_t *buf,
 			      uint32_t size)
 {
+	if (dc->using_hwcrypto)
+		return vb2ex_hwcrypto_digest_extend(buf, size);
+
 	switch (dc->hash_alg) {
 #if VB2_SUPPORT_SHA1
 	case VB2_HASH_SHA1:
@@ -116,6 +138,9 @@ test_mockable
 vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 				uint32_t digest_size)
 {
+	if (dc->using_hwcrypto)
+		return vb2ex_hwcrypto_digest_finalize(digest, digest_size);
+
 	if (digest_size < vb2_digest_size(dc->hash_alg))
 		return VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE;
 
@@ -142,27 +167,26 @@ vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
 	}
 }
 
-test_mockable
-vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
-			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
-			      uint32_t digest_size)
+vb2_error_t vb2_hash_calculate(bool allow_hwcrypto, const void *buf,
+			       uint32_t size, enum vb2_hash_algorithm algo,
+			       struct vb2_hash *hash)
 {
 	struct vb2_digest_context dc;
+	hash->algo = algo;
 
-	VB2_TRY(vb2_digest_init(&dc, hash_alg));
+	VB2_TRY(vb2_digest_init(&dc, allow_hwcrypto, algo, size));
 	VB2_TRY(vb2_digest_extend(&dc, buf, size));
 
-	return vb2_digest_finalize(&dc, digest, digest_size);
+	return vb2_digest_finalize(&dc, hash->raw, vb2_digest_size(algo));
 }
 
-vb2_error_t vb2_hash_verify(const void *buf, uint32_t size,
+vb2_error_t vb2_hash_verify(bool allow_hwcrypto, const void *buf, uint32_t size,
 			    const struct vb2_hash *hash)
 {
-	uint8_t hash_buf[VB2_MAX_DIGEST_SIZE];
-	size_t hash_size = vb2_digest_size(hash->algo);
+	struct vb2_hash tmp;
 
-	VB2_TRY(vb2_digest_buffer(buf, size, hash->algo, hash_buf, hash_size));
-	if (memcmp(hash_buf, hash->raw, hash_size))
+	VB2_TRY(vb2_hash_calculate(allow_hwcrypto, buf, size, hash->algo, &tmp));
+	if (memcmp(tmp.raw, hash->raw, vb2_digest_size(hash->algo)))
 		return VB2_ERROR_SHA_MISMATCH;
 	else
 		return VB2_SUCCESS;

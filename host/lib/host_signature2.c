@@ -65,17 +65,18 @@ vb2_error_t vb2_copy_signature(struct vb2_signature *dest,
 
 struct vb2_signature *vb2_sha512_signature(const uint8_t *data, uint32_t size)
 {
-	uint8_t digest[VB2_SHA512_DIGEST_SIZE];
-	if (VB2_SUCCESS != vb2_digest_buffer(data, size, VB2_HASH_SHA512,
-					     digest, sizeof(digest)))
+	struct vb2_hash hash;
+	if (VB2_SUCCESS != vb2_hash_calculate(false, data, size,
+					      VB2_HASH_SHA512, &hash))
 		return NULL;
 
 	struct vb2_signature *sig =
-		vb2_alloc_signature(VB2_SHA512_DIGEST_SIZE, size);
+		vb2_alloc_signature(sizeof(hash.sha512), size);
 	if (!sig)
 		return NULL;
 
-	memcpy(vb2_signature_data_mutable(sig), digest, VB2_SHA512_DIGEST_SIZE);
+	memcpy(vb2_signature_data_mutable(sig), hash.sha512,
+	       sizeof(hash.sha512));
 	return sig;
 }
 
@@ -83,7 +84,7 @@ struct vb2_signature *vb2_calculate_signature(
 		const uint8_t *data, uint32_t size,
 		const struct vb2_private_key *key)
 {
-	uint8_t digest[VB2_MAX_DIGEST_SIZE];
+	struct vb2_hash hash;
 	uint32_t digest_size = vb2_digest_size(key->hash_alg);
 
 	uint32_t digest_info_size = 0;
@@ -93,8 +94,8 @@ struct vb2_signature *vb2_calculate_signature(
 		return NULL;
 
 	/* Calculate the digest */
-	if (VB2_SUCCESS != vb2_digest_buffer(data, size, key->hash_alg,
-					     digest, digest_size))
+	if (VB2_SUCCESS != vb2_hash_calculate(false, data, size, key->hash_alg,
+					      &hash))
 		return NULL;
 
 	/* Prepend the digest info to the digest */
@@ -104,7 +105,7 @@ struct vb2_signature *vb2_calculate_signature(
 		return NULL;
 
 	memcpy(signature_digest, digest_info, digest_info_size);
-	memcpy(signature_digest + digest_info_size, digest, digest_size);
+	memcpy(signature_digest + digest_info_size, hash.raw, digest_size);
 
 	/* Allocate output signature */
 	struct vb2_signature *sig = (struct vb2_signature *)

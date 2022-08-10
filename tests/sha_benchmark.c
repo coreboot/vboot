@@ -20,14 +20,13 @@ int main(int argc, char *argv[]) {
 	double speed;
 	uint32_t msecs;
 	uint8_t *buffer = malloc(TEST_BUFFER_SIZE);
-	uint8_t digest[VB2_MAX_DIGEST_SIZE];
+	struct vb2_hash hash;
 	ClockTimerState ct;
 
 	/* Iterate through all the hash functions. */
 	for(i = VB2_HASH_SHA1; i < VB2_HASH_ALG_COUNT; i++) {
 		StartTimer(&ct);
-		vb2_digest_buffer(buffer, TEST_BUFFER_SIZE, i,
-				  digest, sizeof(digest));
+		vb2_hash_calculate(false, buffer, TEST_BUFFER_SIZE, i, &hash);
 		StopTimer(&ct);
 
 		msecs = GetDurationMsecs(&ct);

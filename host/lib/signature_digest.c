@@ -38,8 +38,7 @@ uint8_t* SignatureDigest(const uint8_t* buf, uint64_t len,
 {
 	uint8_t* info_digest  = NULL;
 
-	uint8_t digest[VB2_SHA512_DIGEST_SIZE];  /* Longest digest */
-	enum vb2_hash_algorithm hash_alg;
+	struct vb2_hash hash;
 
 	if (algorithm >= VB2_ALG_COUNT) {
 		fprintf(stderr,
@@ -47,11 +46,10 @@ uint8_t* SignatureDigest(const uint8_t* buf, uint64_t len,
 		return NULL;
 	}
 
-	hash_alg = vb2_crypto_to_hash(algorithm);
-
-	if (VB2_SUCCESS == vb2_digest_buffer(buf, len, hash_alg,
-					     digest, sizeof(digest))) {
-		info_digest = PrependDigestInfo(hash_alg, digest);
+	if (VB2_SUCCESS == vb2_hash_calculate(false, buf, len,
+					      vb2_crypto_to_hash(algorithm),
+					      &hash)) {
+		info_digest = PrependDigestInfo(hash.algo, hash.raw);
 	}
 	return info_digest;
 }

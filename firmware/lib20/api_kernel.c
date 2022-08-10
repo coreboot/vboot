@@ -99,7 +99,8 @@ vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
 				      vb2_member_of(sd, sd->data_key_offset),
 				      sd->data_key_size));
 
-	VB2_TRY(vb2_digest_init(dc, key.hash_alg));
+	VB2_TRY(vb2_digest_init(dc, vb2api_hwcrypto_allowed(ctx),
+				key.hash_alg, size));
 
 	VB2_TRY(vb2_digest_extend(dc, buf, size));
 

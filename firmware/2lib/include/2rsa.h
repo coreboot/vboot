@@ -22,7 +22,7 @@ struct vb2_public_key {
 	const char *desc;			/* Description */
 	uint32_t version;			/* Key version */
 	const struct vb2_id *id;		/* Key ID */
-	int allow_hwcrypto;			/* Is hwcrypto allowed for key */
+	bool allow_hwcrypto;			/* Is hwcrypto allowed for key */
 };
 
 /**

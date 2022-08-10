@@ -235,9 +235,8 @@ vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 	return cur_kernel->rv;
 }
 
-vb2_error_t vb2_digest_buffer(const uint8_t *buf, uint32_t size,
-			      enum vb2_hash_algorithm hash_alg, uint8_t *digest,
-			      uint32_t digest_size)
+vb2_error_t vb2_digest_finalize(struct vb2_digest_context *dc, uint8_t *digest,
+				uint32_t digest_size)
 {
 	return cur_kernel->rv;
 }

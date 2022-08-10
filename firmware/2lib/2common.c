@@ -187,45 +187,15 @@ vb2_error_t vb2_verify_data(const uint8_t *data, uint32_t size,
 			    const struct vb2_public_key *key,
 			    const struct vb2_workbuf *wb)
 {
-	struct vb2_workbuf wblocal = *wb;
-	uint8_t *digest;
-	uint32_t digest_size;
-	vb2_error_t rv;
+	struct vb2_hash hash;
 
 	if (sig->data_size > size) {
 		VB2_DEBUG("Data buffer smaller than length of signed data.\n");
 		return VB2_ERROR_VDATA_NOT_ENOUGH_DATA;
 	}
 
-	/* Digest goes at start of work buffer */
-	digest_size = vb2_digest_size(key->hash_alg);
-	if (!digest_size)
-		return VB2_ERROR_VDATA_DIGEST_SIZE;
+	VB2_TRY(vb2_hash_calculate(key->allow_hwcrypto, data, sig->data_size,
+				   key->hash_alg, &hash));
 
-	digest = vb2_workbuf_alloc(&wblocal, digest_size);
-	if (!digest)
-		return VB2_ERROR_VDATA_WORKBUF_DIGEST;
-
-	if (key->allow_hwcrypto) {
-		rv = vb2ex_hwcrypto_digest_init(key->hash_alg, sig->data_size);
-		if (rv == VB2_SUCCESS) {
-			VB2_DEBUG("Using HW crypto engine for hash_alg %d\n", key->hash_alg);
-			VB2_TRY(vb2ex_hwcrypto_digest_extend(data, sig->data_size));
-			VB2_TRY(vb2ex_hwcrypto_digest_finalize(digest, digest_size));
-		} else if (rv == VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED) {
-			VB2_DEBUG("HW crypto for hash_alg %d not supported, using SW\n",
-				  key->hash_alg);
-			VB2_TRY(vb2_digest_buffer(data, sig->data_size, key->hash_alg,
-						  digest, digest_size));
-		} else {
-			VB2_DEBUG("HW crypto init error : %d\n", rv);
-			return rv;
-		}
-	} else {
-		VB2_DEBUG("HW crypto forbidden by TPM flag, using SW\n");
-		VB2_TRY(vb2_digest_buffer(data, sig->data_size, key->hash_alg,
-					  digest, digest_size));
-	}
-
-	return vb2_verify_digest(key, sig, digest, &wblocal);
+	return vb2_verify_digest(key, sig, hash.raw, wb);
 }

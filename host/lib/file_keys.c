@@ -31,7 +31,7 @@ vb2_error_t DigestFile(char *input_file, enum vb2_hash_algorithm alg,
 		fprintf(stderr, "Couldn't open %s\n", input_file);
 		return VB2_ERROR_UNKNOWN;
 	}
-	vb2_digest_init(&ctx, alg);
+	vb2_digest_init(&ctx, false, alg, 0);
 	while ((len = read(input_fd, data, sizeof(data))) == sizeof(data))
 		vb2_digest_extend(&ctx, data, len);
 	if (len != -1)

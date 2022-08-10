@@ -25,15 +25,15 @@ const char *packed_key_sha1_string(const struct vb2_packed_key *key)
 {
 	uint8_t *buf = ((uint8_t *)key) + key->key_offset;
 	uint32_t buflen = key->key_size;
-	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	static char dest[VB2_SHA1_DIGEST_SIZE * 2 + 1];
 
-	vb2_digest_buffer(buf, buflen, VB2_HASH_SHA1, digest, sizeof(digest));
+	vb2_hash_calculate(false, buf, buflen, VB2_HASH_SHA1, &hash);
 
 	char *dnext = dest;
 	int i;
-	for (i = 0; i < sizeof(digest); i++)
-		dnext += sprintf(dnext, "%02x", digest[i]);
+	for (i = 0; i < sizeof(hash.sha1); i++)
+		dnext += sprintf(dnext, "%02x", hash.sha1[i]);
 
 	return dest;
 }
@@ -42,7 +42,7 @@ const char *private_key_sha1_string(const struct vb2_private_key *key)
 {
 	uint8_t *buf;
 	uint32_t buflen;
-	uint8_t digest[VB2_SHA1_DIGEST_SIZE];
+	struct vb2_hash hash;
 	static char dest[VB2_SHA1_DIGEST_SIZE * 2 + 1];
 
 	if (!key->rsa_private_key ||
@@ -50,12 +50,12 @@ const char *private_key_sha1_string(const struct vb2_private_key *key)
 		return "<error>";
 	}
 
-	vb2_digest_buffer(buf, buflen, VB2_HASH_SHA1, digest, sizeof(digest));
+	vb2_hash_calculate(false, buf, buflen, VB2_HASH_SHA1, &hash);
 
 	char *dnext = dest;
 	int i;
-	for (i = 0; i < sizeof(digest); i++)
-		dnext += sprintf(dnext, "%02x", digest[i]);
+	for (i = 0; i < sizeof(hash.sha1); i++)
+		dnext += sprintf(dnext, "%02x", hash.sha1[i]);
 
 	free(buf);
 	return dest;

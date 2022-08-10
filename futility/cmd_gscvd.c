@@ -437,7 +437,7 @@ static int calculate_ranges_digest(const struct file_buf *ap_firmware_file,
 	size_t i;
 
 	/* Calculate the ranges digest. */
-	if (vb2_digest_init(&dc, hash_alg) != VB2_SUCCESS) {
+	if (vb2_digest_init(&dc, false, hash_alg, 0) != VB2_SUCCESS) {
 		ERROR("Failed to init digest!\n");
 		return 1;
 	}
@@ -904,10 +904,10 @@ static int validate_gscvd(int argc, char *argv[])
 		/* Find the keyblock. */
 		kblock = (struct vb2_keyblock *)((uintptr_t)gvd + gvd->size);
 
-		if ((argc > 1) && (vb2_hash_verify
-				   (vb2_packed_key_data(&gvd->root_key_header),
-				    gvd->root_key_header.key_size,
-				    &root_key_digest) != VB2_SUCCESS)) {
+		if ((argc > 1) && (vb2_hash_verify(false,
+				vb2_packed_key_data(&gvd->root_key_header),
+				gvd->root_key_header.key_size,
+				&root_key_digest) != VB2_SUCCESS)) {
 			ERROR("Sha256 mismatch\n");
 			break;
 		}
@@ -946,7 +946,7 @@ static void dump_pubk_hash(const struct vb2_packed_key *pubk)
 	struct vb2_hash hash;
 	size_t i;
 
-	vb2_hash_calculate(vb2_packed_key_data(pubk), pubk->key_size,
+	vb2_hash_calculate(false, vb2_packed_key_data(pubk), pubk->key_size,
 			   VB2_HASH_SHA256, &hash);
 
 	printf("Root key body sha256 hash:\n");
