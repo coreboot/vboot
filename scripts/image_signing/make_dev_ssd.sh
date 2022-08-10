@@ -35,7 +35,8 @@ ROOTDEV_KERNEL="$((ROOTDEV_PARTITION - 1))"
 DEFINE_string image "$ROOTDEV_DISK" "Path to device or image file" "i"
 DEFINE_string keys "$DEFAULT_KEYS_FOLDER" "Path to folder of dev keys" "k"
 DEFINE_boolean remove_rootfs_verification \
-  "${FLAGS_FALSE}" "Modify kernel boot config to disable rootfs verification" ""
+  "${FLAGS_FALSE}" "Modify kernel boot config to disable rootfs verification" \
+  "r"
 DEFINE_boolean enable_earlycon "${FLAGS_FALSE}" \
   "Enable earlycon from stdout-path (ARM/ARM64) or SPCR (x86)." ""
 DEFINE_boolean disable_earlycon "${FLAGS_FALSE}" \
