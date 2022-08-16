@@ -6,11 +6,10 @@
 # Load common constants and variables.
 . "$(dirname "$0")/../common.sh"
 
-OUTDIR="${BUILD}/tests/futility_test_results"
+OUTDIR="${BUILD_RUN}/tests/futility_test_results"
 [ -d "$OUTDIR" ] || mkdir -p "$OUTDIR"
 
 # Let each test know where to find things...
-export BUILD
 export BUILD_RUN
 export SRCDIR
 export FUTILITY
