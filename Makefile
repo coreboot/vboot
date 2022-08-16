@@ -37,7 +37,6 @@
 
 # We should only run pwd once, not every time we refer to ${BUILD}.
 SRCDIR := $(shell pwd)
-export SRCDIR
 BUILD = ${SRCDIR}/build
 export BUILD
 
@@ -88,7 +87,7 @@ endif
 _machname := $(shell uname -m)
 HOST_ARCH ?= ${_machname}
 
-# ARCH and/or FIRMWARE_ARCH are defined by the Chromium OS ebuild.
+# ARCH and/or FIRMWARE_ARCH are defined by the ChromiumOS ebuild.
 # Pick a valid target architecture if none is defined.
 ifeq (${ARCH},)
   ARCH := ${HOST_ARCH}
@@ -112,7 +111,7 @@ else
 	CROSSYSTEM_ARCH_C := host/arch/stub/lib/crossystem_arch.c
 endif
 
-# FIRMWARE_ARCH is only defined by the Chromium OS ebuild if compiling
+# FIRMWARE_ARCH is only defined by the ChromiumOS ebuild if compiling
 # for a firmware target (coreboot or depthcharge). It must map to the same
 # consistent set of architectures as the host.
 ifeq (${FIRMWARE_ARCH},i386)
@@ -291,39 +290,16 @@ endif
 # Get major version of openssl (e.g. version 3.0.5 -> "3")
 OPENSSL_VERSION := $(shell ${PKG_CONFIG} --modversion openssl | cut -d. -f1)
 
-# Determine QEMU architecture needed, if any
-ifeq (${ARCH},${HOST_ARCH})
-  # Same architecture; no need for QEMU
-  QEMU_ARCH :=
-else ifeq (${HOST_ARCH}-${ARCH},x86_64-x86)
-  # 64-bit host can run 32-bit targets directly
-  QEMU_ARCH :=
-else
-  QEMU_ARCH := ${ARCH}
-endif
-
-# The top of the chroot for qemu must be passed in via the SYSROOT environment
-# variable.  In the Chromium OS chroot, this is done automatically by the
-# ebuild.
-
-ifeq (${QEMU_ARCH},)
-  # Path to build output for running tests is same as for building
-  BUILD_RUN = ${BUILD}
-  SRC_RUN = ${SRCDIR}
-else
-  $(info Using qemu for testing.)
-  # Path to build output for running tests is different in the chroot
-  BUILD_RUN = $(subst ${SYSROOT},,${BUILD})
-  SRC_RUN = $(subst ${SYSROOT},,${SRCDIR})
-
-  QEMU_BIN = qemu-${QEMU_ARCH}
-  QEMU_RUN = ${BUILD_RUN}/${QEMU_BIN}
-  export QEMU_RUN
-
-  RUNTEST = tests/test_using_qemu.sh
-endif
-
-export BUILD_RUN
+# A test wrapper can be specified. Tests are run inside the wrapper eg:
+# make RUNTEST=env runtests
+RUNTEST =
+# The Path to the $BUILD inside the runtest wrapper, used by the test scripts.
+# The top of the chroot for RUNTEST must be passed in via the SYSROOT
+# environment variable.  In the ChromiumOS chroot, this is done automatically by
+# the ebuild.
+export BUILD_RUN = $(subst ${SYSROOT},,${BUILD})
+# Path to the $SRCDIR inside the wrapper, the test scripts rederive this.
+SRC_RUN = $(subst ${SYSROOT},,${SRCDIR})
 
 ##############################################################################
 # The default target is here, to allow dependencies to be expressed below
@@ -1244,36 +1220,20 @@ ${FUTIL_CMD_LIST}: ${FUTIL_SRCS}
 .PHONY: test_setup
 test_setup:: cgpt ${UTIL_FILES_SDK} ${UTIL_FILES_BOARD} futil tests
 
-# Qemu setup for cross-compiled tests.  Need to copy qemu binary into the
-# sysroot.
-ifneq (${QEMU_ARCH},)
-test_setup:: qemu_install
-
-.PHONY: qemu_install
-qemu_install:
-ifeq (${SYSROOT},)
-	$(error SYSROOT must be set to the top of the target-specific root \
-when cross-compiling for qemu-based tests to run properly.)
-endif
-	@${PRINTF} "    Copying qemu binary.\n"
-	${Q}cp -fu /usr/bin/${QEMU_BIN} ${BUILD}/${QEMU_BIN}
-	${Q}chmod a+rx ${BUILD}/${QEMU_BIN}
-endif
-
 # Generate test keys
 .PHONY: genkeys
 genkeys: install_for_test
-	tests/gen_test_keys.sh
+	${RUNTEST} ${SRC_RUN}/tests/gen_test_keys.sh
 
 # Generate test cases
 .PHONY: gentestcases
 gentestcases: install_for_test
-	tests/gen_test_cases.sh
+	${RUNTEST} ${SRC_RUN}/tests/gen_test_cases.sh
 
 # Generate test cases for fuzzing
 .PHONY: genfuzztestcases
 genfuzztestcases: install_for_test
-	tests/gen_fuzz_test_cases.sh
+	${RUNTEST} ${SRC_RUN}/tests/gen_fuzz_test_cases.sh
 
 .PHONY: runcgpttests
 runcgpttests: install_for_test
@@ -1281,15 +1241,15 @@ runcgpttests: install_for_test
 
 .PHONY: runtestscripts
 runtestscripts: install_for_test genfuzztestcases
-	scripts/image_signing/sign_android_unittests.sh
-	tests/load_kernel_tests.sh
-	tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
-	tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt -D 358400
-	tests/run_preamble_tests.sh
-	tests/run_vbutil_kernel_arg_tests.sh
-	tests/run_vbutil_tests.sh
-	tests/vb2_rsa_tests.sh
-	tests/vb2_firmware_tests.sh
+	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_android_unittests.sh
+	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
+	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt -D 358400
+	${RUNTEST} ${SRC_RUN}/tests/run_preamble_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_kernel_arg_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/vb2_rsa_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/vb2_firmware_tests.sh
 
 .PHONY: runmisctests
 runmisctests: install_for_test
@@ -1330,14 +1290,14 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS}
-	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_key_tests ${TEST_KEYS} ${BUILD}
-	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_misc_tests ${BUILD}
+	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_key_tests ${TEST_KEYS} ${BUILD_RUN}
+	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_misc_tests ${BUILD_RUN}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_sig_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/hmac_test
 
 .PHONY: runfutiltests
 runfutiltests: install_for_test
-	tests/futility/run_test_scripts.sh
+	${RUNTEST} ${SRC_RUN}/tests/futility/run_test_scripts.sh
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_file_types
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_not_really
 
@@ -1348,8 +1308,8 @@ runlongtests: install_for_test genkeys genfuzztestcases
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common2_tests ${TEST_KEYS} --all
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_common3_tests ${TEST_KEYS} --all
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS} --all
-	tests/run_preamble_tests.sh --all
-	tests/run_vbutil_tests.sh --all
+	${RUNTEST} ${SRC_RUN}/tests/run_preamble_tests.sh --all
+	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_tests.sh --all
 
 .PHONY: rununittests
 rununittests: runcgpttests runmisctests run2tests
