@@ -160,6 +160,12 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.full.empty_rw_vpd"
 	RW_VPD:"${TMP}.to/RW_VPD"
 patch_file "${TMP}.expected.full.empty_rw_vpd" FMAP 0x3fc "$(printf '\010')"
 
+# Has 3 modes:
+# 1. $3 = "!something", run command, expect failure,
+#    grep for something in log, fail if it is not present
+# 2. $3 = "something", run command, expect success,
+#    cmp output to file named $3, fail if they are not the same
+# 3. $3 = "!", run command, expect success, fail to find a file named !
 test_update() {
 	local test_name="$1"
 	local emu_src="$2"
