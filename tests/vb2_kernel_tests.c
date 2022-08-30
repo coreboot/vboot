@@ -128,6 +128,8 @@ vb2_error_t vb2api_ec_sync(struct vb2_context *c)
 
 vb2_error_t vb2api_auxfw_sync(struct vb2_context *c)
 {
+	TEST_EQ(mock_ec_sync_called, 1,
+		"  auxfw sync must happen after EC sync");
 	return VB2_SUCCESS;
 }
 
