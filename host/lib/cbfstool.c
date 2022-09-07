@@ -43,8 +43,6 @@ vb2_error_t cbfstool_truncate(const char *file, const char *region,
 		cbfstool, file, "truncate", "-r", region, NULL,
 	};
 
-	VB2_DEBUG("Calling: %s '%s' truncate -r '%s'\n", cbfstool, file,
-		  region);
 	status = subprocess_run(argv, &subprocess_null, &output,
 				&subprocess_null);
 
