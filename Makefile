@@ -288,6 +288,9 @@ ifeq ($(HAVE_CROSID),1)
   CROSID_LIBS := $(shell ${PKG_CONFIG} --libs crosid)
 endif
 
+# Get major version of openssl (e.g. version 3.0.5 -> "3")
+OPENSSL_VERSION := $(shell ${PKG_CONFIG} --modversion openssl | cut -d. -f1)
+
 # Determine QEMU architecture needed, if any
 ifeq (${ARCH},${HOST_ARCH})
   # Same architecture; no need for QEMU
@@ -455,6 +458,14 @@ COMMONLIB_SRCS += \
 
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
+
+# Avoid build failures outside the chroot on Ubuntu 2022.04
+# e.g.:
+# host/lib/host_key2.c:103:17: error: ‘RSA_free’ is deprecated: Since OpenSSL 3.0
+# [-Werror=deprecated-declarations]
+ifeq ($(OPENSSL_VERSION),3)
+${UTILLIB}: CFLAGS += -Wno-error=deprecated-declarations
+endif
 
 UTILLIB_SRCS = \
 	cgpt/cgpt_add.c \
@@ -689,6 +700,14 @@ FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
 ${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include
+
+# Avoid build failures outside the chroot on Ubuntu 2022.04
+# e.g.:
+# futility/cmd_create.c:161:9: warning: ‘RSA_free’ is deprecated: Since OpenSSL 3.0
+# [-Wdeprecated-declarations]
+ifeq ($(OPENSSL_VERSION),3)
+${FUTIL_OBJS}: CFLAGS += -Wno-error=deprecated-declarations
+endif
 
 ALL_OBJS += ${FUTIL_OBJS}
 
