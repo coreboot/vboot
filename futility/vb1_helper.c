@@ -1,4 +1,4 @@
-/* Copyright 2014 The Chromium OS Authors. All rights reserved.
+/* Copyright 2014 The ChromiumOS Authors
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  */
@@ -129,6 +129,18 @@ uint64_t kernel_cmd_line_offset(const struct vb2_kernel_preamble *preamble)
 	    CROS_CONFIG_SIZE - CROS_PARAMS_SIZE;
 }
 
+/* Returns whether the kernel CONFIG_EFI_STUB enabled. */
+static int KernelHasEfiBootStub(const uint8_t *kernel_buf,
+				uint32_t kernel_size)
+{
+	if (kernel_size < 2)
+		return 0;
+
+	/* If the stub is enabled then the kernel data will start with
+	 * the COFF header, which begins with the magic bytes "MZ". */
+	return kernel_buf[0] == 'M' && kernel_buf[1] == 'Z';
+}
+
 /* Returns the size of the 32-bit kernel, or negative on error. */
 static int KernelSize(uint8_t *kernel_buf,
 		      uint32_t kernel_size,
@@ -138,7 +150,7 @@ static int KernelSize(uint8_t *kernel_buf,
 	struct linux_kernel_params *lh;
 
 	/* Except for x86, the kernel is the kernel. */
-	if (arch != ARCH_X86)
+	if (arch != ARCH_X86 || KernelHasEfiBootStub(kernel_buf, kernel_size))
 		return kernel_size;
 
 	/* The first part of the x86 vmlinuz is a header, followed by
@@ -170,6 +182,13 @@ static int PickApartVmlinuz(uint8_t *kernel_buf,
 	/* Except for x86, the kernel is the kernel. */
 	switch (arch) {
 	case ARCH_X86:
+		/* If the kernel has the EFI boot stub enabled, don't
+		 * modify the kernel buffer. */
+		if (KernelHasEfiBootStub(kernel_buf, kernel_size)) {
+			VB2_DEBUG("EFI boot stub detected\n");
+			break;
+		}
+
 		/* The first part of the x86 vmlinuz is a header, followed by
 		 * a real-mode boot stub. We only want the 32-bit part. */
 		lh = (struct linux_kernel_params *)kernel_buf;
