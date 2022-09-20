@@ -74,10 +74,17 @@ static const char *short_opts = "R:Gb:hk:p:r:";
 static const char usage[] =
 	"\n"
 	"This utility creates an RO verification space in the Chrome OS AP\n"
-	"firmware image or allows to validate a previously prepared image\n"
-	"containing the RO verification space.\n\n"
-	"Usage: " MYNAME " gscvd PARAMS <AP FIRMWARE FILE> [<root key hash>]\n"
-	"\n\nCreation of RO Verification space:\n\n"
+	"firmware image, allows to validate a previously prepared image\n"
+	"containing the RO verification space, and prints out the hash of the\n"
+	"payload of the root public key.\n\n"
+	"Create a new GSCVD from scratch:\n"
+	"  "MYNAME" gscvd -R <ranges> PARAMS <firmware image>\n\n"
+	"Re-sign an existing GSCVD with new keys, preserving ranges:\n"
+	"  "MYNAME" gscvd PARAMS <firmware image>\n\n"
+	"Validate an existing GSCVD with given root key hash:\n"
+	"  "MYNAME" gscvd <firmware image> [<root key hash in hex>]\n\n"
+	"Print the hash of a public root key:\n"
+	"  "MYNAME" gscvd -r <root key .vpubk file>\n\n"
 	"Required PARAMS:\n"
 	"  -b|--board_id  <string|hex>      The Board ID of the board for\n"
 	"                                     which the image is signed.\n"
@@ -107,12 +114,6 @@ static const char usage[] =
 	"                                     of the input file\n"
 	"  [--outfile]        OUTFILE       Output firmware image containing\n"
 	"                                     RO verification information\n"
-	"\n\n"
-	"Validation of RO Verification space:\n\n"
-	"   The only required parameter is <AP FIRMWARE FILE>, if optional\n"
-	"   <root key hash> is given, it is compared to the hash\n"
-	"   of the root key found in <AP_FIRMWARE_FILE>.\n"
-	"\n\n"
 	"  -h|--help                        Print this message\n\n";
 
 /* Structure helping to keep track of the file mapped into memory. */
@@ -1112,20 +1113,27 @@ static int do_gscvd(int argc, char *argv[])
 		/* This must be a validation request. */
 		return validate_gscvd(argc - 1, argv + 1);
 
-	if (optind != (argc - 1)) {
-		ERROR("Misformatted command line\n");
-		goto usage_out;
-	}
-
-	infile = argv[optind];
-
 	if (errorcount) /* Error message(s) should have been printed by now. */
 		goto usage_out;
 
 	if (!root_pubk) {
 		ERROR("Missing --root_pub_key argument\n");
 		goto usage_out;
+	} else if (argc == 3) {
+		/*
+		 * This is a request to print out the hash of the root pub key
+		 * payload.
+		 */
+		dump_pubk_hash(root_pubk);
+		return 0;
 	}
+
+	if (optind != (argc - 1)) {
+		ERROR("Misformatted command line\n");
+		goto usage_out;
+	}
+
+	infile = argv[optind];
 
 	if (!kblock) {
 		ERROR("Missing --keyblock argument\n");
@@ -1184,8 +1192,6 @@ static int do_gscvd(int argc, char *argv[])
 
 		if (fill_gvd_area(&ap_firmware_file, gvd, kblock))
 			break;
-
-		dump_pubk_hash(root_pubk);
 
 		rv = 0;
 	} while (false);
