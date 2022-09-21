@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2017 The Chromium OS Authors. All rights reserved.
+# Copyright 2017 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
@@ -73,7 +73,10 @@ maybe_disable_cpu_fw_spi() {
   if [ "${CPU_FW_SPI}" = "${FLAGS_TRUE}" ]; then
     dut-control cpu_fw_spi:off >/dev/null
   fi
+  cleanup_temps_and_mounts
 }
+
+# This overrides the trap set in common_minimal.
 trap "maybe_disable_cpu_fw_spi" EXIT
 
 update_programmer_for_servo() {
