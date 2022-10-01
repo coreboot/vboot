@@ -456,7 +456,7 @@ resign_firmware_payload() {
     info "See go/cros-unibuild-signing for details"
     {
       read # Burn the first line (header line)
-      while IFS="," read -r output_name bios_image key_id ec_image
+      while IFS="," read -r output_name bios_image key_id ec_image brand_code
       do
         local key_suffix=''
         local extra_args=()
@@ -574,6 +574,34 @@ resign_firmware_payload() {
         echo "After setting GBB on ${bios_path}: md5 =" \
           $(md5sum ${bios_path} | awk '{print $1}')
 
+        if [[ -n ${brand_code} ]]; then
+          # Resign the RO_GSCVD FMAP area.
+          if [[ -z ${shellball_keyset_dir} ]]; then
+            extra_args=()
+          else
+            extra_args=( --gscvd_out
+                         "${shellball_keyset_dir}/gscvd.${output_name}" )
+          fi
+          echo "Setting RO_GSCVD with: ${FUTILITY} gscvd" \
+            --keyblock "${KEY_DIR}/arv_platform.keyblock" \
+            --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
+            --board_id "${brand_code}" \
+            --root_pub_key "${KEY_DIR}/arv_root.vbpubk" \
+            "${extra_args[@]}" \
+            "${bios_path}"
+          ${FUTILITY} gscvd \
+            --keyblock "${KEY_DIR}/arv_platform.keyblock" \
+            --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
+            --board_id "${brand_code}" \
+            --root_pub_key "${KEY_DIR}/arv_root.vbpubk" \
+            "${extra_args[@]}" \
+            "${bios_path}"
+
+          echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
+               "$(md5sum "${bios_path}" | awk '{print $1}')"
+        else
+          warn "No brand code for ${bios_path} in signer_config.csv"
+        fi
         info "Signed firmware image output to ${bios_path}"
       done
       unset IFS
