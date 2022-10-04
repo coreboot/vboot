@@ -261,7 +261,6 @@ static int write_new_preamble(struct bios_area_s *vblock,
 			vblock->flags);
 	if (!preamble) {
 		ERROR("Error creating firmware preamble.\n");
-		free(body_sig);
 		goto end;
 	}
 

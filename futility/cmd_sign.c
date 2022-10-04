@@ -292,7 +292,6 @@ int ft_sign_raw_firmware(const char *name, void *data)
 			sign_option.flags);
 	if (!preamble) {
 		fprintf(stderr, "Error creating firmware preamble.\n");
-		free(body_sig);
 		goto done;
 	}
 
