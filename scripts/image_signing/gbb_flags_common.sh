@@ -103,7 +103,7 @@ update_programmer_for_servo() {
       programmer="raiden_debug_spi:serial=${serial}"
       enable_cpu_fw_spi
       ;;
-    *ccd_cr50*|*ccd_gsc*)
+    *ccd_ti50*|*ccd_cr50*|*ccd_gsc*)
       programmer="raiden_debug_spi:target=AP,serial=${serial}"
       ;;
     *)
