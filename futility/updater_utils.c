@@ -503,7 +503,8 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 		programmer = "raiden_debug_spi";
 		*prepare_ctrl_name = cpu_fw_spi;
 	} else if (strstr(servo_type, "ccd_cr50") ||
-		   strstr(servo_type, "ccd_gsc")) {
+		   strstr(servo_type, "ccd_gsc") ||
+		   strstr(servo_type, "ccd_ti50")) {
 		VB2_DEBUG("Selected CCD.\n");
 		programmer = "raiden_debug_spi:target=AP,custom_rst=true";
 		*prepare_ctrl_name = ccd_cpu_fw_spi;
