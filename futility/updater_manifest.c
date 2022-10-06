@@ -22,33 +22,44 @@
  * archive (see updater_archive.c) with image files and configuration files, and
  * the meta data is maintained by a "manifest" that described below.
  *
- * A package for single board (i.e., not Unified Build) will have all the image
- * files in top folder:
+ * A package for a single board (i.e., not Unified Build) will have all the
+ * image files in the top folder:
  *  - host: 'image.bin' (or 'bios.bin' as legacy name before CL:1318712)
  *  - ec: 'ec.bin'
  *  - pd: 'pd.bin'
+ *
  * If custom label is supported, a 'keyset/' folder will be available, with key
  * files in it:
  *  - rootkey.$CLTAG
  *  - vblock_A.$CLTAG
  *  - vblock_B.$CLTAG
+ *
  * The $CLTAG should come from VPD value 'custom_label_tag'. For legacy devices,
  * the VPD name may be 'whitelabel_tag', or 'customization_id'.
  * The 'customization_id' has a different format: LOEM[-VARIANT] and we can only
  * take LOEM as $CLTAG, for example A-B => $CLTAG=A.
  *
- * A package for Unified Build is more complicated. There will be a models/
- * folder, and each model (by $(mosys platform model) ) should appear as a sub
- * folder, with a 'setvars.sh' file inside. The 'setvars.sh' is a shell script
- * describing what files should be used and the signature ID ($SIGID) to use.
+ * A package for Unified Build is more complicated.
+ *
+ * You need to look at the signer_config.csv file to find image files and their
+ * firmware manifest key (usually the same as the model name), then search for
+ * patch files in the keyset/ folder.
  *
  * Similar to custom label in non-Unified-Build, the keys and vblock files will
- * be in 'keyset/' folder:
- *  - rootkey.$SIGID
- *  - vblock_A.$SIGID
- *  - vblock_B.$SIGID
- * If $SIGID starts with 'sig-id-in-*' then we have to replace it by VPD value
- * 'custom_label_tag' as '$MODEL-$CLTAG'.
+ * be available in the 'keyset/' folder:
+ *  - rootkey.$MANIFEST_KEY
+ *  - vblock_A.$MANIFEST_KEY
+ *  - vblock_B.$MANIFEST_KEY
+ *
+ * Historically (the original design in Unified Build) there should also be a
+ * models/ folder, and each model (by $(mosys platform model) ) should appear as
+ * a sub folder, with a 'setvars.sh' file inside. The 'setvars.sh' is a shell
+ * script describing what files should be used and the signature ID ($SIGID) to
+ * use as firmware manifest key. If $SIGID starts with 'sig-id-in-*' then we
+ * have to replace it by VPD value 'custom_label_tag' as '$MODEL-$CLTAG'.
+ *
+ * The current implementation is to first look at `setvars.sh` first, and then
+ * fallback to `signer_config.csv` if needed.
  */
 
 static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
@@ -437,6 +448,16 @@ static struct model_config *manifest_get_model_config(
 	return NULL;
 }
 
+/* Releases (and zeros) the data inside a patch config. */
+static void clear_patch_config(struct patch_config *patch)
+{
+	free(patch->rootkey);
+	free(patch->vblock_a);
+	free(patch->vblock_b);
+	free(patch->gscvd);
+	memset(patch, 0, sizeof(*patch));
+}
+
 /*
  * Creates the manifest from the 'signer_config.csv' file.
  * Returns 0 on success (loaded), otherwise failure.
@@ -518,6 +539,15 @@ static int manifest_from_signer_config(struct manifest *manifest)
 				free(base_model_config->signature_id);
 				base_model_config->signature_id = strdup(
 						"sig-id-in-customization-id");
+				/*
+				 * Historically (e.g., setvars.sh), custom label
+				 * devices will have signature ID set to
+				 * 'sig-id-in-*' so the patch files will be
+				 * discovered later from VPD. We want to
+				 * follow that behavior until fully migrated.
+				 */
+				clear_patch_config(
+						&base_model_config->patches);
 			}
 		}
 
@@ -527,6 +557,9 @@ static int manifest_from_signer_config(struct manifest *manifest)
 			free(model.ec_image);
 			continue;
 		}
+
+		/* Find patch files. */
+		find_patches_for_model(&model, archive, model.name);
 
 		model.signature_id = strdup(model.name);
 		if (!manifest_add_model(manifest, &model))
@@ -811,10 +844,7 @@ void delete_manifest(struct manifest *manifest)
 		free(model->image);
 		free(model->ec_image);
 		free(model->pd_image);
-		free(model->patches.rootkey);
-		free(model->patches.vblock_a);
-		free(model->patches.vblock_b);
-		free(model->patches.gscvd);
+		clear_patch_config(&model->patches);
 	}
 	free(manifest->models);
 	free(manifest);
