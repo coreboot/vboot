@@ -54,8 +54,8 @@
  * use as firmware manifest key. If $SIGID starts with 'sig-id-in-*' then we
  * have to replace it by VPD value 'custom_label_tag' as '$MODEL-$CLTAG'.
  *
- * The current implementation is to first look at `setvars.sh` first, and then
- * fallback to `signer_config.csv` if needed.
+ * The current implementation is to try `signer_config.csv` approach first, and
+ * then fallback to `setvars.sh` on failure.
  */
 
 static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
@@ -812,6 +812,29 @@ int model_apply_custom_label(
 }
 
 /*
+ * b/251040363: Checks if the archive can be parsed using signer_config.
+ * Currently only wlref and whitelabel-test (both fake models for testing) must
+ * use setvars. In future this can be replaced by a quirk.
+ */
+static bool archive_signer_config_first(struct u_archive *archive)
+{
+	int i;
+	const char *setvars_list[] = {
+		"models/wlref/setvars.sh",
+		"models/whitelabel-test/setvars.sh"
+	};
+
+	for (i = 0; i < ARRAY_SIZE(setvars_list); i++) {
+		if (archive_has_entry(archive, setvars_list[i])) {
+			INFO("Detected %s, will ignore %s.\n",
+			     setvars_list[i], PATH_SIGNER_CONFIG);
+			return false;
+		}
+	}
+	return true;
+}
+
+/*
  * Creates a new manifest object by scanning files in archive.
  * Returns the manifest on success, otherwise NULL for failure.
  */
@@ -822,13 +845,15 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 	manifest.archive = archive;
 	manifest.default_model = -1;
 
-	VB2_DEBUG("Try to build a manifest from *%s\n", PATH_ENDSWITH_SETVARS);
-	archive_walk(archive, &manifest, manifest_scan_entries);
-
-	if (manifest.num == 0) {
+	if (archive_signer_config_first(archive)) {
 		VB2_DEBUG("Try to build a manifest from %s\n",
 			  PATH_SIGNER_CONFIG);
 		manifest_from_signer_config(&manifest);
+	}
+	if (manifest.num == 0) {
+		VB2_DEBUG("Try to build a manifest from *%s\n",
+			  PATH_ENDSWITH_SETVARS);
+		archive_walk(archive, &manifest, manifest_scan_entries);
 	}
 	if (manifest.num == 0) {
 		VB2_DEBUG("Try to build a manifest from a */firmware folder\n");
