@@ -202,11 +202,12 @@ static int change_gbb_rootkey(struct firmware_image *image,
 }
 
 /*
- * Changes the VBlock in firmware section to new data.
+ * Changes the firmware section (for example vblock or GSCVD) to new data.
  * Returns 0 on success, otherwise failure.
  */
-static int change_vblock(struct firmware_image *image, const char *section_name,
-			 const uint8_t *vblock, uint32_t vblock_len)
+static int change_section(struct firmware_image *image,
+			  const char *section_name,
+			  const uint8_t *data, uint32_t data_len)
 {
 	struct firmware_section section;
 
@@ -216,12 +217,14 @@ static int change_vblock(struct firmware_image *image, const char *section_name,
 		      image->file_name);
 		return -1;
 	}
-	if (section.size < vblock_len) {
-		ERROR("'%s' is too small (%zu bytes) for vblock (%u bytes).\n",
-		      section_name, section.size, vblock_len);
+	if (section.size < data_len) {
+		ERROR("'%s' is too small (%zu bytes) for patching %u bytes.\n",
+		      section_name, section.size, data_len);
 		return -1;
 	}
-	memcpy(section.data, vblock, vblock_len);
+	/* First erase (0xff) the section in case the new data is smaller. */
+	memset(section.data, 0xff, section.size);
+	memcpy(section.data, data, data_len);
 	return 0;
 }
 
@@ -268,11 +271,15 @@ int patch_image_by_model(
 	if (model->patches.vblock_a)
 		err += !!apply_key_file(
 				image, model->patches.vblock_a, archive,
-				FMAP_RW_VBLOCK_A, change_vblock);
+				FMAP_RW_VBLOCK_A, change_section);
 	if (model->patches.vblock_b)
 		err += !!apply_key_file(
 				image, model->patches.vblock_b, archive,
-				FMAP_RW_VBLOCK_B, change_vblock);
+				FMAP_RW_VBLOCK_B, change_section);
+	if (model->patches.gscvd)
+		err += !!apply_key_file(
+				image, model->patches.gscvd, archive,
+				FMAP_RO_GSCVD, change_section);
 	return err;
 }
 
@@ -291,12 +298,14 @@ static void find_patches_for_model(struct model_config *model,
 		"rootkey",
 		"vblock_A",
 		"vblock_B",
+		"gscvd",
 	};
 
 	char **targets[] = {
 		&model->patches.rootkey,
 		&model->patches.vblock_a,
 		&model->patches.vblock_b,
+		&model->patches.gscvd,
 	};
 
 	assert(ARRAY_SIZE(names) == ARRAY_SIZE(targets));
@@ -805,6 +814,7 @@ void delete_manifest(struct manifest *manifest)
 		free(model->patches.rootkey);
 		free(model->patches.vblock_a);
 		free(model->patches.vblock_b);
+		free(model->patches.gscvd);
 	}
 	free(manifest->models);
 	free(manifest);
@@ -875,9 +885,12 @@ void print_json_manifest(const struct manifest *manifest)
 		if (m->patches.rootkey) {
 			struct patch_config *p = &m->patches;
 			printf(",\n%*s\"patches\": { \"rootkey\": \"%s\", "
-			       "\"vblock_a\": \"%s\", \"vblock_b\": \"%s\" }",
+			       "\"vblock_a\": \"%s\", \"vblock_b\": \"%s\"",
 			       indent, "", p->rootkey, p->vblock_a,
 			       p->vblock_b);
+			if (p->gscvd)
+				printf(", \"gscvd\": \"%s\"", p->gscvd);
+			printf(" }");
 		}
 		if (m->signature_id)
 			printf(",\n%*s\"signature_id\": \"%s\"", indent, "",

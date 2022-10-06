@@ -16,6 +16,7 @@ static const char * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RO_SECTION = "RO_SECTION",
 		  * const FMAP_RO_CBFS = "COREBOOT",
 		  * const FMAP_RO_GBB = "GBB",
+		  * const FMAP_RO_GSCVD = "RO_GSCVD",
 		  * const FMAP_RW_VBLOCK_A = "VBLOCK_A",
 		  * const FMAP_RW_VBLOCK_B = "VBLOCK_B",
 		  * const FMAP_RW_SECTION_A = "RW_SECTION_A",
@@ -99,6 +100,7 @@ struct patch_config {
 	char *rootkey;
 	char *vblock_a;
 	char *vblock_b;
+	char *gscvd;
 };
 
 struct model_config {
