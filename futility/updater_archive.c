@@ -831,6 +831,15 @@ static struct model_config *manifest_get_model_config(
 	return NULL;
 }
 
+/* Releases (and zeros) the data inside a patch config. */
+static void clear_patch_config(struct patch_config *patch)
+{
+	free(patch->rootkey);
+	free(patch->vblock_a);
+	free(patch->vblock_b);
+	memset(patch, 0, sizeof(*patch));
+}
+
 /*
  * Creates the manifest from the 'signer_config.csv' file.
  * Returns 0 on success (loaded), otherwise failure.
@@ -912,6 +921,15 @@ static int manifest_from_signer_config(struct manifest *manifest)
 				free(base_model_config->signature_id);
 				base_model_config->signature_id = strdup(
 						"sig-id-in-customization-id");
+				/*
+				 * Historically (e.g., setvars.sh), custom label
+				 * devices will have signature ID set to
+				 * 'sig-id-in-*' so the patch files will be
+				 * discovered later from VPD. We want to
+				 * follow that behavior until fully migrated.
+				 */
+				clear_patch_config(
+						&base_model_config->patches);
 			}
 		}
 
@@ -921,6 +939,9 @@ static int manifest_from_signer_config(struct manifest *manifest)
 			free(model.ec_image);
 			continue;
 		}
+
+		/* Find patch files. */
+		find_patches_for_model(&model, archive, model.name);
 
 		model.signature_id = strdup(model.name);
 		if (!manifest_add_model(manifest, &model))
@@ -1151,9 +1172,7 @@ void delete_manifest(struct manifest *manifest)
 		free(model->image);
 		free(model->ec_image);
 		free(model->pd_image);
-		free(model->patches.rootkey);
-		free(model->patches.vblock_a);
-		free(model->patches.vblock_b);
+		clear_patch_config(&model->patches);
 	}
 	free(manifest->models);
 	free(manifest);
