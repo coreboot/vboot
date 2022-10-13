@@ -160,7 +160,7 @@ static int do_update(int argc, char *argv[])
 {
 	struct updater_config *cfg;
 	struct updater_config_arguments args = {0};
-	int i, errorcnt = 0, do_update = 1;
+	int i, errorcnt = 0, update_needed = 1;
 	int detect_servo = 0;
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
@@ -323,8 +323,8 @@ static int do_update(int argc, char *argv[])
 	prepare_servo_control(prepare_ctrl_name, 1);
 
 	if (!errorcnt)
-		errorcnt += updater_setup_config(cfg, &args, &do_update);
-	if (!errorcnt && do_update) {
+		errorcnt += updater_setup_config(cfg, &args, &update_needed);
+	if (!errorcnt && update_needed) {
 		int r;
 		STATUS("Starting firmware updater.\n");
 		r = update_firmware(cfg);
