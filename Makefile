@@ -1,4 +1,4 @@
-# Copyright 2013 The Chromium OS Authors. All rights reserved.
+# Copyright 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -671,7 +671,6 @@ FUTIL_SRCS = \
 	futility/cmd_show.c \
 	futility/cmd_sign.c \
 	futility/cmd_update.c \
-	futility/cmd_validate_rec_mrc.c \
 	futility/cmd_vbutil_firmware.c \
 	futility/cmd_vbutil_kernel.c \
 	futility/cmd_vbutil_key.c \
