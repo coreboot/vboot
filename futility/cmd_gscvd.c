@@ -17,6 +17,7 @@
 #include "gsc_ro.h"
 #include "host_key21.h"
 #include "host_keyblock.h"
+#include "host_misc.h"
 #include "host_signature.h"
 
 /*
@@ -53,18 +54,20 @@
 /* Command line options processing support. */
 enum no_short_opts {
 	OPT_OUTFILE = 1000,
+	OPT_RO_GSCVD_FILE = 1001,
 };
 
 static const struct option long_opts[] = {
 	/* name       hasarg *flag  val */
-	{"outfile",       1, NULL, OPT_OUTFILE},
-	{"ranges",        1, NULL, 'R'},
 	{"add_gbb",       0, NULL, 'G'},
 	{"board_id",      1, NULL, 'b'},
-	{"root_pub_key",  1, NULL, 'r'},
-	{"keyblock",      1, NULL, 'k'},
-	{"platform_priv", 1, NULL, 'p'},
 	{"help",          0, NULL, 'h'},
+	{"keyblock",      1, NULL, 'k'},
+	{"outfile",       1, NULL, OPT_OUTFILE},
+	{"platform_priv", 1, NULL, 'p'},
+	{"ranges",        1, NULL, 'R'},
+	{"gscvd_out",     1, NULL, OPT_RO_GSCVD_FILE},
+	{"root_pub_key",  1, NULL, 'r'},
 	{}
 };
 
@@ -113,6 +116,8 @@ static const char usage[] =
 	"                                     of the input file\n"
 	"  [--outfile]        OUTFILE       Output firmware image containing\n"
 	"                                     RO verification information\n"
+	"  [--gscvd_out]      GSCVD_FILE    A binary blob containing just the\n"
+	"                                     unpadded RO_GSCVD section\n"
 	"  -h|--help                        Print this message\n\n";
 
 /* Structure helping to keep track of the file mapped into memory. */
@@ -571,17 +576,19 @@ struct gsc_verification_data *create_gvd(struct file_buf *ap_firmware_file,
  *
  * All trust chain components have been verified, AP RO sections digest
  * calculated, and GVD signature created; put it all together in the dedicated
- * FMAP area.
+ * FMAP area and save in a binary blob if requested.
  *
  * @param ap_firmware_file  pointer to the AP firmware file layout descriptor
  * @param gvd  pointer to the GVD header
  * @param keyblock  pointer to the keyblock container
- *
+ * @param gscvd_file_name  if not NULL the name of the file to save the
+ *			RO_GSCVD section in.
  * @return zero on success, -1 on failure
  */
 static int fill_gvd_area(struct file_buf *ap_firmware_file,
 			 struct gsc_verification_data *gvd,
-			 struct vb2_keyblock *keyblock)
+			 struct vb2_keyblock *keyblock,
+			 const char *gscvd_file_name)
 {
 	size_t total;
 	uint8_t *cursor;
@@ -605,6 +612,11 @@ static int fill_gvd_area(struct file_buf *ap_firmware_file,
 	/* Keyblock, size includes everything. */
 	memcpy(cursor, keyblock, keyblock->keyblock_size);
 
+	if (gscvd_file_name) {
+		if (vb2_write_file(gscvd_file_name, cursor - gvd->size,
+				   total) != VB2_SUCCESS)
+			return -1;
+	}
 	return 0;
 }
 
@@ -1023,6 +1035,7 @@ static int do_gscvd(int argc, char *argv[])
 	struct gsc_verification_data *gvd = NULL;
 	struct file_buf ap_firmware_file = { .fd = -1 };
 	uint32_t board_id = UINT32_MAX;
+	char *ro_gscvd_file = NULL;
 	int rv = 0;
 
 	ranges.range_count = 0;
@@ -1032,6 +1045,9 @@ static int do_gscvd(int argc, char *argv[])
 		switch (i) {
 		case OPT_OUTFILE:
 			outfile = optarg;
+			break;
+		case OPT_RO_GSCVD_FILE:
+			ro_gscvd_file = optarg;
 			break;
 		case 'R':
 			if (parse_ranges(optarg, &ranges)) {
@@ -1108,9 +1124,14 @@ static int do_gscvd(int argc, char *argv[])
 		}
 	}
 
-	if ((optind == 1) && (argc > 1))
+	if ((optind == 1) && (argc > 1)) {
+		if (ro_gscvd_file) {
+			ERROR("Unexpected --gscvd_out in command line\n");
+			goto usage_out;
+		}
 		/* This must be a validation request. */
 		return validate_gscvd(argc - 1, argv + 1);
+	}
 
 	if (errorcount) /* Error message(s) should have been printed by now. */
 		goto usage_out;
@@ -1119,6 +1140,10 @@ static int do_gscvd(int argc, char *argv[])
 		ERROR("Missing --root_pub_key argument\n");
 		goto usage_out;
 	} else if (argc == 3) {
+		if (ro_gscvd_file) {
+			ERROR("Unexpected --gscvd_out in command line\n");
+			goto usage_out;
+		}
 		/*
 		 * This is a request to print out the hash of the root pub key
 		 * payload.
@@ -1189,7 +1214,8 @@ static int do_gscvd(int argc, char *argv[])
 		if (!gvd)
 			break;
 
-		if (fill_gvd_area(&ap_firmware_file, gvd, kblock))
+		if (fill_gvd_area(&ap_firmware_file, gvd,
+				  kblock, ro_gscvd_file))
 			break;
 
 		rv = 0;
