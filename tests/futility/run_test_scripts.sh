@@ -36,6 +36,7 @@ ${SCRIPT_DIR}/futility/test_sign_keyblocks.sh
 ${SCRIPT_DIR}/futility/test_sign_usbpd1.sh
 ${SCRIPT_DIR}/futility/test_update.sh
 ${SCRIPT_DIR}/futility/test_file_types.sh
+${SCRIPT_DIR}/futility/test_gscvd.sh
 "
 
 # Get ready...
