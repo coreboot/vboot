@@ -171,6 +171,31 @@ fix_old_names() {
   true
 }
 
+report_firmware_mismatch() {
+  # Check for mismatched OS/firmware and send UMA metrics
+  if ! type "chromeos-firmwareupdate" >/dev/null 2>&1 ; then
+    debug "Skip checking firmware mismatch: missing 'chromeos-firmwareupdate'."
+    return 1
+  fi
+
+  local cros_fwid="$(crossystem fwid 2>/dev/null)"
+
+  local model="$(cros_config / name || echo unknown)"
+  local manifest="$(chromeos-firmwareupdate --manifest 2>/dev/null)"
+  local expect_fwid=$(echo "${manifest}" |
+    jq -c -r ".${model}.host.versions.rw" 2>/dev/null)
+
+  if [ -z "${expect_fwid}" ] || [ "${expect_fwid}" = "null" ]; then
+    debug "Failed to get the expected fwid for model '${model}'."
+  elif [ "${cros_fwid}" = "${expect_fwid}" ]; then
+    info "Report UMA metrics: System firmware matched OS bundled firmware."
+    metrics_client -e "Platform.Firmware.Mismatch" 0 2
+  else
+    info "Report UMA metrics: System firmware mismatched OS bundled firmware."
+    metrics_client -e "Platform.Firmware.Mismatch" 1 2
+  fi
+}
+
 ##############################################################################
 # Here we go...
 
@@ -383,5 +408,7 @@ for kname in ${kernparts}; do
 
   kc=$(expr $kc + 1)
 done
+
+report_firmware_mismatch || true
 
 exit 0
