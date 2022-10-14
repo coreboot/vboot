@@ -126,6 +126,9 @@ struct file_buf {
 	uint8_t *data;
 	int fd;
 	FmapAreaHeader *ro_gscvd;
+	/* Cached GBB information. */
+	const FmapAreaHeader *gbb_area;
+	uint32_t gbb_maxlen;
 };
 
 /*
@@ -159,6 +162,8 @@ struct gscvd_ro_ranges {
 static int load_ap_firmware(const char *file_name, struct file_buf *file,
 			int mode)
 {
+	memset(file, 0, sizeof(*file));
+
 	if (futil_open_and_map_file(file_name, &file->fd, mode, &file->data,
 				    &file->len))
 		return 1;
@@ -172,6 +177,43 @@ static int load_ap_firmware(const char *file_name, struct file_buf *file,
 		file->data = NULL;
 		file->len = 0;
 		return 1;
+	}
+
+	/*
+	 * Try finding FMAP gbb area and validating the GBB. It's not a
+	 * failure if GBB is not found, it might not be required after all.
+	 */
+	FmapAreaHeader *area;
+	while (fmap_find_by_name(file->data, file->len, NULL, "GBB", &area)) {
+		struct vb2_gbb_header *gbb;
+		uint32_t maxlen;
+
+		gbb = (void *)(file->data + area->area_offset);
+
+		if (!futil_valid_gbb_header(gbb, area->area_size, &maxlen)) {
+			ERROR("GBB is invalid.\n");
+			break;
+		}
+
+		/*
+		 * This implementation relies on the fact that no meaningful
+		 * fields come after the `hwid_digest` field in the header. If
+		 * we ever make new GBB versions that add more fields, the
+		 * code below and in add_gbb() needs to be adapted. Older
+		 * versions than 1.2 or GBBs with a bmpblk are not expected
+		 * with GSCVD images.
+		 */
+		if (gbb->major_version != 1 || gbb->minor_version != 2 ||
+		    gbb->bmpfv_size != 0) {
+			ERROR("Unsupported GBB version.\n");
+			break;
+		}
+
+
+		file->gbb_area = area;
+		file->gbb_maxlen = maxlen;
+
+		break;
 	}
 
 	return 0;
@@ -370,34 +412,13 @@ static int parse_ranges(const char *input, struct gscvd_ro_ranges *output)
  */
 static int add_gbb(struct gscvd_ro_ranges *ranges, const struct file_buf *file)
 {
-	FmapAreaHeader *area;
-
-	if (!fmap_find_by_name(file->data, file->len, NULL, "GBB", &area)) {
+	if (!file->gbb_area) {
 		ERROR("Could not find a GBB area in the FMAP.\n");
 		return 1;
 	}
 
-	struct vb2_gbb_header *gbb = (void *)file->data + area->area_offset;
-	uint32_t maxlen;
-
-	if (!futil_valid_gbb_header(gbb, area->area_size, &maxlen)) {
-		ERROR("GBB is invalid.\n");
-		return 1;
-	}
-
-	/*
-	 * This implementation relies on the fact that no meaningful fields come
-	 * after the `hwid_digest` field in the header. If we ever make new GBB
-	 * versions that add more fields, the code below needs to be adapted.
-	 * Older versions than 1.2 or GBBs with a bmpblk are not expected with
-	 * GSCVD images.
-	 */
-	if (gbb->major_version != 1 || gbb->minor_version != 2 ||
-	    gbb->bmpfv_size != 0) {
-		ERROR("Unsupported GBB version.\n");
-		return 1;
-	}
-
+	const struct vb2_gbb_header *gbb = (void *)(file->data +
+					      file->gbb_area->area_offset);
 	uint32_t lower_key_offset = VB2_MIN(gbb->rootkey_offset,
 					    gbb->recovery_key_offset);
 	if (gbb->hwid_offset > lower_key_offset) {
@@ -410,14 +431,16 @@ static int add_gbb(struct gscvd_ro_ranges *ranges, const struct file_buf *file)
 		return 1;
 	}
 
-	ranges->ranges[ranges->range_count].offset = area->area_offset;
+	ranges->ranges[ranges->range_count].offset =
+		file->gbb_area->area_offset;
 	ranges->ranges[ranges->range_count].size =
-				offsetof(struct vb2_gbb_header, hwid_digest);
+		offsetof(struct vb2_gbb_header, hwid_digest);
 	ranges->range_count++;
 
-	ranges->ranges[ranges->range_count].offset = area->area_offset +
-						     lower_key_offset;
-	ranges->ranges[ranges->range_count].size = maxlen - lower_key_offset;
+	ranges->ranges[ranges->range_count].offset =
+		file->gbb_area->area_offset + lower_key_offset;
+	ranges->ranges[ranges->range_count].size =
+		file->gbb_maxlen - lower_key_offset;
 	ranges->range_count++;
 
 	return 0;
