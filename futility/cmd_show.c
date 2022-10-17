@@ -238,7 +238,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	uint8_t *fv_data = show_option.fv;
 	uint64_t fv_size = show_option.fv_size;
 	struct bios_area_s *fw_body_area = 0;
-	enum bios_component body_c;
+	enum bios_component body_c = BIOS_FMAP_FW_MAIN_A;
 	int good_sig = 0;
 	int retval = 0;
 
