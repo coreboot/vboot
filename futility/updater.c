@@ -1423,9 +1423,19 @@ static int updater_setup_archive(
 		return errorcnt;
 	}
 
-	model = manifest_find_model(manifest, arg->model);
+	if (cfg->detect_model)
+		model = manifest_detect_model_from_frid(cfg, manifest);
+	else
+		model = manifest_find_model(manifest, arg->model);
+
 	if (!model)
 		return ++errorcnt;
+
+	if (arg->detect_model_only) {
+		puts(model->name);
+		/* No additional error. */
+		return errorcnt;
+	}
 
 	/* Load images now so we can get quirks in custom label checks. */
 	errorcnt += updater_load_images(
@@ -1504,6 +1514,14 @@ int updater_setup_config(struct updater_config *cfg,
 		}
 		*do_update = 0;
 	}
+	if (arg->detect_model_only) {
+		if (!arg->archive) {
+			ERROR("--detect-model-only needs --archive.\n");
+			return ++errorcnt;
+		}
+		cfg->detect_model = true;
+		*do_update = 0;
+	}
 
 	/* Setup update mode. */
 	if (arg->try_update)
@@ -1545,6 +1563,9 @@ int updater_setup_config(struct updater_config *cfg,
 		cfg->original_programmer = arg->programmer;
 		VB2_DEBUG("AP (host) programmer changed to %s.\n",
 			  arg->programmer);
+
+		if (arg->archive && !arg->model)
+			cfg->detect_model = true;
 	}
 	if (arg->emulation) {
 		VB2_DEBUG("Using file %s for emulation.\n", arg->emulation);
