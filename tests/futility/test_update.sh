@@ -33,6 +33,7 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 # Test data files
 LINK_BIOS="${SCRIPT_DIR}/futility/data/bios_link_mp.bin"
 PEPPY_BIOS="${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin"
+VOXEL_BIOS="${SCRIPT_DIR}/futility/data/bios_voxel_dev.bin"
 RO_VPD_BLOB="${SCRIPT_DIR}/futility/data/ro_vpd.bin"
 
 # Work in scratch directory
@@ -475,8 +476,10 @@ cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.customtip-cl"
 cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.customtip-cl"
 cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
 cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
+cp -f "${VOXEL_BIOS}" "${FROM_IMAGE}.av"
 patch_file "${FROM_IMAGE}.ap" FW_MAIN_A 0 "corrupted"
 patch_file "${FROM_IMAGE}.al" FW_MAIN_A 0 "corrupted"
+patch_file "${FROM_IMAGE}.av" FW_MAIN_A 0 "corrupted"
 test_update "Full update (--archive, model=link)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=link
@@ -490,6 +493,20 @@ test_update "Full update (--archive, model=customtip, signature_id=CL)" \
 	"${FROM_IMAGE}.al" "${LINK_BIOS}" \
 	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 --model=customtip \
 	--signature_id=customtip-cl
+
+test_update "Full update (--archive, detect-model)" \
+	"${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 \
+	--programmer raiden_debug_spi:target=AP
+test_update "Full update (--archive, detect-model, unsupported FRID)" \
+	"${FROM_IMAGE}.av" "!Unsupported FRID: 'Google_Voxel'" \
+	-a "${A}" --wp=0 --sys_props 0,0x10001,1,3 \
+	--programmer raiden_debug_spi:target=AP
+
+echo "*** Test Item: Detect model (--archive, --detect-model-only)"
+"${FUTILITY}" update -a "${A}" \
+	--emulate "${FROM_IMAGE}.ap" --detect-model-only >"${TMP}.model.out"
+cmp "${TMP}.model.out" <(echo peppy)
 
 CL_TAG="cl" PATH="${A}/bin:${PATH}" \
 	test_update "Full update (-a, model=customtip, fake VPD)" \

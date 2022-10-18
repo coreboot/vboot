@@ -88,6 +88,7 @@ struct updater_config {
 	const char *original_programmer;
 	int override_gbb_flags;
 	uint32_t gbb_flags;
+	bool detect_model;
 };
 
 struct updater_config_arguments {
@@ -103,6 +104,7 @@ struct updater_config_arguments {
 	int verbosity;
 	int override_gbb_flags;
 	uint32_t gbb_flags;
+	bool detect_model_only;
 };
 
 struct patch_config {
@@ -293,6 +295,15 @@ int patch_image_by_model(
  */
 const struct model_config *manifest_find_model(const struct manifest *manifest,
 					       const char *model_name);
+
+/*
+ * Finds the first existing model_config from manifest that matches current
+ * system by reading RO_FRID from the existing host firmware.
+ * Returns a model_config from manifest, or NULL if not found.
+ */
+const struct model_config *
+manifest_detect_model_from_frid(struct updater_config *cfg,
+				struct manifest *manifest);
 
 /*
  * Applies custom label information to an existing model configuration.

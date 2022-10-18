@@ -706,6 +706,58 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 	return model;
 }
 
+const struct model_config *
+manifest_detect_model_from_frid(struct updater_config *cfg,
+				struct manifest *manifest)
+{
+	const struct model_config *result = NULL;
+	struct firmware_image current_ro_frid = {0};
+	current_ro_frid.programmer = cfg->image_current.programmer;
+	int error = flashrom_read_region(&current_ro_frid, FMAP_RO_FRID,
+					 cfg->verbosity + 1);
+	const char *from_dot;
+	int len;
+
+	if (error)
+		return NULL;
+
+	current_ro_frid.data[current_ro_frid.size - 1] = '\0';
+	from_dot = strchr((const char *)current_ro_frid.data, '.');
+	if (!from_dot) {
+		VB2_DEBUG("Missing dot (%s)\n",
+			  (const char *)current_ro_frid.data);
+		goto cleanup;
+	}
+	len = from_dot - (const char *)current_ro_frid.data + 1;
+
+	for (int i = 0; i < manifest->num && !result; ++i) {
+		struct model_config *m = &manifest->models[i];
+		struct firmware_image image = {0};
+
+		if (load_firmware_image(&image, m->image, manifest->archive))
+			return NULL;
+
+		VB2_DEBUG("Comparing '%*.*s' with '%*.*s'\n", len, len,
+			  (const char *)current_ro_frid.data, len, len,
+			  image.ro_version);
+		if (strncasecmp((const char *)current_ro_frid.data,
+				image.ro_version, len) == 0) {
+			result = m;
+		}
+		free_firmware_image(&image);
+	}
+	if (result) {
+		INFO("Detected model: '%s'\n", result->name);
+	} else {
+		ERROR("Unsupported FRID: '%*.*s'.\n", len - 1, len - 1,
+		      (const char *)current_ro_frid.data);
+	}
+cleanup:
+	free_firmware_image(&current_ro_frid);
+
+	return result;
+}
+
 /*
  * Determines the signature ID to use for custom label.
  * Returns the signature ID for looking up rootkey and vblock files.
