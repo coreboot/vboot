@@ -334,7 +334,7 @@ test_update "Legacy update" \
 
 # Test quirks
 test_update "Full update (wrong size)" \
-	"${FROM_IMAGE}.large" "!Image size is different" \
+	"${FROM_IMAGE}.large" "!Failed writing firmware" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1 \
 	--quirks unlock_me_for_update,eve_smm_store
 
