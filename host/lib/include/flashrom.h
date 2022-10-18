@@ -40,7 +40,8 @@ struct firmware_image {
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
-int flashrom_read_image(struct firmware_image *image, const char *region,
+int flashrom_read_image(struct firmware_image *image, int verbosity);
+int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity);
 
 /**
