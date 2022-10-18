@@ -19,6 +19,7 @@ enum {
 	OPT_DUMMY = 0x100,
 
 	OPT_CCD,
+	OPT_DETECT_MODEL_ONLY,
 	OPT_EMULATE,
 	OPT_FACTORY,
 	OPT_FAST,
@@ -58,6 +59,7 @@ static struct option const long_opts[] = {
 	{"ccd", 0, NULL, OPT_CCD},
 	{"servo", 0, NULL, OPT_SERVO},
 	{"servo_port", 1, NULL, OPT_SERVO_PORT},
+	{"detect-model-only", 0, NULL, OPT_DETECT_MODEL_ONLY},
 	{"emulate", 1, NULL, OPT_EMULATE},
 	{"factory", 0, NULL, OPT_FACTORY},
 	{"fast", 0, NULL, OPT_FAST},
@@ -133,6 +135,7 @@ static void print_help(int argc, char *argv[])
 		"    --host_only     \tUpdate only AP (host) firmware\n"
 		"    --emulate=FILE  \tEmulate system firmware using file\n"
 		"    --model=MODEL   \tOverride system model for images\n"
+		"    --detect-model-only\tDetect model by reading the FRID and exit\n"
 		"    --gbb_flags=FLAG\tOverride new GBB flags\n"
 		"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"
 		"    --servo         \tFlash using Servo (v2, v4, micro, ...)\n"
@@ -225,6 +228,9 @@ static int do_update(int argc, char *argv[])
 			break;
 		case OPT_MODEL:
 			args.model = optarg;
+			break;
+		case OPT_DETECT_MODEL_ONLY:
+			args.detect_model_only = true;
 			break;
 		case OPT_SIGNATURE:
 			args.signature_id = optarg;
