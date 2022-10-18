@@ -18,6 +18,7 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -199,13 +200,33 @@ static int gpioline_read_value(int chip_fd, int idx, bool active_low)
 		.lines = 1,
 	};
 	struct gpiohandle_data data;
+	int trynum;
 	int ret;
 
-	ret = ioctl(chip_fd, GPIO_GET_LINEHANDLE_IOCTL, &request);
+	/*
+	 * If two callers try to read the same GPIO at the same time then
+	 * one of the two will get back EBUSY. There's no great way to
+	 * solve this, so we'll just retry a bunch with a small sleep in
+	 * between.
+	 */
+	for (trynum = 0; true; trynum++) {
+		ret = ioctl(chip_fd, GPIO_GET_LINEHANDLE_IOCTL, &request);
+
+		/*
+		 * Not part of the loop condition so usleep doesn't clobber
+		 * errno (implicitly used by perror).
+		 */
+		if (ret >= 0 || errno != EBUSY || trynum >= 50)
+			break;
+
+		usleep(trynum * 1000);
+	}
+
 	if (ret < 0) {
 		perror("GPIO_GET_LINEHANDLE_IOCTL");
 		return -1;
 	}
+
 	if (request.fd < 0) {
 		fprintf(stderr, "bad LINEHANDLE fd %d\n", request.fd);
 		return -1;
