@@ -46,8 +46,10 @@ static char *flashrom_extract_params(const char *str, char **prog, char **params
 	return tmp;
 }
 
-int flashrom_read_image(struct firmware_image *image, const char *region,
-			int verbosity)
+static int flashrom_read_image_impl(struct firmware_image *image,
+				    const char *region,
+				    unsigned int *region_start,
+				    unsigned int *region_len, int verbosity)
 {
 	int r = 0;
 	size_t len = 0;
@@ -106,6 +108,10 @@ int flashrom_read_image(struct firmware_image *image, const char *region,
 
 	r |= flashrom_image_read(flashctx, image->data, len);
 
+	if (r == 0 && region)
+		r |= flashrom_layout_get_region_range(layout, region,
+						      region_start, region_len);
+
 err_cleanup:
 	flashrom_layout_release(layout);
 	flashrom_flash_release(flashctx);
@@ -116,6 +122,25 @@ err_probe:
 err_init:
 	free(tmp);
 	return r;
+}
+
+int flashrom_read_image(struct firmware_image *image, int verbosity)
+{
+	return flashrom_read_image_impl(image, NULL, NULL, NULL, verbosity);
+}
+
+int flashrom_read_region(struct firmware_image *image, const char *region,
+			 int verbosity)
+{
+	unsigned int start, len;
+	int r = flashrom_read_image_impl(image, region, &start, &len,
+					 verbosity);
+	if (r != 0)
+		return r;
+
+	memmove(image->data, image->data + start, len);
+	image->size = len;
+	return 0;
 }
 
 int flashrom_write_image(const struct firmware_image *image,

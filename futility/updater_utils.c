@@ -672,7 +672,7 @@ static int read_flash(struct flashrom_params *params,
 	if (get_config_quirk(QUIRK_EXTERNAL_FLASHROM, cfg))
 		return external_flashrom(FLASH_READ, params, &cfg->tempfiles);
 
-	return flashrom_read_image(params->image, NULL, params->verbose);
+	return flashrom_read_image(params->image, params->verbose);
 }
 
 static int write_flash(struct flashrom_params *params,
