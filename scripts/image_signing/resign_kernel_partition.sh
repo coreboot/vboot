@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+# Copyright 2010 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -43,4 +43,3 @@ vbutil_kernel --repack "${DST_VBLOCK}" \
   --oldblob "${SRC_KPART}"
 
 echo "New kernel vblock was output to ${DST_VBLOCK}"
-

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
+# Copyright 2011 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
@@ -517,4 +517,3 @@ no_chronos_password() {
 is_ec_rw_signed() {
   ${FUTILITY} dump_fmap "$1" | grep -q KEY_RO
 }
-
