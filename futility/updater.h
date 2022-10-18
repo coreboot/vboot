@@ -77,6 +77,8 @@ struct updater_config {
 	int do_verify;
 	int verbosity;
 	const char *emulation;
+	char *emulation_programmer;
+	const char *original_programmer;
 	int override_gbb_flags;
 	uint32_t gbb_flags;
 };

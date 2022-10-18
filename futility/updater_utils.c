@@ -618,61 +618,6 @@ static char *get_flashrom_command(enum flash_command flash_cmd,
 	return cmd;
 }
 
-/*
- * Emulates writing a firmware image to the system.
- * Returns 0 if success, non-zero if error.
- */
-static int emulate_write_firmware(const char *filename,
-				  const struct firmware_image *image,
-				  const char * const sections[])
-{
-	int i, errorcnt = 0;
-	struct firmware_image to_image = {0};
-
-	INFO("Writing from %s to %s (emu=%s).\n",
-	     image->file_name, image->programmer, filename);
-
-	if (load_firmware_image(&to_image, filename, NULL)) {
-		ERROR("Cannot load image from %s.\n", filename);
-		return -1;
-	}
-
-	if (image->size != to_image.size) {
-		ERROR("Image size is different (%s:%d != %s:%d)\n",
-		      image->file_name, image->size, to_image.file_name,
-		      to_image.size);
-		errorcnt++;
-		goto exit;
-	}
-
-	if (!sections) {
-		VB2_DEBUG(" - write the whole image.\n");
-		memmove(to_image.data, image->data, image->size);
-	}
-	for (i = 0; sections && sections[i]; i++) {
-		VB2_DEBUG(" - write the section: %s.\n", sections[i]);
-		if (preserve_firmware_section(image, &to_image, sections[i])) {
-			ERROR("Failed to write the section: %s\n", sections[i]);
-			errorcnt++;
-			/*
-			 * Exit the loop, but still write the file to reflect
-			 * the partial changes - same as real flashrom behavior.
-			 */
-			break;
-		}
-	}
-
-	if (vb2_write_file(filename, to_image.data, to_image.size)) {
-		ERROR("Failed writing to file: %s\n", filename);
-		errorcnt++;
-		goto exit;
-	}
-
-exit:
-	free_firmware_image(&to_image);
-	return errorcnt;
-}
-
 static int external_flashrom(enum flash_command flash_cmd,
 			     struct flashrom_params *params,
 			     struct tempfile *tempfiles)
@@ -795,9 +740,6 @@ int write_system_firmware(struct updater_config *cfg,
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
 	struct flashrom_params params = {0};
 	struct firmware_image *flash_contents = NULL;
-
-	if (cfg->emulation)
-		return emulate_write_firmware(cfg->emulation, image, sections);
 
 	if (cfg->use_diff_image && cfg->image_current.data &&
 	    is_the_same_programmer(&cfg->image_current, image))
