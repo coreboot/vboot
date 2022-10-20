@@ -1,4 +1,4 @@
-/* Copyright (c) 2010 The Chromium OS Authors. All rights reserved.
+/* Copyright 2010 The ChromiumOS Authors
  * Use of this source code is governed by a BSD-style license that can be
  * found in the LICENSE file.
  *
@@ -15,9 +15,9 @@
 #define TPM_E_NON_FATAL 0x800
 
 typedef struct tpm_error_info {
-	const char* name;
+	const char *name;
 	uint32_t code;
-	const char* description;
+	const char *description;
 } tpm_error_info;
 
 tpm_error_info tpm_error_table[] = {
@@ -28,11 +28,11 @@ tpm_error_info tpm_error_table[] = {
 { "TPM_BAD_PARAMETER", TPM_E_BASE + 3,
 "One or more parameter is bad" },
 { "TPM_AUDITFAILURE", TPM_E_BASE + 4,
-"An operation completed successfully\n\
-but the auditing of that operation failed" },
+"An operation completed successfully\n"
+"but the auditing of that operation failed" },
 { "TPM_CLEAR_DISABLED", TPM_E_BASE + 5,
-"The clear disable flag is set and all clear operations now require\n\
-physical access" },
+"The clear disable flag is set and all clear operations now require\n"
+"physical access" },
 { "TPM_DEACTIVATED", TPM_E_BASE + 6,
 "The TPM is deactivated" },
 { "TPM_DISABLED", TPM_E_BASE + 7,
@@ -76,13 +76,13 @@ physical access" },
 { "TPM_SHA_THREAD", TPM_E_BASE + 26,
 "There is no existing SHA-1 thread" },
 { "TPM_SHA_ERROR", TPM_E_BASE + 27,
-"The calculation is unable to proceed because the existing SHA-1\n\
-thread has already encountered an error" },
+"The calculation is unable to proceed because the existing SHA-1\n"
+"thread has already encountered an error" },
 { "TPM_FAILEDSELFTEST", TPM_E_BASE + 28,
 "Self-test has failed and the TPM has shutdown" },
 { "TPM_AUTH2FAIL", TPM_E_BASE + 29,
-"The authorization for the second key in a 2 key function\n\
-failed authorization" },
+"The authorization for the second key in a 2 key function\n"
+"failed authorization" },
 { "TPM_BADTAG", TPM_E_BASE + 30,
 "The tag value sent to for a command is invalid" },
 { "TPM_IOERROR", TPM_E_BASE + 31,
@@ -100,8 +100,8 @@ failed authorization" },
 { "TPM_WRONG_ENTITYTYPE", TPM_E_BASE + 37,
 "The submitted entity type is not allowed" },
 { "TPM_INVALID_POSTINIT", TPM_E_BASE + 38,
-"The command was received in the wrong sequence relative to TPM_Init\n\
-and a subsequent TPM_Startup" },
+"The command was received in the wrong sequence relative to TPM_Init\n"
+"and a subsequent TPM_Startup" },
 { "TPM_INAPPROPRIATE_SIG", TPM_E_BASE + 39,
 "Signed data cannot include additional DER information" },
 { "TPM_BAD_KEY_PROPERTY", TPM_E_BASE + 40,
@@ -109,33 +109,33 @@ and a subsequent TPM_Startup" },
 { "TPM_BAD_MIGRATION", TPM_E_BASE + 41,
 "The migration properties of this key are incorrect" },
 { "TPM_BAD_SCHEME", TPM_E_BASE + 42,
-"The signature or encryption scheme for this key is incorrect or not\n\
-permitted in this situation" },
+"The signature or encryption scheme for this key is incorrect or not\n"
+"permitted in this situation" },
 { "TPM_BAD_DATASIZE", TPM_E_BASE + 43,
-"The size of the data (or blob) parameter is bad or inconsistent\n\
-with the referenced key" },
+"The size of the data (or blob) parameter is bad or inconsistent\n"
+"with the referenced key" },
 { "TPM_BAD_MODE", TPM_E_BASE + 44,
-"A mode parameter is bad, such as capArea or subCapArea for\n\
-TPM_GetCapability, physicalPresence parameter for TPM_PhysicalPresence,\n\
-or migrationType for, TPM_CreateMigrationBlob" },
+"A mode parameter is bad, such as capArea or subCapArea for\n"
+"TPM_GetCapability, physicalPresence parameter for TPM_PhysicalPresence,\n"
+"or migrationType for, TPM_CreateMigrationBlob" },
 { "TPM_BAD_PRESENCE", TPM_E_BASE + 45,
-"Either the physicalPresence or physicalPresenceLock bits\n\
-have the wrong value" },
+"Either the physicalPresence or physicalPresenceLock bits\n"
+"have the wrong value" },
 { "TPM_BAD_VERSION", TPM_E_BASE + 46,
 "The TPM cannot perform this version of the capability" },
 { "TPM_NO_WRAP_TRANSPORT", TPM_E_BASE + 47,
 "The TPM does not allow for wrapped transport sessions" },
 { "TPM_AUDITFAIL_UNSUCCESSFUL", TPM_E_BASE + 48,
-"TPM audit construction failed and the underlying command\n\
-was returning a failure code also" },
+"TPM audit construction failed and the underlying command\n"
+"was returning a failure code also" },
 { "TPM_AUDITFAIL_SUCCESSFUL", TPM_E_BASE + 49,
-"TPM audit construction failed and the underlying command\n\
-was returning success" },
+"TPM audit construction failed and the underlying command\n"
+"was returning success" },
 { "TPM_NOTRESETABLE", TPM_E_BASE + 50,
 "Attempt to reset a PCR register that does not have the resettable attribute" },
 { "TPM_NOTLOCAL", TPM_E_BASE + 51,
-"Attempt to reset a PCR register that requires locality\n\
-and locality modifier not part of command transport" },
+"Attempt to reset a PCR register that requires locality\n"
+"and locality modifier not part of command transport" },
 { "TPM_BAD_TYPE", TPM_E_BASE + 52,
 "Make identity blob not properly typed" },
 { "TPM_INVALID_RESOURCE", TPM_E_BASE + 53,
@@ -169,8 +169,8 @@ and locality modifier not part of command transport" },
 { "TPM_INVALID_STRUCTURE", TPM_E_BASE + 67,
 "The structure tag and version are invalid or inconsistent" },
 { "TPM_KEY_OWNER_CONTROL", TPM_E_BASE + 68,
-"The key is under control of the TPM Owner and can only be evicted\n\
-by the TPM Owner" },
+"The key is under control of the TPM Owner and can only be evicted\n"
+"by the TPM Owner" },
 { "TPM_BAD_COUNTER", TPM_E_BASE + 69,
 "The counter handle is incorrect" },
 { "TPM_NOT_FULLWRITE", TPM_E_BASE + 70,
@@ -204,8 +204,8 @@ by the TPM Owner" },
 { "TPM_DAA_TPM_SETTINGS", TPM_E_BASE + 84,
 "The consistency check on DAA_tpmSpecific has failed" },
 { "TPM_DAA_STAGE", TPM_E_BASE + 85,
-"The atomic process indicated by the submitted DAA command is not\n\
-the expected process" },
+"The atomic process indicated by the submitted DAA command is not\n"
+"the expected process" },
 { "TPM_DAA_ISSUER_VALIDITY", TPM_E_BASE + 86,
 "The issuerâs validity check has detected an inconsistency" },
 { "TPM_DAA_WRONG_W", TPM_E_BASE + 87,
@@ -233,17 +233,17 @@ the expected process" },
 { "TPM_NOCONTEXTSPACE", TPM_E_BASE + 99,
 "There is no room in the context list for additional contexts" },
 { "TPM_RETRY", TPM_E_BASE + TPM_E_NON_FATAL,
-"The TPM is too busy to respond to the command immediately, but\n\
-the command could be resubmitted at a later time.  The TPM MAY\n\
-return TPM_RETRY for any command at any time" },
+"The TPM is too busy to respond to the command immediately, but\n"
+"the command could be resubmitted at a later time.  The TPM MAY\n"
+"return TPM_RETRY for any command at any time" },
 { "TPM_NEEDS_SELFTEST", TPM_E_BASE + TPM_E_NON_FATAL + 1,
 "TPM_ContinueSelfTest has not been run" },
 { "TPM_DOING_SELFTEST", TPM_E_BASE + TPM_E_NON_FATAL + 2,
-"The TPM is currently executing the actions of TPM_ContinueSelfTest\n\
-because the ordinal required resources that have not been tested" },
+"The TPM is currently executing the actions of TPM_ContinueSelfTest\n"
+"because the ordinal required resources that have not been tested" },
 { "TPM_DEFEND_LOCK_RUNNING", TPM_E_BASE + TPM_E_NON_FATAL + 3,
-"The TPM is defending against dictionary attacks and is in some\n\
-time-out period" },
+"The TPM is defending against dictionary attacks and is in some\n"
+"time-out period" },
 };
 
 #endif  /* VBOOT_REFERENCE_TPM_ERROR_MESSAGES_H_ */
