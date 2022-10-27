@@ -43,10 +43,14 @@ uint32_t vb2api_get_firmware_size(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	if (!sd->preamble_size)
-		return 0;
+		VB2_DIE("Firmware preamble size is zero\n");
 
 	const struct vb2_fw_preamble *pre = (const struct vb2_fw_preamble *)
 		vb2_member_of(sd, sd->preamble_offset);
+
+	if (!pre->body_signature.data_size)
+		VB2_DIE("Firmware body data size in signature is zero\n");
+
 	return pre->body_signature.data_size;
 }
 
