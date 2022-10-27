@@ -288,7 +288,7 @@ static void misc_tests(void)
 
 	reset_common_data(FOR_MISC);
 	sd->preamble_size = 0;
-	TEST_EQ(vb2api_get_firmware_size(ctx), 0, "firmware_size too early");
+	TEST_ABORT(vb2api_get_firmware_size(ctx), "firmware_size too early");
 
 	/* Test VB2_TRY() */
 	reset_common_data(FOR_MISC);
