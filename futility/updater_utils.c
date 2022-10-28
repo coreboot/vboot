@@ -470,6 +470,7 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 
 	/* By default, no control is needed. */
 	*prepare_ctrl_name = NULL;
+	VB2_DEBUG("servo_type: %s\n", servo_type);
 
 	/* Get serial name if servo port is provided. */
 	if ((servo_port && *servo_port) || (servo_name && *servo_name)) {
@@ -490,17 +491,14 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 		VB2_DEBUG("Servo SN=%s (serial cmd: %s)\n", servo_serial, cmd);
 	}
 
+	/* servo_type names: chromite/lib/firmware/servo_lib.py */
 	if (!*servo_type) {
 		ERROR("Failed to get servo type. Check servod.\n");
 	} else if (servo_serial && !*servo_serial) {
 		ERROR("Failed to get serial at servo port %s.\n", servo_port);
-	} else if (strstr(servo_type, "servo_micro")) {
-		VB2_DEBUG("Selected Servo Micro.\n");
-		programmer = "raiden_debug_spi";
-		*prepare_ctrl_name = cpu_fw_spi;
-	} else if (strstr(servo_type, "c2d2")) {
-		VB2_DEBUG("Selected C2D2.\n");
-		programmer = "raiden_debug_spi";
+	} else if (strcmp(servo_type, "servo_v2") == 0) {
+		VB2_DEBUG("Selected Servo V2.\n");
+		programmer = "ft2232_spi:type=google-servo-v2";
 		*prepare_ctrl_name = cpu_fw_spi;
 	} else if (strstr(servo_type, "ccd_cr50") ||
 		   strstr(servo_type, "ccd_gsc") ||
@@ -509,8 +507,13 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 		programmer = "raiden_debug_spi:target=AP,custom_rst=true";
 		*prepare_ctrl_name = ccd_cpu_fw_spi;
 	} else {
-		VB2_DEBUG("Selected Servo V2.\n");
-		programmer = "ft2232_spi:type=google-servo-v2";
+		if (strstr(servo_type, "servo_micro"))
+			VB2_DEBUG("Selected Servo Micro.\n");
+		else if (strstr(servo_type, "c2d2"))
+			VB2_DEBUG("Selected C2D2.\n");
+		else
+			WARN("Unknown servo: %s\n", servo_type);
+		programmer = "raiden_debug_spi";
 		*prepare_ctrl_name = cpu_fw_spi;
 	}
 
