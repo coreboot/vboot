@@ -52,9 +52,9 @@
  *  - vblock_B.$MANIFEST_KEY
  *
  * Historically (the original design in Unified Build) there should also be a
- * models/ folder, and each model (by $(mosys platform model) ) should appear as
- * a sub folder, with a 'setvars.sh' file inside. The 'setvars.sh' is a shell
- * script describing what files should be used and the signature ID ($SIGID) to
+ * models/ folder, and each model should appear as a sub folder, with
+ * a 'setvars.sh' file inside. The 'setvars.sh' is a shell script
+ * describing what files should be used and the signature ID ($SIGID) to
  * use as firmware manifest key. If $SIGID starts with 'sig-id-in-*' then we
  * have to replace it by VPD value 'custom_label_tag' as '$MODEL-$CLTAG'.
  *
