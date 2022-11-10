@@ -359,6 +359,23 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 }
 
 /*
+ * Returns true if the write protection is enabled on current system.
+ */
+int is_write_protection_enabled(struct updater_config *cfg)
+{
+	/* Default to enabled. */
+	int wp = get_system_property(SYS_PROP_WP_HW, cfg);
+	if (wp == WP_DISABLED)
+		return wp;
+	/* For error or enabled, check WP SW. */
+	wp = get_system_property(SYS_PROP_WP_SW, cfg);
+	/* Consider all errors as enabled. */
+	if (wp != WP_DISABLED)
+		return WP_ENABLED;
+	return wp;
+}
+
+/*
  * Executes a command on current host and returns stripped command output.
  * If the command has failed (exit code is not zero), returns an empty string.
  * The caller is responsible for releasing the returned string.

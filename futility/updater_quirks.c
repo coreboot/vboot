@@ -424,6 +424,52 @@ static int quirk_preserve_me(struct updater_config *cfg)
 	return 1;
 }
 
+static int quirk_clear_mrc_data(struct updater_config *cfg)
+{
+	struct firmware_section section;
+	struct firmware_image *image = &cfg->image_current;
+	int i, count = 0;
+	int flash_now = 0;
+
+	/*
+	 * Devices with multiple MRC caches (RECOVERY, RW, RW_VAR) will have the
+	 * UNIFIED_MRC_CACHE; and devices with single RW cache will only have
+	 * RW_MRC_CACHE (for example MediaTek devices).
+	 */
+	const char * const mrc_names[] = {
+		"UNIFIED_MRC_CACHE",
+		"RW_MRC_CACHE",
+	};
+
+	if (is_write_protection_enabled(cfg) || cfg->try_update)
+		flash_now = 1;
+
+	for (i = 0; i < ARRAY_SIZE(mrc_names); i++) {
+		const char *name = mrc_names[i];
+		const char *write_names[2] = {0};
+
+		find_firmware_section(&section, image, name);
+		if (!section.size)
+			continue;
+
+		WARN("Wiping memory training data: %s\n", name);
+		memset(section.data, 0xff, section.size);
+		if (flash_now) {
+			write_names[0] = name;
+			write_system_firmware(cfg, image, write_names);
+		}
+		count++;
+		break;
+	}
+
+	if (count)
+		WARN("Next boot will take a few mins for memory training.\n");
+	else
+		ERROR("No known memory training data in the firmware image.\n");
+
+	return 0;
+}
+
 /*
  * Disable checking platform compatibility.
  */
@@ -522,6 +568,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "external_flashrom";
 	quirks->help = "Use external flashrom to access the system firmware.";
 	quirks->apply = NULL;  /* Simple config. */
+
+	quirks = &cfg->quirks[QUIRK_CLEAR_MRC_DATA];
+	quirks->name = "clear_mrc_data";
+	quirks->help = "b/255617349: Clear memory training data (MRC).";
+	quirks->apply = quirk_clear_mrc_data;
 }
 
 /*

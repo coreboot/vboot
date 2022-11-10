@@ -581,23 +581,6 @@ static int section_needs_update(const struct firmware_image *image_from,
 }
 
 /*
- * Returns true if the write protection is enabled on current system.
- */
-static int is_write_protection_enabled(struct updater_config *cfg)
-{
-	/* Default to enabled. */
-	int wp = get_system_property(SYS_PROP_WP_HW, cfg);
-	if (wp == WP_DISABLED)
-		return wp;
-	/* For error or enabled, check WP SW. */
-	wp = get_system_property(SYS_PROP_WP_SW, cfg);
-	/* Consider all errors as enabled. */
-	if (wp != WP_DISABLED)
-		return WP_ENABLED;
-	return wp;
-}
-
-/*
  * Checks if the given firmware images are compatible with current platform.
  * In current implementation (following Chrome OS style), we assume the platform
  * is identical to the name before a dot (.) in firmware version.
@@ -1226,6 +1209,9 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	if (try_apply_quirk(QUIRK_EVE_SMM_STORE, cfg))
 		return UPDATE_ERR_INVALID_IMAGE;
+
+	if (try_apply_quirk(QUIRK_CLEAR_MRC_DATA, cfg))
+		return UPDATE_ERR_SYSTEM_IMAGE;
 
 	if (debugging_enabled)
 		print_system_properties(cfg);

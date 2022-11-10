@@ -176,6 +176,11 @@ void strip_string(char *s, const char *pattern);
 int save_file_from_stdin(const char *output);
 
 /*
+ * Returns true if the write protection is enabled on current system.
+ */
+int is_write_protection_enabled(struct updater_config *cfg);
+
+/*
  * Executes a command on current host and returns stripped command output.
  * If the command has failed (exit code is not zero), returns an empty string.
  * The caller is responsible for releasing the returned string.
