@@ -531,7 +531,12 @@ main() {
     exit 1
 
   # checks for running on a live system image.
-  if [ "$FLAGS_image" = "$ROOTDEV_DISK" ]; then
+  if [ "${FLAGS_image}" = "${ROOTDEV_DISK}" ]; then
+    # Log the operartions and the parameters passed to the script
+    # when the device is changing itself
+    logger -p NOTICE "executing ${ORIGINAL_CMD}" \
+                     "with the following parameters: ${ORIGINAL_PARAMS}"
+
     debug_msg "check valid kernel partitions for live system"
     local valid_partitions="$(find_valid_kernel_partitions $FLAGS_partitions)"
     [ -n "$valid_partitions" ] ||
