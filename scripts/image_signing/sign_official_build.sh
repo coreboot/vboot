@@ -575,30 +575,36 @@ resign_firmware_payload() {
           $(md5sum ${bios_path} | awk '{print $1}')
 
         if [[ -n ${brand_code} ]]; then
-          # Resign the RO_GSCVD FMAP area.
-          if [[ -z ${shellball_keyset_dir} ]]; then
-            extra_args=()
-          else
-            extra_args=( --gscvd_out
-                         "${shellball_keyset_dir}/gscvd.${output_name}" )
-          fi
-          echo "Setting RO_GSCVD with: ${FUTILITY} gscvd" \
-            --keyblock "${KEY_DIR}/arv_platform.keyblock" \
-            --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
-            --board_id "${brand_code}" \
-            --root_pub_key "${KEY_DIR}/arv_root.vbpubk" \
-            "${extra_args[@]}" \
-            "${bios_path}"
-          ${FUTILITY} gscvd \
-            --keyblock "${KEY_DIR}/arv_platform.keyblock" \
-            --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
-            --board_id "${brand_code}" \
-            --root_pub_key "${KEY_DIR}/arv_root.vbpubk" \
-            "${extra_args[@]}" \
-            "${bios_path}"
+          local arv_root="${KEY_DIR}/arv_root.vbpubk"
 
-          echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
-               "$(md5sum "${bios_path}" | awk '{print $1}')"
+          if [[ -f ${arv_root} ]]; then
+            # Resign the RO_GSCVD FMAP area.
+            if [[ -z ${shellball_keyset_dir} ]]; then
+              extra_args=()
+            else
+              extra_args=( --gscvd_out
+                         "${shellball_keyset_dir}/gscvd.${output_name}" )
+            fi
+            echo "Setting RO_GSCVD with: ${FUTILITY} gscvd" \
+                 --keyblock "${KEY_DIR}/arv_platform.keyblock" \
+                 --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
+                 --board_id "${brand_code}" \
+                 --root_pub_key "${arv_root}" \
+                 "${extra_args[@]}" \
+                 "${bios_path}"
+            ${FUTILITY} gscvd \
+                        --keyblock "${KEY_DIR}/arv_platform.keyblock" \
+                        --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
+                        --board_id "${brand_code}" \
+                        --root_pub_key "${arv_root}" \
+                        "${extra_args[@]}" \
+                        "${bios_path}"
+
+            echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
+                 "$(md5sum "${bios_path}" | awk '{print $1}')"
+          else
+            echo "No AP RO verification keys, skipping GSCVD signing"
+          fi
         else
           warn "No brand code for ${bios_path} in signer_config.csv"
         fi
