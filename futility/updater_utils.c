@@ -23,9 +23,6 @@
 
 #define COMMAND_BUFFER_SIZE 256
 
-/* System environment values. */
-static const char * const STR_REV = "rev";
-
 /*
  * Strips a string (usually from shell execution output) by removing all the
  * trailing characters in pattern. If pattern is NULL, match by space type
@@ -428,28 +425,9 @@ static int host_get_fw_vboot2(void)
 	return VbGetSystemPropertyInt("fw_vboot2");
 }
 
-/* A help function to get $(mosys platform version). */
 static int host_get_platform_version(void)
 {
-	char *result = host_shell("mosys platform version");
-	long rev = -1;
-
-	/* Result should be 'revN' */
-	if (strncmp(result, STR_REV, strlen(STR_REV)) == 0)
-		rev = strtol(result + strlen(STR_REV), NULL, 0);
-
-	/* we should never have negative or extremely large versions,
-	 * but clamp just to be sure
-	 */
-	if (rev < 0)
-		rev = 0;
-	if (rev > INT_MAX)
-		rev = INT_MAX;
-
-	VB2_DEBUG("Raw data = [%s], parsed version is %ld\n", result, rev);
-
-	free(result);
-	return rev;
+	return VbGetSystemPropertyInt("board_id");
 }
 
 /*
