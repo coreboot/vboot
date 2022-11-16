@@ -340,6 +340,7 @@ sign_rw() {
   local rma_key_base=""
   local signer_command_params
   local temp_dir
+  local prohibited_blobs=()
 
   temp_dir="$(make_temp_dir)"
   signer_command_params=(-x "${fuses_file}" --key "${key_file}")
@@ -375,6 +376,12 @@ sign_rw() {
       # Indicate D1 signing.
       signer_command_params+=( "--dauntless" "--ihex" )
       base_name="ti50"
+      # Key and hashes used in dev, must not leak into prod signed images.
+      prohibited_blobs=(
+        "${rma_key_dir}/rma_test_pub_key.bin"
+        "${rma_key_dir}/arv_2k_test_key_hash.bin"
+        "${rma_key_dir}/arv_4k_test_key_hash.bin"
+      )
       ;;
     (*)
       die "Unknown generation value \"${generation}\""
@@ -392,6 +399,7 @@ sign_rw() {
     local hex_signed="${temp_dir}/hex_signed"
     local bin_signed="${temp_dir}/bin_signed"
     local hex_base
+    local blob
 
     # Make sure output files are not owned by root.
     touch "${bin_signed}" "${hex_signed}"
@@ -414,6 +422,15 @@ sign_rw() {
         die "prod RMA key not in the signed image!"
       fi
     fi
+
+    for blob in "${prohibited_blobs[@]}"; do
+      if [[ ! -f ${blob} ]]; then
+        die "${blob} not found in the GSC tarball"
+      fi
+      if find_blob_in_blob "${bin_signed}" "${blob}"; then
+        die "${blob} found in signed image"
+      fi
+    done
 
     hex_base="$(get_hex_base "${hex_signed}")"
     paste_bin "${result_file}" "${bin_signed}" "${image_base}" "${hex_base}"
