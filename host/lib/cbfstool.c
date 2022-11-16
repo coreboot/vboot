@@ -102,7 +102,7 @@ static vb2_error_t extract_metadata_hash(const char *buf, struct vb2_hash *hash)
 		    !parse_hash(&hash->raw[0], vb2_digest_size(algo), hash_str))
 			goto done;
 
-		if (!strstr(buf, "] fully valid"))
+		if (!strstr(buf, "]\tfully valid"))
 			goto done;
 
 		rv = VB2_SUCCESS;
