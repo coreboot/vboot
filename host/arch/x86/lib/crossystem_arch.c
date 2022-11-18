@@ -83,10 +83,6 @@
 #define GPIO_BASE_PATH "/sys/class/gpio"
 #define GPIO_EXPORT_PATH GPIO_BASE_PATH "/export"
 
-/* Base for SMBIOS information files */
-#define SMBIOS_BASE_PATH "/sys/class/dmi/id"
-#define SMBIOS_PRODUCT_VERSION_PATH SMBIOS_BASE_PATH "/product_version"
-
 /* Filename for NVRAM file */
 #define NVRAM_PATH "/dev/nvram"
 
@@ -838,25 +834,6 @@ static int ReadGpio(unsigned signal_type)
 	return (value == active_high ? 1 : 0);
 }
 
-static int GetBoardId(void)
-{
-	/*
-	 * Can't use vb2_read_file here, as it expects to be able to
-	 * seek to the end of the file to tell the size, and the sysfs
-	 * SMBIOS implementation will seek to offset 4096.
-	 */
-	int board_id = -1;
-	FILE *f = fopen(SMBIOS_PRODUCT_VERSION_PATH, "r");
-
-	if (!f)
-		return -1;
-
-	if (fscanf(f, "rev%d\n", &board_id) != 1)
-		board_id = -1;
-
-	fclose(f);
-	return board_id;
-}
 
 int VbGetArchPropertyInt(const char* name)
 {
@@ -919,9 +896,6 @@ int VbGetArchPropertyInt(const char* name)
 		else
 			value = (int)fwupdate_value;
 	}
-
-	if (!strcasecmp(name, "board_id"))
-		return GetBoardId();
 
 	return value;
 }

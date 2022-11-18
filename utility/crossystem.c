@@ -32,7 +32,6 @@ const Param sys_param_list[] = {
   {"battery_cutoff_request", CAN_WRITE,
    "Cut off battery and shutdown on next boot"},
   {"block_devmode", CAN_WRITE, "Block all use of developer mode"},
-  {"board_id", 0, "Board hardware revision number"},
   {"clear_tpm_owner_done", CAN_WRITE, "Clear TPM owner done"},
   {"clear_tpm_owner_request", CAN_WRITE, "Clear TPM owner on next boot"},
   {"cros_debug", 0, "OS should allow debug features"},
