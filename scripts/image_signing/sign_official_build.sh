@@ -570,36 +570,42 @@ resign_firmware_payload() {
         echo "After setting GBB on ${bios_path}: md5 =" \
           $(md5sum ${bios_path} | awk '{print $1}')
 
-        if [[ -n ${brand_code} ]]; then
-          local arv_root="${KEY_DIR}/arv_root.vbpubk"
+        # Do not attempt AP RO verification signing if the image FMAP does not
+        # include the RO_GSCVD section.
+        if futility dump_fmap -p "${bios_path}" | grep -q RO_GSCVD; then
+          local arv_root
 
-          if [[ -f ${arv_root} ]]; then
-            # Resign the RO_GSCVD FMAP area.
-            if [[ -z ${shellball_keyset_dir} ]]; then
-              extra_args=()
-            else
-              extra_args=( --gscvd_out
-                         "${shellball_keyset_dir}/gscvd.${output_name}" )
-            fi
-            full_command=(
-              "${FUTILITY}" gscvd
-              --keyblock "${KEY_DIR}/arv_platform.keyblock"
-              --platform_priv "${KEY_DIR}/arv_platform.vbprivk"
-              --board_id "${brand_code}"
-              --root_pub_key "${arv_root}"
-              "${extra_args[@]}"
-              "${bios_path}"
-            )
-            echo "Setting RO_GSCVD with: ${full_command[*]}"
-            "${full_command[@]}"
-
-            echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
-                 "$(md5sum "${bios_path}" | awk '{print $1}')"
-          else
-            echo "No AP RO verification keys, skipping GSCVD signing"
+          if [[ -z ${brand_code} ]]; then
+            die "No brand code for ${bios_path} in signer_config.csv"
           fi
+
+          arv_root="${KEY_DIR}/arv_root.vbpubk"
+          if [[ ! -f ${arv_root} ]]; then
+            die "No AP RO verification keys, could not create RO_GSCVD"
+          fi
+
+          # Resign the RO_GSCVD FMAP area.
+          full_command=(
+            "${FUTILITY}" gscvd
+            --keyblock "${KEY_DIR}/arv_platform.keyblock"
+            --platform_priv "${KEY_DIR}/arv_platform.vbprivk"
+            --board_id "${brand_code}"
+            --root_pub_key "${arv_root}"
+            "${bios_path}"
+          )
+          if [[ -n ${shellball_keyset_dir} ]]; then
+            full_command+=(
+              --gscvd_out
+              "${shellball_keyset_dir}/gscvd.${output_name}"
+            )
+          fi
+          echo "Setting RO_GSCVD with: ${full_command[*]}"
+          "${full_command[@]}"
+
+          echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
+               "$(md5sum "${bios_path}" | awk '{print $1}')"
         else
-          warn "No brand code for ${bios_path} in signer_config.csv"
+          echo "No RO_GSCVD section in the image, skipping AP RO signing"
         fi
         info "Signed firmware image output to ${bios_path}"
       done
