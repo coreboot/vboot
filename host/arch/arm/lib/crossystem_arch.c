@@ -525,6 +525,8 @@ int VbGetArchPropertyInt(const char* name)
 	} else if (!strcasecmp(name, "recoverysw_ec_boot")) {
 		/* TODO: read correct value using ectool */
 		return 0;
+	} else if (!strcasecmp(name, "board_id")) {
+		return ReadFdtInt("firmware/coreboot/board-id");
 	} else {
 		return -1;
 	}
