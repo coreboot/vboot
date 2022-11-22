@@ -460,6 +460,8 @@ resign_firmware_payload() {
       do
         local key_suffix=''
         local extra_args=()
+        local full_command=()
+
         rootkey="${KEY_DIR}/root_key.vbpubk"
 
         # If there are OEM specific keys available, we're going to use them.
@@ -513,13 +515,14 @@ resign_firmware_payload() {
             local rw_hash="EC_RW.hash"
             # futility writes byproduct files to CWD, so we cd to temp dir.
             pushd "$(make_temp_dir)" > /dev/null
-
-            echo "Signing EC with:" ${FUTILITY} sign --type rwsig --prikey \
-              "${KEY_DIR}/key_ec_efs.vbprik2" "${ec_path}"
-
-            ${FUTILITY} sign --type rwsig --prikey \
-              "${KEY_DIR}/key_ec_efs.vbprik2" "${ec_path}" \
-              || die "Failed to sign ${ec_path}"
+            full_command=(
+              "${FUTILITY}" sign
+              --type rwsig
+              --prikey "${KEY_DIR}/key_ec_efs.vbprik2"
+              "${ec_path}"
+            )
+            echo "Signing EC with: ${full_command[*]}"
+            "${full_command[@]}" || die "Failed to sign ${ec_path}"
             # Above command produces EC_RW.bin. Compute its hash.
             openssl dgst -sha256 -binary "${rw_bin}" > "${rw_hash}"
             # Store EC_RW.bin and its hash in bios.bin.
@@ -536,40 +539,33 @@ resign_firmware_payload() {
           $(md5sum ${bios_path} | awk '{print $1}')
 
         # Resign bios.bin.
-        echo "Signing Bios with:" ${FUTILITY} sign \
-          --signprivate "${signprivate}" \
-          --keyblock "${keyblock}" \
-          --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk" \
-          --version "${FIRMWARE_VERSION}" \
-          "${extra_args[@]}" \
-          ${bios_path} \
-          ${temp_fw}
-        ${FUTILITY} sign \
-          --signprivate "${signprivate}" \
-          --keyblock "${keyblock}" \
-          --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk" \
-          --version "${FIRMWARE_VERSION}" \
-          "${extra_args[@]}" \
-          ${bios_path} \
-          ${temp_fw}
+        full_command=(
+          "${FUTILITY}" sign
+          --signprivate "${signprivate}"
+          --keyblock "${keyblock}"
+          --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk"
+          --version "${FIRMWARE_VERSION}"
+          "${extra_args[@]}"
+          "${bios_path}"
+          "${temp_fw}"
+        )
+        echo "Signing BIOS with: ${full_command[*]}"
+        "${full_command[@]}"
 
-        echo "After Bios signing ${temp_fw}: md5 =" \
+        echo "After BIOS signing ${temp_fw}: md5 =" \
           $(md5sum ${temp_fw} | awk '{print $1}')
 
         # For development phases, when the GBB can be updated still, set the
         # recovery and root keys in the image.
-        echo "Setting GBB with:" ${FUTILITY} gbb \
-          -s \
-          --recoverykey="${KEY_DIR}/recovery_key.vbpubk" \
-          --rootkey="${rootkey}" \
-          "${temp_fw}" \
+        full_command=(
+          "${FUTILITY}" gbb
+          -s
+          --recoverykey="${KEY_DIR}/recovery_key.vbpubk"
+          --rootkey="${rootkey}" "${temp_fw}"
           "${bios_path}"
-        ${FUTILITY} gbb \
-          -s \
-          --recoverykey="${KEY_DIR}/recovery_key.vbpubk" \
-          --rootkey="${rootkey}" \
-          "${temp_fw}" \
-          "${bios_path}"
+        )
+        echo "Setting GBB with: ${full_command[*]}"
+        "${full_command[@]}"
 
         echo "After setting GBB on ${bios_path}: md5 =" \
           $(md5sum ${bios_path} | awk '{print $1}')
@@ -585,20 +581,17 @@ resign_firmware_payload() {
               extra_args=( --gscvd_out
                          "${shellball_keyset_dir}/gscvd.${output_name}" )
             fi
-            echo "Setting RO_GSCVD with: ${FUTILITY} gscvd" \
-                 --keyblock "${KEY_DIR}/arv_platform.keyblock" \
-                 --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
-                 --board_id "${brand_code}" \
-                 --root_pub_key "${arv_root}" \
-                 "${extra_args[@]}" \
-                 "${bios_path}"
-            ${FUTILITY} gscvd \
-                        --keyblock "${KEY_DIR}/arv_platform.keyblock" \
-                        --platform_priv "${KEY_DIR}/arv_platform.vbprivk" \
-                        --board_id "${brand_code}" \
-                        --root_pub_key "${arv_root}" \
-                        "${extra_args[@]}" \
-                        "${bios_path}"
+            full_command=(
+              "${FUTILITY}" gscvd
+              --keyblock "${KEY_DIR}/arv_platform.keyblock"
+              --platform_priv "${KEY_DIR}/arv_platform.vbprivk"
+              --board_id "${brand_code}"
+              --root_pub_key "${arv_root}"
+              "${extra_args[@]}"
+              "${bios_path}"
+            )
+            echo "Setting RO_GSCVD with: ${full_command[*]}"
+            "${full_command[@]}"
 
             echo "After signing RO_GSCVD on ${bios_path}: md5 =" \
                  "$(md5sum "${bios_path}" | awk '{print $1}')"
