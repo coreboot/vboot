@@ -593,9 +593,12 @@ UTIL_BIN_NAMES_SDK = \
 	utility/signature_digest_utility \
 	utility/verify_data
 UTIL_BIN_NAMES_BOARD = \
-	utility/crossystem \
 	utility/dumpRSAPublicKey \
 	utility/tpmc
+
+ifneq ($(filter-out 0,${USE_FLASHROM}),)
+UTIL_BIN_NAMES_BOARD += utility/crossystem
+endif
 
 UTIL_SCRIPTS_SDK = $(addprefix ${BUILD}/,${UTIL_SCRIPT_NAMES_SDK})
 UTIL_SCRIPTS_BOARD = $(addprefix ${BUILD}/,${UTIL_SCRIPT_NAMES_BOARD})
