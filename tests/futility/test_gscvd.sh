@@ -28,10 +28,12 @@ FMAP_OFFSET_K=28696
 main() {
   local bios_blob
   local command_args
+  local warn
   local fmap_blob
   local hwid
   local pubkhash
   local section
+  local stderr_output
 
   cd "${SCRIPT_DIR}/futility"
 
@@ -72,10 +74,19 @@ main() {
   pubkhash="$( "${FUTILITY}" gscvd --root_pub_key \
       "${KEYS_DIR}"/arv_root.vbpubk | tail -1)"
 
-  # Run verification, this one is expected to fail because GBB flags are not
-  # zero.
-  if "${FUTILITY}" gscvd "${bios_blob}" "${pubkhash}" 2>/dev/null ; then
-    echo "Unexpected signature match!" >&2
+  # Message printed on stderr in case signature matches only after zeroing GBB
+  # flags.
+  warn="WARNING: validate_gscvd: Ranges digest matches with zeroed GBB flags"
+
+  # Run verification, this one is expected to succeed but report GBB flags
+  # mismatch.
+  stderr_output=$("${FUTILITY}" gscvd "${bios_blob}" "${pubkhash}" 2>&1)
+  if [[ $? != 0 ]] ; then
+    echo "Unexpected failure with nonzero GBB!" >&2
+    exit 1
+  fi
+  if [[ ${stderr_output} !=  "${warn}" ]]; then
+    echo "Unexpected error message \"${stderr_output}\" with nonzero GBB!"
     exit 1
   fi
 
