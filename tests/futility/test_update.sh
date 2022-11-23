@@ -378,8 +378,23 @@ test_update "Full update (--quirks preserve_me with non-host programmer)" \
 	-p raiden_debug_spi:target=AP
 
 test_update "Full update (--quirks preserve_me)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_preserved" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	--quirks preserve_me \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks preserve_me, autoupdate)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_preserved" \
+	--quirks preserve_me -m autoupdate \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks preserve_me, deferupdate_hold)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_preserved" \
+	--quirks preserve_me -m deferupdate_hold \
+	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
+
+test_update "Full update (--quirks preserve_me, factory)" \
+	"${FROM_IMAGE}" "${TMP}.expected.full" \
+	--quirks preserve_me -m factory \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,1
 
 # Test archive and manifest. CL_TAG is for custom_label_tag.
