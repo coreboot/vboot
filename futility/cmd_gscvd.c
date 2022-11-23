@@ -474,6 +474,8 @@ static vb2_error_t extend_digest(const struct file_buf *ap_firmware_file,
 	/* Define it as array to simplify calling vb2_digest_extend() below. */
 	const uint8_t flags[sizeof(vb2_gbb_flags_t)] = {0};
 
+	VB2_DEBUG("%s: %#x..+%#x\n", __func__, offset, size);
+
 	if (flags_offset &&
 	    (flags_offset >= offset) &&
 	    (flags_offset < (offset + size))) {
@@ -993,6 +995,29 @@ static void try_retrieving_ranges_from_the_image(const char *file_name,
 }
 
 /*
+ * Calculate ranges digest and compare it with the value stored in gvd, with
+ * or without ignoring GBB flags, as requested by the caller.
+ *
+ * @return zero on success, nonzero on failure.
+ */
+static int validate_digest(struct file_buf *ap_firmware_file,
+			   const struct gscvd_ro_ranges *ranges,
+			   const struct gsc_verification_data *gvd,
+			   bool override_gbb_flags)
+{
+	uint8_t digest[sizeof(gvd->ranges_digest)];
+
+	if (calculate_ranges_digest(ap_firmware_file, ranges,
+				    gvd->hash_alg, digest,
+				    sizeof(digest),
+				    override_gbb_flags)) {
+		return 1;
+	}
+
+	return memcmp(digest, gvd->ranges_digest, sizeof(digest));
+}
+
+/*
  * Validate GVD of the passed in AP firmware file and possibly the root key hash
  *
  * The input parameters are the subset of the command line, the first argv
@@ -1000,7 +1025,7 @@ static void try_retrieving_ranges_from_the_image(const char *file_name,
  * hash of the root public key included in the RO_GSCVD area of the AP
  * firmware file.
  *
- * @return zero on success, -1 on failure.
+ * @return zero on success, nonzero on failure.
  */
 static int validate_gscvd(int argc, char *argv[])
 {
@@ -1009,7 +1034,6 @@ static int validate_gscvd(int argc, char *argv[])
 	struct gscvd_ro_ranges ranges;
 	struct gsc_verification_data *gvd;
 	const char *file_name;
-	uint8_t digest[sizeof(gvd->ranges_digest)];
 	struct vb2_hash root_key_digest = { .algo = VB2_HASH_SHA256 };
 
 	/* Guaranteed to be available. */
@@ -1039,15 +1063,15 @@ static int validate_gscvd(int argc, char *argv[])
 		if (copy_ranges(&ap_firmware_file, gvd, &ranges))
 			break;
 
-		if (calculate_ranges_digest(&ap_firmware_file, &ranges,
-					    gvd->hash_alg, digest,
-					    sizeof(digest),
-					    false))
-			break;
-
-		if (memcmp(digest, gvd->ranges_digest, sizeof(digest))) {
-			ERROR("Ranges digest mismatch\n");
-			break;
+		/* First try validating without ignoring GBB flags. */
+		if (validate_digest(&ap_firmware_file, &ranges, gvd, false)) {
+			/* It failed, maybe GBB flags are not cleared yet. */
+			if (validate_digest(&ap_firmware_file, &ranges,
+					    gvd, true)) {
+				ERROR("Ranges digest mismatch\n");
+				break;
+			}
+			WARN("Ranges digest matches with zeroed GBB flags\n");
 		}
 
 		/* Find the keyblock. */
