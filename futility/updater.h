@@ -61,6 +61,13 @@ enum {
 	EC_RECOVERY_DONE
 };
 
+enum try_update_type {
+	TRY_UPDATE_OFF = 0,
+	TRY_UPDATE_AUTO,
+	TRY_UPDATE_DEFERRED_HOLD,
+	TRY_UPDATE_DEFERRED_APPLY,
+};
+
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
@@ -68,7 +75,7 @@ struct updater_config {
 	struct quirk_entry quirks[QUIRK_MAX];
 	struct u_archive *archive;
 	struct tempfile tempfiles;
-	int try_update;
+	enum try_update_type try_update;
 	int force_update;
 	int legacy_update;
 	int factory_update;

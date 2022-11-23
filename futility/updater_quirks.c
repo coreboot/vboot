@@ -391,7 +391,7 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
  *
  * Updating ME region while SoC is in S0 state is an unsupported use-case. On
  * recent platforms, we are seeing issues more frequently because of this use-
- * case. For the firmware updates performed using firmware update archive,
+ * case. For the firmware updates performed for autoupdate firmware updates,
  * preserve the ME region so that it gets updated in the successive boot.
  *
  * Returns:
@@ -400,21 +400,17 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
  */
 static int quirk_preserve_me(struct updater_config *cfg)
 {
-	/* For a factory update donot preserve ME. */
-	if (cfg->factory_update) {
-	       WARN("Factory update. Not preserving ME.\n");
-	       return 0;
-	}
-
 	/*
-	 * For a non-archive update, the post boot script that updates ME
-	 * does not have access to the firmware image after the boot. Hence
-	 * donot preserve ME.
+	 * Only preserve the ME if performing an autoupdate-mode firmware
+	 * update. Recovery, factory and any other update modes cannot leave the
+	 * ME as is. Otherwise, a recovery firmware update cannot be relied upon
+	 * to update the ME to a valid version for WP-disabled devices.
 	 */
-	if (!cfg->archive) {
-		WARN("Update using a non-archive image. Not preserving ME.\n");
+	if (cfg->try_update == TRY_UPDATE_OFF) {
+		INFO("No auto-update requested. Not preserving ME.\n");
 		return 0;
 	}
+	INFO("Auto-update requested. Preserving ME.\n");
 
 	/*
 	 * b/213706510: subratabanik@ confirmed CSE may modify itself while we

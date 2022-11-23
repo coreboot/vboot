@@ -21,13 +21,6 @@
 static const char ROOTKEY_HASH_DEV[] =
 		"b11d74edd286c144e1135b49e7f0bc20cf041f10";
 
-enum try_update_type {
-	TRY_UPDATE_OFF = 0,
-	TRY_UPDATE_AUTO,
-	TRY_UPDATE_DEFERRED_HOLD,
-	TRY_UPDATE_DEFERRED_APPLY,
-};
-
 enum target_type {
 	TARGET_SELF,
 	TARGET_UPDATE,
