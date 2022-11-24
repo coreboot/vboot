@@ -169,8 +169,3 @@ uint32_t vb2ex_mtime(void)
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * VB2_MSEC_PER_SEC + tv.tv_usec / VB2_USEC_PER_MSEC;
 }
-
-__attribute__((weak))
-void vb2ex_msleep(uint32_t msec)
-{
-}
