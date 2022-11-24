@@ -1346,12 +1346,8 @@ char *vb2api_get_debug_info(struct vb2_context *ctx);
  */
 uint32_t vb2ex_mtime(void);
 
-/**
- * Delay for at least the specified number of milliseconds.
- *
- * @param msec			Duration in milliseconds.
- */
-void vb2ex_msleep(uint32_t msec);
+/*****************************************************************************/
+/* Firmware slot information. */
 
 union vb2_fw_boot_info {
 	uint8_t raw[4];
