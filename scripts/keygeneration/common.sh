@@ -66,6 +66,10 @@ KERNEL_DATAKEY_ALGOID=${RSA2048_SHA256_ALGOID}
 # AP RO Verification.
 ARV_ROOT_ALGOID=${RSA4096_SHA256_ALGOID}
 ARV_PLATFORM_ALGOID=${RSA4096_SHA256_ALGOID}
+ARV_ROOT_NAME_BASE="arv_root"
+# Presumably the script is run from the top of the PreMP keys directory
+# tree, place AP RO verification root key there.
+ARV_ROOT_DIR="ApRoV1Signing-PreMP"
 
 # Keyblock modes determine which boot modes a signing key is valid for use
 # in verification.
@@ -88,6 +92,9 @@ MINIOS_KERNEL_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x8 | 0x20))
 KERNEL_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
 # Only allow in dev + recovery + non-miniOS.
 INSTALLER_KERNEL_KEYBLOCK_MODE=$((0x2 | 0x8 | 0x10))
+# Only allow in non-recovery + non-miniOS, does not mean much for AP RO keys.
+ARV_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
+
 
 # Emit .vbpubk and .vbprivk using given basename and algorithm
 # NOTE: This function also appears in ../../utility/dev_make_keypair. Making
