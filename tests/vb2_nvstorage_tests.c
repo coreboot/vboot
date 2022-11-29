@@ -125,6 +125,7 @@ static void nv_storage_test(uint32_t ctxflags)
 	ctx->nvdata[VB2_NV_OFFS_HEADER] ^= 0x40;
 	TEST_EQ(vb2_nv_check_crc(ctx),
 		VB2_ERROR_NV_HEADER, "vb2_nv_check_crc() bad header");
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_HEADER], expect_header,
 		"vb2_nv_init() reset header byte again");
@@ -137,6 +138,7 @@ static void nv_storage_test(uint32_t ctxflags)
 	ctx->nvdata[VB2_NV_OFFS_KERNEL1] = 12;
 	TEST_EQ(vb2_nv_check_crc(ctx),
 		VB2_ERROR_NV_CRC, "vb2_nv_check_crc() bad CRC");
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	TEST_EQ(ctx->nvdata[VB2_NV_OFFS_KERNEL1], 0,
 		"vb2_nv_init() reset kernel byte");
@@ -145,6 +147,7 @@ static void nv_storage_test(uint32_t ctxflags)
 		"vb2_nv_init() CRC same again");
 
 	/* Clear the kernel and firmware flags */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		1, "Firmware settings are reset");
@@ -166,6 +169,7 @@ static void nv_storage_test(uint32_t ctxflags)
 		 "vb2_nv_init() CRC changed due to flags clear");
 
 	/* Test explicitly setting the reset flags again */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	vb2_nv_set(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET, 1);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
@@ -178,11 +182,13 @@ static void nv_storage_test(uint32_t ctxflags)
 	vb2_nv_set(ctx, VB2_NV_KERNEL_SETTINGS_RESET, 0);
 
 	/* Get/set an invalid field */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	vb2_nv_set(ctx, -1, 1);
 	TEST_EQ(vb2_nv_get(ctx, -1), 0, "Get invalid setting");
 
 	/* Test other fields */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	for (vnf = nvfields; vnf->desc; vnf++) {
 		TEST_EQ(vb2_nv_get(ctx, vnf->param), vnf->default_value,
@@ -218,6 +224,7 @@ static void nv_storage_test(uint32_t ctxflags)
 	}
 
 	/* None of those changes should have caused a reset to defaults */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FIRMWARE_SETTINGS_RESET),
 		0, "Firmware settings are still clear");
@@ -226,6 +233,7 @@ static void nv_storage_test(uint32_t ctxflags)
 
 	/* Writing identical settings doesn't cause the CRC to regenerate */
 	ctx->flags = ctxflags;
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	test_changed(ctx, 0, "No regen CRC on open");
 	for (vnf = nvfields; vnf->desc; vnf++)
@@ -240,6 +248,7 @@ static void nv_storage_test(uint32_t ctxflags)
 	test_changed(ctx, 0, "No regen CRC if V2 data not changed");
 
 	/* Test out-of-range fields mapping to defaults or failing */
+	sd->status = 0;
 	vb2_nv_init(ctx);
 	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 16);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_COUNT),
