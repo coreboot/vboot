@@ -64,6 +64,8 @@ void vb2_nv_init(struct vb2_context *ctx)
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint8_t *p = ctx->nvdata;
 
+	if (sd->status & VB2_SD_STATUS_NV_INIT)
+		return;
 
 	/* Check data for consistency */
 	if (vb2_nv_check_crc(ctx) != VB2_SUCCESS) {
