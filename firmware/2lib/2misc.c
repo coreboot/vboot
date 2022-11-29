@@ -82,17 +82,31 @@ vb2_error_t vb2_read_gbb_header(struct vb2_context *ctx,
 	return VB2_SUCCESS;
 }
 
-test_mockable
-void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
+static void fail_impl(struct vb2_context *ctx,
+		      uint8_t reason, uint8_t subcode, bool previous_boot)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	uint32_t last_fw_slot, last_fw_result, fw_slot;
 
 	/* If NV data hasn't been initialized, initialize it now */
 	if (!(sd->status & VB2_SD_STATUS_NV_INIT))
 		vb2_nv_init(ctx);
 
+	/*
+	 * Donot overwrite any existing failure with a new failure reported
+	 * through vb2api_previous_boot_fail(). Existing failure might have
+	 * been set through vb2api_fail() in the previous boot and the new
+	 * failure can stand.
+	 */
+	if (previous_boot &&
+	    vb2_nv_get(ctx, VB2_NV_FW_RESULT) == VB2_FW_RESULT_FAILURE)
+		return;
+
 	/* See if we were far enough in the boot process to choose a slot */
-	if (sd->status & VB2_SD_STATUS_CHOSE_SLOT) {
+	if (previous_boot || (sd->status & VB2_SD_STATUS_CHOSE_SLOT)) {
+		last_fw_slot = vb2_nv_get(ctx, VB2_NV_FW_PREV_TRIED);
+		last_fw_result = vb2_nv_get(ctx, VB2_NV_FW_PREV_RESULT);
+		fw_slot = vb2_nv_get(ctx, VB2_NV_FW_TRIED);
 
 		/* Boot failed */
 		vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_FAILURE);
@@ -105,14 +119,14 @@ void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 		 * between slots, which may help if one or both slots is
 		 * flaky.
 		 */
-		vb2_nv_set(ctx, VB2_NV_TRY_NEXT, 1 - sd->fw_slot);
+		vb2_nv_set(ctx, VB2_NV_TRY_NEXT, 1 - fw_slot);
 
 		/*
 		 * If we didn't try the other slot last boot, or we tried it
 		 * and it didn't fail, try it next boot.
 		 */
-		if (sd->last_fw_slot != 1 - sd->fw_slot ||
-		    sd->last_fw_result != VB2_FW_RESULT_FAILURE)
+		if (last_fw_slot != 1 - fw_slot ||
+		    last_fw_result != VB2_FW_RESULT_FAILURE)
 			return;
 	}
 
@@ -130,6 +144,24 @@ void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, reason);
 		vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, subcode);
 	}
+}
+
+test_mockable
+void vb2api_fail(struct vb2_context *ctx, uint8_t reason, uint8_t subcode)
+{
+	fail_impl(ctx, reason, subcode, false);
+}
+
+test_mockable
+void vb2api_previous_boot_fail(struct vb2_context *ctx,
+			       uint8_t reason, uint8_t subcode)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+
+	VB2_ASSERT(!(sd->status & VB2_SD_STATUS_NV_INIT) &&
+		   !(sd->status & VB2_SD_STATUS_CHOSE_SLOT));
+
+	fail_impl(ctx, reason, subcode, true);
 }
 
 void vb2_check_recovery(struct vb2_context *ctx)

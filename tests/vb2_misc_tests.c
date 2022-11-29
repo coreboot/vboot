@@ -390,10 +390,10 @@ static void fail_tests(void)
 	reset_common_data();
 	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 3);
 	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_UNKNOWN);
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, 0);
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_TRIED, 1);
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_RESULT, VB2_FW_RESULT_UNKNOWN);
 	sd->status |= VB2_SD_STATUS_CHOSE_SLOT;
-	sd->fw_slot = 0;
-	sd->last_fw_slot = 1;
-	sd->last_fw_result = VB2_FW_RESULT_UNKNOWN;
 	vb2api_fail(ctx, 5, 6);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 0, "vb2_failover");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
@@ -405,10 +405,10 @@ static void fail_tests(void)
 
 	/* Fail with other slot already failing triggers recovery */
 	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_TRIED, 0);
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_RESULT, VB2_FW_RESULT_FAILURE);
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, 1);
 	sd->status |= VB2_SD_STATUS_CHOSE_SLOT;
-	sd->fw_slot = 1;
-	sd->last_fw_slot = 0;
-	sd->last_fw_result = VB2_FW_RESULT_FAILURE;
 	vb2api_fail(ctx, 7, 8);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 7,
 		"vb2api_fail both slots bad");
@@ -416,6 +416,60 @@ static void fail_tests(void)
 		VB2_FW_RESULT_FAILURE, "vb2api_fail this fw");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT), 0,
 		"vb2api_fail try other slot");
+}
+
+static void previous_boot_fail_tests(void)
+{
+	/* Previous boot fail (before even NV init) */
+	/* Fail with other slot good doesn't trigger recovery */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, VB2_FW_SLOT_A);
+	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 3);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_UNKNOWN);
+	sd->status &= ~VB2_SD_STATUS_NV_INIT;
+	vb2api_previous_boot_fail(ctx, 1, 2);
+	TEST_NEQ(sd->status & VB2_SD_STATUS_NV_INIT,
+		 0, "vb2api_previous_boot_fail inits NV");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		0, "vb2_previous_boot_fail over");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
+		VB2_FW_RESULT_FAILURE, "vb2api_previous_boot_fail result");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_COUNT),
+		0, "vb2api_previous_boot_fail try count");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT),
+		1, "vb2api_previous_boot_fail FW tried");
+
+	/* Fail with other slot already failing triggers recovery */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_TRIED, VB2_FW_SLOT_A);
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_RESULT, VB2_FW_RESULT_FAILURE);
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, VB2_FW_SLOT_B);
+	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 3);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_UNKNOWN);
+	sd->status &= ~VB2_SD_STATUS_NV_INIT;
+	vb2api_previous_boot_fail(ctx, 3, 4);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
+		3, "vb2api_previous_boot_fail both slots bad");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
+		VB2_FW_RESULT_FAILURE, "vb2api_previous_boot_fail result");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_COUNT),
+		0, "vb2api_previous_boot_fail try count");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT),
+		0, "vb2api_previous_boot_fail FW tried");
+
+	/* Repeated fail doesn't overwrite the error code */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_TRY_NEXT, VB2_FW_SLOT_A);
+	vb2_nv_set(ctx, VB2_NV_TRY_COUNT, 3);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_FAILURE);
+	sd->status &= ~VB2_SD_STATUS_NV_INIT;
+	vb2api_previous_boot_fail(ctx, 5, 6);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
+		VB2_FW_RESULT_FAILURE, "vb2api_previous_boot_fail result");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_COUNT),
+		3, "vb2api_previous_boot_fail try count");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT),
+		VB2_FW_SLOT_A, "vb2api_previous_boot_fail try next");
 }
 
 static void recovery_tests(void)
@@ -1085,6 +1139,7 @@ int main(int argc, char* argv[])
 	misc_tests();
 	gbb_tests();
 	fail_tests();
+	previous_boot_fail_tests();
 	recovery_tests();
 	dev_switch_tests();
 	enable_dev_tests();
