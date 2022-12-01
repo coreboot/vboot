@@ -1337,7 +1337,7 @@ static int updater_load_images(struct updater_config *cfg,
 		if (!errorcnt)
 			errorcnt += updater_setup_quirks(cfg, arg);
 	}
-	if (arg->host_only)
+	if (arg->host_only || arg->emulation)
 		return errorcnt;
 
 	if (!cfg->ec_image.data && ec_image)
