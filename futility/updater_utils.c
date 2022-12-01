@@ -430,6 +430,17 @@ static int host_get_platform_version(void)
 	return VbGetSystemPropertyInt("board_id");
 }
 
+void prepare_servo_control(const char *control_name, int on)
+{
+	char *cmd;
+	if (!control_name)
+		return;
+
+	ASPRINTF(&cmd, "dut-control %s:%s", control_name, on ? "on" : "off");
+	free(host_shell(cmd));
+	free(cmd);
+}
+
 /*
  * Helper function to detect type of Servo board attached to host.
  * Returns a string as programmer parameter on success, otherwise NULL.

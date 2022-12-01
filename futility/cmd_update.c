@@ -148,17 +148,6 @@ static void print_help(int argc, char *argv[])
 		argv[0]);
 }
 
-static void prepare_servo_control(const char *control_name, int on)
-{
-	char *cmd;
-	if (!control_name)
-		return;
-
-	ASPRINTF(&cmd, "dut-control %s:%s", control_name, on ? "on" : "off");
-	free(host_shell(cmd));
-	free(cmd);
-}
-
 static int do_update(int argc, char *argv[])
 {
 	struct updater_config *cfg;

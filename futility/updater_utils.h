@@ -194,6 +194,13 @@ char *host_shell(const char *command);
 char *host_detect_servo(const char **prepare_ctrl_name);
 
 /*
+ * Makes a dut-control request for control_name.
+ * Sets control_name to "on" if on is non zero, else "off".
+ * Does not check for failure.
+ */
+void prepare_servo_control(const char *control_name, int on);
+
+/*
  * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
  * section of an image file, otherwise 0.
  */
