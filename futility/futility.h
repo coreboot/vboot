@@ -172,4 +172,12 @@ enum arch_t {
 	ARCH_MIPS
 };
 
+/*
+ * Write size bytes from start into filename. Print "%msg %filename" to stdout
+ * on success, if msg is non-NULL. Writes messages to stderr on failure.
+ * Returns 0 on success.
+ */
+int write_to_file(const char *msg, const char *filename, uint8_t *start,
+		  size_t size);
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_H_ */

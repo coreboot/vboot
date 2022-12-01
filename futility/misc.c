@@ -436,3 +436,38 @@ void print_bytes(const void *ptr, size_t len)
 	for (size_t i = 0; i < len; i++)
 		printf("%02x", *buf++);
 }
+
+int write_to_file(const char *msg, const char *filename, uint8_t *start,
+		  size_t size)
+{
+	FILE *fp;
+	int r = 0;
+
+	fp = fopen(filename, "wb");
+	if (!fp) {
+		r = errno;
+		fprintf(stderr, "ERROR: Unable to open %s for writing: %s\n",
+			filename, strerror(r));
+		return r;
+	}
+
+	/* Don't write zero bytes */
+	if (size && 1 != fwrite(start, size, 1, fp)) {
+		r = errno;
+		fprintf(stderr, "ERROR: Unable to write to %s: %s\n", filename,
+			strerror(r));
+	}
+
+	if (fclose(fp) != 0) {
+		int e = errno;
+		fprintf(stderr, "ERROR: Unable to close %s: %s\n", filename,
+			strerror(e));
+		if (!r)
+			r = e;
+	}
+
+	if (!r && msg)
+		printf("%s %s\n", msg, filename);
+
+	return r;
+}
