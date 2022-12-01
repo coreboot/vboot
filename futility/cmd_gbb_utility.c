@@ -261,26 +261,28 @@ static int write_to_file(const char *msg, const char *filename,
 
 	fp = fopen(filename, "wb");
 	if (!fp) {
+		r = errno;
 		fprintf(stderr, "ERROR: Unable to open %s for writing: %s\n",
-			filename, strerror(errno));
+			filename, strerror(r));
 		errorcnt++;
-		return errno;
+		return r;
 	}
 
 	/* Don't write zero bytes */
 	if (size && 1 != fwrite(start, size, 1, fp)) {
-		fprintf(stderr, "ERROR: Unable to write to %s: %s\n",
-			filename, strerror(errno));
-		errorcnt++;
 		r = errno;
+		fprintf(stderr, "ERROR: Unable to write to %s: %s\n", filename,
+			strerror(r));
+		errorcnt++;
 	}
 
 	if (0 != fclose(fp)) {
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n",
-			filename, strerror(errno));
-		errorcnt++;
+		int e = errno;
+		fprintf(stderr, "ERROR: Unable to close %s: %s\n", filename,
+			strerror(e));
 		if (!r)
-			r = errno;
+			r = e;
+		errorcnt++;
 	}
 
 	if (!r && msg)
@@ -299,17 +301,18 @@ static int read_from_file(const char *msg, const char *filename,
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
+		r = errno;
 		fprintf(stderr, "ERROR: Unable to open %s for reading: %s\n",
-			filename, strerror(errno));
+			filename, strerror(r));
 		errorcnt++;
-		return errno;
+		return r;
 	}
 
 	if (0 != fstat(fileno(fp), &sb)) {
-		fprintf(stderr, "ERROR: can't fstat %s: %s\n",
-			filename, strerror(errno));
-		errorcnt++;
 		r = errno;
+		fprintf(stderr, "ERROR: can't fstat %s: %s\n", filename,
+			strerror(r));
+		errorcnt++;
 		goto done_close;
 	}
 
@@ -328,20 +331,21 @@ static int read_from_file(const char *msg, const char *filename,
 	/* It's okay if we read less than size. That's just the max. */
 	count = fread(start, 1, size, fp);
 	if (ferror(fp)) {
+		r = errno;
 		fprintf(stderr,
 			"ERROR: Read %zu/%" PRIi64 " bytes from %s: %s\n",
-			count, sb.st_size, filename, strerror(errno));
+			count, sb.st_size, filename, strerror(r));
 		errorcnt++;
-		r = errno;
 	}
 
 done_close:
 	if (0 != fclose(fp)) {
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n",
-			filename, strerror(errno));
+		int e = errno;
+		fprintf(stderr, "ERROR: Unable to close %s: %s\n", filename,
+			strerror(e));
 		errorcnt++;
 		if (!r)
-			r = errno;
+			r = e;
 	}
 
 	if (!r && msg)
