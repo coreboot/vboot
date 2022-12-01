@@ -644,6 +644,7 @@ FUTIL_SRCS = \
 	futility/cmd_gscvd.c \
 	futility/cmd_load_fmap.c \
 	futility/cmd_pcr.c \
+	futility/cmd_read.c \
 	futility/cmd_show.c \
 	futility/cmd_sign.c \
 	futility/cmd_update.c \
