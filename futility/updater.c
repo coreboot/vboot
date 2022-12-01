@@ -1709,6 +1709,43 @@ int updater_setup_config(struct updater_config *cfg,
 	return errorcnt;
 }
 
+int handle_flash_argument(struct updater_config_arguments *args, int opt,
+			  char *optarg)
+{
+	switch (opt) {
+	case 'p':
+		args->programmer = optarg;
+		break;
+	case OPT_CCD:
+		args->fast_update = 1;
+		args->force_update = 1;
+		args->write_protection = "0";
+		args->programmer = "raiden_debug_spi:target=AP";
+		break;
+	case OPT_EMULATE:
+		args->emulation = optarg;
+		break;
+	case OPT_SERVO:
+		args->detect_servo = 1;
+		args->fast_update = 1;
+		args->force_update = 1;
+		args->write_protection = "0";
+		args->host_only = 1;
+		break;
+	case OPT_SERVO_PORT:
+		setenv(ENV_SERVOD_PORT, optarg, 1);
+		args->detect_servo = 1;
+		args->fast_update = 1;
+		args->force_update = 1;
+		args->write_protection = "0";
+		args->host_only = 1;
+		break;
+	default:
+		return 0;
+	}
+	return 1;
+}
+
 /*
  * Releases all resources in an updater configuration object.
  */
