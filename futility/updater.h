@@ -103,9 +103,43 @@ struct updater_config_arguments {
 	int fast_update;
 	int verbosity;
 	int override_gbb_flags;
+	int detect_servo;
 	uint32_t gbb_flags;
 	bool detect_model_only;
 };
+
+/*
+ * Shared getopt arguments controlling flash behaviour.
+ * These are shared by multiple commands.
+ */
+enum {
+	OPT_CCD = 0x100,
+	OPT_EMULATE,
+	OPT_SERVO,
+	OPT_SERVO_PORT,
+};
+
+#ifdef USE_FLASHROM
+#define SHARED_FLASH_ARGS_SHORTOPTS "p:"
+
+#define SHARED_FLASH_ARGS_LONGOPTS                                             \
+	{"programmer", 1, NULL, 'p'},                                          \
+	{"ccd", 0, NULL, OPT_CCD},                                             \
+	{"servo", 0, NULL, OPT_SERVO},                                         \
+	{"servo_port", 1, NULL, OPT_SERVO_PORT},                               \
+	{"emulate", 1, NULL, OPT_EMULATE},
+
+#define SHARED_FLASH_ARGS_HELP                                                 \
+	"-p, --programmer=PRG\tChange AP (host) flashrom programmer\n"         \
+	"    --ccd           \tDo fast,force,wp=0,p=raiden_debug_spi\n"        \
+	"    --emulate=FILE  \tEmulate system firmware using file\n"           \
+	"    --servo         \tFlash using Servo (v2, v4, micro, ...)\n"       \
+	"    --servo_port=PRT\tOverride servod port, implies --servo\n"
+#else
+#define SHARED_FLASH_ARGS_HELP
+#define SHARED_FLASH_ARGS_LONGOPTS
+#define SHARED_FLASH_ARGS_SHORTOPTS
+#endif /* USE_FLASHROM */
 
 struct patch_config {
 	char *rootkey;
@@ -170,6 +204,13 @@ struct updater_config *updater_new_config(void);
  * Releases all resources in an updater configuration object.
  */
 void updater_delete_config(struct updater_config *cfg);
+
+/*
+ * Handle an argument if it is a shared updater option.
+ * Returns 1 if argument was used.
+ */
+int handle_flash_argument(struct updater_config_arguments *args, int opt,
+			  char *optarg);
 
 /*
  * Helper function to setup an allocated updater_config object.
