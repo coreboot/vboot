@@ -318,7 +318,7 @@ static int read_from_file(const char *msg, const char *filename,
 			"ERROR: file %s exceeds capacity (%" PRIu32 ")\n",
 			filename, size);
 		errorcnt++;
-		r = errno;
+		r = -1;
 		goto done_close;
 	}
 
