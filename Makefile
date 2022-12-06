@@ -1247,6 +1247,7 @@ runcgpttests: install_for_test
 .PHONY: runtestscripts
 runtestscripts: install_for_test genfuzztestcases
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_android_unittests.sh
+	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_uefi_unittest.py
 	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
 	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt -D 358400
