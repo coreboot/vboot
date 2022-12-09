@@ -111,6 +111,9 @@ enum vb2_nv_recovery {
 	/* Latest tried RW firmware RO normal path not supported */
 	VB2_RECOVERY_DEPRECATED_FW_NO_RO_NORMAL = 0x1d,
 
+	/* Latest tried RW firmware vendor blob verification failed */
+	VB2_RECOVERY_FW_VENDOR_BLOB = 0x1e,
+
 	/*
 	 * Firmware boot failure outside of verified boot (RAM init, missing
 	 * SSD, etc.).
