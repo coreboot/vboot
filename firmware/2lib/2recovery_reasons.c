@@ -59,6 +59,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "RW firmware is valid";
 	/* 0x1d */ case VB2_RECOVERY_DEPRECATED_FW_NO_RO_NORMAL:
 		return "RW firmware read-only normal path is not supported";
+	/* 0x1e */ case VB2_RECOVERY_FW_VENDOR_BLOB:
+		return "RW firmware vendor blob verification failure";
 	/* 0x20 */ case VB2_RECOVERY_RO_FIRMWARE:
 		return "Firmware problem outside of verified boot";
 	/* 0x21 */ case VB2_RECOVERY_RO_TPM_REBOOT:
