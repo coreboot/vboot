@@ -583,18 +583,27 @@ static int do_gbb(int argc, char *argv[])
 		}
 
 		if (opt_rootkey) {
-			read_from_file("root_key", opt_rootkey,
-				       gbb_base + gbb->rootkey_offset,
-				       gbb->rootkey_size);
+			if (read_from_file("root_key", opt_rootkey,
+					   gbb_base + gbb->rootkey_offset,
+					   gbb->rootkey_size)) {
+				errorcnt++;
+				break;
+			}
 		}
 		if (opt_bmpfv)
-			read_from_file("bmp_fv", opt_bmpfv,
-				       gbb_base + gbb->bmpfv_offset,
-				       gbb->bmpfv_size);
+			if (read_from_file("bmp_fv", opt_bmpfv,
+					   gbb_base + gbb->bmpfv_offset,
+					   gbb->bmpfv_size)) {
+				errorcnt++;
+				break;
+			}
 		if (opt_recoverykey)
-			read_from_file("recovery_key", opt_recoverykey,
-				       gbb_base + gbb->recovery_key_offset,
-				       gbb->recovery_key_size);
+			if (read_from_file("recovery_key", opt_recoverykey,
+					   gbb_base + gbb->recovery_key_offset,
+					   gbb->recovery_key_size)) {
+				errorcnt++;
+				break;
+			}
 
 		/* Write it out if there are no problems. */
 		if (!errorcnt)
