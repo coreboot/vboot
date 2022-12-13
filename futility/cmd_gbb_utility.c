@@ -428,7 +428,8 @@ static int do_gbb(int argc, char *argv[])
 		if (argc - optind < 1) {
 			fprintf(stderr, "\nERROR: missing input filename\n");
 			print_help(argc, argv);
-			return 1;
+			errorcnt++;
+			break;
 		} else {
 			infile = argv[optind++];
 		}
@@ -439,12 +440,15 @@ static int do_gbb(int argc, char *argv[])
 			sel_hwid = 1;
 
 		inbuf = read_entire_file(infile, &filesize);
-		if (!inbuf)
+		if (!inbuf) {
+			errorcnt++;
 			break;
+		}
 
 		gbb = FindGbbHeader(inbuf, filesize);
 		if (!gbb) {
 			fprintf(stderr, "ERROR: No GBB found in %s\n", infile);
+			errorcnt++;
 			break;
 		}
 		gbb_base = (uint8_t *) gbb;
@@ -464,27 +468,34 @@ static int do_gbb(int argc, char *argv[])
 			if (write_to_file(" - exported root_key to file:",
 					  opt_rootkey,
 					  gbb_base + gbb->rootkey_offset,
-					  gbb->rootkey_size))
+					  gbb->rootkey_size)) {
 				errorcnt++;
+				break;
+			}
 		if (opt_bmpfv)
 			if (write_to_file(
 				    " - exported bmp_fv to file:", opt_bmpfv,
 				    gbb_base + gbb->bmpfv_offset,
-				    gbb->bmpfv_size))
+				    gbb->bmpfv_size)) {
 				errorcnt++;
+				break;
+			}
 		if (opt_recoverykey)
 			if (write_to_file(" - exported recovery_key to file:",
 					  opt_recoverykey,
 					  gbb_base + gbb->recovery_key_offset,
-					  gbb->recovery_key_size))
+					  gbb->recovery_key_size)) {
 				errorcnt++;
+				break;
+			}
 		break;
 
 	case DO_SET:
 		if (argc - optind < 1) {
 			fprintf(stderr, "\nERROR: missing input filename\n");
 			print_help(argc, argv);
-			return 1;
+			errorcnt++;
+			break;
 		}
 		infile = argv[optind++];
 		if (!outfile)
@@ -493,32 +504,37 @@ static int do_gbb(int argc, char *argv[])
 		if (sel_hwid && !opt_hwid) {
 			fprintf(stderr, "\nERROR: missing new HWID value\n");
 			print_help(argc, argv);
-			return 1;
+			errorcnt++;
+			break;
 		}
 		if (sel_flags && (!opt_flags || !*opt_flags)) {
 			fprintf(stderr, "\nERROR: missing new flags value\n");
 			print_help(argc, argv);
-			return 1;
+			errorcnt++;
+			break;
 		}
 
 		/* With no args, we'll either copy it unchanged or do nothing */
 		inbuf = read_entire_file(infile, &filesize);
-		if (!inbuf)
+		if (!inbuf) {
+			errorcnt++;
 			break;
+		}
 
 		gbb = FindGbbHeader(inbuf, filesize);
 		if (!gbb) {
 			fprintf(stderr, "ERROR: No GBB found in %s\n", infile);
+			errorcnt++;
 			break;
 		}
 		gbb_base = (uint8_t *) gbb;
 
 		outbuf = (uint8_t *) malloc(filesize);
 		if (!outbuf) {
-			errorcnt++;
 			fprintf(stderr,
 				"ERROR: can't malloc %" PRIi64 " bytes: %s\n",
 				filesize, strerror(errno));
+			errorcnt++;
 			break;
 		}
 
@@ -528,7 +544,8 @@ static int do_gbb(int argc, char *argv[])
 		if (!gbb) {
 			fprintf(stderr,
 				"INTERNAL ERROR: No GBB found in outbuf\n");
-			exit(1);
+			errorcnt++;
+			break;
 		}
 		gbb_base = (uint8_t *) gbb;
 
@@ -539,6 +556,7 @@ static int do_gbb(int argc, char *argv[])
 					" exceeds capacity (%d)\n",
 					gbb->hwid_size);
 				errorcnt++;
+				break;
 			} else {
 				/* Wipe data before writing new value. */
 				memset(gbb_base + gbb->hwid_offset, 0,
@@ -558,6 +576,7 @@ static int do_gbb(int argc, char *argv[])
 					"ERROR: invalid flags value: %s\n",
 					opt_flags);
 				errorcnt++;
+				break;
 			} else {
 				gbb->flags = val;
 			}
@@ -580,8 +599,10 @@ static int do_gbb(int argc, char *argv[])
 		/* Write it out if there are no problems. */
 		if (!errorcnt)
 			if (write_to_file("successfully saved new image to:",
-					  outfile, outbuf, filesize))
+					  outfile, outbuf, filesize)) {
 				errorcnt++;
+				break;
+			}
 
 		break;
 
@@ -591,7 +612,8 @@ static int do_gbb(int argc, char *argv[])
 				fprintf(stderr,
 					"\nERROR: missing output filename\n");
 				print_help(argc, argv);
-				return 1;
+				errorcnt++;
+				break;
 			}
 			outfile = argv[optind++];
 		}
@@ -602,12 +624,15 @@ static int do_gbb(int argc, char *argv[])
 				"\nERROR: unable to parse creation spec (%s)\n",
 				opt_create);
 			print_help(argc, argv);
-			return 1;
+			errorcnt++;
+			break;
 		}
 		if (!errorcnt)
 			if (write_to_file("successfully created new GBB to:",
-					  outfile, outbuf, filesize))
+					  outfile, outbuf, filesize)) {
 				errorcnt++;
+				break;
+			}
 		break;
 	}
 
