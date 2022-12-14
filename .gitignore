@@ -3,12 +3,6 @@
 /build-main
 Cargo.lock
 ID
-scripts/newbitmaps/default_source/*.bmp
-scripts/newbitmaps/images/out_*
-scripts/newbitmaps/lib/*.pyc
-scripts/newbitmaps/strings/font
-scripts/newbitmaps/strings/*.png
-scripts/newbitmaps/strings/localized_text/*/*.png
 target
 .idea
 *.swp
