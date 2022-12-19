@@ -583,72 +583,16 @@ static char *get_flashrom_command(enum flash_command flash_cmd,
 	return cmd;
 }
 
-static int external_flashrom(enum flash_command flash_cmd,
-			     struct flashrom_params *params,
-			     struct tempfile *tempfiles)
-{
-	int r;
-	char *cmd;
-	const char *image_name = NULL, *contents_name = NULL;
-
-	switch (flash_cmd) {
-	case FLASH_READ:
-		image_name = create_temp_file(tempfiles);
-		break;
-
-	case FLASH_WRITE:
-		image_name = get_firmware_image_temp_file(
-				params->image, tempfiles);
-		if (params->flash_contents)
-			contents_name = get_firmware_image_temp_file(
-					params->flash_contents, tempfiles);
-		break;
-
-	default:
-		ERROR("Unknown command: %d\n", flash_cmd);
-		return -1;
-	}
-
-	cmd = get_flashrom_command(flash_cmd, params, image_name,
-				   contents_name);
-	if (!cmd)
-		return -1;
-
-	VB2_DEBUG(cmd);
-	r = system(cmd);
-	free(cmd);
-	if (r)
-		return r;
-
-	switch (flash_cmd) {
-	case FLASH_READ:
-		r = load_firmware_image(params->image, image_name, NULL);
-		break;
-	default:
-		break;
-	}
-
-	return r;
-}
-
 static int read_flash(struct flashrom_params *params,
 		      struct updater_config *cfg)
 {
-	if (get_config_quirk(QUIRK_EXTERNAL_FLASHROM, cfg))
-		return external_flashrom(FLASH_READ, params, &cfg->tempfiles);
-
 	return flashrom_read_image(params->image, NULL, params->verbose);
 }
 
 static int write_flash(struct flashrom_params *params,
 		       struct updater_config *cfg)
 {
-	int r;
-
-	if (get_config_quirk(QUIRK_EXTERNAL_FLASHROM, cfg))
-		return external_flashrom(FLASH_WRITE, params, &cfg->tempfiles);
-
-	r = flashrom_write_image(params->image,
+	int r = flashrom_write_image(params->image,
 				 params->regions,
 				 params->flash_contents,
 				 !params->noverify,
