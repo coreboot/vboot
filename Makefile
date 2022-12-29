@@ -1,4 +1,4 @@
-# Copyright 2013 The ChromiumOS Authors
+# Copyright 2013 The ChromiumOS Authors.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -319,10 +319,8 @@ INCLUDES += \
 	-Ifirmware/include \
 	-Ifirmware/lib/include \
 	-Ifirmware/lib/cgptlib/include \
-	-Ifirmware/lib/cryptolib/include \
 	-Ifirmware/lib/tpm_lite/include \
-	-Ifirmware/2lib/include \
-	-Ifirmware/lib20/include
+	-Ifirmware/2lib/include
 
 # If we're not building for a specific target, just stub out things like the
 # TPM commands and various external functions that are provided by the BIOS.
