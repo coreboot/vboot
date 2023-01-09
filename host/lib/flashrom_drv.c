@@ -217,6 +217,7 @@ int flashrom_write_image(const struct firmware_image *image,
 			}
 		}
 		for (i = 0; regions[i]; i++) {
+			INFO(" including region '%s'\n", regions[i]);
 			// empty region causes seg fault in API.
 			r |= flashrom_layout_include_region(layout, regions[i]);
 			if (r > 0) {

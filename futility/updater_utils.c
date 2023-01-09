@@ -517,91 +517,19 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 	return strcmp(image1->programmer, image2->programmer) == 0;
 }
 
-enum flash_command {
-	FLASH_READ = 0,
-	FLASH_WRITE,
-};
-
-/* Converts the flashrom_params to an equivalent flashrom command. */
-static char *get_flashrom_command(enum flash_command flash_cmd,
-				  struct flashrom_params *params,
-				  const char *image_name,
-				  const char *contents_name)
-{
-	int i, len = 0;
-	char *partial = NULL;
-	char *cmd = NULL;
-
-	if (!image_name)
-		image_name = "<IMAGE>";
-	if (!contents_name)
-		contents_name = "<OLD-IMAGE>";
-
-	for (i = 0; params->regions && params->regions[i]; i++)
-		len += strlen(params->regions[i]) + strlen(" -i ");
-
-	if (len) {
-		partial = (char *)malloc(len + 1);
-		if (!partial) {
-			ERROR("Failed to allocate a string buffer.\n");
-			return NULL;
-		}
-
-		partial[0] = '\0';
-		for (i = 0; params->regions[i]; i++) {
-			strcat(partial, " -i ");
-			strcat(partial, params->regions[i]);
-		}
-		assert(strlen(partial) == len);
-	}
-
-	switch (flash_cmd) {
-	case FLASH_READ:
-		ASPRINTF(&cmd, "flashrom -r %s -p %s%s%s",
-			 image_name,
-			 params->image->programmer,
-			 params->verbose > 1 ? " -V" : "",
-			 partial ? partial : "");
-		break;
-
-	case FLASH_WRITE:
-		ASPRINTF(&cmd, "flashrom -w %s -p %s%s%s%s%s%s",
-			 image_name,
-			 params->image->programmer,
-			 params->flash_contents ? " --flash-contents " : "",
-			 params->flash_contents ? contents_name : "",
-			 params->noverify ? " --noverify" : "",
-			 params->verbose > 1 ? " -V" : "",
-			 partial ? partial : "");
-		break;
-
-	default:
-		ERROR("Unknown command: %d.\n", flash_cmd);
-		break;
-	}
-	free(partial);
-	return cmd;
-}
-
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
 	int r, i;
-	char *cmd;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
-	struct flashrom_params params = {0};
 
-	params.image = image;
-	params.verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
+	int verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
 
-	cmd = get_flashrom_command(FLASH_READ, &params, NULL, NULL);
-	INFO("%s\n", cmd);
-	free(cmd);
-
-	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
+	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
-		r = flashrom_read_image(image, NULL, params.verbose);
+		INFO("Reading SPI Flash..\n");
+		r = flashrom_read_image(image, NULL, verbose);
 	}
 	if (!r)
 		r = parse_firmware_image(image);
@@ -619,33 +547,22 @@ int write_system_firmware(struct updater_config *cfg,
 			  const char * const sections[])
 {
 	int r = 0, i;
-	char *cmd;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
-	struct flashrom_params params = {0};
 	struct firmware_image *flash_contents = NULL;
 
 	if (cfg->use_diff_image && cfg->image_current.data &&
 	    is_the_same_programmer(&cfg->image_current, image))
 		flash_contents = &cfg->image_current;
 
-	params.image = (struct firmware_image *)image;
-	params.flash_contents = flash_contents;
-	params.regions = sections;
-	params.noverify = !cfg->do_verify;
-	params.noverify_all = true;
-	params.verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
+	int verbose = cfg->verbosity + 1; /* libflashrom verbose 1 = WARN. */
 
-	cmd = get_flashrom_command(FLASH_WRITE, &params, NULL, NULL);
-	INFO("%s\n", cmd);
-	free(cmd);
-
-	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
+	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
+		INFO("Writing SPI Flash..\n");
 		r = flashrom_write_image(image, sections,
 					 flash_contents,
-					 !params.noverify,
-					 params.verbose);
+					 cfg->do_verify, verbose);
 		/*
 		 * Force a newline to flush stdout in case if
 		 * flashrom_write_image left some messages in the buffer.

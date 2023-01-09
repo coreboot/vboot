@@ -56,23 +56,6 @@ void remove_all_temp_files(struct tempfile *head);
 /* Include definition of 'struct firmware_image;' */
 #include "flashrom.h"
 
-/* Parameters when invoking flashrom. */
-struct flashrom_params {
-	struct firmware_image *image; /* The firmware image to read/write. */
-	const struct firmware_image *flash_contents; /* --flash-contents */
-	const char *const *regions; /* -i: only read/write <region> */
-	bool noverify; /* -n: don't auto-verify */
-	bool noverify_all; /* -N: verify included regions only */
-	int verbose; /* -V: more verbose output */
-	/* Supported by libflashrom but no exported by flashrom_drv:
-	 *  - force
-	 *  - noverify_all
-	 * Not supported by libflashrom:
-	 *  - do_not_diff
-	 *  - ignore_lock
-	 */
-};
-
 enum {
 	IMAGE_LOAD_SUCCESS = 0,
 	IMAGE_READ_FAILURE = -1,
