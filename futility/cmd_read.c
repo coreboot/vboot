@@ -19,6 +19,7 @@ static struct option const long_opts[] = {
 	/* name  has_arg *flag val */
 	{"help", 0, NULL, 'h'},
 	{"debug", 0, NULL, 'd'},
+	{"region", 1, NULL, 'r'},
 	{"verbose", 0, NULL, 'v'},
 	{NULL, 0, NULL, 0},
 };
@@ -32,6 +33,7 @@ static void print_help(int argc, char *argv[])
 	       "\n"
 	       "Reads AP firmware to the FILE\n"
 	       "-d, --debug         \tPrint debugging messages\n"
+	       "-r, --region        \tThe region to read (optional)\n"
 	       "-v, --verbose       \tPrint verbose messages\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
@@ -45,6 +47,7 @@ static int do_read(int argc, char *argv[])
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
 	char *output_file_name = NULL;
+	char *region = NULL;
 
 	cfg = updater_new_config();
 	assert(cfg);
@@ -61,6 +64,9 @@ static int do_read(int argc, char *argv[])
 		case 'd':
 			debugging_enabled = 1;
 			args.verbosity++;
+			break;
+		case 'r':
+			region = optarg;
 			break;
 		case 'v':
 			args.verbosity++;
@@ -113,12 +119,27 @@ static int do_read(int argc, char *argv[])
 			errorcnt++;
 		prepare_servo_control(prepare_ctrl_name, 0);
 	}
-	if (!errorcnt)
+	if (errorcnt)
+		goto err;
+
+	if (region) {
+		struct firmware_section section;
+		if (find_firmware_section(&section, &cfg->image_current,
+					  region)) {
+			ERROR("Region '%s' not found in image.\n", region);
+			goto err;
+		}
+		if (write_to_file("Wrote AP firmware region to",
+				  output_file_name, section.data, section.size))
+			errorcnt++;
+	} else {
 		if (write_to_file("Wrote AP firmware to", output_file_name,
 				  cfg->image_current.data,
 				  cfg->image_current.size))
 			errorcnt++;
+	}
 
+err:
 	free(servo_programmer);
 	updater_delete_config(cfg);
 	return !!errorcnt;
