@@ -159,6 +159,10 @@ static int load_firmware_version(struct firmware_image *image,
 	return 0;
 }
 
+/*
+ * Fills in the other fields of image using image->data.
+ * Returns IMAGE_LOAD_SUCCESS or IMAGE_PARSE_FAILURE.
+ */
 static int parse_firmware_image(struct firmware_image *image)
 {
 	int ret = IMAGE_LOAD_SUCCESS;
@@ -685,10 +689,6 @@ static int write_flash(struct flashrom_params *params,
 	return r;
 }
 
-/*
- * Loads the active system firmware image (usually from SPI flash chip).
- * Returns 0 if success, non-zero if error.
- */
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
