@@ -18,6 +18,7 @@
 #include "futility.h"
 #include "updater.h"
 #include "updater_utils.h"
+#include "2gbb_flags.h"
 
 #ifdef USE_FLASHROM
 #define FLASH_ARG_HELP                                                         \
@@ -50,6 +51,7 @@ static void print_help(int argc, char *argv[])
 		" -k, --rootkey=FILE  \tFile name to export Root Key.\n"
 		" -b, --bmpfv=FILE    \tFile name to export Bitmap FV.\n"
 		" -r  --recoverykey=FILE\tFile name to export Recovery Key.\n"
+		" -e  --explicit      \tReport header flags by name.\n"
 		"\n"
 		"SET MODE:\n"
 		"-s, --set            \tSet (write) to flash or file, "
@@ -71,8 +73,21 @@ static void print_help(int argc, char *argv[])
 		"  %s -g bios.bin\n"
 		"  %s --set --hwid='New Model' -k key.bin"
 		" bios.bin newbios.bin\n"
-		"  %s -c 0x100,0x1000,0x03DE80,0x1000 gbb.blob\n\n",
+		"  %s -c 0x100,0x1000,0x03DE80,0x1000 gbb.blob\n\n"
+		"GBB Flags:\n"
+		" To get a developer-friendly device, try 0x18 (dev_mode boot_usb).\n"
+		" For early bringup development, try 0x40b9.\n",
 		argv[0], argv[0], argv[0], argv[0]);
+	for (vb2_gbb_flags_t flag = 1; flag; flag <<= 1) {
+		const char *name;
+		const char *description;
+		if (vb2_get_gbb_flag_description(flag, &name, &description) !=
+		    VB2_SUCCESS)
+			break;
+		printf(" 0x%08x\t%s\n"
+		       "                     \t%s\n",
+		       flag, name, description);
+	}
 }
 
 enum {
@@ -96,13 +111,14 @@ static struct option long_opts[] = {
 	{"recoverykey", 1, NULL, 'r'},
 	{"hwid", 0, NULL, OPT_HWID},
 	{"flags", 0, NULL, OPT_FLAGS},
+	{"explicit", 0, NULL, 'e'},
 	{"digest", 0, NULL, OPT_DIGEST},
 	{"flash", 0, NULL, OPT_FLASH},
 	{"help", 0, NULL, OPT_HELP},
 	{NULL, 0, NULL, 0},
 };
 
-static const char *short_opts = ":gsc:o:k:b:r:" SHARED_FLASH_ARGS_SHORTOPTS;
+static const char *short_opts = ":gsc:o:k:b:r:e" SHARED_FLASH_ARGS_SHORTOPTS;
 
 /* Change the has_arg field of a long_opts entry */
 static void opt_has_arg(const char *name, int val)
@@ -443,6 +459,7 @@ static int do_gbb(int argc, char *argv[])
 	int sel_hwid = 0;
 	int sel_digest = 0;
 	int sel_flags = 0;
+	int explicit_flags = 0;
 	uint8_t *inbuf = NULL;
 	off_t filesize;
 	uint8_t *outbuf = NULL;
@@ -496,6 +513,10 @@ static int do_gbb(int argc, char *argv[])
 			/* --flags is optional: null might be okay */
 			opt_flags = optarg;
 			sel_flags = 1;
+			break;
+		case 'e':
+			sel_flags = 1;
+			explicit_flags = 1;
 			break;
 		case OPT_DIGEST:
 			sel_digest = 1;
@@ -628,6 +649,24 @@ static int do_gbb(int argc, char *argv[])
 				errorcnt++;
 				break;
 			}
+		if (explicit_flags) {
+			vb2_gbb_flags_t remaining_flags = gbb->flags;
+			while (remaining_flags) {
+				vb2_gbb_flags_t lsb_flag =
+					remaining_flags & -remaining_flags;
+				remaining_flags &= ~lsb_flag;
+				const char *name;
+				const char *description;
+				if (vb2_get_gbb_flag_description(
+					    lsb_flag, &name, &description) ==
+				    VB2_SUCCESS) {
+					printf("%s\n", name);
+				} else {
+					printf("unknown set flag: 0x%08x\n",
+					       lsb_flag);
+				}
+			}
+		}
 		break;
 
 	case DO_SET:

@@ -117,3 +117,86 @@ vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx)
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	return gbb->flags;
 }
+
+vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
+					 const char **name,
+					 const char **description)
+{
+	switch (flag) {
+	case VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY:
+		*name = "VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY";
+		*description = "Reduce the dev screen delay to 2 sec from 30 sec.";
+		break;
+	case VB2_GBB_FLAG_LOAD_OPTION_ROMS:
+		*name = "VB2_GBB_FLAG_LOAD_OPTION_ROMS";
+		*description = "BIOS should load option ROMs from arbitrary PCI devices.";
+		break;
+	case VB2_GBB_FLAG_ENABLE_ALTERNATE_OS:
+		*name = "VB2_GBB_FLAG_ENABLE_ALTERNATE_OS";
+		*description = "Boot a non-ChromeOS kernel.";
+		break;
+	case VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON:
+		*name = "VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON";
+		*description = "Force dev switch on, regardless of physical/keyboard dev switch.";
+		break;
+	case VB2_GBB_FLAG_FORCE_DEV_BOOT_USB:
+		*name = "VB2_GBB_FLAG_FORCE_DEV_BOOT_USB";
+		*description = "Allow booting from external disk even if dev_boot_usb=0.";
+		break;
+	case VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK:
+		*name = "VB2_GBB_FLAG_DISABLE_FW_ROLLBACK_CHECK";
+		*description = "Disable firmware rollback protection.";
+		break;
+	case VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM:
+		*name = "VB2_GBB_FLAG_ENTER_TRIGGERS_TONORM";
+		*description = "Allow Enter key to trigger dev->tonorm screen transition.";
+		break;
+	case VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW:
+		*name = "VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW";
+		*description =
+			"Allow booting Legacy OSes even if dev_boot_altfw=0.";
+		break;
+	case VB2_GBB_FLAG_RUNNING_FAFT:
+		*name = "VB2_GBB_FLAG_RUNNING_FAFT";
+		*description = "Currently running FAFT tests.";
+		break;
+	case VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC:
+		*name = "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC";
+		*description = "Disable EC software sync.";
+		break;
+	case VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW:
+		*name = "VB2_GBB_FLAG_DEFAULT_DEV_BOOT_ALTFW";
+		*description = "Default to booting legacy OS when dev screen times out.";
+		break;
+	case VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC:
+		*name = "VB2_GBB_FLAG_DISABLE_AUXFW_SOFTWARE_SYNC";
+		*description =
+			"Disable auxiliary firmware (auxfw) software sync.";
+		break;
+	case VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN:
+		*name = "VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN";
+		*description = "Disable shutdown on lid closed.";
+		break;
+	case VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP:
+		*name = "VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP";
+		*description = "Allow full fastboot capability in firmware even if dev_boot_fastboot_full_cap=0.";
+		break;
+	case VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY:
+		*name = "VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY";
+		*description = "Recovery mode always assumes manual recovery, even if EC_IN_RW=1.";
+		break;
+	case VB2_GBB_FLAG_DISABLE_FWMP:
+		*name = "VB2_GBB_FLAG_DISABLE_FWMP";
+		*description = "Disable FWMP.";
+		break;
+	case VB2_GBB_FLAG_ENABLE_UDC:
+		*name = "VB2_GBB_FLAG_ENABLE_UDC";
+		*description = "Enable USB Device Controller.";
+		break;
+	default:
+		*name = NULL;
+		*description = NULL;
+		return VB2_ERROR_UNKNOWN;
+	}
+	return VB2_SUCCESS;
+}
