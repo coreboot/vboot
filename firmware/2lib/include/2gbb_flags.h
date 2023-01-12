@@ -10,6 +10,8 @@
 #ifndef VBOOT_REFERENCE_2GBB_FLAGS_H_
 #define VBOOT_REFERENCE_2GBB_FLAGS_H_
 
+#include "2return_codes.h"
+
 enum vb2_gbb_flag {
 	/*
 	 * Reduce the dev screen delay to 2 sec from 30 sec to speed up
@@ -92,5 +94,9 @@ enum vb2_gbb_flag {
 	/* Enable USB Device Controller */
 	VB2_GBB_FLAG_ENABLE_UDC = 1 << 16,
 };
+
+vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
+					 const char **name,
+					 const char **description);
 
 #endif  /* VBOOT_REFERENCE_2GBB_FLAGS_H_ */
