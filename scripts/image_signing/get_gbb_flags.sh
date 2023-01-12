@@ -27,6 +27,10 @@ main() {
   echo 'NOTICE: Please try `futility gbb --get --flags`' 1>&2
 
   local args=()
+  if [ "${FLAGS_explicit}" = "${FLAGS_TRUE}" ]; then
+    args+=("--explicit")
+  fi
+
   if [ -n "${FLAGS_file}" ]; then
     args+=("${FLAGS_file}")
   elif [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
@@ -35,22 +39,9 @@ main() {
     args+=("--flash" "--programmer=${FLAGS_programmer}")
   fi
 
-  # Keep 'local' declaration split from assignment so return code is checked.
-  local gbb_flags
-  gbb_flags="$(futility gbb --get --flags "${args[@]}" | grep "flags: ")"
-
-  local raw_gbb_flags
-  raw_gbb_flags="$(echo "${gbb_flags}" | grep -E -o "0x[0-9a-fA-F]+")"
-  printf "Chrome OS GBB set %s\n" "${gbb_flags}"
-
-  if [ "${FLAGS_explicit}" = "${FLAGS_TRUE}" ]; then
-    printf "Chrome OS GBB set flags listed:\n"
-    echo "${GBBFLAGS_LIST}" | while read -r flag code; do
-      if [ $((code & raw_gbb_flags)) -ne 0 ]; then
-        printf "%s\n" "${flag}"
-      fi
-    done
-  fi
+  set -o pipefail # fail if futility fails
+  futility gbb --get --flags "${args[@]}" | \
+    sed 's/flags: /Chrome OS GBB set flags: /'
 }
 
 # Parse command line.
