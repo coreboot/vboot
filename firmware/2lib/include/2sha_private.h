@@ -19,6 +19,8 @@
 
 extern const uint32_t vb2_sha256_h0[8];
 extern const uint32_t vb2_sha256_k[64];
+extern const uint32_t vb2_hash_seq[8];
+extern struct vb2_sha256_context vb2_sha_ctx;
 
 #define UNPACK32(x, str)				\
 	{						\
@@ -35,4 +37,7 @@ extern const uint32_t vb2_sha256_k[64];
 			| ((uint32_t) *((str) + 1) << 16)       \
 			| ((uint32_t) *((str) + 0) << 24);      \
 	}
+
+void vb2_sha256_transform_hwcrypto(const uint8_t *message,
+				   unsigned int block_nb);
 #endif  /* VBOOT_REFERENCE_2SHA_PRIVATE_H_ */

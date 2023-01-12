@@ -7,7 +7,7 @@
 
 #include "2api.h"
 
-#ifndef X86_SHA_EXT
+#if !defined(X86_SHA_EXT) && !defined(ARMV8_CRYPTO_EXT)
 __attribute__((weak))
 vb2_error_t vb2ex_hwcrypto_digest_init(enum vb2_hash_algorithm hash_alg,
 				       uint32_t data_size)
