@@ -422,8 +422,19 @@ endif
 ifneq ($(filter-out 0,${X86_SHA_EXT}),)
 CFLAGS += -DX86_SHA_EXT
 FWLIB_SRCS += \
+	firmware/2lib/2hwcrypto.c \
 	firmware/2lib/2sha256_x86.c
 endif
+
+ifneq ($(filter-out 0,${ARMV8_CRYPTO_EXT}),)
+CFLAGS += -DARMV8_CRYPTO_EXT
+FWLIB_SRCS += \
+	firmware/2lib/2hwcrypto.c \
+	firmware/2lib/2sha256_arm.c
+FWLIB_ASMS += \
+	firmware/2lib/sha256_armv8a_ce_a64.S
+endif
+
 # Even if X86_SHA_EXT is 0 we need cflags since this will be compiled for tests
 ${BUILD}/firmware/2lib/2sha256_x86.o: CFLAGS += -mssse3 -mno-avx -msha
 
@@ -437,7 +448,7 @@ FWLIB_SRCS += \
 	firmware/2lib/2stub.c
 endif
 
-FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
+FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o} ${FWLIB_ASMS:%.S=${BUILD}/%.o}
 TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
 
@@ -1129,9 +1140,9 @@ DUT_TEST_BINS = $(addprefix ${BUILD}/,${DUT_TEST_NAMES})
 
 # Special build for sha256_x86 test
 ${BUILD}/tests/vb2_sha256_x86_tests: \
-	${BUILD}/firmware/2lib/2sha256_x86.o
+	${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
 ${BUILD}/tests/vb2_sha256_x86_tests: \
-	LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o
+	LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
 
 .PHONY: install_dut_test
 install_dut_test: ${DUT_TEST_BINS}
@@ -1164,6 +1175,10 @@ ${BUILD}/%.o: %.c
 	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
 
 ${BUILD}/%.o: ${BUILD}/%.c
+	@${PRINTF} "    CC            $(subst ${BUILD}/,,$@)\n"
+	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
+
+${BUILD}/%.o: %.S
 	@${PRINTF} "    CC            $(subst ${BUILD}/,,$@)\n"
 	${Q}${CC} ${CFLAGS} ${INCLUDES} -c -o $@ $<
 
