@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2012 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 #
-# This script can change GBB flags in system live firmware or a given image
-# file.
+# This script can change GBB flags in system flash or a file.
+# This script calls `futility gbb --set`, consider using that directly.
 
 SCRIPT_BASE="$(dirname "$0")"
 . "${SCRIPT_BASE}/gbb_flags_common.sh"
@@ -51,36 +51,30 @@ main() {
   echo 'NOTICE: Please try `futility gbb --set --flags=`' 1>&2
 
   local value="$(($1))"
-  local image_file="${FLAGS_file}"
-  local programmer="${FLAGS_programmer}"
 
-  if [ -z "${FLAGS_file}" ]; then
-    image_file="$(make_temp_file)"
-    if [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
-      update_programmer_for_servo
-    fi
-
-    flashrom_read "${image_file}" "${programmer}"
-  fi
-
-  # Process file
-  # Keep 'local' declaration split from assignment so return code is checked.
-  local old_value
-  old_value="$(futility gbb -g --flags "${image_file}")"
-  printf "Setting GBB flags from %s to %#x.." "${old_value}" "${value}"
-  futility gbb -s --flags="${value}" "${image_file}"
-
-  if [ -z "${FLAGS_file}" ]; then
+  local args=()
+  if [ -n "${FLAGS_file}" ]; then
+    args+=("${FLAGS_file}")
+  elif [ "${FLAGS_servo}" = "${FLAGS_TRUE}" ]; then
+    args+=("--servo")
+  else
+    args+=("--flash" "--programmer=${FLAGS_programmer}")
     if [ "${FLAGS_check_wp}" = "${FLAGS_TRUE}" ]; then
-      if ! check_write_protection "${programmer}"; then
+      if ! check_write_protection "${FLAGS_programmer}"; then
         echo ""
         echo "WARNING: System GBB Flags are NOT changed!!!"
         echo "ERROR: You must disable write protection before setting flags."
         exit 1
       fi
     fi
-    flashrom_write "${image_file}" "${programmer}"
   fi
+
+  # Process file
+  # Keep 'local' declaration split from assignment so return code is checked.
+  local old_value
+  old_value="$(futility gbb --get --flags "${args[@]}" | grep "flags: ")"
+  printf "Setting GBB flags from %s to %#x\n" "${old_value}" "${value}"
+  futility gbb --set --flags="${value}" "${args[@]}"
 }
 
 # Parse command line
