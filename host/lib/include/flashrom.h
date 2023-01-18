@@ -30,7 +30,11 @@ struct firmware_image {
 };
 
 /**
- * Read using flashrom into an allocated buffer.
+ * Read using flashrom into an allocated buffer. flashrom_read subprocesses the
+ * flashrom binary and returns a buffer truncated to the region.
+ * flashrom_read_image will read the return a full sized buffer with only the
+ * region filled with data. flashrom_read_region will return the buffer
+ * truncated to the region.
  *
  * @param image		The parameter that contains the programmer, buffer and
  *			size to use in the read operation.
@@ -40,7 +44,8 @@ struct firmware_image {
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
-int flashrom_read_image(struct firmware_image *image, int verbosity);
+int flashrom_read_image(struct firmware_image *image, const char *region,
+			int verbosity);
 int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity);
 

@@ -119,9 +119,11 @@ err_init:
 	return r;
 }
 
-int flashrom_read_image(struct firmware_image *image, int verbosity)
+int flashrom_read_image(struct firmware_image *image, const char *region,
+			int verbosity)
 {
-	return flashrom_read_image_impl(image, NULL, NULL, NULL, verbosity);
+	unsigned int start, len;
+	return flashrom_read_image_impl(image, region, &start, &len, verbosity);
 }
 
 int flashrom_read_region(struct firmware_image *image, const char *region,
