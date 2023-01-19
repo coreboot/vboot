@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 
 #include "2rsa.h"
-#include "crossystem.h"
 #include "futility.h"
 #include "host_misc.h"
 #include "updater.h"
@@ -33,27 +32,7 @@ enum rootkey_compat_result {
 	ROOTKEY_COMPAT_REKEY_TO_DEV,
 };
 
-/*
- * Gets the system property by given type.
- * If the property was not loaded yet, invoke the property getter function
- * and cache the result.
- * Returns the property value.
- */
-int get_system_property(enum system_property_type property_type,
-			struct updater_config *cfg)
-{
-	struct system_property *prop;
-
-	assert(property_type < SYS_PROP_MAX);
-	prop = &cfg->system_properties[property_type];
-	if (!prop->initialized) {
-		prop->initialized = 1;
-		prop->value = prop->getter();
-	}
-	return prop->value;
-}
-
-static void print_system_properties(struct updater_config *cfg)
+static void print_dut_properties(struct updater_config *cfg)
 {
 	int i;
 
@@ -62,37 +41,35 @@ static void print_system_properties(struct updater_config *cfg)
 	 * system, so we want to peek at them first and then print out.
 	 */
 	VB2_DEBUG("Scanning system properties...\n");
-	for (i = 0; i < SYS_PROP_MAX; i++) {
-		get_system_property((enum system_property_type)i, cfg);
-	}
+	for (i = 0; i < DUT_PROP_MAX; i++)
+		dut_get_property((enum dut_property_type)i, cfg);
 
 	printf("System properties: [");
-	for (i = 0; i < SYS_PROP_MAX; i++) {
+	for (i = 0; i < DUT_PROP_MAX; i++) {
 		printf("%d,",
-		       get_system_property((enum system_property_type)i, cfg));
+		       dut_get_property((enum dut_property_type)i, cfg));
 	}
 	printf("]\n");
 }
 
 /*
  * Overrides the return value of a system property.
- * After invoked, next call to get_system_property(type, cfg) will return
+ * After invoked, next call to dut_get_property(type, cfg) will return
  * the given value.
  */
-static void override_system_property(enum system_property_type property_type,
-				     struct updater_config *cfg,
-				     int value)
+static void override_dut_property(enum dut_property_type property_type,
+				  struct updater_config *cfg, int value)
 {
-	struct system_property *prop;
+	struct dut_property *prop;
 
-	assert(property_type < SYS_PROP_MAX);
-	prop = &cfg->system_properties[property_type];
+	assert(property_type < DUT_PROP_MAX);
+	prop = &cfg->dut_properties[property_type];
 	prop->initialized = 1;
 	prop->value = value;
 }
 
 /*
- * Overrides system properties from a given list.
+ * Overrides DUT properties from a given list.
  * The list should be string of integers eliminated by comma and/or space.
  * For example, "1 2 3" and "1,2,3" both overrides first 3 properties.
  * To skip some properties you have to use comma, for example
@@ -120,15 +97,15 @@ static void override_properties_from_list(const char *override_list,
 		}
 		if (!isascii(c) || !(isdigit(c) || c == '-'))
 			continue;
-		if (i >= SYS_PROP_MAX) {
+		if (i >= DUT_PROP_MAX) {
 			ERROR("Too many fields (max is %d): %s.\n",
-			      SYS_PROP_MAX, override_list);
+			      DUT_PROP_MAX, override_list);
 			return;
 		}
 		v = strtol(s, &e, 0);
 		s = e - 1;
 		VB2_DEBUG("property[%d].value = %ld\n", i, v);
-		override_system_property((enum system_property_type)i, cfg, v);
+		override_dut_property((enum dut_property_type)i, cfg, v);
 		wait_comma = 1;
 		i++;
 	}
@@ -250,7 +227,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
 				    int is_vboot2)
 {
 	const char *a = FMAP_RW_SECTION_A, *b = FMAP_RW_SECTION_B;
-	int slot = get_system_property(SYS_PROP_MAINFW_ACT, cfg);
+	int slot = dut_get_property(DUT_PROP_MAINFW_ACT, cfg);
 
 	/* In vboot1, always update B and check content with A. */
 	if (!is_vboot2)
@@ -268,7 +245,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
 }
 
 /*
- * Sets any needed system properties to indicate system should try the new
+ * Sets any needed DUT properties to indicate system should try the new
  * firmware on next boot.
  * The `target` argument is an FMAP section name indicating which to try.
  * Returns 0 if success, non-zero if error.
@@ -303,19 +280,19 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	}
 
 	if (is_vboot2) {
-		if (VbSetSystemPropertyString("fw_try_next", slot)) {
+		if (dut_set_property_string("fw_try_next", slot)) {
 			ERROR("Failed to set fw_try_next to %s.\n", slot);
 			return -1;
 		}
 		if (!has_update &&
-		    VbSetSystemPropertyString("fw_result", "success")) {
+		    dut_set_property_string("fw_result", "success")) {
 			ERROR("Failed to set fw_result to success.\n");
 			return -1;
 		}
 	}
 
 	/* fw_try_count is identical to fwb_tries in vboot1. */
-	if (VbSetSystemPropertyInt("fw_try_count", tries)) {
+	if (dut_set_property_int("fw_try_count", tries)) {
 		ERROR("Failed to set fw_try_count to %d.\n", tries);
 		return -1;
 	}
@@ -380,7 +357,7 @@ static int write_optional_firmware(struct updater_config *cfg,
 	 * only if it is OK.
 	 */
 	if (check_programmer_wp &&
-	    get_system_property(SYS_PROP_WP_HW, cfg) == WP_ENABLED &&
+	    dut_get_property(DUT_PROP_WP_HW, cfg) == WP_ENABLED &&
 	    flashrom_get_wp(image->programmer, -1) == WP_ENABLED) {
 		ERROR("Target %s is write protected, skip updating.\n",
 		      image->programmer);
@@ -827,7 +804,7 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 		return -1;
 
 	/* The stored tpm_fwver can be 0 (b/116298359#comment3). */
-	tpm_fwver = get_system_property(SYS_PROP_TPM_FWVER, cfg);
+	tpm_fwver = dut_get_property(DUT_PROP_TPM_FWVER, cfg);
 	if (tpm_fwver < 0) {
 		/*
 		 * tpm_fwver is commonly misreported in --ccd mode, so allow
@@ -931,7 +908,7 @@ static enum updater_error_codes update_try_rw_firmware(
 {
 	const char *target, *self_target;
 	int has_update = 1;
-	int is_vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
+	int is_vboot2 = dut_get_property(DUT_PROP_FW_VBOOT2, cfg);
 
 	preserve_gbb(image_from, image_to, 1, 0, 0);
 	if (!wp_enabled && section_needs_update(
@@ -1149,7 +1126,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (cfg->try_update == TRY_UPDATE_DEFERRED_APPLY) {
 		INFO("Apply deferred updates, only setting cookies for the "
 		     "next boot slot.\n");
-		int vboot2 = get_system_property(SYS_PROP_FW_VBOOT2, cfg);
+		int vboot2 = dut_get_property(DUT_PROP_FW_VBOOT2, cfg);
 		if (set_try_cookies(
 			cfg,
 			decide_rw_target(cfg, TARGET_UPDATE, vboot2),
@@ -1201,8 +1178,8 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	wp_enabled = is_write_protection_enabled(cfg);
 	STATUS("Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
 	       wp_enabled ? "enabled" : "disabled",
-	       get_system_property(SYS_PROP_WP_HW, cfg),
-	       get_system_property(SYS_PROP_WP_SW, cfg));
+	       dut_get_property(DUT_PROP_WP_HW, cfg),
+	       dut_get_property(DUT_PROP_WP_SW, cfg));
 
 	if (try_apply_quirk(QUIRK_ENLARGE_IMAGE, cfg))
 		return UPDATE_ERR_SYSTEM_IMAGE;
@@ -1214,7 +1191,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		return UPDATE_ERR_SYSTEM_IMAGE;
 
 	if (debugging_enabled)
-		print_system_properties(cfg);
+		print_dut_properties(cfg);
 
 	if (cfg->legacy_update)
 		return update_legacy_firmware(cfg, image_to);
@@ -1260,8 +1237,8 @@ struct updater_config *updater_new_config(void)
 	cfg->check_platform = 1;
 	cfg->do_verify = 1;
 
-	init_system_properties(&cfg->system_properties[0],
-			       ARRAY_SIZE(cfg->system_properties));
+	dut_init_properties(&cfg->dut_properties[0],
+			    ARRAY_SIZE(cfg->dut_properties));
 	updater_register_quirks(cfg);
 	return cfg;
 }
@@ -1573,8 +1550,8 @@ int updater_setup_config(struct updater_config *cfg,
 	if (arg->write_protection) {
 		/* arg->write_protection must be done after arg->sys_props. */
 		int r = strtol(arg->write_protection, NULL, 0);
-		override_system_property(SYS_PROP_WP_HW, cfg, r);
-		override_system_property(SYS_PROP_WP_SW, cfg, r);
+		override_dut_property(DUT_PROP_WP_HW, cfg, r);
+		override_dut_property(DUT_PROP_WP_SW, cfg, r);
 	}
 
 	/* Set up archive and load images. */

@@ -10,10 +10,6 @@
 #include <sys/types.h>
 #endif
 
-#ifdef HAVE_CROSID
-#include <crosid.h>
-#endif
-
 #include "updater.h"
 #include "util_misc.h"
 
@@ -619,30 +615,6 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	return 0;
 }
 
-/**
- * get_manifest_key() - Wrapper to get the firmware manifest key from crosid
- *
- * @manifest_key_out - Output parameter of the firmware manifest key.
- *
- * Returns:
- * - <0 if libcrosid is unavailable or there was an error reading
- *   device data
- * - >=0 (the matched device index) success
- */
-static int get_manifest_key(char **manifest_key_out)
-{
-#ifdef HAVE_CROSID
-	return crosid_get_firmware_manifest_key(manifest_key_out);
-#else
-	ERROR("This version of futility was compiled without libcrosid "
-	      "(perhaps compiled outside of the Chrome OS build system?) and "
-	      "the update command is not fully supported.  Either compile "
-	      "from the Chrome OS build, or pass --model to manually specify "
-	      "the machine model.\n");
-	return -1;
-#endif
-}
-
 /*
  * Finds the existing model_config from manifest that best matches current
  * system (as defined by model_name).
@@ -665,7 +637,7 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 		return &manifest->models[0];
 
 	if (!model_name) {
-		matched_index = get_manifest_key(&manifest_key);
+		matched_index = dut_get_manifest_key(&manifest_key);
 		if (matched_index < 0) {
 			ERROR("Failed to get device identity.  "
 			      "Run \"crosid -v\" for explanation.\n");

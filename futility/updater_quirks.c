@@ -91,7 +91,7 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
 	const struct vb2_gbb_header *gbb;
 
 	/* Check if current system has disabled software sync or no support. */
-	if (!(VbGetSystemPropertyInt("vdat_flags") & VBSD_EC_SOFTWARE_SYNC)) {
+	if (!(dut_get_property_int("vdat_flags") & VBSD_EC_SOFTWARE_SYNC)) {
 		INFO("EC Software Sync is not available.\n");
 		return 0;
 	}
@@ -156,7 +156,7 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		      "update by EC RO software sync.\n");
 		return 1;
 	}
-	VbSetSystemPropertyInt("try_ro_sync", 1);
+	dut_set_property_int("try_ro_sync", 1);
 	return 0;
 }
 
@@ -166,7 +166,7 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 static int is_ec_in_rw(void)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
-	return (VbGetSystemPropertyString("ecfw_act", buf, sizeof(buf)) &&
+	return (dut_get_property_string("ecfw_act", buf, sizeof(buf)) &&
 		strcasecmp(buf, "RW") == 0);
 }
 
@@ -276,7 +276,7 @@ static int quirk_unlock_wilco_me_for_update(struct updater_config *cfg)
 static int quirk_min_platform_version(struct updater_config *cfg)
 {
 	int min_version = get_config_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg);
-	int platform_version = get_system_property(SYS_PROP_PLATFORM_VER, cfg);
+	int platform_version = dut_get_property(DUT_PROP_PLATFORM_VER, cfg);
 
 	VB2_DEBUG("Minimum required version=%d, current platform version=%d\n",
 		  min_version, platform_version);

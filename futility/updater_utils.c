@@ -16,7 +16,6 @@
 #endif
 
 #include "2common.h"
-#include "crossystem.h"
 #include "host_misc.h"
 #include "util_misc.h"
 #include "updater.h"
@@ -364,11 +363,11 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 int is_write_protection_enabled(struct updater_config *cfg)
 {
 	/* Default to enabled. */
-	int wp = get_system_property(SYS_PROP_WP_HW, cfg);
+	int wp = dut_get_property(DUT_PROP_WP_HW, cfg);
 	if (wp == WP_DISABLED)
 		return wp;
 	/* For error or enabled, check WP SW. */
-	wp = get_system_property(SYS_PROP_WP_SW, cfg);
+	wp = dut_get_property(DUT_PROP_WP_SW, cfg);
 	/* Consider all errors as enabled. */
 	if (wp != WP_DISABLED)
 		return WP_ENABLED;
@@ -408,47 +407,6 @@ char *host_shell(const char *command)
 		buf[0] = '\0';
 	}
 	return strdup(buf);
-}
-
-
-/* An helper function to return "mainfw_act" system property.  */
-static int host_get_mainfw_act(void)
-{
-	char buf[VB_MAX_STRING_PROPERTY];
-
-	if (!VbGetSystemPropertyString("mainfw_act", buf, sizeof(buf)))
-		return SLOT_UNKNOWN;
-
-	if (strcmp(buf, FWACT_A) == 0)
-		return SLOT_A;
-	else if (strcmp(buf, FWACT_B) == 0)
-		return SLOT_B;
-
-	return SLOT_UNKNOWN;
-}
-
-/* A helper function to return the "tpm_fwver" system property. */
-static int host_get_tpm_fwver(void)
-{
-	return VbGetSystemPropertyInt("tpm_fwver");
-}
-
-/* A helper function to return the "hardware write protection" status. */
-static int host_get_wp_hw(void)
-{
-	/* wpsw refers to write protection 'switch', not 'software'. */
-	return VbGetSystemPropertyInt("wpsw_cur") ? WP_ENABLED : WP_DISABLED;
-}
-
-/* A helper function to return "fw_vboot2" system property. */
-static int host_get_fw_vboot2(void)
-{
-	return VbGetSystemPropertyInt("fw_vboot2");
-}
-
-static int host_get_platform_version(void)
-{
-	return VbGetSystemPropertyInt("board_id");
 }
 
 void prepare_servo_control(const char *control_name, int on)
@@ -768,25 +726,6 @@ int write_system_firmware(struct updater_config *cfg,
 		r = write_flash(&params, cfg);
 	}
 	return r;
-}
-
-/* Helper function to return host software write protection status. */
-static int host_get_wp_sw(void)
-{
-	return flashrom_get_wp(PROG_HOST, -1);
-}
-
-/* Helper function to configure all properties. */
-void init_system_properties(struct system_property *props, int num)
-{
-	memset(props, 0, num * sizeof(*props));
-	assert(num >= SYS_PROP_MAX);
-	props[SYS_PROP_MAINFW_ACT].getter = host_get_mainfw_act;
-	props[SYS_PROP_TPM_FWVER].getter = host_get_tpm_fwver;
-	props[SYS_PROP_FW_VBOOT2].getter = host_get_fw_vboot2;
-	props[SYS_PROP_PLATFORM_VER].getter = host_get_platform_version;
-	props[SYS_PROP_WP_HW].getter = host_get_wp_hw;
-	props[SYS_PROP_WP_SW].getter = host_get_wp_sw;
 }
 
 /*
