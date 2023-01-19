@@ -674,6 +674,7 @@ FUTIL_SRCS = \
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
 FUTIL_SRCS += host/lib/flashrom_drv.c \
 	futility/updater_archive.c \
+	futility/updater_dut.c \
 	futility/updater_manifest.c \
 	futility/updater_quirks.c \
 	futility/updater_utils.c \
