@@ -156,6 +156,11 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 			      const char *section_name);
 
 /*
+ * Returns rootkey hash of firmware image, or NULL on failure.
+ */
+const char *get_firmware_rootkey_hash(const struct firmware_image *image);
+
+/*
  * Finds the GBB (Google Binary Block) header on a given firmware image.
  * Returns a pointer to valid GBB header, or NULL on not found.
  */
@@ -223,29 +228,37 @@ const char *cbfs_extract_file(const char *image_file,
 			      const char *cbfs_name,
 			      struct tempfile *tempfiles);
 
-/* Utilities for accessing system properties */
-struct system_property {
-	int (*getter)(void);
+/* DUT related functions (implementations in updater_dut.c) */
+
+struct dut_property {
+	int (*getter)(struct updater_config *cfg);
 	int value;
 	int initialized;
 };
 
-enum system_property_type {
-	SYS_PROP_MAINFW_ACT,
-	SYS_PROP_TPM_FWVER,
-	SYS_PROP_FW_VBOOT2,
-	SYS_PROP_PLATFORM_VER,
-	SYS_PROP_WP_HW,
-	SYS_PROP_WP_SW,
-	SYS_PROP_MAX
+enum dut_property_type {
+	DUT_PROP_MAINFW_ACT,
+	DUT_PROP_TPM_FWVER,
+	DUT_PROP_FW_VBOOT2,
+	DUT_PROP_PLATFORM_VER,
+	DUT_PROP_WP_HW,
+	DUT_PROP_WP_SW,
+	DUT_PROP_MAX
 };
 
-/* Helper function to initialize system properties. */
-void init_system_properties(struct system_property *props, int num);
+/* Helper function to initialize DUT properties. */
+void dut_init_properties(struct dut_property *props, int num);
 
-/*
- * Returns rootkey hash of firmware image, or NULL on failure.
- */
-const char *get_firmware_rootkey_hash(const struct firmware_image *image);
+/* Gets the DUT system property by given type. Returns the property value. */
+int dut_get_property(enum dut_property_type property_type,
+		     struct updater_config *cfg);
+
+int dut_set_property_string(const char *key, const char *value);
+const char *dut_get_property_string(const char *key, char *dest, size_t size);
+int dut_set_property_int(const char *key, const int value);
+int dut_get_property_int(const char *key);
+
+/* Gets the 'firmware manifest key' on the DUT. */
+int dut_get_manifest_key(char **manifest_key_out);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */

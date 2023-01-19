@@ -72,7 +72,7 @@ enum try_update_type {
 struct updater_config {
 	struct firmware_image image, image_current;
 	struct firmware_image ec_image, pd_image;
-	struct system_property system_properties[SYS_PROP_MAX];
+	struct dut_property dut_properties[DUT_PROP_MAX];
 	struct quirk_entry quirks[QUIRK_MAX];
 	struct u_archive *archive;
 	struct tempfile tempfiles;
@@ -233,9 +233,6 @@ void updater_register_quirks(struct updater_config *cfg);
 /* Gets the value (setting) of specified quirks from updater configuration. */
 int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg);
 
-/* Gets the system property by given type. Returns the property value. */
-int get_system_property(enum system_property_type property_type,
-			struct updater_config *cfg);
 /*
  * Gets the default quirk config string from target image name.
  * Returns a string (in same format as --quirks) to load or NULL if no quirks.
