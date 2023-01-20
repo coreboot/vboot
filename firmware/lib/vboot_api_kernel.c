@@ -1169,6 +1169,17 @@ VbError_t VbSelectAndLoadKernel(VbCommonParams *cparams,
 		}
 	}
 
+	/* If we're in developer mode when we shouldn't be, disable as soon as
+	   possible and commit that decision right away, unless WP is off.
+	   See b/266013201 and b/268272051 for context. */
+	if ((fwmp.flags & FWMP_DEV_DISABLE_BOOT) &&
+	    !(cparams->gbb->flags & GBB_FLAG_FORCE_DEV_SWITCH_ON) &&
+	    (shared->flags & VBSD_BOOT_DEV_SWITCH_ON) &&
+	    (shared->flags & VBSD_BOOT_FIRMWARE_WP_ENABLED)) {
+		VbNvSet(&vnc, VBNV_DISABLE_DEV_REQUEST, 1);
+		VbNvCommit();
+	}
+
 	/* Fill in params for calls to LoadKernel() */
 	Memset(&p, 0, sizeof(p));
 	p.shared_data_blob = cparams->shared_data_blob;
