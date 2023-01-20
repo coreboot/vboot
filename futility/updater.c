@@ -1561,7 +1561,7 @@ int updater_setup_config(struct updater_config *cfg,
 		/* Store ownership of the dummy programmer string in
 		   cfg->emulation_programmer. */
 		ASPRINTF(&cfg->emulation_programmer,
-			 "dummy:emulate=VARIABLE_SIZE,size=%d,image=%s",
+			 "dummy:emulate=VARIABLE_SIZE,size=%d,image=%s,bus=prog",
 			 (int)statbuf.st_size, arg->emulation);
 
 		cfg->image.programmer = cfg->emulation_programmer;
