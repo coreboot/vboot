@@ -77,6 +77,8 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 
 	len = flashrom_flash_getsize(flashctx);
 
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
+
 	if (region) {
 		r = flashrom_layout_read_fmap_from_buffer(
 			&layout, flashctx, (const uint8_t *)image->data,
