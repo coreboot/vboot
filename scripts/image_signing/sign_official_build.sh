@@ -714,10 +714,33 @@ resign_android_image_if_exists() {
   set +x
 }
 
-# Sign UEFI binaries, if possible.
+# Check whether the image's board is reven or not.
 # Args: LOOPDEV
+# Outputs: "true" if the board is reven, otherwise "false".
+get_is_reven() {
+  local loopdev="$1"
+  local rootfs_dir
+  local board
+
+  rootfs_dir=$(make_temp_dir)
+  mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
+
+  board=$(get_board_from_lsb_release "${rootfs_dir}")
+
+  sudo umount "${rootfs_dir}"
+
+  if [[ "${board}" == "reven" ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
+# Sign UEFI binaries, if possible.
+# Args: LOOPDEV IS_REVEN
 sign_uefi_binaries() {
   local loopdev="$1"
+  local is_reven="$2"
   local efi_glob="*.efi"
 
   if [[ ! -d "${KEY_DIR}/uefi" ]]; then
@@ -731,9 +754,7 @@ sign_uefi_binaries() {
   elif [[ -z "${esp_dir}" ]]; then
     return 0
   fi
-  # TODO(b/199136347): First class this as an arg and pass from config
-  # in the signing repo. This is a temporary fix to unblock reven-release.
-  if [[ "${KEY_DIR}" != *"Reven"* ]]; then
+  if [[ "${is_reven}" == "false" ]]; then
     "${SCRIPT_DIR}/install_gsetup_certs.sh" "${esp_dir}" "${KEY_DIR}/uefi"
   else
     # b/205145491: the reven board's boot*.efi files are already signed,
@@ -1031,11 +1052,12 @@ sign_image_file() {
   local loopdev=$(loopback_partscan "${output}")
   local loop_kern="${loopdev}p${dm_partno}"
   local loop_rootfs="${loopdev}p3"
+  local is_reven=$(get_is_reven "${loopdev}")
 
   resign_firmware_payload "${loopdev}"
   remove_old_container_key "${loopdev}"
   resign_android_image_if_exists "${loopdev}"
-  sign_uefi_binaries "${loopdev}"
+  sign_uefi_binaries "${loopdev}" "${is_reven}"
   # We do NOT strip /boot for factory installer, since some devices need it to
   # boot EFI. crbug.com/260512 would obsolete this requirement.
   #
