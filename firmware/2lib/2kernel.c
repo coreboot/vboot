@@ -157,15 +157,6 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 	sd->kernel_version = sd->kernel_version_secdata;
 
-	/* If we're in developer mode when we shouldn't be, disable as soon as
-	   possible and commit that decision right away (b/266013201). */
-	if (vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_DISABLE_BOOT) &&
-	    !(vb2_get_gbb(ctx)->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON) &&
-	    (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE)) {
-		vb2_nv_set(ctx, VB2_NV_DISABLE_DEV_REQUEST, 1);
-		vb2ex_commit_data(ctx);
-	}
-
 	/* Find the key to use to verify the kernel keyblock */
 	if ((ctx->flags & VB2_CONTEXT_RECOVERY_MODE)) {
 		/* Load recovery key from GBB. */
