@@ -1054,6 +1054,25 @@ sign_image_file() {
   local loop_rootfs="${loopdev}p3"
   local is_reven=$(get_is_reven "${loopdev}")
 
+  # The reven board needs to produce recovery images since some
+  # downstream tools (e.g. the Chromebook Recovery Utility) expect
+  # them. However, reven's recovery images are not like other boards
+  # since reven is installed on generic PC hardware, and "recovery"
+  # actually means reinstalling.
+  #
+  # Installation occurs via liveboot, which loads the 'A' partitions.
+  # The UEFI bootloader expects the kernel partition to be signed with
+  # the normal board key, not the recovery key, so for reven we sign
+  # recovery images like base images: using the non-recovery key for
+  # both the 'A' and 'B' partitions.
+  local sign_recovery_like_base="${is_reven}"
+
+  if [[ "${image_type}" == "recovery" &&
+        "${sign_recovery_like_base}" == "true" ]]; then
+    kernA_keyblock="${kernB_keyblock}"
+    kernA_privkey="${kernB_privkey}"
+  fi
+
   resign_firmware_payload "${loopdev}"
   remove_old_container_key "${loopdev}"
   resign_android_image_if_exists "${loopdev}"
@@ -1076,7 +1095,8 @@ sign_image_file() {
     "${kernA_keyblock}" "${kernA_privkey}" \
     "${kernB_keyblock}" "${kernB_privkey}"
   update_stateful_partition_vblock "${loopdev}"
-  if [[ "${image_type}" == "recovery" ]]; then
+  if [[ "${image_type}" == "recovery" &&
+        "${sign_recovery_like_base}" == "false" ]]; then
     update_recovery_kernel_hash "${loopdev}"
   fi
   if ! resign_minios_kernels "${loopdev}" "${minios_keyblock}" \
