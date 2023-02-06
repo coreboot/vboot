@@ -264,6 +264,13 @@ uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
  */
 uint32_t TlclIFXFieldUpgradeInfo(TPM_IFX_FIELDUPGRADEINFO *info);
 
+/**
+ * Read the public area of object. Put at most [length] bytes public area
+ * into [data], and the format of [data] is TPM2B_PUBLIC. The TPM error code
+ * is returned.
+ */
+uint32_t TlclReadPublic(uint32_t handle, uint8_t *data, uint32_t *length);
+
 #ifdef CHROMEOS_ENVIRONMENT
 
 /**
