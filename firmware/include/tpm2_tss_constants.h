@@ -32,6 +32,7 @@ extern "C" {
 #define TPM2_NV_Read           ((TPM_CC)0x0000014E)
 #define TPM2_NV_ReadLock       ((TPM_CC)0x0000014F)
 #define TPM2_NV_ReadPublic     ((TPM_CC)0x00000169)
+#define TPM2_ReadPublic        ((TPM_CC)0x00000173)
 #define TPM2_GetCapability     ((TPM_CC)0x0000017A)
 #define TPM2_GetRandom         ((TPM_CC)0x0000017B)
 #define TPM2_PCR_Extend        ((TPM_CC)0x00000182)
@@ -122,6 +123,7 @@ extern "C" {
 typedef uint8_t TPMI_YES_NO;
 typedef uint32_t TPM_CC;
 typedef uint32_t TPM_HANDLE;
+typedef TPM_HANDLE TPMI_DH_OBJECT;
 typedef TPM_HANDLE TPMI_DH_PCR;
 typedef TPM_HANDLE TPMI_RH_NV_INDEX;
 typedef TPM_HANDLE TPMI_RH_ENABLES;
@@ -144,6 +146,14 @@ typedef union {
 	} t;
 	TPM2B b;
 } TPM2B_MAX_NV_BUFFER;
+
+typedef union {
+	struct {
+		uint16_t size;
+		const uint8_t *buffer;
+	} t;
+	TPM2B b;
+} TPM2B_PUBLIC;
 
 typedef struct {
 	TPM_PT property;
@@ -252,6 +262,10 @@ struct tpm2_pcr_extend_cmd {
 	TPML_DIGEST_VALUES digests;
 };
 
+struct tpm2_read_public_cmd {
+	TPMI_DH_OBJECT object_handle;
+};
+
 /* Common command/response header. */
 struct tpm_header {
 	uint16_t tpm_tag;
@@ -262,6 +276,10 @@ struct tpm_header {
 struct nv_read_response {
 	uint32_t params_size;
 	TPM2B_MAX_NV_BUFFER buffer;
+};
+
+struct read_public_response {
+	TPM2B_PUBLIC buffer;
 };
 
 struct tpm2_session_attrs {
@@ -308,6 +326,7 @@ struct tpm2_response {
 		struct get_capability_response cap;
 		struct get_random_response random;
 		struct nv_read_public_response nv_read_public;
+		struct read_public_response read_pub;
 	};
 };
 

@@ -688,3 +688,42 @@ uint32_t TlclIFXFieldUpgradeInfo(TPM_IFX_FIELDUPGRADEINFO* info)
 	VB2_DEBUG("NOT YET IMPLEMENTED\n");
 	return TPM_E_IOERROR;
 }
+
+uint32_t TlclReadPublic(uint32_t handle, uint8_t *data, uint32_t *length)
+{
+	struct tpm2_read_public_cmd cmd;
+	struct tpm2_response *response = &tpm2_resp;
+	uint32_t rv;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.object_handle = handle;
+
+	rv = tpm_send_receive(TPM2_ReadPublic, &cmd, response);
+
+	/* Need to map tpm error codes into internal values. */
+	switch (rv) {
+	case TPM_SUCCESS:
+		break;
+
+	case 0x8b:
+	case 0x18b:
+		return TPM_E_BADINDEX;
+
+	default:
+		return rv;
+	}
+
+	if (*length < response->read_pub.buffer.t.size + 2)
+		return TPM_E_RESPONSE_TOO_LARGE;
+
+	*length = response->read_pub.buffer.t.size + 2;
+
+	data[0] = (response->read_pub.buffer.t.size >> 8) & 0xff;
+	data[1] = response->read_pub.buffer.t.size & 0xff;
+
+	memcpy(data + 2, response->read_pub.buffer.t.buffer,
+	       response->read_pub.buffer.t.size);
+
+	return TPM_SUCCESS;
+}
