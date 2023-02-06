@@ -121,6 +121,26 @@ static void unmarshal_TPM2B_MAX_NV_BUFFER(void **buffer,
 	*size -= nv_buffer->t.size;
 }
 
+static void unmarshal_TPM2B_PUBLIC(void **buffer, int *size,
+				   TPM2B_PUBLIC *pub_buffer)
+{
+	pub_buffer->t.size = unmarshal_u16(buffer, size);
+	if (pub_buffer->t.size > *size) {
+		VB2_DEBUG("size mismatch: expected %d, remaining %d\n",
+			  pub_buffer->t.size, *size);
+		pub_buffer->t.buffer = NULL;
+		pub_buffer->t.size = 0;
+		*buffer = NULL;
+		*size = -1;
+		return;
+	}
+
+	pub_buffer->t.buffer = *buffer;
+
+	*buffer = ((uint8_t *)(*buffer)) + pub_buffer->t.size;
+	*size -= pub_buffer->t.size;
+}
+
 static void unmarshal_authorization_section(void **buffer, int *size,
 					    const char *cmd_name)
 {
@@ -154,6 +174,19 @@ static void unmarshal_nv_read(void **buffer, int *size,
 		return;
 
 	unmarshal_authorization_section(buffer, size, "NV_Read");
+}
+
+static void unmarshal_read_public(void **buffer, int *size,
+				  struct read_public_response *rpr)
+{
+	unmarshal_TPM2B_PUBLIC(buffer, size, &rpr->buffer);
+
+	if (*size < 0)
+		return;
+
+	/* Drain the name & authorization sections. */
+	*buffer = ((uint8_t *)(*buffer)) + *size;
+	*size = 0;
 }
 
 static void unmarshal_TPM2B(void **buffer,
@@ -611,6 +644,13 @@ static void marshal_hierarchy_control(void **buffer,
 	marshal_u8(buffer, command_body->state, buffer_space);
 }
 
+static void marshal_read_public(void **buffer,
+				struct tpm2_read_public_cmd *command_body,
+				int *buffer_space)
+{
+	marshal_u32(buffer, command_body->object_handle, buffer_space);
+}
+
 static void marshal_get_capability(void **buffer,
 				   struct tpm2_get_capability_cmd
 				       *command_body,
@@ -787,6 +827,10 @@ int tpm_marshal_command(TPM_CC command, void *tpm_command_body,
 		marshal_pcr_extend(&cmd_body, tpm_command_body, &body_size);
 		break;
 
+	case TPM2_ReadPublic:
+		marshal_read_public(&cmd_body, tpm_command_body, &body_size);
+		break;
+
 	default:
 		body_size = -1;
 		VB2_DEBUG("Request to marshal unsupported command %#x\n",
@@ -846,6 +890,11 @@ int tpm_unmarshal_response(TPM_CC command,
 	case TPM2_GetRandom:
 		unmarshal_get_random(&response_body, &cr_size,
 				     &response->random);
+		break;
+
+	case TPM2_ReadPublic:
+		unmarshal_read_public(&response_body, &cr_size,
+				      &response->read_pub);
 		break;
 
 	case TPM2_Hierarchy_Control:
