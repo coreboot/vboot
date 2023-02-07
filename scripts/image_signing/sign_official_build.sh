@@ -571,11 +571,10 @@ resign_firmware_payload() {
         echo "After setting GBB on ${bios_path}: md5 =" \
           $(md5sum ${bios_path} | awk '{print $1}')
 
-        board_name="$(lsbval "${rootfs_dir}/etc/lsb-release" \
-           "CHROMEOS_RELEASE_BOARD")"
-
-        if [[ ${board_name} == "guybrush" ]]; then
-          echo "Not looking for RO_GSCVD on guygrush, b/263378945"
+        board_name="$(get_boardvar_from_lsb_release "${rootfs_dir}")"
+        echo "Board name from lsb-release: ${board_name}"
+        if [[ ${board_name} == *guybrush* ]]; then
+          echo "Not looking for RO_GSCVD on guybrush, b/263378945"
         elif futility dump_fmap -p "${bios_path}" | grep -q RO_GSCVD; then
           # Attempt AP RO verification signing only in case the FMAP includes
           # the RO_GSCVD section.
