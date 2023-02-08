@@ -447,11 +447,9 @@ validity_check_live_firmware() {
     return
   fi
   debug_msg "Loading firmware to check root key..."
-  local bios_image="$(make_temp_file)"
   local rootkey_file="$(make_temp_file)"
   info "checking system firmware..."
-  sudo flashrom -p host -i GBB -r "$bios_image" >/dev/null 2>&1
-  futility gbb -g --rootkey="$rootkey_file" "$bios_image" >/dev/null 2>&1
+  futility gbb -g --flash --rootkey="$rootkey_file" >/dev/null 2>&1
   if [ ! -s "$rootkey_file" ]; then
     debug_msg "failed to read root key from system firmware..."
   else
