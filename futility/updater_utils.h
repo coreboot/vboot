@@ -239,7 +239,6 @@ struct dut_property {
 enum dut_property_type {
 	DUT_PROP_MAINFW_ACT,
 	DUT_PROP_TPM_FWVER,
-	DUT_PROP_FW_VBOOT2,
 	DUT_PROP_PLATFORM_VER,
 	DUT_PROP_WP_HW,
 	DUT_PROP_WP_SW,

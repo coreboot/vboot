@@ -85,12 +85,6 @@ static int dut_get_wp_hw(struct updater_config *cfg)
 	return dut_get_property_int("wpsw_cur") ? WP_ENABLED : WP_DISABLED;
 }
 
-/* A helper function to return "fw_vboot2" system property. */
-static int dut_get_fw_vboot2(struct updater_config *cfg)
-{
-	return dut_get_property_int("fw_vboot2");
-}
-
 static int dut_get_platform_version(struct updater_config *cfg)
 {
 	return dut_get_property_int("board_id");
@@ -131,7 +125,6 @@ void dut_init_properties(struct dut_property *props, int num)
 	assert(num >= DUT_PROP_MAX);
 	props[DUT_PROP_MAINFW_ACT].getter = dut_get_mainfw_act;
 	props[DUT_PROP_TPM_FWVER].getter = dut_get_tpm_fwver;
-	props[DUT_PROP_FW_VBOOT2].getter = dut_get_fw_vboot2;
 	props[DUT_PROP_PLATFORM_VER].getter = dut_get_platform_version;
 	props[DUT_PROP_WP_HW].getter = dut_get_wp_hw;
 	props[DUT_PROP_WP_SW].getter = dut_get_wp_sw;
