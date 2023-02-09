@@ -109,8 +109,10 @@ get_dmparams_from_config() {
 # Get the verity root digest hash from a kernel config command line.
 get_hash_from_config() {
   local kernel_config=$1
-  local dm_config=$(get_dmparams_from_config "${kernel_config}")
-  local vroot_dev=$(get_dm_device "${dm_config}" vroot)
+  local dm_config
+  dm_config=$(get_dmparams_from_config "${kernel_config}")
+  local vroot_dev
+  vroot_dev=$(get_dm_device "${dm_config}" vroot)
   echo $(get_verity_arg "${vroot_dev}" root_hexdigest)
 }
 
@@ -150,20 +152,27 @@ calculate_rootfs_hash() {
   local rootfs_image=$1
   local kernel_config=$2
   local hash_image=$3
-  local dm_config=$(get_dmparams_from_config "${kernel_config}")
+  local dm_config
+  dm_config=$(get_dmparams_from_config "${kernel_config}")
 
   if [ -z "${dm_config}" ]; then
     warn "Couldn't grab dm_config. Aborting rootfs hash calculation."
     return 1
   fi
-  local vroot_dev=$(get_dm_device "${dm_config}" vroot)
+  local vroot_dev
+  vroot_dev=$(get_dm_device "${dm_config}" vroot)
 
   # Extract the key-value parameters from the kernel command line.
-  local rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
-  local verity_algorithm=$(get_verity_arg "${vroot_dev}" alg)
-  local root_dev=$(get_verity_arg "${vroot_dev}" payload)
-  local hash_dev=$(get_verity_arg "${vroot_dev}" hashtree)
-  local salt=$(get_verity_arg "${vroot_dev}" salt)
+  local rootfs_sectors
+  rootfs_sectors=$(get_verity_arg "${vroot_dev}" hashstart)
+  local verity_algorithm
+  verity_algorithm=$(get_verity_arg "${vroot_dev}" alg)
+  local root_dev
+  root_dev=$(get_verity_arg "${vroot_dev}" payload)
+  local hash_dev
+  hash_dev=$(get_verity_arg "${vroot_dev}" hashtree)
+  local salt
+  salt=$(get_verity_arg "${vroot_dev}" salt)
 
   local salt_arg
   if [ -n "$salt" ]; then
@@ -171,7 +180,8 @@ calculate_rootfs_hash() {
   fi
 
   # Run the verity tool on the rootfs partition.
-  local table=$(sudo verity mode=create \
+  local table
+  table=$(sudo verity mode=create \
     alg=${verity_algorithm} \
     payload="${rootfs_image}" \
     payload_blocks=$((rootfs_sectors / 8)) \
@@ -209,8 +219,10 @@ update_rootfs_hash() {
   info "Updating rootfs hash and updating config for Kernel partitions"
 
   # If we can't find dm parameters in the kernel config, bail out now.
-  local kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
-  local dm_config=$(get_dmparams_from_config "${kernel_config}")
+  local kernel_config
+  kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
+  local dm_config
+  dm_config=$(get_dmparams_from_config "${kernel_config}")
   if [ -z "${dm_config}" ]; then
     error "Couldn't grab dm_config from kernel ${loop_kern}"
     error " (config: ${kernel_config})"
@@ -218,7 +230,8 @@ update_rootfs_hash() {
   fi
 
   # check and clear need_to_resign tag
-  local rootfs_dir=$(make_temp_dir)
+  local rootfs_dir
+  rootfs_dir=$(make_temp_dir)
   sudo mount -o ro "${loop_rootfs}" "${rootfs_dir}"
   if has_needs_to_be_resigned_tag "${rootfs_dir}"; then
     # remount as RW
@@ -227,7 +240,8 @@ update_rootfs_hash() {
   fi
   sudo umount "${rootfs_dir}"
 
-  local hash_image=$(make_temp_file)
+  local hash_image
+  hash_image=$(make_temp_file)
 
   # Disable rw mount support prior to hashing.
   disable_rw_mount "${loop_rootfs}"
@@ -239,7 +253,8 @@ update_rootfs_hash() {
     return 1
   fi
 
-  local rootfs_blocks=$(sudo dumpe2fs "${loop_rootfs}" 2> /dev/null |
+  local rootfs_blocks
+  rootfs_blocks=$(sudo dumpe2fs "${loop_rootfs}" 2> /dev/null |
     grep "Block count" |
     tr -d ' ' |
     cut -f2 -d:)
@@ -251,7 +266,8 @@ update_rootfs_hash() {
 
   # Update kernel command lines
   local dm_args="${CALCULATED_DM_ARGS}"
-  local temp_config=$(make_temp_file)
+  local temp_config
+  temp_config=$(make_temp_file)
   local kernelpart=
   local keyblock=
   local priv_key=
@@ -294,7 +310,8 @@ update_rootfs_hash() {
 # (crbug.com/449450#c13) so we will probably never remove this.
 update_stateful_partition_vblock() {
   local loopdev="$1"
-  local temp_out_vb="$(make_temp_file)"
+  local temp_out_vb
+  temp_out_vb="$(make_temp_file)"
 
   local loop_kern="${loopdev}p4"
   if [[ -z "$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}" 2>/dev/null)" ]]; then
@@ -310,7 +327,8 @@ update_stateful_partition_vblock() {
     --vblockonly
 
   # Copy the installer vblock to the stateful partition.
-  local stateful_dir=$(make_temp_dir)
+  local stateful_dir
+  stateful_dir=$(make_temp_dir)
   sudo mount "${loopdev}p1" "${stateful_dir}"
   sudo cp ${temp_out_vb} ${stateful_dir}/vmlinuz_hd.vblock
   sudo umount "${stateful_dir}"
@@ -334,7 +352,8 @@ verify_image_rootfs() {
 # Args: INPUT_DIR TARGET_SCRIPT
 repack_firmware_bundle() {
   local input_dir="$1"
-  local target="$(readlink -f "$2")"
+  local target
+  target="$(readlink -f "$2")"
 
   if [ ! -s "${target}" ]; then
     return 1
@@ -349,8 +368,10 @@ repack_firmware_bundle() {
   else
     # Legacy bundle using uuencode + tar.gz.
     # Replace MD5 checksum in the firmware update payload.
-    local newfd_checksum="$(md5sum ${input_dir}/bios.bin | cut -f 1 -d ' ')"
-    local temp_version="$(make_temp_file)"
+    local newfd_checksum
+    newfd_checksum="$(md5sum ${input_dir}/bios.bin | cut -f 1 -d ' ')"
+    local temp_version
+    temp_version="$(make_temp_file)"
     cat ${input_dir}/VERSION |
     sed -e "s#\(.*\)\ \(.*bios.bin.*\)#${newfd_checksum}\ \2#" > ${temp_version}
     mv ${temp_version} ${input_dir}/VERSION
@@ -416,10 +437,12 @@ resign_firmware_payload() {
   fi
 
   # Grab firmware image from the autoupdate bundle (shellball).
-  local rootfs_dir=$(make_temp_dir)
+  local rootfs_dir
+  rootfs_dir=$(make_temp_dir)
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
   local firmware_bundle="${rootfs_dir}/usr/sbin/chromeos-firmwareupdate"
-  local shellball_dir=$(make_temp_dir)
+  local shellball_dir
+  shellball_dir=$(make_temp_dir)
 
   # extract_firmware_bundle can fail if the image has no firmware update.
   if ! extract_firmware_bundle "${firmware_bundle}" "${shellball_dir}"; then
@@ -474,8 +497,10 @@ resign_firmware_payload() {
         # This is what updater4.sh currently uses to make the decision.
         if [[ -e "${KEY_DIR}/loem.ini" ]]; then
           # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
-          local match="$(grep -E "[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"
-          local key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
+          local match
+          match="$(grep -E "[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"
+          local key_index
+          key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
           info "Detected key index from loem.ini as ${key_index} for ${key_id}"
           if [[ -z "${key_index}" ]]; then
             die "Failed to find key_id ${key_id} in loem.ini file for " \
@@ -495,7 +520,8 @@ resign_firmware_payload() {
         info "Signing firmware image ${bios_image} for ${output_name} " \
           "with key suffix ${key_suffix}"
 
-        local temp_fw=$(make_temp_file)
+        local temp_fw
+        temp_fw=$(make_temp_file)
 
         local signprivate="${KEY_DIR}/firmware_data_key${key_suffix}.vbprivk"
         local keyblock="${KEY_DIR}/firmware${key_suffix}.keyblock"
@@ -674,7 +700,8 @@ resign_firmware_payload() {
 remove_old_container_key() {
   local loopdev="$1"
 
-  local rootfs_dir=$(make_temp_dir)
+  local rootfs_dir
+  rootfs_dir=$(make_temp_dir)
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
 
   sudo rm -f "${rootfs_dir}/usr/share/misc/oci-container-key-pub.der"
@@ -686,11 +713,14 @@ remove_old_container_key() {
 resign_android_image_if_exists() {
   local loopdev="$1"
 
-  local rootfs_dir=$(make_temp_dir)
+  local rootfs_dir
+  rootfs_dir=$(make_temp_dir)
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
 
-  local system_img="$(echo "${rootfs_dir}"/opt/google/*/android/system.raw.img)"
-  local arc_version=$(grep CHROMEOS_ARC_VERSION= \
+  local system_img
+  system_img="$(echo "${rootfs_dir}"/opt/google/*/android/system.raw.img)"
+  local arc_version
+  arc_version=$(grep CHROMEOS_ARC_VERSION= \
     "${rootfs_dir}/etc/lsb-release" | cut -d= -f2)
   if [[ ! -e "${system_img}" || -z "${arc_version}" ]]; then
     info "ARC image not found.  Not signing Android APKs."
@@ -764,7 +794,8 @@ sign_uefi_binaries() {
   "${SCRIPT_DIR}/sign_uefi.py" "${esp_dir}" "${KEY_DIR}/uefi" "${efi_glob}"
   sudo umount "${esp_dir}"
 
-  local rootfs_dir="$(make_temp_dir)"
+  local rootfs_dir
+  rootfs_dir="$(make_temp_dir)"
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
   "${SCRIPT_DIR}/sign_uefi.py" "${rootfs_dir}/boot" "${KEY_DIR}/uefi" \
                                "${efi_glob}"
@@ -794,7 +825,8 @@ verify_uefi_signatures() {
   "${SCRIPT_DIR}/verify_uefi.sh" "${esp_dir}" "${esp_dir}" \
       "${KEY_DIR}/uefi" || succeeded=0
 
-  local rootfs_dir="$(make_temp_dir)"
+  local rootfs_dir
+  rootfs_dir="$(make_temp_dir)"
   mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs_dir}"
   "${SCRIPT_DIR}/verify_uefi.sh" "${rootfs_dir}/boot" "${esp_dir}" \
       "${KEY_DIR}/uefi" || succeeded=0
@@ -820,7 +852,8 @@ sign_gsc_firmware() {
 
 # Verify an image including rootfs hash using the specified keys.
 verify_image() {
-  local loopdev=$(loopback_partscan "${INPUT_IMAGE}")
+  local loopdev
+  loopdev=$(loopback_partscan "${INPUT_IMAGE}")
   local loop_rootfs="${loopdev}p3"
 
   info "Verifying RootFS hash..."
@@ -834,7 +867,8 @@ verify_image() {
   for partnum in 2 4; do
     info "Considering Kernel partition ${partnum}"
     kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loopdev}p${partnum}")
-    local hash_image=$(make_temp_file)
+    local hash_image
+    hash_image=$(make_temp_file)
     if ! calculate_rootfs_hash "${loop_rootfs}" "${kernel_config}" \
       "${hash_image}"; then
       info "Trying next kernel partition."
@@ -901,14 +935,17 @@ update_recovery_kernel_hash() {
   local loop_kernb="${loopdev}p4"
 
   # Update the Kernel B hash in Kernel A command line
-  local old_kerna_config="$(sudo ${FUTILITY} \
+  local old_kerna_config
+  old_kerna_config="$(sudo ${FUTILITY} \
     dump_kernel_config "${loop_kerna}")"
-  local old_kernb_hash="$(echo "$old_kerna_config" |
+  local old_kernb_hash
+  old_kernb_hash="$(echo "$old_kerna_config" |
     sed -nEe "s#.*kern_b_hash=([a-z0-9]*).*#\1#p")"
+  local new_kernb_hash
   if [[ "${#old_kernb_hash}" -lt 64 ]]; then
-    local new_kernb_hash=$(sudo sha1sum "${loop_kernb}" | cut -f1 -d' ')
+    new_kernb_hash=$(sudo sha1sum "${loop_kernb}" | cut -f1 -d' ')
   else
-    local new_kernb_hash=$(sudo sha256sum "${loop_kernb}" | cut -f1 -d' ')
+    new_kernb_hash=$(sudo sha256sum "${loop_kernb}" | cut -f1 -d' ')
   fi
 
   new_kerna_config=$(make_temp_file)
@@ -995,8 +1032,10 @@ update_legacy_bootloader() {
   fi
 
   # If we can't find the dm parameter in the kernel config, bail out now.
-  local kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
-  local root_hexdigest="$(get_hash_from_config "${kernel_config}")"
+  local kernel_config
+  kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
+  local root_hexdigest
+  root_hexdigest="$(get_hash_from_config "${kernel_config}")"
   if [[ -z "${root_hexdigest}" ]]; then
     error "Couldn't grab root_digest from kernel partition ${loop_kern}"
     error " (config: ${kernel_config})"
@@ -1049,10 +1088,12 @@ sign_image_file() {
   info "Preparing ${image_type} image..."
   cp --sparse=always "${input}" "${output}"
 
-  local loopdev=$(loopback_partscan "${output}")
+  local loopdev
+  loopdev=$(loopback_partscan "${output}")
   local loop_kern="${loopdev}p${dm_partno}"
   local loop_rootfs="${loopdev}p3"
-  local is_reven=$(get_is_reven "${loopdev}")
+  local is_reven
+  is_reven=$(get_is_reven "${loopdev}")
 
   # The reven board needs to produce recovery images since some
   # downstream tools (e.g. the Chromebook Recovery Utility) expect
@@ -1085,7 +1126,8 @@ sign_image_file() {
   # /boot in rootfs to update kernel.  We infer the BIOS type from the kernel
   # config.
   local loop_kerna="${loopdev}p2"
-  local kerna_config="$(sudo ${FUTILITY} dump_kernel_config "${loop_kerna}")"
+  local kerna_config
+  kerna_config="$(sudo ${FUTILITY} dump_kernel_config "${loop_kerna}")"
   if [[ "${image_type}" != "factory_install" &&
         " ${kerna_config} " != *" cros_legacy "* &&
         " ${kerna_config} " != *" cros_efi "* ]]; then
