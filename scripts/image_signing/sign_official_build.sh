@@ -104,7 +104,7 @@ get_verity_arg() {
 # Get the dmparams parameters from a kernel config.
 get_dmparams_from_config() {
   local kernel_config=$1
-  echo ${kernel_config} | sed -nre 's/.*dm="([^"]*)".*/\1/p'
+  echo "${kernel_config}" | sed -nre 's/.*dm="([^"]*)".*/\1/p'
 }
 # Get the verity root digest hash from a kernel config command line.
 get_hash_from_config() {
@@ -182,10 +182,10 @@ calculate_rootfs_hash() {
   # Run the verity tool on the rootfs partition.
   local table
   table=$(sudo verity mode=create \
-    alg=${verity_algorithm} \
+    alg="${verity_algorithm}" \
     payload="${rootfs_image}" \
     payload_blocks=$((rootfs_sectors / 8)) \
-    hashtree="${hash_image}" ${salt_arg})
+    hashtree="${hash_image}" "${salt_arg}")
   # Reconstruct new kernel config command line and replace placeholders.
   table="$(echo "${table}" |
     sed -s "s|ROOT_DEV|${root_dev}|g;s|HASH_DEV|${hash_dev}|")"
@@ -295,11 +295,11 @@ update_rootfs_hash() {
       priv_key="${kern_b_privkey}"
     fi
     sudo ${FUTILITY} vbutil_kernel --repack "${loop_kern}" \
-      --keyblock ${keyblock} \
-      --signprivate ${priv_key} \
+      --keyblock "${keyblock}" \
+      --signprivate "${priv_key}" \
       --version "${KERNEL_VERSION}" \
       --oldblob "${loop_kern}" \
-      --config ${temp_config}
+      --config "${temp_config}"
   done
 }
 
@@ -330,7 +330,7 @@ update_stateful_partition_vblock() {
   local stateful_dir
   stateful_dir=$(make_temp_dir)
   sudo mount "${loopdev}p1" "${stateful_dir}"
-  sudo cp ${temp_out_vb} ${stateful_dir}/vmlinuz_hd.vblock
+  sudo cp "${temp_out_vb}" "${stateful_dir}"/vmlinuz_hd.vblock
   sudo umount "${stateful_dir}"
 }
 
@@ -369,12 +369,13 @@ repack_firmware_bundle() {
     # Legacy bundle using uuencode + tar.gz.
     # Replace MD5 checksum in the firmware update payload.
     local newfd_checksum
-    newfd_checksum="$(md5sum ${input_dir}/bios.bin | cut -f 1 -d ' ')"
+    newfd_checksum="$(md5sum "${input_dir}"/bios.bin | cut -f 1 -d ' ')"
     local temp_version
     temp_version="$(make_temp_file)"
-    cat ${input_dir}/VERSION |
-    sed -e "s#\(.*\)\ \(.*bios.bin.*\)#${newfd_checksum}\ \2#" > ${temp_version}
-    mv ${temp_version} ${input_dir}/VERSION
+    cat "${input_dir}"/VERSION |
+    sed -e "s#\(.*\)\ \(.*bios.bin.*\)#${newfd_checksum}\ \2#" > \
+      "${temp_version}"
+    mv "${temp_version}" "${input_dir}"/VERSION
 
     # Re-generate firmware_update.tgz and copy over encoded archive in
     # the original shell ball.
@@ -422,7 +423,7 @@ sign_update_payload() {
     die "Unknown algorithm: futility output=${key_output}"
   fi
 
-  pad_digest_utility ${algo} "${image}" | \
+  pad_digest_utility "${algo}" "${image}" | \
     openssl rsautl -sign -pkcs -inkey "${key_file}" -out "${output}"
 }
 
@@ -530,7 +531,7 @@ resign_firmware_payload() {
         local bios_path="${shellball_dir}/${bios_image}"
 
         echo "Before EC signing ${bios_path}: md5 =" \
-          $(md5sum ${bios_path} | awk '{print $1}')
+          $(md5sum "${bios_path}" | awk '{print $1}')
 
         if [ -n "${ec_image}" ]; then
           # Path to ec.bin.
@@ -563,7 +564,7 @@ resign_firmware_payload() {
         fi
 
         echo "After EC signing ${bios_path}: md5 =" \
-          $(md5sum ${bios_path} | awk '{print $1}')
+          $(md5sum "${bios_path}" | awk '{print $1}')
 
         # Resign bios.bin.
         full_command=(
@@ -580,7 +581,7 @@ resign_firmware_payload() {
         "${full_command[@]}"
 
         echo "After BIOS signing ${temp_fw}: md5 =" \
-          $(md5sum ${temp_fw} | awk '{print $1}')
+          $(md5sum "${temp_fw}" | awk '{print $1}')
 
         # For development phases, when the GBB can be updated still, set the
         # recovery and root keys in the image.
@@ -595,7 +596,7 @@ resign_firmware_payload() {
         "${full_command[@]}"
 
         echo "After setting GBB on ${bios_path}: md5 =" \
-          $(md5sum ${bios_path} | awk '{print $1}')
+          $(md5sum "${bios_path}" | awk '{print $1}')
 
         board_name="$(get_boardvar_from_lsb_release "${rootfs_dir}")"
         echo "Board name from lsb-release: ${board_name}"
@@ -951,17 +952,17 @@ update_recovery_kernel_hash() {
   new_kerna_config=$(make_temp_file)
   echo "$old_kerna_config" |
     sed -e "s#\(kern_b_hash=\)[a-z0-9]*#\1${new_kernb_hash}#" \
-      > ${new_kerna_config}
+      > "${new_kerna_config}"
   info "New config for kernel partition 2 is"
-  cat ${new_kerna_config}
+  cat "${new_kerna_config}"
 
   # Re-calculate kernel partition signature and command line.
   sudo ${FUTILITY} vbutil_kernel --repack "${loop_kerna}" \
-    --keyblock ${KEY_DIR}/recovery_kernel.keyblock \
-    --signprivate ${KEY_DIR}/recovery_kernel_data_key.vbprivk \
+    --keyblock "${KEY_DIR}"/recovery_kernel.keyblock \
+    --signprivate "${KEY_DIR}"/recovery_kernel_data_key.vbprivk \
     --version "${KERNEL_VERSION}" \
     --oldblob "${loop_kerna}" \
-    --config ${new_kerna_config}
+    --config "${new_kerna_config}"
 }
 
 # Re-sign miniOS kernels with new keys.
@@ -1182,8 +1183,9 @@ esac
 # If a version file was specified, read the firmware and kernel
 # versions from there.
 if [ -n "${VERSION_FILE}" ]; then
-  FIRMWARE_VERSION=$(sed -n 's#^firmware_version=\(.*\)#\1#pg' ${VERSION_FILE})
-  KERNEL_VERSION=$(sed -n 's#^kernel_version=\(.*\)#\1#pg' ${VERSION_FILE})
+  FIRMWARE_VERSION=$(sed -n 's#^firmware_version=\(.*\)#\1#pg' \
+    "${VERSION_FILE}")
+  KERNEL_VERSION=$(sed -n 's#^kernel_version=\(.*\)#\1#pg' "${VERSION_FILE}")
 fi
 info "Using firmware version: ${FIRMWARE_VERSION}"
 info "Using kernel version: ${KERNEL_VERSION}"
@@ -1217,12 +1219,12 @@ elif [[ "${TYPE}" == "firmware" ]]; then
   if [[ -e "${KEY_DIR}/loem.ini" ]]; then
     die "LOEM signing not implemented yet for firmware images"
   fi
-  cp ${INPUT_IMAGE} ${OUTPUT_IMAGE}
-  sign_firmware ${OUTPUT_IMAGE} ${KEY_DIR} ${FIRMWARE_VERSION}
+  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+  sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
 elif [[ "${TYPE}" == "update_payload" ]]; then
-  sign_update_payload ${INPUT_IMAGE} ${KEY_DIR} ${OUTPUT_IMAGE}
+  sign_update_payload "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
-  KEY_NAME="${KEY_DIR}/key_$(basename $(dirname ${INPUT_IMAGE}))"
+  KEY_NAME="${KEY_DIR}/key_$(basename $(dirname "${INPUT_IMAGE}"))"
   if [[ ! -e "${KEY_NAME}.pem" ]]; then
     KEY_NAME="${KEY_DIR}/key"
   fi
