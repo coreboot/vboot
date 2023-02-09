@@ -23,7 +23,8 @@ MINIOS_KERNEL_GUID="09845860-705f-4bb5-b16c-8a8a099caf52"
 # Print usage string
 usage() {
   cat <<EOF
-Usage: $PROG <type> input_image /path/to/keys/dir [output_image] [version_file]
+Usage: ${PROG} <type> input_image /path/to/keys/dir [output_image] \
+[version_file]
 where <type> is one of:
              base (sign a base image)
              recovery (sign a USB recovery image)
@@ -75,7 +76,7 @@ set -e
 
 # Add to the path since some tools reside here and may not be in the non-root
 # system path.
-PATH=$PATH:/usr/sbin:/sbin
+PATH+=:/usr/sbin:/sbin
 
 # Make sure the tools we need are available.
 for prereqs in ${FUTILITY} verity load_kernel_test dumpe2fs e2fsck sha1sum; do
@@ -175,8 +176,8 @@ calculate_rootfs_hash() {
   salt=$(get_verity_arg "${vroot_dev}" salt)
 
   local salt_arg
-  if [ -n "$salt" ]; then
-    salt_arg="salt=$salt"
+  if [ -n "${salt}" ]; then
+    salt_arg="salt=${salt}"
   fi
 
   # Run the verity tool on the rootfs partition.
@@ -287,7 +288,7 @@ update_rootfs_hash() {
     info "New config for kernel partition ${kernelpart} is:"
     echo "${new_kernel_config}" | tee "${temp_config}"
     # Re-calculate kernel partition signature and command line.
-    if [[ "$kernelpart" == 2 ]]; then
+    if [[ "${kernelpart}" == 2 ]]; then
       keyblock="${kern_a_keyblock}"
       priv_key="${kern_a_privkey}"
     else
@@ -364,7 +365,7 @@ repack_firmware_bundle() {
     sed -i \
       's/shar -Q -q -x -m -w/shar -Q -q -x -m --no-character-count/' \
       "${target}"
-    "$target" --sb_repack "${input_dir}" ||
+    "${target}" --sb_repack "${input_dir}" ||
       die "Updating firmware autoupdate (--sb_repack) failed."
   else
     # Legacy bundle using uuencode + tar.gz.
@@ -380,7 +381,7 @@ repack_firmware_bundle() {
 
     # Re-generate firmware_update.tgz and copy over encoded archive in
     # the original shell ball.
-    sed -ine '/^begin .*firmware_package/,/end/D' "$target"
+    sed -ine '/^begin .*firmware_package/,/end/D' "${target}"
     tar zcf - -C "${input_dir}" . |
       uuencode firmware_package.tgz >>"${target}"
   fi
@@ -661,7 +662,7 @@ resign_firmware_payload() {
   fi
 
   local signer_notes="${shellball_dir}/VERSION.signer"
-  echo "" >"$signer_notes"
+  echo "" >"${signer_notes}"
   echo "Signed with keyset in $(readlink -f "${KEY_DIR}") ." >>"${signer_notes}"
   # record recovery_key
   key="${KEY_DIR}/recovery_key.vbpubk"
@@ -877,7 +878,7 @@ verify_image() {
       info "Trying next kernel partition."
       continue
     fi
-    new_kernel_config="$CALCULATED_KERNEL_CONFIG"
+    new_kernel_config="${CALCULATED_KERNEL_CONFIG}"
     break
   done
 
@@ -942,7 +943,7 @@ update_recovery_kernel_hash() {
   old_kerna_config="$(sudo "${FUTILITY}" \
     dump_kernel_config "${loop_kerna}")"
   local old_kernb_hash
-  old_kernb_hash="$(echo "$old_kerna_config" |
+  old_kernb_hash="$(echo "${old_kerna_config}" |
     sed -nEe "s#.*kern_b_hash=([a-z0-9]*).*#\1#p")"
   local new_kernb_hash
   if [[ "${#old_kernb_hash}" -lt 64 ]]; then
@@ -952,7 +953,7 @@ update_recovery_kernel_hash() {
   fi
 
   new_kerna_config=$(make_temp_file)
-  echo "$old_kerna_config" |
+  echo "${old_kerna_config}" |
     sed -e "s#\(kern_b_hash=\)[a-z0-9]*#\1${new_kernb_hash}#" \
       > "${new_kerna_config}"
   info "New config for kernel partition 2 is"
