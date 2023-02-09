@@ -223,15 +223,10 @@ static int section_is_filled_with(const struct firmware_section *section,
  * Returns the section name if success, otherwise NULL.
  */
 static const char *decide_rw_target(struct updater_config *cfg,
-				    enum target_type target,
-				    int is_vboot2)
+				    enum target_type target)
 {
 	const char *a = FMAP_RW_SECTION_A, *b = FMAP_RW_SECTION_B;
 	int slot = dut_get_property(DUT_PROP_MAINFW_ACT, cfg);
-
-	/* In vboot1, always update B and check content with A. */
-	if (!is_vboot2)
-		return target == TARGET_UPDATE ? b : a;
 
 	switch (slot) {
 	case SLOT_A:
@@ -251,7 +246,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
  * Returns 0 if success, non-zero if error.
  */
 static int set_try_cookies(struct updater_config *cfg, const char *target,
-			   int has_update, int is_vboot2)
+			   int has_update)
 {
 	int tries = 8;
 	const char *slot;
@@ -279,19 +274,16 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 		return 0;
 	}
 
-	if (is_vboot2) {
-		if (dut_set_property_string("fw_try_next", slot)) {
-			ERROR("Failed to set fw_try_next to %s.\n", slot);
-			return -1;
-		}
-		if (!has_update &&
-		    dut_set_property_string("fw_result", "success")) {
-			ERROR("Failed to set fw_result to success.\n");
-			return -1;
-		}
+	if (dut_set_property_string("fw_try_next", slot)) {
+		ERROR("Failed to set fw_try_next to %s.\n", slot);
+		return -1;
+	}
+	if (!has_update &&
+	    dut_set_property_string("fw_result", "success")) {
+		ERROR("Failed to set fw_result to success.\n");
+		return -1;
 	}
 
-	/* fw_try_count is identical to fwb_tries in vboot1. */
 	if (dut_set_property_int("fw_try_count", tries)) {
 		ERROR("Failed to set fw_try_count to %d.\n", tries);
 		return -1;
@@ -908,7 +900,6 @@ static enum updater_error_codes update_try_rw_firmware(
 {
 	const char *target, *self_target;
 	int has_update = 1;
-	int is_vboot2 = dut_get_property(DUT_PROP_FW_VBOOT2, cfg);
 
 	preserve_gbb(image_from, image_to, 1, 0, 0);
 	if (!wp_enabled && section_needs_update(
@@ -921,8 +912,7 @@ static enum updater_error_codes update_try_rw_firmware(
 	if (check_compatible_tpm_keys(cfg, image_to))
 		return UPDATE_ERR_TPM_ROLLBACK;
 
-	VB2_DEBUG("Firmware %s vboot2.\n", is_vboot2 ?  "is" : "is NOT");
-	self_target = target = decide_rw_target(cfg, TARGET_SELF, is_vboot2);
+	self_target = target = decide_rw_target(cfg, TARGET_SELF);
 	if (target == NULL) {
 		ERROR("TRY-RW update needs system to boot in RW firmware.\n");
 		return UPDATE_ERR_TARGET;
@@ -938,7 +928,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		has_update = section_needs_update(image_from, image_to, target);
 
 	if (has_update) {
-		target = decide_rw_target(cfg, TARGET_UPDATE, is_vboot2);
+		target = decide_rw_target(cfg, TARGET_UPDATE);
 		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.\n",
 		       target);
 
@@ -965,7 +955,7 @@ static enum updater_error_codes update_try_rw_firmware(
 	}
 
 	/* Always set right cookies for next boot. */
-	if (set_try_cookies(cfg, target, has_update, is_vboot2))
+	if (set_try_cookies(cfg, target, has_update))
 		return UPDATE_ERR_SET_COOKIES;
 
 	/* Do not fail on updating legacy. */
@@ -1126,12 +1116,8 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (cfg->try_update == TRY_UPDATE_DEFERRED_APPLY) {
 		INFO("Apply deferred updates, only setting cookies for the "
 		     "next boot slot.\n");
-		int vboot2 = dut_get_property(DUT_PROP_FW_VBOOT2, cfg);
-		if (set_try_cookies(
-			cfg,
-			decide_rw_target(cfg, TARGET_UPDATE, vboot2),
-			/*has_update=*/1,
-			vboot2))
+		if (set_try_cookies(cfg, decide_rw_target(cfg, TARGET_UPDATE),
+				    /*has_update=*/1))
 			return UPDATE_ERR_SET_COOKIES;
 		return UPDATE_ERR_DONE;
 	}
