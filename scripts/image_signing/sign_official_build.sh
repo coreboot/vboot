@@ -220,7 +220,7 @@ update_rootfs_hash() {
 
   # If we can't find dm parameters in the kernel config, bail out now.
   local kernel_config
-  kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
+  kernel_config=$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}")
   local dm_config
   dm_config=$(get_dmparams_from_config "${kernel_config}")
   if [ -z "${dm_config}" ]; then
@@ -262,7 +262,7 @@ update_rootfs_hash() {
 
   # Overwrite the appended hashes in the rootfs
   sudo dd if="${hash_image}" of="${loop_rootfs}" bs=512 \
-    seek=${rootfs_sectors} conv=notrunc 2>/dev/null
+    seek="${rootfs_sectors}" conv=notrunc 2>/dev/null
 
   # Update kernel command lines
   local dm_args="${CALCULATED_DM_ARGS}"
@@ -276,7 +276,7 @@ update_rootfs_hash() {
   for kernelpart in 2 4; do
     loop_kern="${loopdev}p${kernelpart}"
     if ! new_kernel_config="$(
-         sudo ${FUTILITY} dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
+         sudo "${FUTILITY}" dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
        [[ "${kernelpart}" == 4 ]]; then
       # Legacy images don't have partition 4.
       info "Skipping empty kernel partition 4 (legacy images)."
@@ -294,7 +294,7 @@ update_rootfs_hash() {
       keyblock="${kern_b_keyblock}"
       priv_key="${kern_b_privkey}"
     fi
-    sudo ${FUTILITY} vbutil_kernel --repack "${loop_kern}" \
+    sudo "${FUTILITY}" vbutil_kernel --repack "${loop_kern}" \
       --keyblock "${keyblock}" \
       --signprivate "${priv_key}" \
       --version "${KERNEL_VERSION}" \
@@ -314,13 +314,14 @@ update_stateful_partition_vblock() {
   temp_out_vb="$(make_temp_file)"
 
   local loop_kern="${loopdev}p4"
-  if [[ -z "$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}" 2>/dev/null)" ]]; then
+  if [[ -z "$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}" \
+        2>/dev/null)" ]]; then
     info "Building vmlinuz_hd.vblock from legacy image partition 2."
     loop_kern="${loopdev}p2"
   fi
 
   # vblock should always use kernel keyblock.
-  sudo ${FUTILITY} vbutil_kernel --repack "${temp_out_vb}" \
+  sudo "${FUTILITY}" vbutil_kernel --repack "${temp_out_vb}" \
     --keyblock "${KEY_DIR}/kernel.keyblock" \
     --signprivate "${KEY_DIR}/kernel_data_key.vbprivk" \
     --oldblob "${loop_kern}" \
@@ -867,7 +868,8 @@ verify_image() {
   local partnum
   for partnum in 2 4; do
     info "Considering Kernel partition ${partnum}"
-    kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loopdev}p${partnum}")
+    kernel_config=$(sudo "${FUTILITY}" dump_kernel_config \
+      "${loopdev}p${partnum}")
     local hash_image
     hash_image=$(make_temp_file)
     if ! calculate_rootfs_hash "${loop_rootfs}" "${kernel_config}" \
@@ -937,7 +939,7 @@ update_recovery_kernel_hash() {
 
   # Update the Kernel B hash in Kernel A command line
   local old_kerna_config
-  old_kerna_config="$(sudo ${FUTILITY} \
+  old_kerna_config="$(sudo "${FUTILITY}" \
     dump_kernel_config "${loop_kerna}")"
   local old_kernb_hash
   old_kernb_hash="$(echo "$old_kerna_config" |
@@ -957,7 +959,7 @@ update_recovery_kernel_hash() {
   cat "${new_kerna_config}"
 
   # Re-calculate kernel partition signature and command line.
-  sudo ${FUTILITY} vbutil_kernel --repack "${loop_kerna}" \
+  sudo "${FUTILITY}" vbutil_kernel --repack "${loop_kerna}" \
     --keyblock "${KEY_DIR}"/recovery_kernel.keyblock \
     --signprivate "${KEY_DIR}"/recovery_kernel_data_key.vbprivk \
     --version "${KERNEL_VERSION}" \
@@ -1004,7 +1006,7 @@ resign_minios_kernels() {
 
     # Assume this is a miniOS kernel.
     local minios_kernel_version=$((KERNEL_VERSION >> 24))
-    if sudo ${FUTILITY} vbutil_kernel --repack "${loop_minios}" \
+    if sudo "${FUTILITY}" vbutil_kernel --repack "${loop_minios}" \
         --keyblock "${keyblock}" \
         --signprivate "${priv_key}" \
         --version "${minios_kernel_version}" \
@@ -1034,7 +1036,7 @@ update_legacy_bootloader() {
 
   # If we can't find the dm parameter in the kernel config, bail out now.
   local kernel_config
-  kernel_config=$(sudo ${FUTILITY} dump_kernel_config "${loop_kern}")
+  kernel_config=$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}")
   local root_hexdigest
   root_hexdigest="$(get_hash_from_config "${kernel_config}")"
   if [[ -z "${root_hexdigest}" ]]; then
@@ -1128,7 +1130,7 @@ sign_image_file() {
   # config.
   local loop_kerna="${loopdev}p2"
   local kerna_config
-  kerna_config="$(sudo ${FUTILITY} dump_kernel_config "${loop_kerna}")"
+  kerna_config="$(sudo "${FUTILITY}" dump_kernel_config "${loop_kerna}")"
   if [[ "${image_type}" != "factory_install" &&
         " ${kerna_config} " != *" cros_legacy "* &&
         " ${kerna_config} " != *" cros_efi "* ]]; then
@@ -1160,7 +1162,7 @@ dump_config)
   loopdev=$(loopback_partscan "${INPUT_IMAGE}")
   for partnum in 2 4; do
     info "kernel config in partition number ${partnum}:"
-    sudo ${FUTILITY} dump_kernel_config "${loopdev}p${partnum}"
+    sudo "${FUTILITY}" dump_kernel_config "${loopdev}p${partnum}"
     echo
   done
   exit 0
