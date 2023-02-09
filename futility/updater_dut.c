@@ -99,7 +99,8 @@ static int dut_get_platform_version(struct updater_config *cfg)
 /* Helper function to return host software write protection status. */
 static int dut_get_wp_sw(struct updater_config *cfg)
 {
-	return flashrom_get_wp(PROG_HOST, -1);
+	assert(cfg->image.programmer);
+	return flashrom_get_wp(cfg->image.programmer, -1);
 }
 
 /* Helper functions to use or configure the DUT properties. */
