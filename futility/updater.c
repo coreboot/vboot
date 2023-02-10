@@ -274,17 +274,17 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 		return 0;
 	}
 
-	if (dut_set_property_string("fw_try_next", slot)) {
+	if (dut_set_property_string("fw_try_next", slot, cfg)) {
 		ERROR("Failed to set fw_try_next to %s.\n", slot);
 		return -1;
 	}
 	if (!has_update &&
-	    dut_set_property_string("fw_result", "success")) {
+	    dut_set_property_string("fw_result", "success", cfg)) {
 		ERROR("Failed to set fw_result to success.\n");
 		return -1;
 	}
 
-	if (dut_set_property_int("fw_try_count", tries)) {
+	if (dut_set_property_int("fw_try_count", tries, cfg)) {
 		ERROR("Failed to set fw_try_count to %d.\n", tries);
 		return -1;
 	}
@@ -1369,7 +1369,7 @@ static int updater_setup_archive(
 	if (cfg->detect_model)
 		model = manifest_detect_model_from_frid(cfg, manifest);
 	else
-		model = manifest_find_model(manifest, arg->model);
+		model = manifest_find_model(cfg, manifest, arg->model);
 
 	if (!model)
 		return ++errorcnt;

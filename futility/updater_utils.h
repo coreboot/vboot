@@ -252,12 +252,15 @@ void dut_init_properties(struct dut_property *props, int num);
 int dut_get_property(enum dut_property_type property_type,
 		     struct updater_config *cfg);
 
-int dut_set_property_string(const char *key, const char *value);
-const char *dut_get_property_string(const char *key, char *dest, size_t size);
-int dut_set_property_int(const char *key, const int value);
-int dut_get_property_int(const char *key);
+int dut_set_property_string(const char *key, const char *value,
+			    struct updater_config *cfg);
+const char *dut_get_property_string(const char *key, char *dest, size_t size,
+				    struct updater_config *cfg);
+int dut_set_property_int(const char *key, const int value,
+			 struct updater_config *cfg);
+int dut_get_property_int(const char *key, struct updater_config *cfg);
 
 /* Gets the 'firmware manifest key' on the DUT. */
-int dut_get_manifest_key(char **manifest_key_out);
+int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */
