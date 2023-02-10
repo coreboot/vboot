@@ -1016,6 +1016,11 @@ util_files: $(if ${SDK_BUILD},${UTIL_FILES_SDK},${UTIL_FILES_BOARD})
 # These have their own headers too.
 ${BUILD}/utility/%: INCLUDES += -Iutility/include
 
+# Avoid build failures outside the chroot on Ubuntu 2022.04
+ifeq ($(OPENSSL_VERSION),3)
+${BUILD}/utility/%: CFLAGS += -Wno-error=deprecated-declarations
+endif
+
 ${UTIL_BINS_SDK}: ${UTILLIB}
 ${UTIL_BINS_SDK}: LIBS = ${UTILLIB}
 ${UTIL_BINS_BOARD}: ${UTILLIB}
