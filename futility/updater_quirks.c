@@ -77,7 +77,8 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
 	const struct vb2_gbb_header *gbb;
 
 	/* Check if current system has disabled software sync or no support. */
-	if (!(dut_get_property_int("vdat_flags") & VBSD_EC_SOFTWARE_SYNC)) {
+	if (!(dut_get_property_int("vdat_flags", cfg) & VBSD_EC_SOFTWARE_SYNC))
+	{
 		INFO("EC Software Sync is not available.\n");
 		return 0;
 	}
@@ -142,17 +143,17 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 		      "update by EC RO software sync.\n");
 		return 1;
 	}
-	dut_set_property_int("try_ro_sync", 1);
+	dut_set_property_int("try_ro_sync", 1, cfg);
 	return 0;
 }
 
 /*
  * Returns True if EC is running in RW.
  */
-static int is_ec_in_rw(void)
+static int is_ec_in_rw(struct updater_config *cfg)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
-	return (dut_get_property_string("ecfw_act", buf, sizeof(buf)) &&
+	return (dut_get_property_string("ecfw_act", buf, sizeof(buf), cfg) &&
 		strcasecmp(buf, "RW") == 0);
 }
 
@@ -358,7 +359,7 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
 		/* Need full update. */
 	} else if (!is_ec_software_sync_enabled(cfg)) {
 		/* Message already printed, need full update. */
-	} else if (is_ec_in_rw()) {
+	} else if (is_ec_in_rw(cfg)) {
 		WARN("EC Software Sync detected, will only update EC RO. "
 		     "The contents in EC RW will be updated after reboot.\n");
 		return EC_RECOVERY_RO;

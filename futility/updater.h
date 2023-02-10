@@ -342,7 +342,8 @@ int patch_image_by_model(
  * system (as defined by model_name).
  * Returns a model_config from manifest, or NULL if not found.
  */
-const struct model_config *manifest_find_model(const struct manifest *manifest,
+const struct model_config *manifest_find_model(struct updater_config *cfg,
+					       const struct manifest *manifest,
 					       const char *model_name);
 
 /*
