@@ -30,11 +30,7 @@ struct quirks_record {
  * Examples: CL:*3365287, CL:*3351831, CL:*4441527
  */
 static const struct quirks_record quirks_records[] = {
-	{ .match = "Google_Whirlwind.", .quirks = "enlarge_image" },
-	{ .match = "Google_Arkham.", .quirks = "enlarge_image" },
-	{ .match = "Google_Storm.", .quirks = "enlarge_image" },
-	{ .match = "Google_Gale.", .quirks = "enlarge_image" },
-
+	/* reference design: 'glados' */
 	{ .match = "Google_Chell.", .quirks = "unlock_me_for_update" },
 	{ .match = "Google_Lars.", .quirks = "unlock_me_for_update" },
 	{ .match = "Google_Sentry.", .quirks = "unlock_me_for_update" },
@@ -45,6 +41,7 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Eve.",
 	  .quirks = "unlock_me_for_update,eve_smm_store" },
 
+	/* reference design: sarien/drallion (wilco) */
 	{ .match = "Google_Sarien.",
 	  .quirks = "unlock_wilco_me_for_update" },
 	{ .match = "Google_Arcada.",
@@ -57,21 +54,10 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=2" },
 
         /* Legacy custom label units. */
+	/* reference design: oak */
 	{ .match = "Google_Hana.", .quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Reks.", .quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Relm.", .quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Wizpig.", .quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Enguarde.",
-		.quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Expresso.",
-		.quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Veyron_Jaq.",
-		.quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Veyron_Jerry.",
-		.quirks = "allow_empty_custom_label_tag" },
-	{ .match = "Google_Veyron_Mighty.",
-		.quirks = "allow_empty_custom_label_tag" },
 
+	/* reference design: octopus */
 	{ .match = "Google_Phaser.", .quirks = "override_signature_id" },
 };
 
