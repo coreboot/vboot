@@ -620,7 +620,8 @@ static int manifest_from_simple_folder(struct manifest *manifest)
  * system (as defined by model_name).
  * Returns a model_config from manifest, or NULL if not found.
  */
-const struct model_config *manifest_find_model(const struct manifest *manifest,
+const struct model_config *manifest_find_model(struct updater_config *cfg,
+					       const struct manifest *manifest,
 					       const char *model_name)
 {
 	char *manifest_key = NULL;
@@ -637,7 +638,7 @@ const struct model_config *manifest_find_model(const struct manifest *manifest,
 		return &manifest->models[0];
 
 	if (!model_name) {
-		matched_index = dut_get_manifest_key(&manifest_key);
+		matched_index = dut_get_manifest_key(&manifest_key, cfg);
 		if (matched_index < 0) {
 			ERROR("Failed to get device identity.  "
 			      "Run \"crosid -v\" for explanation.\n");

@@ -22,7 +22,7 @@
  *   device data
  * - >=0 (the matched device index) success
  */
-int dut_get_manifest_key(char **manifest_key_out)
+int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
 {
 #ifdef HAVE_CROSID
 	return crosid_get_firmware_manifest_key(manifest_key_out);
@@ -36,22 +36,26 @@ int dut_get_manifest_key(char **manifest_key_out)
 #endif
 }
 
-int dut_set_property_string(const char *key, const char *value)
+int dut_set_property_string(const char *key, const char *value,
+			    struct updater_config *cfg)
+
 {
 	return VbSetSystemPropertyString(key, value);
 }
 
-const char *dut_get_property_string(const char *key, char *dest, size_t size)
+const char *dut_get_property_string(const char *key, char *dest, size_t size,
+				    struct updater_config *cfg)
 {
 	return VbGetSystemPropertyString(key, dest, size);
 }
 
-int dut_set_property_int(const char *key, const int value)
+int dut_set_property_int(const char *key, const int value,
+			 struct updater_config *cfg)
 {
 	return VbSetSystemPropertyInt(key, value);
 }
 
-int dut_get_property_int(const char *key)
+int dut_get_property_int(const char *key, struct updater_config *cfg)
 {
 	return VbGetSystemPropertyInt(key);
 }
@@ -61,7 +65,7 @@ static int dut_get_mainfw_act(struct updater_config *cfg)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
 
-	if (!dut_get_property_string("mainfw_act", buf, sizeof(buf)))
+	if (!dut_get_property_string("mainfw_act", buf, sizeof(buf), cfg))
 		return SLOT_UNKNOWN;
 
 	if (strcmp(buf, FWACT_A) == 0)
@@ -75,19 +79,19 @@ static int dut_get_mainfw_act(struct updater_config *cfg)
 /* A helper function to return the "tpm_fwver" system property. */
 static int dut_get_tpm_fwver(struct updater_config *cfg)
 {
-	return dut_get_property_int("tpm_fwver");
+	return dut_get_property_int("tpm_fwver", cfg);
 }
 
 /* A helper function to return the "hardware write protection" status. */
 static int dut_get_wp_hw(struct updater_config *cfg)
 {
 	/* wpsw refers to write protection 'switch', not 'software'. */
-	return dut_get_property_int("wpsw_cur") ? WP_ENABLED : WP_DISABLED;
+	return dut_get_property_int("wpsw_cur", cfg) ? WP_ENABLED : WP_DISABLED;
 }
 
 static int dut_get_platform_version(struct updater_config *cfg)
 {
-	return dut_get_property_int("board_id");
+	return dut_get_property_int("board_id", cfg);
 }
 
 /* Helper function to return host software write protection status. */
