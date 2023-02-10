@@ -90,6 +90,7 @@ struct updater_config {
 	int override_gbb_flags;
 	uint32_t gbb_flags;
 	bool detect_model;
+	bool dut_is_remote;
 };
 
 struct updater_config_arguments {
