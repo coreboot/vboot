@@ -76,9 +76,14 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
 {
 	const struct vb2_gbb_header *gbb;
 
+	int vdat_flags = dut_get_property_int("vdat_flags", cfg);
+	if (vdat_flags < 0) {
+		WARN("Failed to identify DUT vdat_flags.\n");
+		return 0;
+	}
+
 	/* Check if current system has disabled software sync or no support. */
-	if (!(dut_get_property_int("vdat_flags", cfg) & VBSD_EC_SOFTWARE_SYNC))
-	{
+	if (!(vdat_flags & VBSD_EC_SOFTWARE_SYNC)) {
 		INFO("EC Software Sync is not available.\n");
 		return 0;
 	}

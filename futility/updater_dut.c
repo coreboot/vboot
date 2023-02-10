@@ -24,6 +24,11 @@
  */
 int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
 {
+	if (cfg->dut_is_remote) {
+		WARN("Cannot retrieve the remote DUT manifest info. "
+		     "Please specify the DUT type by --model.\n");
+		return -1;
+	}
 #ifdef HAVE_CROSID
 	return crosid_get_firmware_manifest_key(manifest_key_out);
 #else
@@ -38,25 +43,40 @@ int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
 
 int dut_set_property_string(const char *key, const char *value,
 			    struct updater_config *cfg)
-
 {
+	if (cfg->dut_is_remote) {
+		WARN("Ignored setting property %s on a remote DUT.\n", key);
+		return -1;
+	}
 	return VbSetSystemPropertyString(key, value);
 }
 
 const char *dut_get_property_string(const char *key, char *dest, size_t size,
 				    struct updater_config *cfg)
 {
+	if (cfg->dut_is_remote) {
+		WARN("Ignored getting property %s on a remote DUT.\n", key);
+		return NULL;
+	}
 	return VbGetSystemPropertyString(key, dest, size);
 }
 
 int dut_set_property_int(const char *key, const int value,
 			 struct updater_config *cfg)
 {
+	if (cfg->dut_is_remote) {
+		WARN("Ignored setting property %s on a remote DUT.\n", key);
+		return -1;
+	}
 	return VbSetSystemPropertyInt(key, value);
 }
 
 int dut_get_property_int(const char *key, struct updater_config *cfg)
 {
+	if (cfg->dut_is_remote) {
+		WARN("Ignored getting property %s on a remote DUT.\n", key);
+		return -1;
+	}
 	return VbGetSystemPropertyInt(key);
 }
 
