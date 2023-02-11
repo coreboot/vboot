@@ -54,7 +54,8 @@ vb2_error_t vb2ex_hwcrypto_digest_extend(const uint8_t *buf, uint32_t size)
 	shifted_data = buf + rem_size;
 
 	vb2_sha256_transform_hwcrypto(vb2_sha_ctx.block, 1);
-	vb2_sha256_transform_hwcrypto(shifted_data, remaining_blocks);
+	if (remaining_blocks)
+		vb2_sha256_transform_hwcrypto(shifted_data, remaining_blocks);
 
 	rem_size = new_size % VB2_SHA256_BLOCK_SIZE;
 

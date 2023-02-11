@@ -17,5 +17,6 @@ int sha256_ce_transform(uint32_t *state, const unsigned char *buf, int blocks);
 void vb2_sha256_transform_hwcrypto(const uint8_t *message,
 				   unsigned int block_nb)
 {
-	sha256_ce_transform(vb2_sha_ctx.h, message, block_nb);
+	if (block_nb)
+		sha256_ce_transform(vb2_sha_ctx.h, message, block_nb);
 }
