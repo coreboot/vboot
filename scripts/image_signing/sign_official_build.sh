@@ -532,7 +532,7 @@ resign_firmware_payload() {
         local bios_path="${shellball_dir}/${bios_image}"
 
         echo "Before EC signing ${bios_path}: md5 =" \
-          $(md5sum "${bios_path}" | awk '{print $1}')
+          "$(md5sum "${bios_path}" | awk '{print $1}')"
 
         if [ -n "${ec_image}" ]; then
           # Path to ec.bin.
@@ -565,7 +565,7 @@ resign_firmware_payload() {
         fi
 
         echo "After EC signing ${bios_path}: md5 =" \
-          $(md5sum "${bios_path}" | awk '{print $1}')
+          "$(md5sum "${bios_path}" | awk '{print $1}')"
 
         # Resign bios.bin.
         full_command=(
@@ -582,7 +582,7 @@ resign_firmware_payload() {
         "${full_command[@]}"
 
         echo "After BIOS signing ${temp_fw}: md5 =" \
-          $(md5sum "${temp_fw}" | awk '{print $1}')
+          "$(md5sum "${temp_fw}" | awk '{print $1}')"
 
         # For development phases, when the GBB can be updated still, set the
         # recovery and root keys in the image.
@@ -597,7 +597,7 @@ resign_firmware_payload() {
         "${full_command[@]}"
 
         echo "After setting GBB on ${bios_path}: md5 =" \
-          $(md5sum "${bios_path}" | awk '{print $1}')
+          "$(md5sum "${bios_path}" | awk '{print $1}')"
 
         board_name="$(get_boardvar_from_lsb_release "${rootfs_dir}")"
         echo "Board name from lsb-release: ${board_name}"
@@ -1226,7 +1226,7 @@ elif [[ "${TYPE}" == "firmware" ]]; then
 elif [[ "${TYPE}" == "update_payload" ]]; then
   sign_update_payload "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
 elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
-  KEY_NAME="${KEY_DIR}/key_$(basename $(dirname "${INPUT_IMAGE}"))"
+  KEY_NAME="${KEY_DIR}/key_$(basename "$(dirname "${INPUT_IMAGE}")")"
   if [[ ! -e "${KEY_NAME}.pem" ]]; then
     KEY_NAME="${KEY_DIR}/key"
   fi
