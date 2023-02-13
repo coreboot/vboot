@@ -190,6 +190,7 @@ calculate_rootfs_hash() {
   table="$(echo "${table}" |
     sed -s "s|ROOT_DEV|${root_dev}|g;s|HASH_DEV|${hash_dev}|")"
   CALCULATED_DM_ARGS="$(set_dm_device "${dm_config}" vroot "${table}")"
+  # shellcheck disable=SC2001
   CALCULATED_KERNEL_CONFIG="$(echo "${kernel_config}" |
     sed -e 's#\(.*dm="\)\([^"]*\)\(".*\)'"#\1${CALCULATED_DM_ARGS}\3#g")"
 }
@@ -282,6 +283,7 @@ update_rootfs_hash() {
       info "Skipping empty kernel partition 4 (legacy images)."
       continue
     fi
+    # shellcheck disable=SC2001
     new_kernel_config="$(echo "${new_kernel_config}" |
       sed -e 's#\(.*dm="\)\([^"]*\)\(".*\)'"#\1${dm_args}\3#g")"
     info "New config for kernel partition ${kernelpart} is:"
@@ -502,6 +504,7 @@ resign_firmware_payload() {
           local match
           match="$(grep -E "[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"
           local key_index
+          # shellcheck disable=SC2001
           key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
           info "Detected key index from loem.ini as ${key_index} for ${key_id}"
           if [[ -z "${key_index}" ]]; then
@@ -952,6 +955,7 @@ update_recovery_kernel_hash() {
   fi
 
   new_kerna_config=$(make_temp_file)
+  # shellcheck disable=SC2001
   echo "${old_kerna_config}" |
     sed -e "s#\(kern_b_hash=\)[a-z0-9]*#\1${new_kernb_hash}#" \
       > "${new_kerna_config}"
