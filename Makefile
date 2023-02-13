@@ -634,9 +634,6 @@ SIGNING_SCRIPTS_BOARD = \
 	scripts/image_signing/resign_firmwarefd.sh \
 	scripts/image_signing/make_dev_firmware.sh \
 	scripts/image_signing/make_dev_ssd.sh \
-	scripts/image_signing/gbb_flags_common.sh \
-	scripts/image_signing/set_gbb_flags.sh \
-	scripts/image_signing/get_gbb_flags.sh \
 	scripts/image_signing/common_minimal.sh
 
 # SDK installations just want everything.
