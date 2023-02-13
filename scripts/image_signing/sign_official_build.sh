@@ -114,7 +114,7 @@ get_hash_from_config() {
   dm_config=$(get_dmparams_from_config "${kernel_config}")
   local vroot_dev
   vroot_dev=$(get_dm_device "${dm_config}" vroot)
-  echo $(get_verity_arg "${vroot_dev}" root_hexdigest)
+  get_verity_arg "${vroot_dev}" root_hexdigest
 }
 
 # Get the mapped device and its args.
@@ -124,7 +124,7 @@ get_hash_from_config() {
 get_dm_device() {
   local dm=$1
   local device=$2
-  echo $(echo "${dm}" | sed -nre "s/.*${device}[^,]*,([^,]*).*/\1/p")
+  echo "${dm}" | sed -nre "s/.*${device}[^,]*,([^,]*).*/\1/p"
 }
 
 # Set the mapped device and its args for a device.
@@ -135,8 +135,7 @@ set_dm_device() {
   local dm=$1
   local device=$2
   local args=$3
-  echo $(echo "${dm}" |
-    sed -nre "s#(.*${device}[^,]*,)([^,]*)(.*)#\1${args}\3#p")
+  echo "${dm}" | sed -nre "s#(.*${device}[^,]*,)([^,]*)(.*)#\1${args}\3#p"
 }
 
 CALCULATED_KERNEL_CONFIG=
