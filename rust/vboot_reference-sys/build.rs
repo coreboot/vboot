@@ -23,20 +23,20 @@ fn bindings_generation() -> io::Result<()> {
     let header_dir = Path::new(".");
     let header_path = header_dir.join("crossystem.h");
     println!("cargo:rerun-if-changed={}", header_path.display());
-    let status = Command::new(&bindgen)
-        .args(&["--default-enum-style", "rust"])
-        .args(&["--blacklist-type", "__rlim64_t"])
-        .args(&["--raw-line", "pub type __rlim64_t = u64;"])
-        .args(&["--blacklist-type", "__u\\d{1,2}"])
-        .args(&["--raw-line", "pub type __u8 = u8;"])
-        .args(&["--raw-line", "pub type __u16 = u16;"])
-        .args(&["--raw-line", "pub type __u32 = u32;"])
-        .args(&["--blacklist-type", "__uint64_t"])
+    let status = Command::new(bindgen)
+        .args(["--default-enum-style", "rust"])
+        .args(["--blacklist-type", "__rlim64_t"])
+        .args(["--raw-line", "pub type __rlim64_t = u64;"])
+        .args(["--blacklist-type", "__u\\d{1,2}"])
+        .args(["--raw-line", "pub type __u8 = u8;"])
+        .args(["--raw-line", "pub type __u16 = u16;"])
+        .args(["--raw-line", "pub type __u32 = u32;"])
+        .args(["--blacklist-type", "__uint64_t"])
         .arg("--no-layout-tests")
         .arg("--disable-header-comment")
-        .args(&["--output", gen_file.to_str().unwrap()])
+        .args(["--output", gen_file.to_str().unwrap()])
         .arg(header_path.to_str().unwrap())
-        .args(&[
+        .args([
             "--",
             "-DUSE_BINDGEN",
             "-D_FILE_OFFSET_BITS=64",
