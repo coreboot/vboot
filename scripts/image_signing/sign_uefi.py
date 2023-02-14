@@ -10,6 +10,7 @@ The target directory can be either the root of ESP or /boot of root filesystem.
 
 import argparse
 import logging
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -96,6 +97,32 @@ class Signer:
             sys.exit("Verification failed")
 
 
+def inject_vbpubk(efi_file: os.PathLike, key_dir: os.PathLike):
+    """Update a UEFI executable's vbpubk section.
+
+    The crdyboot bootloader contains an embedded public key in the
+    ".vbpubk" section. This function replaces the data in the existing
+    section (normally containing a dev key) with the real key.
+
+    Args:
+        efi_file: Path of a UEFI file.
+        key_dir: Path of the UEFI key directory.
+    """
+    section_name = ".vbpubk"
+    logging.info("updating section %s in %s", section_name, efi_file.name)
+    section_data_path = key_dir / "../kernel_subkey.vbpubk"
+    subprocess.run(
+        [
+            "sudo",
+            "objcopy",
+            "--update-section",
+            f"{section_name}={section_data_path}",
+            efi_file,
+        ],
+        check=True,
+    )
+
+
 def sign_target_dir(target_dir, key_dir, efi_glob):
     """Sign various EFI files under |target_dir|.
 
@@ -119,10 +146,16 @@ def sign_target_dir(target_dir, key_dir, efi_glob):
     ensure_file_exists(sign_key, "No signing key")
 
     with tempfile.TemporaryDirectory() as working_dir:
-        signer = Signer(Path(working_dir), sign_key, sign_cert, verify_cert)
+        working_dir = Path(working_dir)
+        signer = Signer(working_dir, sign_key, sign_cert, verify_cert)
 
         for efi_file in sorted(bootloader_dir.glob(efi_glob)):
             if efi_file.is_file():
+                signer.sign_efi_file(efi_file)
+
+        for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
+            if efi_file.is_file():
+                inject_vbpubk(efi_file, key_dir)
                 signer.sign_efi_file(efi_file)
 
         for syslinux_kernel_file in sorted(syslinux_dir.glob("vmlinuz.?")):
@@ -165,7 +198,12 @@ def main(argv: Optional[List[str]] = None) -> Optional[int]:
     parser = get_parser()
     opts = parser.parse_args(argv)
 
-    for tool in ("sbattach", "sbsign", "sbverify"):
+    for tool in (
+        "objcopy",
+        "sbattach",
+        "sbsign",
+        "sbverify",
+    ):
         ensure_executable_available(tool)
 
     sign_target_dir(opts.target_dir, opts.key_dir, opts.efi_glob)
