@@ -184,6 +184,9 @@ int flashrom_write_image(const struct firmware_image *image,
 		}
 	}
 
+	/* Must occur before attempting to read FMAP from SPI flash. */
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
+
 	if (regions) {
 		int i;
 		r = flashrom_layout_read_fmap_from_buffer(
@@ -216,7 +219,6 @@ int flashrom_write_image(const struct firmware_image *image,
 		goto err_cleanup;
 	}
 
-	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNWRITABLE_REGIONS, true);
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, false);
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE,
