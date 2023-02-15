@@ -12,7 +12,8 @@
 #include "updater_utils.h"
 
 /* FMAP section names. */
-static const char * const FMAP_RO_FRID = "RO_FRID",
+static const char * const FMAP_RO_FMAP = "FMAP",
+		  * const FMAP_RO_FRID = "RO_FRID",
 		  * const FMAP_RO_SECTION = "RO_SECTION",
 		  * const FMAP_RO_CBFS = "COREBOOT",
 		  * const FMAP_RO_GBB = "GBB",
