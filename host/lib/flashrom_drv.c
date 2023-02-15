@@ -46,13 +46,19 @@ static char *flashrom_extract_params(const char *str, char **prog, char **params
 	return tmp;
 }
 
+/*
+ * NOTE: When `regions` contains multiple regions, `region_start` and
+ * `region_len` will be filled with the data of the first region.
+ */
 static int flashrom_read_image_impl(struct firmware_image *image,
-				    const char *region,
+				    const char * const regions[],
 				    unsigned int *region_start,
 				    unsigned int *region_len, int verbosity)
 {
 	int r = 0;
 	size_t len = 0;
+	*region_start = 0;
+	*region_len = 0;
 
 	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
 
@@ -79,7 +85,8 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
 
-	if (region) {
+	if (regions) {
+		int i;
 		r = flashrom_layout_read_fmap_from_rom(
 			&layout, flashctx, 0, len);
 		if (r > 0) {
@@ -87,12 +94,15 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 			r = -1;
 			goto err_cleanup;
 		}
-		// empty region causes seg fault in API.
-		r |= flashrom_layout_include_region(layout, region);
-		if (r > 0) {
-			ERROR("could not include region = '%s'\n", region);
-			r = -1;
-			goto err_cleanup;
+		for (i = 0; regions[i]; i++) {
+			// empty region causes seg fault in API.
+			r |= flashrom_layout_include_region(layout, regions[i]);
+			if (r > 0) {
+				ERROR("could not include region = '%s'\n",
+				      regions[i]);
+				r = -1;
+				goto err_cleanup;
+			}
 		}
 		flashrom_layout_set(flashctx, layout);
 	}
@@ -103,8 +113,8 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 
 	r |= flashrom_image_read(flashctx, image->data, len);
 
-	if (r == 0 && region)
-		r |= flashrom_layout_get_region_range(layout, region,
+	if (r == 0 && regions && regions[0])
+		r |= flashrom_layout_get_region_range(layout, regions[0],
 						      region_start, region_len);
 
 err_cleanup:
@@ -119,18 +129,21 @@ err_init:
 	return r;
 }
 
-int flashrom_read_image(struct firmware_image *image, const char *region,
+int flashrom_read_image(struct firmware_image *image,
+			const char * const regions[],
 			int verbosity)
 {
 	unsigned int start, len;
-	return flashrom_read_image_impl(image, region, &start, &len, verbosity);
+	return flashrom_read_image_impl(image, regions, &start, &len,
+					verbosity);
 }
 
 int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity)
 {
+	const char * const regions[] = {region, NULL};
 	unsigned int start, len;
-	int r = flashrom_read_image_impl(image, region, &start, &len,
+	int r = flashrom_read_image_impl(image, regions, &start, &len,
 					 verbosity);
 	if (r != 0)
 		return r;
