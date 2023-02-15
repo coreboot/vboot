@@ -417,7 +417,11 @@ static void teardown_flash(struct updater_config *cfg,
 static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
 {
 #ifdef USE_FLASHROM
-	const char * const regions[] = {FMAP_RO_GBB, NULL};
+	/*
+	 * Read the FMAP region as well, so that a subsequet write won't
+	 * require another read of FMAP.
+	 */
+	const char * const regions[] = {FMAP_RO_FMAP, FMAP_RO_GBB, NULL};
 	if (flashrom_read_image(&cfg->image_current, regions,
 				cfg->verbosity + 1))
 		return NULL;
