@@ -417,8 +417,9 @@ static void teardown_flash(struct updater_config *cfg,
 static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
 {
 #ifdef USE_FLASHROM
-	if (flashrom_read_image(&cfg->image_current, FMAP_RO_GBB,
-				 cfg->verbosity + 1))
+	const char * const regions[] = {FMAP_RO_GBB, NULL};
+	if (flashrom_read_image(&cfg->image_current, regions,
+				cfg->verbosity + 1))
 		return NULL;
 	uint8_t *ret = cfg->image_current.data;
 	cfg->image_current.data = NULL;

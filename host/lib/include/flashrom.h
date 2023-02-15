@@ -30,21 +30,26 @@ struct firmware_image {
 };
 
 /**
- * Read using flashrom into an allocated buffer. flashrom_read subprocesses the
- * flashrom binary and returns a buffer truncated to the region.
- * flashrom_read_image will read the return a full sized buffer with only the
- * region filled with data. flashrom_read_region will return the buffer
- * truncated to the region.
+ * Read using flashrom into an allocated buffer.
+ *
+ * flashrom_read subprocesses the flashrom binary and returns a buffer truncated
+ * to the region.
+ *
+ * flashrom_read_image reads the returns a full sized buffer with only the
+ * regions filled with data.
+ *
+ * flashrom_read_region returns the buffer truncated to the region.
  *
  * @param image		The parameter that contains the programmer, buffer and
  *			size to use in the read operation.
- * @param region	The name of the fmap region to read, or NULL to
- *			read the entire flash chip.
+ * @param regions	A list of the names of the fmap regions to read, or NULL
+ *			to read the entire flash chip.
  *
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
-int flashrom_read_image(struct firmware_image *image, const char *region,
+int flashrom_read_image(struct firmware_image *image,
+			const char * const regions[],
 			int verbosity);
 int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity);
