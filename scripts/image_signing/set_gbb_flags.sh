@@ -48,7 +48,7 @@ main() {
     exit 1
   fi
   echo 'NOTICE: This script has been replaced with futility functionality and will be removed.' 1>&2
-  echo 'NOTICE: Please try `futility gbb --set --flags=`' 1>&2
+  echo "NOTICE: Please try \`futility gbb --set --flash --flags=$1\`" 1>&2
 
   local value="$(($1))"
 
