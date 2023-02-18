@@ -49,6 +49,8 @@ main() {
   fi
   echo 'NOTICE: This script has been replaced with futility functionality and will be removed.' 1>&2
   echo "NOTICE: Please try \`futility gbb --set --flash --flags=$1\`" 1>&2
+  echo 'NOTICE: Waiting for 30 seconds before proceeding...' 1>&2
+  sleep 30
 
   local value="$(($1))"
 
