@@ -59,7 +59,7 @@ static void print_help(int argc, char *argv[])
 		FLASH_ARG_HELP
 		" -o, --output=FILE   \tNew file name for ouptput.\n"
 		"     --hwid=HWID     \tThe new hardware id to be changed.\n"
-		"     --flags=FLAGS   \tThe new (numeric) flags value.\n"
+		"     --flags=FLAGS   \tThe new (numeric) flags value or +/- diff value.\n"
 		" -k, --rootkey=FILE  \tFile name of new Root Key.\n"
 		" -b, --bmpfv=FILE    \tFile name of new Bitmap FV.\n"
 		" -r  --recoverykey=FILE\tFile name of new Recovery Key.\n"
@@ -451,6 +451,29 @@ static int write_to_flash(struct updater_config *cfg, uint8_t *outbuf,
 #endif /* USE_FLASHROM */
 }
 
+static int parse_flag_value(const char *s, vb2_gbb_flags_t *val)
+{
+	int sign = 0;
+
+	if (!strlen(s))
+		return -1;
+
+	if (s[0] == '+')
+		sign = 1;
+	else if (s[0] == '-')
+		sign = 2;
+
+	const char *ss = !sign ? s : &s[1];
+	char *e = NULL;
+	*val = strtoul(ss, &e, 0);
+	if (e && *e) {
+		fprintf(stderr, "ERROR: invalid flags value: %s\n", ss);
+		return -1;
+	}
+
+	return sign;
+}
+
 static int do_gbb(int argc, char *argv[])
 {
 	enum do_what_now { DO_GET, DO_SET, DO_CREATE } mode = DO_GET;
@@ -756,17 +779,17 @@ static int do_gbb(int argc, char *argv[])
 		}
 
 		if (opt_flags) {
-			char *e = NULL;
-			uint32_t val;
-			val = (uint32_t) strtoul(opt_flags, &e, 0);
-			if (e && *e) {
-				fprintf(stderr,
-					"ERROR: invalid flags value: %s\n",
-					opt_flags);
+			vb2_gbb_flags_t val;
+			const int flag_sign = parse_flag_value(opt_flags, &val);
+			if (flag_sign < 0) {
 				errorcnt++;
 				break;
 			}
-			gbb->flags = val;
+			if (flag_sign > 0)
+				/* flag_sign := 1 => +ve and flag_sign := 2 => -ve. */
+				gbb->flags = flag_sign == 1 ? (gbb->flags | val) : (gbb->flags & ~val);
+			else
+				gbb->flags = val;
 		}
 
 		if (opt_rootkey) {
