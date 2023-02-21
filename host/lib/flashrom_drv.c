@@ -311,3 +311,95 @@ err_init:
 
 	return ret;
 }
+
+int flashrom_set_wp(const char *prog_with_params, bool wp_mode,
+		    uint32_t wp_start, uint32_t wp_len, int verbosity)
+{
+	int ret = 1;
+
+	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+
+	struct flashrom_wp_cfg *cfg = NULL;
+
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(prog_with_params, &programmer,
+					    &params);
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	if (flashrom_init(1)
+		|| flashrom_programmer_init(&prog, programmer, params))
+		goto err_init;
+
+	if (flashrom_flash_probe(&flashctx, prog, NULL))
+		goto err_probe;
+
+	if (flashrom_wp_cfg_new(&cfg) != FLASHROM_WP_OK)
+		goto err_cleanup;
+
+	enum flashrom_wp_mode mode = wp_mode ?
+			FLASHROM_WP_MODE_HARDWARE : FLASHROM_WP_MODE_DISABLED;
+	flashrom_wp_set_mode(cfg, mode);
+	flashrom_wp_set_range(cfg, wp_start, wp_len);
+
+	if (flashrom_wp_write_cfg(flashctx, cfg) != FLASHROM_WP_OK)
+		goto err_write_cfg;
+
+	ret = 0;
+
+err_write_cfg:
+	flashrom_wp_cfg_release(cfg);
+
+err_cleanup:
+	flashrom_flash_release(flashctx);
+
+err_probe:
+	if (flashrom_programmer_shutdown(prog))
+		ret = 1;
+
+err_init:
+	free(tmp);
+
+	return ret;
+}
+
+int flashrom_get_size(const char *prog_with_params,
+		      uint32_t *flash_len, int verbosity)
+{
+	int r = 0;
+
+	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
+
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(prog_with_params,
+					    &programmer, &params);
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+
+	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
+
+	if (flashrom_init(1) ||
+	    flashrom_programmer_init(&prog, programmer, params)) {
+		r = -1;
+		goto err_init;
+	}
+	if (flashrom_flash_probe(&flashctx, prog, NULL)) {
+		r = -1;
+		goto err_probe;
+	}
+
+	*flash_len = flashrom_flash_getsize(flashctx);
+
+	flashrom_flash_release(flashctx);
+
+err_probe:
+	r |= flashrom_programmer_shutdown(prog);
+
+err_init:
+	free(tmp);
+	return r;
+}

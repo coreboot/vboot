@@ -88,3 +88,28 @@ int flashrom_write_image(const struct firmware_image *image,
  */
 int flashrom_get_wp(const char *programmer, bool *wp_mode,
 		    uint32_t *wp_start, uint32_t *wp_len, int verbosity);
+
+/**
+ * Set wp state using flashrom.
+ *
+ * @param programmer	The name of the programmer to use for writing the
+ *                      writeprotect state.
+ * @param wp_mode       WP mode to set. true to enable, false disable WP.
+ * @param wp_start      WP start addr to set
+ * @param wp_len        WP region length set
+ *
+ * @return 0 on success, or a relevant error.
+ */
+int flashrom_set_wp(const char *programmer, bool wp_mode,
+		    uint32_t wp_start, uint32_t wp_len, int verbosity);
+
+/**
+ * Get flash size using flashrom.
+ *
+ * @param programmer	The name of the programmer to use.
+ * @param flash_len     Pointer to a uint32_t to store chip length.
+ *
+ * @return 0 on success, or a relevant error.
+ */
+int flashrom_get_size(const char *programmer, uint32_t *flash_len,
+		      int verbosity);
