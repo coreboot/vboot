@@ -20,6 +20,7 @@ export OUTDIR
 TESTS="
 ${SCRIPT_DIR}/futility/test_create.sh
 ${SCRIPT_DIR}/futility/test_dump_fmap.sh
+${SCRIPT_DIR}/futility/test_flash_util.sh
 ${SCRIPT_DIR}/futility/test_gbb_utility.sh
 ${SCRIPT_DIR}/futility/test_load_fmap.sh
 ${SCRIPT_DIR}/futility/test_main.sh
