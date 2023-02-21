@@ -651,6 +651,7 @@ FUTIL_SRCS = \
 	futility/cmd_create.c \
 	futility/cmd_dump_fmap.c \
 	futility/cmd_dump_kernel_config.c \
+	futility/cmd_flash_util.c \
 	futility/cmd_gbb_utility.c \
 	futility/cmd_gscvd.c \
 	futility/cmd_load_fmap.c \
