@@ -120,6 +120,7 @@ LOCAL_CFLAGS += -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64
 FUTIL_STATIC_SRCS = \
 	futility/futility.c \
 	futility/cmd_dump_fmap.c \
+	futility/cmd_flash_util.c \
 	futility/cmd_gbb_utility.c \
 	futility/misc.c
 
