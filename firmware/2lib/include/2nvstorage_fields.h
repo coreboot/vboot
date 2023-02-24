@@ -55,10 +55,10 @@ enum vb2_nv_offset {
 };
 
 /* Fields in VB2_NV_OFFS_HEADER (unused = 0x04) */
-#define VB2_NV_HEADER_WIPEOUT		       0x08
-#define VB2_NV_HEADER_KERNEL_SETTINGS_RESET    0x10
-#define VB2_NV_HEADER_FW_SETTINGS_RESET        0x20
-#define VB2_NV_HEADER_SIGNATURE_MASK           0xc3
+#define VB2_NV_HEADER_WIPEOUT			0x08
+#define VB2_NV_HEADER_KERNEL_SETTINGS_RESET	0x10
+#define VB2_NV_HEADER_FW_SETTINGS_RESET		0x20
+#define VB2_NV_HEADER_SIGNATURE_MASK		0xc3
 
 /*
  * Valid signature values.  Note that V1 readers only looked at mask 0xc0, and
@@ -68,46 +68,46 @@ enum vb2_nv_offset {
  * some platforms.
  */
 /* Version 1 = 16-byte record */
-#define VB2_NV_HEADER_SIGNATURE_V1             0x40
+#define VB2_NV_HEADER_SIGNATURE_V1		0x40
 /* Version 2 = 64-byte record */
-#define VB2_NV_HEADER_SIGNATURE_V2             0x03
+#define VB2_NV_HEADER_SIGNATURE_V2		0x03
 
 /* Fields in VB2_NV_OFFS_BOOT */
-#define VB2_NV_BOOT_TRY_COUNT_MASK             0x0f
-#define VB2_NV_BOOT_BACKUP_NVRAM               0x10
-#define VB2_NV_BOOT_DISPLAY_REQUEST            0x20
-#define VB2_NV_BOOT_DISABLE_DEV                0x40
-#define VB2_NV_BOOT_DEBUG_RESET                0x80
+#define VB2_NV_BOOT_TRY_COUNT_MASK		0x0f
+#define VB2_NV_BOOT_BACKUP_NVRAM		0x10
+#define VB2_NV_BOOT_DISPLAY_REQUEST		0x20
+#define VB2_NV_BOOT_DISABLE_DEV			0x40
+#define VB2_NV_BOOT_DEBUG_RESET			0x80
 
 /* Fields in VB2_NV_OFFS_BOOT2 */
-#define VB2_NV_BOOT2_RESULT_MASK               0x03
-#define VB2_NV_BOOT2_TRIED                     0x04
-#define VB2_NV_BOOT2_TRY_NEXT                  0x08
-#define VB2_NV_BOOT2_PREV_RESULT_MASK          0x30
+#define VB2_NV_BOOT2_RESULT_MASK		0x03
+#define VB2_NV_BOOT2_TRIED			0x04
+#define VB2_NV_BOOT2_TRY_NEXT			0x08
+#define VB2_NV_BOOT2_PREV_RESULT_MASK		0x30
 #define VB2_NV_BOOT2_PREV_RESULT_SHIFT 4  /* Number of bits to shift result */
-#define VB2_NV_BOOT2_PREV_TRIED                0x40
-#define VB2_NV_BOOT2_REQ_DIAG                  0x80
+#define VB2_NV_BOOT2_PREV_TRIED			0x40
+#define VB2_NV_BOOT2_REQ_DIAG			0x80
 
 /* Fields in VB2_NV_OFFS_DEV (unused = 0x80) */
-#define VB2_NV_DEV_FLAG_EXTERNAL               0x01
-#define VB2_NV_DEV_FLAG_SIGNED_ONLY            0x02
-#define VB2_NV_DEV_FLAG_LEGACY                 0x04
-#define VB2_NV_DEV_FLAG_DEPRECATED_FASTBOOT_FULL_CAP      0x08
-#define VB2_NV_DEV_FLAG_DEFAULT_BOOT           0x30
+#define VB2_NV_DEV_FLAG_EXTERNAL		0x01
+#define VB2_NV_DEV_FLAG_SIGNED_ONLY		0x02
+#define VB2_NV_DEV_FLAG_LEGACY			0x04
+#define VB2_NV_DEV_FLAG_DEPRECATED_FASTBOOT_FULL_CAP	0x08
+#define VB2_NV_DEV_FLAG_DEFAULT_BOOT		0x30
 #define VB2_NV_DEV_DEFAULT_BOOT_SHIFT 4  /* Number of bits to shift */
-#define VB2_NV_DEV_FLAG_UDC                    0x40
+#define VB2_NV_DEV_FLAG_UDC			0x40
 
 /* Fields in VB2_NV_OFFS_TPM (unused = 0xf8) */
-#define VB2_NV_TPM_CLEAR_OWNER_REQUEST         0x01
-#define VB2_NV_TPM_CLEAR_OWNER_DONE            0x02
-#define VB2_NV_TPM_REBOOTED                    0x04
+#define VB2_NV_TPM_CLEAR_OWNER_REQUEST		0x01
+#define VB2_NV_TPM_CLEAR_OWNER_DONE		0x02
+#define VB2_NV_TPM_REBOOTED			0x04
 
 /* Fields in VB2_NV_OFFS_MISC (unused = 0xa0) */
-#define VB2_NV_MISC_DEPRECATED_UNLOCK_FASTBOOT            0x01
-#define VB2_NV_MISC_BOOT_ON_AC_DETECT          0x02
-#define VB2_NV_MISC_TRY_RO_SYNC		       0x04
-#define VB2_NV_MISC_BATTERY_CUTOFF             0x08
-#define VB2_NV_MISC_MINIOS_PRIORITY            0x10
-#define VB2_NV_MISC_POST_EC_SYNC_DELAY         0x40
+#define VB2_NV_MISC_DEPRECATED_UNLOCK_FASTBOOT	0x01
+#define VB2_NV_MISC_BOOT_ON_AC_DETECT		0x02
+#define VB2_NV_MISC_TRY_RO_SYNC			0x04
+#define VB2_NV_MISC_BATTERY_CUTOFF		0x08
+#define VB2_NV_MISC_MINIOS_PRIORITY		0x10
+#define VB2_NV_MISC_POST_EC_SYNC_DELAY		0x40
 
 #endif  /* VBOOT_REFERENCE_2NVSTORAGE_FIELDS_H_ */
