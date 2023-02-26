@@ -252,7 +252,7 @@ err_init:
 	return r;
 }
 
-enum wp_state flashrom_get_wp(const char *programmer, int verbosity)
+enum wp_state flashrom_get_wp(const char *prog_with_params, int verbosity)
 {
 	enum wp_state r = WP_ERROR;
 
@@ -263,8 +263,8 @@ enum wp_state flashrom_get_wp(const char *programmer, int verbosity)
 
 	struct flashrom_wp_cfg *cfg = NULL;
 
-	char *tmp_programmer, *params;
-	char *tmp = flashrom_extract_params(programmer, &tmp_programmer,
+	char *programmer, *params;
+	char *tmp = flashrom_extract_params(prog_with_params, &programmer,
 					    &params);
 
 	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
