@@ -25,21 +25,21 @@ typedef enum { FMT_NORMAL, FMT_PRETTY, FMT_FLASHROM, FMT_HUMAN } format_t;
 static int normal_fmap(const FmapHeader *fmh,
 	const void *base_of_rom, size_t size_of_rom,
 	bool extract, format_t format,
-	int argc, char *argv[])
+	const char *const *names, size_t names_len)
 {
 	int retval = 0;
 	char buf[80];		/* DWR: magic number */
 	const FmapAreaHeader *ah = (const FmapAreaHeader *) (fmh + 1);
         /* Size must greater than 0, else behavior is undefined. */
-	char *extract_names[argc >= 1 ? argc : 1];
+	char *extract_names[names_len >= 1 ? names_len : 1];
 	char *outname = 0;
 
 	memset(extract_names, 0, sizeof(extract_names));
 
 	if (extract) {
 		/* prepare the filenames to write areas to */
-		for (int i = 0; i < argc; i++) {
-			char *a = argv[i];
+		for (int i = 0; i < names_len; i++) {
+			const char *a = names[i];
 			char *f = strchr(a, ':');
 			if (!f)
 				continue;
@@ -72,11 +72,11 @@ static int normal_fmap(const FmapHeader *fmh,
 	for (uint16_t i = 0; i < fmh->fmap_nareas; i++, ah++) {
 		snprintf(buf, FMAP_NAMELEN + 1, "%s", ah->area_name);
 
-		if (argc) {
+		if (names_len) {
 			int found = 0;
 			outname = NULL;
-			for (int j = 0; j < argc; j++)
-				if (!strcmp(argv[j], buf)) {
+			for (int j = 0; j < names_len; j++)
+				if (!strcmp(names[j], buf)) {
 					found = 1;
 					outname = extract_names[j];
 					break;
@@ -105,31 +105,31 @@ static int normal_fmap(const FmapHeader *fmh,
 		}
 
 		if (extract) {
-			char *s;
 			if (!outname) {
-				for (s = buf; *s; s++)
+				for (char *s = buf; *s; s++)
 					if (*s == ' ')
 						*s = '_';
 				outname = buf;
 			}
+			const char *first_name = names[0];
 			FILE *fp = fopen(outname, "wb");
 			if (!fp) {
 				ERROR("%s: can't open %s: %s\n",
-					argv[0], outname, strerror(errno));
+					first_name, outname, strerror(errno));
 				retval = 1;
 			} else if (!ah->area_size) {
 				ERROR(
 					"%s: section %s has zero size\n",
-					argv[0], buf);
+					first_name, buf);
 			} else if (ah->area_offset + ah->area_size >
 				   size_of_rom) {
 				ERROR("%s: section %s is larger"
-					" than the image\n", argv[0], buf);
+					" than the image\n", first_name, buf);
 				retval = 1;
 			} else if (1 != fwrite(base_of_rom + ah->area_offset,
 					       ah->area_size, 1, fp)) {
 				ERROR("%s: can't write %s: %s\n",
-					argv[0], buf, strerror(errno));
+					first_name, buf, strerror(errno));
 				retval = 1;
 			} else {
 				if (FMT_NORMAL == format)
@@ -497,8 +497,8 @@ static int do_dump_fmap(int argc, char *argv[])
 		default:
 			retval = normal_fmap(fmap, base_of_rom, size_of_rom,
 					     opt_extract, opt_format,
-					     argc - optind - 1,
-					     argv + optind + 1);
+					     (const char **)(argv + optind + 1),
+					     argc - optind - 1);
 		}
 	}
 
