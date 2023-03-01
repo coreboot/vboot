@@ -278,8 +278,6 @@ static int human_fmap(const FmapHeader *fmh, bool gaps, int overlap)
 {
 	int errorcnt = 0;
 
-	FmapAreaHeader *ah = (FmapAreaHeader *) (fmh + 1);
-
 	/* The challenge here is to generate a directed graph from the
 	 * arbitrarily-ordered FMAP entries, and then to prune it until it's as
 	 * simple (and deep) as possible. Overlapping regions are not allowed.
@@ -293,16 +291,18 @@ static int human_fmap(const FmapHeader *fmh, bool gaps, int overlap)
 					     sizeof(struct node_s));
 	if (!all_nodes) {
 		perror("calloc failed");
-		exit(1);
+		return 1;
 	}
 	for (uint16_t i = 0; i < numnodes; i++) {
 		char buf[FMAP_NAMELEN + 1];
+		const FmapAreaHeader *ah = (FmapAreaHeader *) (fmh + 1);
+
 		strncpy(buf, ah[i].area_name, FMAP_NAMELEN);
 		buf[FMAP_NAMELEN] = '\0';
 		all_nodes[i].name = strdup(buf);
 		if (!all_nodes[i].name) {
 			perror("strdup failed");
-			exit(1);
+			return 1;
 		}
 		all_nodes[i].start = ah[i].area_offset;
 		all_nodes[i].size = ah[i].area_size;
