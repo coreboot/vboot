@@ -9,6 +9,7 @@
 #ifdef HAVE_CROSID
 #include <crosid.h>
 #endif
+#include <limits.h>
 #include "crossystem.h"
 #include "updater.h"
 
@@ -111,7 +112,13 @@ static int dut_get_wp_hw(struct updater_config *cfg)
 
 static int dut_get_platform_version(struct updater_config *cfg)
 {
-	return dut_get_property_int("board_id", cfg);
+	long rev = dut_get_property_int("board_id", cfg);
+	/* Assume platform version = 0 on error. */
+	if (rev < 0)
+		rev = 0;
+	if (rev > INT_MAX)
+		rev = INT_MAX;
+	return rev;
 }
 
 /* Helper function to return host software write protection status. */
