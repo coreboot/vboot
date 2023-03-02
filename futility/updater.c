@@ -348,9 +348,7 @@ static int write_optional_firmware(struct updater_config *cfg,
 	 * EC & PD may have different WP settings and we want to write
 	 * only if it is OK.
 	 */
-	if (check_programmer_wp &&
-	    dut_get_property(DUT_PROP_WP_HW, cfg) == WP_ENABLED &&
-	    flashrom_get_wp(image->programmer, -1) == WP_ENABLED) {
+	if (check_programmer_wp && is_write_protection_enabled(cfg)) {
 		ERROR("Target %s is write protected, skip updating.\n",
 		      image->programmer);
 		return 0;

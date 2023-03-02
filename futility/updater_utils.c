@@ -362,16 +362,9 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
  */
 int is_write_protection_enabled(struct updater_config *cfg)
 {
-	/* Default to enabled. */
-	int wp = dut_get_property(DUT_PROP_WP_HW, cfg);
-	if (wp == WP_DISABLED)
-		return wp;
-	/* For error or enabled, check WP SW. */
-	wp = dut_get_property(DUT_PROP_WP_SW, cfg);
-	/* Consider all errors as enabled. */
-	if (wp != WP_DISABLED)
-		return WP_ENABLED;
-	return wp;
+	/* Assume HW/SW WP are enabled if -1 error code is returned */
+	return dut_get_property(DUT_PROP_WP_HW, cfg) &&
+	       dut_get_property(DUT_PROP_WP_SW, cfg);
 }
 
 /*
