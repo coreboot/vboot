@@ -1203,9 +1203,11 @@ sign_image_file() {
         "${kernC_privkey}"
     fi
   fi
-  if ! resign_minios_kernels "${loopdev}" "${minios_keyblock}" \
-      "${minios_privkey}"; then
-    return 1
+  if [[ -n "${minios_keyblock}" ]]; then
+    if ! resign_minios_kernels "${loopdev}" "${minios_keyblock}" \
+        "${minios_privkey}"; then
+      return 1
+    fi
   fi
   if ! update_legacy_bootloader "${loopdev}" "${loop_kern}"; then
     # Error is already logged.
@@ -1280,8 +1282,8 @@ elif [[ "${TYPE}" == "factory" ]]; then
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
     "" \
     "" \
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+    "" \
+    ""
 elif [[ "${TYPE}" == "firmware" ]]; then
   if [[ -e "${KEY_DIR}/loem.ini" ]]; then
     die "LOEM signing not implemented yet for firmware images"
