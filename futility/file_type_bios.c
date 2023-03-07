@@ -19,10 +19,9 @@
 #include "host_common.h"
 #include "vb1_helper.h"
 
-
 static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 {
-	uint32_t sum = ah->area_offset + ah->area_size;
+	const uint32_t sum = ah->area_offset + ah->area_size;
 	if (sum < ah->area_size || sum > len) {
 		VB2_DEBUG("%.*s %#x + %#x > %#x\n", FMAP_NAMELEN,
 			  ah->area_name, ah->area_offset, ah->area_size, len);
@@ -95,8 +94,7 @@ static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
 	}
 
 	pubkey = (struct vb2_packed_key *)(buf + gbb->recovery_key_offset);
-	if (vb2_packed_key_looks_ok(pubkey, gbb->recovery_key_size)
-	    == VB2_SUCCESS) {
+	if (vb2_packed_key_looks_ok(pubkey, gbb->recovery_key_size) == VB2_SUCCESS) {
 		if (state) {
 			state->recovery_key.offset =
 				state->area[BIOS_FMAP_GBB].offset +
@@ -121,12 +119,11 @@ static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
 
 int ft_show_gbb(const char *name, void *data)
 {
-	int retval = 0;
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 
-	retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
+	int retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
 	if (retval)
 		return 1;
 
@@ -177,32 +174,27 @@ _Static_assert(ARRAY_SIZE(fmap_show_fn) == NUM_BIOS_COMPONENTS,
 
 int ft_show_bios(const char *name, void *data)
 {
-	FmapHeader *fmap;
-	FmapAreaHeader *ah = 0;
-	char ah_name[FMAP_NAMELEN + 1];
-	enum bios_component c;
-	int retval = 0;
-	struct bios_state_s state;
+	struct bios_state_s state = {0}; /* loop inc state on each pass. */
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 
-	retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
+	int retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
 	if (retval)
 		return 1;
-
-	memset(&state, 0, sizeof(state));
 
 	printf("BIOS:                    %s\n", name);
 
 	/* We've already checked, so we know this will work. */
-	fmap = fmap_find(buf, len);
-	for (c = 0; c < NUM_BIOS_COMPONENTS; c++) {
+	FmapHeader *fmap = fmap_find(buf, len);
+	for (enum bios_component c = 0; c < NUM_BIOS_COMPONENTS; c++) {
+		FmapAreaHeader *ah = NULL;
 		/* We know one of these will work, too */
 		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah)) {
 			/* But the file might be truncated */
 			fmap_limit_area(ah, len);
 			/* The name is not necessarily null-terminated */
+			char ah_name[FMAP_NAMELEN + 1];
 			snprintf(ah_name, sizeof(ah_name), "%s", ah->area_name);
 
 			/* Update the state we're passing around */
@@ -235,10 +227,9 @@ static int write_new_preamble(struct bios_area_s *vblock,
 			      struct vb2_private_key *signkey,
 			      struct vb2_keyblock *keyblock)
 {
-	struct vb2_signature *body_sig = NULL;
-	struct vb2_fw_preamble *preamble = NULL;
 	int retval = 1;
 
+	struct vb2_signature *body_sig;
 	if (fw_body->metadata_hash.algo != VB2_HASH_INVALID)
 		body_sig =
 			vb2_create_signature_from_hash(&fw_body->metadata_hash);
@@ -248,10 +239,10 @@ static int write_new_preamble(struct bios_area_s *vblock,
 
 	if (!body_sig) {
 		ERROR("Error calculating or creating body signature\n");
-		goto end;
+		return 1;
 	}
 
-	preamble = vb2_create_fw_preamble(vblock->version,
+	struct vb2_fw_preamble *preamble = vb2_create_fw_preamble(vblock->version,
 			(struct vb2_packed_key *)sign_option.kernel_subkey,
 			body_sig,
 			signkey,
@@ -283,8 +274,7 @@ end:
 static int write_loem(const char *ab, struct bios_area_s *vblock)
 {
 	char filename[PATH_MAX];
-	int n;
-	n = snprintf(filename, sizeof(filename), "%s/vblock_%s.%s",
+	int n = snprintf(filename, sizeof(filename), "%s/vblock_%s.%s",
 		     sign_option.loemdir ? sign_option.loemdir : ".",
 		     ab, sign_option.loemid);
 	if (n >= sizeof(filename)) {
@@ -356,20 +346,19 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 			enum bios_component vblock_c,
 			struct bios_state_s *state)
 {
-	FmapHeader *fmap;
-	FmapAreaHeader *ah;
 	const char *fw_main_name = fmap_name[fw_c];
 	const char *vblock_name = fmap_name[vblock_c];
 	static uint8_t workbuf[VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE]
 		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	static struct vb2_workbuf wb;
 
-	fmap = fmap_find(buf, len);
+	FmapHeader *fmap = fmap_find(buf, len);
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
 	VB2_DEBUG("Preparing areas: %s and %s\n", fw_main_name, vblock_name);
 
 	/* FW_MAIN */
+	FmapAreaHeader *ah;
 	if (!fmap_find_by_name(buf, len, fmap, fw_main_name, &ah)) {
 		ERROR("%s area not found in FMAP\n", fw_main_name);
 		return 1;
@@ -533,15 +522,11 @@ static void check_slot_after_prepare(enum bios_component fw_c,
 
 int ft_sign_bios(const char *name, void *data)
 {
-	int retval = 0;
-	struct bios_state_s state;
+	struct bios_state_s state = {0};
 	int fd = -1;
 	uint8_t *buf = NULL;
 	uint32_t len = 0;
-	bool uses_cbfs_integration =
-		image_uses_cbfs_integration(name);
-
-	memset(&state, 0, sizeof(state));
+	bool uses_cbfs_integration = image_uses_cbfs_integration(name);
 
 	image_check_and_prepare_cbfs(name, BIOS_FMAP_FW_MAIN_A,
 				     uses_cbfs_integration, &state);
@@ -552,7 +537,7 @@ int ft_sign_bios(const char *name, void *data)
 				    &buf, &len))
 		return 1;
 
-	retval = prepare_slot(buf, len, BIOS_FMAP_FW_MAIN_A, BIOS_FMAP_VBLOCK_A,
+	int retval = prepare_slot(buf, len, BIOS_FMAP_FW_MAIN_A, BIOS_FMAP_VBLOCK_A,
 			      &state);
 	if (retval)
 		goto done;
@@ -575,9 +560,7 @@ done:
 
 enum futil_file_type ft_recognize_bios_image(uint8_t *buf, uint32_t len)
 {
-	FmapHeader *fmap;
-
-	fmap = fmap_find(buf, len);
+	FmapHeader *fmap = fmap_find(buf, len);
 	if (!fmap)
 		return FILE_TYPE_UNKNOWN;
 

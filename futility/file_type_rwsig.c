@@ -52,12 +52,10 @@ static void show_sig(const char *name, const struct vb21_signature *sig)
 
 int ft_show_rwsig(const char *name, void *nuthin)
 {
-	const struct vb21_signature *sig = 0;
 	const struct vb21_packed_key *pkey = show_option.pkey;
 	struct vb2_public_key key;
 	uint8_t workbuf[VB2_VERIFY_DATA_WORKBUF_BYTES]
-		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
-	struct vb2_workbuf wb;
+		__attribute__((aligned(VB2_WORKBUF_ALIGN)));
 	uint32_t data_size, sig_size = SIGNATURE_RSVD_SIZE;
 	uint32_t total_data_size = 0;
 	uint8_t *data;
@@ -66,18 +64,16 @@ int ft_show_rwsig(const char *name, void *nuthin)
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
-	int rv;
+	int rv = 1;
 
 	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
 		return 1;
-
-	rv = 1;
 
 	VB2_DEBUG("name %s len 0x%08x (%d)\n", name, len, len);
 
 	/* Am I just looking at a signature file? */
 	VB2_DEBUG("Looking for signature at 0x0\n");
-	sig = (const struct vb21_signature *)buf;
+	const struct vb21_signature *sig = (const struct vb21_signature *)buf;
 	if (VB2_SUCCESS == vb21_verify_signature(sig, len)) {
 		show_sig(name, sig);
 		if (!show_option.fv) {
@@ -115,7 +111,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 		sig_size = fmaparea->area_size;
 
 		VB2_DEBUG("Looking for signature at %#tx (%#x)\n",
-			  (uint8_t*)sig - buf, sig_size);
+			  (uint8_t *)sig - buf, sig_size);
 
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
 			goto done;
@@ -127,7 +123,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 		 * TODO(crosbug.com/p/62231): EC_RW region should not include
 		 * the signature.
 		 */
-		total_data_size = fmaparea->area_size-sig_size;
+		total_data_size = fmaparea->area_size - sig_size;
 
 		if (!data) {
 			VB2_DEBUG("No EC_RW in FMAP.\n");
@@ -164,9 +160,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 	}
 
 	/* We already did this once, so it should work again */
-	if (vb21_unpack_key(&key,
-			    (const uint8_t *)pkey,
-			    pkey->c.total_size)) {
+	if (vb21_unpack_key(&key, (const uint8_t *)pkey, pkey->c.total_size)) {
 		VB2_DEBUG("Can't unpack pubkey\n");
 		goto done;
 	}
@@ -180,6 +174,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 	{
 		uint8_t sigbuf[sig->c.total_size];
 		memcpy(sigbuf, sig, sizeof(sigbuf));
+		struct vb2_workbuf wb;
 
 		vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
@@ -252,7 +247,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 			sig_size = fmaparea->area_size;
 
 			VB2_DEBUG("Looking for signature at %#tx (%#x)\n",
-				  (uint8_t*)old_sig - buf, sig_size);
+				  (uint8_t *)old_sig - buf, sig_size);
 
 			data = fmap_find_by_name(buf, len, fmap, "EC_RW",
 						 &fmaparea);
@@ -353,14 +348,14 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 
 		/* Create the public key */
 		if (vb2_public_key_alloc(&pubkey,
-						sign_option.prikey->sig_alg)) {
+					 sign_option.prikey->sig_alg)) {
 			fprintf(stderr, "Unable to allocate the public key\n");
 			goto done;
 		}
 
 		/* Extract the keyb blob */
 		if (vb_keyb_from_rsa(sign_option.prikey->rsa_private_key,
-					&keyb_data, &keyb_size)) {
+				     &keyb_data, &keyb_size)) {
 			fprintf(stderr, "Couldn't extract the public key\n");
 			goto done;
 		}
@@ -385,7 +380,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		vb2_public_key_set_desc(pubkey, sign_option.prikey->desc);
 
 		memcpy((struct vb2_id *)pubkey->id, &sign_option.prikey->id,
-			sizeof(*(pubkey->id)));
+		       sizeof(*(pubkey->id)));
 
 		if (vb21_public_key_pack(&packedkey, pubkey)) {
 			goto done;
@@ -400,7 +395,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		/* Overwrite the old signature */
 		if (packedkey->c.total_size > fmaparea->area_size) {
 			fprintf(stderr, "New sig is too large (%d > %d)\n",
-			        packedkey->c.total_size, sig_size);
+				packedkey->c.total_size, sig_size);
 			goto done;
 		}
 
@@ -423,14 +418,13 @@ done:
 
 enum futil_file_type ft_recognize_rwsig(uint8_t *buf, uint32_t len)
 {
-	FmapHeader *fmap;
 	const struct vb21_signature *sig = NULL;
 	uint32_t sig_size;
 
 	if (!vb21_verify_signature((const struct vb21_signature *)buf, len))
 		return FILE_TYPE_RWSIG;
 
-	fmap = fmap_find(buf, len);
+	FmapHeader *fmap = fmap_find(buf, len);
 	if (fmap) {
 		/* This looks like a full image. */
 		FmapAreaHeader *fmaparea;
