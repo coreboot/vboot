@@ -24,19 +24,19 @@ enum bios_component {
 	NUM_BIOS_COMPONENTS
 };
 
-static const char * const fmap_name[] = {
-	"GBB",					/* BIOS_FMAP_GBB */
-	"FW_MAIN_A",				/* BIOS_FMAP_FW_MAIN_A */
-	"FW_MAIN_B",				/* BIOS_FMAP_FW_MAIN_B */
-	"VBLOCK_A",				/* BIOS_FMAP_VBLOCK_A */
-	"VBLOCK_B",				/* BIOS_FMAP_VBLOCK_B */
+static const char *const fmap_name[] = {
+	"GBB",	     /* BIOS_FMAP_GBB */
+	"FW_MAIN_A", /* BIOS_FMAP_FW_MAIN_A */
+	"FW_MAIN_B", /* BIOS_FMAP_FW_MAIN_B */
+	"VBLOCK_A",  /* BIOS_FMAP_VBLOCK_A */
+	"VBLOCK_B",  /* BIOS_FMAP_VBLOCK_B */
 };
 _Static_assert(ARRAY_SIZE(fmap_name) == NUM_BIOS_COMPONENTS,
 	       "Size of fmap_name[] should match NUM_BIOS_COMPONENTS");
 
 /* Location information for each component */
 struct bios_area_s {
-	uint32_t offset;			/* to avoid pointer math */
+	uint32_t offset; /* to avoid pointer math */
 	uint8_t *buf;
 	uint32_t len;
 	uint32_t is_valid;
@@ -60,4 +60,4 @@ struct bios_state_s {
 	struct bios_area_s rootkey;
 };
 
-#endif  /* VBOOT_REFERENCE_FILE_TYPE_BIOS_H_ */
+#endif /* VBOOT_REFERENCE_FILE_TYPE_BIOS_H_ */

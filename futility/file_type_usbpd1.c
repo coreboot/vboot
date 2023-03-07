@@ -30,15 +30,15 @@
 #include "util_misc.h"
 
 /* Return 1 if okay, 0 if not */
-static int parse_size_opts(uint32_t len,
+static int parse_size_opts(const uint32_t len,
 			   uint32_t *ro_size_ptr, uint32_t *rw_size_ptr,
 			   uint32_t *ro_offset_ptr, uint32_t * rw_offset_ptr)
 {
-	uint32_t ro_size, rw_size, ro_offset, rw_offset;
-
 	/* Assume the image has both RO and RW, evenly split. */
-	ro_offset = 0;
-	ro_size = rw_size = rw_offset = len / 2;
+	uint32_t ro_offset = 0;
+	uint32_t ro_size = len / 2;
+	uint32_t rw_size = len / 2;
+	uint32_t rw_offset = len / 2;
 
 	/* Unless told otherwise... */
 	if (sign_option.ro_size != 0xffffffff)
@@ -99,7 +99,7 @@ int ft_sign_usbpd1(const char *name, void *data)
 	int fd = -1;
 
 	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
-					 &buf, &len))
+				    &buf, &len))
 		return 1;
 
 	VB2_DEBUG("name %s len  %#.8x (%d)\n", name, len, len);
@@ -157,10 +157,8 @@ int ft_sign_usbpd1(const char *name, void *data)
 	}
 
 	/* Okay, looking good. Update the signature. */
-	memcpy(buf + sig_offset,
-	       (uint8_t *)sig_ptr + sig_ptr->sig_offset,
+	memcpy(buf + sig_offset, (uint8_t *)sig_ptr + sig_ptr->sig_offset,
 	       sig_ptr->sig_size);
-
 
 	/* If there's no RO section, we're done. */
 	if (!ro_size) {
@@ -227,17 +225,11 @@ int ft_sign_usbpd1(const char *name, void *data)
 	VB2_DEBUG("pub_pad 0x%08x\n", pub_pad);
 
 	/* Copy n[nwords] */
-	memcpy(buf + dst_ofs_n,
-	       keyb_data + src_ofs_n,
-	       nbytes);
+	memcpy(buf + dst_ofs_n, keyb_data + src_ofs_n, nbytes);
 	/* Copy rr[nwords] */
-	memcpy(buf + dst_ofs_rr,
-	       keyb_data + src_ofs_rr,
-	       nbytes);
+	memcpy(buf + dst_ofs_rr, keyb_data + src_ofs_rr, nbytes);
 	/* Copy n0inv */
-	memcpy(buf + dst_ofs_n0inv,
-	       keyb_data + src_ofs_n0inv,
-	       4);
+	memcpy(buf + dst_ofs_n0inv, keyb_data + src_ofs_n0inv, 4);
 	/* Pad with 0xff */
 	memset(buf + dst_ofs_n0inv + 4, 0xff, pub_pad);
 
@@ -252,7 +244,6 @@ done:
 
 	return retval;
 }
-
 
 /*
  * Algorithms that we want to try, in order. We've only ever shipped with
@@ -326,7 +317,7 @@ static vb2_error_t vb21_sig_from_usbpd1(struct vb21_signature **sig,
 		.sig_size = vb2_rsa_sig_size(sig_alg),
 		.sig_offset = sizeof(s),
 	};
-	uint32_t total_size = sizeof(s) + o_sig_size;
+	const uint32_t total_size = sizeof(s) + o_sig_size;
 	uint8_t *buf = calloc(1, total_size);
 	if (!buf)
 		return VB2_ERROR_UNKNOWN;
@@ -369,7 +360,6 @@ static void show_usbpd1_stuff(const char *name,
 	free(pkey);
 }
 
-
 /* Returns VB2_SUCCESS or random error code */
 static vb2_error_t try_our_own(enum vb2_signature_algorithm sig_alg,
 			       enum vb2_hash_algorithm hash_alg,
@@ -410,19 +400,18 @@ static vb2_error_t check_self_consistency(const uint8_t *buf, const char *name,
 					  enum vb2_hash_algorithm hash_alg)
 {
 	/* Where are the important bits? */
-	uint32_t sig_size = vb2_rsa_sig_size(sig_alg);
-	uint32_t sig_offset = rw_offset + rw_size - sig_size;
-	uint32_t pubkey_size = usbpd1_packed_key_size(sig_alg);
-	uint32_t pubkey_offset = ro_offset + ro_size - pubkey_size;
-	vb2_error_t rv;
+	const uint32_t sig_size = vb2_rsa_sig_size(sig_alg);
+	const uint32_t sig_offset = rw_offset + rw_size - sig_size;
+	const uint32_t pubkey_size = usbpd1_packed_key_size(sig_alg);
+	const uint32_t pubkey_offset = ro_offset + ro_size - pubkey_size;
 
 	/* Skip stuff that obviously doesn't work */
 	if (sig_size > rw_size || pubkey_size > ro_size)
 		return VB2_ERROR_UNKNOWN;
 
-	rv = try_our_own(sig_alg, hash_alg,		   /* algs */
-			 buf + pubkey_offset, pubkey_size, /* pubkey blob */
-			 buf + sig_offset, sig_size,	   /* sig blob */
+	vb2_error_t rv = try_our_own(sig_alg, hash_alg,		/* algs */
+			 buf + pubkey_offset, pubkey_size,     /* pubkey blob */
+			 buf + sig_offset, sig_size,	       /* sig blob */
 			 buf + rw_offset, rw_size - sig_size); /* RW image */
 
 	if (rv == VB2_SUCCESS && name)
@@ -432,11 +421,8 @@ static vb2_error_t check_self_consistency(const uint8_t *buf, const char *name,
 	return rv;
 }
 
-
 int ft_show_usbpd1(const char *name, void *data)
 {
-	uint32_t ro_size, rw_size, ro_offset, rw_offset;
-	int s, h;
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
@@ -448,6 +434,7 @@ int ft_show_usbpd1(const char *name, void *data)
 	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
 
 	/* Get image locations */
+	uint32_t ro_size, rw_size, ro_offset, rw_offset;
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))
 		goto done;
 
@@ -459,8 +446,8 @@ int ft_show_usbpd1(const char *name, void *data)
 	}
 
 	/* TODO: Only loop through the numbers we haven't been given */
-	for (s = 0; s < ARRAY_SIZE(sigs); s++) {
-		for (h = 0; h < ARRAY_SIZE(hashes); h++) {
+	for (enum vb2_signature_algorithm s = 0; s < ARRAY_SIZE(sigs); s++) {
+		for (enum vb2_hash_algorithm h = 0; h < ARRAY_SIZE(hashes); h++) {
 			if (!check_self_consistency(buf, name, ro_size, rw_size,
 						    ro_offset, rw_offset,
 						    sigs[s], hashes[h])) {
@@ -478,9 +465,6 @@ done:
 
 enum futil_file_type ft_recognize_usbpd1(uint8_t *buf, uint32_t len)
 {
-	uint32_t ro_size, rw_size, ro_offset, rw_offset;
-	int s, h;
-
 	/*
 	 * Since we don't use any headers to identify or locate the pubkey and
 	 * signature, in order to identify blob as the right type we have to
@@ -488,16 +472,19 @@ enum futil_file_type ft_recognize_usbpd1(uint8_t *buf, uint32_t len)
 	 * split. Then we just try to use what we think might be the pubkey to
 	 * validate what we think might be the signature.
 	 */
-	ro_offset = 0;
-	ro_size = rw_size = rw_offset = len / 2;
+	const uint32_t ro_offset = 0;
+	const uint32_t ro_size = len / 2;
+	const uint32_t rw_size = len / 2;
+	const uint32_t rw_offset = len / 2;
 
-	for (s = 0; s < ARRAY_SIZE(sigs); s++)
-		for (h = 0; h < ARRAY_SIZE(hashes); h++)
-			if (!check_self_consistency(buf, 0,
-						    ro_size, rw_size,
+	for (enum vb2_signature_algorithm s = 0; s < ARRAY_SIZE(sigs); s++) {
+		for (enum vb2_hash_algorithm h = 0; h < ARRAY_SIZE(hashes); h++) {
+			if (!check_self_consistency(buf, 0, ro_size, rw_size,
 						    ro_offset, rw_offset,
 						    sigs[s], hashes[h]))
 				return FILE_TYPE_USBPD1;
+		}
+	}
 
 	return FILE_TYPE_UNKNOWN;
 }

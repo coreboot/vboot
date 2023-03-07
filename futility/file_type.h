@@ -16,10 +16,10 @@ enum futil_file_type {
 };
 
 /* Short name for file types */
-const char * const futil_file_type_name(enum futil_file_type type);
+const char *const futil_file_type_name(enum futil_file_type type);
 
 /* Description of file type */
-const char * const futil_file_type_desc(enum futil_file_type type);
+const char *const futil_file_type_desc(enum futil_file_type type);
 
 /* Print the list of type names and exit with the given value. */
 void print_file_types_and_exit(int retval);
@@ -59,10 +59,8 @@ int futil_file_type_sign(enum futil_file_type type, const char *filename);
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wredundant-decls"
-#define R_(FOO) \
-	enum futil_file_type FOO(uint8_t *buf, uint32_t len);
-#define S_(FOO) \
-	int FOO(const char *name, void *data);
+#define R_(FOO) enum futil_file_type FOO(uint8_t *buf, uint32_t len);
+#define S_(FOO) int FOO(const char *name, void *data);
 #define NONE
 #define FILE_TYPE(A, B, C, D, E, F) D E F
 #include "file_type.inc"
@@ -79,4 +77,4 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 			 void *data);
 
-#endif  /* VBOOT_REFERENCE_FILE_TYPE_H_ */
+#endif /* VBOOT_REFERENCE_FILE_TYPE_H_ */
