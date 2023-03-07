@@ -8,6 +8,9 @@
 #include <fcntl.h>
 #if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/fs.h>		/* For BLKGETSIZE64 */
+#include <sys/sendfile.h>
+#else
+#include <copyfile.h>
 #endif
 #include <stdarg.h>
 #include <stdint.h>
@@ -210,58 +213,39 @@ int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid)
 	return VB2_SUCCESS;
 }
 
-/*
- * TODO: All sorts of race conditions likely here, and everywhere this is used.
- * Do we care? If so, fix it.
- */
-void futil_copy_file_or_die(const char *infile, const char *outfile)
+int futil_copy_file(const char *infile, const char *outfile)
 {
-	pid_t pid;
-	int status;
-
 	VB2_DEBUG("%s -> %s\n", infile, outfile);
 
-	pid = fork();
-
-	if (pid < 0) {
-		fprintf(stderr, "Couldn't fork /bin/cp process: %s\n",
-			strerror(errno));
-		exit(1);
+	int ifd, ofd;
+	if ((ifd = open(infile, O_RDONLY)) == -1) {
+		ERROR("Cannot open '%s', %s.\n", infile, strerror(errno));
+		return -1;
 	}
-
-	/* child */
-	if (!pid) {
-		execl("/bin/cp", "/bin/cp", infile, outfile, NULL);
-		fprintf(stderr, "Child couldn't exec /bin/cp: %s\n",
-			strerror(errno));
-		exit(1);
+	if ((ofd = creat(outfile, 0660)) == -1) {
+		ERROR("Cannot open '%s', %s.\n", outfile, strerror(errno));
+		close(ifd);
+		return -1;
 	}
-
-	/* parent - wait for child to finish */
-	if (wait(&status) == -1) {
-		fprintf(stderr,
-			"Couldn't wait for /bin/cp process to exit: %s\n",
-			strerror(errno));
-		exit(1);
+	struct stat finfo = {0};
+	if (fstat(ifd, &finfo) < 0) {
+		ERROR("Cannot fstat '%s' as %s.\n", infile, strerror(errno));
+		close (ifd);
+		close (ofd);
+		return -1;
 	}
-
-	if (WIFEXITED(status)) {
-		status = WEXITSTATUS(status);
-		/* zero is normal exit */
-		if (!status)
-			return;
-		fprintf(stderr, "/bin/cp exited with status %d\n", status);
-		exit(1);
+#if !defined(HAVE_MACOS) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
+	ssize_t ret = sendfile(ofd, ifd, NULL, finfo.st_size);
+#else
+	ssize_t ret = fcopyfile(ifd, ofd, 0, COPYFILE_ALL);
+#endif
+	close(ifd);
+	close(ofd);
+	if (ret == -1) {
+		ERROR("Cannot copy '%s'->'%s', %s.\n", infile,
+		      outfile, strerror(errno));
 	}
-
-	if (WIFSIGNALED(status)) {
-		status = WTERMSIG(status);
-		fprintf(stderr, "/bin/cp was killed with signal %d\n", status);
-		exit(1);
-	}
-
-	fprintf(stderr, "I have no idea what just happened\n");
-	exit(1);
+	return ret;
 }
 
 enum futil_file_err futil_open_file(const char *infile, int *fd,
