@@ -144,10 +144,11 @@ static int do_load_fmap(int argc, char *argv[])
 	infile = argv[optind++];
 
 	/* okay, let's do it ... */
-	if (outfile)
-		futil_copy_file_or_die(infile, outfile);
-	else
+	if (!outfile)
 		outfile = infile;
+	else
+		if (futil_copy_file(infile, outfile) < 0)
+			exit(1);
 
 	errorcnt |= futil_open_and_map_file(outfile, &fd, FILE_RW, &buf, &len);
 
