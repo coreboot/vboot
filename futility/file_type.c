@@ -30,7 +30,7 @@ struct futil_file_type_s {
 
 /* Populate a list of file types and operator functions. */
 static const struct futil_file_type_s futil_file_types[] = {
-	{"unknown",       "not something we know about", 0, 0, 0},
+	{"unknown", "not something we know about", 0, 0, 0},
 #define R_(x) x
 #define S_(x) x
 #define NONE 0
@@ -42,12 +42,12 @@ static const struct futil_file_type_s futil_file_types[] = {
 #undef R_
 };
 
-const char * const futil_file_type_name(enum futil_file_type type)
+const char *const futil_file_type_name(enum futil_file_type type)
 {
 	return futil_file_types[type].name;
 }
 
-const char * const futil_file_type_desc(enum futil_file_type type)
+const char *const futil_file_type_desc(enum futil_file_type type)
 {
 	return futil_file_types[type].desc;
 }
@@ -55,12 +55,12 @@ const char * const futil_file_type_desc(enum futil_file_type type)
 /* Name to enum. Returns true on success. */
 int futil_str_to_file_type(const char *str, enum futil_file_type *type)
 {
-	int i;
-	for (i = 0; i < NUM_FILE_TYPES; i++)
+	for (enum futil_file_type i = 0; i < NUM_FILE_TYPES; i++) {
 		if (!strcasecmp(str, futil_file_types[i].name)) {
 			*type = i;
 			return 1;
 		}
+	}
 
 	*type = FILE_TYPE_UNKNOWN;
 	return 0;
@@ -69,9 +69,8 @@ int futil_str_to_file_type(const char *str, enum futil_file_type *type)
 /* Print the list of type names and exit with the given value. */
 void print_file_types_and_exit(int retval)
 {
-	int i;
 	printf("\nValid file types are:\n\n");
-	for (i = 0; i < NUM_FILE_TYPES; i++)
+	for (enum futil_file_type i = 0; i < NUM_FILE_TYPES; i++)
 		printf("  %-20s%s\n", futil_file_types[i].name,
 		       futil_file_types[i].desc);
 	printf("\n");
@@ -82,12 +81,9 @@ void print_file_types_and_exit(int retval)
 /* Try to figure out what we're looking at */
 enum futil_file_type futil_file_type_buf(uint8_t *buf, uint32_t len)
 {
-	enum futil_file_type type;
-	int i;
-
-	for (i = 0; i < NUM_FILE_TYPES; i++) {
+	for (enum futil_file_type i = 0; i < NUM_FILE_TYPES; i++) {
 		if (futil_file_types[i].recognize) {
-			type = futil_file_types[i].recognize(buf, len);
+			enum futil_file_type type = futil_file_types[i].recognize(buf, len);
 			if (type != FILE_TYPE_UNKNOWN)
 				return type;
 		}
@@ -103,15 +99,14 @@ enum futil_file_err futil_file_type(const char *filename,
 	uint8_t *buf = NULL;
 	uint32_t buf_len = 0;
 	struct stat sb;
-	enum futil_file_err err = FILE_ERR_NONE;
 
 	*type = FILE_TYPE_UNKNOWN;
 
-	err = futil_open_file(filename, &ifd, FILE_RO);
+	enum futil_file_err err = futil_open_file(filename, &ifd, FILE_RO);
 	if (err != FILE_ERR_NONE)
 		goto done;
 
-	if (0 != fstat(ifd, &sb)) {
+	if (fstat(ifd, &sb)) {
 		fprintf(stderr, "Can't stat input file: %s\n", strerror(errno));
 		err = FILE_ERR_STAT;
 		goto done;
@@ -131,6 +126,7 @@ enum futil_file_err futil_file_type(const char *filename,
 	} else if (S_ISSOCK(sb.st_mode)) {
 		err = FILE_ERR_SOCK;
 	}
+
 done:
 	futil_unmap_and_close_file(ifd, FILE_RO, buf, buf_len);
 	return err;
