@@ -113,8 +113,8 @@ void update_hwid_digest(struct vb2_gbb_header *gbb);
 int print_hwid_digest(struct vb2_gbb_header *gbb,
 		      const char *banner, const char *footer);
 
-/* Copies a file or dies with an error message */
-void futil_copy_file_or_die(const char *infile, const char *outfile);
+/* Copies a file. */
+int futil_copy_file(const char *infile, const char *outfile);
 
 /* Possible file operation errors */
 enum futil_file_err {

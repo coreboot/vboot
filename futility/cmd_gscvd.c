@@ -1293,7 +1293,8 @@ static int do_gscvd(int argc, char *argv[])
 	}
 
 	if (outfile) {
-		futil_copy_file_or_die(infile, outfile);
+		if (futil_copy_file(infile, outfile) < 0)
+			exit(1);
 		work_file = outfile;
 	} else {
 		work_file = infile;
