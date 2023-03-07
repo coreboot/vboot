@@ -37,13 +37,6 @@ enum {
 #define DEFAULT_VERSION 1
 #define DEFAULT_HASH VB2_HASH_SHA256;
 
-static char *infile, *outfile, *outext;
-static uint32_t opt_version = DEFAULT_VERSION;
-enum vb2_hash_algorithm opt_hash_alg = DEFAULT_HASH;
-static char *opt_desc;
-static struct vb2_id opt_id;
-static int force_id;
-
 static const struct option long_opts[] = {
 	{"version",  1, 0, OPT_VERSION},
 	{"desc",     1, 0, OPT_DESC},
@@ -81,7 +74,9 @@ static void print_help(int argc, char *argv[])
 
 }
 
-static int vb1_make_keypair(void)
+static int vb1_make_keypair(const char *infile, const char *outfile,
+			    char *outext, uint32_t version,
+			    enum vb2_hash_algorithm hash_alg)
 {
 	struct vb2_private_key *privkey = NULL;
 	struct vb2_packed_key *pubkey = NULL;
@@ -112,8 +107,7 @@ static int vb1_make_keypair(void)
 	}
 
 	/* Combine the sig_alg with the hash_alg to get the vb1 algorithm */
-	uint64_t vb1_algorithm =
-		vb2_get_crypto_algorithm(opt_hash_alg, sig_alg);
+	uint64_t vb1_algorithm = vb2_get_crypto_algorithm(hash_alg, sig_alg);
 
 	/* Create the private key */
 	privkey = (struct vb2_private_key *)calloc(sizeof(*privkey), 1);
@@ -122,7 +116,7 @@ static int vb1_make_keypair(void)
 
 	privkey->rsa_private_key = rsa_key;
 	privkey->sig_alg = sig_alg;
-	privkey->hash_alg = opt_hash_alg;
+	privkey->hash_alg = hash_alg;
 
 	/* Write it out */
 	strcpy(outext, ".vbprivk");
@@ -139,7 +133,7 @@ static int vb1_make_keypair(void)
 		goto done;
 	}
 
-	pubkey = vb2_alloc_packed_key(keyb_size, vb1_algorithm, opt_version);
+	pubkey = vb2_alloc_packed_key(keyb_size, vb1_algorithm, version);
 	if (!pubkey)
 		goto done;
 	memcpy((uint8_t *)vb2_packed_key_data(pubkey), keyb_data, keyb_size);
@@ -162,7 +156,10 @@ done:
 	return ret;
 }
 
-static int vb2_make_keypair(void)
+static int vb2_make_keypair(const char *infile, const char *outfile,
+			    char *outext, char *desc, struct vb2_id *id,
+			    bool force_id, uint32_t version,
+			    enum vb2_hash_algorithm hash_alg)
 {
 	struct vb2_private_key *privkey = 0;
 	struct vb2_public_key *pubkey = 0;
@@ -220,8 +217,8 @@ static int vb2_make_keypair(void)
 
 		privkey->rsa_private_key = rsa_key;
 		privkey->sig_alg = sig_alg;
-		privkey->hash_alg = opt_hash_alg;
-		if (opt_desc && vb2_private_key_set_desc(privkey, opt_desc)) {
+		privkey->hash_alg = hash_alg;
+		if (desc && vb2_private_key_set_desc(privkey, desc)) {
 			ERROR("Unable to set the private key description\n");
 			goto done;
 		}
@@ -252,9 +249,9 @@ static int vb2_make_keypair(void)
 		goto done;
 	}
 
-	pubkey->hash_alg = opt_hash_alg;
-	pubkey->version = opt_version;
-	if (opt_desc && vb2_public_key_set_desc(pubkey, opt_desc)) {
+	pubkey->hash_alg = hash_alg;
+	pubkey->version = version;
+	if (desc && vb2_public_key_set_desc(pubkey, desc)) {
 		ERROR("Unable to set pubkey description\n");
 		goto done;
 	}
@@ -264,14 +261,14 @@ static int vb2_make_keypair(void)
 		struct vb2_hash hash;
 		vb2_hash_calculate(false, keyb_data, keyb_size, VB2_HASH_SHA1,
 				   &hash);
-		memcpy(opt_id.raw, hash.raw, sizeof(opt_id.raw));
+		memcpy(id->raw, hash.raw, sizeof(id->raw));
 	}
 
-	memcpy((struct vb2_id *)pubkey->id, &opt_id, sizeof(opt_id));
+	memcpy((struct vb2_id *)pubkey->id, id, sizeof(*id));
 
 	/* Write them out */
 	if (has_priv) {
-		privkey->id = opt_id;
+		privkey->id = *id;
 		strcpy(outext, ".vbprik2");
 		if (vb21_private_key_write(privkey, outfile)) {
 			ERROR("Unable to write private key\n");
@@ -302,8 +299,14 @@ done:
 static int do_create(int argc, char *argv[])
 {
 	int errorcnt = 0;
-	char *e, *s;
-	int i, r, len, remove_ext = 0;
+	int i;
+	char *e;
+	char *opt_desc = NULL;
+	struct vb2_id opt_id;
+	bool force_id = false;
+	uint32_t opt_version = DEFAULT_VERSION;
+	enum vb2_hash_algorithm opt_hash_alg = DEFAULT_HASH;
+
 
 	while ((i = getopt_long(argc, argv, "", long_opts, NULL)) != -1) {
 		switch (i) {
@@ -325,7 +328,7 @@ static int do_create(int argc, char *argv[])
 				ERROR("Invalid id \"%s\"\n", optarg);
 				errorcnt = 1;
 			}
-			force_id = 1;
+			force_id = true;
 			break;
 
 		case OPT_HASH_ALG:
@@ -359,31 +362,28 @@ static int do_create(int argc, char *argv[])
 	}
 
 	/* If we don't have an input file already, we need one */
-	if (!infile) {
-		if (argc - optind <= 0) {
-			ERROR("Missing input filename\n");
-			errorcnt++;
-		} else {
-			infile = argv[optind++];
-		}
+	if (argc - optind <= 0) {
+		ERROR("Missing input filename\n");
+		errorcnt++;
 	}
-
 	if (errorcnt) {
 		print_help(argc, argv);
 		return 1;
 	}
+	char *infile = argv[optind++];
 
 	/* Decide how to determine the output filenames. */
+	bool remove_ext = false;
+	char *s;
 	if (argc > optind) {
 		s = argv[optind++];		/* just use this */
 	} else {
 		s = infile;			/* based on pem file name */
-		remove_ext = 1;
+		remove_ext = true;
 	}
 
 	/* Make an extra-large copy to leave room for filename extensions */
-	len = strlen(s) + 20;
-	outfile = (char *)malloc(len);
+	char *outfile = (char *)malloc(strlen(s) + 20);
 	if (!outfile) {
 		ERROR("malloc() failed\n");
 		return 1;
@@ -401,13 +401,16 @@ static int do_create(int argc, char *argv[])
 			*s = '\0';
 	}
 	/* Remember that spot for later */
-	outext = outfile + strlen(outfile);
+	char *outext = outfile + strlen(outfile);
 
 	/* Okay, do it */
+	int r;
 	if (vboot_version == VBOOT_VERSION_1_0)
-		r = vb1_make_keypair();
+		r = vb1_make_keypair(infile, outfile, outext, opt_version,
+				     opt_hash_alg);
 	else
-		r = vb2_make_keypair();
+		r = vb2_make_keypair(infile, outfile, outext, opt_desc, &opt_id,
+				     force_id, opt_version, opt_hash_alg);
 
 	free(outfile);
 	return r;
