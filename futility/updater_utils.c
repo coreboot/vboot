@@ -426,6 +426,7 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 	char *ret = NULL;
 	char *servo_serial = NULL;
 
+	static const char * const raiden_debug_spi = "raiden_debug_spi";
 	static const char * const cpu_fw_spi = "cpu_fw_spi";
 	static const char * const ccd_cpu_fw_spi = "ccd_cpu_fw_spi";
 
@@ -461,6 +462,14 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 		VB2_DEBUG("Selected Servo V2.\n");
 		programmer = "ft2232_spi:type=google-servo-v2";
 		*prepare_ctrl_name = cpu_fw_spi;
+	} else if (strstr(servo_type, "servo_micro")) {
+		VB2_DEBUG("Selected Servo Micro.\n");
+		programmer = raiden_debug_spi;
+		*prepare_ctrl_name = cpu_fw_spi;
+	} else if (strstr(servo_type, "c2d2")) {
+		VB2_DEBUG("Selected C2D2.\n");
+		programmer = raiden_debug_spi;
+		*prepare_ctrl_name = cpu_fw_spi;
 	} else if (strstr(servo_type, "ccd_cr50") ||
 		   strstr(servo_type, "ccd_gsc") ||
 		   strstr(servo_type, "ccd_ti50")) {
@@ -468,13 +477,8 @@ char *host_detect_servo(const char **prepare_ctrl_name)
 		programmer = "raiden_debug_spi:target=AP,custom_rst=true";
 		*prepare_ctrl_name = ccd_cpu_fw_spi;
 	} else {
-		if (strstr(servo_type, "servo_micro"))
-			VB2_DEBUG("Selected Servo Micro.\n");
-		else if (strstr(servo_type, "c2d2"))
-			VB2_DEBUG("Selected C2D2.\n");
-		else
-			WARN("Unknown servo: %s\n", servo_type);
-		programmer = "raiden_debug_spi";
+		WARN("Unknown servo: %s\nAssuming debug header.\n", servo_type);
+		programmer = raiden_debug_spi;
 		*prepare_ctrl_name = cpu_fw_spi;
 	}
 
