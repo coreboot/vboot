@@ -518,6 +518,11 @@ uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 	case TPM_SUCCESS:
 		break;
 
+	/*
+	 * 0x14a = RC_NV_UNINITIALIZED (space created but not written)
+	 * 0x28b = RC_HANDLE(2) ("unknown handle" = space does not exist)
+	 */
+	case 0x14a:
 	case 0x28b:
 		return TPM_E_BADINDEX;
 
