@@ -311,7 +311,7 @@ enum futil_file_err futil_map_file(int fd, enum file_mode mode,
 		mmap_ptr = mmap(0, sb.st_size,
 				PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 
-	if (mmap_ptr == (void *)-1) {
+	if (mmap_ptr == MAP_FAILED) {
 		ERROR("Can't mmap %s file: %s\n",
 		      mode == FILE_RW ? "output" : "input", strerror(errno));
 		return FILE_ERR_MMAP;
