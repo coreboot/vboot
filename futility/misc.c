@@ -255,16 +255,16 @@ enum futil_file_err futil_open_file(const char *infile, int *fd,
 		VB2_DEBUG("open RW %s\n", infile);
 		*fd = open(infile, O_RDWR);
 		if (*fd < 0) {
-			fprintf(stderr, "Can't open %s for writing: %s\n",
-				infile, strerror(errno));
+			ERROR("Can't open %s for writing: %s\n", infile,
+			      strerror(errno));
 			return FILE_ERR_OPEN;
 		}
 	} else {
 		VB2_DEBUG("open RO %s\n", infile);
 		*fd = open(infile, O_RDONLY);
 		if (*fd < 0) {
-			fprintf(stderr, "Can't open %s for reading: %s\n",
-				infile, strerror(errno));
+			ERROR("Can't open %s for reading: %s\n", infile,
+			      strerror(errno));
 			return FILE_ERR_OPEN;
 		}
 	}
@@ -274,8 +274,7 @@ enum futil_file_err futil_open_file(const char *infile, int *fd,
 enum futil_file_err futil_close_file(int fd)
 {
 	if (fd >= 0 && close(fd)) {
-		fprintf(stderr, "Error when closing ifd: %s\n",
-			strerror(errno));
+		ERROR("Closing ifd: %s\n", strerror(errno));
 		return FILE_ERR_CLOSE;
 	}
 	return FILE_ERR_NONE;
@@ -289,8 +288,7 @@ enum futil_file_err futil_map_file(int fd, enum file_mode mode,
 	uint32_t reasonable_len;
 
 	if (0 != fstat(fd, &sb)) {
-		fprintf(stderr, "Can't stat input file: %s\n",
-			strerror(errno));
+		ERROR("Can't stat input file: %s\n", strerror(errno));
 		return FILE_ERR_STAT;
 	}
 
@@ -301,7 +299,7 @@ enum futil_file_err futil_map_file(int fd, enum file_mode mode,
 
 	/* If the image is larger than 2^32 bytes, it's wrong. */
 	if (sb.st_size < 0 || sb.st_size > UINT32_MAX) {
-		fprintf(stderr, "Image size is unreasonable\n");
+		ERROR("Image size is unreasonable\n");
 		return FILE_ERR_SIZE;
 	}
 	reasonable_len = (uint32_t)sb.st_size;
@@ -314,9 +312,8 @@ enum futil_file_err futil_map_file(int fd, enum file_mode mode,
 				PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
 
 	if (mmap_ptr == (void *)-1) {
-		fprintf(stderr, "Can't mmap %s file: %s\n",
-			mode == FILE_RW ? "output" : "input",
-			strerror(errno));
+		ERROR("Can't mmap %s file: %s\n",
+		      mode == FILE_RW ? "output" : "input", strerror(errno));
 		return FILE_ERR_MMAP;
 	}
 
@@ -333,13 +330,12 @@ enum futil_file_err futil_unmap_file(int fd, enum file_mode mode,
 
 	if (mode == FILE_RW &&
 	    (0 != msync(mmap_ptr, len, MS_SYNC | MS_INVALIDATE))) {
-		fprintf(stderr, "msync failed: %s\n", strerror(errno));
+		ERROR("msync failed: %s\n", strerror(errno));
 		err = FILE_ERR_MSYNC;
 	}
 
 	if (0 != munmap(mmap_ptr, len)) {
-		fprintf(stderr, "Can't munmap pointer: %s\n",
-			strerror(errno));
+		ERROR("Can't munmap pointer: %s\n", strerror(errno));
 		if (err == FILE_ERR_NONE)
 			err = FILE_ERR_MUNMAP;
 	}
@@ -408,7 +404,7 @@ enum futil_file_type ft_recognize_gpt(uint8_t *buf, uint32_t len)
 void parse_digest_or_die(uint8_t *buf, int len, const char *str)
 {
 	if (!parse_hash(buf, len, str)) {
-		fprintf(stderr, "Invalid DIGEST \"%s\"\n", str);
+		ERROR("Invalid DIGEST \"%s\"\n", str);
 		exit(1);
 	}
 }
@@ -430,22 +426,20 @@ int write_to_file(const char *msg, const char *filename, uint8_t *start,
 	fp = fopen(filename, "wb");
 	if (!fp) {
 		r = errno;
-		fprintf(stderr, "ERROR: Unable to open %s for writing: %s\n",
-			filename, strerror(r));
+		ERROR("Unable to open %s for writing: %s\n", filename,
+		      strerror(r));
 		return r;
 	}
 
 	/* Don't write zero bytes */
 	if (size && 1 != fwrite(start, size, 1, fp)) {
 		r = errno;
-		fprintf(stderr, "ERROR: Unable to write to %s: %s\n", filename,
-			strerror(r));
+		ERROR("Unable to write to %s: %s\n", filename, strerror(r));
 	}
 
 	if (fclose(fp) != 0) {
 		int e = errno;
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n", filename,
-			strerror(e));
+		ERROR("Unable to close %s: %s\n", filename, strerror(e));
 		if (!r)
 			r = e;
 	}
