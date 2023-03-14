@@ -131,8 +131,6 @@ static void opt_has_arg(const char *name, int val)
 		}
 }
 
-static int errorcnt;
-
 #define GBB_SEARCH_STRIDE 4
 static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 {
@@ -154,13 +152,11 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 
 	switch (count) {
 	case 0:
-		errorcnt++;
 		return NULL;
 	case 1:
 		return gbb_header;
 	default:
 		ERROR("Multiple GBB headers found\n");
-		errorcnt++;
 		return NULL;
 	}
 }
@@ -177,7 +173,6 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 
 	sizes = strdup(desc);
 	if (!sizes) {
-		errorcnt++;
 		ERROR("strdup() failed: %s\n", strerror(errno));
 		return NULL;
 	}
@@ -185,7 +180,6 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 	for (str = sizes; (param = strtok(str, ", ")) != NULL; str = NULL) {
 		val[i] = (uint32_t) strtoul(param, &e, 0);
 		if (e && *e) {
-			errorcnt++;
 			ERROR("Invalid creation parameter: \"%s\"\n", param);
 			free(sizes);
 			return NULL;
@@ -197,7 +191,6 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 
 	buf = (uint8_t *) calloc(1, size);
 	if (!buf) {
-		errorcnt++;
 		ERROR("Can't malloc %zu bytes: %s\n", size, strerror(errno));
 		free(sizes);
 		return NULL;
@@ -275,8 +268,6 @@ static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
 	return buf;
 
 fail:
-	errorcnt++;
-
 	if (buf)
 		free(buf);
 
@@ -297,20 +288,17 @@ static int read_from_file(const char *msg, const char *filename,
 	if (!fp) {
 		r = errno;
 		ERROR("Unable to open %s for reading: %s\n", filename, strerror(r));
-		errorcnt++;
 		return r;
 	}
 
 	if (0 != fstat(fileno(fp), &sb)) {
 		r = errno;
 		ERROR("Can't fstat %s: %s\n", filename, strerror(r));
-		errorcnt++;
 		goto done_close;
 	}
 
 	if (sb.st_size > size) {
 		ERROR("File %s exceeds capacity (%" PRIu32 ")\n", filename, size);
-		errorcnt++;
 		r = -1;
 		goto done_close;
 	}
@@ -324,14 +312,12 @@ static int read_from_file(const char *msg, const char *filename,
 		r = errno;
 		ERROR("Read %zu/%" PRIi64 " bytes from %s: %s\n", count,
 		      sb.st_size, filename, strerror(r));
-		errorcnt++;
 	}
 
 done_close:
 	if (0 != fclose(fp)) {
 		int e = errno;
 		ERROR("Unable to close %s: %s\n", filename, strerror(e));
-		errorcnt++;
 		if (!r)
 			r = e;
 	}
@@ -489,6 +475,8 @@ static int do_gbb(int argc, char *argv[])
 	struct updater_config_arguments args = {0};
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
+	int errorcnt = 0;
+
 
 	opterr = 0;		/* quiet, you */
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
