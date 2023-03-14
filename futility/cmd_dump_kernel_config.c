@@ -56,7 +56,7 @@ static int do_dump_kern_cfg(int argc, char *argv[])
 		case OPT_KLOADADDR:
 			kernel_body_load_address = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --kloadaddr\n");
+				ERROR("Invalid --kloadaddr\n");
 				parse_error = 1;
 			}
 			break;
@@ -68,7 +68,7 @@ static int do_dump_kern_cfg(int argc, char *argv[])
 	}
 
 	if (optind >= argc) {
-		fprintf(stderr, "Expected argument after options\n");
+		ERROR("Expected argument after options\n");
 		parse_error = 1;
 	} else
 		infile = argv[optind];
@@ -79,7 +79,7 @@ static int do_dump_kern_cfg(int argc, char *argv[])
 	}
 
 	if (!infile || !*infile) {
-		fprintf(stderr, "Must specify filename\n");
+		ERROR("Must specify filename\n");
 		return 1;
 	}
 

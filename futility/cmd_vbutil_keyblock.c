@@ -91,26 +91,23 @@ static int Pack(const char *outfile, const char *datapubkey,
 	struct vb2_keyblock *block;
 
 	if (!outfile) {
-		fprintf(stderr,
-			"vbutil_keyblock: Must specify output filename.\n");
+		ERROR("vbutil_keyblock: Must specify output filename.\n");
 		return 1;
 	}
 	if (!datapubkey) {
-		fprintf(stderr,
-			"vbutil_keyblock: Must specify data public key.\n");
+		ERROR("vbutil_keyblock: Must specify data public key.\n");
 		return 1;
 	}
 
 	struct vb2_packed_key *data_key = vb2_read_packed_key(datapubkey);
 	if (!data_key) {
-		fprintf(stderr, "vbutil_keyblock: Error reading data key.\n");
+		ERROR("vbutil_keyblock: Error reading data key.\n");
 		return 1;
 	}
 
 	if (signprivate_pem) {
 		if (pem_algorithm >= VB2_ALG_COUNT) {
-			fprintf(stderr,
-				"vbutil_keyblock: Invalid --pem_algorithm %"
+			ERROR("vbutil_keyblock: Invalid --pem_algorithm %"
 				PRIu64 "\n", pem_algorithm);
 			return 1;
 		}
@@ -126,7 +123,7 @@ static int Pack(const char *outfile, const char *datapubkey,
 				vb2_read_private_key_pem(signprivate_pem,
 							 pem_algorithm);
 			if (!signing_key) {
-				fprintf(stderr, "vbutil_keyblock:"
+				ERROR("vbutil_keyblock:"
 					" Error reading signing key.\n");
 				return 1;
 			}
@@ -137,7 +134,7 @@ static int Pack(const char *outfile, const char *datapubkey,
 		if (signprivate) {
 			signing_key = vb2_read_private_key(signprivate);
 			if (!signing_key) {
-				fprintf(stderr, "vbutil_keyblock:"
+				ERROR("vbutil_keyblock:"
 					" Error reading signing key.\n");
 				return 1;
 			}
@@ -150,7 +147,7 @@ static int Pack(const char *outfile, const char *datapubkey,
 		free(signing_key);
 
 	if (VB2_SUCCESS != vb2_write_keyblock(outfile, block)) {
-		fprintf(stderr, "vbutil_keyblock: Error writing keyblock.\n");
+		ERROR("vbutil_keyblock: Error writing keyblock.\n");
 		return 1;
 	}
 	free(block);
@@ -163,13 +160,13 @@ static int Unpack(const char *infile, const char *datapubkey,
 	struct vb2_packed_key *sign_key = NULL;
 
 	if (!infile) {
-		fprintf(stderr, "vbutil_keyblock: Must specify filename\n");
+		ERROR("vbutil_keyblock: Must specify filename\n");
 		return 1;
 	}
 
 	struct vb2_keyblock *block = vb2_read_keyblock(infile);
 	if (!block) {
-		fprintf(stderr, "vbutil_keyblock: Error reading keyblock.\n");
+		ERROR("vbutil_keyblock: Error reading keyblock.\n");
 		return 1;
 	}
 
@@ -181,8 +178,7 @@ static int Unpack(const char *infile, const char *datapubkey,
 		static struct vb2_workbuf wb;
 
 		if (block->keyblock_signature.sig_size == 0) {
-			fprintf(stderr,
-				"vbutil_keyblock: signpubkey provided but keyblock is not signed.\n");
+			ERROR("vbutil_keyblock: signpubkey provided but keyblock is not signed.\n");
 			return 1;
 		}
 
@@ -190,22 +186,19 @@ static int Unpack(const char *infile, const char *datapubkey,
 
 		sign_key = vb2_read_packed_key(signpubkey);
 		if (!sign_key) {
-			fprintf(stderr,
-				"vbutil_keyblock: Error reading signpubkey.\n");
+			ERROR("vbutil_keyblock: Error reading signpubkey.\n");
 			return 1;
 		}
 		struct vb2_public_key key;
 		if (VB2_SUCCESS != vb2_unpack_key(&key, sign_key)) {
-			fprintf(stderr,
-				"vbutil_keyblock: Error reading signpubkey.\n");
+			ERROR("vbutil_keyblock: Error reading signpubkey.\n");
 			return 1;
 		}
 
 		if (VB2_SUCCESS !=
 		    vb2_verify_keyblock(block, block->keyblock_size,
 					&key, &wb)) {
-			fprintf(stderr, "vbutil_keyblock:"
-				" Error verifying keyblock.\n");
+			ERROR("vbutil_keyblock: Error verifying keyblock.\n");
 			return 1;
 		}
 		free(sign_key);
@@ -237,7 +230,7 @@ static int Unpack(const char *infile, const char *datapubkey,
 
 	if (datapubkey &&
 	    VB2_SUCCESS != vb2_write_packed_key(datapubkey, data_key)) {
-		fprintf(stderr, "vbutil_keyblock: error writing public key\n");
+		ERROR("vbutil_keyblock: error writing public key\n");
 		return 1;
 	}
 
@@ -298,7 +291,7 @@ static int do_vbutil_keyblock(int argc, char *argv[])
 		case OPT_PEM_ALGORITHM:
 			pem_algorithm = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --pem_algorithm\n");
+				ERROR("Invalid --pem_algorithm\n");
 				parse_error = 1;
 			} else {
 				is_pem_algorithm = 1;
@@ -312,7 +305,7 @@ static int do_vbutil_keyblock(int argc, char *argv[])
 		case OPT_FLAGS:
 			flags = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --flags\n");
+				ERROR("Invalid --flags\n");
 				parse_error = 1;
 			}
 			break;
@@ -321,22 +314,19 @@ static int do_vbutil_keyblock(int argc, char *argv[])
 
 	/* Check if the right combination of options was provided. */
 	if (signprivate && signprivate_pem) {
-		fprintf(stderr,
-			"Only one of --signprivate or --signprivate_pem must"
+		ERROR("Only one of --signprivate or --signprivate_pem must"
 			" be specified\n");
 		parse_error = 1;
 	}
 
 	if (signprivate_pem && !is_pem_algorithm) {
-		fprintf(stderr, "--pem_algorithm must be used with"
+		ERROR("--pem_algorithm must be used with"
 			" --signprivate_pem\n");
 		parse_error = 1;
 	}
 
 	if (external_signer && !signprivate_pem) {
-		fprintf(stderr,
-			"--externalsigner must be used with --signprivate_pem"
-			"\n");
+		ERROR("--externalsigner must be used with --signprivate_pem\n");
 		parse_error = 1;
 	}
 
