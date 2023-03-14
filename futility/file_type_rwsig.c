@@ -182,7 +182,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 				     (struct vb21_signature *)sigbuf,
 				     (const struct vb2_public_key *)&key,
 				     &wb)) {
-			fprintf(stderr, "Signature verification failed\n");
+			ERROR("Signature verification failed\n");
 			goto done;
 		}
 	}
@@ -190,7 +190,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 	/* Check that the rest of region is padded with 0xff. */
 	for (i = data_size; i < total_data_size; i++) {
 		if (data[i] != 0xff) {
-			fprintf(stderr, "Padding verification failed\n");
+			ERROR("Padding verification failed\n");
 			goto done;
 		}
 	}
@@ -265,7 +265,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 				  len - sig_size);
 
 			if (len < sig_size) {
-				fprintf(stderr, "File is too small\n");
+				ERROR("File is too small\n");
 				goto done;
 			}
 
@@ -275,7 +275,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		}
 
 		if (vb21_verify_signature(old_sig, sig_size)) {
-			fprintf(stderr, "Can't find a valid signature\n");
+			ERROR("Can't find a valid signature\n");
 			goto done;
 		}
 
@@ -295,8 +295,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		r = vb21_sign_data(&tmp_sig,
 				   data, data_size, sign_option.prikey, 0);
 		if (r) {
-			fprintf(stderr,
-				"Unable to sign data (error 0x%08x)\n", r);
+			ERROR("Unable to sign data (error 0x%08x)\n", r);
 			goto done;
 		}
 	} else {
@@ -304,7 +303,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		if (!old_sig) {
 			/* This isn't necessary because no prikey mode runs only
 			 * for fmap input or RW input */
-			fprintf(stderr, "Previous signature not found.\n");
+			ERROR("Previous signature not found.\n");
 			goto done;
 		}
 		tmp_sig = calloc(1, old_sig->c.total_size);
@@ -316,8 +315,8 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 	if (sign_option.inout_file_count < 2) {
 		/* Overwrite the old signature */
 		if (tmp_sig->c.total_size > sig_size) {
-			fprintf(stderr, "New sig is too large (%d > %d)\n",
-				tmp_sig->c.total_size, sig_size);
+			ERROR("New sig is too large (%d > %d)\n",
+			      tmp_sig->c.total_size, sig_size);
 			goto done;
 		}
 		VB2_DEBUG("Replacing old signature with new one\n");
@@ -334,8 +333,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		/* Write the signature to a new file */
 		r = vb21_write_object(sign_option.outfile, tmp_sig);
 		if (r) {
-			fprintf(stderr, "Unable to write sig"
-				" (error 0x%08x, if that helps)\n", r);
+			ERROR("Unable to write sig (error 0x%08x)\n", r);
 			goto done;
 		}
 	}
@@ -349,14 +347,14 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		/* Create the public key */
 		if (vb2_public_key_alloc(&pubkey,
 					 sign_option.prikey->sig_alg)) {
-			fprintf(stderr, "Unable to allocate the public key\n");
+			ERROR("Unable to allocate the public key\n");
 			goto done;
 		}
 
 		/* Extract the keyb blob */
 		if (vb_keyb_from_rsa(sign_option.prikey->rsa_private_key,
 				     &keyb_data, &keyb_size)) {
-			fprintf(stderr, "Couldn't extract the public key\n");
+			ERROR("Couldn't extract the public key\n");
 			goto done;
 		}
 
@@ -370,7 +368,7 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 
 		/* Fill in the internal struct pointers */
 		if (vb2_unpack_key_data(pubkey, pubkey_buf, keyb_size)) {
-			fprintf(stderr, "Unable to unpack the public key blob\n");
+			ERROR("Unable to unpack the public key blob\n");
 			goto done;
 		}
 
@@ -394,8 +392,8 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		}
 		/* Overwrite the old signature */
 		if (packedkey->c.total_size > fmaparea->area_size) {
-			fprintf(stderr, "New sig is too large (%d > %d)\n",
-				packedkey->c.total_size, sig_size);
+			ERROR("New sig is too large (%d > %d)\n",
+			      packedkey->c.total_size, sig_size);
 			goto done;
 		}
 

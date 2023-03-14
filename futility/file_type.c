@@ -107,7 +107,7 @@ enum futil_file_err futil_file_type(const char *filename,
 		goto done;
 
 	if (fstat(ifd, &sb)) {
-		fprintf(stderr, "Can't stat input file: %s\n", strerror(errno));
+		ERROR("Cannot stat input file: %s\n", strerror(errno));
 		err = FILE_ERR_STAT;
 		goto done;
 	}
@@ -137,8 +137,8 @@ int futil_file_type_show(enum futil_file_type type, const char *filename)
 	if (futil_file_types[type].show)
 		return futil_file_types[type].show(filename, 0);
 
-	fprintf(stderr, "Don't know how to show %s (type %s)\n",
-		filename, futil_file_type_name(type));
+	ERROR("Don't know how to show %s (type %s)\n", filename,
+	      futil_file_type_name(type));
 	return 1;
 }
 
@@ -147,7 +147,7 @@ int futil_file_type_sign(enum futil_file_type type, const char *filename)
 	if (futil_file_types[type].sign)
 		return futil_file_types[type].sign(filename, 0);
 
-	fprintf(stderr, "Don't know how to sign %s (type %s)\n",
-		filename, futil_file_type_name(type));
+	ERROR("Don't know how to sign %s (type %s)\n", filename,
+	      futil_file_type_name(type));
 	return 1;
 }

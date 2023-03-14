@@ -238,7 +238,7 @@ static int write_new_preamble(struct bios_area_s *vblock,
 						   signkey);
 
 	if (!body_sig) {
-		ERROR("Error calculating or creating body signature\n");
+		ERROR("Cannot calculate or creating body signature\n");
 		return 1;
 	}
 
@@ -248,7 +248,7 @@ static int write_new_preamble(struct bios_area_s *vblock,
 			signkey,
 			vblock->flags);
 	if (!preamble) {
-		ERROR("Error creating firmware preamble.\n");
+		ERROR("Cannot create firmware preamble.\n");
 		goto end;
 	}
 
@@ -278,26 +278,24 @@ static int write_loem(const char *ab, struct bios_area_s *vblock)
 		     sign_option.loemdir ? sign_option.loemdir : ".",
 		     ab, sign_option.loemid);
 	if (n >= sizeof(filename)) {
-		fprintf(stderr, "LOEM args produce bogus filename\n");
+		ERROR("LOEM args produce bogus filename\n");
 		return 1;
 	}
 
 	FILE *fp = fopen(filename, "w");
 	if (!fp) {
-		fprintf(stderr, "Can't open %s for writing: %s\n",
-			filename, strerror(errno));
+		ERROR("Cannot open %s for writing: %s\n", filename,
+		      strerror(errno));
 		return 1;
 	}
 
 	if (1 != fwrite(vblock->buf, vblock->len, 1, fp)) {
-		fprintf(stderr, "Can't write to %s: %s\n",
-			filename, strerror(errno));
+		ERROR("Cannot write to %s: %s\n", filename, strerror(errno));
 		fclose(fp);
 		return 1;
 	}
 	if (fclose(fp)) {
-		fprintf(stderr, "Failed closing loem output: %s\n",
-			strerror(errno));
+		ERROR("Failed closing loem output: %s\n", strerror(errno));
 		return 1;
 	}
 
@@ -314,7 +312,7 @@ static int sign_bios_at_end(struct bios_state_s *state)
 	int retval = 0;
 
 	if (!vblock_a->is_valid || !fw_a->is_valid) {
-		fprintf(stderr, "Something's wrong. Not changing anything\n");
+		ERROR("Something's wrong. Not changing anything\n");
 		return 1;
 	}
 
