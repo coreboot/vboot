@@ -62,7 +62,7 @@ static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)
 
 	fp = fopen(file, "r");
 	if (!fp) {
-		fprintf(stderr, "area %s: can't open %s for reading: %s\n",
+		ERROR("area %s: can't open %s for reading: %s\n",
 			area, file, strerror(errno));
 		return 1;
 	}
@@ -70,19 +70,18 @@ static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)
 	n = fread(buf, 1, len, fp);
 	if (n == 0) {
 		if (feof(fp))
-			fprintf(stderr, "area %s: unexpected EOF on %s\n",
-				area, file);
+			ERROR("area %s: unexpected EOF on %s\n", area, file);
 		if (ferror(fp))
-			fprintf(stderr, "area %s: can't read from %s: %s\n",
+			ERROR("area %s: can't read from %s: %s\n",
 				area, file, strerror(errno));
 		retval = 1;
 	} else if (n < len) {
-		fprintf(stderr, "Warning on area %s: only read %d "
+		ERROR("Warning on area %s: only read %d "
 			"(not %d) from %s\n", area, n, len, file);
 	}
 
 	if (0 != fclose(fp)) {
-		fprintf(stderr, "area %s: error closing %s: %s\n",
+		ERROR("area %s: error closing %s: %s\n",
 			area, file, strerror(errno));
 		retval = 1;
 	}
@@ -113,14 +112,14 @@ static int do_load_fmap(int argc, char *argv[])
 			return !!errorcnt;
 		case '?':
 			if (optopt)
-				fprintf(stderr, "Unrecognized option: -%c\n",
+				ERROR("Unrecognized option: -%c\n",
 					optopt);
 			else
-				fprintf(stderr, "Unrecognized option\n");
+				ERROR("Unrecognized option\n");
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "Missing argument to -%c\n", optopt);
+			ERROR("Missing argument to -%c\n", optopt);
 			errorcnt++;
 			break;
 		default:
@@ -134,8 +133,7 @@ static int do_load_fmap(int argc, char *argv[])
 	}
 
 	if (argc - optind < 2) {
-		fprintf(stderr,
-			"You must specify an input file"
+		ERROR("You must specify an input file"
 			" and at least one AREA:file argument\n");
 		print_help(argc, argv);
 		return 1;
@@ -151,13 +149,12 @@ static int do_load_fmap(int argc, char *argv[])
 			exit(1);
 
 	errorcnt |= futil_open_and_map_file(outfile, &fd, FILE_RW, &buf, &len);
-
 	if (errorcnt)
 		goto done;
 
 	fmap = fmap_find(buf, len);
 	if (!fmap) {
-		fprintf(stderr, "Can't find an FMAP in %s\n", infile);
+		ERROR("Can't find an FMAP in %s\n", infile);
 		errorcnt++;
 		goto done;
 	}
@@ -167,14 +164,14 @@ static int do_load_fmap(int argc, char *argv[])
 		char *f = strchr(a, ':');
 
 		if (!f || a == f || *(f+1) == '\0') {
-			fprintf(stderr, "argument \"%s\" is bogus\n", a);
+			ERROR("argument \"%s\" is bogus\n", a);
 			errorcnt++;
 			break;
 		}
 		*f++ = '\0';
 		uint8_t *area_buf = fmap_find_by_name(buf, len, fmap, a, &ah);
 		if (!area_buf) {
-			fprintf(stderr, "Can't find area \"%s\" in FMAP\n", a);
+			ERROR("Can't find area \"%s\" in FMAP\n", a);
 			errorcnt++;
 			break;
 		}

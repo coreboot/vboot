@@ -207,11 +207,11 @@ static int do_verify(const char *infile, const char *signpubkey,
 	uint32_t pubklen;
 	struct vb2_public_key sign_key;
 	if (VB2_SUCCESS != vb2_read_file(signpubkey, &pubkbuf, &pubklen)) {
-		fprintf(stderr, "Error reading signpubkey.\n");
+		ERROR("Reading signpubkey.\n");
 		goto verify_cleanup;
 	}
 	if (VB2_SUCCESS != vb2_unpack_key_buffer(&sign_key, pubkbuf, pubklen)) {
-		fprintf(stderr, "Error unpacking signpubkey.\n");
+		ERROR("Unpacking signpubkey.\n");
 		goto verify_cleanup;
 	}
 
@@ -254,7 +254,7 @@ static int do_verify(const char *infile, const char *signpubkey,
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS !=
 	    vb2_unpack_key(&data_key, &keyblock->data_key)) {
-		fprintf(stderr, "Error parsing data key.\n");
+		ERROR("Parsing data key.\n");
 		goto verify_cleanup;
 	}
 
@@ -405,7 +405,7 @@ static int do_vbutil_firmware(int argc, char *argv[])
 	case OPT_MODE_VERIFY:
 		return do_verify(filename, signpubkey, fv_file, kernelkey_file);
 	default:
-		fprintf(stderr, "Must specify a mode.\n");
+		ERROR("Must specify a mode.\n");
 		print_help(argc, argv);
 		return 1;
 	}

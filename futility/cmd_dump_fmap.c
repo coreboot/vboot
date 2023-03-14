@@ -50,8 +50,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 			if (!f)
 				continue;
 			if (a == f || *(f+1) == '\0') {
-				fprintf(stderr,
-					"argument \"%s\" is bogus\n", a);
+				ERROR("argument \"%s\" is bogus\n", a);
 				retval = 1;
 				continue;
 			}
@@ -121,21 +120,21 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 			}
 			FILE *fp = fopen(outname, "wb");
 			if (!fp) {
-				fprintf(stderr, "%s: can't open %s: %s\n",
+				ERROR("%s: can't open %s: %s\n",
 					argv[0], outname, strerror(errno));
 				retval = 1;
 			} else if (!ah->area_size) {
-				fprintf(stderr,
+				ERROR(
 					"%s: section %s has zero size\n",
 					argv[0], buf);
 			} else if (ah->area_offset + ah->area_size >
 				   size_of_rom) {
-				fprintf(stderr, "%s: section %s is larger"
+				ERROR("%s: section %s is larger"
 					" than the image\n", argv[0], buf);
 				retval = 1;
 			} else if (1 != fwrite(base_of_rom + ah->area_offset,
 					       ah->area_size, 1, fp)) {
-				fprintf(stderr, "%s: can't write %s: %s\n",
+				ERROR("%s: can't write %s: %s\n",
 					argv[0], buf, strerror(errno));
 				retval = 1;
 			} else {
@@ -454,12 +453,12 @@ static int do_dump_fmap(int argc, char *argv[])
 			print_help(argc, argv);
 			return 0;
 		case '?':
-			fprintf(stderr, "%s: unrecognized switch: -%c\n",
+			ERROR("%s: unrecognized switch: -%c\n",
 				argv[0], optopt);
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "%s: missing argument to -%c\n",
+			ERROR("%s: missing argument to -%c\n",
 				argv[0], optopt);
 			errorcnt++;
 			break;
@@ -476,13 +475,13 @@ static int do_dump_fmap(int argc, char *argv[])
 
 	fd = open(argv[optind], O_RDONLY);
 	if (fd < 0) {
-		fprintf(stderr, "%s: can't open %s: %s\n",
+		ERROR("%s: can't open %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		return 1;
 	}
 
 	if (0 != fstat(fd, &sb)) {
-		fprintf(stderr, "%s: can't stat %s: %s\n",
+		ERROR("%s: can't stat %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		close(fd);
 		return 1;
@@ -491,7 +490,7 @@ static int do_dump_fmap(int argc, char *argv[])
 	base_of_rom =
 	    mmap(0, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 	if (base_of_rom == (char *)-1) {
-		fprintf(stderr, "%s: can't mmap %s: %s\n",
+		ERROR("%s: can't mmap %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		close(fd);
 		return 1;
@@ -517,7 +516,7 @@ static int do_dump_fmap(int argc, char *argv[])
 	}
 
 	if (0 != munmap(base_of_rom, sb.st_size)) {
-		fprintf(stderr, "%s: can't munmap %s: %s\n",
+		ERROR("%s: can't munmap %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		return 1;
 	}

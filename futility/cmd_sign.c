@@ -51,7 +51,7 @@ struct sign_option_s sign_option = {
 static int no_opt_if(int expr, const char *optname)
 {
 	if (expr) {
-		fprintf(stderr, "Missing --%s option\n", optname);
+		ERROR("Missing --%s option\n", optname);
 		return 1;
 	}
 	return 0;
@@ -71,7 +71,7 @@ int ft_sign_pubkey(const char *name, void *data)
 		return 1;
 
 	if (vb2_packed_key_looks_ok(data_key, data_len)) {
-		fprintf(stderr, "Public key looks bad.\n");
+		ERROR("Public key looks bad.\n");
 		goto done;
 	}
 
@@ -89,7 +89,7 @@ int ft_sign_pubkey(const char *name, void *data)
 				sign_option.pem_signpriv,
 				sign_option.pem_algo);
 			if (!sign_option.signprivate) {
-				fprintf(stderr,
+				ERROR(
 					"Unable to read PEM signing key: %s\n",
 					strerror(errno));
 				goto done;
@@ -131,7 +131,7 @@ int ft_sign_raw_kernel(const char *name, void *data)
 		sign_option.bootloader_data, sign_option.bootloader_size,
 		&kblob_size);
 	if (!kblob_data) {
-		fprintf(stderr, "Unable to create kernel blob\n");
+		ERROR("Unable to create kernel blob\n");
 		goto done;
 	}
 	VB2_DEBUG("kblob_size = %#x\n", kblob_size);
@@ -144,7 +144,7 @@ int ft_sign_raw_kernel(const char *name, void *data)
 				     sign_option.signprivate,
 				     sign_option.flags, &vblock_size);
 	if (!vblock_data) {
-		fprintf(stderr, "Unable to sign kernel blob\n");
+		ERROR("Unable to sign kernel blob\n");
 		goto done;
 	}
 	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
@@ -190,7 +190,7 @@ int ft_sign_kern_preamble(const char *name, void *data)
 					     &keyblock, &preamble, &kblob_size);
 
 	if (!kblob_data) {
-		fprintf(stderr, "Unable to unpack kernel partition\n");
+		ERROR("Unable to unpack kernel partition\n");
 		goto done;
 	}
 
@@ -208,7 +208,7 @@ int ft_sign_kern_preamble(const char *name, void *data)
 	    0 != UpdateKernelBlobConfig(kblob_data, kblob_size,
 					sign_option.config_data,
 					sign_option.config_size)) {
-		fprintf(stderr, "Unable to update config\n");
+		ERROR("Unable to update config\n");
 		goto done;
 	}
 
@@ -235,7 +235,7 @@ int ft_sign_kern_preamble(const char *name, void *data)
 				     sign_option.flags,
 				     &vblock_size);
 	if (!vblock_data) {
-		fprintf(stderr, "Unable to sign kernel blob\n");
+		ERROR("Unable to sign kernel blob\n");
 		goto done;
 	}
 	VB2_DEBUG("vblock_size = %#x\n", vblock_size);
@@ -280,7 +280,7 @@ int ft_sign_raw_firmware(const char *name, void *data)
 
 	body_sig = vb2_calculate_signature(buf, len, sign_option.signprivate);
 	if (!body_sig) {
-		fprintf(stderr, "Error calculating body signature\n");
+		ERROR("Calculating body signature\n");
 		goto done;
 	}
 
@@ -291,7 +291,7 @@ int ft_sign_raw_firmware(const char *name, void *data)
 			sign_option.signprivate,
 			sign_option.flags);
 	if (!preamble) {
-		fprintf(stderr, "Error creating firmware preamble.\n");
+		ERROR("Creating firmware preamble.\n");
 		goto done;
 	}
 
@@ -353,7 +353,7 @@ static int load_keyset(void)
 		INFO("Loading private data key from default keyset: %s\n", buf);
 		sign_option.signprivate = vb2_read_private_key(buf);
 		if (!sign_option.signprivate) {
-			ERROR("Error reading %s\n", buf);
+			ERROR("Reading %s\n", buf);
 			errorcnt++;
 		}
 		free(buf);
@@ -366,7 +366,7 @@ static int load_keyset(void)
 		INFO("Loading keyblock from default keyset: %s\n", buf);
 		sign_option.keyblock = vb2_read_keyblock(buf);
 		if (!sign_option.keyblock) {
-			ERROR("Error reading %s\n", buf);
+			ERROR("Reading %s\n", buf);
 			errorcnt++;
 		}
 		free(buf);
@@ -379,7 +379,7 @@ static int load_keyset(void)
 		INFO("Loading kernel subkey from default keyset: %s\n", buf);
 		sign_option.kernel_subkey = vb2_read_packed_key(buf);
 		if (!sign_option.kernel_subkey) {
-			ERROR("Error reading %s\n", buf);
+			ERROR("Reading %s\n", buf);
 			errorcnt++;
 		}
 		free(buf);
@@ -776,7 +776,7 @@ static int parse_number_opt(const char *arg, const char *name, uint32_t *dest)
 	char *e;
 	uint32_t val = strtoul(arg, &e, 0);
 	if (!*arg || (e && *e)) {
-		fprintf(stderr, "Invalid --%s \"%s\"\n", name, arg);
+		ERROR("Invalid --%s \"%s\"\n", name, arg);
 		return 1;
 	}
 	*dest = val;
@@ -799,21 +799,21 @@ static int do_sign(int argc, char *argv[])
 		case 's':
 			sign_option.signprivate = vb2_read_private_key(optarg);
 			if (!sign_option.signprivate) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
 			break;
 		case 'b':
 			sign_option.keyblock = vb2_read_keyblock(optarg);
 			if (!sign_option.keyblock) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
 			break;
 		case 'k':
 			sign_option.kernel_subkey = vb2_read_packed_key(optarg);
 			if (!sign_option.kernel_subkey) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -821,8 +821,7 @@ static int do_sign(int argc, char *argv[])
 			sign_option.version_specified = 1;
 			sign_option.version = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr,
-					"Invalid --version \"%s\"\n", optarg);
+				ERROR("Invalid --version \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -856,8 +855,7 @@ static int do_sign(int argc, char *argv[])
 			sign_option.bootloader_data = ReadFile(
 				optarg, &sign_option.bootloader_size);
 			if (!sign_option.bootloader_data) {
-				fprintf(stderr,
-					"Error reading bootloader file: %s\n",
+				ERROR("Error reading bootloader file: %s\n",
 					strerror(errno));
 				errorcnt++;
 			}
@@ -868,8 +866,7 @@ static int do_sign(int argc, char *argv[])
 			sign_option.config_data = ReadConfigFile(
 				optarg, &sign_option.config_size);
 			if (!sign_option.config_data) {
-				fprintf(stderr,
-					"Error reading config file: %s\n",
+				ERROR("Error reading config file: %s\n",
 					strerror(errno));
 				errorcnt++;
 			}
@@ -885,8 +882,7 @@ static int do_sign(int argc, char *argv[])
 			else if (!strcasecmp(optarg, "mips"))
 				sign_option.arch = ARCH_MIPS;
 			else {
-				fprintf(stderr,
-					"Unknown architecture: \"%s\"\n",
+				ERROR("Unknown architecture: \"%s\"\n",
 					optarg);
 				errorcnt++;
 			}
@@ -931,16 +927,14 @@ static int do_sign(int argc, char *argv[])
 			sign_option.pem_algo = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e) ||
 			    (sign_option.pem_algo >= VB2_ALG_COUNT)) {
-				fprintf(stderr,
-					"Invalid --pem_algo \"%s\"\n", optarg);
+				ERROR("Invalid --pem_algo \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
 		case OPT_HASH_ALG:
 			if (!vb2_lookup_hash_alg(optarg,
 						 &sign_option.hash_alg)) {
-				fprintf(stderr,
-					"invalid hash_alg \"%s\"\n", optarg);
+				ERROR("Invalid hash_alg \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -952,15 +946,14 @@ static int do_sign(int argc, char *argv[])
 						    &sign_option.type)) {
 				if (!strcasecmp("help", optarg))
 				    print_file_types_and_exit(errorcnt);
-				fprintf(stderr,
-					"Invalid --type \"%s\"\n", optarg);
+				ERROR("Invalid --type \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
 		case OPT_PRIKEY:
 			if (vb21_private_key_read(&sign_option.prikey,
 						  optarg)) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -970,15 +963,15 @@ static int do_sign(int argc, char *argv[])
 
 		case '?':
 			if (optopt)
-				fprintf(stderr, "Unrecognized option: -%c\n",
+				ERROR("Unrecognized option: -%c\n",
 					optopt);
 			else
-				fprintf(stderr, "Unrecognized option: %s\n",
+				ERROR("Unrecognized option: %s\n",
 					argv[optind - 1]);
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "Missing argument to -%c\n", optopt);
+			ERROR("Missing argument to -%c\n", optopt);
 			errorcnt++;
 			break;
 		case 0:				/* handled option */
@@ -1002,7 +995,7 @@ static int do_sign(int argc, char *argv[])
 	if (!infile) {
 		if (argc - optind <= 0) {
 			errorcnt++;
-			fprintf(stderr, "ERROR: missing input filename\n");
+			ERROR("Missing input filename\n");
 			goto done;
 		} else {
 			sign_option.inout_file_count++;
@@ -1043,8 +1036,7 @@ static int do_sign(int argc, char *argv[])
 	case FILE_TYPE_PUBKEY:
 		sign_option.create_new_outfile = 1;
 		if (sign_option.signprivate && sign_option.pem_signpriv) {
-			fprintf(stderr,
-				"Only one of --signprivate and --pem_signpriv"
+			ERROR("Only one of --signprivate and --pem_signpriv"
 				" can be specified\n");
 			errorcnt++;
 		}
@@ -1052,12 +1044,12 @@ static int do_sign(int argc, char *argv[])
 		     sign_option.pem_algo_specified) ||
 		    (sign_option.pem_signpriv &&
 		     !sign_option.pem_algo_specified)) {
-			fprintf(stderr, "--pem_algo must be used with"
+			ERROR("--pem_algo must be used with"
 				" --pem_signpriv\n");
 			errorcnt++;
 		}
 		if (sign_option.pem_external && !sign_option.pem_signpriv) {
-			fprintf(stderr, "--pem_external must be used with"
+			ERROR("--pem_external must be used with"
 				" --pem_signpriv\n");
 			errorcnt++;
 		}
@@ -1119,7 +1111,7 @@ static int do_sign(int argc, char *argv[])
 	if (!sign_option.outfile) {
 		if (sign_option.create_new_outfile) {
 			errorcnt++;
-			fprintf(stderr, "Missing output filename\n");
+			ERROR("Missing output filename\n");
 			goto done;
 		} else {
 			sign_option.outfile = infile;
@@ -1130,7 +1122,7 @@ static int do_sign(int argc, char *argv[])
 
 	if (argc - optind > 0) {
 		errorcnt++;
-		fprintf(stderr, "ERROR: too many arguments left over\n");
+		ERROR("Too many arguments left over\n");
 	}
 
 	if (errorcnt)
@@ -1153,7 +1145,7 @@ done:
 		vb2_private_key_free(sign_option.prikey);
 
 	if (errorcnt)
-		fprintf(stderr, "Use --help for usage instructions\n");
+		ERROR("Use --help for usage instructions\n");
 
 	return !!errorcnt;
 }

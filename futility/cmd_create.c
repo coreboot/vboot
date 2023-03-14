@@ -92,7 +92,7 @@ static int vb1_make_keypair(void)
 
 	FILE *fp = fopen(infile, "rb");
 	if (!fp) {
-		fprintf(stderr, "Unable to open %s\n", infile);
+		ERROR("Unable to open %s\n", infile);
 		goto done;
 	}
 
@@ -101,13 +101,13 @@ static int vb1_make_keypair(void)
 	rsa_key = PEM_read_RSAPrivateKey(fp, NULL, NULL, NULL);
 	fclose(fp);
 	if (!rsa_key) {
-		fprintf(stderr, "Unable to read RSA key from %s\n", infile);
+		ERROR("Unable to read RSA key from %s\n", infile);
 		goto done;
 	}
 
 	enum vb2_signature_algorithm sig_alg = vb2_rsa_sig_alg(rsa_key);
 	if (sig_alg == VB2_SIG_INVALID) {
-		fprintf(stderr, "Unsupported sig algorithm in RSA key\n");
+		ERROR("Unsupported sig algorithm in RSA key\n");
 		goto done;
 	}
 
@@ -127,7 +127,7 @@ static int vb1_make_keypair(void)
 	/* Write it out */
 	strcpy(outext, ".vbprivk");
 	if (0 != vb2_write_private_key(outfile, privkey)) {
-		fprintf(stderr, "unable to write private key\n");
+		ERROR("Unable to write private key\n");
 		goto done;
 	}
 	printf("wrote %s\n", outfile);
@@ -135,7 +135,7 @@ static int vb1_make_keypair(void)
 	/* Create the public key */
 	ret = vb_keyb_from_rsa(rsa_key, &keyb_data, &keyb_size);
 	if (ret) {
-		fprintf(stderr, "couldn't extract the public key\n");
+		ERROR("Couldn't extract the public key\n");
 		goto done;
 	}
 
@@ -147,7 +147,7 @@ static int vb1_make_keypair(void)
 	/* Write it out */
 	strcpy(outext, ".vbpubk");
 	if (VB2_SUCCESS != vb2_write_packed_key(outfile, pubkey)) {
-		fprintf(stderr, "unable to write public key\n");
+		ERROR("Unable to write public key\n");
 		goto done;
 	}
 	printf("wrote %s\n", outfile);
@@ -179,7 +179,7 @@ static int vb2_make_keypair(void)
 
 	fp = fopen(infile, "rb");
 	if (!fp) {
-		fprintf(stderr, "Unable to open %s\n", infile);
+		ERROR("Unable to open %s\n", infile);
 		goto done;
 	}
 
@@ -188,25 +188,25 @@ static int vb2_make_keypair(void)
 	if (!rsa_key) {
 		/* Check if the PEM contains only a public key */
 		if (0 != fseek(fp, 0, SEEK_SET)) {
-			fprintf(stderr, "Error seeking in %s\n", infile);
+			ERROR("Seeking in %s\n", infile);
 			goto done;
 		}
 		rsa_key = PEM_read_RSA_PUBKEY(fp, NULL, NULL, NULL);
 	}
 	fclose(fp);
 	if (!rsa_key) {
-		fprintf(stderr, "Unable to read RSA key from %s\n", infile);
+		ERROR("Unable to read RSA key from %s\n", infile);
 		goto done;
 	}
 	/* Public keys doesn't have the private exponent */
 	RSA_get0_key(rsa_key, NULL, NULL, &rsa_d);
 	has_priv = !!rsa_d;
 	if (!has_priv)
-		fprintf(stderr, "%s has a public key only.\n", infile);
+		ERROR("%s has a public key only.\n", infile);
 
 	sig_alg = vb2_rsa_sig_alg(rsa_key);
 	if (sig_alg == VB2_SIG_INVALID) {
-		fprintf(stderr, "Unsupported sig algorithm in RSA key\n");
+		ERROR("Unsupported sig algorithm in RSA key\n");
 		goto done;
 	}
 
@@ -214,7 +214,7 @@ static int vb2_make_keypair(void)
 		/* Create the private key */
 		privkey = calloc(1, sizeof(*privkey));
 		if (!privkey) {
-			fprintf(stderr, "Unable to allocate the private key\n");
+			ERROR("Unable to allocate the private key\n");
 			goto done;
 		}
 
@@ -222,21 +222,20 @@ static int vb2_make_keypair(void)
 		privkey->sig_alg = sig_alg;
 		privkey->hash_alg = opt_hash_alg;
 		if (opt_desc && vb2_private_key_set_desc(privkey, opt_desc)) {
-			fprintf(stderr,
-				"Unable to set the private key description\n");
+			ERROR("Unable to set the private key description\n");
 			goto done;
 		}
 	}
 
 	/* Create the public key */
 	if (vb2_public_key_alloc(&pubkey, sig_alg)) {
-		fprintf(stderr, "Unable to allocate the public key\n");
+		ERROR("Unable to allocate the public key\n");
 		goto done;
 	}
 
 	/* Extract the keyb blob */
 	if (vb_keyb_from_rsa(rsa_key, &keyb_data, &keyb_size)) {
-		fprintf(stderr, "Couldn't extract the public key\n");
+		ERROR("Couldn't extract the public key\n");
 		goto done;
 	}
 
@@ -249,14 +248,14 @@ static int vb2_make_keypair(void)
 
 	/* Fill in the internal struct pointers */
 	if (vb2_unpack_key_data(pubkey, pubkey_buf, keyb_size)) {
-		fprintf(stderr, "Unable to unpack the public key blob\n");
+		ERROR("Unable to unpack the public key blob\n");
 		goto done;
 	}
 
 	pubkey->hash_alg = opt_hash_alg;
 	pubkey->version = opt_version;
 	if (opt_desc && vb2_public_key_set_desc(pubkey, opt_desc)) {
-		fprintf(stderr, "Unable to set pubkey description\n");
+		ERROR("Unable to set pubkey description\n");
 		goto done;
 	}
 
@@ -275,7 +274,7 @@ static int vb2_make_keypair(void)
 		privkey->id = opt_id;
 		strcpy(outext, ".vbprik2");
 		if (vb21_private_key_write(privkey, outfile)) {
-			fprintf(stderr, "unable to write private key\n");
+			ERROR("Unable to write private key\n");
 			goto done;
 		}
 		printf("wrote %s\n", outfile);
@@ -283,7 +282,7 @@ static int vb2_make_keypair(void)
 
 	strcpy(outext, ".vbpubk2");
 	if (vb21_public_key_write(pubkey, outfile)) {
-		fprintf(stderr, "unable to write public key\n");
+		ERROR("Unable to write public key\n");
 		goto done;
 	}
 	printf("wrote %s\n", outfile);
@@ -312,8 +311,7 @@ static int do_create(int argc, char *argv[])
 		case OPT_VERSION:
 			opt_version = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr,
-					"invalid version \"%s\"\n", optarg);
+				ERROR("Invalid version \"%s\"\n", optarg);
 				errorcnt = 1;
 			}
 			break;
@@ -324,8 +322,7 @@ static int do_create(int argc, char *argv[])
 
 		case OPT_ID:
 			if (VB2_SUCCESS != vb2_str_to_id(optarg, &opt_id)) {
-				fprintf(stderr, "invalid id \"%s\"\n",
-					optarg);
+				ERROR("Invalid id \"%s\"\n", optarg);
 				errorcnt = 1;
 			}
 			force_id = 1;
@@ -333,8 +330,7 @@ static int do_create(int argc, char *argv[])
 
 		case OPT_HASH_ALG:
 			if (!vb2_lookup_hash_alg(optarg, &opt_hash_alg)) {
-				fprintf(stderr,
-					"invalid hash_alg \"%s\"\n", optarg);
+				ERROR("Invalid hash_alg \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -345,14 +341,14 @@ static int do_create(int argc, char *argv[])
 
 		case '?':
 			if (optopt)
-				fprintf(stderr, "Unrecognized option: -%c\n",
+				ERROR("Unrecognized option: -%c\n",
 					optopt);
 			else
-				fprintf(stderr, "Unrecognized option\n");
+				ERROR("Unrecognized option\n");
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "Missing argument to -%c\n", optopt);
+			ERROR("Missing argument to -%c\n", optopt);
 			errorcnt++;
 			break;
 		case 0:				/* handled option */
@@ -365,7 +361,7 @@ static int do_create(int argc, char *argv[])
 	/* If we don't have an input file already, we need one */
 	if (!infile) {
 		if (argc - optind <= 0) {
-			fprintf(stderr, "ERROR: missing input filename\n");
+			ERROR("Missing input filename\n");
 			errorcnt++;
 		} else {
 			infile = argv[optind++];
@@ -389,7 +385,7 @@ static int do_create(int argc, char *argv[])
 	len = strlen(s) + 20;
 	outfile = (char *)malloc(len);
 	if (!outfile) {
-		fprintf(stderr, "ERROR: malloc() failed\n");
+		ERROR("malloc() failed\n");
 		return 1;
 	}
 	strcpy(outfile, s);
