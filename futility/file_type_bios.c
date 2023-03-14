@@ -562,18 +562,16 @@ enum futil_file_type ft_recognize_bios_image(uint8_t *buf, uint32_t len)
 	if (!fmap)
 		return FILE_TYPE_UNKNOWN;
 
-	/* Correct BIOS image should contain at least GBB, FW_MAIN_A and
-	   VBLOCK_A areas. FW_MAIN_B and VBLOCK_B are optional, but will be
-	   signed or shown if present. */
-	const int gbb_and_a_slot_ok =
-		fmap_find_by_name(buf, len, fmap, fmap_name[BIOS_FMAP_GBB],
-				  0) != NULL &&
-		fmap_find_by_name(buf, len, fmap,
-				  fmap_name[BIOS_FMAP_FW_MAIN_A], 0) != NULL &&
-		fmap_find_by_name(buf, len, fmap, fmap_name[BIOS_FMAP_VBLOCK_A],
-				  0) != NULL;
+	/**
+	 * Correct BIOS image should contain at least:
+	 * GBB, FW_MAIN_A and VBLOCK_A areas.
+	 * The FW_MAIN_B and VBLOCK_B are optional, however will be signed or shown if present.
+	 */
+	const int gbb_slot = !!fmap_find_by_name(buf, len, fmap, fmap_name[BIOS_FMAP_GBB], 0);
+	const int fw_slot_a = !!fmap_find_by_name(buf, len, fmap, fmap_name[BIOS_FMAP_FW_MAIN_A], 0);
+	const int vblock_slot_a = !!fmap_find_by_name(buf, len, fmap, fmap_name[BIOS_FMAP_VBLOCK_A], 0);
 
-	if (gbb_and_a_slot_ok)
+	if (gbb_slot && fw_slot_a && vblock_slot_a)
 		return FILE_TYPE_BIOS_IMAGE;
 
 	return FILE_TYPE_UNKNOWN;
