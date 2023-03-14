@@ -110,8 +110,8 @@ int ft_sign_usbpd1(const char *name, void *data)
 
 	/* Read the signing keypair file */
 	if (vb2_private_key_read_pem(&key_ptr, sign_option.pem_signpriv)) {
-		fprintf(stderr, "Unable to read keypair from %s\n",
-			sign_option.pem_signpriv);
+		ERROR("Unable to read keypair from %s\n",
+		      sign_option.pem_signpriv);
 		goto done;
 	}
 
@@ -119,16 +119,16 @@ int ft_sign_usbpd1(const char *name, void *data)
 	key_ptr->hash_alg = sign_option.hash_alg;
 	key_ptr->sig_alg = vb2_rsa_sig_alg(key_ptr->rsa_private_key);
 	if (key_ptr->sig_alg == VB2_SIG_INVALID) {
-		fprintf(stderr, "Unsupported sig algorithm in RSA key\n");
+		ERROR("Unsupported sig algorithm in RSA key\n");
 		goto done;
 	}
 
 	/* Figure out what needs signing */
 	sig_size = vb2_rsa_sig_size(key_ptr->sig_alg);
 	if (rw_size < sig_size) {
-		fprintf(stderr,
-			"The RW image is too small to hold the signature"
-			" (0x%08x < %08x)\n", rw_size, sig_size);
+		ERROR("The RW image is too small to hold the signature"
+		      " (0x%08x < %08x)\n",
+		      rw_size, sig_size);
 		goto done;
 	}
 	rw_size -= sig_size;
@@ -142,17 +142,14 @@ int ft_sign_usbpd1(const char *name, void *data)
 	/* Sign the blob */
 	r = vb21_sign_data(&sig_ptr, buf + rw_offset, rw_size, key_ptr, "Bah");
 	if (r) {
-		fprintf(stderr,
-			"Unable to sign data (error 0x%08x, if that helps)\n",
-			r);
+		ERROR("Unable to sign data (error 0x%08x, if that helps)\n", r);
 		goto done;
 	}
 
 	/* Double-check the size */
 	if (sig_ptr->sig_size != sig_size) {
-		fprintf(stderr,
-			"ERROR: sig size is %d bytes, not %d as expected.\n",
-			sig_ptr->sig_size, sig_size);
+		ERROR("The sig size is %d bytes, not %d as expected.\n",
+		      sig_ptr->sig_size, sig_size);
 		goto done;
 	}
 
@@ -169,7 +166,7 @@ int ft_sign_usbpd1(const char *name, void *data)
 	/* Otherwise, now update the public key */
 	if (vb_keyb_from_rsa(key_ptr->rsa_private_key,
 			     &keyb_data, &keyb_size)) {
-		fprintf(stderr, "Couldn't extract the public key\n");
+		ERROR("Could not extract the public key\n");
 		goto done;
 	}
 	VB2_DEBUG("keyb_size is %#x (%d):\n", keyb_size, keyb_size);
@@ -201,9 +198,9 @@ int ft_sign_usbpd1(const char *name, void *data)
 	pub_offset = ro_offset + ro_size - pub_size;
 
 	if (ro_size < pub_size) {
-		fprintf(stderr,
-			"The RO image is too small to hold the public key"
-			" (0x%08x < %08x)\n", ro_size, pub_size);
+		ERROR("The RO image is too small to hold the public key"
+		      " (0x%08x < %08x)\n",
+		      ro_size, pub_size);
 		goto done;
 	}
 
