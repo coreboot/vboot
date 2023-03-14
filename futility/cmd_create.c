@@ -126,7 +126,7 @@ static int vb1_make_keypair(void)
 
 	/* Write it out */
 	strcpy(outext, ".vbprivk");
-	if (0 != vb2_write_private_key(outfile, privkey)) {
+	if (vb2_write_private_key(outfile, privkey)) {
 		ERROR("Unable to write private key\n");
 		goto done;
 	}
@@ -187,7 +187,7 @@ static int vb2_make_keypair(void)
 
 	if (!rsa_key) {
 		/* Check if the PEM contains only a public key */
-		if (0 != fseek(fp, 0, SEEK_SET)) {
+		if (fseek(fp, 0, SEEK_SET)) {
 			ERROR("Seeking in %s\n", infile);
 			goto done;
 		}

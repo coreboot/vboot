@@ -40,10 +40,9 @@ static void print_help(int argc, char *argv[])
 	printf(usage, argv[0], argv[0], argv[0]);
 }
 
-static void print_digest(const uint8_t *buf, int len)
+static void print_digest(const uint8_t *buf, size_t len)
 {
-	int i;
-	for (i = 0; i < len; i++)
+	for (size_t i = 0; i < len; i++)
 		printf("%02x", buf[i]);
 }
 
@@ -57,9 +56,8 @@ static const struct option long_opts[] = {
 static int do_pcr(int argc, char *argv[])
 {
 	uint8_t accum[VB2_MAX_DIGEST_SIZE * 2];
-	uint8_t pcr[VB2_MAX_DIGEST_SIZE];
+	uint8_t pcr[VB2_MAX_DIGEST_SIZE] = {0};
 	int digest_alg = VB2_HASH_SHA1;
-	int digest_size;
 	int opt_init = 0;
 	int errorcnt = 0;
 	int i;
@@ -104,9 +102,7 @@ static int do_pcr(int argc, char *argv[])
 		return 1;
 	}
 
-	memset(pcr, 0, sizeof(pcr));
-
-	digest_size = vb2_digest_size(digest_alg);
+	int digest_size = vb2_digest_size(digest_alg);
 	if (!digest_size) {
 		ERROR("Cannot determine digest size!\n");
 		return 1;
