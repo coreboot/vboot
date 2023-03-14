@@ -54,21 +54,20 @@ static const struct option long_opts[] = {
 static const char *short_opts = ":o:";
 
 
-static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)
+static int copy_to_area(const char *file, uint8_t *buf,
+			const uint32_t len, const char *area)
 {
-	FILE *fp;
 	int retval = 0;
-	int n;
 
-	fp = fopen(file, "r");
+	FILE *fp = fopen(file, "r");
 	if (!fp) {
 		ERROR("area %s: can't open %s for reading: %s\n",
 			area, file, strerror(errno));
 		return 1;
 	}
 
-	n = fread(buf, 1, len, fp);
-	if (n == 0) {
+	size_t n = fread(buf, 1, len, fp);
+	if (!n) {
 		if (feof(fp))
 			ERROR("area %s: unexpected EOF on %s\n", area, file);
 		if (ferror(fp))
@@ -76,11 +75,11 @@ static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)
 				area, file, strerror(errno));
 		retval = 1;
 	} else if (n < len) {
-		ERROR("Warning on area %s: only read %d "
+		ERROR("Warning on area %s: only read %zu "
 			"(not %d) from %s\n", area, n, len, file);
 	}
 
-	if (0 != fclose(fp)) {
+	if (fclose(fp)) {
 		ERROR("area %s: error closing %s: %s\n",
 			area, file, strerror(errno));
 		retval = 1;
@@ -92,14 +91,9 @@ static int copy_to_area(char *file, uint8_t *buf, uint32_t len, char *area)
 
 static int do_load_fmap(int argc, char *argv[])
 {
-	char *infile = 0;
-	char *outfile = 0;
-	uint8_t *buf;
-	uint32_t len;
-	FmapHeader *fmap;
-	FmapAreaHeader *ah;
+	char *outfile = NULL;
 	int errorcnt = 0;
-	int fd, i;
+	int i;
 
 	opterr = 0;		/* quiet, you */
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
@@ -139,20 +133,23 @@ static int do_load_fmap(int argc, char *argv[])
 		return 1;
 	}
 
-	infile = argv[optind++];
+	const char *infile = argv[optind++];
 
 	/* okay, let's do it ... */
 	if (!outfile)
-		outfile = infile;
+		outfile = (char *)infile;
 	else
 		if (futil_copy_file(infile, outfile) < 0)
 			exit(1);
 
+	int fd;
+	uint8_t *buf;
+	uint32_t len;
 	errorcnt |= futil_open_and_map_file(outfile, &fd, FILE_RW, &buf, &len);
 	if (errorcnt)
 		goto done;
 
-	fmap = fmap_find(buf, len);
+	FmapHeader *fmap = fmap_find(buf, len);
 	if (!fmap) {
 		ERROR("Can't find an FMAP in %s\n", infile);
 		errorcnt++;
@@ -169,6 +166,8 @@ static int do_load_fmap(int argc, char *argv[])
 			break;
 		}
 		*f++ = '\0';
+
+		FmapAreaHeader *ah;
 		uint8_t *area_buf = fmap_find_by_name(buf, len, fmap, a, &ah);
 		if (!area_buf) {
 			ERROR("Can't find area \"%s\" in FMAP\n", a);
@@ -176,7 +175,7 @@ static int do_load_fmap(int argc, char *argv[])
 			break;
 		}
 
-		if (0 != copy_to_area(f, area_buf, ah->area_size, a)) {
+		if (copy_to_area(f, area_buf, ah->area_size, a)) {
 			errorcnt++;
 			break;
 		}

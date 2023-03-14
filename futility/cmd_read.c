@@ -41,15 +41,13 @@ static void print_help(int argc, char *argv[])
 
 static int do_read(int argc, char *argv[])
 {
-	struct updater_config *cfg;
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0, update_needed = 1;
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
-	char *output_file_name = NULL;
 	char *region = NULL;
 
-	cfg = updater_new_config();
+	struct updater_config *cfg = updater_new_config();
 	assert(cfg);
 
 	opterr = 0;
@@ -91,7 +89,7 @@ static int do_read(int argc, char *argv[])
 		print_help(argc, argv);
 		return 1;
 	}
-	output_file_name = argv[optind++];
+	const char *output_file_name = argv[optind++];
 	if (optind < argc) {
 		errorcnt++;
 		ERROR("Unexpected arguments.\n");

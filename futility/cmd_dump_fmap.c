@@ -32,10 +32,9 @@ static int opt_gaps;
 /* Return 0 if successful */
 static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 {
-	int i, retval = 0;
+	int retval = 0;
 	char buf[80];		/* DWR: magic number */
-	const FmapAreaHeader *ah;
-	ah = (const FmapAreaHeader *) (fmh + 1);
+	const FmapAreaHeader *ah = (const FmapAreaHeader *) (fmh + 1);
         /* Size must greater than 0, else behavior is undefined. */
 	char *extract_names[argc >= 1 ? argc : 1];
 	char *outname = 0;
@@ -44,7 +43,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 
 	if (opt_extract) {
 		/* prepare the filenames to write areas to */
-		for (i = 0; i < argc; i++) {
+		for (int i = 0; i < argc; i++) {
 			char *a = argv[i];
 			char *f = strchr(a, ':');
 			if (!f)
@@ -75,13 +74,13 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 		printf("fmap_nareas:     %d\n", fmh->fmap_nareas);
 	}
 
-	for (i = 0; i < fmh->fmap_nareas; i++, ah++) {
+	for (uint16_t i = 0; i < fmh->fmap_nareas; i++, ah++) {
 		snprintf(buf, FMAP_NAMELEN + 1, "%s", ah->area_name);
 
 		if (argc) {
-			int j, found = 0;
+			int found = 0;
 			outname = NULL;
-			for (j = 0; j < argc; j++)
+			for (int j = 0; j < argc; j++)
 				if (!strcmp(argv[j], buf)) {
 					found = 1;
 					outname = extract_names[j];
@@ -172,14 +171,11 @@ static struct node_s *all_nodes;
 
 static void sort_nodes(int num, struct node_s *ary[])
 {
-	int i, j;
-	struct node_s *tmp;
-
 	/* bubble-sort is quick enough with only a few entries */
-	for (i = 0; i < num; i++) {
-		for (j = i + 1; j < num; j++) {
+	for (unsigned int i = 0; i < num; i++) {
+		for (unsigned int j = i + 1; j < num; j++) {
 			if (ary[j]->start > ary[i]->start) {
-				tmp = ary[i];
+				struct node_s *tmp = ary[i];
 				ary[i] = ary[j];
 				ary[j] = tmp;
 			}
@@ -190,8 +186,7 @@ static void sort_nodes(int num, struct node_s *ary[])
 static void line(int indent, const char *name, uint32_t start, uint32_t end,
 		 uint32_t size, const char *append)
 {
-	int i;
-	for (i = 0; i < indent; i++)
+	for (int i = 0; i < indent; i++)
 		printf("  ");
 	printf("%-25s  %08x    %08x    %08x%s\n", name, start, end, size,
 	       append ? append : "");
@@ -210,7 +205,6 @@ static void empty(int indent, uint32_t start, uint32_t end, char *name)
 
 static void show(struct node_s *p, int indent, int show_first)
 {
-	int i;
 	struct dup_s *alias;
 	if (show_first) {
 		line(indent, p->name, p->start, p->end, p->size, 0);
@@ -219,7 +213,7 @@ static void show(struct node_s *p, int indent, int show_first)
 			     "  // DUPLICATE");
 	}
 	sort_nodes(p->num_children, p->child);
-	for (i = 0; i < p->num_children; i++) {
+	for (unsigned int i = 0; i < p->num_children; i++) {
 		if (i == 0 && p->end != p->child[i]->end)
 			empty(indent, p->child[i]->end, p->end, p->name);
 		show(p->child[i], indent + show_first, 1);
@@ -259,20 +253,16 @@ static int duplicates(int i, int j)
 
 static void add_dupe(int i, int j, int numnodes)
 {
-	int k;
-	struct dup_s *alias;
-
-	alias = (struct dup_s *) malloc(sizeof(struct dup_s));
+	struct dup_s *alias = (struct dup_s *) malloc(sizeof(struct dup_s));
 	alias->name = all_nodes[j].name;
 	alias->next = all_nodes[i].alias;
 	all_nodes[i].alias = alias;
-	for (k = j; k < numnodes; k++)
+	for (int k = j; k < numnodes; k++)
 		all_nodes[k] = all_nodes[k + 1];
 }
 
 static void add_child(struct node_s *p, int n)
 {
-	int i;
 	if (p->num_children && !p->child) {
 		p->child =
 		    (struct node_s **)calloc(p->num_children,
@@ -282,20 +272,19 @@ static void add_child(struct node_s *p, int n)
 			exit(1);
 		}
 	}
-	for (i = 0; i < p->num_children; i++)
+	for (unsigned int i = 0; i < p->num_children; i++) {
 		if (!p->child[i]) {
 			p->child[i] = all_nodes + n;
 			return;
 		}
+	}
 }
 
 static int human_fmap(const FmapHeader *fmh)
 {
-	FmapAreaHeader *ah;
-	int i, j, errorcnt = 0;
-	int numnodes;
+	int errorcnt = 0;
 
-	ah = (FmapAreaHeader *) (fmh + 1);
+	FmapAreaHeader *ah = (FmapAreaHeader *) (fmh + 1);
 
 	/* The challenge here is to generate a directed graph from the
 	 * arbitrarily-ordered FMAP entries, and then to prune it until it's as
@@ -303,7 +292,7 @@ static int human_fmap(const FmapHeader *fmh)
 	 * Duplicate regions are okay, but may require special handling. */
 
 	/* Convert the FMAP info into our format. */
-	numnodes = fmh->fmap_nareas;
+	uint16_t numnodes = fmh->fmap_nareas;
 
 	/* plus one for the all-enclosing "root" */
 	all_nodes = (struct node_s *) calloc(numnodes + 1,
@@ -312,7 +301,7 @@ static int human_fmap(const FmapHeader *fmh)
 		perror("calloc failed");
 		exit(1);
 	}
-	for (i = 0; i < numnodes; i++) {
+	for (uint16_t i = 0; i < numnodes; i++) {
 		char buf[FMAP_NAMELEN + 1];
 		strncpy(buf, ah[i].area_name, FMAP_NAMELEN);
 		buf[FMAP_NAMELEN] = '\0';
@@ -332,8 +321,8 @@ static int human_fmap(const FmapHeader *fmh)
 	all_nodes[numnodes].end = fmh->fmap_base + fmh->fmap_size;
 
 	/* First, coalesce any duplicates */
-	for (i = 0; i < numnodes; i++) {
-		for (j = i + 1; j < numnodes; j++) {
+	for (uint16_t i = 0; i < numnodes; i++) {
+		for (uint16_t j = i + 1; j < numnodes; j++) {
 			if (duplicates(i, j)) {
 				add_dupe(i, j, numnodes);
 				numnodes--;
@@ -345,10 +334,10 @@ static int human_fmap(const FmapHeader *fmh)
 	 * enclosing node. Duplicate nodes "enclose" each other, but if there's
 	 * already a relationship in one direction, we won't create another.
 	 */
-	for (i = 0; i < numnodes; i++) {
+	for (uint16_t i = 0; i < numnodes; i++) {
 		/* Find the smallest parent, which might be the root node. */
 		int k = numnodes;
-		for (j = 0; j < numnodes; j++) { /* full O(N^2) comparison */
+		for (uint16_t j = 0; j < numnodes; j++) { /* full O(N^2) comparison */
 			if (i == j)
 				continue;
 			if (overlaps(i, j)) {
@@ -375,10 +364,10 @@ static int human_fmap(const FmapHeader *fmh)
 		return 1;
 
 	/* Force those deadbeat parents to recognize their children */
-	for (i = 0; i < numnodes; i++)	/* how many */
+	for (uint16_t i = 0; i < numnodes; i++)	/* how many */
 		if (all_nodes[i].parent)
 			all_nodes[i].parent->num_children++;
-	for (i = 0; i < numnodes; i++)	/* here they are */
+	for (uint16_t i = 0; i < numnodes; i++)	/* here they are */
 		if (all_nodes[i].parent)
 			add_child(all_nodes[i].parent, i);
 
@@ -425,9 +414,6 @@ static int do_dump_fmap(int argc, char *argv[])
 {
 	int c;
 	int errorcnt = 0;
-	struct stat sb;
-	int fd;
-	const FmapHeader *fmap;
 	int retval = 1;
 
 	opterr = 0;		/* quiet, you */
@@ -473,14 +459,15 @@ static int do_dump_fmap(int argc, char *argv[])
 		return 1;
 	}
 
-	fd = open(argv[optind], O_RDONLY);
+	int fd = open(argv[optind], O_RDONLY);
 	if (fd < 0) {
 		ERROR("%s: can't open %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		return 1;
 	}
 
-	if (0 != fstat(fd, &sb)) {
+	struct stat sb;
+	if (fstat(fd, &sb)) {
 		ERROR("%s: can't stat %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		close(fd);
@@ -498,7 +485,7 @@ static int do_dump_fmap(int argc, char *argv[])
 	close(fd);		/* done with this now */
 	size_of_rom = sb.st_size;
 
-	fmap = fmap_find(base_of_rom, size_of_rom);
+	const FmapHeader *fmap = fmap_find(base_of_rom, size_of_rom);
 	if (fmap) {
 		switch (opt_format) {
 		case FMT_HUMAN:
@@ -515,7 +502,7 @@ static int do_dump_fmap(int argc, char *argv[])
 		}
 	}
 
-	if (0 != munmap(base_of_rom, sb.st_size)) {
+	if (munmap(base_of_rom, sb.st_size)) {
 		ERROR("%s: can't munmap %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		return 1;

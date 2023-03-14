@@ -123,12 +123,12 @@ static const char *short_opts = ":gsc:o:k:b:r:e" SHARED_FLASH_ARGS_SHORTOPTS;
 /* Change the has_arg field of a long_opts entry */
 static void opt_has_arg(const char *name, int val)
 {
-	struct option *p;
-	for (p = long_opts; p->name; p++)
+	for (struct option *p = long_opts; p->name; p++) {
 		if (!strcmp(name, p->name)) {
 			p->has_arg = val;
 			break;
 		}
+	}
 }
 
 #define GBB_SEARCH_STRIDE 4
@@ -139,8 +139,7 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 	int count = 0;
 
 	for (i = 0; i <= size - GBB_SEARCH_STRIDE; i += GBB_SEARCH_STRIDE) {
-		if (0 != memcmp(ptr + i, VB2_GBB_SIGNATURE,
-				VB2_GBB_SIGNATURE_SIZE))
+		if (memcmp(ptr + i, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE))
 			continue;
 
 		/* Found something. See if it's any good. */
@@ -163,21 +162,19 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 
 static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 {
-	char *str, *sizes, *param, *e = NULL;
+	char *param, *e = NULL;
 	size_t size = EXPECTED_VB2_GBB_HEADER_SIZE;
 	int i = 0;
 	/* Danger Will Robinson! four entries ==> four paramater blocks */
 	uint32_t val[] = { 0, 0, 0, 0 };
-	uint8_t *buf;
-	struct vb2_gbb_header *gbb;
 
-	sizes = strdup(desc);
+	char *sizes = strdup(desc);
 	if (!sizes) {
 		ERROR("strdup() failed: %s\n", strerror(errno));
 		return NULL;
 	}
 
-	for (str = sizes; (param = strtok(str, ", ")) != NULL; str = NULL) {
+	for (char *str = sizes; (param = strtok(str, ", ")) != NULL; str = NULL) {
 		val[i] = (uint32_t) strtoul(param, &e, 0);
 		if (e && *e) {
 			ERROR("Invalid creation parameter: \"%s\"\n", param);
@@ -189,7 +186,7 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 			break;
 	}
 
-	buf = (uint8_t *) calloc(1, size);
+	uint8_t *buf = (uint8_t *) calloc(1, size);
 	if (!buf) {
 		ERROR("Can't malloc %zu bytes: %s\n", size, strerror(errno));
 		free(sizes);
@@ -198,7 +195,7 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 	if (sizeptr)
 		*sizeptr = size;
 
-	gbb = (struct vb2_gbb_header *) buf;
+	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *) buf;
 	memcpy(gbb->signature, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE);
 	gbb->major_version = VB2_GBB_MAJOR_VER;
 	gbb->minor_version = VB2_GBB_MINOR_VER;
@@ -228,18 +225,17 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 
 static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
 {
-	FILE *fp = NULL;
 	uint8_t *buf = NULL;
 	struct stat sb;
 
-	fp = fopen(filename, "rb");
+	FILE *fp = fopen(filename, "rb");
 	if (!fp) {
 		ERROR("Unable to open %s for reading: %s\n", filename,
 		      strerror(errno));
 		goto fail;
 	}
 
-	if (0 != fstat(fileno(fp), &sb)) {
+	if (fstat(fileno(fp), &sb)) {
 		ERROR("Can't fstat %s: %s\n", filename, strerror(errno));
 		goto fail;
 	}
@@ -259,7 +255,7 @@ static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
 		goto fail;
 	}
 
-	if (0 != fclose(fp)) {
+	if (fclose(fp)) {
 		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
 		fp = NULL;  /* Don't try to close it again */
 		goto fail;
@@ -271,7 +267,7 @@ fail:
 	if (buf)
 		free(buf);
 
-	if (fp && 0 != fclose(fp))
+	if (fp && fclose(fp))
 		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
 	return NULL;
 }
@@ -279,19 +275,18 @@ fail:
 static int read_from_file(const char *msg, const char *filename,
 			  uint8_t *start, uint32_t size)
 {
-	FILE *fp;
 	struct stat sb;
 	size_t count;
 	int r = 0;
 
-	fp = fopen(filename, "rb");
+	FILE *fp = fopen(filename, "rb");
 	if (!fp) {
 		r = errno;
 		ERROR("Unable to open %s for reading: %s\n", filename, strerror(r));
 		return r;
 	}
 
-	if (0 != fstat(fileno(fp), &sb)) {
+	if (fstat(fileno(fp), &sb)) {
 		r = errno;
 		ERROR("Can't fstat %s: %s\n", filename, strerror(r));
 		goto done_close;
@@ -315,7 +310,7 @@ static int read_from_file(const char *msg, const char *filename,
 	}
 
 done_close:
-	if (0 != fclose(fp)) {
+	if (fclose(fp)) {
 		int e = errno;
 		ERROR("Unable to close %s: %s\n", filename, strerror(e));
 		if (!r)
@@ -461,15 +456,13 @@ static int do_gbb(int argc, char *argv[])
 	char *opt_recoverykey = NULL;
 	char *opt_hwid = NULL;
 	char *opt_flags = NULL;
-	int sel_hwid = 0;
-	int sel_digest = 0;
-	int sel_flags = 0;
+	bool sel_hwid = false;
+	bool sel_digest = false;
+	bool sel_flags = false;
 	int explicit_flags = 0;
 	uint8_t *inbuf = NULL;
 	off_t filesize;
 	uint8_t *outbuf = NULL;
-	struct vb2_gbb_header *gbb;
-	uint8_t *gbb_base;
 	int i;
 	struct updater_config *cfg = NULL;
 	struct updater_config_arguments args = {0};
@@ -514,19 +507,19 @@ static int do_gbb(int argc, char *argv[])
 		case OPT_HWID:
 			/* --hwid is optional: null might be okay */
 			opt_hwid = optarg;
-			sel_hwid = 1;
+			sel_hwid = true;
 			break;
 		case OPT_FLAGS:
 			/* --flags is optional: null might be okay */
 			opt_flags = optarg;
-			sel_flags = 1;
+			sel_flags = true;
 			break;
 		case 'e':
-			sel_flags = 1;
+			sel_flags = true;
 			explicit_flags = 1;
 			break;
 		case OPT_DIGEST:
-			sel_digest = 1;
+			sel_digest = true;
 			break;
 		case OPT_FLASH:
 #ifndef USE_FLASHROM
@@ -599,15 +592,15 @@ static int do_gbb(int argc, char *argv[])
 		/* With no args, show the HWID */
 		if (!opt_rootkey && !opt_bmpfv && !opt_recoverykey
 		    && !sel_flags && !sel_digest)
-			sel_hwid = 1;
+			sel_hwid = true;
 
-		gbb = FindGbbHeader(inbuf, filesize);
+		struct vb2_gbb_header *gbb = FindGbbHeader(inbuf, filesize);
 		if (!gbb) {
 			ERROR("No GBB found in %s\n", infile);
 			errorcnt++;
 			break;
 		}
-		gbb_base = (uint8_t *) gbb;
+		uint8_t *gbb_base = (uint8_t *) gbb;
 
 		/* Get the stuff */
 		if (sel_hwid)
