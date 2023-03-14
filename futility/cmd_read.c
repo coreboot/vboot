@@ -87,7 +87,7 @@ static int do_read(int argc, char *argv[])
 		}
 	}
 	if (argc - optind < 1) {
-		fprintf(stderr, "\nERROR: missing output filename\n");
+		ERROR("Missing output filename\n");
 		print_help(argc, argv);
 		return 1;
 	}

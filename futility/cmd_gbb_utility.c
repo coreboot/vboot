@@ -159,7 +159,7 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 	case 1:
 		return gbb_header;
 	default:
-		fprintf(stderr, "ERROR: multiple GBB headers found\n");
+		ERROR("Multiple GBB headers found\n");
 		errorcnt++;
 		return NULL;
 	}
@@ -178,8 +178,7 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 	sizes = strdup(desc);
 	if (!sizes) {
 		errorcnt++;
-		fprintf(stderr, "ERROR: strdup() failed: %s\n",
-			strerror(errno));
+		ERROR("strdup() failed: %s\n", strerror(errno));
 		return NULL;
 	}
 
@@ -187,9 +186,7 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 		val[i] = (uint32_t) strtoul(param, &e, 0);
 		if (e && *e) {
 			errorcnt++;
-			fprintf(stderr,
-				"ERROR: invalid creation parameter: \"%s\"\n",
-				param);
+			ERROR("Invalid creation parameter: \"%s\"\n", param);
 			free(sizes);
 			return NULL;
 		}
@@ -201,8 +198,7 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 	buf = (uint8_t *) calloc(1, size);
 	if (!buf) {
 		errorcnt++;
-		fprintf(stderr, "ERROR: can't malloc %zu bytes: %s\n",
-			size, strerror(errno));
+		ERROR("Can't malloc %zu bytes: %s\n", size, strerror(errno));
 		free(sizes);
 		return NULL;
 	}
@@ -245,14 +241,13 @@ static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
 
 	fp = fopen(filename, "rb");
 	if (!fp) {
-		fprintf(stderr, "ERROR: Unable to open %s for reading: %s\n",
-			filename, strerror(errno));
+		ERROR("Unable to open %s for reading: %s\n", filename,
+		      strerror(errno));
 		goto fail;
 	}
 
 	if (0 != fstat(fileno(fp), &sb)) {
-		fprintf(stderr, "ERROR: can't fstat %s: %s\n",
-			filename, strerror(errno));
+		ERROR("Can't fstat %s: %s\n", filename, strerror(errno));
 		goto fail;
 	}
 	if (sizeptr)
@@ -260,20 +255,19 @@ static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
 
 	buf = (uint8_t *) malloc(sb.st_size);
 	if (!buf) {
-		fprintf(stderr, "ERROR: can't malloc %" PRIi64 " bytes: %s\n",
-			sb.st_size, strerror(errno));
+		ERROR("Can't malloc %" PRIi64 " bytes: %s\n", sb.st_size,
+		      strerror(errno));
 		goto fail;
 	}
 
 	if (1 != fread(buf, sb.st_size, 1, fp)) {
-		fprintf(stderr, "ERROR: Unable to read from %s: %s\n",
-			filename, strerror(errno));
+		ERROR("Unable to read from %s: %s\n", filename,
+		      strerror(errno));
 		goto fail;
 	}
 
 	if (0 != fclose(fp)) {
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n",
-			filename, strerror(errno));
+		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
 		fp = NULL;  /* Don't try to close it again */
 		goto fail;
 	}
@@ -287,8 +281,7 @@ fail:
 		free(buf);
 
 	if (fp && 0 != fclose(fp))
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n",
-			filename, strerror(errno));
+		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
 	return NULL;
 }
 
@@ -303,24 +296,20 @@ static int read_from_file(const char *msg, const char *filename,
 	fp = fopen(filename, "rb");
 	if (!fp) {
 		r = errno;
-		fprintf(stderr, "ERROR: Unable to open %s for reading: %s\n",
-			filename, strerror(r));
+		ERROR("Unable to open %s for reading: %s\n", filename, strerror(r));
 		errorcnt++;
 		return r;
 	}
 
 	if (0 != fstat(fileno(fp), &sb)) {
 		r = errno;
-		fprintf(stderr, "ERROR: can't fstat %s: %s\n", filename,
-			strerror(r));
+		ERROR("Can't fstat %s: %s\n", filename, strerror(r));
 		errorcnt++;
 		goto done_close;
 	}
 
 	if (sb.st_size > size) {
-		fprintf(stderr,
-			"ERROR: file %s exceeds capacity (%" PRIu32 ")\n",
-			filename, size);
+		ERROR("File %s exceeds capacity (%" PRIu32 ")\n", filename, size);
 		errorcnt++;
 		r = -1;
 		goto done_close;
@@ -333,17 +322,15 @@ static int read_from_file(const char *msg, const char *filename,
 	count = fread(start, 1, size, fp);
 	if (ferror(fp)) {
 		r = errno;
-		fprintf(stderr,
-			"ERROR: Read %zu/%" PRIi64 " bytes from %s: %s\n",
-			count, sb.st_size, filename, strerror(r));
+		ERROR("Read %zu/%" PRIi64 " bytes from %s: %s\n", count,
+		      sb.st_size, filename, strerror(r));
 		errorcnt++;
 	}
 
 done_close:
 	if (0 != fclose(fp)) {
 		int e = errno;
-		fprintf(stderr, "ERROR: Unable to close %s: %s\n", filename,
-			strerror(e));
+		ERROR("Unable to close %s: %s\n", filename, strerror(e));
 		errorcnt++;
 		if (!r)
 			r = e;
@@ -368,15 +355,14 @@ static int setup_flash(struct updater_config **cfg,
 	*prepare_ctrl_name = NULL;
 	*cfg = updater_new_config();
 	if (!*cfg) {
-		fprintf(stderr, "\nERROR: Out of memory\n");
+		ERROR("Out of memory\n");
 		return 1;
 	}
 	if (args->detect_servo) {
 		char *servo_programmer = host_detect_servo(prepare_ctrl_name);
 
 		if (!servo_programmer) {
-			fprintf(stderr,
-				"\nERROR: Problem communicating with servo\n");
+			ERROR("Problem communicating with servo\n");
 			goto errdelete;
 		}
 
@@ -387,7 +373,7 @@ static int setup_flash(struct updater_config **cfg,
 	}
 	int ignored;
 	if (updater_setup_config(*cfg, args, &ignored)) {
-		fprintf(stderr, "\nERROR: Bad servo options\n");
+		ERROR("Bad servo options\n");
 		goto errdelete;
 	}
 	prepare_servo_control(*prepare_ctrl_name, 1);
@@ -471,7 +457,7 @@ static int parse_flag_value(const char *s, vb2_gbb_flags_t *val)
 	char *e = NULL;
 	*val = strtoul(ss, &e, 0);
 	if (e && *e) {
-		fprintf(stderr, "ERROR: invalid flags value: %s\n", ss);
+		ERROR("Invalid flags value: %s\n", ss);
 		return -1;
 	}
 
@@ -556,8 +542,7 @@ static int do_gbb(int argc, char *argv[])
 			break;
 		case OPT_FLASH:
 #ifndef USE_FLASHROM
-			fprintf(stderr, "ERROR: futility was built without "
-					"flashrom support\n");
+			ERROR("futility was built without flashrom support\n");
 			return 1;
 #endif
 			args.use_flash = 1;
@@ -569,32 +554,24 @@ static int do_gbb(int argc, char *argv[])
 		case '?':
 			errorcnt++;
 			if (optopt)
-				fprintf(stderr,
-					"ERROR: unrecognized option: -%c\n",
-					optopt);
+				ERROR("Unrecognized option: -%c\n", optopt);
 			else if (argv[optind - 1])
-				fprintf(stderr,
-					"ERROR: unrecognized option "
-					"(possibly \"%s\")\n",
-					argv[optind - 1]);
+				ERROR("Unrecognized option (possibly \"%s\")\n",
+				      argv[optind - 1]);
 			else
-				fprintf(stderr, "ERROR: unrecognized option\n");
+				ERROR("Unrecognized option\n");
 			break;
 		case ':':
 			errorcnt++;
 			if (argv[optind - 1])
-				fprintf(stderr,
-					"ERROR: missing argument to -%c (%s)\n",
-					optopt, argv[optind - 1]);
+				ERROR("Missing argument to -%c (%s)\n", optopt,
+				      argv[optind - 1]);
 			else
-				fprintf(stderr,
-					"ERROR: missing argument to -%c\n",
-					optopt);
+				ERROR("Missing argument to -%c\n", optopt);
 			break;
 		default:
 			errorcnt++;
-			fprintf(stderr,
-				"ERROR: error while parsing options\n");
+			ERROR("While parsing options\n");
 		}
 	}
 
@@ -606,8 +583,7 @@ static int do_gbb(int argc, char *argv[])
 
 	if (args.use_flash) {
 		if (setup_flash(&cfg, &args, &prepare_ctrl_name)) {
-			fprintf(stderr,
-				"ERROR: error while preparing flash\n");
+			ERROR("While preparing flash\n");
 			return 1;
 		}
 	}
@@ -619,15 +595,13 @@ static int do_gbb(int argc, char *argv[])
 			inbuf = read_from_flash(cfg, &filesize);
 		} else {
 			if (argc - optind < 1) {
-				fprintf(stderr,
-					"\nERROR: missing input filename\n");
+				ERROR("Missing input filename\n");
 				print_help(argc, argv);
 				errorcnt++;
 				break;
 			}
 			infile = argv[optind++];
 			inbuf = read_entire_file(infile, &filesize);
-
 		}
 		if (!inbuf) {
 			errorcnt++;
@@ -641,7 +615,7 @@ static int do_gbb(int argc, char *argv[])
 
 		gbb = FindGbbHeader(inbuf, filesize);
 		if (!gbb) {
-			fprintf(stderr, "ERROR: No GBB found in %s\n", infile);
+			ERROR("No GBB found in %s\n", infile);
 			errorcnt++;
 			break;
 		}
@@ -707,8 +681,7 @@ static int do_gbb(int argc, char *argv[])
 			inbuf = read_from_flash(cfg, &filesize);
 		} else {
 			if (argc - optind < 1) {
-				fprintf(stderr,
-					"\nERROR: missing input filename\n");
+				ERROR("Missing input filename\n");
 				print_help(argc, argv);
 				errorcnt++;
 				break;
@@ -725,13 +698,13 @@ static int do_gbb(int argc, char *argv[])
 		}
 
 		if (sel_hwid && !opt_hwid) {
-			fprintf(stderr, "\nERROR: missing new HWID value\n");
+			ERROR("Missing new HWID value\n");
 			print_help(argc, argv);
 			errorcnt++;
 			break;
 		}
 		if (sel_flags && (!opt_flags || !*opt_flags)) {
-			fprintf(stderr, "\nERROR: missing new flags value\n");
+			ERROR("Missing new flags value\n");
 			print_help(argc, argv);
 			errorcnt++;
 			break;
@@ -739,7 +712,7 @@ static int do_gbb(int argc, char *argv[])
 
 		gbb = FindGbbHeader(inbuf, filesize);
 		if (!gbb) {
-			fprintf(stderr, "ERROR: No GBB found in %s\n", infile);
+			ERROR("No GBB found in %s\n", infile);
 			errorcnt++;
 			break;
 		}
@@ -747,9 +720,8 @@ static int do_gbb(int argc, char *argv[])
 
 		outbuf = (uint8_t *) malloc(filesize);
 		if (!outbuf) {
-			fprintf(stderr,
-				"ERROR: can't malloc %" PRIi64 " bytes: %s\n",
-				filesize, strerror(errno));
+			ERROR("Can't malloc %" PRIi64 " bytes: %s\n", filesize,
+			      strerror(errno));
 			errorcnt++;
 			break;
 		}
@@ -758,8 +730,7 @@ static int do_gbb(int argc, char *argv[])
 		memcpy(outbuf, inbuf, filesize);
 		gbb = FindGbbHeader(outbuf, filesize);
 		if (!gbb) {
-			fprintf(stderr,
-				"INTERNAL ERROR: No GBB found in outbuf\n");
+			ERROR("INTERNAL ERROR: No GBB found in outbuf\n");
 			errorcnt++;
 			break;
 		}
@@ -767,9 +738,7 @@ static int do_gbb(int argc, char *argv[])
 
 		if (opt_hwid) {
 			if (strlen(opt_hwid) + 1 > gbb->hwid_size) {
-				fprintf(stderr,
-					"ERROR: null-terminated HWID"
-					" exceeds capacity (%d)\n",
+				ERROR("null-terminated HWID exceeds capacity (%d)\n",
 					gbb->hwid_size);
 				errorcnt++;
 				break;
@@ -838,8 +807,7 @@ static int do_gbb(int argc, char *argv[])
 	case DO_CREATE:
 		if (!outfile) {
 			if (argc - optind < 1) {
-				fprintf(stderr,
-					"\nERROR: missing output filename\n");
+				ERROR("Missing output filename\n");
 				print_help(argc, argv);
 				errorcnt++;
 				break;
@@ -849,9 +817,7 @@ static int do_gbb(int argc, char *argv[])
 		/* Parse the creation args */
 		outbuf = create_gbb(opt_create, &filesize);
 		if (!outbuf) {
-			fprintf(stderr,
-				"\nERROR: unable to parse creation spec (%s)\n",
-				opt_create);
+			ERROR("Unable to parse creation spec (%s)\n", opt_create);
 			print_help(argc, argv);
 			errorcnt++;
 			break;

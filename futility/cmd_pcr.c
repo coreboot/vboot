@@ -78,14 +78,14 @@ static int do_pcr(int argc, char *argv[])
 			return !!errorcnt;
 		case '?':
 			if (optopt)
-				fprintf(stderr, "Unrecognized option: -%c\n",
+				ERROR("Unrecognized option: -%c\n",
 					optopt);
 			else
-				fprintf(stderr, "Unrecognized option\n");
+				ERROR("Unrecognized option\n");
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "Missing argument to -%c\n", optopt);
+			ERROR("Missing argument to -%c\n", optopt);
 			errorcnt++;
 			break;
 		default:
@@ -99,7 +99,7 @@ static int do_pcr(int argc, char *argv[])
 	}
 
 	if (argc - optind < 1 + opt_init) {
-		fprintf(stderr, "You must extend at least one DIGEST\n");
+		ERROR("You must extend at least one DIGEST\n");
 		print_help(argc, argv);
 		return 1;
 	}
@@ -108,7 +108,7 @@ static int do_pcr(int argc, char *argv[])
 
 	digest_size = vb2_digest_size(digest_alg);
 	if (!digest_size) {
-		fprintf(stderr, "Error determining digest size!\n");
+		ERROR("Cannot determine digest size!\n");
 		return 1;
 	}
 
@@ -133,7 +133,7 @@ static int do_pcr(int argc, char *argv[])
 		if (VB2_SUCCESS != vb2_hash_calculate(false, accum,
 						      digest_size * 2,
 						      digest_alg, &hash)) {
-			fprintf(stderr, "Error computing digest!\n");
+			ERROR("Cannot compute digest!\n");
 			return 1;
 		}
 		memcpy(pcr, hash.raw, digest_size);
