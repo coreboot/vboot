@@ -168,7 +168,7 @@ static uint8_t *ReadOldKPartFromFileOrDie(const char *filename,
 	uint8_t *buf;
 	uint32_t file_size = 0;
 
-	if (0 != stat(filename, &statbuf))
+	if (stat(filename, &statbuf))
 		FATAL("Unable to stat %s: %s\n", filename, strerror(errno));
 
 	if (S_ISBLK(statbuf.st_mode)) {
@@ -502,7 +502,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 				ReadConfigFile(config_file, &t_config_size);
 			if (!t_config_data)
 				FATAL("Error reading config file.\n");
-			if (0 != UpdateKernelBlobConfig(
+			if (UpdateKernelBlobConfig(
 				    kblob_data, kblob_size,
 				    t_config_data, t_config_size))
 				FATAL("Unable to update config\n");

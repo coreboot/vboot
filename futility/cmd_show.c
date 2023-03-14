@@ -161,7 +161,7 @@ int ft_show_keyblock(const char *name, void *data)
 		return 1;
 
 	/* Check the hash only first */
-	if (0 != vb2_verify_keyblock_hash(block, len, &wb)) {
+	if (vb2_verify_keyblock_hash(block, len, &wb)) {
 		printf("%s is invalid\n", name);
 		retval = 1;
 		goto done;
