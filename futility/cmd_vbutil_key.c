@@ -73,7 +73,7 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 		   uint32_t version)
 {
 	if (!infile || !outfile) {
-		fprintf(stderr, "vbutil_key: Must specify --in and --out\n");
+		ERROR("vbutil_key: Must specify --in and --out\n");
 		return 1;
 	}
 
@@ -81,7 +81,7 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 		vb2_read_packed_keyb(infile, algorithm, version);
 	if (pubkey) {
 		if (0 != vb2_write_packed_key(outfile, pubkey)) {
-			fprintf(stderr, "vbutil_key: Error writing key.\n");
+			ERROR("vbutil_key: Error writing key.\n");
 			free(pubkey);
 			return 1;
 		}
@@ -93,7 +93,7 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 		vb2_read_private_key_pem(infile, algorithm);
 	if (privkey) {
 		if (VB2_SUCCESS != vb2_write_private_key(outfile, privkey)) {
-			fprintf(stderr, "vbutil_key: Error writing key.\n");
+			ERROR("vbutil_key: Error writing key.\n");
 			free(privkey);
 			return 1;
 		}
@@ -111,7 +111,7 @@ static int do_unpack(const char *infile, const char *outfile)
 	struct vb2_packed_key *pubkey;
 
 	if (!infile) {
-		fprintf(stderr, "Need file to unpack\n");
+		ERROR("Need file to unpack\n");
 		return 1;
 	}
 
@@ -125,7 +125,7 @@ static int do_unpack(const char *infile, const char *outfile)
 		       packed_key_sha1_string(pubkey));
 		if (outfile &&
 		    VB2_SUCCESS != vb2_write_packed_key(outfile, pubkey)) {
-			fprintf(stderr, "butil_key: Error writing key copy\n");
+			ERROR("butil_key: Error writing key copy\n");
 			free(pubkey);
 			return 1;
 		}
@@ -144,7 +144,7 @@ static int do_unpack(const char *infile, const char *outfile)
 		       vb2_get_crypto_algorithm_name(alg));
 		if (outfile &&
 		    VB2_SUCCESS != vb2_write_private_key(outfile, privkey)) {
-			fprintf(stderr,"vbutil_key: Error writing key copy\n");
+			ERROR("vbutil_key: Error writing key copy\n");
 			free(privkey);
 			return 1;
 		}

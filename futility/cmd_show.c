@@ -192,8 +192,7 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 
 	if (!bhsize || pre->body_signature.sig_size <
 			       offsetof(struct vb2_hash, raw) + bhsize) {
-		fprintf(stderr, "Body signature data is too small to "
-				"fit metadata hash.\n");
+		ERROR("Body signature data is too small to fit metadata hash.\n");
 		return 1;
 	}
 
@@ -209,8 +208,8 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 	if (cbfstool_get_metadata_hash(name, fmap_name[body_c], &real_hash) !=
 		    VB2_SUCCESS ||
 	    real_hash.algo == VB2_HASH_INVALID) {
-		fprintf(stderr, "Failed to get metadata hash. Firmware body is"
-				" corrupted or is not a valid CBFS.\n");
+		ERROR("Failed to get metadata hash. Firmware body is"
+			" corrupted or is not a valid CBFS.\n");
 		return 1;
 	}
 
@@ -222,8 +221,8 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 		       vb2_get_hash_algorithm_name(real_hash.algo));
 		print_bytes(&real_hash.raw, vb2_digest_size(real_hash.algo));
 		putchar('\n');
-		fprintf(stderr, "Signature hash does not match with"
-				" real metadata hash.\n");
+		ERROR("Signature hash does not match with"
+			" real metadata hash.\n");
 		return 1;
 	}
 	return 0;
@@ -283,7 +282,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
-		fprintf(stderr, "Error parsing data key in %s\n", name);
+		ERROR("Parsing data key in %s\n", name);
 		return 1;
 	}
 
@@ -339,7 +338,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	if (pre2->body_signature.data_size) {
 		if (vb2_verify_data(fv_data, fv_size, &pre2->body_signature,
 				    &data_key, &wb) != VB2_SUCCESS) {
-			fprintf(stderr, "Error verifying firmware body.\n");
+			ERROR("Verifying firmware body.\n");
 			return 1;
 		}
 	} else if (state) { /* Only works for images with at least FW_MAIN_A */
@@ -411,7 +410,7 @@ int ft_show_kernel_preamble(const char *name, void *data)
 
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
-		fprintf(stderr, "Error parsing data key in %s\n", name);
+		ERROR("Parsing data key in %s\n", name);
 		goto done;
 	}
 
@@ -468,14 +467,14 @@ int ft_show_kernel_preamble(const char *name, void *data)
 
 	if (!kernel_blob) {
 		/* TODO: Is this always a failure? The preamble is okay. */
-		fprintf(stderr, "No kernel blob available to verify.\n");
+		ERROR("No kernel blob available to verify.\n");
 		goto done;
 	}
 
 	if (VB2_SUCCESS !=
 	    vb2_verify_data(kernel_blob, kernel_size, &pre2->body_signature,
 			    &data_key, &wb)) {
-		fprintf(stderr, "Error verifying kernel body.\n");
+		ERROR("Verifying kernel body.\n");
 		goto done;
 	}
 
@@ -598,7 +597,7 @@ static int do_show(int argc, char *argv[])
 			show_option.fv = ReadFile(optarg,
 						  &show_option.fv_size);
 			if (!show_option.fv) {
-				fprintf(stderr, "Error reading %s: %s\n",
+				ERROR("Reading %s: %s\n",
 					optarg, strerror(errno));
 				errorcnt++;
 			}
@@ -606,14 +605,14 @@ static int do_show(int argc, char *argv[])
 		case 'k':
 			if (VB2_SUCCESS !=
 			    vb2_read_file(optarg, &pubkbuf, &len)) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 				break;
 			}
 
 			if (VB2_SUCCESS !=
 			    vb2_unpack_key_buffer(&pubk2, pubkbuf, len)) {
-				fprintf(stderr, "Error unpacking %s\n", optarg);
+				ERROR("Unpacking %s\n", optarg);
 				errorcnt++;
 				break;
 			}
@@ -626,8 +625,7 @@ static int do_show(int argc, char *argv[])
 		case OPT_PADDING:
 			show_option.padding = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr,
-					"Invalid --padding \"%s\"\n", optarg);
+				ERROR("Invalid --padding \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -636,15 +634,14 @@ static int do_show(int argc, char *argv[])
 						    &show_option.type)) {
 				if (!strcasecmp("help", optarg))
 					print_file_types_and_exit(errorcnt);
-				fprintf(stderr,
-					"Invalid --type \"%s\"\n", optarg);
+				ERROR("Invalid --type \"%s\"\n", optarg);
 				errorcnt++;
 			}
 			type_override = 1;
 			break;
 		case OPT_PUBKEY:
 			if (vb21_packed_key_read(&show_option.pkey, optarg)) {
-				fprintf(stderr, "Error reading %s\n", optarg);
+				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
 			break;
@@ -654,14 +651,14 @@ static int do_show(int argc, char *argv[])
 
 		case '?':
 			if (optopt)
-				fprintf(stderr, "Unrecognized option: -%c\n",
+				ERROR("Unrecognized option: -%c\n",
 					optopt);
 			else
-				fprintf(stderr, "Unrecognized option\n");
+				ERROR("Unrecognized option\n");
 			errorcnt++;
 			break;
 		case ':':
-			fprintf(stderr, "Missing argument to -%c\n", optopt);
+			ERROR("Missing argument to -%c\n", optopt);
 			errorcnt++;
 			break;
 		case 0:				/* handled option */
@@ -677,7 +674,7 @@ static int do_show(int argc, char *argv[])
 	}
 
 	if (argc - optind < 1) {
-		fprintf(stderr, "ERROR: missing input filename\n");
+		ERROR("Missing input filename\n");
 		print_help(argc, argv);
 		return 1;
 	}

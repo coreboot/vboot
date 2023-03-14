@@ -272,8 +272,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		case OPT_MODE_VERIFY:
 		case OPT_MODE_GET_VMLINUZ:
 			if (mode && (mode != i)) {
-				fprintf(stderr,
-					"Only one mode can be specified\n");
+				ERROR("Only one mode can be specified\n");
 				parse_error = 1;
 				break;
 			}
@@ -293,9 +292,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			else if (!strcasecmp(optarg, "mips"))
 				arch = ARCH_MIPS;
 			else {
-				fprintf(stderr,
-					"Unknown architecture string: %s\n",
-					optarg);
+				ERROR("Unknown architecture string: %s\n", optarg);
 				parse_error = 1;
 			}
 			break;
@@ -307,7 +304,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		case OPT_KLOADADDR:
 			kernel_body_load_address = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --kloadaddr\n");
+				ERROR("Invalid --kloadaddr\n");
 				parse_error = 1;
 			}
 			break;
@@ -331,7 +328,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		case OPT_FLAGS:
 			flags = (uint32_t)strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --flags\n");
+				ERROR("Invalid --flags\n");
 				parse_error = 1;
 			}
 			break;
@@ -352,7 +349,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			version_str = optarg;
 			version = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --version\n");
+				ERROR("Invalid --version\n");
 				parse_error = 1;
 			}
 			break;
@@ -360,7 +357,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		case OPT_MINVERSION:
 			min_version = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --minversion\n");
+				ERROR("Invalid --minversion\n");
 				parse_error = 1;
 			}
 			break;
@@ -368,7 +365,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		case OPT_PAD:
 			opt_pad = strtoul(optarg, &e, 0);
 			if (!*optarg || (e && *e)) {
-				fprintf(stderr, "Invalid --pad\n");
+				ERROR("Invalid --pad\n");
 				parse_error = 1;
 			}
 			break;
@@ -571,8 +568,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 	case OPT_MODE_GET_VMLINUZ:
 
 		if (!vmlinuz_out_file) {
-			fprintf(stderr,
-				"USE: vbutil_kernel --get-vmlinuz <file> "
+			ERROR("USE: vbutil_kernel --get-vmlinuz <file> "
 				"--vmlinuz-out <file>\n");
 			print_help(argc, argv);
 			return 1;
@@ -641,8 +637,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		return 0;
 	}
 
-	fprintf(stderr,
-		"You must specify a mode: "
+	ERROR("You must specify a mode: "
 		"--pack, --repack, --verify, or --get-vmlinuz\n");
 	print_help(argc, argv);
 	return 1;
