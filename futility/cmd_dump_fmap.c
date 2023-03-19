@@ -19,18 +19,13 @@
 #include "fmap.h"
 #include "futility.h"
 
-enum { FMT_NORMAL, FMT_PRETTY, FMT_FLASHROM, FMT_HUMAN };
-
-/* global variables */
-static int opt_extract;
-static int opt_format = FMT_NORMAL;
-static int opt_overlap;
-static void *base_of_rom;
-static size_t size_of_rom;
-static int opt_gaps;
+typedef enum { FMT_NORMAL, FMT_PRETTY, FMT_FLASHROM, FMT_HUMAN } format_t;
 
 /* Return 0 if successful */
-static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
+static int normal_fmap(const FmapHeader *fmh,
+	const void *base_of_rom, size_t size_of_rom,
+	bool extract, format_t format,
+	int argc, char *argv[])
 {
 	int retval = 0;
 	char buf[80];		/* DWR: magic number */
@@ -41,7 +36,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 
 	memset(extract_names, 0, sizeof(extract_names));
 
-	if (opt_extract) {
+	if (extract) {
 		/* prepare the filenames to write areas to */
 		for (int i = 0; i < argc; i++) {
 			char *a = argv[i];
@@ -60,7 +55,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 			return retval;
 	}
 
-	if (FMT_NORMAL == opt_format) {
+	if (FMT_NORMAL == format) {
 		snprintf(buf, FMAP_SIGNATURE_SIZE + 1, "%s",
 			 fmh->fmap_signature);
 		printf("fmap_signature   %s\n", buf);
@@ -90,7 +85,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 				continue;
 		}
 
-		switch (opt_format) {
+		switch (format) {
 		case FMT_PRETTY:
 			printf("%s %d %d\n", buf, ah->area_offset,
 			       ah->area_size);
@@ -109,7 +104,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 			printf("area_name:       %s\n", buf);
 		}
 
-		if (opt_extract) {
+		if (extract) {
 			char *s;
 			if (!outname) {
 				for (s = buf; *s; s++)
@@ -137,7 +132,7 @@ static int normal_fmap(const FmapHeader *fmh, int argc, char *argv[])
 					argv[0], buf, strerror(errno));
 				retval = 1;
 			} else {
-				if (FMT_NORMAL == opt_format)
+				if (FMT_NORMAL == format)
 					printf("saved as \"%s\"\n", outname);
 			}
 			if (fp)
@@ -192,18 +187,17 @@ static void line(int indent, const char *name, uint32_t start, uint32_t end,
 	       append ? append : "");
 }
 
-static int gapcount;
-static void empty(int indent, uint32_t start, uint32_t end, char *name)
+static void empty(int indent, uint32_t start, uint32_t end, char *name, bool gaps, int *gapcount)
 {
 	char buf[80];
-	if (opt_gaps) {
+	if (gaps) {
 		sprintf(buf, "  // gap in %s", name);
 		line(indent + 1, "", start, end, end - start, buf);
 	}
-	gapcount++;
+	(*gapcount)++;
 }
 
-static void show(struct node_s *p, int indent, int show_first)
+static void show(struct node_s *p, int indent, int show_first, bool show_gaps, int *gapcount)
 {
 	struct dup_s *alias;
 	if (show_first) {
@@ -215,14 +209,14 @@ static void show(struct node_s *p, int indent, int show_first)
 	sort_nodes(p->num_children, p->child);
 	for (unsigned int i = 0; i < p->num_children; i++) {
 		if (i == 0 && p->end != p->child[i]->end)
-			empty(indent, p->child[i]->end, p->end, p->name);
-		show(p->child[i], indent + show_first, 1);
+			empty(indent, p->child[i]->end, p->end, p->name, show_gaps, gapcount);
+		show(p->child[i], indent + show_first, 1, show_gaps, gapcount);
 		if (i < p->num_children - 1
 		    && p->child[i]->start != p->child[i + 1]->end)
 			empty(indent, p->child[i + 1]->end, p->child[i]->start,
-			      p->name);
+			      p->name, show_gaps, gapcount);
 		if (i == p->num_children - 1 && p->child[i]->start != p->start)
-			empty(indent, p->start, p->child[i]->start, p->name);
+			empty(indent, p->start, p->child[i]->start, p->name, show_gaps, gapcount);
 	}
 }
 
@@ -280,7 +274,7 @@ static void add_child(struct node_s *p, int n)
 	}
 }
 
-static int human_fmap(const FmapHeader *fmh)
+static int human_fmap(const FmapHeader *fmh, bool gaps, int overlap)
 {
 	int errorcnt = 0;
 
@@ -347,7 +341,7 @@ static int human_fmap(const FmapHeader *fmh)
 				       all_nodes[i].start, all_nodes[i].end);
 				printf("  %s: %#x - %#x\n", all_nodes[j].name,
 				       all_nodes[j].start, all_nodes[j].end);
-				if (opt_overlap < 2) {
+				if (overlap < 2) {
 					printf("Use more -h args to ignore"
 					       " this error\n");
 					errorcnt++;
@@ -373,9 +367,10 @@ static int human_fmap(const FmapHeader *fmh)
 
 	/* Ready to go */
 	printf("# name                     start       end         size\n");
-	show(all_nodes + numnodes, 0, opt_gaps);
+	int gapcount = 0;
+	show(all_nodes + numnodes, 0, gaps, gaps, &gapcount);
 
-	if (gapcount && !opt_gaps)
+	if (gapcount && !gaps)
 		printf("\nWARNING: unused regions found. Use -H to see them\n");
 
 	return 0;
@@ -415,12 +410,16 @@ static int do_dump_fmap(int argc, char *argv[])
 	int c;
 	int errorcnt = 0;
 	int retval = 1;
+	bool opt_extract = false;
+	int opt_overlap = 0;
+	bool opt_gaps = false;
+	format_t opt_format = FMT_NORMAL;
 
 	opterr = 0;		/* quiet, you */
 	while ((c = getopt_long(argc, argv, ":xpFhH", long_opts, 0)) != -1) {
 		switch (c) {
 		case 'x':
-			opt_extract = 1;
+			opt_extract = true;
 			break;
 		case 'p':
 			opt_format = FMT_PRETTY;
@@ -429,7 +428,7 @@ static int do_dump_fmap(int argc, char *argv[])
 			opt_format = FMT_FLASHROM;
 			break;
 		case 'H':
-			opt_gaps = 1;
+			opt_gaps = true;
 			VBOOT_FALLTHROUGH;
 		case 'h':
 			opt_format = FMT_HUMAN;
@@ -474,29 +473,30 @@ static int do_dump_fmap(int argc, char *argv[])
 		return 1;
 	}
 
-	base_of_rom =
-	    mmap(0, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-	if (base_of_rom == (char *)-1) {
+	void *base_of_rom = mmap(0, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+	if (base_of_rom == MAP_FAILED) {
 		ERROR("%s: can't mmap %s: %s\n",
 			argv[0], argv[optind], strerror(errno));
 		close(fd);
 		return 1;
 	}
 	close(fd);		/* done with this now */
-	size_of_rom = sb.st_size;
+
+	const size_t size_of_rom = sb.st_size;
 
 	const FmapHeader *fmap = fmap_find(base_of_rom, size_of_rom);
 	if (fmap) {
 		switch (opt_format) {
 		case FMT_HUMAN:
-			retval = human_fmap(fmap);
+			retval = human_fmap(fmap, opt_gaps, opt_overlap);
 			break;
 		case FMT_NORMAL:
 			printf("hit at 0x%08x\n",
 			       (uint32_t) ((char *)fmap - (char *)base_of_rom));
 			VBOOT_FALLTHROUGH;
 		default:
-			retval = normal_fmap(fmap,
+			retval = normal_fmap(fmap, base_of_rom, size_of_rom,
+					     opt_extract, opt_format,
 					     argc - optind - 1,
 					     argv + optind + 1);
 		}
