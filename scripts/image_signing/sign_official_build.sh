@@ -782,7 +782,10 @@ get_is_reven() {
 
   sudo umount "${rootfs_dir}"
 
-  if [[ "${board}" == "reven" ]]; then
+  # When run by the signer, the board name will look like
+  # "reven-signed-mp-v2keys". Also accept plain "reven" for local
+  # testing.
+  if [[ "${board}" == "reven-signed"* || "${board}" == "reven" ]]; then
     echo "true"
   else
     echo "false"
