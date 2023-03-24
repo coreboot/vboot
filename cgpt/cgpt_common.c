@@ -838,6 +838,21 @@ int GetSuccessful(struct drive *drive, int secondary, uint32_t entry_index) {
   return GetEntrySuccessful(entry);
 }
 
+void SetErrorCounter(struct drive *drive, int secondary, uint32_t entry_index,
+                     int error_counter) {
+  require(error_counter >= 0 &&
+          error_counter <= CGPT_ATTRIBUTE_MAX_ERROR_COUNTER);
+  GptEntry *entry;
+  entry = GetEntry(&drive->gpt, secondary, entry_index);
+  SetEntryErrorCounter(entry, error_counter);
+}
+
+int GetErrorCounter(struct drive *drive, int secondary, uint32_t entry_index) {
+  GptEntry *entry;
+  entry = GetEntry(&drive->gpt, secondary, entry_index);
+  return GetEntryErrorCounter(entry);
+}
+
 void SetRaw(struct drive *drive, int secondary, uint32_t entry_index,
             uint32_t raw) {
   GptEntry *entry;

@@ -29,6 +29,8 @@ static void PrintCgptAddParams(const CgptAddParams *params) {
     GuidToStr(&params->unique_guid, tmp, sizeof(tmp));
     fprintf(stderr, "-u %s ", tmp);
   }
+  if (params->set_error_counter)
+    fprintf(stderr, "-E %d ", params->error_counter);
   if (params->set_successful)
     fprintf(stderr, "-S %d ", params->successful);
   if (params->set_tries)
@@ -84,6 +86,8 @@ static int SetEntryAttributes(struct drive *drive,
   if (params->set_raw) {
     SetRaw(drive, PRIMARY, index, params->raw_value);
   } else {
+    if (params->set_error_counter)
+      SetErrorCounter(drive, PRIMARY, index, params->error_counter);
     if (params->set_successful)
       SetSuccessful(drive, PRIMARY, index, params->successful);
     if (params->set_tries)
@@ -237,6 +241,7 @@ int CgptGetPartitionDetails(CgptAddParams *params) {
   memcpy(&params->unique_guid, &entry->unique, sizeof(Guid));
   params->raw_value = entry->attrs.fields.gpt_att;
 
+  params->error_counter = GetErrorCounter(&drive, PRIMARY, index);
   params->successful = GetSuccessful(&drive, PRIMARY, index);
   params->tries = GetTries(&drive, PRIMARY, index);
   params->priority = GetPriority(&drive, PRIMARY, index);
