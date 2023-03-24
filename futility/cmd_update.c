@@ -116,9 +116,21 @@ static void print_help(int argc, char *argv[])
 		"    --unlock_me     \tUnlock the Intel ME before flashing\n"
 		SHARED_FLASH_ARGS_HELP
 		"\n"
+		" * Option --manifest requires either -a,--archive or -i,--image\n"
+		"   With -i,--image additional images are accepted with options\n"
+		"   -e,--ec_image and --pd_image.\n"
 		" * If both --manifest and --fast are specified, the updater\n"
 		"   will not scan the archive and simply dump the previously\n"
 		"   cached manifest (may be out-dated) from the archive.\n"
+		"   Works only with -a,--archive option.\n"
+		" * Use of -p,--programmer with option other than '%s',\n"
+		"   or with --ccd effectively disables ability to update EC and PD\n"
+		"   firmware images.\n"
+		" * Emulation works only with AP (host) firmware image, and does\n"
+		"   not accept EC or PD firmware image, and does not work\n"
+		"   with --mode=output\n"
+		" * Model detection with option --detect-model-only requires\n"
+		"   archive path -a,--archive\n"
 		"\n"
 		"Legacy and compatibility options:\n"
 		"    --factory       \tAlias for --mode=factory\n"
@@ -136,7 +148,7 @@ static void print_help(int argc, char *argv[])
 		"-d, --debug         \tPrint debugging messages\n"
 		"-v, --verbose       \tPrint verbose messages\n"
 		"",
-		argv[0]);
+		argv[0], PROG_HOST);
 }
 
 static int do_update(int argc, char *argv[])
