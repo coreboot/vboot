@@ -25,6 +25,7 @@ static void Usage(void)
          "  -t GUID      Partition Type GUID\n"
          "  -u GUID      Partition Unique ID\n"
          "  -l LABEL     Label\n"
+         "  -E NUM       set Error counter flag (0|1)\n"
          "  -S NUM       set Successful flag (0|1)\n"
          "  -T NUM       set Tries flag (0-15)\n"
          "  -P NUM       set Priority flag (0-15)\n"
@@ -48,7 +49,7 @@ int cmd_add(int argc, char *argv[]) {
   char *e = 0;
 
   opterr = 0;                     // quiet, you
-  while ((c=getopt(argc, argv, ":hi:b:s:t:u:l:S:T:P:R:B:A:D:")) != -1)
+  while ((c=getopt(argc, argv, ":hi:b:s:t:u:l:E:S:T:P:R:B:A:D:")) != -1)
   {
     switch (c)
     {
@@ -87,6 +88,12 @@ int cmd_add(int argc, char *argv[]) {
       break;
     case 'l':
       params.label = optarg;
+      break;
+    case 'E':
+      params.set_error_counter = 1;
+      params.error_counter = (uint32_t)strtoul(optarg, &e, 0);
+      errorcnt += check_int_parse(c, e);
+      errorcnt += check_int_limit(c, params.error_counter, 0, 1);
       break;
     case 'S':
       params.set_successful = 1;

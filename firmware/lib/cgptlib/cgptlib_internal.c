@@ -405,6 +405,12 @@ int GetEntryTries(const GptEntry *e)
 		CGPT_ATTRIBUTE_TRIES_OFFSET;
 }
 
+int GetEntryErrorCounter(const GptEntry *e)
+{
+	return (e->attrs.fields.gpt_att & CGPT_ATTRIBUTE_ERROR_COUNTER_MASK) >>
+		CGPT_ATTRIBUTE_ERROR_COUNTER_OFFSET;
+}
+
 void SetEntryRequired(GptEntry *e, int required)
 {
 	e->attrs.fields.required = required;
@@ -436,6 +442,14 @@ void SetEntryTries(GptEntry *e, int tries)
 	e->attrs.fields.gpt_att &= ~CGPT_ATTRIBUTE_TRIES_MASK;
 	e->attrs.fields.gpt_att |= (tries << CGPT_ATTRIBUTE_TRIES_OFFSET) &
 		CGPT_ATTRIBUTE_TRIES_MASK;
+}
+
+void SetEntryErrorCounter(GptEntry *e, int error_counter)
+{
+	e->attrs.fields.gpt_att &= ~CGPT_ATTRIBUTE_ERROR_COUNTER_MASK;
+	e->attrs.fields.gpt_att |=
+            (error_counter << CGPT_ATTRIBUTE_ERROR_COUNTER_OFFSET) &
+            CGPT_ATTRIBUTE_ERROR_COUNTER_MASK;
 }
 
 void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)

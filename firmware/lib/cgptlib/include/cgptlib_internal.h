@@ -22,7 +22,8 @@
  *
  *  63-61  -- (reserved)
  *     60  -- read-only
- *  59-57  -- (reserved)
+ *  59-58  -- (reserved)
+ *     57  -- error counter
  *     56  -- success
  *  55-52  -- tries
  *  51-48  -- priority
@@ -31,6 +32,11 @@
  *      1  -- UEFI: partition is not mapped
  *      0  -- UEFI: partition is required
  */
+#define CGPT_ATTRIBUTE_ERROR_COUNTER_OFFSET (57 - 48)
+#define CGPT_ATTRIBUTE_MAX_ERROR_COUNTER (1ULL)
+#define CGPT_ATTRIBUTE_ERROR_COUNTER_MASK (CGPT_ATTRIBUTE_MAX_ERROR_COUNTER << \
+					   CGPT_ATTRIBUTE_ERROR_COUNTER_OFFSET)
+
 #define CGPT_ATTRIBUTE_SUCCESSFUL_OFFSET (56 - 48)
 #define CGPT_ATTRIBUTE_MAX_SUCCESSFUL (1ULL)
 #define CGPT_ATTRIBUTE_SUCCESSFUL_MASK (CGPT_ATTRIBUTE_MAX_SUCCESSFUL << \

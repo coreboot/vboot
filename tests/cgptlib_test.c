@@ -1174,19 +1174,30 @@ static int EntryAttributeGetSetTest(void)
 	EXPECT(0xFFF0FFFFFFFFFFFFULL == e->attrs.whole);
 	EXPECT(0 == GetEntryPriority(e));
 
+	e->attrs.whole = 0x0000000000000000ULL;
+	SetEntryErrorCounter(e, 1);
+	EXPECT(0x0200000000000000ULL == e->attrs.whole);
+	EXPECT(1 == GetEntryErrorCounter(e));
+	e->attrs.whole = 0xFFFFFFFFFFFFFFFFULL;
+	SetEntryErrorCounter(e, 0);
+	EXPECT(0xFDFFFFFFFFFFFFFFULL == e->attrs.whole);
+	EXPECT(0 == GetEntryErrorCounter(e));
+
 	e->attrs.whole = 0xFFFFFFFFFFFFFFFFULL;
 	EXPECT(1 == GetEntryRequired(e));
 	EXPECT(1 == GetEntryLegacyBoot(e));
 	EXPECT(1 == GetEntrySuccessful(e));
 	EXPECT(15 == GetEntryPriority(e));
 	EXPECT(15 == GetEntryTries(e));
+	EXPECT(1 == GetEntryErrorCounter(e));
 
-	e->attrs.whole = 0x0123000000000004ULL;
+	e->attrs.whole = 0x0323000000000004ULL;
 	EXPECT(0 == GetEntryRequired(e));
 	EXPECT(1 == GetEntryLegacyBoot(e));
 	EXPECT(1 == GetEntrySuccessful(e));
 	EXPECT(2 == GetEntryTries(e));
 	EXPECT(3 == GetEntryPriority(e));
+	EXPECT(1 == GetEntryErrorCounter(e));
 
 	return TEST_OK;
 }
