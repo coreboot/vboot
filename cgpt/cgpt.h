@@ -150,6 +150,9 @@ int GetTries(struct drive *drive, int secondary, uint32_t entry_index);
 void SetSuccessful(struct drive *drive, int secondary, uint32_t entry_index,
                    int success);
 int GetSuccessful(struct drive *drive, int secondary, uint32_t entry_index);
+void SetErrorCounter(struct drive *drive, int secondary, uint32_t entry_index,
+                     int error_counter);
+int GetErrorCounter(struct drive *drive, int secondary, uint32_t entry_index);
 
 void SetRaw(struct drive *drive, int secondary, uint32_t entry_index,
            uint32_t raw);

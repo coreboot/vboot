@@ -206,11 +206,13 @@ int GetEntryLegacyBoot(const GptEntry *e);
 int GetEntrySuccessful(const GptEntry *e);
 int GetEntryPriority(const GptEntry *e);
 int GetEntryTries(const GptEntry *e);
+int GetEntryErrorCounter(const GptEntry *e);
 void SetEntryRequired(GptEntry *e, int required);
 void SetEntryLegacyBoot(GptEntry *e, int legacy_boot);
 void SetEntrySuccessful(GptEntry *e, int successful);
 void SetEntryPriority(GptEntry *e, int priority);
 void SetEntryTries(GptEntry *e, int tries);
+void SetEntryErrorCounter(GptEntry *e, int error_counter);
 
 #ifdef __cplusplus
 }

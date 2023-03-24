@@ -133,9 +133,12 @@ void EntryDetails(GptEntry *entry, uint32_t index, int raw) {
       int priority = (entry->attrs.fields.gpt_att &
                       CGPT_ATTRIBUTE_PRIORITY_MASK) >>
           CGPT_ATTRIBUTE_PRIORITY_OFFSET;
+      int error_counter = (entry->attrs.fields.gpt_att &
+                           CGPT_ATTRIBUTE_ERROR_COUNTER_MASK) >>
+          CGPT_ATTRIBUTE_ERROR_COUNTER_OFFSET;
       clen = snprintf(contents, sizeof(contents),
-                      "priority=%d tries=%d successful=%d ",
-                      priority, tries, successful);
+                      "priority=%d tries=%d successful=%d error_counter=%d ",
+                      priority, tries, successful, error_counter);
     }
 
     if (entry->attrs.fields.required) {

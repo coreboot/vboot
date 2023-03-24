@@ -35,6 +35,7 @@ typedef struct CgptAddParams {
 	Guid type_guid;
 	Guid unique_guid;
 	const char *label;
+	int error_counter;
 	int successful;
 	int tries;
 	int priority;
@@ -45,6 +46,7 @@ typedef struct CgptAddParams {
 	int set_size;
 	int set_type;
 	int set_unique;
+	int set_error_counter;
 	int set_successful;
 	int set_tries;
 	int set_priority;
