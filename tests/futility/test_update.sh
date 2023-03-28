@@ -147,6 +147,9 @@ dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
 patch_file "${TMP}.expected.me_unlocked" SI_DESC 128 \
 	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
+cp -f "${TMP}.expected.me_unlocked" "${TMP}.expected.me_unlocked_gpr0_disabled"
+patch_file "${TMP}.expected.me_unlocked_gpr0_disabled" SI_DESC 0x154 \
+	"\x00\x00\x00\x00"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_preserved"
 "${FUTILITY}" load_fmap "${TMP}.expected.me_preserved" \
 	"SI_ME:${TMP}.from/SI_ME"
@@ -343,6 +346,10 @@ test_update "Full update (--quirks unlock_me_for_update)" \
 	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
 	--quirks unlock_me_for_update \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+
+test_update "Full update (--unlock_me)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_gpr0_disabled" \
+	--unlock_me -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (failure by --quirks min_platform_version)" \
 	"${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
