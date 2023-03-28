@@ -1,4 +1,4 @@
-# Copyright 2013 The ChromiumOS Authors.
+# Copyright 2013 The ChromiumOS Authors
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -496,6 +496,7 @@ HOSTLIB_SRCS = \
 	cgpt/cgpt_edit.c \
 	cgpt/cgpt_find.c \
 	cgpt/cgpt_prioritize.c \
+	cgpt/cgpt_repair.c \
 	cgpt/cgpt_show.c \
 	firmware/2lib/2common.c \
 	firmware/2lib/2context.c \
