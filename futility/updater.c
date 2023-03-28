@@ -881,6 +881,7 @@ const char * const updater_error_messages[] = {
 	[UPDATE_ERR_ROOT_KEY] = "RW signed by incompatible root key "
 			        "(different from RO).",
 	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
+	[UPDATE_ERR_UNLOCK_ME] = "Failed to unlock the Intel ME.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
 
@@ -1057,6 +1058,11 @@ static enum updater_error_codes update_whole_firmware(
 
 	if (preserve_images(cfg))
 		VB2_DEBUG("Failed to preserve some sections - ignore.\n");
+
+	if (cfg->unlock_me && unlock_me(image_to)) {
+		ERROR("Failed unlocking Intel ME.\n");
+		return UPDATE_ERR_UNLOCK_ME;
+	}
 
 	INFO("Checking compatibility...\n");
 	if (!cfg->force_update) {
@@ -1541,6 +1547,8 @@ int updater_setup_config(struct updater_config *cfg,
 		override_dut_property(DUT_PROP_WP_HW, cfg, r);
 		override_dut_property(DUT_PROP_WP_SW, cfg, r);
 	}
+
+	cfg->unlock_me = arg->unlock_me;
 
 	/* Set up archive and load images. */
 	/* Always load images specified from command line directly. */

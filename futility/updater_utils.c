@@ -752,3 +752,96 @@ const char *get_firmware_rootkey_hash(const struct firmware_image *image)
 
 	return packed_key_sha1_string(rootkey);
 }
+
+/*
+ * Overwrite the given offset of a section in the firmware image with the
+ * given values.
+ * Returns 0 on success, otherwise failure.
+ */
+static int overwrite_section(struct firmware_image *image,
+			     const char *fmap_section, size_t offset,
+			     size_t size, const uint8_t *new_values)
+{
+	struct firmware_section section;
+
+	find_firmware_section(&section, image, fmap_section);
+	if (section.size < offset + size) {
+		ERROR("Section smaller than given offset + size\n");
+		return -1;
+	}
+
+	if (memcmp(section.data + offset, new_values, size) == 0) {
+		VB2_DEBUG("Section already contains given values.\n");
+		return 0;
+	}
+
+	memcpy(section.data + offset, new_values, size);
+	return 0;
+}
+
+/*
+ * Unlock the Flash Master values in SI_DESC.
+ * Returns 0 on success, otherwise failure.
+ *
+ * TODO(b/270275115): Replace with a call to ifdtool.
+ */
+int unlock_flash_master(struct firmware_image *image)
+{
+	const int flash_master_offset = 0x80;
+	const uint8_t flash_master[] = {
+		0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff,
+		0xff, 0xff
+	};
+
+	if (overwrite_section(image, FMAP_SI_DESC, flash_master_offset,
+			      ARRAY_SIZE(flash_master), flash_master)) {
+		ERROR("Failed unlocking Flash Master values\n");
+		return -1;
+	}
+
+	INFO("Changed Flash Master Values to unlocked.\n");
+	return 0;
+}
+
+/*
+ * Disable GPR0 (Global Protected Range). When enabled, it provides
+ * write-protection to part of the SI_ME region, specifically CSE_RO and
+ * part of CSE_DATA, so it must be disabled to allow updating SI_ME.
+ * Returns 0 on success, otherwise failure.
+ *
+ * TODO(b/270275115): Replace with a call to ifdtool.
+ */
+static int disable_gpr0(struct firmware_image *image)
+{
+	const int gpr0_offset = 0x154;
+	const uint8_t gpr0_value_disabled[] = { 0x00, 0x00, 0x00, 0x00 };
+
+	if (overwrite_section(image, FMAP_SI_DESC, gpr0_offset,
+			      ARRAY_SIZE(gpr0_value_disabled),
+			      gpr0_value_disabled)) {
+		ERROR("Failed disabling GPR0.\n");
+		return -1;
+	}
+
+	INFO("Disabled GPR0.\n");
+	return 0;
+}
+
+/*
+ * Unlock the Intel ME by:
+ * - Unlocking the FLMSTR values in the descriptor.
+ * - Disabling GPR0 in the descriptor.
+ * This allows the SI_DESC and SI_ME regions to be updated.
+ * Returns 0 on success, otherwise failure.
+ */
+int unlock_me(struct firmware_image *image)
+{
+	if (unlock_flash_master(image))
+		return -1;
+
+	if (disable_gpr0(image))
+		return -1;
+
+	INFO("Unlocked Intel ME.\n");
+	return 0;
+}

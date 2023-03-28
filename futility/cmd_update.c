@@ -33,6 +33,7 @@ enum {
 	OPT_SERVO_NORESET,
 	OPT_SIGNATURE,
 	OPT_SYS_PROPS,
+	OPT_UNLOCK_ME,
 	OPT_UNPACK,
 	OPT_WRITE_PROTECTION,
 };
@@ -66,6 +67,7 @@ static struct option const long_opts[] = {
 	{"repack", 1, NULL, OPT_REPACK},
 	{"signature_id", 1, NULL, OPT_SIGNATURE},
 	{"sys_props", 1, NULL, OPT_SYS_PROPS},
+	{"unlock_me", 0, NULL, OPT_UNLOCK_ME},
 	{"unpack", 1, NULL, OPT_UNPACK},
 	{"wp", 1, NULL, OPT_WRITE_PROTECTION},
 
@@ -111,6 +113,7 @@ static void print_help(int argc, char *argv[])
 		"    --list-quirks   \tPrint all available quirks\n"
 		"-m, --mode=MODE     \tRun updater in the specified mode\n"
 		"    --manifest      \tScan the archive to print a manifest in JSON\n"
+		"    --unlock_me     \tUnlock the Intel ME before flashing\n"
 		SHARED_FLASH_ARGS_HELP
 		"\n"
 		" * If both --manifest and --fast are specified, the updater\n"
@@ -190,6 +193,9 @@ static int do_update(int argc, char *argv[])
 			break;
 		case OPT_UNPACK:
 			args.unpack = optarg;
+			break;
+		case OPT_UNLOCK_ME:
+			args.unlock_me = true;
 			break;
 		case OPT_QUIRKS:
 			args.quirks = optarg;
