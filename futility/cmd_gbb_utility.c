@@ -39,10 +39,10 @@ static void print_help(int argc, char *argv[])
 {
 	printf("\n"
 		"Usage:  " MYNAME " %s [-g|-s|-c] [OPTIONS] "
-		"[bios_file] [output_file]\n"
+		"[image_file] [output_file]\n"
 		"\n"
 		"GET MODE:\n"
-		"-g, --get   (default)\tGet (read) from bios_file or flash, "
+		"-g, --get   (default)\tGet (read) from image_file or flash, "
 		"with following options:\n"
 		FLASH_ARG_HELP
 		"     --hwid          \tReport hardware id (default).\n"
@@ -70,9 +70,9 @@ static void print_help(int argc, char *argv[])
 		"                     \tCreate a GBB blob by given size list.\n\n"
 		FLASH_MORE_HELP
 		"SAMPLE:\n"
-		"  %s -g bios.bin\n"
+		"  %s -g image.bin\n"
 		"  %s --set --hwid='New Model' -k key.bin"
-		" bios.bin newbios.bin\n"
+		" image.bin newimage.bin\n"
 		"  %s -c 0x100,0x1000,0x03DE80,0x1000 gbb.blob\n\n"
 		"GBB Flags:\n"
 		" To get a developer-friendly device, try 0x18 (dev_mode boot_usb).\n"

@@ -35,7 +35,7 @@ static const char usage[] = "\n"
 	"\n"
 	"  This will clear the RO_VPD area, and scramble VBLOCK_B:\n"
 	"\n"
-	"  " MYNAME " %s bios.bin RO_VPD:/dev/zero VBLOCK_B:/dev/urandom\n"
+	"  " MYNAME " %s image.bin RO_VPD:/dev/zero VBLOCK_B:/dev/urandom\n"
 	"\n";
 
 static void print_help(int argc, char *argv[])
