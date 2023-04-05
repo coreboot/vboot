@@ -20,7 +20,7 @@
  *
  * A package for a single board (i.e., not Unified Build) will have all the
  * image files in the top folder:
- *  - host: 'image.bin' (or 'bios.bin' as legacy name before CL:1318712)
+ *  - host: 'image.bin'
  *  - ec: 'ec.bin'
  *  - pd: 'pd.bin'
  *
