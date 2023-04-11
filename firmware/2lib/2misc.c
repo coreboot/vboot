@@ -456,7 +456,7 @@ void vb2api_request_diagnostics(struct vb2_context *ctx) {
 	VB2_DEBUG("Diagnostics requested\n");
 }
 
-void vb2_clear_recovery(struct vb2_context *ctx)
+void vb2api_clear_recovery(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	uint32_t reason = vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST);
