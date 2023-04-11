@@ -891,7 +891,8 @@ static const char *get_gbb_key_hash(const struct vb2_gbb_header *gbb,
 /* Prints the information of given image file in JSON format. */
 static void print_json_image(
 		const char *name, const char *fpath, struct model_config *m,
-		struct u_archive *archive, int indent, int is_host)
+		struct u_archive *archive, int indent, int is_host,
+		bool is_first)
 {
 	struct firmware_image image = {0};
 	const struct vb2_gbb_header *gbb = NULL;
@@ -899,7 +900,7 @@ static void print_json_image(
 		return;
 	if (load_firmware_image(&image, fpath, archive))
 		return;
-	if (!is_host)
+	if (!is_first)
 		printf(",\n");
 	printf("%*s\"%s\": { \"versions\": { \"ro\": \"%s\", \"rw\": \"%s\" },",
 	       indent, "", name, image.ro_version, image.rw_version_a);
@@ -926,17 +927,31 @@ static void print_json_image(
 /* Prints the information of objects in manifest (models and images) in JSON. */
 void print_json_manifest(const struct manifest *manifest)
 {
-	int i, indent;
+	int i, j, indent;
 	struct u_archive *ar = manifest->archive;
 
 	printf("{\n");
 	for (i = 0, indent = 2; i < manifest->num; i++) {
 		struct model_config *m = &manifest->models[i];
+		struct {
+			const char *name;
+			const char *fpath;
+			bool is_host;
+		} images[] = {
+			{"host", m->image, true},
+			{"ec", m->ec_image},
+			{"pd", m->pd_image},
+		};
+		bool is_first = true;
 		printf("%s%*s\"%s\": {\n", i ? ",\n" : "", indent, "", m->name);
 		indent += 2;
-		print_json_image("host", m->image, m, ar, indent, 1);
-		print_json_image("ec", m->ec_image, m, ar, indent, 0);
-		print_json_image("pd", m->pd_image, m, ar, indent, 0);
+		for (j = 0; j < ARRAY_SIZE(images); j++) {
+			if (!images[j].fpath)
+				continue;
+			print_json_image(images[j].name, images[j].fpath, m, ar,
+					 indent, images[j].is_host, is_first);
+			is_first = false;
+		}
 		if (m->patches.rootkey) {
 			struct patch_config *p = &m->patches;
 			printf(",\n%*s\"patches\": { \"rootkey\": \"%s\", "

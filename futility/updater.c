@@ -1443,13 +1443,14 @@ int updater_setup_config(struct updater_config *cfg,
 
 	/* Check incompatible options and return early. */
 	if (arg->do_manifest) {
-		if (!!arg->archive == !!arg->image) {
-			ERROR("--manifest needs either -a or -i\n");
+		if (!arg->archive && !arg->image && !arg->ec_image) {
+			ERROR("--manifest needs -a, -i or -e\n");
 			return ++errorcnt;
 		}
-		if (arg->archive && (arg->ec_image || arg->pd_image)) {
+		if (arg->archive
+		    && (arg->image || arg->ec_image || arg->pd_image)) {
 			ERROR("--manifest for archive (-a) does not accept \n"
-			      "additional images (--ec_image, --pd_image).");
+			      "additional images (--image, --ec_image, --pd_image).");
 			return ++errorcnt;
 		}
 		*do_update = 0;
@@ -1626,7 +1627,6 @@ int updater_setup_config(struct updater_config *cfg,
 			.num = 1,
 			.models = &model,
 		};
-		assert(model.image);
 		print_json_manifest(&manifest);
 	}
 
