@@ -18,7 +18,7 @@ flash_size=$("${FUTILITY}" flash --flash-size -p "${TEST_PROG}")
 [ "${flash_size}" = "Flash size: 0x00800000" ]
 
 # Test WP status (VARIABLE_SIZE always has WP disabled)
-wp_status=$("${FUTILITY}" flash --wp-status -p "${TEST_PROG}")
+wp_status=$("${FUTILITY}" flash --wp-status --ignore-hw -p "${TEST_PROG}")
 [ "${wp_status}" = "WP status: disabled" ]
 
 # Cleanup
