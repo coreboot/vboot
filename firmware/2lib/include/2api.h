@@ -1395,4 +1395,26 @@ union vb2_fw_boot_info {
  */
 union vb2_fw_boot_info vb2api_get_fw_boot_info(struct vb2_context *ctx);
 
+/**
+ * Clear recovery request appropriately.
+ *
+ * To avoid the recovery request "sticking" and the user being in a permanent
+ * recovery loop, the recovery request must be cleared and committed to nvdata.
+ * Note that this should be done at some point after we are certain the system
+ * does not require any reboots for non-vboot-related reasons (e.g. FSP
+ * initialization), and before triggering a reboot to exit a transient recovery
+ * mode (e.g. memory retraining request).
+ *
+ * In BROKEN cases, the recovery reason will be stowed away as subcode, to be
+ * retrieved after the user reboots in manual recovery.  In manual recovery,
+ * subcode will be left alone to keep available for subsequent manual recovery
+ * requests, or for accessing from userspace on the next boot.
+ *
+ * This function modifies nvdata in vb2_context, but the caller is still
+ * expected to call vb2_commit_data.
+ *
+ * @param ctx		Vboot context
+ */
+void vb2api_clear_recovery(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */

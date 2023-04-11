@@ -872,7 +872,7 @@ static void clear_recovery_tests(void)
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY, 4);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
-	vb2_clear_recovery(ctx);
+	vb2api_clear_recovery(ctx);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  request cleared");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
@@ -883,7 +883,7 @@ static void clear_recovery_tests(void)
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_BROKEN_SCREEN, 4);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, 5);
 	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, 13);
-	vb2_clear_recovery(ctx);
+	vb2api_clear_recovery(ctx);
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
 		0, "  request cleared");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
