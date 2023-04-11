@@ -176,7 +176,7 @@ ifneq ($(filter-out 0,${DEBUG})$(filter-out 0,${TEST_PRINT}),)
 CFLAGS += -DVBOOT_DEBUG
 endif
 
-ifeq ($(filter-out 0,${DISABLE_NDEBUG}),)
+ifneq ($(filter-out 0,${NDEBUG}),)
 CFLAGS += -DNDEBUG
 endif
 
