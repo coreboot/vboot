@@ -86,7 +86,7 @@ err:
 	return ret;
 }
 
-static int print_wp_status(struct updater_config *cfg)
+static int print_wp_status(struct updater_config *cfg, bool ignore_hw)
 {
 	/* Get WP_RO region start and length from image */
 	uint32_t ro_start, ro_len;
@@ -102,7 +102,10 @@ static int print_wp_status(struct updater_config *cfg)
 		return -1;
 	}
 
-	if (!wp_mode && wp_start == 0 && wp_len == 0) {
+	/* A 1 implies HWWP is enabled. */
+	int hwwp = ignore_hw ? 1 : dut_get_property(DUT_PROP_WP_HW, cfg);
+
+	if (!hwwp || (!wp_mode && wp_start == 0 && wp_len == 0)) {
 		printf("WP status: disabled\n");
 	} else if (wp_mode && wp_start == ro_start && wp_len == ro_len) {
 		printf("WP status: enabled\n");
@@ -143,6 +146,7 @@ static struct option const long_opts[] = {
 	/* name  has_arg *flag val */
 	{"help", 0, NULL, 'h'},
 	{"wp-status", 0, NULL, 's'},
+	{"ignore-hw", 0, NULL, 'o'},
 	{"wp-enable", 0, NULL, 'e'},
 	{"wp-disable", 0, NULL, 'd'},
 	{"flash-info", 0, NULL, 'i'},
@@ -159,11 +163,13 @@ static void print_help(int argc, char *argv[])
 	       "\n"
 	       "Usage:  " MYNAME " %s [OPTIONS] \n"
 	       "\n"
-	       "    --wp-status      \tGet the current flash WP state.\n"
-	       "    --wp-enable      \tEnable protection for the RO image section.\n"
-	       "    --wp-disable     \tDisable all write protection.\n"
-	       "    --flash-size     \tGet flash size.\n"
-	       "    --flash-info     \tGet flash info.\n"
+	       "    --wp-status          \tGet the current flash WP state.\n"
+	       "    --wp-status          \tGet the current HW and SW WP state.\n"
+	       "        [--ignore-hw]    \tGet SW WP state only.\n"
+	       "    --wp-enable          \tEnable protection for the RO image section.\n"
+	       "    --wp-disable         \tDisable all write protection.\n"
+	       "    --flash-size         \tGet flash size.\n"
+	       "    --flash-info         \tGet flash info.\n"
 	       "\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
@@ -178,6 +184,7 @@ static int do_flash(int argc, char *argv[])
 	bool enable_wp = false;
 	bool disable_wp = false;
 	bool get_wp_status = false;
+	bool ignore_hw_wp = false;
 	bool get_size = false;
 	bool get_info = false;
 
@@ -195,6 +202,9 @@ static int do_flash(int argc, char *argv[])
 			goto out_free;
 		case 's':
 			get_wp_status = true;
+			break;
+		case 'o':
+			ignore_hw_wp = true;
 			break;
 		case 'e':
 			enable_wp = true;
@@ -236,6 +246,12 @@ static int do_flash(int argc, char *argv[])
 		goto out_free;
 	}
 
+	if (!get_wp_status && ignore_hw_wp) {
+		ret = -1;
+		ERROR("--ignore-hw must be used with --wp-status.\n");
+		goto out_free;
+	}
+
 	if (enable_wp && disable_wp) {
 		ret = -1;
 		ERROR("--wp-enable and --wp-disable cannot be used together.\n");
@@ -271,7 +287,7 @@ static int do_flash(int argc, char *argv[])
 		ret = set_flash_wp(cfg, false);
 
 	if (!ret && get_wp_status)
-		ret = print_wp_status(cfg);
+		ret = print_wp_status(cfg, ignore_hw_wp);
 
 out_free:
 	prepare_servo_control(prepare_ctrl_name, 0);
