@@ -160,7 +160,7 @@ vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx)
 	 * If in the broken screen, save the recovery reason as subcode.
 	 * Otherwise, clear any leftover recovery requests or subcodes.
 	 */
-	vb2_clear_recovery(ctx);
+	vb2api_clear_recovery(ctx);
 
 	/*
 	 * Clear the diagnostic request flag and commit nvdata to prevent

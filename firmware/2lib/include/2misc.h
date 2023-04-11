@@ -162,28 +162,6 @@ vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx);
 vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
 
 /**
- * Clear recovery request appropriately.
- *
- * To avoid the recovery request "sticking" and the user being in a permanent
- * recovery loop, the recovery request must be cleared and committed to nvdata.
- * Note that this should be done at some point after we are certain the system
- * does not require any reboots for non-vboot-related reasons (e.g. FSP
- * initialization), and before triggering a reboot to exit a transient recovery
- * mode (e.g. memory retraining request).
- *
- * In BROKEN cases, the recovery reason will be stowed away as subcode, to be
- * retrieved after the user reboots in manual recovery.  In manual recovery,
- * subcode will be left alone to keep available for subsequent manual recovery
- * requests, or for accessing from userspace on the next boot.
- *
- * This function modifies nvdata in vb2_context, but the caller is still
- * expected to call vb2_commit_data.
- *
- * @param ctx		Vboot context
- */
-void vb2_clear_recovery(struct vb2_context *ctx);
-
-/**
  * Fill VB2_CONTEXT_DEV_BOOT_ALLOWED, VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED and
  * VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED flags in ctx->flags.
  *
