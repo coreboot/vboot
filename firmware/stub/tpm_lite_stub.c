@@ -24,6 +24,7 @@
 #include "2sysincludes.h"
 #include "tlcl.h"
 #include "tlcl_internal.h"
+#include "tss_constants.h"
 
 #define TPM_DEVICE_PATH "/dev/tpm0"
 /* Retry failed open()s for 5 seconds in 10ms polling intervals. */
@@ -240,9 +241,6 @@ uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
 	 *              response);
 	 * // Error checking depending on the value of the status above
 	 */
-#ifndef NDEBUG
-	int tag, response_tag;
-#endif
 	uint32_t result;
 
 #ifdef VBOOT_DEBUG
@@ -266,9 +264,10 @@ uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
 #endif
 
 #ifndef NDEBUG
+#ifndef TPM2_MODE
 	/* validity checks */
-	tag = TpmTag(request);
-	response_tag = TpmTag(response);
+	int tag = TpmTag(request);
+	int response_tag = TpmTag(response);
 	assert(
 		(tag == TPM_TAG_RQU_COMMAND &&
 		 response_tag == TPM_TAG_RSP_COMMAND) ||
@@ -277,6 +276,7 @@ uint32_t vb2ex_tpm_send_recv(const uint8_t* request, uint32_t request_length,
 		(tag == TPM_TAG_RQU_AUTH2_COMMAND &&
 		 response_tag == TPM_TAG_RSP_AUTH2_COMMAND));
 	assert(*response_length == TpmResponseSize(response));
+#endif
 #endif
 
 	return TPM_SUCCESS;
