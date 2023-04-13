@@ -424,6 +424,11 @@ mkdir -p "${TMP}.output"
 	--output_dir="${TMP}.output"
 cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 
+echo "TEST: Output (--mode=output, --unlock_me)"
+"${FUTILITY}" update -i "${TMP}.expected.full" --mode=output \
+	--output_dir="${TMP}.output" --unlock_me
+cmp "${TMP}.expected.me_unlocked_gpr0_disabled" "${TMP}.output/image.bin"
+
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/image.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.CL"
