@@ -131,7 +131,7 @@ COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls -Wshadow \
 	-Wwrite-strings -Wstrict-aliasing -Wdate-time \
 	-ffunction-sections -fdata-sections \
-	-Wformat -Wno-format-security ${DEBUG_FLAGS}
+	-Wformat -Wno-format-security ${DEBUG_FLAGS} ${CPPFLAGS}
 
 # FIRMWARE_ARCH is defined if compiling for a firmware target
 # (coreboot or depthcharge).
