@@ -997,11 +997,12 @@ update_recovery_kernel_hash() {
 }
 
 # Re-sign miniOS kernels with new keys.
-# Args: LOOPDEV KEYBLOCK PRIVKEY
+# Args: LOOPDEV MINIOS_A_KEYBLOCK MINIOS_B_KEYBLOCK PRIVKEY
 resign_minios_kernels() {
   local loopdev="$1"
-  local keyblock="$2"
-  local priv_key="$3"
+  local minios_a_keyblock="$2"
+  local minios_b_keyblock="$3"
+  local priv_key="$4"
 
   info "Searching for miniOS kernels to resign..."
 
@@ -1011,6 +1012,16 @@ resign_minios_kernels() {
     part_type_guid=$(sudo lsblk -rnb -o PARTTYPE "${loop_minios}")
     if [[ "${part_type_guid}" != "${MINIOS_KERNEL_GUID}" ]]; then
       continue
+    fi
+
+    local keyblock
+    if [[ "${loop_minios}" == "${loopdev}p9" ]]; then
+      keyblock="${minios_a_keyblock}"
+    elif [[ "${loop_minios}" == "${loopdev}p10" ]]; then
+      keyblock="${minios_b_keyblock}"
+    else
+      error "Unexpected miniOS partition ${loop_minios}"
+      return 1
     fi
 
     # Skip miniOS partitions which are empty. This happens when miniOS
@@ -1098,7 +1109,7 @@ update_legacy_bootloader() {
 # Sign an image file with proper keys.
 # Args: IMAGE_TYPE INPUT OUTPUT DM_PARTNO KERN_A_KEYBLOCK KERN_A_PRIVKEY \
 #       KERN_B_KEYBLOCK KERN_B_PRIVKEY KERN_C_KEYBLOCK KERN_C_PRIVKEY \
-#       MINIOS_KEYBLOCK MINIOS_PRIVKEY
+#       MINIOS_KEYBLOCK MINIOS_KEYBLOCK_V1 MINIOS_PRIVKEY
 #
 # A ChromiumOS image file (INPUT) always contains 2 partitions (kernel A & B).
 # This function will rebuild hash data by DM_PARTNO, resign kernel partitions by
@@ -1120,7 +1131,8 @@ sign_image_file() {
   local kernC_keyblock="$9"
   local kernC_privkey="${10}"
   local minios_keyblock="${11}"
-  local minios_privkey="${12}"
+  local minios_keyblock_v1="${12}"
+  local minios_privkey="${13}"
 
   info "Preparing ${image_type} image..."
   cp --sparse=always "${input}" "${output}"
@@ -1206,12 +1218,23 @@ sign_image_file() {
         "${kernC_privkey}"
     fi
   fi
+
   if [[ -n "${minios_keyblock}" ]]; then
-    if ! resign_minios_kernels "${loopdev}" "${minios_keyblock}" \
-        "${minios_privkey}"; then
+    # b/266502803: If it's a recovery image and minios_kernel.v1.keyblock
+    # exists, sign MINIOS-A with minios_kernel.v1.keyblock and MINIOS-B with
+    # minios_kernel.keyblock. Otherwise, sign both with minios_kernel.keyblock.
+    local miniosA_keyblock="${minios_keyblock}"
+    local miniosB_keyblock="${minios_keyblock}"
+    if [[ -f "${minios_keyblock_v1}" ]]; then
+      miniosA_keyblock="${minios_keyblock_v1}"
+    fi
+
+    if ! resign_minios_kernels "${loopdev}" "${miniosA_keyblock}" \
+        "${miniosB_keyblock}" "${minios_privkey}"; then
       return 1
     fi
   fi
+
   if ! update_legacy_bootloader "${loopdev}" "${loop_kern}"; then
     # Error is already logged.
     return 1
@@ -1266,6 +1289,7 @@ if [[ "${TYPE}" == "base" ]]; then
     "" \
     "" \
     "${KEY_DIR}/minios_kernel.keyblock" \
+    "" \
     "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "recovery" ]]; then
   sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
@@ -1276,6 +1300,7 @@ elif [[ "${TYPE}" == "recovery" ]]; then
     "${KEY_DIR}/recovery_kernel.v1.keyblock" \
     "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
     "${KEY_DIR}/minios_kernel.keyblock" \
+    "${KEY_DIR}/minios_kernel.v1.keyblock" \
     "${KEY_DIR}/minios_kernel_data_key.vbprivk"
 elif [[ "${TYPE}" == "factory" ]]; then
   sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
@@ -1283,6 +1308,7 @@ elif [[ "${TYPE}" == "factory" ]]; then
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
     "${KEY_DIR}/installer_kernel.v1.keyblock" \
     "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
+    "" \
     "" \
     "" \
     "" \
