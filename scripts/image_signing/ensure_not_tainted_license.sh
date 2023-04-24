@@ -33,7 +33,7 @@ main() {
     mount_loop_image_partition_ro "${loopdev}" 3 "${rootfs}"
   fi
 
-  local license_dir license tainted_tag tainted_status
+  local license_dir license license_gz tainted_tag tainted_status
   license_dir="${rootfs}/opt/google/chrome/"
   if [[ ! -d "${license_dir}" ]]; then
     echo "Directory ${license_dir} does not exist. Skipping the tainted check."
@@ -41,6 +41,13 @@ main() {
   fi
 
   license=$(find "${license_dir}" -name about_os_credits.html 2>/dev/null)
+  license_gz=$(find "${license_dir}" -name about_os_credits.html.gz 2>/dev/null)
+  if [[ -n "${license_gz}" ]]; then
+    local tmpfile
+    tmpfile=$(make_temp_file)
+    gunzip --stdout "${license_gz}" > "${tmpfile}"
+    license="${tmpfile}"
+  fi
   if [[ -z "${license}" ]]; then
     echo "License file about_os_credits.html not found in ${license_dir}."
     echo "Skipping the check of tainted license."
