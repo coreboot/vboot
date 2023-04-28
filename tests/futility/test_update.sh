@@ -237,7 +237,7 @@ test_update "Full update (GBB flags -> 0x27)" \
 test_update "Full update (--host_only)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
-	--host_only --ec_image non-exist.bin --pd_image non_exist.bin
+	--host_only --ec_image non-exist.bin
 
 test_update "Full update (GBB1.2 hwid digest)" \
 	"${FROM_IMAGE}" "${TMP}.expected.full.gbb12" \

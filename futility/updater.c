@@ -1096,9 +1096,7 @@ static enum updater_error_codes update_whole_firmware(
 		return UPDATE_ERR_TPM_ROLLBACK;
 
 	/* FMAP may be different so we should just update all. */
-	if (write_firmware(cfg, image_to, NULL) ||
-	    update_ec_firmware(cfg) ||
-	    write_optional_firmware(cfg, &cfg->pd_image, NULL, 1, 0))
+	if (write_firmware(cfg, image_to, NULL) || update_ec_firmware(cfg))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1222,7 +1220,6 @@ struct updater_config *updater_new_config(void)
 	cfg->image_current.programmer = PROG_HOST;
 	cfg->original_programmer = PROG_HOST;
 	cfg->ec_image.programmer = PROG_EC;
-	cfg->pd_image.programmer = PROG_PD;
 
 	cfg->check_platform = 1;
 	cfg->do_verify = 1;
@@ -1267,8 +1264,7 @@ static int updater_setup_quirks(struct updater_config *cfg,
 static int updater_load_images(struct updater_config *cfg,
 			       const struct updater_config_arguments *arg,
 			       const char *image,
-			       const char *ec_image,
-			       const char *pd_image)
+			       const char *ec_image)
 {
 	int errorcnt = 0;
 	struct u_archive *ar = cfg->archive;
@@ -1289,8 +1285,6 @@ static int updater_load_images(struct updater_config *cfg,
 
 	if (!cfg->ec_image.data && ec_image)
 		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
-	if (!cfg->pd_image.data && pd_image)
-		errorcnt += !!load_firmware_image(&cfg->pd_image, pd_image, ar);
 	return errorcnt;
 }
 
@@ -1386,8 +1380,7 @@ static int updater_setup_archive(
 
 	/* Load images now so we can get quirks in custom label checks. */
 	errorcnt += updater_load_images(
-			cfg, arg, model->image, model->ec_image,
-			model->pd_image);
+			cfg, arg, model->image, model->ec_image);
 
 	if (model->is_custom_label && !manifest->has_keyset) {
 		/*
@@ -1448,9 +1441,9 @@ int updater_setup_config(struct updater_config *cfg,
 			return ++errorcnt;
 		}
 		if (arg->archive
-		    && (arg->image || arg->ec_image || arg->pd_image)) {
+		    && (arg->image || arg->ec_image)) {
 			ERROR("--manifest for archive (-a) does not accept \n"
-			      "additional images (--image, --ec_image, --pd_image).");
+			      "additional images (--image, --ec_image).");
 			return ++errorcnt;
 		}
 		*do_update = 0;
@@ -1554,7 +1547,7 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Set up archive and load images. */
 	/* Always load images specified from command line directly. */
 	errorcnt += updater_load_images(
-			cfg, arg, arg->image, arg->ec_image, arg->pd_image);
+			cfg, arg, arg->image, arg->ec_image);
 
 	if (!archive_path)
 		archive_path = ".";
@@ -1621,7 +1614,6 @@ int updater_setup_config(struct updater_config *cfg,
 			.name = name,
 			.image = arg->image,
 			.ec_image = arg->ec_image,
-			.pd_image = arg->pd_image,
 		};
 		struct manifest manifest = {
 			.num = 1,
@@ -1639,7 +1631,7 @@ int updater_setup_config(struct updater_config *cfg,
 		errorcnt += !!setup_config_quirks(arg->quirks, cfg);
 
 	/* Additional checks. */
-	if (check_single_image && !do_output && (cfg->ec_image.data || cfg->pd_image.data)) {
+	if (check_single_image && !do_output && cfg->ec_image.data) {
 		errorcnt++;
 		ERROR("EC/PD images are not supported in current mode.\n");
 	}
@@ -1656,7 +1648,6 @@ int updater_setup_config(struct updater_config *cfg,
 		errorcnt += updater_output_image(&cfg->image, "bios.bin", r);
 		errorcnt += updater_output_image(&cfg->image, "image.bin", r);
 		errorcnt += updater_output_image(&cfg->ec_image, "ec.bin", r);
-		errorcnt += updater_output_image(&cfg->pd_image, "pd.bin", r);
 		*do_update = 0;
 	}
 	return errorcnt;
@@ -1713,7 +1704,6 @@ void updater_delete_config(struct updater_config *cfg)
 	free_firmware_image(&cfg->image);
 	free_firmware_image(&cfg->image_current);
 	free_firmware_image(&cfg->ec_image);
-	free_firmware_image(&cfg->pd_image);
 	cfg->image.programmer = cfg->original_programmer;
 	cfg->image_current.programmer = cfg->original_programmer;
 	free(cfg->emulation_programmer);
