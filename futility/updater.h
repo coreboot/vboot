@@ -72,7 +72,7 @@ enum try_update_type {
 
 struct updater_config {
 	struct firmware_image image, image_current;
-	struct firmware_image ec_image, pd_image;
+	struct firmware_image ec_image;
 	struct dut_property dut_properties[DUT_PROP_MAX];
 	struct quirk_entry quirks[QUIRK_MAX];
 	struct u_archive *archive;
@@ -96,7 +96,7 @@ struct updater_config {
 };
 
 struct updater_config_arguments {
-	char *image, *ec_image, *pd_image;
+	char *image, *ec_image;
 	char *archive, *quirks, *mode;
 	const char *programmer, *write_protection;
 	char *model, *signature_id;
@@ -156,7 +156,7 @@ struct patch_config {
 
 struct model_config {
 	char *name;
-	char *image, *ec_image, *pd_image;
+	char *image, *ec_image;
 	struct patch_config patches;
 	char *signature_id;
 	int is_custom_label;

@@ -26,7 +26,6 @@ enum {
 	OPT_MANIFEST,
 	OPT_MODEL,
 	OPT_OUTPUT_DIR,
-	OPT_PD_IMAGE,
 	OPT_QUIRKS,
 	OPT_QUIRKS_LIST,
 	OPT_REPACK,
@@ -63,7 +62,6 @@ static struct option const long_opts[] = {
 	{"manifest", 0, NULL, OPT_MANIFEST},
 	{"model", 1, NULL, OPT_MODEL},
 	{"output_dir", 1, NULL, OPT_OUTPUT_DIR},
-	{"pd_image", 1, NULL, OPT_PD_IMAGE},
 	{"repack", 1, NULL, OPT_REPACK},
 	{"signature_id", 1, NULL, OPT_SIGNATURE},
 	{"sys_props", 1, NULL, OPT_SYS_PROPS},
@@ -104,7 +102,6 @@ static void print_help(int argc, char *argv[])
 		"\n"
 		"-i, --image=FILE    \tAP (host) firmware image (image.bin)\n"
 		"-e, --ec_image=FILE \tEC firmware image (i.e, ec.bin)\n"
-		"    --pd_image=FILE \tPD firmware image (i.e, pd.bin)\n"
 		"-t, --try           \tTry A/B update on reboot if possible\n"
 		"-a, --archive=PATH  \tRead resources from archive\n"
 		"    --unpack=DIR    \tExtracts archive to DIR\n"
@@ -118,7 +115,7 @@ static void print_help(int argc, char *argv[])
 		"\n"
 		" * Option --manifest requires either -a,--archive or -i,--image\n"
 		"   With -i,--image additional images are accepted with options\n"
-		"   -e,--ec_image and --pd_image.\n"
+		"   -e,--ec_image.\n"
 		" * If both --manifest and --fast are specified, the updater\n"
 		"   will not scan the archive and simply dump the previously\n"
 		"   cached manifest (may be out-dated) from the archive.\n"
@@ -194,9 +191,6 @@ static int do_update(int argc, char *argv[])
 			args.mode = optarg;
 			break;
 
-		case OPT_PD_IMAGE:
-			args.pd_image = optarg;
-			break;
 		case OPT_REPACK:
 			args.repack = optarg;
 			ERROR("Sorry, --repack is only for the script.\n");

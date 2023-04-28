@@ -17,5 +17,4 @@ TARGET_PLATFORM="Google_Coral"
 # Image and key files for model customtip
 IMAGE_MAIN="images/bios_coral.bin"
 IMAGE_EC=""
-IMAGE_PD=""
 SIGNATURE_ID="sig-id-in-customization-id"

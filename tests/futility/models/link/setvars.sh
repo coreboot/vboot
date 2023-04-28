@@ -10,5 +10,4 @@
 # Image and key files for model link
 IMAGE_MAIN="images/bios_link.bin"
 IMAGE_EC="images/ec_link.bin"
-IMAGE_PD=""
 SIGNATURE_ID="link"
