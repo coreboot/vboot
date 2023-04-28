@@ -10,5 +10,4 @@
 # Image and key files for model peppy
 IMAGE_MAIN="images/bios_peppy.bin"
 IMAGE_EC="images/ec_peppy.bin"
-IMAGE_PD=""
 SIGNATURE_ID="peppy"

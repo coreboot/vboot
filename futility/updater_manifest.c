@@ -60,7 +60,6 @@
 
 static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const SETVARS_IMAGE_EC = "IMAGE_EC",
-		  * const SETVARS_IMAGE_PD = "IMAGE_PD",
 		  * const SETVARS_SIGNATURE_ID = "SIGNATURE_ID",
 		  * const SIG_ID_IN_VPD_PREFIX = "sig-id-in",
 		  * const DIR_KEYSET = "keyset",
@@ -166,8 +165,6 @@ static int model_config_parse_setvars_file(
 			cfg->image = strdup(v);
 		else if (strcmp(k, SETVARS_IMAGE_EC) == 0)
 			cfg->ec_image = strdup(v);
-		else if (strcmp(k, SETVARS_IMAGE_PD) == 0)
-			cfg->pd_image = strdup(v);
 		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0) {
 			cfg->signature_id = strdup(v);
 			if (str_startswith(v, SIG_ID_IN_VPD_PREFIX))
@@ -374,16 +371,11 @@ static int manifest_scan_entries(const char *name, void *arg)
 		return 0;
 	}
 
-	/* In legacy setvars.sh, the ec_image and pd_image may not exist. */
+	/* In legacy setvars.sh, the ec_image may not exist. */
 	if (model.ec_image && !archive_has_entry(archive, model.ec_image)) {
 		VB2_DEBUG("Ignore non-exist EC image: %s\n", model.ec_image);
 		free(model.ec_image);
 		model.ec_image = NULL;
-	}
-	if (model.pd_image && !archive_has_entry(archive, model.pd_image)) {
-		VB2_DEBUG("Ignore non-exist PD image: %s\n", model.pd_image);
-		free(model.pd_image);
-		model.pd_image = NULL;
 	}
 
 	/* Find patch files. */
@@ -574,8 +566,7 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 {
 	const char * const host_image_name = "image.bin",
 		   * const old_host_image_name = "bios.bin",
-		   * const ec_name = "ec.bin",
-		   * const pd_name = "pd.bin";
+		   * const ec_name = "ec.bin";
 	struct u_archive *archive = manifest->archive;
 	const char *image_name = NULL;
 	struct firmware_image image = {0};
@@ -592,8 +583,6 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	model.image = strdup(image_name);
 	if (archive_has_entry(archive, ec_name))
 		model.ec_image = strdup(ec_name);
-	if (archive_has_entry(archive, pd_name))
-		model.pd_image = strdup(pd_name);
 	/* Extract model name from FWID: $Vendor_$Platform.$Version */
 	if (!load_firmware_image(&image, image_name, archive)) {
 		char *token = NULL;
@@ -868,7 +857,6 @@ void delete_manifest(struct manifest *manifest)
 		free(model->signature_id);
 		free(model->image);
 		free(model->ec_image);
-		free(model->pd_image);
 		clear_patch_config(&model->patches);
 	}
 	free(manifest->models);
@@ -940,7 +928,6 @@ void print_json_manifest(const struct manifest *manifest)
 		} images[] = {
 			{"host", m->image, true},
 			{"ec", m->ec_image},
-			{"pd", m->pd_image},
 		};
 		bool is_first = true;
 		printf("%s%*s\"%s\": {\n", i ? ",\n" : "", indent, "", m->name);
