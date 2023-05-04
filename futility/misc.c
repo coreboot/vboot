@@ -109,7 +109,7 @@ int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 		return 0;
 	if (gbb->hwid_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
-	if (gbb->hwid_offset + gbb->hwid_size > len)
+	if ((uint64_t)gbb->hwid_offset + gbb->hwid_size > len)
 		return 0;
 	if (gbb->hwid_size) {
 		const char *s = (const char *)
@@ -119,16 +119,16 @@ int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 	}
 	if (gbb->rootkey_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
-	if (gbb->rootkey_offset + gbb->rootkey_size > len)
+	if ((uint64_t)gbb->rootkey_offset + gbb->rootkey_size > len)
 		return 0;
 
 	if (gbb->bmpfv_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
-	if (gbb->bmpfv_offset + gbb->bmpfv_size > len)
+	if ((uint64_t)gbb->bmpfv_offset + gbb->bmpfv_size > len)
 		return 0;
 	if (gbb->recovery_key_offset < EXPECTED_VB2_GBB_HEADER_SIZE)
 		return 0;
-	if (gbb->recovery_key_offset + gbb->recovery_key_size > len)
+	if ((uint64_t)gbb->recovery_key_offset + gbb->recovery_key_size > len)
 		return 0;
 
 	/* Seems legit... */
