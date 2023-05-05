@@ -382,7 +382,9 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 	/* FW_MAIN */
 	FmapAreaHeader *ah;
 	if (!fmap_find_by_name(buf, len, fmap, fw_main_name, &ah)) {
-		ERROR("%s area not found in FMAP\n", fw_main_name);
+		fprintf(stderr, "%s: %s: %s area not found in FMAP\n",
+			fw_c == BIOS_FMAP_FW_MAIN_A ? "ERROR" : "INFO",
+			__func__, fw_main_name);
 		return 1;
 	}
 	fmap_limit_area(ah, len);
@@ -520,14 +522,9 @@ static void image_check_and_prepare_cbfs(const char *file,
 	}
 
 	if (cbfstool_get_metadata_hash(file, fmap_name[fw_c],
-				       &state->area[fw_c].metadata_hash) !=
+				       &state->area[fw_c].metadata_hash) ==
 	    VB2_SUCCESS)
-		FATAL("CBFS metadata hash not found in area"
-		      " %s. It is required for images with"
-		      " VBOOT_CBFS_INTEGRATION",
-		      fmap_name[fw_c]);
-
-	VB2_DEBUG("CBFS metadata hash found in area %s\n", fmap_name[fw_c]);
+		VB2_DEBUG("CBFS metadata hash found in area %s\n", fmap_name[fw_c]);
 }
 
 static void check_slot_after_prepare(enum bios_component fw_c,
