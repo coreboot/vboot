@@ -536,9 +536,9 @@ const char *VbGetSystemPropertyString(const char *name, char *dest, size_t size)
 	if (!strcasecmp(name,"kernkey_vfy")) {
 		switch(GetVdatInt(VDAT_INT_KERNEL_KEY_VERIFIED)) {
 			case 0:
-				return StrCopy(dest, "hash", size);
+				return "hash";
 			case 1:
-				return StrCopy(dest, "sig", size);
+				return "sig";
 			default:
 				return NULL;
 		}
@@ -548,35 +548,31 @@ const char *VbGetSystemPropertyString(const char *name, char *dest, size_t size)
 		return GetVdatString(dest, size,
 				     VDAT_STRING_LOAD_FIRMWARE_DEBUG);
 	} else if (!strcasecmp(name, "fw_try_next")) {
-		return StrCopy(dest, vb2_get_nv_storage(VB2_NV_TRY_NEXT) ?
-						"B" : "A", size);
+		return vb2_get_nv_storage(VB2_NV_TRY_NEXT) ? "B" : "A";
 	} else if (!strcasecmp(name, "fw_tried")) {
-		return StrCopy(dest, vb2_get_nv_storage(VB2_NV_FW_TRIED) ?
-						"B" : "A", size);
+		return vb2_get_nv_storage(VB2_NV_FW_TRIED) ? "B" : "A";
 	} else if (!strcasecmp(name, "fw_result")) {
 		int v = vb2_get_nv_storage(VB2_NV_FW_RESULT);
 		if (v < ARRAY_SIZE(fw_results))
-			return StrCopy(dest, fw_results[v], size);
+			return fw_results[v];
 		else
-			return StrCopy(dest, "unknown", size);
+			return "unknown";
 	} else if (!strcasecmp(name, "fw_prev_tried")) {
-		return StrCopy(dest, vb2_get_nv_storage(VB2_NV_FW_PREV_TRIED) ?
-						"B" : "A", size);
+		return vb2_get_nv_storage(VB2_NV_FW_PREV_TRIED) ? "B" : "A";
 	} else if (!strcasecmp(name, "fw_prev_result")) {
 		int v = vb2_get_nv_storage(VB2_NV_FW_PREV_RESULT);
 		if (v < ARRAY_SIZE(fw_results))
-			return StrCopy(dest, fw_results[v], size);
+			return fw_results[v];
 		else
-			return StrCopy(dest, "unknown", size);
+			return "unknown";
 	} else if (!strcasecmp(name,"dev_default_boot")) {
 		int v = vb2_get_nv_storage(VB2_NV_DEV_DEFAULT_BOOT);
 		if (v < ARRAY_SIZE(default_boot))
-			return StrCopy(dest, default_boot[v], size);
+			return default_boot[v];
 		else
-			return StrCopy(dest, "unknown", size);
+			return "unknown";
 	} else if (!strcasecmp(name, "minios_priority")) {
-		return StrCopy(dest, vb2_get_nv_storage(VB2_NV_MINIOS_PRIORITY)
-						? "B" : "A", size);
+		return vb2_get_nv_storage(VB2_NV_MINIOS_PRIORITY) ? "B" : "A";
 	}
 
 	return NULL;
