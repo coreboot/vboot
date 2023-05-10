@@ -265,8 +265,8 @@ int dut_get_property(enum dut_property_type property_type,
 
 int dut_set_property_string(const char *key, const char *value,
 			    struct updater_config *cfg);
-const char *dut_get_property_string(const char *key, char *dest, size_t size,
-				    struct updater_config *cfg);
+int dut_get_property_string(const char *key, char *dest, size_t size,
+			    struct updater_config *cfg);
 int dut_set_property_int(const char *key, const int value,
 			 struct updater_config *cfg);
 int dut_get_property_int(const char *key, struct updater_config *cfg);

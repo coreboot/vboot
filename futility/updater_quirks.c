@@ -158,8 +158,8 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 static int is_ec_in_rw(struct updater_config *cfg)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
-	return (dut_get_property_string("ecfw_act", buf, sizeof(buf), cfg) &&
-		strcasecmp(buf, "RW") == 0);
+	return (dut_get_property_string("ecfw_act", buf, sizeof(buf), cfg) == 0
+		&& strcasecmp(buf, "RW") == 0);
 }
 
 /*

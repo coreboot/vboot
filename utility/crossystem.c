@@ -191,9 +191,9 @@ static int SetParam(const Param* p, const char* value) {
 static int CheckParam(const Param* p, const char* expect) {
   if (p->flags & IS_STRING) {
     char buf[VB_MAX_STRING_PROPERTY];
-    const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
-    if (!v || 0 != strcmp(v, expect))
-      return 1;
+  const int v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
+  if (v != 0 || 0 != strcmp(buf, expect))
+    return 1;
   } else {
     char* e;
     int i = (int)strtol(expect, &e, 0);
@@ -213,10 +213,10 @@ static int CheckParam(const Param* p, const char* expect) {
 static int PrintParam(const Param* p) {
   if (p->flags & IS_STRING) {
     char buf[VB_MAX_STRING_PROPERTY];
-    const char* v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
-    if (!v)
-      return 1;
-    printf("%s", v);
+  const int v = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
+  if (v != 0)
+    return 1;
+  printf("%s", buf);
   } else {
     int v = VbGetSystemPropertyInt(p->name);
     if (v == -1)
@@ -235,27 +235,23 @@ static int PrintAllParams(int force_all) {
   const Param* p;
   int retval = 0;
   char buf[VB_MAX_STRING_PROPERTY];
-  const char* value;
+  int result = 0;
 
   for (p = sys_param_list; p->name; p++) {
-    if (0 == force_all && (p->flags & NO_PRINT_ALL))
+    if (force_all == 0 && (p->flags & NO_PRINT_ALL))
       continue;
     if (p->flags & IS_STRING) {
-      value = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
+      result = VbGetSystemPropertyString(p->name, buf, sizeof(buf));
     } else {
-      int v = VbGetSystemPropertyInt(p->name);
-      if (v == -1)
-        value = NULL;
-      else {
-        snprintf(buf, sizeof(buf), p->format ? p->format : "%d", v);
-        value = buf;
+      result = VbGetSystemPropertyInt(p->name);
+      if (result != -1)
+        snprintf(buf, sizeof(buf), p->format ? p->format : "%d", result);
       }
-    }
-    printf("%-*s = %-30s # [%s/%s] %s\n", kNameWidth, p->name,
-           (value ? value : "(error)"),
-           (p->flags & CAN_WRITE) ? "RW" : "RO",
-           (p->flags & IS_STRING) ? "str" : "int",
-           p->desc);
+      printf("%-*s = %-30s # [%s/%s] %s\n", kNameWidth, p->name,
+            ((result != -1) ? buf : "(error)"),
+              (p->flags & CAN_WRITE) ? "RW" : "RO",
+              (p->flags & IS_STRING) ? "str" : "int",
+              p->desc);
   }
   return retval;
 }

@@ -52,8 +52,8 @@ int dut_set_property_string(const char *key, const char *value,
 	return VbSetSystemPropertyString(key, value);
 }
 
-const char *dut_get_property_string(const char *key, char *dest, size_t size,
-				    struct updater_config *cfg)
+int dut_get_property_string(const char *key, char *dest, size_t size,
+			    struct updater_config *cfg)
 {
 	if (cfg->dut_is_remote) {
 		WARN("Ignored getting property %s on a remote DUT.\n", key);
@@ -86,7 +86,7 @@ static int dut_get_mainfw_act(struct updater_config *cfg)
 {
 	char buf[VB_MAX_STRING_PROPERTY];
 
-	if (!dut_get_property_string("mainfw_act", buf, sizeof(buf), cfg))
+	if (dut_get_property_string("mainfw_act", buf, sizeof(buf), cfg) != 0)
 		return SLOT_UNKNOWN;
 
 	if (strcmp(buf, FWACT_A) == 0)
