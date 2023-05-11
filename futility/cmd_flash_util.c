@@ -15,6 +15,38 @@
 
 #ifdef USE_FLASHROM
 
+static int get_ro_range(struct updater_config *cfg,
+			uint32_t *start, uint32_t *len)
+{
+	int ret = 0;
+
+	/* Read fmap */
+	const char *const regions[] = {FMAP_RO_FMAP, NULL};
+	if (flashrom_read_image(&cfg->image_current, regions,
+				cfg->verbosity + 1))
+		return -1;
+
+	FmapAreaHeader *wp_ro = NULL;
+	uint8_t *r = fmap_find_by_name(cfg->image_current.data,
+				       cfg->image_current.size,
+				       NULL, FMAP_RO, &wp_ro);
+	if (!r || !wp_ro) {
+		ERROR("Could not find WP_RO in the FMAP\n");
+		ret = -1;
+		goto err;
+	}
+
+	*start = wp_ro->area_offset;
+	*len = wp_ro->area_size;
+
+err:
+	free(cfg->image_current.data);
+	cfg->image_current.data = NULL;
+	cfg->image_current.size = 0;
+
+	return ret;
+}
+
 static int print_flash_size(struct updater_config *cfg)
 {
 	uint32_t flash_size;
@@ -51,39 +83,14 @@ static int print_flash_info(struct updater_config *cfg)
 	const uint64_t vidpid = (uint64_t) vid << 32 | pid;
 	printf("Flash vid-pid: 0x%" PRIx64 "\n", vidpid);
 	printf("Flash size: %#010x\n", flash_size);
-	return 0;
-}
 
-static int get_ro_range(struct updater_config *cfg,
-			uint32_t *start, uint32_t *len)
-{
-	int ret = 0;
-
-	/* Read fmap */
-	const char *const regions[] = {FMAP_RO_FMAP, NULL};
-	if (flashrom_read_image(&cfg->image_current, regions,
-				cfg->verbosity + 1))
+	/* Get WP_RO region start and length from image */
+	uint32_t ro_start, ro_len;
+	if (get_ro_range(cfg, &ro_start, &ro_len))
 		return -1;
+	printf("Expected WP SR configuration by FW image: (start = %#010x, length = %#010x)\n", ro_start, ro_len);
 
-	FmapAreaHeader *wp_ro = NULL;
-	uint8_t *r = fmap_find_by_name(cfg->image_current.data,
-				       cfg->image_current.size,
-				       NULL, FMAP_RO, &wp_ro);
-	if (!r || !wp_ro) {
-		ERROR("Could not find WP_RO in the FMAP\n");
-		ret = -1;
-		goto err;
-	}
-
-	*start = wp_ro->area_offset;
-	*len = wp_ro->area_size;
-
-err:
-	free(cfg->image_current.data);
-	cfg->image_current.data = NULL;
-	cfg->image_current.size = 0;
-
-	return ret;
+	return 0;
 }
 
 static int print_wp_status(struct updater_config *cfg, bool ignore_hw)
