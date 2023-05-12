@@ -63,6 +63,7 @@ struct sign_option_s {
 	uint32_t ro_offset, rw_offset;
 	uint32_t data_size, sig_size;
 	struct vb2_private_key *prikey;
+	const char *ecrw_out;
 };
 extern struct sign_option_s sign_option;
 

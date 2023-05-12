@@ -20,11 +20,13 @@ set -o pipefail
 
 infile="${DATADIR}/hammer_dev.bin"
 outfile="${TMP}.hammer_dev.bin"
+ecrw_out="${TMP}.ec_rw.bin"
 cp "${infile}" "${outfile}"
-# Signing without private key should extract EC_RW.bin
-"${FUTILITY}" sign --type rwsig --version 2 "${outfile}"
+
+"${FUTILITY}" sign --type rwsig --version 2 \
+    --ecrw_out "${ecrw_out}" "${outfile}"
 cmp "${infile}" "${outfile}"
-cmp "${EC_RW}" "${DATADIR}/${EC_RW}"
+cmp "${ecrw_out}" "${DATADIR}/${EC_RW}"
 
 for s in $SIGS; do
     echo -n "$s " 1>&3
@@ -50,9 +52,8 @@ for s in $SIGS; do
 
         # Sign ec.bin with a new private key
         "${FUTILITY}" sign --type rwsig --prikey "${outkeys}.vbprik2" \
-                      --version 2 "${outfile}"
-        # Check EC_RW.bin is produced
-        [[ -e "${EC_RW}" ]]
+                      --version 2 --ecrw_out "${ecrw_out}" "${outfile}"
+        [[ -e "${ecrw_out}" ]]
 
         "${FUTILITY}" show --type rwsig --pubkey "${outkeys}.vbpubk2" \
                       "${outfile}"

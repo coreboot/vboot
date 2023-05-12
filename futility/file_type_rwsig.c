@@ -30,7 +30,6 @@
 #include "util_misc.h"
 
 #define SIGNATURE_RSVD_SIZE 1024
-#define EC_RW_FILENAME "EC_RW.bin"
 
 static void show_sig(const char *name, const struct vb21_signature *sig)
 {
@@ -322,11 +321,11 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 		VB2_DEBUG("Replacing old signature with new one\n");
 		memset(old_sig, 0xff, sig_size);
 		memcpy(old_sig, tmp_sig, tmp_sig->c.total_size);
-		if (fmap) {
+		if (fmap && sign_option.ecrw_out) {
 			VB2_DEBUG("Writing %s (size=%d)\n",
-				  EC_RW_FILENAME, fmaparea->area_size);
-			if (vb2_write_file(EC_RW_FILENAME,
-					   data, fmaparea->area_size))
+				  sign_option.ecrw_out, fmaparea->area_size);
+			if (vb2_write_file(sign_option.ecrw_out, data,
+					   fmaparea->area_size))
 				goto done;
 		}
 	} else {

@@ -238,8 +238,8 @@ main() {
       local old_cwd=$(pwd)
       cd "${expanded_firmware_dir}"
 
-      ${FUTILITY} sign --type rwsig --prikey "${ec_efs_prvkey}" "${IMAGE_EC}" ||
-        die "Failed to sign EC image"
+      ${FUTILITY} sign --type rwsig --prikey "${ec_efs_prvkey}" \
+        --ecrw_out "${rw_bin}" "${IMAGE_EC}" || die "Failed to sign EC image"
       # Above command produces EC_RW.bin. Compute its hash.
       openssl dgst -sha256 -binary "${rw_bin}" > "${rw_hash}"
 

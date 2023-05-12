@@ -634,8 +634,7 @@ static void print_help_rwsig(int argc, char *argv[])
 	       "If INFILE contains an FMAP, RW and signatures offsets are read from\n"
 	       "FMAP. These regions must be named EC_RW and SIG_RW respectively.\n"
 	       "If a public key is found in the region named KEY_RO, it will be replaced\n"
-	       "in the RO image. This mode also produces EC_RW.bin which is a EC_RW\n"
-	       "region image (same as the input file for 'Data + Signature mode').\n"
+	       "in the RO image.\n"
 	       "\n"
 	       "Options:\n"
 	       "\n"
@@ -650,6 +649,8 @@ static void print_help_rwsig(int argc, char *argv[])
 	       "                                    the file does not contain an FMAP.\n"
 	       "                                    (default 1024 bytes)\n"
 	       "  --data_size   NUM               Number of bytes of INFILE to sign\n"
+	       "  --ecrw_out    FILE              Output path for Key+Data+Signature mode\n"
+	       "                                  to extract EC_RW region to\n"
 	       "\n",
 	       argv[0],
 	       futil_file_type_name(FILE_TYPE_RWSIG),
@@ -727,6 +728,7 @@ enum no_short_opts {
 	OPT_DATA_SIZE,
 	OPT_SIG_SIZE,
 	OPT_PRIKEY,
+	OPT_ECRW_OUT,
 	OPT_HELP,
 };
 
@@ -765,6 +767,7 @@ static const struct option long_opts[] = {
 	{"sig_size",     1, NULL, OPT_SIG_SIZE},
 	{"prikey",       1, NULL, OPT_PRIKEY},
 	{"privkey",      1, NULL, OPT_PRIKEY},	/* alias */
+	{"ecrw_out",     1, NULL, OPT_ECRW_OUT},
 	{"help",         0, NULL, OPT_HELP},
 	{NULL,           0, NULL, 0},
 };
@@ -956,6 +959,9 @@ static int do_sign(int argc, char *argv[])
 				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
+			break;
+		case OPT_ECRW_OUT:
+			sign_option.ecrw_out = optarg;
 			break;
 		case OPT_HELP:
 			helpind = optind - 1;

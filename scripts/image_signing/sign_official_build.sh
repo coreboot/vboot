@@ -569,6 +569,7 @@ resign_firmware_payload() {
               "${FUTILITY}" sign
               --type rwsig
               --prikey "${KEY_DIR}/key_ec_efs.vbprik2"
+              --ecrw_out "${rw_bin}"
               "${ec_path}"
             )
             echo "Signing EC with: ${full_command[*]}"
