@@ -361,7 +361,6 @@ static int do_create(int argc, char *argv[])
 		}
 	}
 
-	/* If we don't have an input file already, we need one */
 	if (argc - optind <= 0) {
 		ERROR("Missing input filename\n");
 		errorcnt++;
