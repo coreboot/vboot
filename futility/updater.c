@@ -872,6 +872,24 @@ const char * const updater_error_messages[] = {
 };
 
 /*
+ * The main updater for "Legacy update".
+ * This is equivalent to --mode=legacy.
+ * Returns UPDATE_ERR_DONE if success, otherwise error.
+ */
+static enum updater_error_codes update_legacy_firmware(
+		struct updater_config *cfg,
+		struct firmware_image *image_to)
+{
+	STATUS("LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
+
+	const char *sections[2] = { FMAP_RW_LEGACY, NULL };
+	if (write_system_firmware(cfg, image_to, sections))
+		return UPDATE_ERR_WRITE_FIRMWARE;
+
+	return UPDATE_ERR_DONE;
+}
+
+/*
  * The main updater for "Try-RW update", to update only one RW section
  * and try if it can boot properly on reboot.
  * This was also known as --mode=autoupdate,--wp=1 in legacy updater.
@@ -947,9 +965,7 @@ static enum updater_error_codes update_try_rw_firmware(
 	/* Do not fail on updating legacy. */
 	if (legacy_needs_update(cfg)) {
 		has_update = 1;
-		STATUS("LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
-		const char *sections[2] = { FMAP_RW_LEGACY, NULL };
-		write_system_firmware(cfg, image_to, sections);
+		update_legacy_firmware(cfg, image_to);
 	}
 
 	return UPDATE_ERR_DONE;
@@ -1009,24 +1025,6 @@ static enum updater_error_codes update_rw_firmware(
 	assert(num < ARRAY_SIZE(sections));
 	sections[num] = NULL;
 
-	if (write_system_firmware(cfg, image_to, sections))
-		return UPDATE_ERR_WRITE_FIRMWARE;
-
-	return UPDATE_ERR_DONE;
-}
-
-/*
- * The main updater for "Legacy update".
- * This is equivalent to --mode=legacy.
- * Returns UPDATE_ERR_DONE if success, otherwise error.
- */
-static enum updater_error_codes update_legacy_firmware(
-		struct updater_config *cfg,
-		struct firmware_image *image_to)
-{
-	STATUS("LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
-
-	const char *sections[2] = { FMAP_RW_LEGACY, NULL };
 	if (write_system_firmware(cfg, image_to, sections))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
