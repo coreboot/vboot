@@ -583,14 +583,12 @@ static char *get_flashrom_command(enum flash_command flash_cmd,
 	return cmd;
 }
 
-static int read_flash(struct flashrom_params *params,
-		      struct updater_config *cfg)
+static int read_flash(struct flashrom_params *params)
 {
 	return flashrom_read_image(params->image, NULL, params->verbose);
 }
 
-static int write_flash(struct flashrom_params *params,
-		       struct updater_config *cfg)
+static int write_flash(struct flashrom_params *params)
 {
 	int r = flashrom_write_image(params->image,
 				 params->regions,
@@ -623,7 +621,7 @@ int load_system_firmware(struct updater_config *cfg,
 	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
-		r = read_flash(&params, cfg);
+		r = read_flash(&params);
 	}
 	if (!r)
 		r = parse_firmware_image(image);
@@ -664,7 +662,7 @@ int write_system_firmware(struct updater_config *cfg,
 	for (i = 1, r = -1; i <= tries && r != 0; i++, params.verbose++) {
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
-		r = write_flash(&params, cfg);
+		r = write_flash(&params);
 	}
 	return r;
 }
