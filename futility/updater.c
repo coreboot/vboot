@@ -338,17 +338,14 @@ static int has_valid_update(struct updater_config *cfg,
  */
 static int write_optional_firmware(struct updater_config *cfg,
 				   const struct firmware_image *image,
-				   const char *section_name,
-				   int check_programmer_wp,
-				   int is_host)
+				   const char *section_name)
 {
 	/*
 	 * EC & PD may have different WP settings and we want to write
 	 * only if it is OK.
 	 */
-	if (check_programmer_wp && is_write_protection_enabled(cfg)) {
-		ERROR("Target %s is write protected, skip updating.\n",
-		      image->programmer);
+	if (is_write_protection_enabled(cfg)) {
+		ERROR("Target ec is write protected, skip updating.\n");
 		return 0;
 	}
 
@@ -854,10 +851,10 @@ static int update_ec_firmware(struct updater_config *cfg)
 	int r = try_apply_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg);
 	switch (r) {
 	case EC_RECOVERY_FULL:
-		return write_optional_firmware(cfg, ec_image, NULL, 1, 0);
+		return write_optional_firmware(cfg, ec_image, NULL);
 
 	case EC_RECOVERY_RO:
-		return write_optional_firmware(cfg, ec_image, "WP_RO", 1, 0);
+		return write_optional_firmware(cfg, ec_image, "WP_RO");
 
 	case EC_RECOVERY_DONE:
 		/* Done by some quirks, for example EC RO software sync. */
