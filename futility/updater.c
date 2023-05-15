@@ -292,16 +292,6 @@ static int set_try_cookies(struct updater_config *cfg, const char *target,
 	return 0;
 }
 
-int write_firmware(struct updater_config *cfg,
-		   const struct firmware_image *image, const char *section_name)
-{
-	const char *sections[2] = {0};
-
-	sections[0] = section_name;
-	return write_system_firmware(cfg, image,
-				     section_name ? sections : NULL);
-}
-
 /*
  * Returns True if we should start the update process for given image.
  */
@@ -348,7 +338,9 @@ static int write_ec_firmware(struct updater_config *cfg,
 		return 0;
 	}
 
-	return write_firmware(cfg, image, section_name);
+	/* TODO(quasisec): Uses cros_ec to program the EC. */
+	const char *sections[2] = { section_name, NULL };
+	return write_system_firmware(cfg, image, sections);
 }
 
 /*
@@ -925,7 +917,8 @@ static enum updater_error_codes update_try_rw_firmware(
 		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.\n",
 		       target);
 
-		if (write_firmware(cfg, image_to, target))
+		const char *sections[2] = { target, NULL };
+		if (write_system_firmware(cfg, image_to, sections))
 			return UPDATE_ERR_WRITE_FIRMWARE;
 
 		/*
@@ -955,7 +948,8 @@ static enum updater_error_codes update_try_rw_firmware(
 	if (legacy_needs_update(cfg)) {
 		has_update = 1;
 		STATUS("LEGACY UPDATE: Updating %s.\n", FMAP_RW_LEGACY);
-		write_firmware(cfg, image_to, FMAP_RW_LEGACY);
+		const char *sections[2] = { FMAP_RW_LEGACY, NULL };
+		write_system_firmware(cfg, image_to, sections);
 	}
 
 	return UPDATE_ERR_DONE;
@@ -1032,7 +1026,8 @@ static enum updater_error_codes update_legacy_firmware(
 {
 	STATUS("LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
 
-	if (write_firmware(cfg, image_to, FMAP_RW_LEGACY))
+	const char *sections[2] = { FMAP_RW_LEGACY, NULL };
+	if (write_system_firmware(cfg, image_to, sections))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1090,7 +1085,7 @@ static enum updater_error_codes update_whole_firmware(
 		return UPDATE_ERR_TPM_ROLLBACK;
 
 	/* FMAP may be different so we should just update all. */
-	if (write_firmware(cfg, image_to, NULL) || update_ec_firmware(cfg))
+	if (write_system_firmware(cfg, image_to, NULL) || update_ec_firmware(cfg))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;

@@ -413,7 +413,10 @@ static int write_to_flash(struct updater_config *cfg, uint8_t *outbuf,
 	}
 	cfg->image.data = outbuf;
 	cfg->image.size = filesize;
-	int ret = write_firmware(cfg, &cfg->image, FMAP_RO_GBB);
+
+	const char *sections[2] = { FMAP_RO_GBB, NULL };
+	int ret = write_system_firmware(cfg, &cfg->image, sections);
+
 	cfg->image.data = NULL;
 	cfg->image.size = 0;
 	return ret;

@@ -258,15 +258,6 @@ int quirk_override_signature_id(struct updater_config *cfg,
 				struct model_config *model,
 				const char **signature_id);
 
-/*
- * Writes a single section from the given firmware image to the system.
- * Writes the whole firmware image if the section_name is NULL.
- * Returns 0 if success, non-zero if error.
- */
-int write_firmware(struct updater_config *cfg,
-		   const struct firmware_image *image,
-		   const char *section_name);
-
 /* Functions from updater_archive.c */
 
 /*
