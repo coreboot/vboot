@@ -342,8 +342,6 @@ static int write_optional_firmware(struct updater_config *cfg,
 				   int check_programmer_wp,
 				   int is_host)
 {
-	if (!has_valid_update(cfg, image, section_name, is_host))
-		return 0;
 	/*
 	 * EC & PD may have different WP settings and we want to write
 	 * only if it is OK.
