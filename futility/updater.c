@@ -321,29 +321,6 @@ static int has_valid_update(struct updater_config *cfg,
 }
 
 /*
- * Write a section from given firmware image to system EC firmware if possible.
- * If section_name is NULL, write whole image.  If the image has no data or if
- * the section does not exist, ignore and return success.
- * Returns 0 if success, non-zero if error.
- */
-static int write_ec_firmware(struct updater_config *cfg,
-				   const struct firmware_image *image,
-				   const char *section_name)
-{
-	/** EC may have different WP settings and we want to write
-	 * only if it is OK.
-	 */
-	if (is_write_protection_enabled(cfg)) {
-		ERROR("Target ec is write protected, skip updating.\n");
-		return 0;
-	}
-
-	/* TODO(quasisec): Uses cros_ec to program the EC. */
-	const char *sections[2] = { section_name, NULL };
-	return write_system_firmware(cfg, image, sections);
-}
-
-/*
  * Preserve the GBB contents from image_from to image_to.
  * HWID is always preserved, and flags are preserved only if preserve_flags set.
  * Returns 0 if success, otherwise -1 if GBB header can't be found or if HWID is
@@ -830,7 +807,8 @@ static int check_compatible_tpm_keys(struct updater_config *cfg,
 
 
 /*
- * Update EC (RO+RW) firmware.
+ * Update EC (RO+RW) firmware if possible.
+ * If the image has no data or if the section does not exist, ignore and return success.
  * Returns 0 if success, non-zero if error.
  */
 static int update_ec_firmware(struct updater_config *cfg)
@@ -839,19 +817,35 @@ static int update_ec_firmware(struct updater_config *cfg)
 	if (!has_valid_update(cfg, ec_image, NULL, 0))
 		return 0;
 
+	const char *sections[2] = {0};
 	int r = try_apply_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg);
 	switch (r) {
 	case EC_RECOVERY_FULL:
-		return write_ec_firmware(cfg, ec_image, NULL);
+		break; /* NULL sections implies write whole image. */
 
-	case EC_RECOVERY_RO:
-		return write_ec_firmware(cfg, ec_image, "WP_RO");
+	case EC_RECOVERY_RO: {
+		sections[0] = "WP_RO";
+		break;
+	}
 
 	case EC_RECOVERY_DONE:
 		/* Done by some quirks, for example EC RO software sync. */
 		return 0;
+
+	default:
+		return r;
 	}
-	return r;
+
+	/** EC may have different WP settings and we want to write
+	 * only if it is OK.
+	 */
+	if (is_write_protection_enabled(cfg)) {
+		ERROR("Target ec is write protected, skip updating.\n");
+		return 0;
+	}
+
+	/* TODO(quasisec): Uses cros_ec to program the EC. */
+	return write_system_firmware(cfg, ec_image, sections);
 }
 
 const char * const updater_error_messages[] = {
