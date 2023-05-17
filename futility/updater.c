@@ -381,7 +381,7 @@ static int preserve_management_engine(struct updater_config *cfg,
 				image_from, image_to, FMAP_SI_DESC);
 	}
 
-	if (!strcmp(cfg->original_programmer, PROG_HOST)) {
+	if (!strcmp(cfg->original_programmer, FLASHROM_PROGRAMMER_INTERNAL_AP)) {
 		if (try_apply_quirk(QUIRK_PRESERVE_ME, cfg) > 0) {
 			VB2_DEBUG("ME needs to be preserved - preserving %s.\n",
 				  FMAP_SI_ME);
@@ -1197,9 +1197,9 @@ struct updater_config *updater_new_config(void)
 			1, sizeof(struct updater_config));
 	if (!cfg)
 		return cfg;
-	cfg->image.programmer = PROG_HOST;
-	cfg->image_current.programmer = PROG_HOST;
-	cfg->original_programmer = PROG_HOST;
+	cfg->image.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
+	cfg->image_current.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
+	cfg->original_programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
 	cfg->ec_image.programmer = PROG_EC;
 
 	cfg->check_platform = 1;

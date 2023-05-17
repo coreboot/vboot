@@ -145,7 +145,7 @@ static void print_help(int argc, char *argv[])
 		"-d, --debug         \tPrint debugging messages\n"
 		"-v, --verbose       \tPrint verbose messages\n"
 		"",
-		argv[0], PROG_HOST);
+		argv[0], FLASHROM_PROGRAMMER_INTERNAL_AP);
 }
 
 static int do_update(int argc, char *argv[])
