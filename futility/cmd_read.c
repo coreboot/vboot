@@ -24,7 +24,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static const char *const short_opts = "hdv" SHARED_FLASH_ARGS_SHORTOPTS;
+static const char *const short_opts = "hdrv" SHARED_FLASH_ARGS_SHORTOPTS;
 
 static void print_help(int argc, char *argv[])
 {
@@ -33,10 +33,51 @@ static void print_help(int argc, char *argv[])
 	       "\n"
 	       "Reads AP firmware to the FILE\n"
 	       "-d, --debug         \tPrint debugging messages\n"
-	       "-r, --region        \tThe region to read (optional)\n"
+	       "-r, --region        \tThe comma delimited regions to read (optional)\n"
 	       "-v, --verbose       \tPrint verbose messages\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
+}
+
+static int read_flash_to_file(struct updater_config *cfg, const char *path,
+			const char *regions)
+{
+	/* full image read. */
+	if (!regions) {
+		if (write_to_file("Wrote AP firmware to", path,
+				  cfg->image_current.data,
+				  cfg->image_current.size)) {
+			return -1;
+		}
+		return 0;
+	}
+
+	char *savedptr;
+	char *region = strtok_r((char *)regions, ",", &savedptr);
+	while (region) {
+		struct firmware_section section;
+		if (find_firmware_section(&section, &cfg->image_current,
+					  region)) {
+			ERROR("Region '%s' not found in image.\n", region);
+			return -1;
+		}
+		const size_t fpath_sz = strlen(path) + strlen(region) + 1; /* +1 for underscore. */
+		char *fpath = calloc(1, fpath_sz + 1); /* +1 for null termination. */
+		if (!fpath)
+			return -1;
+		snprintf(fpath, fpath_sz + 1, "%s_%s", path, region);
+		if (write_to_file("Wrote AP firmware region to",
+				  fpath, section.data, section.size)) {
+			free(fpath);
+			return -1;
+		}
+		free(fpath);
+
+		/* next region to read.. */
+		region = strtok_r(NULL, ",", &savedptr);
+	}
+
+	return 0;
 }
 
 static int do_read(int argc, char *argv[])
@@ -45,7 +86,7 @@ static int do_read(int argc, char *argv[])
 	int i, errorcnt = 0, update_needed = 1;
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
-	char *region = NULL;
+	char *regions = NULL;
 
 	struct updater_config *cfg = updater_new_config();
 	assert(cfg);
@@ -64,7 +105,7 @@ static int do_read(int argc, char *argv[])
 			args.verbosity++;
 			break;
 		case 'r':
-			region = optarg;
+			regions = optarg;
 			break;
 		case 'v':
 			args.verbosity++;
@@ -120,22 +161,8 @@ static int do_read(int argc, char *argv[])
 	if (errorcnt)
 		goto err;
 
-	if (region) {
-		struct firmware_section section;
-		if (find_firmware_section(&section, &cfg->image_current,
-					  region)) {
-			ERROR("Region '%s' not found in image.\n", region);
-			goto err;
-		}
-		if (write_to_file("Wrote AP firmware region to",
-				  output_file_name, section.data, section.size))
-			errorcnt++;
-	} else {
-		if (write_to_file("Wrote AP firmware to", output_file_name,
-				  cfg->image_current.data,
-				  cfg->image_current.size))
-			errorcnt++;
-	}
+	if (read_flash_to_file(cfg, output_file_name, regions) < 0)
+		errorcnt++;
 
 err:
 	free(servo_programmer);

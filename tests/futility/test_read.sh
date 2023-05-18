@@ -16,6 +16,10 @@ PEPPY_BIOS="${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin"
 "${FUTILITY}" read --emulate="${PEPPY_BIOS}" "${TMP}"
 cmp "${PEPPY_BIOS}" "${TMP}"
 
+"${FUTILITY}" read --emulate="${PEPPY_BIOS}" --region="GBB,RO_VPD" "${TMP}"
+! cmp --silent "${PEPPY_BIOS}" "${TMP}_GBB"
+! cmp --silent "${PEPPY_BIOS}" "${TMP}_RO_VPD"
+
 # cleanup
 rm -f "${TMP}"*
 exit 0
