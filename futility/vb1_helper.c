@@ -150,7 +150,7 @@ static int KernelSize(uint8_t *kernel_buf,
 	struct linux_kernel_params *lh;
 
 	/* Except for x86, the kernel is the kernel. */
-	if (arch != ARCH_X86 || KernelHasEfiBootStub(kernel_buf, kernel_size))
+	if (arch != ARCH_X86)
 		return kernel_size;
 
 	/* The first part of the x86 vmlinuz is a header, followed by
@@ -168,12 +168,11 @@ static int KernelSize(uint8_t *kernel_buf,
 	return kernel_size - kernel32_start;
 }
 
-/* This extracts g_kernel_* and g_param_* from a standard vmlinuz file.
- * It returns nonzero on error. */
-static int PickApartVmlinuz(uint8_t *kernel_buf,
-			    uint32_t kernel_size,
-			    enum arch_t arch,
-			    uint64_t kernel_body_load_address)
+/* This extracts g_kernel_* and g_param_* from a standard vmlinuz file. */
+static void PickApartVmlinuz(uint8_t *kernel_buf,
+			     uint32_t kernel_size,
+			     enum arch_t arch,
+			     uint64_t kernel_body_load_address)
 {
 	uint32_t kernel32_start = 0;
 	uint32_t kernel32_size = kernel_size;
@@ -182,32 +181,18 @@ static int PickApartVmlinuz(uint8_t *kernel_buf,
 	/* Except for x86, the kernel is the kernel. */
 	switch (arch) {
 	case ARCH_X86:
-		/* If the kernel has the EFI boot stub enabled, don't
-		 * modify the kernel buffer. */
-		if (KernelHasEfiBootStub(kernel_buf, kernel_size)) {
-			VB2_DEBUG("EFI boot stub detected\n");
-			break;
-		}
-
 		/* The first part of the x86 vmlinuz is a header, followed by
-		 * a real-mode boot stub. We only want the 32-bit part. */
-		lh = (struct linux_kernel_params *)kernel_buf;
-		if (lh->header != VMLINUZ_HEADER_SIG) {
-			VB2_DEBUG("Not a linux kernel image\n");
-			break;
-		}
-		kernel32_start = (lh->setup_sects + 1) << 9;
-		if (kernel32_start >= kernel_size) {
-			fprintf(stderr, "Malformed kernel\n");
-			return -1;
-		}
-		kernel32_size = kernel_size - kernel32_start;
+		 * a real-mode boot stub. We only want the 32-bit part. We
+		 * already calculated this in KernelSize() earlier. */
+		kernel32_size = g_kernel_size;
+		kernel32_start = kernel_size - kernel32_size;
 
 		VB2_DEBUG(" kernel16_start=%#x\n", 0);
 		VB2_DEBUG(" kernel16_size=%#x\n", kernel32_start);
 
 		/* Copy the original zeropage data from kernel_buf into
 		 * g_param_data, then tweak a few fields for our purposes */
+		lh = (struct linux_kernel_params *)kernel_buf;
 		params = (struct linux_kernel_params *)(g_param_data);
 		memcpy(&(params->setup_sects), &(lh->setup_sects),
 		       offsetof(struct linux_kernel_params, e820_entries)
@@ -248,9 +233,6 @@ static int PickApartVmlinuz(uint8_t *kernel_buf,
 		memcpy(g_kernel_data, kernel_buf + kernel32_start,
 		       g_kernel_size);
 	}
-
-	/* done */
-	return 0;
 }
 
 /* Split a kernel blob into separate g_kernel, g_param, g_config,
@@ -681,6 +663,19 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 	tmp = KernelSize(vmlinuz_buf, vmlinuz_size, arch);
 	if (tmp < 0)
 		return NULL;
+
+	/* If we have an EFI stub, move it into the bootloader section. */
+	if (KernelHasEfiBootStub(vmlinuz_buf, vmlinuz_size)) {
+		if (bootloader_size) {
+			WARN("Ignoring kernel's EFI boot stub because a bootloader file was provided.\n");
+		} else {
+			bootloader_data = vmlinuz_buf;
+			bootloader_size = vmlinuz_size - tmp;
+			if (bootloader_size & (CROS_ALIGN - 1))
+				FATAL("EFI stub size should be 4K aligned.\n");
+		}
+	}
+
 	g_kernel_size = tmp;
 	g_config_size = CROS_CONFIG_SIZE;
 	g_param_size = CROS_PARAMS_SIZE;
@@ -740,14 +735,8 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 	VB2_DEBUG("end of kern_blob at kern_blob+%#x\n", now);
 
 	/* Copy the kernel and params bits into the correct places */
-	if (0 != PickApartVmlinuz(vmlinuz_buf, vmlinuz_size,
-				  arch, kernel_body_load_address)) {
-		fprintf(stderr, "Error picking apart kernel file.\n");
-		free(g_kernel_blob_data);
-		g_kernel_blob_data = NULL;
-		g_kernel_blob_size = 0;
-		return NULL;
-	}
+	PickApartVmlinuz(vmlinuz_buf, vmlinuz_size, arch,
+			 kernel_body_load_address);
 
 	/* Copy the other bits too */
 	memcpy(g_config_data, config_data, config_size);

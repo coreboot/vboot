@@ -94,12 +94,12 @@ static const char usage[] =
 	"                                in .vbprivk format\n"
 	"    --version <number>        Kernel version\n"
 	"    --vmlinuz <file>          Linux kernel bzImage file\n"
-	"    --bootloader <file>       Bootloader stub\n"
 	"    --config <file>           Command line file\n"
 	"    --arch <arch>             Cpu architecture (default x86)\n"
 	"\n"
 	"  Optional:\n"
 	"    --kloadaddr <address>     Assign kernel body load address\n"
+	"    --bootloader <file>       Bootloader stub\n"
 	"    --pad <number>            Verification padding size in bytes\n"
 	"    --vblockonly              Emit just the verification blob\n"
 	"    --flags NUM               Flags to be passed in the header\n"
@@ -405,16 +405,18 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!t_config_data)
 			FATAL("Error reading config file.\n");
 
-		if (!bootloader_file)
-			FATAL("Missing required bootloader file.\n");
-
-		VB2_DEBUG("Reading %s\n", bootloader_file);
-
-		if (VB2_SUCCESS != vb2_read_file(bootloader_file,
-						 &t_bootloader_data,
-						 &t_bootloader_size))
-			FATAL("Error reading bootloader file.\n");
-		VB2_DEBUG(" bootloader file size=%#x\n", t_bootloader_size);
+		if (bootloader_file) {
+			VB2_DEBUG("Reading %s\n", bootloader_file);
+			if (VB2_SUCCESS != vb2_read_file(bootloader_file,
+							 &t_bootloader_data,
+							 &t_bootloader_size))
+				FATAL("Error reading bootloader file.\n");
+			VB2_DEBUG(" bootloader file size=%#x\n", t_bootloader_size);
+		} else {
+			t_bootloader_data = NULL;
+			t_bootloader_size = 0;
+			VB2_DEBUG("No external bootloader file passed in.\n");
+		}
 
 		if (!vmlinuz_file)
 			FATAL("Missing required vmlinuz file.\n");
