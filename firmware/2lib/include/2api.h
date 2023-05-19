@@ -863,6 +863,14 @@ int vb2api_phone_recovery_ui_enabled(struct vb2_context *ctx);
  */
 int vb2api_diagnostic_ui_enabled(struct vb2_context *ctx);
 
+/**
+ * Whether we are currently in diagnostics mode.
+ *
+ * @param ctx		Vboot context
+ * @return 1 if in diagnostics mode, 0 otherwise.
+ */
+int vb2api_in_diagnostics_mode(struct vb2_context *ctx);
+
 /* Default boot target in developer mode. */
 enum vb2_dev_default_boot_target {
 	/* Default to boot from internal disk. */

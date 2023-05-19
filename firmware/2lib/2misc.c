@@ -523,6 +523,12 @@ int vb2api_diagnostic_ui_enabled(struct vb2_context *ctx)
 		 VB2_SECDATA_KERNEL_FLAG_DIAGNOSTIC_UI_DISABLED);
 }
 
+int vb2api_in_diagnostics_mode(struct vb2_context *ctx)
+{
+	return vb2api_diagnostic_ui_enabled(ctx) &&
+		vb2_nv_get(ctx, VB2_NV_DIAG_REQUEST);
+}
+
 enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	struct vb2_context *ctx)
 {
