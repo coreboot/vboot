@@ -296,8 +296,9 @@ resign_ssd_kernel() {
       debug_msg "New kernel config: ${kernel_config}"
     fi
 
-    local new_kernel_config_file="$(make_temp_file)"
-    echo -n "$kernel_config"  >"$new_kernel_config_file"
+    local new_kernel_config_file
+    new_kernel_config_file="$(make_temp_file)"
+    printf %s "${kernel_config}" >"${new_kernel_config_file}"
 
     debug_msg "Re-signing $name from $old_blob to $new_blob"
     debug_msg "Using key: $KERNEL_DATAKEY"
