@@ -45,6 +45,10 @@ DEFINE_boolean enable_console "${FLAGS_FALSE}" \
   "Enable serial console." ""
 DEFINE_boolean disable_console "${FLAGS_FALSE}" \
   "Disable serial console." ""
+DEFINE_boolean enable_kdump "${FLAGS_FALSE}" \
+  "Enable kdump." ""
+DEFINE_boolean disable_kdump "${FLAGS_FALSE}" \
+  "Disable kdump." ""
 DEFINE_string backup_dir \
   "$DEFAULT_BACKUP_FOLDER" "Path of directory to store kernel backups" ""
 DEFINE_string save_config "" \
@@ -293,6 +297,22 @@ resign_ssd_kernel() {
     elif [ "${FLAGS_disable_console}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Disabling serial console"
       kernel_config="$(insert_parameter "${kernel_config}" "console=")"
+      debug_msg "New kernel config: ${kernel_config}"
+    fi
+
+    if [ "${FLAGS_enable_kdump}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Enabling kdump"
+      kernel_config="$(remove_parameter "${kernel_config}" \
+                       "kexec_load_limit_reboot=0")"
+      kernel_config="$(remove_parameter "${kernel_config}" \
+                       "kexec_load_limit_panic=0")"
+      debug_msg "New kernel config: ${kernel_config}"
+    elif [ "${FLAGS_disable_kdump}" = "${FLAGS_TRUE}" ]; then
+      debug_msg "Disabling kdump"
+      kernel_config="$(insert_parameter "${kernel_config}" \
+                       "kexec_load_limit_reboot=0")"
+      kernel_config="$(insert_parameter "${kernel_config}" \
+                       "kexec_load_limit_panic=0")"
       debug_msg "New kernel config: ${kernel_config}"
     fi
 
