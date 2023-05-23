@@ -287,7 +287,7 @@ static int do_update(int argc, char *argv[])
 	 * update (i.e., in updater_setup_config) so we want to turn on
 	 * cpu_fw_spi mode now.
 	 */
-	prepare_servo_control(prepare_ctrl_name, 1);
+	prepare_servo_control(prepare_ctrl_name, true);
 
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &update_needed);
@@ -306,7 +306,7 @@ static int do_update(int argc, char *argv[])
 			errorcnt ? "aborted" : "exits successfully");
 	}
 
-	prepare_servo_control(prepare_ctrl_name, 0);
+	prepare_servo_control(prepare_ctrl_name, false);
 	free(servo_programmer);
 
 	updater_delete_config(cfg);

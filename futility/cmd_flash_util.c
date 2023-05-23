@@ -279,7 +279,7 @@ static int do_flash(int argc, char *argv[])
 
 	int update_needed;
 	ret = updater_setup_config(cfg, &args, &update_needed);
-	prepare_servo_control(prepare_ctrl_name, 1);
+	prepare_servo_control(prepare_ctrl_name, true);
 
 	if (!ret && get_info)
 		ret = print_flash_info(cfg);
@@ -297,7 +297,7 @@ static int do_flash(int argc, char *argv[])
 		ret = print_wp_status(cfg, ignore_hw_wp);
 
 out_free:
-	prepare_servo_control(prepare_ctrl_name, 0);
+	prepare_servo_control(prepare_ctrl_name, false);
 	free(servo_programmer);
 	updater_delete_config(cfg);
 

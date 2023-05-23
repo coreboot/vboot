@@ -220,7 +220,7 @@ char *host_detect_servo(const char **prepare_ctrl_name);
  * Sets control_name to "on" if on is non zero, else "off".
  * Does not check for failure.
  */
-void prepare_servo_control(const char *control_name, int on);
+void prepare_servo_control(const char *control_name, bool on);
 
 /*
  * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS

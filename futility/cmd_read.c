@@ -148,7 +148,7 @@ static int do_read(int argc, char *argv[])
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &update_needed);
 	if (!errorcnt && update_needed) {
-		prepare_servo_control(prepare_ctrl_name, 1);
+		prepare_servo_control(prepare_ctrl_name, true);
 		int r = load_system_firmware(cfg, &cfg->image_current);
 		/*
 		 * Ignore a parse error as we still want to write the file
@@ -156,7 +156,7 @@ static int do_read(int argc, char *argv[])
 		 */
 		if (r && r != IMAGE_PARSE_FAILURE)
 			errorcnt++;
-		prepare_servo_control(prepare_ctrl_name, 0);
+		prepare_servo_control(prepare_ctrl_name, false);
 	}
 	if (errorcnt)
 		goto err;

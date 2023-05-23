@@ -357,7 +357,7 @@ static int setup_flash(struct updater_config **cfg,
 		ERROR("Bad servo options\n");
 		goto errdelete;
 	}
-	prepare_servo_control(*prepare_ctrl_name, 1);
+	prepare_servo_control(*prepare_ctrl_name, true);
 	return 0;
 errdelete:
 	updater_delete_config(*cfg);
@@ -374,7 +374,7 @@ static void teardown_flash(struct updater_config *cfg,
 			   char *servo_programmer)
 {
 #ifdef USE_FLASHROM
-	prepare_servo_control(prepare_ctrl_name, 0);
+	prepare_servo_control(prepare_ctrl_name, false);
 	free(servo_programmer);
 	updater_delete_config(cfg);
 #endif /* USE_FLASHROM */

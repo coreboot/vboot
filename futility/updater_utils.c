@@ -402,7 +402,7 @@ char *host_shell(const char *command)
 	return strdup(buf);
 }
 
-void prepare_servo_control(const char *control_name, int on)
+void prepare_servo_control(const char *control_name, bool on)
 {
 	char *cmd;
 	if (!control_name)
