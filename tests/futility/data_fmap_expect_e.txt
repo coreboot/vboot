@@ -1,0 +1,10 @@
+WP_RO not-preserve
+EC_RO not-preserve
+RO_FW not-preserve
+FMAP not-preserve
+RO_FRID not-preserve
+CBI preserve
+EC_RW not-preserve
+RW_FW not-preserve
+ZEPHYR_RW not-preserve
+RW_FWID not-preserve

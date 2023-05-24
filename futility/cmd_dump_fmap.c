@@ -19,7 +19,18 @@
 #include "fmap.h"
 #include "futility.h"
 
-typedef enum { FMT_NORMAL, FMT_PRETTY, FMT_FLASHROM, FMT_HUMAN } format_t;
+#define PRESERVE "preserve"
+#define NOT_PRESERVE "not-preserve"
+#define IS_PRESERVE(flags)                                                     \
+	((flags & FMAP_AREA_PRESERVE) ? PRESERVE : NOT_PRESERVE)
+
+typedef enum {
+	FMT_NORMAL,
+	FMT_PRETTY,
+	FMT_FLASHROM,
+	FMT_HUMAN,
+	FMT_FLASH_EC
+} format_t;
 
 /* Return 0 if successful */
 static int normal_fmap(const FmapHeader *fmh,
@@ -95,6 +106,11 @@ static int normal_fmap(const FmapHeader *fmh,
 				printf("0x%08x:0x%08x %s\n", ah->area_offset,
 				       ah->area_offset + ah->area_size - 1,
 				       buf);
+			break;
+		case FMT_FLASH_EC:
+			if (ah->area_size)
+				printf("%s %s\n", buf,
+				       IS_PRESERVE(ah->area_flags));
 			break;
 		default:
 			printf("area:            %d\n", i + 1);
@@ -389,6 +405,7 @@ static const char usage[] =
 	"  -H             With -h, display any gaps\n"
 	"  -p             Use a format easy to parse by scripts\n"
 	"  -F             Use the format expected by flashrom\n"
+	"  -e             Use the format expected by flash_ec\n"
 	"\n"
 	"Specify one or more NAMEs to dump only those sections.\n"
 	"\n";
@@ -416,13 +433,16 @@ static int do_dump_fmap(int argc, char *argv[])
 	format_t opt_format = FMT_NORMAL;
 
 	opterr = 0;		/* quiet, you */
-	while ((c = getopt_long(argc, argv, ":xpFhH", long_opts, 0)) != -1) {
+	while ((c = getopt_long(argc, argv, ":xpFhHe", long_opts, 0)) != -1) {
 		switch (c) {
 		case 'x':
 			opt_extract = true;
 			break;
 		case 'p':
 			opt_format = FMT_PRETTY;
+			break;
+		case 'e':
+			opt_format = FMT_FLASH_EC;
 			break;
 		case 'F':
 			opt_format = FMT_FLASHROM;
