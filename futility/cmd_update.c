@@ -151,7 +151,7 @@ static void print_help(int argc, char *argv[])
 static int do_update(int argc, char *argv[])
 {
 	struct updater_config_arguments args = {0};
-	int i, errorcnt = 0, update_needed = 1;
+	int i, errorcnt = 0;
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
 	char *endptr;
@@ -289,6 +289,7 @@ static int do_update(int argc, char *argv[])
 	 */
 	prepare_servo_control(prepare_ctrl_name, true);
 
+	bool update_needed;
 	if (!errorcnt)
 		errorcnt += updater_setup_config(cfg, &args, &update_needed);
 	if (!errorcnt && update_needed) {

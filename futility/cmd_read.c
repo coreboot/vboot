@@ -83,7 +83,7 @@ static int read_flash_to_file(struct updater_config *cfg, const char *path,
 static int do_read(int argc, char *argv[])
 {
 	struct updater_config_arguments args = {0};
-	int i, errorcnt = 0, update_needed = 1;
+	int i, errorcnt = 0;
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
 	char *regions = NULL;
@@ -145,9 +145,10 @@ static int do_read(int argc, char *argv[])
 			args.programmer = servo_programmer;
 	}
 
+	bool ignored;
 	if (!errorcnt)
-		errorcnt += updater_setup_config(cfg, &args, &update_needed);
-	if (!errorcnt && update_needed) {
+		errorcnt += updater_setup_config(cfg, &args, &ignored);
+	if (!errorcnt) {
 		prepare_servo_control(prepare_ctrl_name, true);
 		int r = load_system_firmware(cfg, &cfg->image_current);
 		/*
