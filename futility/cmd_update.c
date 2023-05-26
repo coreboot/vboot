@@ -71,11 +71,9 @@ static struct option const long_opts[] = {
 
 	/* TODO(hungte) Remove following deprecated options. */
 	{"noupdate_ec", 0, NULL, OPT_HOST_ONLY},
-	{"noupdate_pd", 0, NULL, OPT_HOST_ONLY},
 	{"nocheck_keys", 0, NULL, OPT_FORCE},
 	{"update_main", 0, NULL, OPT_DUMMY},
 	{"update_ec", 0, NULL, OPT_DUMMY},
-	{"update_pd", 0, NULL, OPT_DUMMY},
 	{"check_keys", 0, NULL, OPT_DUMMY},
 
 	{NULL, 0, NULL, 0},
