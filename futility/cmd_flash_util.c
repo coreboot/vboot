@@ -9,6 +9,7 @@
 #include <getopt.h>
 #include <inttypes.h>
 
+#include "flash_helpers.h"
 #include "fmap.h"
 #include "futility.h"
 #include "updater.h"
@@ -184,19 +185,15 @@ static void print_help(int argc, char *argv[])
 
 static int do_flash(int argc, char *argv[])
 {
-	int ret = 0;
+	struct updater_config *cfg = NULL;
 	struct updater_config_arguments args = {0};
-	const char *prepare_ctrl_name = NULL;
-	char *servo_programmer = NULL;
 	bool enable_wp = false;
 	bool disable_wp = false;
 	bool get_wp_status = false;
 	bool ignore_hw_wp = false;
 	bool get_size = false;
 	bool get_info = false;
-
-	struct updater_config *cfg = updater_new_config();
-	assert(cfg);
+	int ret = 0;
 
 	opterr = 0;
 	int i;
@@ -206,7 +203,7 @@ static int do_flash(int argc, char *argv[])
 		switch (i) {
 		case 'h':
 			print_help(argc, argv);
-			goto out_free;
+			return 0;
 		case 's':
 			get_wp_status = true;
 			break;
@@ -229,7 +226,6 @@ static int do_flash(int argc, char *argv[])
 			args.verbosity++;
 			break;
 		case '?':
-			ret = -1;
 			if (optopt)
 				ERROR("Unrecognized option: -%c\n", optopt);
 			else if (argv[optind - 1])
@@ -237,51 +233,38 @@ static int do_flash(int argc, char *argv[])
 				      argv[optind - 1]);
 			else
 				ERROR("Unrecognized option.\n");
-			break;
+			return 1;
 		default:
-			ret = -1;
 			ERROR("Failed parsing options.\n");
+			return 1;
 		}
 	}
 	if (optind < argc) {
-		ret = -1;
 		ERROR("Unexpected arguments.\n");
+		return 1;
 	}
 
 	if (!get_size && !get_info && !enable_wp && !disable_wp && !get_wp_status) {
 		print_help(argc, argv);
-		goto out_free;
+		return 0;
 	}
 
 	if (!get_wp_status && ignore_hw_wp) {
-		ret = -1;
 		ERROR("--ignore-hw must be used with --wp-status.\n");
-		goto out_free;
+		return 1;
 	}
 
 	if (enable_wp && disable_wp) {
-		ret = -1;
 		ERROR("--wp-enable and --wp-disable cannot be used together.\n");
-		goto out_free;
+		return 1;
 	}
 
-	if (args.detect_servo) {
-		servo_programmer = host_detect_servo(&prepare_ctrl_name);
-
-		if (!servo_programmer) {
-			ret = -1;
-			ERROR("No servo detected.\n");
-			goto out_free;
-		}
-		if (!args.programmer)
-			args.programmer = servo_programmer;
+	if (setup_flash(&cfg, &args, NULL)) {
+		ERROR("While preparing flash\n");
+		return 1;
 	}
 
-	bool ignored;
-	ret = updater_setup_config(cfg, &args, &ignored);
-	prepare_servo_control(prepare_ctrl_name, true);
-
-	if (!ret && get_info)
+	if (get_info)
 		ret = print_flash_info(cfg);
 
 	if (!ret && get_size)
@@ -296,11 +279,7 @@ static int do_flash(int argc, char *argv[])
 	if (!ret && get_wp_status)
 		ret = print_wp_status(cfg, ignore_hw_wp);
 
-out_free:
-	prepare_servo_control(prepare_ctrl_name, false);
-	free(servo_programmer);
-	updater_delete_config(cfg);
-
+	teardown_flash(cfg);
 	return ret;
 }
 #define CMD_HELP_STR "Manage AP SPI flash properties and writeprotect configuration"

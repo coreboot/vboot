@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
+#include "flash_helpers.h"
 #include "futility.h"
 #include "updater.h"
 
@@ -82,14 +83,10 @@ static int read_flash_to_file(struct updater_config *cfg, const char *path,
 
 static int do_read(int argc, char *argv[])
 {
+	struct updater_config *cfg = NULL;
 	struct updater_config_arguments args = {0};
 	int i, errorcnt = 0;
-	const char *prepare_ctrl_name = NULL;
-	char *servo_programmer = NULL;
 	char *regions = NULL;
-
-	struct updater_config *cfg = updater_new_config();
-	assert(cfg);
 
 	opterr = 0;
 	while ((i = getopt_long(argc, argv, short_opts, long_opts, 0)) != -1) {
@@ -98,8 +95,7 @@ static int do_read(int argc, char *argv[])
 		switch (i) {
 		case 'h':
 			print_help(argc, argv);
-			updater_delete_config(cfg);
-			return !!errorcnt;
+			return 0;
 		case 'd':
 			debugging_enabled = 1;
 			args.verbosity++;
@@ -132,42 +128,30 @@ static int do_read(int argc, char *argv[])
 	}
 	const char *output_file_name = argv[optind++];
 	if (optind < argc) {
-		errorcnt++;
 		ERROR("Unexpected arguments.\n");
+		return 1;
 	}
 
-	if (!errorcnt && args.detect_servo) {
-		servo_programmer = host_detect_servo(&prepare_ctrl_name);
-
-		if (!servo_programmer)
-			errorcnt++;
-		else if (!args.programmer)
-			args.programmer = servo_programmer;
+	if (setup_flash(&cfg, &args, NULL)) {
+		ERROR("While preparing flash\n");
+		return 1;
 	}
 
-	bool ignored;
-	if (!errorcnt)
-		errorcnt += updater_setup_config(cfg, &args, &ignored);
-	if (!errorcnt) {
-		prepare_servo_control(prepare_ctrl_name, true);
-		int r = load_system_firmware(cfg, &cfg->image_current);
-		/*
-		 * Ignore a parse error as we still want to write the file
-		 * out in that case
-		 */
-		if (r && r != IMAGE_PARSE_FAILURE)
-			errorcnt++;
-		prepare_servo_control(prepare_ctrl_name, false);
-	}
-	if (errorcnt)
+	int r = load_system_firmware(cfg, &cfg->image_current);
+	/*
+	 * Ignore a parse error as we still want to write the file
+	 * out in that case
+	 */
+	if (r && r != IMAGE_PARSE_FAILURE) {
+		errorcnt++;
 		goto err;
+	}
 
 	if (read_flash_to_file(cfg, output_file_name, regions) < 0)
 		errorcnt++;
 
 err:
-	free(servo_programmer);
-	updater_delete_config(cfg);
+	teardown_flash(cfg);
 	return !!errorcnt;
 }
 #define CMD_HELP_STR "Read AP firmware"
