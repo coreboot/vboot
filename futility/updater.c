@@ -1394,6 +1394,32 @@ static int updater_setup_archive(
 	return errorcnt;
 }
 
+static int check_arg_compatibility(
+			 const struct updater_config_arguments *arg)
+{
+	if (!arg->archive) {
+		if (arg->repack || arg->unpack) {
+			ERROR("--{re,un}pack needs --archive.\n");
+			return -1;
+		}
+		if (arg->detect_model_only) {
+			ERROR("--detect-model-only needs --archive.\n");
+			return -1;
+		}
+		if (arg->do_manifest && !(arg->image || arg->ec_image)) {
+			ERROR("--manifest needs -a, -i or -e\n");
+			return -1;
+		}
+	} else {
+		if (arg->do_manifest && (arg->image || arg->ec_image)) {
+				ERROR("--manifest for archive (-a) does not accept \n"
+				      "additional images (--image, --ec_image).");
+				return -1;
+		}
+	}
+	return 0;
+}
+
 /*
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
@@ -1417,32 +1443,14 @@ int updater_setup_config(struct updater_config *cfg,
 		cfg->force_update = 1;
 
 	/* Check incompatible options and return early. */
-	if (arg->do_manifest) {
-		if (!arg->archive && !arg->image && !arg->ec_image) {
-			ERROR("--manifest needs -a, -i or -e\n");
-			return ++errorcnt;
-		}
-		if (arg->archive
-		    && (arg->image || arg->ec_image)) {
-			ERROR("--manifest for archive (-a) does not accept \n"
-			      "additional images (--image, --ec_image).");
-			return ++errorcnt;
-		}
-		*do_update = false;
-	}
-	if (arg->repack || arg->unpack) {
-		if (!arg->archive) {
-			ERROR("--{re,un}pack needs --archive.\n");
-			return ++errorcnt;
-		}
-		*do_update = false;
-	}
+	if (check_arg_compatibility(arg) < 0)
+		return 1;
+
 	if (arg->detect_model_only) {
-		if (!arg->archive) {
-			ERROR("--detect-model-only needs --archive.\n");
-			return ++errorcnt;
-		}
 		cfg->detect_model = true;
+	}
+	if (arg->detect_model_only || arg->do_manifest
+		|| arg->repack || arg->unpack) {
 		*do_update = false;
 	}
 
