@@ -1420,6 +1420,36 @@ static int check_arg_compatibility(
 	return 0;
 }
 
+static int parse_arg_mode(struct updater_config *cfg,
+			  const struct updater_config_arguments *arg,
+			  bool *do_output)
+{
+	if (!arg->mode)
+		return 0;
+
+	if (strcmp(arg->mode, "autoupdate") == 0) {
+		cfg->try_update = TRY_UPDATE_AUTO;
+	} else if (strcmp(arg->mode, "deferupdate_hold") == 0) {
+		cfg->try_update = TRY_UPDATE_DEFERRED_HOLD;
+	} else if (strcmp(arg->mode, "deferupdate_apply") == 0) {
+		cfg->try_update = TRY_UPDATE_DEFERRED_APPLY;
+	} else if (strcmp(arg->mode, "recovery") == 0) {
+		cfg->try_update = TRY_UPDATE_OFF;
+	} else if (strcmp(arg->mode, "legacy") == 0) {
+		cfg->legacy_update = 1;
+	} else if (strcmp(arg->mode, "factory") == 0 ||
+		   strcmp(arg->mode, "factory_install") == 0) {
+		cfg->factory_update = 1;
+	} else if (strcmp(arg->mode, "output") == 0) {
+		*do_output = 1;
+	} else {
+		ERROR("Invalid mode: %s\n", arg->mode);
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
@@ -1430,7 +1460,7 @@ int updater_setup_config(struct updater_config *cfg,
 {
 	int errorcnt = 0;
 	int check_single_image = 0, check_wp_disabled = 0;
-	int do_output = 0;
+	bool do_output = false;
 	const char *archive_path = arg->archive;
 	*do_update = true;
 
@@ -1457,27 +1487,10 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Setup update mode. */
 	if (arg->try_update)
 		cfg->try_update = TRY_UPDATE_AUTO;
-	if (arg->mode) {
-		if (strcmp(arg->mode, "autoupdate") == 0) {
-			cfg->try_update = TRY_UPDATE_AUTO;
-		} else if (strcmp(arg->mode, "deferupdate_hold") == 0) {
-			cfg->try_update = TRY_UPDATE_DEFERRED_HOLD;
-		} else if (strcmp(arg->mode, "deferupdate_apply") == 0) {
-			cfg->try_update = TRY_UPDATE_DEFERRED_APPLY;
-		} else if (strcmp(arg->mode, "recovery") == 0) {
-			cfg->try_update = TRY_UPDATE_OFF;
-		} else if (strcmp(arg->mode, "legacy") == 0) {
-			cfg->legacy_update = 1;
-		} else if (strcmp(arg->mode, "factory") == 0 ||
-			   strcmp(arg->mode, "factory_install") == 0) {
-			cfg->factory_update = 1;
-		} else if (strcmp(arg->mode, "output") == 0) {
-			do_output = 1;
-		} else {
-			errorcnt++;
-			ERROR("Invalid mode: %s\n", arg->mode);
-		}
-	}
+
+	if (parse_arg_mode(cfg, arg, &do_output) < 0)
+		return 1;
+
 	if (cfg->factory_update) {
 		/* factory_update must be processed after arg->mode. */
 		check_wp_disabled = 1;
