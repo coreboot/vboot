@@ -1450,6 +1450,57 @@ static int parse_arg_mode(struct updater_config *cfg,
 	return 0;
 }
 
+static void prog_arg_setup(struct updater_config *cfg,
+			   const struct updater_config_arguments *arg,
+			   bool *check_single_image)
+{
+	if (!arg->programmer || !strcmp(arg->programmer, cfg->image.programmer))
+		return;
+
+	*check_single_image = true;
+	/* DUT should be remote if the programmer is changed. */
+	cfg->dut_is_remote = 1;
+	INFO("Configured to update a remote DUT%s.\n",
+	     arg->detect_servo ? " via Servo" : "");
+	cfg->image.programmer = arg->programmer;
+	cfg->image_current.programmer = arg->programmer;
+	cfg->original_programmer = arg->programmer;
+	VB2_DEBUG("AP (host) programmer changed to %s.\n",
+		  arg->programmer);
+
+	if (arg->archive && !arg->model)
+		cfg->detect_model = true;
+}
+
+static int prog_arg_emulation(struct updater_config *cfg,
+			      const struct updater_config_arguments *arg,
+			      bool *check_single_image)
+{
+	if (!arg->emulation)
+		return 0;
+
+	VB2_DEBUG("Using file %s for emulation.\n", arg->emulation);
+	*check_single_image = true;
+	struct stat statbuf;
+	if (stat(arg->emulation, &statbuf)) {
+		ERROR("Failed to stat emulation file %s\n",
+		      arg->emulation);
+		return -1;
+	}
+
+	cfg->emulation = arg->emulation;
+	/* Store ownership of the dummy programmer string in
+	   cfg->emulation_programmer. */
+	ASPRINTF(&cfg->emulation_programmer,
+		 "dummy:emulate=VARIABLE_SIZE,size=%d,image=%s,bus=prog",
+		 (int)statbuf.st_size, arg->emulation);
+
+	cfg->image.programmer = cfg->emulation_programmer;
+	cfg->image_current.programmer = cfg->emulation_programmer;
+
+	return 0;
+}
+
 /*
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
@@ -1459,7 +1510,8 @@ int updater_setup_config(struct updater_config *cfg,
 			 bool *do_update)
 {
 	int errorcnt = 0;
-	int check_single_image = 0, check_wp_disabled = 0;
+	int check_wp_disabled = 0;
+	bool check_single_image = false;
 	bool do_output = false;
 	const char *archive_path = arg->archive;
 	*do_update = true;
@@ -1500,41 +1552,9 @@ int updater_setup_config(struct updater_config *cfg,
 	cfg->override_gbb_flags = arg->override_gbb_flags;
 
 	/* Setup properties and fields that do not have external dependency. */
-	if (arg->programmer && strcmp(arg->programmer, cfg->image.programmer)) {
-		check_single_image = 1;
-		/* DUT should be remote if the programmer is changed. */
-		cfg->dut_is_remote = 1;
-		INFO("Configured to update a remote DUT%s.\n",
-		     arg->detect_servo ? " via Servo" : "");
-		cfg->image.programmer = arg->programmer;
-		cfg->image_current.programmer = arg->programmer;
-		cfg->original_programmer = arg->programmer;
-		VB2_DEBUG("AP (host) programmer changed to %s.\n",
-			  arg->programmer);
-
-		if (arg->archive && !arg->model)
-			cfg->detect_model = true;
-	}
-	if (arg->emulation) {
-		VB2_DEBUG("Using file %s for emulation.\n", arg->emulation);
-		check_single_image = 1;
-		struct stat statbuf;
-		if (stat(arg->emulation, &statbuf)) {
-			ERROR("Failed to stat emulation file %s\n",
-			      arg->emulation);
-			return ++errorcnt;
-		}
-
-		cfg->emulation = arg->emulation;
-		/* Store ownership of the dummy programmer string in
-		   cfg->emulation_programmer. */
-		ASPRINTF(&cfg->emulation_programmer,
-			 "dummy:emulate=VARIABLE_SIZE,size=%d,image=%s,bus=prog",
-			 (int)statbuf.st_size, arg->emulation);
-
-		cfg->image.programmer = cfg->emulation_programmer;
-		cfg->image_current.programmer = cfg->emulation_programmer;
-	}
+	prog_arg_setup(cfg, arg, &check_single_image);
+	if (prog_arg_emulation(cfg, arg, &check_single_image) < 0)
+		return 1;
 
 	if (arg->sys_props)
 		override_properties_from_list(arg->sys_props, cfg);
