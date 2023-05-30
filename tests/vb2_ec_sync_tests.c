@@ -17,7 +17,6 @@
 /* Mock data */
 static int ec_ro_updated;
 static int ec_rw_updated;
-static int ec_ro_protected;
 static int ec_rw_protected;
 static int ec_run_image;  /* 0 = RO, 1 = RW */
 
@@ -62,7 +61,6 @@ static void ResetMocks(void)
 
 	ec_ro_updated = 0;
 	ec_rw_updated = 0;
-	ec_ro_protected = 0;
 	ec_rw_protected = 0;
 	ec_run_image = 0;
 
@@ -116,15 +114,12 @@ vb2_error_t vb2ex_ec_running_rw(int *in_rw)
 	return in_rw_retval;
 }
 
-vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
+vb2_error_t vb2ex_ec_protect(void)
 {
 	if (protect_retval)
 		return protect_retval;
 
-	if (select == VB_SELECT_FIRMWARE_READONLY)
-		ec_ro_protected = 1;
-	else
-		ec_rw_protected = 1;
+	ec_rw_protected = 1;
 
 	return VB2_SUCCESS;
 }
@@ -209,7 +204,6 @@ static void VbSoftwareSyncTest(void)
 		 "  EC sync complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");
@@ -222,7 +216,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(VB2_SUCCESS, 0, "EC sync already complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_EQ(ec_vboot_done_calls, 0, "ec_vboot_done calls");
@@ -234,7 +227,6 @@ static void VbSoftwareSyncTest(void)
 		 "  EC sync complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");
@@ -245,8 +237,7 @@ static void VbSoftwareSyncTest(void)
 	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
-	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");;
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");
@@ -258,7 +249,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_UNKNOWN_IMAGE, "Unknown EC image");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -269,7 +259,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_HASH_FAILED, "Bad EC hash");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -279,7 +268,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_HASH_SIZE, "Bad EC hash size");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -289,7 +277,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_EXPECTED_HASH, "Bad precalculated hash");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -300,7 +287,6 @@ static void VbSoftwareSyncTest(void)
 		   "Hash size mismatch");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -311,7 +297,6 @@ static void VbSoftwareSyncTest(void)
 		   "Custom hash size secdata_kernel v1");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -323,7 +308,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "Custom hash size secdata_kernel v0");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -335,7 +319,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Pending update needs reboot");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -349,7 +332,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Reboot after synching Hmir");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -362,7 +344,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Reboot after synching Heff");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -377,7 +358,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Reboot after synching Hmir and Heff");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -391,7 +371,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Reboot after synching Hmir");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -401,7 +380,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "Update rw without reboot");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -412,7 +390,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "Update rw and ro images without reboot");
 	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -423,7 +400,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "rw update not needed");
 	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 1,
@@ -435,7 +411,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "ro update not requested");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -446,7 +421,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_UPDATE, "Updated hash mismatch");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -457,7 +431,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Reboot for rw update");
 	TEST_EQ(ec_ro_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -468,7 +441,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_UPDATE, "Update failed");
 	TEST_EQ(ec_ro_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -480,7 +452,6 @@ static void VbSoftwareSyncTest(void)
 		   "Reboot for display - ec rw");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 
@@ -493,7 +464,6 @@ static void VbSoftwareSyncTest(void)
 		   "Reboot for display - ec ro");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
@@ -503,7 +473,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "AP-RW, EC-RW");
 	TEST_EQ(ec_ro_updated, 0, "ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
@@ -513,7 +482,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "AP-RW, EC-RO -> EC-RW");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
@@ -525,7 +493,6 @@ static void VbSoftwareSyncTest(void)
 		   VB2_RECOVERY_EC_JUMP_RW, "Jump to RW fail");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
@@ -537,7 +504,6 @@ static void VbSoftwareSyncTest(void)
 		   0, "Jump to RW fail because locked");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "  ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
@@ -548,7 +514,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(VB2_ERROR_MOCK, VB2_RECOVERY_EC_PROTECT, "Protect error");
 	TEST_EQ(ec_ro_updated, 0, "ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_EC_TRUSTED,
@@ -560,7 +525,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "AP-RW, EC-RO -> EC-RW shutdown requested");
 	TEST_EQ(ec_ro_updated, 0, "ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
 
@@ -570,7 +534,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "AP-RW shutdown requested");
 	TEST_EQ(ec_ro_updated, 0, "ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "ec rw updated");
-	TEST_EQ(ec_ro_protected, 1, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 1, "ec rw protected");
 	TEST_EQ(ec_run_image, 1, "ec run image");
 
@@ -580,7 +543,6 @@ static void VbSoftwareSyncTest(void)
 	test_ssync(0, 0, "No sync in recovery mode");
 	TEST_EQ(ec_ro_updated, 0, "ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "ec rw updated");
-	TEST_EQ(ec_ro_protected, 0, "ec ro protected");
 	TEST_EQ(ec_rw_protected, 0, "ec rw protected");
 	TEST_EQ(ec_run_image, 0, "ec run image");
 }

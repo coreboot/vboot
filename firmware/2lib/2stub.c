@@ -123,7 +123,7 @@ vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
 }
 
 __attribute__((weak))
-vb2_error_t vb2ex_ec_protect(enum vb2_firmware_selection select)
+vb2_error_t vb2ex_ec_protect(void)
 {
 	return VB2_SUCCESS;
 }

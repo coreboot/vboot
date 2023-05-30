@@ -234,12 +234,8 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 			ctx, VB2_RECOVERY_EC_UPDATE);
 	}
 
-	/* Protect RO flash */
-	VB2_TRY(vb2ex_ec_protect(VB_SELECT_FIRMWARE_READONLY),
-		ctx, VB2_RECOVERY_EC_PROTECT);
-
 	/* Protect RW flash */
-	VB2_TRY(vb2ex_ec_protect(select_rw), ctx, VB2_RECOVERY_EC_PROTECT);
+	VB2_TRY(vb2ex_ec_protect(), ctx, VB2_RECOVERY_EC_PROTECT);
 
 	/* Disable further sysjumps */
 	VB2_TRY(vb2ex_ec_disable_jump(), ctx, VB2_RECOVERY_EC_SOFTWARE_SYNC);
