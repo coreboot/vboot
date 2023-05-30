@@ -287,9 +287,9 @@ static int do_update(int argc, char *argv[])
 	 */
 	prepare_servo_control(prepare_ctrl_name, true);
 
-	bool update_needed;
+	const bool update_needed = updater_should_update(&args);
 	if (!errorcnt)
-		errorcnt += updater_setup_config(cfg, &args, &update_needed);
+		errorcnt += updater_setup_config(cfg, &args);
 	if (!errorcnt && update_needed) {
 		int r;
 		STATUS("Starting firmware updater.\n");

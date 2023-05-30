@@ -8,8 +8,7 @@
 #include "updater.h"
 
 int setup_flash(struct updater_config **cfg,
-		struct updater_config_arguments *args,
-		bool *update_needed)
+		struct updater_config_arguments *args)
 {
 #ifdef USE_FLASHROM
 	*cfg = updater_new_config();
@@ -31,12 +30,10 @@ int setup_flash(struct updater_config **cfg,
 			free(servo_programmer);
 	}
 
-	bool is_update_needed;
-	if (updater_setup_config(*cfg, args, &is_update_needed)) {
+	if (updater_setup_config(*cfg, args)) {
 		ERROR("Bad servo options\n");
 		goto errdelete;
 	}
-	if (update_needed) *update_needed = is_update_needed;
 	prepare_servo_control(prepare_ctrl_name, true);
 	return 0;
 

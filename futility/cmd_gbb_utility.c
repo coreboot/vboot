@@ -508,7 +508,7 @@ static int do_gbb(int argc, char *argv[])
 	}
 
 	if (args.use_flash) {
-		if (setup_flash(&cfg, &args, NULL)) {
+		if (setup_flash(&cfg, &args)) {
 			ERROR("While preparing flash\n");
 			return 1;
 		}

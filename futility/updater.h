@@ -222,13 +222,21 @@ void updater_delete_config(struct updater_config *cfg);
 int handle_flash_argument(struct updater_config_arguments *args, int opt,
 			  char *optarg);
 
-/*
+/**
  * Helper function to setup an allocated updater_config object.
  * Returns number of failures, or 0 on success.
+ * @param[out]  updater_config,
+ * @param[int]  updater_config_arguments,
  */
 int updater_setup_config(struct updater_config *cfg,
-			 const struct updater_config_arguments *arg,
-			 bool *do_update);
+			 const struct updater_config_arguments *arg);
+
+/**
+ * Helper function to determine if to perform a update.
+ * Returns true to perform update otherwise false.
+ * @param[in]  updater_config_arguments,
+ */
+bool updater_should_update(const struct updater_config_arguments *arg);
 
 /* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg);
