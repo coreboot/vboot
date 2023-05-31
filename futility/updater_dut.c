@@ -57,7 +57,7 @@ int dut_get_property_string(const char *key, char *dest, size_t size,
 {
 	if (cfg->dut_is_remote) {
 		WARN("Ignored getting property %s on a remote DUT.\n", key);
-		return NULL;
+		return -1;
 	}
 	return VbGetSystemPropertyString(key, dest, size);
 }
