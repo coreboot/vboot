@@ -25,7 +25,7 @@ static struct option const long_opts[] = {
 	{NULL, 0, NULL, 0},
 };
 
-static const char *const short_opts = "hdrv" SHARED_FLASH_ARGS_SHORTOPTS;
+static const char *const short_opts = "hdr:v" SHARED_FLASH_ARGS_SHORTOPTS;
 
 static void print_help(int argc, char *argv[])
 {
@@ -33,52 +33,107 @@ static void print_help(int argc, char *argv[])
 	       "Usage:  " MYNAME " %s [OPTIONS] FILE\n"
 	       "\n"
 	       "Reads AP firmware to the FILE\n"
-	       "-d, --debug         \tPrint debugging messages\n"
-	       "-r, --region        \tThe comma delimited regions to read (optional)\n"
-	       "-v, --verbose       \tPrint verbose messages\n"
+	       "-d, --debug            \tPrint debugging messages\n"
+	       "-r, --region=REGIONS   \tComma delimited regions to read (optional)\n"
+	       "-v, --verbose          \tPrint verbose messages\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
 }
 
-static int read_flash_to_file(struct updater_config *cfg, const char *path,
-			const char *regions)
+static int append_to_str_array(const char ***arr, const char *str, size_t *len)
 {
-	/* full image read. */
-	if (!regions) {
-		if (write_to_file("Wrote AP firmware to", path,
-				  cfg->image_current.data,
-				  cfg->image_current.size)) {
-			return -1;
-		}
-		return 0;
+	const char **expanded_arr = realloc(*arr, sizeof(char *) * ((*len) + 1));
+	if (!expanded_arr) {
+		WARN("Failed to allocate memory for string array");
+		return -1;
 	}
 
-	char *savedptr;
-	char *region = strtok_r((char *)regions, ",", &savedptr);
-	while (region) {
-		struct firmware_section section;
-		if (find_firmware_section(&section, &cfg->image_current,
-					  region)) {
-			ERROR("Region '%s' not found in image.\n", region);
-			return -1;
-		}
-		const size_t fpath_sz = strlen(path) + strlen(region) + 1; /* +1 for underscore. */
-		char *fpath = calloc(1, fpath_sz + 1); /* +1 for null termination. */
-		if (!fpath)
-			return -1;
-		snprintf(fpath, fpath_sz + 1, "%s_%s", path, region);
-		if (write_to_file("Wrote AP firmware region to",
-				  fpath, section.data, section.size)) {
-			free(fpath);
-			return -1;
-		}
-		free(fpath);
+	*arr = expanded_arr;
+	(*arr)[*len] = str;
+	(*len)++;
+	return 0;
+}
 
-		/* next region to read.. */
-		region = strtok_r(NULL, ",", &savedptr);
+static int parse_region_string(const char ***regions, char *str, size_t *rlen)
+{
+	if (!str)
+		return -1; /* no regions to parse. */
+
+	char *savedptr;
+	const char *delim = ",";
+	char *region = strtok_r(str, delim, &savedptr);
+
+	while (region) {
+		if (append_to_str_array(regions, region, rlen))
+			return -1;
+		region = strtok_r(NULL, delim, &savedptr);
 	}
 
 	return 0;
+}
+
+static int read_flash_regions_to_file(struct updater_config *cfg,
+				      const char *path, char *str)
+{
+	int ret = 0;
+	size_t rlen = 0;
+	const char **regions = NULL;
+
+	if (parse_region_string(&regions, str, &rlen) || !regions || !rlen) {
+		WARN("No parsable regions to process.\n");
+		ret = -1;
+		goto out_free;
+	}
+
+	/* Always need to read the FMAP to find regions */
+	if (append_to_str_array(&regions, FMAP_RO_FMAP, &rlen)) {
+		ret = -1;
+		goto out_free;
+	}
+
+	/* Read only the specified regions */
+	if (flashrom_read_image(&cfg->image_current, regions,
+				rlen, cfg->verbosity + 1)) {
+		ret = -1;
+		goto out_free;
+	}
+
+	/*
+	 * The last element of regions is FMAP_RO_FMAP, stop at (rlen-1) to
+	 * only process the user-specified regions.
+	 */
+	for (size_t i = 0; i < rlen - 1; i++) {
+		const char *region = regions[i];
+
+		struct firmware_section section;
+		if (find_firmware_section(&section, &cfg->image_current, region)) {
+			ERROR("Region '%s' not found in image.\n", region);
+			ret = -1;
+			goto out_free;
+		}
+		const char *separator = "_";
+		const size_t fpath_sz = strlen(path) +
+					strlen(separator) +
+					strlen(region) +
+					1; /* +1 for null termination. */
+		char *fpath = calloc(1, fpath_sz);
+		if (!fpath) {
+			ret = -1;
+			goto out_free;
+		}
+		snprintf(fpath, fpath_sz, "%s%s%s", path, separator, region);
+		if (write_to_file("Wrote AP firmware region to",
+				  fpath, section.data, section.size)) {
+			free(fpath);
+			ret = -1;
+			goto out_free;
+		}
+		free(fpath);
+	}
+
+out_free:
+	free(regions);
+	return ret;
 }
 
 static int do_read(int argc, char *argv[])
@@ -101,7 +156,11 @@ static int do_read(int argc, char *argv[])
 			args.verbosity++;
 			break;
 		case 'r':
-			regions = optarg;
+			regions = strdup(optarg);
+			if (!regions) {
+				ERROR("strdup() returned NULL\n");
+				return 1;
+			}
 			break;
 		case 'v':
 			args.verbosity++;
@@ -137,18 +196,28 @@ static int do_read(int argc, char *argv[])
 		return 1;
 	}
 
-	int r = load_system_firmware(cfg, &cfg->image_current);
-	/*
-	 * Ignore a parse error as we still want to write the file
-	 * out in that case
-	 */
-	if (r && r != IMAGE_PARSE_FAILURE) {
-		errorcnt++;
-		goto err;
+	if (!regions) {
+		/* full image read. */
+		int r = load_system_firmware(cfg, &cfg->image_current);
+		/*
+		 * Ignore a parse error as we still want to write the file
+		 * out in that case
+		 */
+		if (r && r != IMAGE_PARSE_FAILURE) {
+			errorcnt++;
+			goto err;
+		}
+		if (write_to_file("Wrote AP firmware to", output_file_name,
+				  cfg->image_current.data,
+				  cfg->image_current.size)) {
+			errorcnt++;
+			goto err;
+		}
+	} else {
+		if (read_flash_regions_to_file(cfg, output_file_name, regions))
+			errorcnt++;
+		free(regions);
 	}
-
-	if (read_flash_to_file(cfg, output_file_name, regions) < 0)
-		errorcnt++;
 
 err:
 	teardown_flash(cfg);
