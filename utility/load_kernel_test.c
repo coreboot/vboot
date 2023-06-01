@@ -248,8 +248,8 @@ int main(int argc, char* argv[])
 
 	if (VB2_SUCCESS == rv) {
 		printf("Partition number:   %u\n", lkp.partition_number);
-		printf("Bootloader address: %" PRIu64 "\n",
-		       lkp.bootloader_address);
+		printf("Bootloader offset: %" PRIu64 "\n",
+		       lkp.bootloader_offset);
 		printf("Bootloader size:    %u\n", lkp.bootloader_size);
 		printf("Partition guid:	    "
 		       "%02x%02x%02x%02x-%02x%02x-%02x%02x"

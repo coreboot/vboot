@@ -447,7 +447,8 @@ static vb2_error_t vb2_load_partition(
 	VB2_DEBUG("Partition is good.\n");
 
 	/* Save kernel data back to parameters */
-	params->bootloader_address = preamble->bootloader_address;
+	params->bootloader_offset = preamble->bootloader_address -
+				    preamble->body_load_address;
 	params->bootloader_size = preamble->bootloader_size;
 	params->flags = vb2_kernel_get_flags(preamble);
 	if (!params->kernel_buffer) {

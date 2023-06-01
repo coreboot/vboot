@@ -307,7 +307,7 @@ static void load_kernel_tests(void)
 	ResetMocks();
 	test_load_kernel(VB2_SUCCESS, "First kernel good");
 	TEST_EQ(lkp.partition_number, 1, "  part num");
-	TEST_EQ(lkp.bootloader_address, 0xbeadd008, "  bootloader addr");
+	TEST_EQ(lkp.bootloader_offset, 0xbeadd008, "  bootloader offset");
 	TEST_EQ(lkp.bootloader_size, 0x1234, "  bootloader size");
 	TEST_STR_EQ((char *)lkp.partition_guid, "FakeGuid", "  guid");
 	TEST_EQ(gpt_flag_external, 0, "GPT was internal");
@@ -581,6 +581,9 @@ static void load_kernel_tests(void)
 	TEST_PTR_EQ(lkp.kernel_buffer, kernel_buffer, "  address");
 	/* Size is rounded up to nearest sector */
 	TEST_EQ(lkp.kernel_buffer_size, 70144, "  size");
+	/* Bootloader offset is relative to body load address */
+	TEST_EQ(lkp.bootloader_offset, 0xbeadd008 - kph.body_load_address,
+		"  bootloader offset");
 
 	ResetMocks();
 	lkp.kernel_buffer_size = 8192;
