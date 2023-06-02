@@ -435,8 +435,8 @@ static int preserve_known_sections(struct firmware_image *from,
 	int errcnt = 0, i;
 	const char * const names[] = {
 		"RW_PRESERVE",  /* Only octopus fw branch is using this. */
-		"RO_VPD",
-		"RW_VPD",
+		FMAP_RO_VPD,
+		FMAP_RW_VPD,
 		"SMMSTORE",
 		"RW_NVRAM",
 		"RW_ELOG",
