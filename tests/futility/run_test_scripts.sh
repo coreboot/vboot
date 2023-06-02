@@ -38,6 +38,7 @@ ${SCRIPT_DIR}/futility/test_update.sh
 ${SCRIPT_DIR}/futility/test_file_types.sh
 ${SCRIPT_DIR}/futility/test_gscvd.sh
 ${SCRIPT_DIR}/futility/test_read.sh
+${SCRIPT_DIR}/futility/test_vpd.sh
 "
 
 # Get ready...
