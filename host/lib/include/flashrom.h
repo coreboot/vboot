@@ -42,14 +42,17 @@ struct firmware_image {
  *
  * @param image		The parameter that contains the programmer, buffer and
  *			size to use in the read operation.
- * @param regions	A list of the names of the fmap regions to read, or NULL
- *			to read the entire flash chip.
+ * @param regions	A list of the names of the fmap regions to read. Must
+ *			be non-null if regions_len is non-zero. Otherwise, must
+ *			be at least regions_len items long.
+ * @param regions_len	The size of regions, or 0 to read the entire flash
+ *			chip.
  *
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
 int flashrom_read_image(struct firmware_image *image,
-			const char * const regions[],
+			const char *const regions[], size_t regions_len,
 			int verbosity);
 int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity);
@@ -59,17 +62,19 @@ int flashrom_read_region(struct firmware_image *image, const char *region,
  *
  * @param image		The parameter that contains the programmer, buffer and
  *			size to use in the write operation.
- * @param regions	A list of the names of the fmap regions to write, or
- *			NULL to write the entire flash chip. The list must be
- *			ended with a NULL pointer.
+ * @param regions	A list of the names of the fmap regions to write. Must
+ *			be non-null if regions_len is non-zero. Otherwise, must
+ *			be at least regions_len items long.
+ * @param regions_len	The size of regions, or 0 to write the entire flash
+ *			chip.
  *
  * @return VB2_SUCCESS on success, or a relevant error.
  */
 vb2_error_t flashrom_write(struct firmware_image *image, const char *region);
 int flashrom_write_image(const struct firmware_image *image,
-			const char * const regions[],
-			const struct firmware_image *diff_image,
-			int do_verify, int verbosity);
+			 const char *const regions[], size_t regions_len,
+			 const struct firmware_image *diff_image, int do_verify,
+			 int verbosity);
 
 /**
  * Get wp state using flashrom.

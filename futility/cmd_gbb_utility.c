@@ -332,9 +332,9 @@ static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
 	 * Read the FMAP region as well, so that a subsequet write won't
 	 * require another read of FMAP.
 	 */
-	const char * const regions[] = {FMAP_RO_FMAP, FMAP_RO_GBB, NULL};
+	const char * const regions[] = {FMAP_RO_FMAP, FMAP_RO_GBB};
 	if (flashrom_read_image(&cfg->image_current, regions,
-				cfg->verbosity + 1))
+				ARRAY_SIZE(regions), cfg->verbosity + 1))
 		return NULL;
 	uint8_t *ret = cfg->image_current.data;
 	cfg->image_current.data = NULL;
@@ -358,8 +358,9 @@ static int write_to_flash(struct updater_config *cfg, uint8_t *outbuf,
 	cfg->image.data = outbuf;
 	cfg->image.size = filesize;
 
-	const char *sections[2] = { FMAP_RO_GBB, NULL };
-	int ret = write_system_firmware(cfg, &cfg->image, sections);
+	const char *sections[] = {FMAP_RO_GBB};
+	int ret = write_system_firmware(cfg, &cfg->image, sections,
+					ARRAY_SIZE(sections));
 
 	cfg->image.data = NULL;
 	cfg->image.size = 0;

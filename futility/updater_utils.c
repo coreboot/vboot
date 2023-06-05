@@ -529,7 +529,7 @@ int load_system_firmware(struct updater_config *cfg,
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
 		INFO("Reading SPI Flash..\n");
-		r = flashrom_read_image(image, NULL, verbose);
+		r = flashrom_read_image(image, NULL, 0, verbose);
 	}
 	if (!r)
 		r = parse_firmware_image(image);
@@ -544,7 +544,8 @@ int load_system_firmware(struct updater_config *cfg,
  */
 int write_system_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
-			  const char * const sections[])
+			  const char * const regions[],
+				const size_t regions_len)
 {
 	int r = 0, i;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
@@ -560,9 +561,9 @@ int write_system_firmware(struct updater_config *cfg,
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
 		INFO("Writing SPI Flash..\n");
-		r = flashrom_write_image(image, sections,
-					 flash_contents,
-					 cfg->do_verify, verbose);
+		r = flashrom_write_image(image, regions, regions_len,
+					 flash_contents, cfg->do_verify,
+					 verbose);
 		/*
 		 * Force a newline to flush stdout in case if
 		 * flashrom_write_image left some messages in the buffer.

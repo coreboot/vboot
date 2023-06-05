@@ -419,7 +419,6 @@ static int quirk_clear_mrc_data(struct updater_config *cfg)
 
 	for (i = 0; i < ARRAY_SIZE(mrc_names); i++) {
 		const char *name = mrc_names[i];
-		const char *write_names[2] = {0};
 
 		find_firmware_section(&section, image, name);
 		if (!section.size)
@@ -428,8 +427,9 @@ static int quirk_clear_mrc_data(struct updater_config *cfg)
 		WARN("Wiping memory training data: %s\n", name);
 		memset(section.data, 0xff, section.size);
 		if (flash_now) {
-			write_names[0] = name;
-			write_system_firmware(cfg, image, write_names);
+			const char *write_names[] = {name};
+			write_system_firmware(cfg, image, write_names,
+					      ARRAY_SIZE(write_names));
 		}
 		count++;
 		break;

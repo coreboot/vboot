@@ -817,14 +817,15 @@ static int update_ec_firmware(struct updater_config *cfg)
 	if (!has_valid_update(cfg, ec_image, NULL, 0))
 		return 0;
 
-	const char *sections[2] = {0};
+	const char *sections[] = {"WP_RO"};
+	size_t num_sections = 0;
 	int r = try_apply_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg);
 	switch (r) {
 	case EC_RECOVERY_FULL:
-		break; /* NULL sections implies write whole image. */
+		break; /* 0 num_sections implies write whole image. */
 
 	case EC_RECOVERY_RO: {
-		sections[0] = "WP_RO";
+		num_sections = ARRAY_SIZE(sections);
 		break;
 	}
 
@@ -845,7 +846,7 @@ static int update_ec_firmware(struct updater_config *cfg)
 	}
 
 	/* TODO(quasisec): Uses cros_ec to program the EC. */
-	return write_system_firmware(cfg, ec_image, sections);
+	return write_system_firmware(cfg, ec_image, sections, num_sections);
 }
 
 const char * const updater_error_messages[] = {
@@ -876,8 +877,9 @@ static enum updater_error_codes update_legacy_firmware(
 {
 	STATUS("LEGACY UPDATE: Updating firmware %s.\n", FMAP_RW_LEGACY);
 
-	const char *sections[2] = { FMAP_RW_LEGACY, NULL };
-	if (write_system_firmware(cfg, image_to, sections))
+	const char *sections[] = {FMAP_RW_LEGACY};
+	if (write_system_firmware(cfg, image_to, sections,
+				  ARRAY_SIZE(sections)))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -929,8 +931,9 @@ static enum updater_error_codes update_try_rw_firmware(
 		STATUS("TRY-RW UPDATE: Updating %s to try on reboot.\n",
 		       target);
 
-		const char *sections[2] = { target, NULL };
-		if (write_system_firmware(cfg, image_to, sections))
+		const char *sections[] = {target};
+		if (write_system_firmware(cfg, image_to, sections,
+					  ARRAY_SIZE(sections)))
 			return UPDATE_ERR_WRITE_FIRMWARE;
 
 		/*
@@ -985,7 +988,7 @@ static enum updater_error_codes update_rw_firmware(
 		FMAP_RW_SHARED,
 	};
 	const char *sections[ARRAY_SIZE(required_sections) +
-			     ARRAY_SIZE(optional_sections) + 1];
+			     ARRAY_SIZE(optional_sections)];
 
 	STATUS("RW UPDATE: Updating RW sections (%s, %s, %s, and %s).\n",
 	       FMAP_RW_SECTION_A, FMAP_RW_SECTION_B, FMAP_RW_SHARED,
@@ -1016,10 +1019,9 @@ static enum updater_error_codes update_rw_firmware(
 		}
 		sections[num++] = name;
 	}
-	assert(num < ARRAY_SIZE(sections));
-	sections[num] = NULL;
+	assert(num <= ARRAY_SIZE(sections));
 
-	if (write_system_firmware(cfg, image_to, sections))
+	if (write_system_firmware(cfg, image_to, sections, num))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;
@@ -1077,7 +1079,8 @@ static enum updater_error_codes update_whole_firmware(
 		return UPDATE_ERR_TPM_ROLLBACK;
 
 	/* FMAP may be different so we should just update all. */
-	if (write_system_firmware(cfg, image_to, NULL) || update_ec_firmware(cfg))
+	if (write_system_firmware(cfg, image_to, NULL, 0) ||
+	    update_ec_firmware(cfg))
 		return UPDATE_ERR_WRITE_FIRMWARE;
 
 	return UPDATE_ERR_DONE;

@@ -52,6 +52,7 @@ static char *flashrom_extract_params(const char *str, char **prog, char **params
  */
 static int flashrom_read_image_impl(struct firmware_image *image,
 				    const char * const regions[],
+						const size_t regions_len,
 				    unsigned int *region_start,
 				    unsigned int *region_len, int verbosity)
 {
@@ -85,7 +86,7 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
 
-	if (regions) {
+	if (regions_len) {
 		int i;
 		r = flashrom_layout_read_fmap_from_rom(
 			&layout, flashctx, 0, len);
@@ -94,7 +95,7 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 			r = -1;
 			goto err_cleanup;
 		}
-		for (i = 0; regions[i]; i++) {
+		for (i = 0; i < regions_len; i++) {
 			// empty region causes seg fault in API.
 			r |= flashrom_layout_include_region(layout, regions[i]);
 			if (r > 0) {
@@ -113,7 +114,7 @@ static int flashrom_read_image_impl(struct firmware_image *image,
 
 	r |= flashrom_image_read(flashctx, image->data, len);
 
-	if (r == 0 && regions && regions[0])
+	if (r == 0 && regions_len)
 		r |= flashrom_layout_get_region_range(layout, regions[0],
 						      region_start, region_len);
 
@@ -131,20 +132,21 @@ err_init:
 
 int flashrom_read_image(struct firmware_image *image,
 			const char * const regions[],
+			const size_t regions_len,
 			int verbosity)
 {
 	unsigned int start, len;
-	return flashrom_read_image_impl(image, regions, &start, &len,
-					verbosity);
+	return flashrom_read_image_impl(image, regions, regions_len, &start,
+					&len, verbosity);
 }
 
 int flashrom_read_region(struct firmware_image *image, const char *region,
 			 int verbosity)
 {
-	const char * const regions[] = {region, NULL};
+	const char * const regions[] = {region};
 	unsigned int start, len;
-	int r = flashrom_read_image_impl(image, regions, &start, &len,
-					 verbosity);
+	int r = flashrom_read_image_impl(image, regions, ARRAY_SIZE(regions),
+					 &start, &len, verbosity);
 	if (r != 0)
 		return r;
 
@@ -155,6 +157,7 @@ int flashrom_read_region(struct firmware_image *image, const char *region,
 
 int flashrom_write_image(const struct firmware_image *image,
 			const char * const regions[],
+			const size_t regions_len,
 			const struct firmware_image *diff_image,
 			int do_verify, int verbosity)
 {
@@ -200,7 +203,7 @@ int flashrom_write_image(const struct firmware_image *image,
 	/* Must occur before attempting to read FMAP from SPI flash. */
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_SKIP_UNREADABLE_REGIONS, true);
 
-	if (regions && regions[0]) {
+	if (regions_len) {
 		int i;
 		r = flashrom_layout_read_fmap_from_buffer(
 			&layout, flashctx, (const uint8_t *)image->data,
@@ -216,7 +219,7 @@ int flashrom_write_image(const struct firmware_image *image,
 				goto err_cleanup;
 			}
 		}
-		for (i = 0; regions[i]; i++) {
+		for (i = 0; i < regions_len; i++) {
 			INFO(" including region '%s'\n", regions[i]);
 			// empty region causes seg fault in API.
 			r |= flashrom_layout_include_region(layout, regions[i]);

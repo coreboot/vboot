@@ -96,13 +96,13 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 
 /*
  * Writes sections from a given firmware image to the system firmware.
- * Regions should be NULL for writing the whole image, or a list of
- * FMAP section names (and ended with a NULL).
+ * regions_len should be zero for writing the whole image; otherwise, regions
+ * should contain a list of FMAP section names of at least regions_len size.
  * Returns 0 if success, non-zero if error.
  */
 int write_system_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
-			  const char * const sections[]);
+			  const char *const regions[], size_t regions_len);
 
 struct firmware_section {
 	uint8_t *data;
