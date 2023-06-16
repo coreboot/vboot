@@ -23,7 +23,7 @@ SIGNPRIVATE="${DATA_DIR}/data_0.vbprivk"
 SIGNPUBLIC="${DATA_DIR}/root_0.vbpubk"
 CONFIG="${DATA_DIR}/dummy_config.txt"
 
-# Create some big and little files for the kernel and bootloader
+# Create some big and little files for the kernel and optional bootloader
 BIG="${TMPDIR}/big.bin"
 dd if=/dev/urandom bs=32768 count=1 of="${BIG}" 2>/dev/null
 SMALL="${TMPDIR}/small.bin"

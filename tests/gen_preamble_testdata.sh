@@ -53,7 +53,6 @@ make_pair "${DATADIR}/dummy_0" 0
 
 # and a few more dummy files just because (crosbug.com/23548)
 echo "hi there" > "${DATADIR}/dummy_config.txt"
-dd if=/dev/urandom bs=32768 count=1 of="${DATADIR}/dummy_bootloader.bin"
 
 # make some fake data
 dd if=/dev/urandom of="${DATADIR}/FWDATA" bs=32768 count=1
@@ -76,7 +75,6 @@ for d in $algs; do
        --version 1 \
        --arch arm \
        --vmlinuz "${DATADIR}/KERNDATA" \
-       --bootloader "${DATADIR}/dummy_bootloader.bin" \
        --config "${DATADIR}/dummy_config.txt"
   done
 done

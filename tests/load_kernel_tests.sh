@@ -45,7 +45,6 @@ dd if=/dev/urandom bs=32768 count=1 of="dummy_kernel.bin"
     --version 1 \
     --arch arm \
     --vmlinuz "dummy_kernel.bin" \
-    --bootloader "dummy_bootloader.bin" \
     --config "dummy_config.txt"
 
 echo 'Verifying test kernel'

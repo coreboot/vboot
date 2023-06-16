@@ -48,10 +48,20 @@ struct sign_option_s sign_option = {
 };
 
 /* Helper to complain about invalid args. Returns num errors discovered */
-static int no_opt_if(int expr, const char *optname)
+static int no_opt_if(bool expr, const char *optname)
 {
 	if (expr) {
 		ERROR("Missing --%s option\n", optname);
+		return 1;
+	}
+	return 0;
+}
+
+static int bad_opt_if(bool expr, const char *optname)
+{
+	if (expr) {
+		ERROR("Option --%s is not supported for file type %s\n",
+		      optname, futil_file_type_name(sign_option.type));
 		return 1;
 	}
 	return 0;
@@ -488,8 +498,6 @@ static const char usage_new_kpart[] = "\n"
 	"To create a new kernel partition image (/dev/sda2, /dev/mmcblk0p2):\n"
 	"\n"
 	"Required PARAMS:\n"
-	"  -v|--version     NUM             The kernel version number\n"
-	"  --bootloader     FILE            Bootloader stub\n"
 	"  --config         FILE            The kernel commandline file\n"
 	"  --arch           ARCH            The CPU architecture (one of\n"
 	"                                     x86|amd64, arm|aarch64, mips)\n"
@@ -501,6 +509,8 @@ static const char usage_new_kpart[] = "\n"
 	"    The private key to sign the kernel blob\n"
 	"  -b|--keyblock    FILE.keyblock   Keyblock containing the public\n"
 	"                                     key to verify the kernel blob\n"
+	"  -v|--version     NUM             The kernel version number (def:1)\n"
+	"  --bootloader     FILE            Bootloader stub\n"
 	"  --kloadaddr      NUM"
 	"             RAM address to load the kernel body\n"
 	"                                     (default %#x)\n"
@@ -509,9 +519,6 @@ static const char usage_new_kpart[] = "\n"
 	" --vblockonly                      Emit just the vblock (requires a\n"
 	"                                     distinct outfile)\n"
 	"  -f|--flags       NUM             The preamble flags value\n"
-	"  -K|--keyset      DIR             Path to directory containing"
-	" private\n"
-	"                                   kernel data key, and keyblock\n"
 	"  -K|--keyset      PATH            Prefix of private kernel data key\n"
 	"                                   and keyblock.\n"
 	"                                   Prefix must be valid path with\n"
@@ -1068,6 +1075,12 @@ static int do_sign(int argc, char *argv[])
 		errorcnt += no_opt_if(!sign_option.kernel_subkey, "kernelkey");
 		break;
 	case FILE_TYPE_KERN_PREAMBLE:
+		errorcnt += bad_opt_if(sign_option.bootloader_data,
+				       "bootloader");
+		errorcnt += bad_opt_if(sign_option.arch != ARCH_UNSPECIFIED,
+				       "arch");
+		errorcnt += bad_opt_if(sign_option.kloadaddr !=
+				       CROS_32BIT_ENTRY_ADDR, "kloadaddr");
 		errorcnt += no_opt_if(!sign_option.signprivate, "signprivate");
 		if (sign_option.vblockonly || sign_option.inout_file_count > 1)
 			sign_option.create_new_outfile = 1;
@@ -1084,10 +1097,6 @@ static int do_sign(int argc, char *argv[])
 		sign_option.create_new_outfile = 1;
 		errorcnt += no_opt_if(!sign_option.signprivate, "signprivate");
 		errorcnt += no_opt_if(!sign_option.keyblock, "keyblock");
-		errorcnt += no_opt_if(!sign_option.version_specified,
-				      "version");
-		errorcnt += no_opt_if(!sign_option.bootloader_data,
-				      "bootloader");
 		errorcnt += no_opt_if(!sign_option.config_data, "config");
 		errorcnt += no_opt_if(sign_option.arch == ARCH_UNSPECIFIED,
 				      "arch");

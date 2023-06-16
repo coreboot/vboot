@@ -473,6 +473,9 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		if (!signprivkey_file)
 			FATAL("Missing required signprivate file.\n");
 
+		if (bootloader_file)
+			FATAL("--repack doesn't support --bootloader.\n");
+
 		signpriv_key = vb2_read_private_key(signprivkey_file);
 		if (!signpriv_key)
 			FATAL("Error reading signing key.\n");
