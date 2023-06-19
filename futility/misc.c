@@ -30,6 +30,7 @@
 #include "cgptlib_internal.h"
 #include "file_type.h"
 #include "futility.h"
+#include "futility_options.h"
 #include "host_misc.h"
 
 /* Default is to support everything we can */
@@ -140,11 +141,14 @@ int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 int print_hwid_digest(struct vb2_gbb_header *gbb,
 		      const char *banner, const char *footer)
 {
-	printf("%s", banner);
+	FT_READABLE_PRINT("%s", banner);
+	FT_PARSEABLE_PRINT("hwid::digest::algorithm::2::SHA256\n");
+	FT_PARSEABLE_PRINT("hwid::digest::hex::");
 
 	/* There isn't one for v1.1 and earlier, so assume it's good. */
 	if (gbb->minor_version < 2) {
 		printf("<none>%s", footer);
+		FT_PARSEABLE_PRINT("hwid::digest::ignored\n");
 		return 1;
 	}
 
@@ -166,8 +170,9 @@ int print_hwid_digest(struct vb2_gbb_header *gbb,
 		}
 	}
 
-	printf("   %s", is_valid ? "valid" : "<invalid>");
-	printf("%s", footer);
+	FT_PARSEABLE_PRINT("\n");
+	FT_PRINT("   %s", "hwid::digest::%s\n", is_valid ? "valid" : "invalid");
+	FT_PARSEABLE_PRINT("%s", footer);
 	return is_valid;
 }
 

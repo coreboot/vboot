@@ -36,6 +36,26 @@ for file in $SHOW_FILES; do
     diff "${wantfile}" "${gotfile}"
 done
 
+PARSE_SUPPORTED_FILES="
+  tests/devkeys/root_key.vbpubk
+  tests/devkeys/root_key.vbprivk
+  tests/devkeys/kernel.keyblock
+  tests/futility/data/fw_vblock.bin
+  tests/futility/data/fw_gbb.bin
+  tests/futility/data/bios_peppy_mp.bin
+  tests/futility/data/kern_preamble.bin
+"
+for file in ${PARSE_SUPPORTED_FILES}; do
+    outfile="show.parseable.${file//\//_}"
+    gotfile="${OUTDIR}/${outfile}"
+    wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
+    ( cd "${SRCDIR}" && "${FUTILITY}" show -P "${file}" ) | tee "${gotfile}"
+
+    # Uncomment this to update the expected output
+    #cp "${gotfile}" "${wantfile}"
+
+    diff "${wantfile}" "${gotfile}"
+done
 
 # Test 'futility vbutil_key' against expected output
 VBUTIL_KEY_FILES="
