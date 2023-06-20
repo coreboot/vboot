@@ -30,7 +30,7 @@ KERNEL_VERSION=1
 usage() {
   cat <<EOF
 Usage: ${PROG} <type> input_image /path/to/keys/dir [output_image] \
-[version_file]
+[version_file] [--cloud-signing]
 where <type> is one of:
              base (sign a base image)
              recovery (sign a USB recovery image)
@@ -44,6 +44,8 @@ where <type> is one of:
 
 output_image: File name of the signed output image
 version_file: File name of where to read the kernel and firmware versions.
+--cloud-signing: Instead of relying on a local key directory, retrieve keys
+  from Cloud KMS.
 
 If you are signing an image, you must specify an [output_image] and
 optionally, a [version_file].
@@ -1238,6 +1240,36 @@ main() {
     type -P "${prereqs}" &>/dev/null || \
       die "${prereqs} tool not found."
   done
+
+  # Parse arguments with positional and optional options.
+  local script_args=()
+  CLOUD_SIGNING=false
+  while [[ "$#" -gt 0 ]]; do
+    case $1 in
+      --cloud-signing)
+        CLOUD_SIGNING=true
+        ;;
+      -h|--help)
+        usage
+        ;;
+      --)
+        shift
+        break
+        ;;
+      -*)
+        usage "Unknown option: $1"
+        ;;
+      *)
+        script_args+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  if [[ "${CLOUD_SIGNING}" == true ]]; then
+    info "signing with cloud keys"
+  fi
+  set -- "${script_args[@]}"
 
   TYPE=$1
   INPUT_IMAGE=$2
