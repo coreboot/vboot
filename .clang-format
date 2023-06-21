@@ -7,4 +7,4 @@ AllowShortIfStatementsOnASingleLine:       false
 IndentCaseLabels:                          false
 SortIncludes:                              false
 ContinuationIndentWidth:                   8
-ColumnLimit:                               80
+ColumnLimit:                               96
