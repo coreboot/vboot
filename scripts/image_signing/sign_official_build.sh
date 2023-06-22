@@ -15,10 +15,16 @@
 #  e2fsck
 #  sha1sum
 
-MINIOS_KERNEL_GUID="09845860-705f-4bb5-b16c-8a8a099caf52"
-
 # Load common constants and variables.
 . "$(dirname "$0")/common.sh"
+
+# Abort on errors.
+set -e
+
+# Our random local constants.
+MINIOS_KERNEL_GUID="09845860-705f-4bb5-b16c-8a8a099caf52"
+FIRMWARE_VERSION=1
+KERNEL_VERSION=1
 
 # Print usage string
 usage() {
@@ -70,28 +76,6 @@ check_argc() {
     die "check_argc: incorrect number of arguments"
   esac
 }
-
-# Abort on errors.
-set -e
-
-# Add to the path since some tools reside here and may not be in the non-root
-# system path.
-PATH+=:/usr/sbin:/sbin
-
-# Make sure the tools we need are available.
-for prereqs in ${FUTILITY} verity load_kernel_test dumpe2fs e2fsck sha1sum; do
-  type -P "${prereqs}" &>/dev/null || \
-    die "${prereqs} tool not found."
-done
-
-TYPE=$1
-INPUT_IMAGE=$2
-KEY_DIR=$3
-OUTPUT_IMAGE=$4
-VERSION_FILE=$5
-
-FIRMWARE_VERSION=1
-KERNEL_VERSION=1
 
 # TODO(gauravsh): These are duplicated from chromeos-setimage. We need
 # to move all signing and rootfs code to one single place where it can be
@@ -1243,111 +1227,131 @@ sign_image_file() {
   info "Signed ${image_type} image output to ${output}"
 }
 
-# Verification
-case ${TYPE} in
-dump_config)
-  check_argc $# 2
-  loopdev=$(loopback_partscan "${INPUT_IMAGE}")
-  for partnum in 2 4; do
-    info "kernel config in partition number ${partnum}:"
-    sudo "${FUTILITY}" dump_kernel_config "${loopdev}p${partnum}"
-    echo
+main() {
+  # Add to the path since some tools reside here and may not be in the non-root
+  # system path.
+  PATH+=:/usr/sbin:/sbin
+
+  # Make sure the tools we need are available.
+  local prereqs
+  for prereqs in ${FUTILITY} verity load_kernel_test dumpe2fs e2fsck sha1sum; do
+    type -P "${prereqs}" &>/dev/null || \
+      die "${prereqs} tool not found."
   done
-  exit 0
-  ;;
-verify)
-  check_argc $# 2
-  verify_image
-  exit 0
-  ;;
-*)
-  # All other signing commands take 4 to 5 args.
-  if [ -z "${OUTPUT_IMAGE}" ]; then
-    # Friendlier message.
-    usage "Missing output image name"
-  fi
-  check_argc $# 4 5
-  ;;
-esac
 
-# If a version file was specified, read the firmware and kernel
-# versions from there.
-if [ -n "${VERSION_FILE}" ]; then
-  FIRMWARE_VERSION=$(sed -n 's#^firmware_version=\(.*\)#\1#pg' \
-    "${VERSION_FILE}")
-  KERNEL_VERSION=$(sed -n 's#^kernel_version=\(.*\)#\1#pg' "${VERSION_FILE}")
-fi
-info "Using firmware version: ${FIRMWARE_VERSION}"
-info "Using kernel version: ${KERNEL_VERSION}"
+  TYPE=$1
+  INPUT_IMAGE=$2
+  KEY_DIR=$3
+  OUTPUT_IMAGE=$4
+  VERSION_FILE=$5
 
-# Make all modifications on output copy.
-if [[ "${TYPE}" == "base" ]]; then
-  sign_image_file "base" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk" \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk" \
-    "" \
-    "" \
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
-elif [[ "${TYPE}" == "recovery" ]]; then
-  sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
-    "${KEY_DIR}/recovery_kernel.keyblock" \
-    "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
-    "${KEY_DIR}/kernel.keyblock" \
-    "${KEY_DIR}/kernel_data_key.vbprivk" \
-    "${KEY_DIR}/recovery_kernel.v1.keyblock" \
-    "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
-    "${KEY_DIR}/minios_kernel.keyblock" \
-    "${KEY_DIR}/minios_kernel.v1.keyblock" \
-    "${KEY_DIR}/minios_kernel_data_key.vbprivk"
-elif [[ "${TYPE}" == "factory" ]]; then
-  sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-    "${KEY_DIR}/installer_kernel.keyblock" \
-    "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
-    "${KEY_DIR}/installer_kernel.v1.keyblock" \
-    "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
-    "" \
-    "" \
-    "" \
-    "" \
-    ""
-elif [[ "${TYPE}" == "firmware" ]]; then
-  if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-    die "LOEM signing not implemented yet for firmware images"
-  fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
-elif [[ "${TYPE}" == "update_payload" ]]; then
-  sign_update_payload "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
-  KEY_NAME="${KEY_DIR}/key_$(basename "$(dirname "${INPUT_IMAGE}")")"
-  if [[ ! -e "${KEY_NAME}.pem" ]]; then
-    KEY_NAME="${KEY_DIR}/key"
-  fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  ${FUTILITY} sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
-  # If one key is present in this container, assume it's the right one.
-  # See crbug.com/863464
-  if [[ ! -e "${KEY_NAME}.vbprik2" ]]; then
-    KEYS=( "${KEY_DIR}"/*.vbprik2 )
-    if [[ ${#KEYS[@]} -eq 1 ]]; then
-      KEY_NAME="${KEYS[0]}"
-    else
-      die "Expected exactly one key present in keyset for accessory_rwsig"
+  # Verification
+  case ${TYPE} in
+  dump_config)
+    check_argc $# 2
+    loopdev=$(loopback_partscan "${INPUT_IMAGE}")
+    for partnum in 2 4; do
+      info "kernel config in partition number ${partnum}:"
+      sudo "${FUTILITY}" dump_kernel_config "${loopdev}p${partnum}"
+      echo
+    done
+    exit 0
+    ;;
+  verify)
+    check_argc $# 2
+    verify_image
+    exit 0
+    ;;
+  *)
+    # All other signing commands take 4 to 5 args.
+    if [ -z "${OUTPUT_IMAGE}" ]; then
+      # Friendlier message.
+      usage "Missing output image name"
     fi
+    check_argc $# 4 5
+    ;;
+  esac
+
+  # If a version file was specified, read the firmware and kernel
+  # versions from there.
+  if [ -n "${VERSION_FILE}" ]; then
+    FIRMWARE_VERSION=$(sed -n 's#^firmware_version=\(.*\)#\1#pg' \
+      "${VERSION_FILE}")
+    KERNEL_VERSION=$(sed -n 's#^kernel_version=\(.*\)#\1#pg' "${VERSION_FILE}")
   fi
-  cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-  ${FUTILITY} sign --type rwsig --prikey "${KEY_NAME}" \
-           --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "gsc_firmware" ]]; then
-  sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
-elif [[ "${TYPE}" == "hps_firmware" ]]; then
-  hps-sign-rom --input "${INPUT_IMAGE}" --output "${OUTPUT_IMAGE}" \
-    --private-key "${KEY_DIR}/key_hps.priv.pem"
-else
-  die "Invalid type ${TYPE}"
-fi
+  info "Using firmware version: ${FIRMWARE_VERSION}"
+  info "Using kernel version: ${KERNEL_VERSION}"
+
+  # Make all modifications on output copy.
+  if [[ "${TYPE}" == "base" ]]; then
+    sign_image_file "base" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
+      "${KEY_DIR}/kernel.keyblock" \
+      "${KEY_DIR}/kernel_data_key.vbprivk" \
+      "${KEY_DIR}/kernel.keyblock" \
+      "${KEY_DIR}/kernel_data_key.vbprivk" \
+      "" \
+      "" \
+      "${KEY_DIR}/minios_kernel.keyblock" \
+      "" \
+      "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+  elif [[ "${TYPE}" == "recovery" ]]; then
+    sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
+      "${KEY_DIR}/recovery_kernel.keyblock" \
+      "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
+      "${KEY_DIR}/kernel.keyblock" \
+      "${KEY_DIR}/kernel_data_key.vbprivk" \
+      "${KEY_DIR}/recovery_kernel.v1.keyblock" \
+      "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
+      "${KEY_DIR}/minios_kernel.keyblock" \
+      "${KEY_DIR}/minios_kernel.v1.keyblock" \
+      "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+  elif [[ "${TYPE}" == "factory" ]]; then
+    sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
+      "${KEY_DIR}/installer_kernel.keyblock" \
+      "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
+      "${KEY_DIR}/installer_kernel.v1.keyblock" \
+      "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
+      "" \
+      "" \
+      "" \
+      "" \
+      ""
+  elif [[ "${TYPE}" == "firmware" ]]; then
+    if [[ -e "${KEY_DIR}/loem.ini" ]]; then
+      die "LOEM signing not implemented yet for firmware images"
+    fi
+    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+    sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
+  elif [[ "${TYPE}" == "update_payload" ]]; then
+    sign_update_payload "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+  elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
+    KEY_NAME="${KEY_DIR}/key_$(basename "$(dirname "${INPUT_IMAGE}")")"
+    if [[ ! -e "${KEY_NAME}.pem" ]]; then
+      KEY_NAME="${KEY_DIR}/key"
+    fi
+    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+    ${FUTILITY} sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
+  elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
+    # If one key is present in this container, assume it's the right one.
+    # See crbug.com/863464
+    if [[ ! -e "${KEY_NAME}.vbprik2" ]]; then
+      KEYS=( "${KEY_DIR}"/*.vbprik2 )
+      if [[ ${#KEYS[@]} -eq 1 ]]; then
+        KEY_NAME="${KEYS[0]}"
+      else
+        die "Expected exactly one key present in keyset for accessory_rwsig"
+      fi
+    fi
+    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+    ${FUTILITY} sign --type rwsig --prikey "${KEY_NAME}" \
+             --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
+  elif [[ "${TYPE}" == "gsc_firmware" ]]; then
+    sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+  elif [[ "${TYPE}" == "hps_firmware" ]]; then
+    hps-sign-rom --input "${INPUT_IMAGE}" --output "${OUTPUT_IMAGE}" \
+      --private-key "${KEY_DIR}/key_hps.priv.pem"
+  else
+    die "Invalid type ${TYPE}"
+  fi
+}
+main "$@"
