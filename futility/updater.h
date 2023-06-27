@@ -90,7 +90,7 @@ struct updater_config {
 	const char *emulation;
 	char *emulation_programmer;
 	const char *original_programmer;
-	char *prepare_ctrl_name;
+	const char *prepare_ctrl_name;
 	int override_gbb_flags;
 	uint32_t gbb_flags;
 	bool detect_model;
