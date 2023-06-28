@@ -671,8 +671,6 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 		} else {
 			bootloader_data = vmlinuz_buf;
 			bootloader_size = vmlinuz_size - tmp;
-			if (bootloader_size & (CROS_ALIGN - 1))
-				FATAL("EFI stub size should be 4K aligned.\n");
 		}
 	}
 
@@ -741,6 +739,8 @@ uint8_t *CreateKernelBlob(uint8_t *vmlinuz_buf, uint32_t vmlinuz_size,
 	/* Copy the other bits too */
 	memcpy(g_config_data, config_data, config_size);
 	memcpy(g_bootloader_data, bootloader_data, bootloader_size);
+	memset(g_bootloader_data + bootloader_size, 0,
+	       g_bootloader_size - bootloader_size);
 	if (g_vmlinuz_header_size) {
 		memcpy(g_vmlinuz_header_data,
 		       vmlinuz_buf,
