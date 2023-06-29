@@ -366,53 +366,6 @@ err_init:
 	return ret;
 }
 
-int flashrom_get_info(const char *prog_with_params,
-		      char **vendor, char **name,
-		      uint32_t *vid, uint32_t *pid,
-		      uint32_t *flash_len, int verbosity)
-{
-	int r = 0;
-
-	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
-
-	char *programmer, *params;
-	char *tmp = flashrom_extract_params(prog_with_params,
-					    &programmer, &params);
-
-	struct flashrom_programmer *prog = NULL;
-	struct flashrom_flashctx *flashctx = NULL;
-
-	flashrom_set_log_callback((flashrom_log_callback *)&flashrom_print_cb);
-
-	if (flashrom_init(1) ||
-	    flashrom_programmer_init(&prog, programmer, params)) {
-		r = -1;
-		goto err_init;
-	}
-	if (flashrom_flash_probe(&flashctx, prog, NULL)) {
-		r = -1;
-		goto err_probe;
-	}
-
-	struct flashrom_flashchip_info info;
-	flashrom_flash_getinfo(flashctx, &info);
-
-	*vendor = strdup(info.vendor);
-	*name = strdup(info.name);
-	*vid = info.manufacture_id;
-	*pid = info.model_id;
-	*flash_len = info.total_size * 1024;
-
-	flashrom_flash_release(flashctx);
-
-err_probe:
-	r |= flashrom_programmer_shutdown(prog);
-
-err_init:
-	free(tmp);
-	return r;
-}
-
 int flashrom_get_size(const char *prog_with_params,
 		      uint32_t *flash_len, int verbosity)
 {

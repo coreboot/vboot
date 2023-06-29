@@ -104,23 +104,6 @@ int flashrom_set_wp(const char *programmer, bool wp_mode,
 		    uint32_t wp_start, uint32_t wp_len, int verbosity);
 
 /**
- * Get flash info using flashrom.
- *
- * @param programmer	The name of the programmer to use.
- * @param vendor        The chip vendor name, non-NULLable.
- * @param name          The chip product name, non-NULLable.
- * @param vid           The chip vendor id, non-NULLable.
- * @param pid           The chip product id, non-NULLable.
- * @param flash_len     Pointer to a uint32_t to store chip length, non-NULLable.
- *
- * @return 0 on success, or a relevant error.
- */
-int flashrom_get_info(const char *prog_with_params,
-		      char **vendor, char **name,
-		      uint32_t *vid, uint32_t *pid,
-		      uint32_t *flash_len, int verbosity);
-
-/**
  * Get flash size using flashrom.
  *
  * @param programmer	The name of the programmer to use.
