@@ -416,6 +416,21 @@ static void fail_tests(void)
 		VB2_FW_RESULT_FAILURE, "vb2api_fail this fw");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT), 0,
 		"vb2api_fail try other slot");
+
+	/* Fail with single slot already failing triggers recovery */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_FW_PREV_TRIED, 0);
+	vb2_nv_set(ctx, VB2_NV_FW_TRIED, 0);
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
+	ctx->flags |= VB2_CONTEXT_SLOT_A_ONLY;
+	sd->status |= VB2_SD_STATUS_CHOSE_SLOT;
+	vb2api_fail(ctx, 9, 10);
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST), 9,
+		"vb2api_fail single slot fail");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_RESULT),
+		VB2_FW_RESULT_FAILURE, "vb2api_fail this fw");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT), 0,
+		"vb2api_fail did not try other slot");
 }
 
 static void previous_boot_fail_tests(void)
@@ -791,6 +806,18 @@ static void select_slot_tests(void)
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_TRIED), 1, "tried B");
 	TEST_EQ(sd->fw_slot, 1, "selected B");
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_FW_SLOT_B, 0, "ctx says choose B");
+
+	/* Slot A ran out of tries, but slot B not present */
+	reset_common_data();
+	ctx->flags |= VB2_CONTEXT_SLOT_A_ONLY;
+	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
+	TEST_EQ(vb2_select_fw_slot(ctx), VB2_ERROR_API_NEXT_SLOT_UNAVAILABLE,
+		"don't try slot B if only one slot present");
+	TEST_EQ(sd->status & VB2_SD_STATUS_CHOSE_SLOT, 0, "didn't choose slot");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_FW_TRIED), 0, "tried A");
+	TEST_EQ(sd->fw_slot, 0, "selected A");
+	TEST_EQ(ctx->flags & VB2_CONTEXT_FW_SLOT_B, 0, "didn't choose B");
+	TEST_EQ(vb2_nv_get(ctx, VB2_NV_TRY_NEXT), 0, "didn't try B next");
 
 	/* Slot A ran out of tries, even with nofail active */
 	reset_common_data();
