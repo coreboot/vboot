@@ -132,7 +132,7 @@ static int do_read(int argc, char *argv[])
 		return 1;
 	}
 
-	if (setup_flash(&cfg, &args, false)) {
+	if (setup_flash(&cfg, &args)) {
 		ERROR("While preparing flash\n");
 		return 1;
 	}

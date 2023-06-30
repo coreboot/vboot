@@ -15,8 +15,7 @@
  * called.
  */
 int setup_flash(struct updater_config **cfg,
-		struct updater_config_arguments *args,
-		bool needs_write);
+		struct updater_config_arguments *args);
 
 /* Cleanup objects created in setup_flash and release servo from flash mode. */
 void teardown_flash(struct updater_config *cfg);

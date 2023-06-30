@@ -259,7 +259,7 @@ static int do_flash(int argc, char *argv[])
 		return 1;
 	}
 
-	if (setup_flash(&cfg, &args, enable_wp || disable_wp)) {
+	if (setup_flash(&cfg, &args)) {
 		ERROR("While preparing flash\n");
 		return 1;
 	}

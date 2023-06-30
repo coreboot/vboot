@@ -8,8 +8,7 @@
 #include "updater.h"
 
 int setup_flash(struct updater_config **cfg,
-		struct updater_config_arguments *args,
-		bool needs_write)
+		struct updater_config_arguments *args)
 {
 #ifdef USE_FLASHROM
 	*cfg = updater_new_config();
@@ -17,9 +16,8 @@ int setup_flash(struct updater_config **cfg,
 		ERROR("Out of memory\n");
 		return 1;
 	}
-	const char *prepare_ctrl_name = NULL;
 	if (args->detect_servo) {
-		char *servo_programmer = host_detect_servo(&prepare_ctrl_name);
+		char *servo_programmer = host_detect_servo(&(*cfg)->prepare_ctrl_name);
 		if (!servo_programmer) {
 			ERROR("Problem communicating with servo\n");
 			goto errdelete;
@@ -35,11 +33,7 @@ int setup_flash(struct updater_config **cfg,
 		ERROR("Bad servo options\n");
 		goto errdelete;
 	}
-
-	if (needs_write) {
-		(*cfg)->prepare_ctrl_name = prepare_ctrl_name;
-		prepare_servo_control((*cfg)->prepare_ctrl_name, true);
-	}
+	prepare_servo_control((*cfg)->prepare_ctrl_name, true);
 	return 0;
 
 errdelete:
