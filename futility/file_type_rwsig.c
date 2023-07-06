@@ -31,9 +31,9 @@
 
 #define SIGNATURE_RSVD_SIZE 1024
 
-static void show_sig(const char *name, const struct vb21_signature *sig)
+static void show_sig(const char *fname, const struct vb21_signature *sig)
 {
-	printf("Signature:             %s\n", name);
+	printf("Signature:             %s\n", fname);
 	printf("  Vboot API:           2.1\n");
 	printf("  Desc:                \"%s\"\n", vb21_common_desc(sig));
 	printf("  Signature Algorithm: %d %s\n", sig->sig_alg,
@@ -49,7 +49,7 @@ static void show_sig(const char *name, const struct vb21_signature *sig)
 	       sig->data_size);
 }
 
-int ft_show_rwsig(const char *name, void *nuthin)
+int ft_show_rwsig(const char *fname)
 {
 	const struct vb21_packed_key *pkey = show_option.pkey;
 	struct vb2_public_key key;
@@ -65,16 +65,16 @@ int ft_show_rwsig(const char *name, void *nuthin)
 	uint32_t len;
 	int rv = 1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
-	VB2_DEBUG("name %s len 0x%08x (%d)\n", name, len, len);
+	VB2_DEBUG("name %s len 0x%08x (%d)\n", fname, len, len);
 
 	/* Am I just looking at a signature file? */
 	VB2_DEBUG("Looking for signature at 0x0\n");
 	const struct vb21_signature *sig = (const struct vb21_signature *)buf;
 	if (VB2_SUCCESS == vb21_verify_signature(sig, len)) {
-		show_sig(name, sig);
+		show_sig(fname, sig);
 		if (!show_option.fv) {
 			printf("No data available to verify\n");
 			rv = show_option.strict;
@@ -96,8 +96,8 @@ int ft_show_rwsig(const char *name, void *nuthin)
 				fmap_find_by_name(buf, len, fmap, "KEY_RO", 0);
 
 			if (pkey)
-				show_vb21_pubkey_buf(name, (uint8_t *)pkey,
-						     pkey->c.total_size, NULL);
+				show_vb21_pubkey_buf(fname, (uint8_t *)pkey,
+						     pkey->c.total_size);
 		}
 
 		sig = (const struct vb21_signature *)
@@ -115,7 +115,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 		if (VB2_SUCCESS != vb21_verify_signature(sig, sig_size))
 			goto done;
 
-		show_sig(name, sig);
+		show_sig(fname, sig);
 		data = fmap_find_by_name(buf, len, fmap, "EC_RW", &fmaparea);
 		data_size = sig->data_size;
 		/*
@@ -143,7 +143,7 @@ int ft_show_rwsig(const char *name, void *nuthin)
 
 		sig = (const struct vb21_signature *)(buf + len - sig_size);
 		if (VB2_SUCCESS == vb21_verify_signature(sig, sig_size)) {
-			show_sig(name, sig);
+			show_sig(fname, sig);
 			data = buf;
 			data_size = sig->data_size;
 			total_data_size = len - sig_size;
@@ -201,7 +201,7 @@ done:
 	return rv;
 }
 
-int ft_sign_rwsig(const char *name, void *nuthin)
+int ft_sign_rwsig(const char *fname)
 {
 	struct vb21_signature *tmp_sig = 0;
 	struct vb2_public_key *pubkey = 0;
@@ -218,14 +218,14 @@ int ft_sign_rwsig(const char *name, void *nuthin)
 	uint32_t len;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &buf, &len))
 		return 1;
 
 	data = buf;
 	data_size = len;
 
-	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
+	VB2_DEBUG("name %s len  0x%08x (%d)\n", fname, len, len);
 
 	/* If we don't have a distinct OUTFILE, look for an existing sig */
 	if (sign_option.inout_file_count < 2) {

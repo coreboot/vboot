@@ -78,7 +78,7 @@ static int parse_size_opts(const uint32_t len,
 	return 1;
 }
 
-int ft_sign_usbpd1(const char *name, void *data)
+int ft_sign_usbpd1(const char *fname)
 {
 	struct vb2_private_key *key_ptr = 0;
 	struct vb21_signature *sig_ptr = 0;
@@ -98,11 +98,11 @@ int ft_sign_usbpd1(const char *name, void *data)
 	uint32_t len;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &buf, &len))
 		return 1;
 
-	VB2_DEBUG("name %s len  %#.8x (%d)\n", name, len, len);
+	VB2_DEBUG("name %s len  %#.8x (%d)\n", fname, len, len);
 
 	/* Get image locations */
 	if (!parse_size_opts(len, &ro_size, &rw_size, &ro_offset, &rw_offset))
@@ -326,7 +326,7 @@ static vb2_error_t vb21_sig_from_usbpd1(struct vb21_signature **sig,
 	return VB2_SUCCESS;
 }
 
-static void show_usbpd1_stuff(const char *name,
+static void show_usbpd1_stuff(const char *fname,
 			      enum vb2_signature_algorithm sig_alg,
 			      enum vb2_hash_algorithm hash_alg,
 			      const uint8_t *o_pubkey, uint32_t o_pubkey_size)
@@ -345,7 +345,7 @@ static void show_usbpd1_stuff(const char *name,
 	vb2_hash_calculate(false, (uint8_t *)pkey + pkey->key_offset,
 			   pkey->key_size, VB2_HASH_SHA1, &hash);
 
-	printf("USB-PD v1 image:       %s\n", name);
+	printf("USB-PD v1 image:       %s\n", fname);
 	printf("  Algorithm:           %s %s\n",
 	       vb2_get_sig_algorithm_name(sig_alg),
 	       vb2_get_hash_algorithm_name(hash_alg));
@@ -389,7 +389,7 @@ static vb2_error_t try_our_own(enum vb2_signature_algorithm sig_alg,
 }
 
 /* Returns VB2_SUCCESS if the image validates itself */
-static vb2_error_t check_self_consistency(const uint8_t *buf, const char *name,
+static vb2_error_t check_self_consistency(const uint8_t *buf, const char *fname,
 					  uint32_t ro_size, uint32_t rw_size,
 					  uint32_t ro_offset,
 					  uint32_t rw_offset,
@@ -411,24 +411,24 @@ static vb2_error_t check_self_consistency(const uint8_t *buf, const char *name,
 			 buf + sig_offset, sig_size,	       /* sig blob */
 			 buf + rw_offset, rw_size - sig_size); /* RW image */
 
-	if (rv == VB2_SUCCESS && name)
-		show_usbpd1_stuff(name, sig_alg, hash_alg,
+	if (rv == VB2_SUCCESS && fname)
+		show_usbpd1_stuff(fname, sig_alg, hash_alg,
 				  buf + pubkey_offset, pubkey_size);
 
 	return rv;
 }
 
-int ft_show_usbpd1(const char *name, void *data)
+int ft_show_usbpd1(const char *fname)
 {
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 	int rv = 1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
-	VB2_DEBUG("name %s len  0x%08x (%d)\n", name, len, len);
+	VB2_DEBUG("name %s len  0x%08x (%d)\n", fname, len, len);
 
 	/* Get image locations */
 	uint32_t ro_size, rw_size, ro_offset, rw_offset;
@@ -445,7 +445,7 @@ int ft_show_usbpd1(const char *name, void *data)
 	/* TODO: Only loop through the numbers we haven't been given */
 	for (enum vb2_signature_algorithm s = 0; s < ARRAY_SIZE(sigs); s++) {
 		for (enum vb2_hash_algorithm h = 0; h < ARRAY_SIZE(hashes); h++) {
-			if (!check_self_consistency(buf, name, ro_size, rw_size,
+			if (!check_self_consistency(buf, fname, ro_size, rw_size,
 						    ro_offset, rw_offset,
 						    sigs[s], hashes[h])) {
 				rv = 0;

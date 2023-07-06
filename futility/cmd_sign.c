@@ -68,7 +68,7 @@ static int bad_opt_if(bool expr, const char *optname)
 }
 
 /* This wraps/signs a public key, producing a keyblock. */
-int ft_sign_pubkey(const char *name, void *data)
+int ft_sign_pubkey(const char *fname)
 {
 	struct vb2_packed_key *data_key;
 	uint32_t data_len;
@@ -76,7 +76,7 @@ int ft_sign_pubkey(const char *name, void *data)
 	int rv = 1;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    (uint8_t **)&data_key, &data_len))
 		return 1;
 
@@ -123,14 +123,14 @@ done:
 	return rv;
 }
 
-int ft_sign_raw_kernel(const char *name, void *data)
+int ft_sign_raw_kernel(const char *fname)
 {
 	uint8_t *vmlinuz_data = NULL, *kblob_data = NULL, *vblock_data = NULL;
 	uint32_t vmlinuz_size, kblob_size, vblock_size;
 	int rv = 1;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &vmlinuz_data, &vmlinuz_size))
 		return 1;
 
@@ -181,7 +181,7 @@ done:
 	return rv;
 }
 
-int ft_sign_kern_preamble(const char *name, void *data)
+int ft_sign_kern_preamble(const char *fname)
 {
 	uint8_t *kpart_data = NULL, *kblob_data = NULL, *vblock_data = NULL;
 	uint32_t kpart_size, kblob_size, vblock_size;
@@ -190,7 +190,7 @@ int ft_sign_kern_preamble(const char *name, void *data)
 	int rv = 1;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &kpart_data, &kpart_size))
 		return 1;
 
@@ -275,7 +275,7 @@ done:
 }
 
 
-int ft_sign_raw_firmware(const char *name, void *data)
+int ft_sign_raw_firmware(const char *fname)
 {
 	struct vb2_signature *body_sig = NULL;
 	struct vb2_fw_preamble *preamble = NULL;
@@ -284,7 +284,7 @@ int ft_sign_raw_firmware(const char *name, void *data)
 	int rv = 1;
 	int fd = -1;
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &buf, &len))
 		return 1;
 

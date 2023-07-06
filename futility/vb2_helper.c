@@ -53,8 +53,7 @@ static int vb2_public_key_sha1sum(struct vb2_public_key *key,
 	return 1;
 }
 
-int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
-			void *data)
+int show_vb21_pubkey_buf(const char *fname, uint8_t *buf, uint32_t len)
 {
 	struct vb2_public_key key;
 	struct vb2_hash hash;
@@ -64,7 +63,7 @@ int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 	if (VB2_SUCCESS != vb21_unpack_key(&key, buf, len))
 		return 1;
 
-	printf("Public Key file:       %s\n", name);
+	printf("Public Key file:       %s\n", fname);
 	printf("  Vboot API:           2.1\n");
 	printf("  Desc:                \"%s\"\n", key.desc);
 	printf("  Signature Algorithm: %d %s\n", key.sig_alg,
@@ -84,7 +83,7 @@ int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
 	return 0;
 }
 
-int ft_show_vb21_pubkey(const char *name, void *data)
+int ft_show_vb21_pubkey(const char *fname)
 {
 	int fd = -1;
 	uint8_t *buf;
@@ -96,10 +95,10 @@ int ft_show_vb21_pubkey(const char *name, void *data)
 		return 1;
 	}
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
-	rv = show_vb21_pubkey_buf(name, buf, len, data);
+	rv = show_vb21_pubkey_buf(fname, buf, len);
 
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return rv;
@@ -120,7 +119,7 @@ static int vb2_private_key_sha1sum(struct vb2_private_key *key,
 	return 1;
 }
 
-int ft_show_vb21_privkey(const char *name, void *data)
+int ft_show_vb21_privkey(const char *fname)
 {
 	struct vb2_private_key *key = 0;
 	struct vb2_hash hash;
@@ -134,7 +133,7 @@ int ft_show_vb21_privkey(const char *name, void *data)
 		return 1;
 	}
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
 	if (VB2_SUCCESS != vb21_private_key_unpack(&key, buf, len)) {
@@ -142,7 +141,7 @@ int ft_show_vb21_privkey(const char *name, void *data)
 		goto done;
 	}
 
-	printf("Private key file:      %s\n", name);
+	printf("Private key file:      %s\n", fname);
 	printf("  Vboot API:           2.1\n");
 	printf("  Desc:                \"%s\"\n", key->desc ? key->desc : "");
 	printf("  Signature Algorithm: %d %s\n", key->sig_alg,
@@ -201,7 +200,7 @@ enum futil_file_type ft_recognize_pem(uint8_t *buf, uint32_t len)
 	return FILE_TYPE_UNKNOWN;
 }
 
-int ft_show_pem(const char *name, void *data)
+int ft_show_pem(const char *fname)
 {
 	RSA *rsa_key;
 	uint8_t *keyb;
@@ -219,7 +218,7 @@ int ft_show_pem(const char *name, void *data)
 		return 1;
 	}
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
 	/* We're called only after ft_recognize_pem, so this should work. */
@@ -229,8 +228,7 @@ int ft_show_pem(const char *name, void *data)
 
 	/* Use to presence of the private exponent to decide if it's public */
 	RSA_get0_key(rsa_key, &rsa_key_n, NULL, &rsa_key_d);
-	printf("%s Key file:      %s\n", rsa_key_d ? "Private" : "Public",
-					 name);
+	printf("%s Key file:      %s\n", rsa_key_d ? "Private" : "Public", fname);
 
 	bits = BN_num_bits(rsa_key_n);
 	printf("  Key length:          %d\n", bits);

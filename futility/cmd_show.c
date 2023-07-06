@@ -99,23 +99,23 @@ static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
 		 packed_key_sha1_string(data_key));
 }
 
-int ft_show_pubkey(const char *name, void *data)
+int ft_show_pubkey(const char *fname)
 {
 	int fd = -1;
 	struct vb2_packed_key *pubkey;
 	uint32_t len;
 	int rv = 0;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&pubkey,
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, (uint8_t **)&pubkey,
 				     &len))
 		return 1;
 
 	if (vb2_packed_key_looks_ok(pubkey, len)) {
-		ERROR("Invalid public key: %s\n", name);
+		ERROR("Invalid public key: %s\n", fname);
 		rv = 1;
 		goto done;
 	}
-	FT_READABLE_PRINT("Public Key file:       %s\n", name);
+	FT_READABLE_PRINT("Public Key file:       %s\n", fname);
 
 	ft_print_header = "pubkey";
 	show_pubkey(pubkey, "  ");
@@ -125,7 +125,7 @@ done:
 	return rv;
 }
 
-int ft_show_privkey(const char *name, void *data)
+int ft_show_privkey(const char *fname)
 {
 	int fd = -1;
 	int rv = 0;
@@ -134,13 +134,13 @@ int ft_show_privkey(const char *name, void *data)
 	struct vb2_private_key key;
 	const unsigned char *start;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&pkey,
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, (uint8_t **)&pkey,
 				     &len))
 		return 1;
 
 	start = pkey->key_data;
 	if (len <= sizeof(*pkey)) {
-		ERROR("Invalid private key: %s\n", name);
+		ERROR("Invalid private key: %s\n", fname);
 		rv = 1;
 		goto done;
 	}
@@ -149,7 +149,7 @@ int ft_show_privkey(const char *name, void *data)
 
 
 	ft_print_header = "prikey";
-	FT_READABLE_PRINT("Private Key file:      %s\n", name);
+	FT_READABLE_PRINT("Private Key file:      %s\n", fname);
 	FT_PRINT("  Vboot API:           1.0\n", "api::1.0\n");
 	FT_PRINT("  Algorithm:           %u %s\n",
 		 "algorithm::%d::%s\n", pkey->algorithm,
@@ -162,7 +162,7 @@ done:
 	return rv;
 }
 
-int ft_show_keyblock(const char *name, void *data)
+int ft_show_keyblock(const char *fname)
 {
 	struct vb2_keyblock *block;
 	struct vb2_public_key *sign_key = show_option.k;
@@ -171,14 +171,12 @@ int ft_show_keyblock(const char *name, void *data)
 	int fd = -1;
 	uint32_t len;
 
-	retval = futil_open_and_map_file(name, &fd, FILE_RO, (uint8_t **)&block,
-					 &len);
-	if (retval)
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, (uint8_t **)&block, &len))
 		return 1;
 
 	/* Check the hash only first */
 	if (vb2_verify_keyblock_hash(block, len, &wb)) {
-		ERROR("%s is invalid\n", name);
+		ERROR("%s is invalid\n", fname);
 		FT_PARSEABLE_PRINT("keyblock::invalid\n");
 		retval = 1;
 		goto done;
@@ -193,7 +191,7 @@ int ft_show_keyblock(const char *name, void *data)
 		retval = 1;
 
 	ft_print_header = "keyblock";
-	show_keyblock(block, name, !!sign_key, good_sig);
+	show_keyblock(block, fname, !!sign_key, good_sig);
 
 done:
 	futil_unmap_and_close_file(fd, FILE_RO, (uint8_t *)block, len);
@@ -261,10 +259,9 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 }
 
 int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
-			 void *data)
+			 struct bios_state_s *state)
 {
 	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)buf;
-	struct bios_state_s *state = (struct bios_state_s *)data;
 	struct vb2_public_key *sign_key = show_option.k;
 	uint8_t *fv_data = show_option.fv;
 	uint64_t fv_size = show_option.fv_size;
@@ -424,23 +421,23 @@ done:
 	return retval;
 }
 
-int ft_show_fw_preamble(const char *name, void *data)
+int ft_show_fw_preamble(const char *fname)
 {
 	int rv = 0;
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 	ft_print_header = "fw_pre";
-	rv = show_fw_preamble_buf(name, buf, len, data);
+	rv = show_fw_preamble_buf(fname, buf, len, NULL);
 
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return rv;
 }
 
-int ft_show_kernel_preamble(const char *name, void *data)
+int ft_show_kernel_preamble(const char *fname)
 {
 	struct vb2_keyblock *keyblock;
 	struct vb2_public_key *sign_key = show_option.k;
@@ -449,7 +446,7 @@ int ft_show_kernel_preamble(const char *name, void *data)
 	uint8_t *buf;
 	uint32_t len;
 
-	if (futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len))
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 
 	keyblock = (struct vb2_keyblock *)buf;
@@ -457,7 +454,7 @@ int ft_show_kernel_preamble(const char *name, void *data)
 	ft_print_header2 = "keyblock";
 	/* Check the hash... */
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(keyblock, len, &wb)) {
-		ERROR("%s keyblock component is invalid\n", name);
+		ERROR("%s keyblock component is invalid\n", fname);
 		FT_PARSEABLE_PRINT("invalid\n");
 		goto done;
 	} else {
@@ -470,12 +467,12 @@ int ft_show_kernel_preamble(const char *name, void *data)
 	    vb2_verify_keyblock(keyblock, len, sign_key, &wb))
 		good_sig = 1;
 
-	FT_READABLE_PRINT("Kernel partition:        %s\n", name);
+	FT_READABLE_PRINT("Kernel partition:        %s\n", fname);
 	show_keyblock(keyblock, NULL, !!sign_key, good_sig);
 
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
-		ERROR("Parsing data key in %s\n", name);
+		ERROR("Parsing data key in %s\n", fname);
 		goto done;
 	}
 
@@ -485,7 +482,7 @@ int ft_show_kernel_preamble(const char *name, void *data)
 
 	if (VB2_SUCCESS != vb2_verify_kernel_preamble(pre2, len - more,
 						      &data_key, &wb)) {
-		ERROR("%s is invalid\n", name);
+		ERROR("%s is invalid\n", fname);
 		FT_PARSEABLE_PRINT("kernel_preamble::signature::invalid\n");
 		goto done;
 	}

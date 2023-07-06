@@ -33,10 +33,9 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 /** Show functions **/
 
 static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
-			void *data)
+			struct bios_state_s *state)
 {
 	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)buf;
-	struct bios_state_s *state = (struct bios_state_s *)data;
 	int retval = 0;
 	uint32_t maxlen = 0;
 
@@ -141,17 +140,16 @@ static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
 	return retval;
 }
 
-int ft_show_gbb(const char *name, void *data)
+int ft_show_gbb(const char *fname)
 {
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 
-	int retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
-	if (retval)
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
 		return 1;
 	ft_print_header = "gbb";
-	retval = show_gbb_buf(name, buf, len, data);
+	int retval = show_gbb_buf(fname, buf, len, NULL);
 
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return retval;
@@ -165,10 +163,8 @@ int ft_show_gbb(const char *name, void *data)
  * VBLOCK area, we'll have this to verify.
  */
 static int fmap_show_fw_main(const char *name, uint8_t *buf, uint32_t len,
-			     void *data)
+			     struct bios_state_s *state)
 {
-	struct bios_state_s *state = (struct bios_state_s *)data;
-
 	FT_READABLE_PRINT("Firmware body:           %s\n", name);
 	FT_READABLE_PRINT("  Offset:                0x%08x\n",
 			  state->area[state->c].offset);
@@ -181,7 +177,7 @@ static int fmap_show_fw_main(const char *name, uint8_t *buf, uint32_t len,
 
 /* Functions to call to show the bios components */
 static int (*fmap_show_fn[])(const char *name, uint8_t *buf, uint32_t len,
-			       void *data) = {
+			     struct bios_state_s *state) = {
 	show_gbb_buf,
 	fmap_show_fw_main,
 	fmap_show_fw_main,
@@ -191,18 +187,18 @@ static int (*fmap_show_fn[])(const char *name, uint8_t *buf, uint32_t len,
 _Static_assert(ARRAY_SIZE(fmap_show_fn) == NUM_BIOS_COMPONENTS,
 	       "Size of fmap_show_fn[] should match NUM_BIOS_COMPONENTS");
 
-int ft_show_bios(const char *name, void *data)
+int ft_show_bios(const char *fname)
 {
 	struct bios_state_s state = {0}; /* loop inc state on each pass. */
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
 
-	int retval = futil_open_and_map_file(name, &fd, FILE_RO, &buf, &len);
+	int retval = futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len);
 	if (retval)
 		return 1;
 
-	FT_READABLE_PRINT("BIOS:                    %s\n", name);
+	FT_READABLE_PRINT("BIOS:                    %s\n", fname);
 
 	/* We've already checked, so we know this will work. */
 	FmapHeader *fmap = fmap_find(buf, len);
@@ -539,20 +535,20 @@ static void check_slot_after_prepare(enum bios_component fw_c,
 		      fmap_name[fw_c]);
 }
 
-int ft_sign_bios(const char *name, void *data)
+int ft_sign_bios(const char *fname)
 {
 	struct bios_state_s state = {0};
 	int fd = -1;
 	uint8_t *buf = NULL;
 	uint32_t len = 0;
-	bool uses_cbfs_integration = image_uses_cbfs_integration(name);
+	bool uses_cbfs_integration = image_uses_cbfs_integration(fname);
 
-	image_check_and_prepare_cbfs(name, BIOS_FMAP_FW_MAIN_A,
+	image_check_and_prepare_cbfs(fname, BIOS_FMAP_FW_MAIN_A,
 				     uses_cbfs_integration, &state);
-	image_check_and_prepare_cbfs(name, BIOS_FMAP_FW_MAIN_B,
+	image_check_and_prepare_cbfs(fname, BIOS_FMAP_FW_MAIN_B,
 				     uses_cbfs_integration, &state);
 
-	if (futil_open_and_map_file(name, &fd, FILE_MODE_SIGN(sign_option),
+	if (futil_open_and_map_file(fname, &fd, FILE_MODE_SIGN(sign_option),
 				    &buf, &len))
 		return 1;
 

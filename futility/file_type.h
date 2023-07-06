@@ -60,7 +60,7 @@ int futil_file_type_sign(enum futil_file_type type, const char *filename);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 #define R_(FOO) enum futil_file_type FOO(uint8_t *buf, uint32_t len);
-#define S_(FOO) int FOO(const char *name, void *data);
+#define S_(FOO) int FOO(const char *fname);
 #define NONE
 #define FILE_TYPE(A, B, C, D, E, F) D E F
 #include "file_type.inc"
@@ -72,9 +72,6 @@ int futil_file_type_sign(enum futil_file_type type, const char *filename);
 #pragma GCC diagnostic pop
 
 /* Declared for use inside other show functions. */
-int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
-			 void *data);
-int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len,
-			 void *data);
+int show_vb21_pubkey_buf(const char *name, uint8_t *buf, uint32_t len);
 
 #endif /* VBOOT_REFERENCE_FILE_TYPE_H_ */
