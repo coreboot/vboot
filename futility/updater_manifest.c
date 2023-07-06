@@ -734,6 +734,24 @@ static char *resolve_signature_id(struct model_config *model, const char *image)
 	if (tag == NULL)
 		tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG_LEGACY);
 
+	/*
+	 * All active non-unibuild devices have now migrated to run unibuild
+	 * software, so we have to check customization_id first for those
+	 * devices (in particular, 'haha').
+	 */
+	/* The tag should be the LOEM part of the customization_id. */
+	if (!tag) {
+		char *cid = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
+		if (cid) {
+			/* customization_id in format LOEM[-VARIANT]. */
+			char *dash = strchr(cid, '-');
+			if (dash)
+				*dash = '\0';
+			tag = cid;
+			WARN("From %s: tag=%s\n", VPD_CUSTOMIZATION_ID, tag);
+		}
+	}
+
 	/* Unified build: $model.$tag, or $model (b/126800200). */
 	if (is_unibuild) {
 		if (!tag) {
@@ -748,17 +766,7 @@ static char *resolve_signature_id(struct model_config *model, const char *image)
 		return sig_id;
 	}
 
-	/* Non-Unibuild: Upper($tag), or Upper(${cid%%-*}). */
-	if (!tag) {
-		char *cid = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
-		if (cid) {
-			/* customization_id in format LOEM[-VARIANT]. */
-			char *dash = strchr(cid, '-');
-			if (dash)
-				*dash = '\0';
-			tag = cid;
-		}
-	}
+	/* Non-unibuilds are always upper cased. */
 	if (tag)
 		str_convert(tag, toupper);
 	return tag;
