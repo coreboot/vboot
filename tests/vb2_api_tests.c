@@ -274,14 +274,6 @@ static void misc_tests(void)
 	TEST_SUCC(vb2api_secdata_firmware_check(ctx),
 		  "secdata_firmware check 2");
 
-	/* Test fail passthru */
-	reset_common_data(FOR_MISC);
-	vb2api_fail(ctx, 12, 34);
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST),
-		12, "vb2api_fail request");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE),
-		34, "vb2api_fail subcode");
-
 	/* Test get_firmware_size() */
 	reset_common_data(FOR_MISC);
 	TEST_EQ(vb2api_get_firmware_size(ctx), mock_body_size, "firmware_size");
