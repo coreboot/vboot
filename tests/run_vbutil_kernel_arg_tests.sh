@@ -52,7 +52,7 @@ while [ "$k" -lt "${#KERN_VALS[*]}" ]; do
         --arch arm \
         --config "${CONFIG}" \
         "${KERN_VALS[$k]}" \
-        "${BOOT_VALS[$k]}" >/dev/null
+        "${BOOT_VALS[$b]}" >/dev/null
       then
         echo -e "${COL_RED}FAILED${COL_STOP}"
         : $(( errs++ ))
