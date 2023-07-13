@@ -6,6 +6,9 @@
 me="${0##*/}"
 TMP="$me.tmp"
 
+# Set to 1 to update the expected output
+UPDATE_MODE=0
+
 # Work in scratch directory
 cd "${OUTDIR}"
 
@@ -30,8 +33,7 @@ for file in $SHOW_FILES; do
     wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
     ( cd "${SRCDIR}" && "${FUTILITY}" show "${file}" ) | tee "${gotfile}"
 
-    # Uncomment this to update the expected output
-    #cp "${gotfile}" "${wantfile}"
+    [[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
 
     diff "${wantfile}" "${gotfile}"
 done
@@ -51,8 +53,7 @@ for file in ${PARSE_SUPPORTED_FILES}; do
     wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
     ( cd "${SRCDIR}" && "${FUTILITY}" show -P "${file}" ) | tee "${gotfile}"
 
-    # Uncomment this to update the expected output
-    #cp "${gotfile}" "${wantfile}"
+    [[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
 
     diff "${wantfile}" "${gotfile}"
 done
@@ -70,8 +71,7 @@ for file in $VBUTIL_KEY_FILES; do
     ( cd "${SRCDIR}" && "${FUTILITY}" vbutil_key --unpack "${file}" ) \
         | tee "${gotfile}"
 
-    # Uncomment this to update the expected output
-    #cp "${gotfile}" "${wantfile}"
+    [[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
 
     diff "${wantfile}" "${gotfile}"
 done
@@ -86,8 +86,7 @@ wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
     --signpubkey "tests/devkeys/kernel_subkey.vbpubk" ) \
     | tee "${gotfile}"
 
-# Uncomment this to update the expected output
-#cp "${gotfile}" "${wantfile}"
+[[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
 
 diff "${wantfile}" "${gotfile}"
 
@@ -115,8 +114,7 @@ dd bs=1024 count=16 if=/dev/urandom of="${TMP}.fw_main"
   --signpubkey "${KEYDIR}/root_key.vbpubk" \
   --fv "${TMP}.fw_main" | tee "${gotfile}"
 
-# Uncomment this to update the expected output
-#cp "${gotfile}" "${wantfile}"
+[[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
 
 diff "${wantfile}" "${gotfile}"
 
