@@ -61,11 +61,11 @@ void show_pubkey(const struct vb2_packed_key *pubkey, const char *sp)
 		 sp, packed_key_sha1_string(pubkey));
 }
 
-static void show_keyblock(struct vb2_keyblock *keyblock, const char *name,
+static void show_keyblock(struct vb2_keyblock *keyblock, const char *print_name,
 			  int sign_key, int good_sig)
 {
-	if (name)
-		FT_READABLE_PRINT("Keyblock:                %s\n", name);
+	if (print_name)
+		FT_READABLE_PRINT("Keyblock:                %s\n", print_name);
 	else
 		FT_READABLE_PRINT("Keyblock:\n");
 
@@ -198,7 +198,7 @@ done:
 	return retval;
 }
 
-static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
+static int fw_show_metadata_hash(const char *fname, enum bios_component body_c,
 				 struct vb2_fw_preamble *pre)
 {
 	struct vb2_hash real_hash;
@@ -224,7 +224,7 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 		putchar('\n');
 	}
 
-	if (cbfstool_get_metadata_hash(name, fmap_name[body_c], &real_hash) !=
+	if (cbfstool_get_metadata_hash(fname, fmap_name[body_c], &real_hash) !=
 		    VB2_SUCCESS ||
 	    real_hash.algo == VB2_HASH_INVALID) {
 		ERROR("Failed to get metadata hash. Firmware body is"
@@ -258,9 +258,10 @@ static int fw_show_metadata_hash(const char *name, enum bios_component body_c,
 	return 0;
 }
 
-int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
+int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 			 struct bios_state_s *state)
 {
+	const char *print_name = state ? fmap_name[state->c] : fname;
 	struct vb2_keyblock *keyblock = (struct vb2_keyblock *)buf;
 	struct vb2_public_key *sign_key = show_option.k;
 	uint8_t *fv_data = show_option.fv;
@@ -273,7 +274,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	ft_print_header2 = "keyblock";
 	/* Check the hash... */
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(keyblock, len, &wb)) {
-		ERROR("%s keyblock component is invalid\n", name);
+		ERROR("%s keyblock component is invalid\n", print_name);
 		FT_PARSEABLE_PRINT("invalid\n");
 		return 1;
 	} else {
@@ -308,7 +309,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	    vb2_verify_keyblock(keyblock, len, sign_key, &wb))
 		good_sig = 1;
 
-	show_keyblock(keyblock, name, !!sign_key, good_sig);
+	show_keyblock(keyblock, print_name, !!sign_key, good_sig);
 	ft_print_header2 = NULL;
 
 	if (show_option.strict && (!sign_key || !good_sig))
@@ -316,7 +317,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
-		ERROR("Parsing data key in %s\n", name);
+		ERROR("Parsing data key in %s\n", print_name);
 		FT_PARSEABLE_PRINT("data_key::invalid\n");
 		return 1;
 	}
@@ -326,7 +327,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	struct vb2_fw_preamble *pre2 = (struct vb2_fw_preamble *)(buf + more);
 	if (VB2_SUCCESS != vb2_verify_fw_preamble(pre2, len - more,
 						  &data_key, &wb)) {
-		ERROR("%s is invalid\n", name);
+		ERROR("%s is invalid\n", print_name);
 		FT_PARSEABLE_PRINT("invalid\n");
 		return 1;
 	} else {
@@ -398,7 +399,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 			return 1;
 		}
 	} else if (state) { /* Only works for images with at least FW_MAIN_A */
-		if (fw_show_metadata_hash(name, body_c, pre2))
+		if (fw_show_metadata_hash(fname, body_c, pre2))
 			return 1;
 	}
 

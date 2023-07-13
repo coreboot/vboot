@@ -60,7 +60,7 @@ struct bios_state_s {
 	struct bios_area_s rootkey;
 };
 
-int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
+int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 			 struct bios_state_s *state);
 
 #endif /* VBOOT_REFERENCE_FILE_TYPE_BIOS_H_ */

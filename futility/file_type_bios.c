@@ -32,15 +32,16 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 
 /** Show functions **/
 
-static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
+static int show_gbb_buf(const char *fname, uint8_t *buf, uint32_t len,
 			struct bios_state_s *state)
 {
+	const char *print_name = state ? fmap_name[state->c] : fname;
 	struct vb2_gbb_header *gbb = (struct vb2_gbb_header *)buf;
 	int retval = 0;
 	uint32_t maxlen = 0;
 
 	if (!len) {
-		ERROR("GBB header:              %s <invalid>\n", name);
+		ERROR("GBB header:              %s <invalid>\n", print_name);
 		return 1;
 	}
 
@@ -48,7 +49,7 @@ static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
 	if (!futil_valid_gbb_header(gbb, len, &maxlen))
 		retval = 1;
 
-	FT_READABLE_PRINT("GBB header:              %s\n", name);
+	FT_READABLE_PRINT("GBB header:              %s\n", print_name);
 	FT_PRINT("  Version:               %d.%d\n", "version::%d.%d\n",
 		 gbb->major_version, gbb->minor_version);
 	FT_PRINT("  Flags:                 0x%08x\n",
@@ -162,10 +163,10 @@ int ft_show_gbb(const char *fname)
  * about it. We'll just mark it as present so when we encounter corresponding
  * VBLOCK area, we'll have this to verify.
  */
-static int fmap_show_fw_main(const char *name, uint8_t *buf, uint32_t len,
+static int fmap_show_fw_main(const char *fname, uint8_t *buf, uint32_t len,
 			     struct bios_state_s *state)
 {
-	FT_READABLE_PRINT("Firmware body:           %s\n", name);
+	FT_READABLE_PRINT("Firmware body:           %s\n", fmap_name[state->c]);
 	FT_READABLE_PRINT("  Offset:                0x%08x\n",
 			  state->area[state->c].offset);
 	FT_READABLE_PRINT("  Size:                  0x%08x\n", len);
@@ -208,11 +209,8 @@ int ft_show_bios(const char *fname)
 		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah)) {
 			/* But the file might be truncated */
 			fmap_limit_area(ah, len);
-			/* The name is not necessarily null-terminated */
-			char ah_name[FMAP_NAMELEN + 1];
-			snprintf(ah_name, sizeof(ah_name), "%s", ah->area_name);
-			if (asprintf((char **)&ft_print_header, "bios::%.*s",
-				     FMAP_NAMELEN, ah->area_name) <= 0) {
+			if (asprintf((char **)&ft_print_header, "bios::%s",
+				     fmap_name[c]) <= 0) {
 				ERROR("Failed to allocate buffer for FT_PRINT");
 				return 1;
 			}
@@ -224,12 +222,12 @@ int ft_show_bios(const char *fname)
 			state.area[c].len = ah->area_size;
 
 			VB2_DEBUG("showing FMAP area %d (%s),"
-				  " offset=0x%08x len=0x%08x\n",
-				  c, ah_name, ah->area_offset, ah->area_size);
+				  " offset=0x%08x len=0x%08x\n", c,
+				  fmap_name[c], ah->area_offset, ah->area_size);
 
 			/* Go look at it. */
 			if (fmap_show_fn[c])
-				retval += fmap_show_fn[c](ah_name,
+				retval += fmap_show_fn[c](fname,
 							  state.area[c].buf,
 							  state.area[c].len,
 							  &state);
