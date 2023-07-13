@@ -555,7 +555,7 @@ static int do_gbb(int argc, char *argv[])
 							 gbb->
 							 hwid_offset) : "");
 		if (sel_digest)
-			print_hwid_digest(gbb, "digest: ", "\n");
+			print_hwid_digest(gbb, "digest: ");
 
 		if (sel_flags)
 			printf("flags: 0x%08x\n", gbb->flags);

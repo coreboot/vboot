@@ -138,8 +138,7 @@ int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 
 /* For GBB v1.2 and later, print the stored digest of the HWID (and whether
  * it's correct). Return true if it is correct. */
-int print_hwid_digest(struct vb2_gbb_header *gbb,
-		      const char *banner, const char *footer)
+int print_hwid_digest(struct vb2_gbb_header *gbb, const char *banner)
 {
 	FT_READABLE_PRINT("%s", banner);
 	FT_PARSEABLE_PRINT("hwid::digest::algorithm::2::SHA256\n");
@@ -147,7 +146,7 @@ int print_hwid_digest(struct vb2_gbb_header *gbb,
 
 	/* There isn't one for v1.1 and earlier, so assume it's good. */
 	if (gbb->minor_version < 2) {
-		printf("<none>%s", footer);
+		printf("<none>\n");
 		FT_PARSEABLE_PRINT("hwid::digest::ignored\n");
 		return 1;
 	}
@@ -170,9 +169,8 @@ int print_hwid_digest(struct vb2_gbb_header *gbb,
 		}
 	}
 
-	FT_PARSEABLE_PRINT("\n");
-	FT_PRINT("   %s", "hwid::digest::%s\n", is_valid ? "valid" : "invalid");
-	FT_PARSEABLE_PRINT("%s", footer);
+	FT_PRINT_RAW("", "\n");
+	FT_PRINT("   %s\n", "hwid::digest::%s\n", is_valid ? "valid" : "invalid");
 	return is_valid;
 }
 

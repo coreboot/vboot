@@ -137,8 +137,7 @@ void update_hwid_digest(struct vb2_gbb_header *gbb);
 
 /* For GBB v1.2 and later, print the stored digest of the HWID (and whether
  * it's correct). Return true if it is correct. */
-int print_hwid_digest(struct vb2_gbb_header *gbb,
-		      const char *banner, const char *footer);
+int print_hwid_digest(struct vb2_gbb_header *gbb, const char *banner);
 
 /* Copies a file. */
 int futil_copy_file(const char *infile, const char *outfile);

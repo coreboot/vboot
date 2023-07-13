@@ -91,7 +91,7 @@ static int show_gbb_buf(const char *name, uint8_t *buf, uint32_t len,
 	FT_PRINT("  HWID:                  %s\n", "hwid::value::%s\n",
 		 buf + gbb->hwid_offset);
 
-	print_hwid_digest(gbb, "     digest:             ", "\n");
+	print_hwid_digest(gbb, "     digest:             ");
 
 	struct vb2_packed_key *pubkey =
 		(struct vb2_packed_key *)(buf + gbb->rootkey_offset);
