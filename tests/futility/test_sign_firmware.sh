@@ -124,28 +124,24 @@ for infile in $INFILES; do
   [ "${m}" = "4" ]
 
   # check the sha1sums
-  "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${outfile}" \
-    | grep sha1sum \
-    | sed -e 's/.*: \+//' > "${TMP}.${base}.sha.new"
+  "${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${outfile}" \
+    | grep ::sha1_sum:: | sort | cut -d: -f5- > "${TMP}.${base}.sha.new"
   cmp "${SCRIPT_DIR}/futility/data_${base}_expect.txt" "${TMP}.${base}.sha.new"
 
-   # and the LOEM stuff
-   "${FUTILITY}" dump_fmap -x "${outfile}" \
-     "FW_MAIN_A:${loemdir}/fw_main_A" "FW_MAIN_B:${loemdir}/fw_main_B"
+  # and the LOEM stuff
+  "${FUTILITY}" dump_fmap -x "${outfile}" \
+    "FW_MAIN_A:${loemdir}/fw_main_A" "FW_MAIN_B:${loemdir}/fw_main_B"
 
-   "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
-     --fv "${loemdir}/fw_main_A" \
-     "${loemdir}/vblock_A.${loemid}" | grep sha1sum \
-     | sed -e 's/.*: \+//' > "${loemdir}/loem.sha.new"
-   "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
-     --fv "${loemdir}/fw_main_B" \
-     "${loemdir}/vblock_B.${loemid}" | grep sha1sum \
-     | sed -e 's/.*: \+//' >> "${loemdir}/loem.sha.new"
+  "${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
+    --fv "${loemdir}/fw_main_A" "${loemdir}/vblock_A.${loemid}" \
+    | grep ::sha1_sum:: | sort | cut -d: -f3- > "${loemdir}/loem.sha.new"
+  "${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
+    --fv "${loemdir}/fw_main_B" "${loemdir}/vblock_B.${loemid}" \
+    | grep ::sha1_sum:: | sort | cut -d: -f3- >> "${loemdir}/loem.sha.new"
 
   # the vblocks don't have root or recovery keys
-  tail -4 "${SCRIPT_DIR}/futility/data_${base}_expect.txt" \
-    > "${loemdir}/sha.expect"
-  cmp "${loemdir}/sha.expect" "${loemdir}/loem.sha.new"
+  cmp <(grep -Ev "recovery_key|root_key" "${SCRIPT_DIR}/futility/data_${base}_expect.txt") \
+  	"${loemdir}/loem.sha.new"
 
 done
 
@@ -154,25 +150,25 @@ GOOD_OUT="${TMP}.${GOOD_VBLOCKS##*/}.new"
 MORE_OUT="${TMP}.${ONEMORE##*/}.new"
 GOOD_CBFS_OUT="${TMP}.${GOOD_CBFS##*/}.new"
 
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${GOOD_OUT}" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.good.body"
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${GOOD_OUT}" \
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.good.body"
 "${FUTILITY}" dump_fmap -p "${GOOD_OUT}" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.good.fw_main"
 # This should fail because they're different
 if cmp "${TMP}.good.body" "${TMP}.good.fw_main"; then false; fi
 
 # Make sure that the BIOS with the bad vblocks signed the whole fw body
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${MORE_OUT}" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.onemore.body"
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${MORE_OUT}" \
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.onemore.body"
 "${FUTILITY}" dump_fmap -p "${MORE_OUT}" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.onemore.fw_main"
 # These should match
 cmp "${TMP}.onemore.body" "${TMP}.onemore.fw_main"
 cmp "${TMP}.onemore.body" "${TMP}.good.fw_main"
 
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
     "${GOOD_CBFS_OUT}" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.good_cbfs.body"
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.good_cbfs.body"
 "${FUTILITY}" dump_fmap -p "${GOOD_CBFS_OUT}" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.good_cbfs.fw_main"
 if cmp "${TMP}.good_cbfs.body" "${TMP}.good_cbfs.fw_main"; then false; fi
@@ -194,9 +190,9 @@ cbfstool "${GOOD_CBFS_OUT}.1" add \
   -K "${KEYDIR}" \
   "${GOOD_CBFS_OUT}.1"
 
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
     "${GOOD_CBFS_OUT}.1" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.good_cbfs.1.body"
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.good_cbfs.1.body"
 "${FUTILITY}" dump_fmap -p "${GOOD_CBFS_OUT}" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.good_cbfs.1.fw_main"
 
@@ -223,8 +219,8 @@ echo -n "${count} " 1>&3
   -K "${KEYDIR}" \
   "${MORE_OUT}" "${MORE_OUT}.2"
 
-m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
-      "${MORE_OUT}.2" | grep -c -E 'Firmware version: +14$|Preamble flags: +8$')
+m=$("${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
+      "${MORE_OUT}.2" | grep -c -E 'firmware_version::14$|preamble::flags::8$')
 [ "${m}" = "4" ]
 
 
@@ -238,8 +234,8 @@ echo -n "${count} " 1>&3
   -K "${KEYDIR}" \
   "${MORE_OUT}" "${MORE_OUT}.3"
 
-m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
-      "${MORE_OUT}.3" | grep -c -E 'Firmware version: +1$|Preamble flags: +0$')
+m=$("${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
+      "${MORE_OUT}.3" | grep -c -E 'firmware_version::1$|preamble::flags::0$')
 [ "${m}" = "4" ]
 
 
@@ -254,8 +250,8 @@ echo -n "${count} " 1>&3
   -K "${KEYDIR}" \
   "${CLEAN_B}" "${CLEAN_B}.1"
 
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${CLEAN_B}.1" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.clean_b.body"
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${CLEAN_B}.1" \
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.clean_b.body"
 "${FUTILITY}" dump_fmap -p "${CLEAN_B}.1" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.clean_b.fw_main"
 
@@ -268,10 +264,9 @@ cmp_last_line "${TMP}.clean_b.body" "${TMP}.clean_b.fw_main"
 
 # Version for slot A should be kept intact, while for B slot it should default
 # to 1. All flags should be zero.
-m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
+m=$("${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
         "${CLEAN_B}.1" \
-      | grep -c -E \
-          'Firmware version: +1$|Preamble flags: +0$|Firmware version: +2$')
+      | grep -c -E 'firmware_version::1$|preamble::flags::0$|firmware_version::2$')
 [ "${m}" = "4" ]
 
 # Check signing when there is no B slot
@@ -291,18 +286,18 @@ apply_xxd_patch "${NO_B_SLOT_PATCH}" "${NO_B_SLOT}"
   -v 1 \
   "${NO_B_SLOT}" "${NO_B_SLOT_SIGNED_IMG}"
 
-"${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
+"${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
     "${NO_B_SLOT_SIGNED_IMG}" \
-  | awk '/Firmware body size:/ {print $4}' > "${TMP}.no_b_slot.body"
+  | grep "::body::size::" | cut -d: -f9 > "${TMP}.no_b_slot.body"
 "${FUTILITY}" dump_fmap -p "${NO_B_SLOT_SIGNED_IMG}" \
   | awk '/FW_MAIN_/ {print $3}' > "${TMP}.no_b_slot.fw_main"
 
 if cmp "${TMP}.no_b_slot.body" "${TMP}.no_b_slot.fw_main" ; then false; fi
 cmp "${TMP}.no_b_slot.body" <(tail -n1 "${TMP}.good_cbfs.body")
 
-m=$("${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" \
+m=$("${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" \
         "${NO_B_SLOT_SIGNED_IMG}" \
-      | grep -c -E 'Firmware version: +1$|Preamble flags: +0$')
+      | grep -c -E 'firmware_version::1$|preamble::flags::0$')
 [ "${m}" = "2" ]
 
 # Check signing when cbfstool reports incorrect size
@@ -366,18 +361,18 @@ for keyblock_patch in "${BAD_KEYBLOCK_PATCHES[@]}"; do
   cp "${GOOD_DEV}" "${BAD_IN}"
   apply_xxd_patch "${keyblock_patch}" "${BAD_IN}"
 
-  FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
+  FUTIL_OUTPUT="$(if "${FUTILITY}" verify -P \
                         --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_IN}"; \
                   then false; fi)"
-  grep -q 'VBLOCK_A keyblock component is invalid' <<< "${FUTIL_OUTPUT}"
+  grep -q 'bios::VBLOCK_A::keyblock::invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$("${FUTILITY}" sign \
     -K "${KEYDIR}" \
     "${BAD_IN}" "${BAD_OUT}" 2>&1)"
    grep -q 'VBLOCK_A keyblock is invalid' <<< "${FUTIL_OUTPUT}"
 
-  "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_OUT}" \
-    | awk '/Firmware body size:/ {print $4}' > "${BAD_OUT}.body"
+  "${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_OUT}" \
+    | grep "::body::size::" | cut -d: -f9 > "${BAD_OUT}.body"
   "${FUTILITY}" dump_fmap -p "${BAD_OUT}" \
     | awk '/FW_MAIN_/ {print $3}' > "${BAD_OUT}.fw_main"
 
@@ -395,18 +390,18 @@ for vblock_patch in "${BAD_PREAMBLE_PATCHES[@]}"; do
   cp "${GOOD_DEV}" "${BAD_IN}"
   apply_xxd_patch "${vblock_patch}" "${BAD_IN}"
 
-  FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
+  FUTIL_OUTPUT="$(if "${FUTILITY}" verify -P \
                        --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_IN}"; \
                   then false; fi)"
-  grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
+  grep -q 'bios::VBLOCK_A::preamble::invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$("${FUTILITY}" sign \
     -K "${KEYDIR}" \
     "${BAD_IN}" "${BAD_OUT}" 2>&1)"
   grep -q 'VBLOCK_A preamble is invalid' <<< "${FUTIL_OUTPUT}"
 
-  "${FUTILITY}" verify --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_OUT}" \
-    | awk '/Firmware body size:/ {print $4}' > "${BAD_OUT}.body"
+  "${FUTILITY}" verify -P --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_OUT}" \
+    | grep "::body::size::" | cut -d: -f9 > "${BAD_OUT}.body"
   "${FUTILITY}" dump_fmap -p "${BAD_OUT}" \
     | awk '/FW_MAIN_/ {print $3}' > "${BAD_OUT}.fw_main"
 
@@ -424,10 +419,10 @@ for vblock_patch in "${BAD_FMAP_KEYBLOCK_PATCHES[@]}"; do
   cp "${GOOD_DEV}" "${BAD_IN}"
   apply_xxd_patch "${vblock_patch}" "${BAD_IN}"
 
-  FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
+  FUTIL_OUTPUT="$(if "${FUTILITY}" verify -P\
                        --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_IN}"; \
                   then false; fi)"
-  grep -q 'VBLOCK_A keyblock component is invalid' <<< "${FUTIL_OUTPUT}"
+  grep -q 'bios::VBLOCK_A::keyblock::invalid' <<< "${FUTIL_OUTPUT}"
 
   FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
                        -K "${KEYDIR}" \
@@ -447,10 +442,10 @@ BAD_OUT="${TMP}.${GOOD_DEV##*/}.bad.${bad_counter}.out.bin"
 cp "${GOOD_DEV}" "${BAD_IN}"
 apply_xxd_patch "${BAD_FMAP_PREAMBLE_PATCHES[0]}" "${BAD_IN}"
 
-FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
+FUTIL_OUTPUT="$(if "${FUTILITY}" verify -P \
                      --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_IN}"; \
                 then false; fi)"
-grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
+grep -q 'bios::VBLOCK_A::preamble::invalid' <<< "${FUTIL_OUTPUT}"
 
 FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
                      -K "${KEYDIR}" \
@@ -469,10 +464,10 @@ BAD_OUT="${TMP}.${GOOD_DEV##*/}.bad.${bad_counter}.out.bin"
 cp "${GOOD_DEV}" "${BAD_IN}"
 apply_xxd_patch "${BAD_FMAP_PREAMBLE_PATCHES[1]}" "${BAD_IN}"
 
-FUTIL_OUTPUT="$(if "${FUTILITY}" verify \
+FUTIL_OUTPUT="$(if "${FUTILITY}" verify -P \
                      --publickey "${KEYDIR}/root_key.vbpubk" "${BAD_IN}"; \
                 then false; fi)"
-grep -q 'VBLOCK_A is invalid' <<< "${FUTIL_OUTPUT}"
+grep -q 'bios::VBLOCK_A::preamble::invalid' <<< "${FUTIL_OUTPUT}"
 
 FUTIL_OUTPUT="$(if "${FUTILITY}" sign \
                      -K "${KEYDIR}" \

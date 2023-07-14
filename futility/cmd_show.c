@@ -276,7 +276,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	ft_print_header2 = "keyblock";
 	/* Check the hash... */
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(keyblock, len, &wb)) {
-		FT_READABLE_PRINT("%s keyblock component is invalid\n", name);
+		ERROR("%s keyblock component is invalid\n", name);
 		FT_PARSEABLE_PRINT("invalid\n");
 		return 1;
 	} else {
@@ -329,7 +329,7 @@ int show_fw_preamble_buf(const char *name, uint8_t *buf, uint32_t len,
 	struct vb2_fw_preamble *pre2 = (struct vb2_fw_preamble *)(buf + more);
 	if (VB2_SUCCESS != vb2_verify_fw_preamble(pre2, len - more,
 						  &data_key, &wb)) {
-		FT_READABLE_PRINT("%s is invalid\n", name);
+		ERROR("%s is invalid\n", name);
 		FT_PARSEABLE_PRINT("invalid\n");
 		return 1;
 	} else {
