@@ -92,6 +92,92 @@ extern const struct futil_cmd_t *const futil_cmds[];
 extern const char *ft_print_header;
 extern const char *ft_print_header2;
 
+/*
+ * `futility show` supports two kinds of output: human readable and machine
+ * parseable. To keep the code simple, there is mostly a 1-to-1 relationship
+ * between lines of human readable and lines of machine parseable output. The
+ * FT_PRINT() macro should be used in those cases to define both output types
+ * for a given line in one statement. In rare cases where lines do not match
+ * 1-to-1, FT_READABLE_PRINT() and FT_PARSEABLE_PRINT() can be used to only
+ * print to one or the other format.
+ *
+ * The requirements for machine parseable output are as follows and must be
+ * strictly followed to ensure backwards-compatibility with tools using it:
+ *
+ * * Each line consists of a string of prefix tokens and one or more data
+ *   values, separated by double colon delimiters (`::`).
+ *
+ *   * Output lines are independent of each other. No information may be encoded
+ *     by the position of one output line relative to another (e.g. no
+ *     "headings" which apply to all following lines).
+ *
+ *   * Tokens should form a hierarchy that groups related values together.
+ *
+ *     * Do not just use delimiters to separate words. Each token should
+ *       represent a real layer in the hierarchy (e.g.
+ *       `preamble::firmware_version` instead of `preamble::firmware::version`
+ *       since "firmware" isn't a real hierarchical layer within the preamble).
+ *
+ *     * The toplevel token should be the same for all output lines and
+ *       represent the futility file type being displayed (e.g. `bios`).
+ *
+ *   * Neither tokens nor values may contain the colon character (`:`) or a
+ *     line break (`\n`).
+ *
+ *   * All integer values (even memory addresses) should be output in decimal.
+ *
+ *   * Every line should represent one single piece of information (i.e. no
+ *     aggregate lines that e.g. show both the offset and size of something in
+ *     the same line).
+ *
+ *     * If a single piece of information can be represented in multiple ways
+ *       (e.g. hash algorithm by name and numerical ID), and it is useful to
+ *       output both of them, they should be both output on the same line
+ *       separated by `::`.
+ *
+ *   * Values should generally be simple. For very complex values and those that
+ *     need to contain the disallowed characters or raw binary data (like the
+ *     kernel command line), consider just creating a separate command to
+ *     extract them specifically (e.g. `futility dump_kernel_config`).
+ *
+ *   * When a line represents a set (e.g. flags in textual representation), the
+ *     individual set items should be separated by single colons (`:`). Callers
+ *     should make no assumptions about the order of items listed in a set.
+ *
+ * * The parseable output is considered a stable API. Once an output line has
+ *   been added, futility must forever return the exact same format (same prefix
+ *   tokens, same data values in the same notation) on the same input file.
+ *
+ *   * Output lines are independent. Callers must make no assumption about the
+ *     order of output lines, and additional lines may be added in the future.
+ *
+ *   * For values representing a set, new items may become possible for the set
+ *     in future versions as long as the existing ones are still represented in
+ *     the same way.
+ *
+ *   * When input files themselves change in a way that certain output lines no
+ *     longer make sense for them (e.g. switching from raw area signing to
+ *     metadata hash signing), some of the output lines that used to appear for
+ *     the old version of that file type may no longer appear for the new
+ *     version. But the lines that do appear must still follow the same
+ *     format as they did for the old version.
+ *
+ *   * When there's a strong need to change the existing way something is
+ *     represented, a new output line should be added that represents it in a
+ *     better way. The old output line should be marked deprecated in a code
+ *     comment but not removed or altered in any way from the output. (This
+ *     means that as changes accrue information may be displayed in multiple
+ *     redundant ways.)
+ *
+ *   * If one day the burden of accumulated deprecated output lines becomes too
+ *     high, we may consider a permanent deprecation and removal plan. But this
+ *     would be done over a long time frame with plenty of heads-up notice to
+ *     `futility show` consumers to ensure they have migrated to the new format.
+ *     Consumers are meant to be able to trust that they can hardcode parsing
+ *     for a certain output line and it will remain working without futility
+ *     suddenly pulling the rug out from under them.
+ */
+
 /* futility print helpers to handle parseable prints */
 #define FT_READABLE_PRINT(fmt, args...) do { \
 		if (!show_option.parseable) \
