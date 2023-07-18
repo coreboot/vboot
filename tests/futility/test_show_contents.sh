@@ -20,6 +20,7 @@ SHOW_FILES="
   tests/futility/data/fw_vblock.bin
   tests/futility/data/fw_gbb.bin
   tests/futility/data/bios_peppy_mp.bin
+  tests/futility/data/bios_coachz_cbfs.bin
   tests/futility/data/kern_preamble.bin
   tests/futility/data/sample.vbpubk2
   tests/futility/data/sample.vbprik2
@@ -45,6 +46,7 @@ PARSE_SUPPORTED_FILES="
   tests/futility/data/fw_vblock.bin
   tests/futility/data/fw_gbb.bin
   tests/futility/data/bios_peppy_mp.bin
+  tests/futility/data/bios_coachz_cbfs.bin
   tests/futility/data/kern_preamble.bin
 "
 for file in ${PARSE_SUPPORTED_FILES}; do

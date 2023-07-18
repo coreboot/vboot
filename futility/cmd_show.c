@@ -229,6 +229,8 @@ static int fw_show_metadata_hash(const char *fname, enum bios_component body_c,
 	    real_hash.algo == VB2_HASH_INVALID) {
 		ERROR("Failed to get metadata hash. Firmware body is"
 			" corrupted or is not a valid CBFS.\n");
+		FT_PARSEABLE_PRINT("body::metadata_hash::invalid\n");
+		FT_PARSEABLE_PRINT("body::signature::invalid\n");
 		return 1;
 	}
 
@@ -250,6 +252,9 @@ static int fw_show_metadata_hash(const char *fname, enum bios_component body_c,
 		putchar('\n');
 		ERROR("Signature hash does not match with"
 			" real metadata hash.\n");
+
+		/* To balance out signature::valid otherwise printed by caller. */
+		FT_PARSEABLE_PRINT("body::signature::invalid\n");
 		return 1;
 	} else {
 		FT_PRINT("  Body metadata hash valid!\n",
