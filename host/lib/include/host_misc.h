@@ -27,6 +27,8 @@ uint8_t* ReadFile(const char* filename, uint64_t* size);
 /* Read the first line from a file.  Passed the destination, dest size,
  * and filename to read.
  *
+ * Trailing newlines will be chomped from dest.
+ *
  * Returns the destination, or NULL if error. */
 char* ReadFileFirstLine(char* dest, int size, const char* filename);
 

@@ -71,6 +71,10 @@ char* ReadFileFirstLine(char* dest, int size, const char* filename)
 
 	got = fgets(dest, size, f);
 	fclose(f);
+
+	/* chomp the trailing newline if any */
+	if (got)
+		dest[strcspn(dest, "\n")] = 0;
 	return got;
 }
 
