@@ -24,11 +24,11 @@ char* StrCopy(char* dest, const char* src, int dest_size);
  * error. */
 uint8_t* ReadFile(const char* filename, uint64_t* size);
 
-/* Read a string from a file.  Passed the destination, dest size, and
- * filename to read.
+/* Read the first line from a file.  Passed the destination, dest size,
+ * and filename to read.
  *
  * Returns the destination, or NULL if error. */
-char* ReadFileString(char* dest, int size, const char* filename);
+char* ReadFileFirstLine(char* dest, int size, const char* filename);
 
 /* Read an unsigned integer from a file and save into passed pointer.
  *

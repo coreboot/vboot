@@ -544,8 +544,8 @@ static int FindGpioChipOffsetByLabel(unsigned *gpio_num, unsigned *offset,
 			snprintf(filename, sizeof(filename),
 				 "%s/gpiochip%u/label",
 				 GPIO_BASE_PATH, controller_offset);
-			if (ReadFileString(chiplabel, sizeof(chiplabel),
-					   filename)) {
+			if (ReadFileFirstLine(chiplabel, sizeof(chiplabel),
+					      filename)) {
 				if (!strncasecmp(chiplabel, name,
 						 strlen(name))) {
 					/*
@@ -800,7 +800,7 @@ static int ReadGpio(unsigned signal_type)
 
 	/* Check for chipsets we recognize. */
 	snprintf(name, sizeof(name), "%s.%d/GPIO.3", ACPI_GPIO_PATH, index);
-	if (!ReadFileString(controller_name, sizeof(controller_name), name))
+	if (!ReadFileFirstLine(controller_name, sizeof(controller_name), name))
 		return -1;
 	chipset = FindChipset(controller_name);
 	if (chipset == NULL)
@@ -935,11 +935,11 @@ const char* VbGetArchPropertyString(const char* name, char* dest,
 	if (!strcasecmp(name,"arch")) {
 		return StrCopy(dest, "x86", size);
 	} else if (!strcasecmp(name,"hwid")) {
-		return ReadFileString(dest, size, ACPI_BASE_PATH "/HWID");
+		return ReadFileFirstLine(dest, size, ACPI_BASE_PATH "/HWID");
 	} else if (!strcasecmp(name,"fwid")) {
-		return ReadFileString(dest, size, ACPI_BASE_PATH "/FWID");
+		return ReadFileFirstLine(dest, size, ACPI_BASE_PATH "/FWID");
 	} else if (!strcasecmp(name,"ro_fwid")) {
-		return ReadFileString(dest, size, ACPI_BASE_PATH "/FRID");
+		return ReadFileFirstLine(dest, size, ACPI_BASE_PATH "/FRID");
 	} else if (!strcasecmp(name,"mainfw_act")) {
 		if (ReadFileInt(ACPI_BINF_PATH ".1", &value) < 0)
 			return NULL;

@@ -60,7 +60,7 @@ uint8_t* ReadFile(const char* filename, uint64_t* sizeptr)
 	return buf;
 }
 
-char* ReadFileString(char* dest, int size, const char* filename)
+char* ReadFileFirstLine(char* dest, int size, const char* filename)
 {
 	char* got;
 	FILE* f;
@@ -79,7 +79,7 @@ int ReadFileInt(const char* filename, unsigned* value)
 	char buf[64];
 	char* e = NULL;
 
-	if (!ReadFileString(buf, sizeof(buf), filename))
+	if (!ReadFileFirstLine(buf, sizeof(buf), filename))
 		return -1;
 
 	/* Convert to integer.  Allow characters after the int ("123 blah"). */
