@@ -25,7 +25,6 @@ set -u
 
 PRE_PVT_BID_FLAG=0x10
 MP_BID_FLAG=0x10000
-CR50_NODE_LOCKED_VERSION="0.5.12"
 
 # Convert unsigned 32 bit value into a signed one.
 to_int32() {

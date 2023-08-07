@@ -158,8 +158,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "Verification of alternate bootloader payload failed";
 	/* 0x62 */ case VB2_RECOVERY_SECDATA_FWMP_INIT:
 		return "FWMP secure NVRAM (TPM) initialization error";
-	/* 0x63 */ case VB2_RECOVERY_CR50_BOOT_MODE:
-		return "Failed to get boot mode from Cr50";
+	/* 0x63 */ case VB2_RECOVERY_GSC_BOOT_MODE:
+		return "Failed to get boot mode from GSC";
 	/* 0x64 */ case VB2_RECOVERY_ESCAPE_NO_BOOT:
 		return "Attempt to escape from NO_BOOT mode was detected";
 	/* 0x7f */ case VB2_RECOVERY_RW_UNSPECIFIED:

@@ -274,7 +274,9 @@ enum vb2_nv_recovery {
 	/* FWMP secure data initialization error */
 	VB2_RECOVERY_SECDATA_FWMP_INIT = 0x62,
 
-	/* Failed to get boot mode from TPM/Cr50 */
+	/* Failed to get boot mode from TPM/GSC */
+	VB2_RECOVERY_GSC_BOOT_MODE = 0x63,
+	/* TODO: Remove the deprecated alias */
 	VB2_RECOVERY_CR50_BOOT_MODE = 0x63,
 
 	/* Attempt to escape from NO_BOOT mode was detected */

@@ -133,8 +133,9 @@ struct file_buf {
 
 /*
  * Max number of RO ranges to cover. 32 is more than enough, this must be kept
- * in sync with APRO_MAX_NUM_RANGES declaration in
- * common/ap_ro_integrity_check.c in the Cr50 tree.
+ * in sync with
+ * - AP_RO_MAX_NUM_RANGES in cr50/common/ap_ro_integrity_check.c
+ * - MAX_RO_RANGES in ti50/common/capsules/src/ap_ro_verification/gscvd.rs
  */
 #define MAX_RANGES 32
 

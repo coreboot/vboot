@@ -161,7 +161,7 @@ static vb2_error_t check_ec_active(struct vb2_context *ctx)
 	int in_rw = 0;
 	/*
 	 * We don't use VB2_CONTEXT_EC_TRUSTED, which checks if not EC_IN_RW.
-	 * It is controlled by cr50 but on some platforms, cr50 can't know when
+	 * It is controlled by GSC but on some platforms, GSC can't know when
 	 * a EC resets. So, we trust what EC-RW says. If it lies it's in RO,
 	 * we'll flash RW while it's in RW.
 	 */
