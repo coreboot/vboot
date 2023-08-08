@@ -64,7 +64,9 @@ class Signer:
         """
         logging.info("signing efi file %s", target)
 
-        # Allow this to fail, as there maybe no current signature.
+        # Remove any existing signatures, in case the file being signed
+        # was signed previously. Allow this to fail, as there may not be
+        # any signatures.
         subprocess.run(["sudo", "sbattach", "--remove", target], check=False)
 
         signed_file = self.temp_dir / target.name
