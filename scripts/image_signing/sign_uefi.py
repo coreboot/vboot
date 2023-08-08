@@ -70,33 +70,26 @@ class Signer:
         subprocess.run(["sudo", "sbattach", "--remove", target], check=False)
 
         signed_file = self.temp_dir / target.name
-        try:
-            subprocess.run(
-                [
-                    "sbsign",
-                    "--key",
-                    self.priv_key,
-                    "--cert",
-                    self.sign_cert,
-                    "--output",
-                    signed_file,
-                    target,
-                ],
-                check=True,
-            )
-        except subprocess.CalledProcessError:
-            logging.warning("cannot sign %s", target)
-            return
+        subprocess.run(
+            [
+                "sbsign",
+                "--key",
+                self.priv_key,
+                "--cert",
+                self.sign_cert,
+                "--output",
+                signed_file,
+                target,
+            ],
+            check=True,
+        )
 
         subprocess.run(
             ["sudo", "cp", "--force", signed_file, target], check=True
         )
-        try:
-            subprocess.run(
-                ["sbverify", "--cert", self.verify_cert, target], check=True
-            )
-        except subprocess.CalledProcessError:
-            sys.exit("Verification failed")
+        subprocess.run(
+            ["sbverify", "--cert", self.verify_cert, target], check=True
+        )
 
 
 def inject_vbpubk(efi_file: os.PathLike, key_dir: os.PathLike):
