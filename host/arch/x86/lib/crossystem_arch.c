@@ -838,7 +838,7 @@ static const struct GpioChipset *FindChipset(const char *name)
  * Returns 1 if the signal is asserted, 0 if not asserted, or -1 if error. */
 static int ReadGpio(unsigned signal_type)
 {
-	char name[128];
+	char name[256];
 	int index = 0;
 	unsigned gpio_type;
 	unsigned active_high;
