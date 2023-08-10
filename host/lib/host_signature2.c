@@ -22,6 +22,7 @@
 #include "host_common.h"
 #include "host_key21.h"
 #include "host_signature21.h"
+#include "host_p11.h"
 
 struct vb2_signature *vb2_alloc_signature(uint32_t sig_size,
 					  uint32_t data_size)
@@ -84,6 +85,21 @@ struct vb2_signature *vb2_calculate_signature(
 		const uint8_t *data, uint32_t size,
 		const struct vb2_private_key *key)
 {
+	if (key->key_location == PRIVATE_KEY_P11) {
+		const uint32_t sig_size = vb2_rsa_sig_size(key->sig_alg);
+		struct vb2_signature *sig =
+			(struct vb2_signature *)vb2_alloc_signature(sig_size, size);
+		if (!sig)
+			return NULL;
+		if (pkcs11_sign(key->p11_key, key->hash_alg, data, size,
+				vb2_signature_data_mutable(sig), sig_size) != VB2_SUCCESS) {
+			fprintf(stderr, "%s: pkcs11_sign failed\n", __func__);
+			free(sig);
+			return NULL;
+		}
+		return sig;
+	}
+
 	struct vb2_hash hash;
 	uint32_t digest_size = vb2_digest_size(key->hash_alg);
 

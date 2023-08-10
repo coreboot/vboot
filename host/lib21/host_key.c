@@ -499,36 +499,13 @@ vb2_error_t vb2_public_key_hash(struct vb2_public_key *key,
 enum vb2_signature_algorithm vb2_rsa_sig_alg(struct rsa_st *rsa)
 {
 	const BIGNUM *e, *n;
-	int exp, bits;
+	uint32_t exp, bits;
 
 	RSA_get0_key(rsa, &n, &e, NULL);
 	exp = BN_get_word(e);
 	bits = BN_num_bits(n);
 
-	switch (exp) {
-	case RSA_3:
-		switch (bits) {
-		case 2048:
-			return VB2_SIG_RSA2048_EXP3;
-		case 3072:
-			return VB2_SIG_RSA3072_EXP3;
-		}
-		break;
-	case RSA_F4:
-		switch (bits) {
-		case 1024:
-			return VB2_SIG_RSA1024;
-		case 2048:
-			return VB2_SIG_RSA2048;
-		case 4096:
-			return VB2_SIG_RSA4096;
-		case 8192:
-			return VB2_SIG_RSA8192;
-		}
-	}
-
-	/* no clue */
-	return VB2_SIG_INVALID;
+	return vb2_get_sig_alg(exp, bits);
 }
 
 vb2_error_t vb21_public_key_write(const struct vb2_public_key *key,

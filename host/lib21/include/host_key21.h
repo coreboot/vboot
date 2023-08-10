@@ -12,12 +12,23 @@
 #include "2return_codes.h"
 #include "2struct.h"
 
+struct pkcs11_key;
 struct vb2_public_key;
 struct vb21_packed_key;
 
+/* Location of private key */
+enum private_key_location {
+	PRIVATE_KEY_LOCAL = 0,
+	PRIVATE_KEY_P11,
+};
+
 /* Private key data, in-memory format for use in signing calls. */
 struct vb2_private_key {
-	struct rsa_st *rsa_private_key;		/* Private key data */
+	enum private_key_location key_location; /* Key location */
+	union {
+		struct rsa_st *rsa_private_key; /* Local private key*/
+		struct pkcs11_key *p11_key;	/* PKCS#11 private key */
+	};
 	enum vb2_hash_algorithm hash_alg;	/* Hash algorithm */
 	enum vb2_signature_algorithm sig_alg;	/* Signature algorithm */
 	char *desc;				/* Description */
