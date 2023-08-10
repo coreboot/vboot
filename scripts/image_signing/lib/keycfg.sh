@@ -27,6 +27,13 @@ setup_default_keycfg() {
   # This is for `sign_official_build.sh accessory_rwsig`, which uses arbitrary
   # one of .vbprik2 in KEY_DIR if KEYCFG_ACCESSORY_RWSIG_VBPRIK2 is empty or unset.
   export KEYCFG_ACCESSORY_RWSIG_VBPRIK2=""
+
+  export KEYCFG_ROOT_KEY_VBPUBK="${key_dir}/root_key.vbpubk"
+  declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM
+  export KEYCFG_FIRMWARE_VBPRIVK="${key_dir}/firmware_data_key.vbprivk"
+  declare -a KEYCFG_FIRMARE_VBPRIVK_LOEM
+  export KEYCFG_FIRMWARE_KEYBLOCK="${key_dir}/firmware.keyblock"
+  declare -a KEYCFG_FIRMARE_KEYBLOCK_LOEM
 }
 
 # Setup the key configuration. This setups the default configuration and source
@@ -34,7 +41,65 @@ setup_default_keycfg() {
 setup_keycfg() {
   local key_dir=$1
   setup_default_keycfg "${key_dir}"
+  export KEYCFG_KEY_DIR="${key_dir}"
   if [ -f "${key_dir}/key_config.sh" ]; then
     . "${key_dir}/key_config.sh"
   fi
+}
+
+# Check if KEYCFG_KEY_DIR is set properly.
+check_key_dir() {
+  if [[ -z "${KEYCFG_KEY_DIR}" ]]; then
+    echo "KEYCFG_KEY_DIR is unset. Try run setup_keycfg first." >&2
+    exit 1
+  fi
+  if [[ ! -d "${KEYCFG_KEY_DIR}" ]]; then
+    echo "The key directory '${KEYCFG_KEY_DIR}' doesn't exist." >&2
+    exit 1
+  fi
+}
+
+# Get the default or configured path of root key with loem suffix. It could be
+# either local or PKCS#11 path. If LOEM_INDEX is not specified, the non-loem
+# root key would be returned.
+# Args: [LOEM_INDEX]
+get_root_key_vbpubk() {
+  local loem_index=$1
+  check_key_dir
+  if [[ -z "${loem_index}" ]]; then
+    echo "${KEYCFG_ROOT_KEY_VBPUBK}"
+    return
+  fi
+  local default="${KEYCFG_KEY_DIR}/root_key.loem${loem_index}.vbpubk"
+  echo "${KEYCFG_ROOT_KEY_VBPUBK_LOEM[${loem_index}]:-${default}}"
+}
+
+# Get the default or configured path of firmware data key with loem suffix. It
+# could be either local or PKCS#11 path. If LOEM_INDEX is not specified, the
+# non-loem data key would be returned.
+# Args: [LOEM_INDEX]
+get_firmware_vbprivk() {
+  local loem_index=$1
+  check_key_dir
+  if [[ -z "${loem_index}" ]]; then
+    echo "${KEYCFG_FIRMWARE_VBPRIVK}"
+    return
+  fi
+  local default="${KEYCFG_KEY_DIR}/firmware_data_key.loem${loem_index}.vbprivk"
+  echo "${KEYCFG_FIRMARE_VBPRIVK_LOEM[${loem_index}]:-${default}}"
+}
+
+# Get the default or configured path of firmware key block with loem suffix. It
+# could be either local or PKCS#11 path. If LOEM_INDEX is not specified, the
+# non-loem key block would be returned.
+# Args: [LOEM_INDEX]
+get_firmware_keyblock() {
+  local loem_index=$1
+  check_key_dir
+  if [[ -z "${loem_index}" ]]; then
+    echo "${KEYCFG_FIRMWARE_KEYBLOCK}"
+    return
+  fi
+  local default="${KEYCFG_KEY_DIR}/firmware.loem${loem_index}.keyblock"
+  echo "${KEYCFG_FIRMARE_KEYBLOCK_LOEM[${loem_index}]:-${default}}"
 }

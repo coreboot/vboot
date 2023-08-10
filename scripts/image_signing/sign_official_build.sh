@@ -501,12 +501,11 @@ resign_firmware_payload() {
       read # Burn the first line (header line)
       while IFS="," read -r output_name bios_image key_id ec_image brand_code
       do
-        local key_suffix=''
         local extra_args=()
         local full_command=()
         local board_name
 
-        rootkey="${KEY_DIR}/root_key.vbpubk"
+	rootkey="$(get_root_key_vbpubk)"
 
         info "Signing firmware image ${bios_image} for ${output_name}"
 
@@ -534,14 +533,13 @@ resign_firmware_payload() {
               "${output_name}"
           fi
 
-          key_suffix=".loem${key_index}"
           shellball_keyset_dir="${shellball_dir}/keyset"
           mkdir -p "${shellball_keyset_dir}"
           extra_args+=(
             --loemdir "${shellball_keyset_dir}"
             --loemid "${output_name}"
           )
-          rootkey="${KEY_DIR}/root_key${key_suffix}.vbpubk"
+          rootkey="$(get_root_key_vbpubk "${key_index}")"
           cp "${rootkey}" "${shellball_keyset_dir}/rootkey.${output_name}"
         fi
 
@@ -550,8 +548,10 @@ resign_firmware_payload() {
         local temp_fw
         temp_fw=$(make_temp_file)
 
-        local signprivate="${KEY_DIR}/firmware_data_key${key_suffix}.vbprivk"
-        local keyblock="${KEY_DIR}/firmware${key_suffix}.keyblock"
+        local signprivate
+        local keyblock
+        signprivate="$(get_firmware_vbprivk "${key_index}")"
+        keyblock="$(get_firmware_keyblock "${key_index}")"
 
         # Path to bios.bin.
         local bios_path="${shellball_dir}/${bios_image}"
@@ -705,7 +705,7 @@ resign_firmware_payload() {
     done
   else
     echo "List sha1sum of single key's signature:" >>"${signer_notes}"
-    key="${KEY_DIR}/root_key.vbpubk"
+    key="$(get_root_key_vbpubk)"
     sha1=$(do_futility vbutil_key --unpack "${key}" \
       | grep sha1sum | cut -d" " -f9)
     echo "  root: ${sha1}" >>"${signer_notes}"
