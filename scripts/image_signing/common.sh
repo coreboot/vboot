@@ -145,9 +145,10 @@ extract_firmware_bundle() {
   if [[ ! -s "${input}" ]]; then
     return 1
   elif grep -q '^##CUTHERE##' "${input}"; then
-    # Bundle supports self-extraction.
-    "${input}" --sb_extract "${output_dir}" ||
-      die "Extracting firmware autoupdate (--sb_extract) failed."
+    # Bundle supports self-extraction (--unpack, or --sb_extract)
+    "${input}" --unpack "${output_dir}" ||
+      "${input}" --sb_extract "${output_dir}" ||
+        die "Extracting firmware autoupdate (--unpack) failed."
   else
     # Legacy bundle - try uudecode.
     uudecode -o - "${input}" | tar -C "${output_dir}" -zxf - 2>/dev/null ||

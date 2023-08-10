@@ -365,13 +365,14 @@ repack_firmware_bundle() {
   if [ ! -s "${target}" ]; then
     return 1
   elif grep -q '^##CUTHERE##' "${target}"; then
-    # Bundle supports repacking.
+    # Bundle supports repacking (--repack, --sb_repack)
     # Workaround issue crosbug.com/p/33719
     sed -i \
       's/shar -Q -q -x -m -w/shar -Q -q -x -m --no-character-count/' \
       "${target}"
-    "${target}" --sb_repack "${input_dir}" ||
-      die "Updating firmware autoupdate (--sb_repack) failed."
+    "${target}" --repack "${input_dir}" ||
+      "${target}" --sb_repack "${input_dir}" ||
+        die "Updating firmware autoupdate (--repack) failed."
   else
     # Legacy bundle using uuencode + tar.gz.
     # Replace MD5 checksum in the firmware update payload.
