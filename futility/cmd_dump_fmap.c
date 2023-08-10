@@ -27,7 +27,7 @@
 /*
  * FMT_NORMAL: This format contains info related to fmap and areas including
  * their name, offset and size in multiple lines per area
- * FMT_PRETTY: This format is parsable by scripts, it contains info about areas
+ * FMT_PARSER: This format is parsable by scripts, it contains info about areas
  * including their name, offset and size
  * FMT_FLASHROM: This format is understandable by 'flashrom', it contains info
  * about areas including their name, first and last offsets
@@ -39,7 +39,7 @@
  */
 typedef enum {
 	FMT_NORMAL,
-	FMT_PRETTY,
+	FMT_PARSER,
 	FMT_FLASHROM,
 	FMT_HUMAN,
 	FMT_FLASH_EC
@@ -110,7 +110,7 @@ static int normal_fmap(const FmapHeader *fmh,
 		}
 
 		switch (format) {
-		case FMT_PRETTY:
+		case FMT_PARSER:
 			printf("%s %d %d\n", buf, ah->area_offset,
 			       ah->area_size);
 			break;
@@ -452,7 +452,7 @@ static int do_dump_fmap(int argc, char *argv[])
 			opt_extract = true;
 			break;
 		case 'p':
-			opt_format = FMT_PRETTY;
+			opt_format = FMT_PARSER;
 			break;
 		case 'e':
 			opt_format = FMT_FLASH_EC;
