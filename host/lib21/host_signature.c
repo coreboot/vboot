@@ -15,6 +15,7 @@
 #include "host_common21.h"
 #include "host_key21.h"
 #include "host_misc.h"
+#include "host_p11.h"
 #include "host_signature21.h"
 
 vb2_error_t vb2_digest_info(enum vb2_hash_algorithm hash_alg,
@@ -82,13 +83,14 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 		.id = key->id,
 	};
 
+	vb2_error_t rv;
 	struct vb2_digest_context dc;
 	uint32_t digest_size;
 	const uint8_t *info = NULL;
 	uint32_t info_size = 0;
 	uint32_t sig_digest_size;
-	uint8_t *sig_digest;
-	uint8_t *buf;
+	uint8_t *sig_digest = NULL;
+	uint8_t *buf = NULL;
 
 	*sig_ptr = NULL;
 
@@ -100,25 +102,52 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 
 	s.sig_offset = s.c.fixed_size + s.c.desc_size;
 	s.sig_size = vb2_sig_size(key->sig_alg, key->hash_alg);
-	if (!s.sig_size)
-		return VB2_SIGN_DATA_SIG_SIZE;
+	if (!s.sig_size) {
+		rv = VB2_SIGN_DATA_SIG_SIZE;
+		goto done;
+	}
 
 	s.c.total_size = s.sig_offset + s.sig_size;
+	/* Allocate signature buffer and copy header */
+	buf = calloc(1, s.c.total_size);
+	if (!buf) {
+		rv = VB2_ERROR_UNKNOWN;
+		goto done;
+	}
+	memcpy(buf, &s, sizeof(s));
+
+	/* strcpy() is ok because we allocated buffer based on desc length */
+	if (desc)
+		strcpy((char *)buf + s.c.fixed_size, desc);
+
+	/* If it is PKCS11#11 key, we could sign with pkcs11_sign instead */
+	if (key->key_location == PRIVATE_KEY_P11) {
+		/* RSA-encrypt the signature */
+		rv = pkcs11_sign(key->p11_key, key->hash_alg, data, size,
+				 buf + s.sig_offset, s.sig_size);
+		goto done;
+	}
 
 	/* Determine digest size and allocate buffer */
 	if (s.sig_alg != VB2_SIG_NONE) {
-		if (vb2_digest_info(s.hash_alg, &info, &info_size))
-			return VB2_SIGN_DATA_DIGEST_INFO;
+		if (vb2_digest_info(s.hash_alg, &info, &info_size)) {
+			rv = VB2_SIGN_DATA_DIGEST_INFO;
+			goto done;
+		}
 	}
 
 	digest_size = vb2_digest_size(key->hash_alg);
-	if (!digest_size)
-		return VB2_SIGN_DATA_DIGEST_SIZE;
+	if (!digest_size) {
+		rv = VB2_SIGN_DATA_DIGEST_SIZE;
+		goto done;
+	}
 
 	sig_digest_size = info_size + digest_size;
 	sig_digest = malloc(sig_digest_size);
-	if (!sig_digest)
-		return VB2_SIGN_DATA_DIGEST_ALLOC;
+	if (!sig_digest) {
+		rv = VB2_SIGN_DATA_DIGEST_ALLOC;
+		goto done;
+	}
 
 	/* Prepend digest info, if any */
 	if (info_size)
@@ -126,27 +155,19 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 
 	/* Calculate hash digest */
 	if (vb2_digest_init(&dc, false, s.hash_alg, 0)) {
-		free(sig_digest);
-		return VB2_SIGN_DATA_DIGEST_INIT;
+		rv = VB2_SIGN_DATA_DIGEST_INIT;
+		goto done;
 	}
 
 	if (vb2_digest_extend(&dc, data, size)) {
-		free(sig_digest);
-		return VB2_SIGN_DATA_DIGEST_EXTEND;
+		rv = VB2_SIGN_DATA_DIGEST_EXTEND;
+		goto done;
 	}
 
 	if (vb2_digest_finalize(&dc, sig_digest + info_size, digest_size)) {
-		free(sig_digest);
-		return VB2_SIGN_DATA_DIGEST_FINALIZE;
+		rv = VB2_SIGN_DATA_DIGEST_FINALIZE;
+		goto done;
 	}
-
-	/* Allocate signature buffer and copy header */
-	buf = calloc(1, s.c.total_size);
-	memcpy(buf, &s, sizeof(s));
-
-	/* strcpy() is ok because we allocated buffer based on desc length */
-	if (desc)
-		strcpy((char *)buf + s.c.fixed_size, desc);
 
 	if (s.sig_alg == VB2_SIG_NONE) {
 		/* Bare hash signature is just the digest */
@@ -158,15 +179,18 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 					buf + s.sig_offset,
 					key->rsa_private_key,
 					RSA_PKCS1_PADDING) == -1) {
-			free(sig_digest);
-			free(buf);
-			return VB2_SIGN_DATA_RSA_ENCRYPT;
+			rv = VB2_SIGN_DATA_RSA_ENCRYPT;
+			goto done;
 		}
 	}
-
+	rv = VB2_SUCCESS;
+done:
 	free(sig_digest);
-	*sig_ptr = (struct vb21_signature *)buf;
-	return VB2_SUCCESS;
+	if (rv == VB2_SUCCESS)
+		*sig_ptr = (struct vb21_signature *)buf;
+	else
+		free(buf);
+	return rv;
 }
 
 vb2_error_t vb21_sig_size_for_key(uint32_t *size_ptr,
