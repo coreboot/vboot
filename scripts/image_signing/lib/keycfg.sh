@@ -7,33 +7,51 @@
 # Setup the default key configuration by using the local key in `key_dir`.
 setup_default_keycfg() {
   local key_dir=$1
-  export KEYCFG_KERNEL_KEYBLOCK="${key_dir}/kernel.keyblock"
-  export KEYCFG_KERNEL_VBPRIVK="${key_dir}/kernel_data_key.vbprivk"
-  export KEYCFG_MINIOS_KERNEL_KEYBLOCK="${key_dir}/minios_kernel.keyblock"
-  export KEYCFG_MINIOS_KERNEL_V1_KEYBLOCK="${key_dir}/minios_kernel.v1.keyblock"
-  export KEYCFG_MINIOS_KERNEL_VBPRIVK="${key_dir}/minios_kernel_data_key.vbprivk"
-  export KEYCFG_RECOVERY_KERNEL_KEYBLOCK="${key_dir}/recovery_kernel.keyblock"
-  export KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK="${key_dir}/recovery_kernel.v1.keyblock"
-  export KEYCFG_RECOVERY_KERNEL_VBPRIVK="${key_dir}/recovery_kernel_data_key.vbprivk"
-  export KEYCFG_INSTALLER_KERNEL_KEYBLOCK="${key_dir}/installer_kernel.keyblock"
-  export KEYCFG_INSTALLER_KERNEL_V1_KEYBLOCK="${key_dir}/installer_kernel.v1.keyblock"
-  export KEYCFG_INSTALLER_KERNEL_VBPRIVK="${key_dir}/installer_kernel_data_key.vbprivk"
-  export KEYCFG_ARV_PLATFORM_KEYBLOCK="${key_dir}/arv_platform.keyblock"
-  export KEYCFG_ARV_PLATFORM_VBPRIVK="${key_dir}/arv_platform.vbprivk"
-  export KEYCFG_UEFI_PRIVATE_KEY="${key_dir}/uefi/db/db.children/db_child.rsa"
-  export KEYCFG_UEFI_SIGN_CERT="${key_dir}/uefi/db/db.children/db_child.pem"
-  export KEYCFG_UEFI_VERIFY_CERT="${key_dir}/uefi/db/db.pem"
-  export KEYCFG_KEY_EC_EFS_VBPRIK2="${key_dir}/key_ec_efs.vbprik2"
-  # This is for `sign_official_build.sh accessory_rwsig`, which uses arbitrary
-  # one of .vbprik2 in KEY_DIR if KEYCFG_ACCESSORY_RWSIG_VBPRIK2 is empty or unset.
-  export KEYCFG_ACCESSORY_RWSIG_VBPRIK2=""
 
+  # Root keys with LOEM variants. Avoid using them directly; instead, use
+  # get_root_key_vbpubk().
   export KEYCFG_ROOT_KEY_VBPUBK="${key_dir}/root_key.vbpubk"
   declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM
+  # Firmware data keys with LOEM variants. Avoid using them directly; instead, use
+  # get_firmware_vbprivk() and get_firmware_keyblock().
   export KEYCFG_FIRMWARE_VBPRIVK="${key_dir}/firmware_data_key.vbprivk"
   declare -a KEYCFG_FIRMARE_VBPRIVK_LOEM
   export KEYCFG_FIRMWARE_KEYBLOCK="${key_dir}/firmware.keyblock"
   declare -a KEYCFG_FIRMARE_KEYBLOCK_LOEM
+
+  # Kernel subkey
+  export KEYCFG_KERNEL_SUBKEY_VBPUBK="${key_dir}/kernel_subkey.vbpubk"
+  # Kernel data keys
+  export KEYCFG_KERNEL_KEYBLOCK="${key_dir}/kernel.keyblock"
+  export KEYCFG_KERNEL_VBPRIVK="${key_dir}/kernel_data_key.vbprivk"
+  # Recovery root key
+  export KEYCFG_RECOVERY_KEY_VBPUBK="${key_dir}/recovery_key.vbpubk"
+  # Recovery kernel data keys
+  export KEYCFG_RECOVERY_KERNEL_KEYBLOCK="${key_dir}/recovery_kernel.keyblock"
+  export KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK="${key_dir}/recovery_kernel.v1.keyblock"
+  export KEYCFG_RECOVERY_KERNEL_VBPRIVK="${key_dir}/recovery_kernel_data_key.vbprivk"
+  # Installer kernel data keys
+  export KEYCFG_INSTALLER_KERNEL_KEYBLOCK="${key_dir}/installer_kernel.keyblock"
+  export KEYCFG_INSTALLER_KERNEL_V1_KEYBLOCK="${key_dir}/installer_kernel.v1.keyblock"
+  export KEYCFG_INSTALLER_KERNEL_VBPRIVK="${key_dir}/installer_kernel_data_key.vbprivk"
+  # MiniOS kernel data keys
+  export KEYCFG_MINIOS_KERNEL_KEYBLOCK="${key_dir}/minios_kernel.keyblock"
+  export KEYCFG_MINIOS_KERNEL_V1_KEYBLOCK="${key_dir}/minios_kernel.v1.keyblock"
+  export KEYCFG_MINIOS_KERNEL_VBPRIVK="${key_dir}/minios_kernel_data_key.vbprivk"
+
+  # AP RO verification keys
+  export KEYCFG_ARV_ROOT_VBPUBK="${key_dir}/arv_root.vbpubk"
+  export KEYCFG_ARV_PLATFORM_KEYBLOCK="${key_dir}/arv_platform.keyblock"
+  export KEYCFG_ARV_PLATFORM_VBPRIVK="${key_dir}/arv_platform.vbprivk"
+  # UEFI keys and certs
+  export KEYCFG_UEFI_PRIVATE_KEY="${key_dir}/uefi/db/db.children/db_child.rsa"
+  export KEYCFG_UEFI_SIGN_CERT="${key_dir}/uefi/db/db.children/db_child.pem"
+  export KEYCFG_UEFI_VERIFY_CERT="${key_dir}/uefi/db/db.pem"
+  # EC EFS key
+  export KEYCFG_KEY_EC_EFS_VBPRIK2="${key_dir}/key_ec_efs.vbprik2"
+  # This is for `sign_official_build.sh accessory_rwsig`, which uses arbitrary
+  # one of .vbprik2 in KEY_DIR if KEYCFG_ACCESSORY_RWSIG_VBPRIK2 is empty or unset.
+  export KEYCFG_ACCESSORY_RWSIG_VBPRIK2=""
 }
 
 # Setup the key configuration. This setups the default configuration and source

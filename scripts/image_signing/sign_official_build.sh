@@ -598,7 +598,7 @@ resign_firmware_payload() {
           do_futility sign
           --signprivate "${signprivate}"
           --keyblock "${keyblock}"
-          --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk"
+          --kernelkey "${KEYCFG_KERNEL_SUBKEY_VBPUBK}"
           --version "${FIRMWARE_VERSION}"
           "${extra_args[@]}"
           "${bios_path}"
@@ -615,7 +615,7 @@ resign_firmware_payload() {
         full_command=(
           do_futility gbb
           -s
-          --recoverykey="${KEY_DIR}/recovery_key.vbpubk"
+          --recoverykey="${KEYCFG_RECOVERY_KEY_VBPUBK}"
           --rootkey="${rootkey}" "${temp_fw}"
           "${bios_path}"
         )
@@ -638,7 +638,7 @@ resign_firmware_payload() {
             die "No brand code for ${bios_path} in signer_config.csv"
           fi
 
-          arv_root="${KEY_DIR}/arv_root.vbpubk"
+          arv_root="${KEYCFG_ARV_ROOT_VBPUBK}"
           if [[ ! -f ${arv_root} ]]; then
             die "No AP RO verification keys, could not create RO_GSCVD"
           fi
@@ -690,7 +690,7 @@ resign_firmware_payload() {
   echo "" >"${signer_notes}"
   echo "Signed with keyset in $(readlink -f "${KEY_DIR}") ." >>"${signer_notes}"
   # record recovery_key
-  key="${KEY_DIR}/recovery_key.vbpubk"
+  key="${KEYCFG_RECOVERY_KEY_VBPUBK}"
   sha1=$(do_futility vbutil_key --unpack "${key}" \
     | grep sha1sum | cut -d" " -f9)
   echo "recovery: ${sha1}" >>"${signer_notes}"
@@ -827,7 +827,7 @@ sign_uefi_binaries() {
       --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
       --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
       --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
-      --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
+      --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}" \
       --efi-glob "${efi_glob}"
   sudo umount "${esp_dir}"
 
@@ -839,7 +839,7 @@ sign_uefi_binaries() {
       --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
       --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
       --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
-      --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
+      --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}" \
       --efi-glob "${efi_glob}"
   sudo umount "${rootfs_dir}"
 
@@ -943,7 +943,7 @@ EOF
 
   # Now try and verify kernel partition signature.
   set +e
-  local try_key=${KEY_DIR}/recovery_key.vbpubk
+  local try_key="${KEYCFG_RECOVERY_KEY_VBPUBK}"
   info "Testing key verification..."
   # The recovery key is only used in the recovery mode.
   echo -n "With Recovery Key (Recovery Mode ON, Dev Mode OFF): " && \
@@ -953,7 +953,7 @@ EOF
   { load_kernel_test "${INPUT_IMAGE}" "${try_key}" -b 3 >/dev/null 2>&1 && \
     echo "YES"; } || echo "NO"
 
-  try_key=${KEY_DIR}/kernel_subkey.vbpubk
+  try_key="${KEYCFG_KERNEL_SUBKEY_VBPUBK}"
   # The SSD key is only used in non-recovery mode.
   echo -n "With SSD Key (Recovery Mode OFF, Dev Mode OFF): " && \
   { load_kernel_test "${INPUT_IMAGE}" "${try_key}" -b 0 >/dev/null 2>&1  && \
