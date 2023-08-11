@@ -105,6 +105,8 @@ static void reset_common_data(enum reset_type t)
 	pre->body_signature.data_size = mock_body_size;
 	pre->body_signature.sig_size = mock_sig_size;
 	pre->flags = 0;
+	sd->fw_version = 0x00030004U;
+	sd->kernel_version = 0x00010002U;
 
 	sd->data_key_offset = sd->workbuf_used;
 	sd->data_key_size = sizeof(*k) + 8;
@@ -599,6 +601,10 @@ static void get_pcr_digest_tests(void)
 {
 	uint8_t digest[VB2_PCR_DIGEST_RECOMMENDED_SIZE];
 	uint8_t digest_org[VB2_PCR_DIGEST_RECOMMENDED_SIZE];
+	uint8_t fw_ver_digest[VB2_PCR_DIGEST_RECOMMENDED_SIZE] = {0x04, 0x00,
+								  0x03, 0x00};
+	uint8_t ker_ver_digest[VB2_PCR_DIGEST_RECOMMENDED_SIZE] = {0x02, 0x00,
+								   0x01, 0x00};
 	uint32_t digest_size;
 
 	reset_common_data(FOR_MISC);
@@ -623,15 +629,32 @@ static void get_pcr_digest_tests(void)
 	TEST_FALSE(memcmp(digest, mock_hwid_digest, digest_size),
 		   "HWID_DIGEST_PCR digest");
 
+	digest_size = sizeof(digest);
+	memset(digest, 0, sizeof(digest));
+	TEST_SUCC(vb2api_get_pcr_digest(ctx, FIRMWARE_VERSION_PCR, digest,
+					&digest_size),
+		  "FIRMWARE_DIGEST_PCR");
+	TEST_EQ(digest_size, sizeof(uint32_t),
+		"FIRMWARE_DIGEST_PCR digest size");
+	TEST_FALSE(memcmp(digest, fw_ver_digest, digest_size),
+		   "FIRMWARE_DIGEST_PCR digest");
+
+	digest_size = sizeof(digest);
+	memset(digest, 0, sizeof(digest));
+	TEST_SUCC(vb2api_get_pcr_digest(ctx, KERNEL_VERSION_PCR, digest,
+					&digest_size),
+		  "KERNEL_DIGEST_PCR");
+	TEST_EQ(digest_size, sizeof(uint32_t), "KERNEL_DIGEST_PCR digest size");
+	TEST_FALSE(memcmp(digest, ker_ver_digest, digest_size),
+		   "KERNEL_DIGEST_PCR digest");
+
 	digest_size = 1;
 	TEST_EQ(vb2api_get_pcr_digest(ctx, BOOT_MODE_PCR, digest, &digest_size),
 		VB2_ERROR_API_PCR_DIGEST_BUF,
 		"BOOT_MODE_PCR buffer too small");
 
-	TEST_EQ(vb2api_get_pcr_digest(
-			ctx, HWID_DIGEST_PCR + 1, digest, &digest_size),
-		VB2_ERROR_API_PCR_DIGEST,
-		"invalid enum vb2_pcr_digest");
+	TEST_EQ(vb2api_get_pcr_digest(ctx, 255, digest, &digest_size),
+		VB2_ERROR_API_PCR_DIGEST, "invalid enum vb2_pcr_digest");
 }
 
 static void phase3_tests(void)

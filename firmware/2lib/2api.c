@@ -166,6 +166,7 @@ vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
 {
 	const uint8_t *digest;
 	uint32_t digest_size;
+	struct vb2_shared_data *sd;
 
 	switch (which_digest) {
 	case BOOT_MODE_PCR:
@@ -175,6 +176,16 @@ vb2_error_t vb2api_get_pcr_digest(struct vb2_context *ctx,
 	case HWID_DIGEST_PCR:
 		digest = vb2_get_gbb(ctx)->hwid_digest;
 		digest_size = VB2_GBB_HWID_DIGEST_SIZE;
+		break;
+	case FIRMWARE_VERSION_PCR:
+		sd = vb2_get_sd(ctx);
+		digest = (uint8_t *)&sd->fw_version;
+		digest_size = sizeof(sd->fw_version);
+		break;
+	case KERNEL_VERSION_PCR:
+		sd = vb2_get_sd(ctx);
+		digest = (uint8_t *)&sd->kernel_version;
+		digest_size = sizeof(sd->kernel_version);
 		break;
 	default:
 		return VB2_ERROR_API_PCR_DIGEST;
