@@ -758,7 +758,7 @@ const char *get_firmware_rootkey_hash(const struct firmware_image *image)
  * given values.
  * Returns 0 on success, otherwise failure.
  */
-static int overwrite_section(struct firmware_image *image,
+int overwrite_section(struct firmware_image *image,
 			     const char *fmap_section, size_t offset,
 			     size_t size, const uint8_t *new_values)
 {
@@ -787,9 +787,9 @@ static int overwrite_section(struct firmware_image *image,
  */
 int unlock_flash_master(struct firmware_image *image)
 {
-	const int flash_master_offset = 0x80;
+	const size_t flash_master_offset = 0x80;
 	const uint8_t flash_master[] = {
-		0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff,
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff
 	};
 
