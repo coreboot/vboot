@@ -194,10 +194,29 @@ static int quirk_enlarge_image(struct updater_config *cfg)
  * so the system has a chance to make sure SI_ME won't be corrupted on next boot
  * before locking the Flash Master values in SI_DESC.
  * Returns 0 on success, otherwise failure.
+ *
+ * The FLMSTR settings are slightly different to those in the common
+ * unlock_flash_master() function. The common settings might work, but we keep
+ * these as is for now to avoid breaking things on old devices. These settings
+ * are also hardcoded in postinst scripts (e.g. https://crrev.com/i/252522), so
+ * those would probably need to be changed too.
  */
 static int quirk_unlock_me_for_update(struct updater_config *cfg)
 {
-	return unlock_flash_master(&cfg->image);
+	const size_t flash_master_offset = 0x80;
+	const uint8_t flash_master[] = {
+		0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff,
+		0xff, 0xff
+	};
+
+	if (overwrite_section(&cfg->image, FMAP_SI_DESC, flash_master_offset,
+			      ARRAY_SIZE(flash_master), flash_master)) {
+		ERROR("Failed unlocking Flash Master values\n");
+		return -1;
+	}
+
+	INFO("Changed Flash Master Values to unlocked.\n");
+	return 0;
 }
 
 /*

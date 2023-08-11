@@ -144,11 +144,13 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0x27"
 "${FUTILITY}" gbb -s --flags=0x27 "${TMP}.expected.full.gbb0x27"
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
+cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked_quirk"
+patch_file "${TMP}.expected.me_unlocked_quirk" SI_DESC 128 \
+	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
 patch_file "${TMP}.expected.me_unlocked" SI_DESC 128 \
-	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
-cp -f "${TMP}.expected.me_unlocked" "${TMP}.expected.me_unlocked_gpr0_disabled"
-patch_file "${TMP}.expected.me_unlocked_gpr0_disabled" SI_DESC 0x154 \
+	"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+patch_file "${TMP}.expected.me_unlocked" SI_DESC 0x154 \
 	"\x00\x00\x00\x00"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_preserved"
 "${FUTILITY}" load_fmap "${TMP}.expected.me_preserved" \
@@ -343,12 +345,12 @@ test_update "Full update (multi-line --quirks enlarge_image)" \
 	' -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (--quirks unlock_me_for_update)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_quirk" \
 	--quirks unlock_me_for_update \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (--unlock_me)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_gpr0_disabled" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked" \
 	--unlock_me -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (failure by --quirks min_platform_version)" \
@@ -427,7 +429,7 @@ cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 echo "TEST: Output (--mode=output, --unlock_me)"
 "${FUTILITY}" update -i "${TMP}.expected.full" --mode=output \
 	--output_dir="${TMP}.output" --unlock_me
-cmp "${TMP}.expected.me_unlocked_gpr0_disabled" "${TMP}.output/image.bin"
+cmp "${TMP}.expected.me_unlocked" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/image.bin"

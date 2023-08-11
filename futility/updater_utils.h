@@ -137,6 +137,15 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 			      const char *section_name);
 
 /*
+ * Overwrite the given offset of a section in the firmware image with the
+ * given values.
+ * Returns 0 on success, otherwise failure.
+ */
+int overwrite_section(struct firmware_image *image,
+			     const char *fmap_section, size_t offset,
+			     size_t size, const uint8_t *new_values);
+
+/*
  * Unlock the Flash Master values in SI_DESC.
  */
 int unlock_flash_master(struct firmware_image *image);
