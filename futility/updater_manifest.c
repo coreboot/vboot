@@ -75,6 +75,7 @@ static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
 		  * const VPD_CUSTOMIZATION_ID = "customization_id",
 		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_STARTSWITH_KEYSET = "keyset/",
+		  * const PATH_KEYSET_FOLDER = "keyset/",
 		  * const PATH_SIGNER_CONFIG = "signer_config.csv",
 		  * const PATH_ENDSWITH_SETVARS = "/setvars.sh";
 
@@ -471,6 +472,9 @@ static int manifest_from_signer_config(struct manifest *manifest)
 
 	if (!archive_has_entry(archive, PATH_SIGNER_CONFIG))
 		return -1;
+	if (archive_has_entry(archive, PATH_KEYSET_FOLDER))
+		manifest->has_keyset = 1;
+	VB2_DEBUG("Has keyset: %s\n", manifest->has_keyset ? "True" : "False");
 
 	/*
 	 * CSV format: model_name,firmware_image,key_id,ec_image
