@@ -817,15 +817,12 @@ int model_apply_custom_label(
 
 /*
  * b/251040363: Checks if the archive can be parsed using signer_config.
- * Currently only wlref and whitelabel-test (both fake models for testing) must
- * use setvars. In future this can be replaced by a quirk.
  */
 static bool archive_signer_config_first(struct u_archive *archive)
 {
 	int i;
 	const char *setvars_list[] = {
-		"models/wlref/setvars.sh",
-		"models/whitelabel-test/setvars.sh"
+		"setvars_sh_only",
 	};
 
 	for (i = 0; i < ARRAY_SIZE(setvars_list); i++) {
