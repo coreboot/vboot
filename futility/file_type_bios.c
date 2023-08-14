@@ -212,7 +212,8 @@ int ft_show_bios(const char *fname)
 			if (asprintf((char **)&ft_print_header, "bios::%s",
 				     fmap_name[c]) <= 0) {
 				ERROR("Failed to allocate buffer for FT_PRINT");
-				return 1;
+				retval = 1;
+				goto end;
 			}
 
 			/* Update the state we're passing around */
@@ -234,6 +235,7 @@ int ft_show_bios(const char *fname)
 		}
 	}
 
+end:
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return retval;
 }
