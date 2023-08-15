@@ -276,8 +276,6 @@ enum vb2_nv_recovery {
 
 	/* Failed to get boot mode from TPM/GSC */
 	VB2_RECOVERY_GSC_BOOT_MODE = 0x63,
-	/* TODO: Remove the deprecated alias */
-	VB2_RECOVERY_CR50_BOOT_MODE = 0x63,
 
 	/* Attempt to escape from NO_BOOT mode was detected */
 	VB2_RECOVERY_ESCAPE_NO_BOOT = 0x64,
