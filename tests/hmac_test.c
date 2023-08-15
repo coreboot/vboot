@@ -23,8 +23,7 @@ static void test_hmac_by_openssl(enum vb2_hash_algorithm alg,
 				 const void *key, uint32_t key_size,
 				 const void *msg, uint32_t msg_size)
 {
-	uint8_t mac[VB2_MAX_DIGEST_SIZE];
-	uint32_t mac_size = sizeof(mac);
+	struct vb2_hash mac;
 	uint8_t md[VB2_MAX_DIGEST_SIZE];
 	uint32_t md_size = sizeof(md);
 	char test_name[256];
@@ -51,32 +50,28 @@ static void test_hmac_by_openssl(enum vb2_hash_algorithm alg,
 	sprintf(test_name, "%s: HMAC-%s (key_size=%d)",
 		__func__, vb2_get_hash_algorithm_name(alg), key_size);
 	TEST_EQ(vb2_digest_size(alg), md_size, "HMAC size");
-	TEST_SUCC(hmac(alg, key, key_size, msg, msg_size, mac, mac_size),
+	TEST_SUCC(vb2_hmac_calculate(false, alg, key, key_size, msg, msg_size, &mac),
 		  test_name);
-	TEST_SUCC(memcmp(mac, md, md_size), "HMAC digests match");
+	TEST_SUCC(memcmp(mac.raw, md, md_size), "HMAC digests match");
+	TEST_EQ(alg, mac.algo, "HMAC algo match");
 }
 
 static void test_hmac_error(void)
 {
-	uint8_t mac[VB2_MAX_DIGEST_SIZE];
+	struct vb2_hash mac;
 	enum vb2_hash_algorithm alg;
 
 	alg = VB2_HASH_SHA1;
-	TEST_TRUE(hmac(alg, NULL, 0,
-		       message, strlen(message), mac, sizeof(mac)),
+	TEST_TRUE(vb2_hmac_calculate(false, alg, NULL, 0, message, strlen(message), &mac),
 		  "key = NULL");
-	TEST_TRUE(hmac(alg, short_key, strlen(short_key),
-		       NULL, 0, mac, sizeof(mac)),
+	TEST_TRUE(vb2_hmac_calculate(false, alg, short_key, strlen(short_key), NULL, 0, &mac),
 		  "msg = NULL");
-	TEST_TRUE(hmac(alg, short_key, strlen(short_key),
-		       message, strlen(message), NULL, 0),
+	TEST_TRUE(vb2_hmac_calculate(false, alg, short_key, strlen(short_key), message,
+				     strlen(message), NULL),
 		  "mac = NULL");
-	TEST_TRUE(hmac(alg, short_key, strlen(short_key),
-		       message, strlen(message), mac, 0),
-		  "Buffer too small");
 	alg = -1;
-	TEST_TRUE(hmac(alg, short_key, strlen(short_key),
-		       message, strlen(message), mac, sizeof(mac)),
+	TEST_TRUE(vb2_hmac_calculate(false, alg, short_key, strlen(short_key), message,
+				     strlen(message), &mac),
 		  "Invalid algorithm");
 }
 

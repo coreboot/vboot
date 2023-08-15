@@ -235,11 +235,16 @@ static uint32_t StartOSAPSession(
 	memcpy(hmac_input, nonce_even_osap, sizeof(TPM_NONCE));
 	memcpy(hmac_input + sizeof(TPM_NONCE), cmd.buffer + cmd.nonceOddOSAP,
 	       sizeof(TPM_NONCE));
-	if (hmac(VB2_HASH_SHA1, entity_usage_auth, TPM_AUTH_DATA_LEN,
-		 hmac_input, sizeof(hmac_input), session->shared_secret,
-		 sizeof(session->shared_secret))) {
+	struct vb2_hash mac;
+	if (vb2_hmac_calculate(false, VB2_HASH_SHA1, entity_usage_auth, TPM_AUTH_DATA_LEN,
+			       hmac_input, sizeof(hmac_input), &mac)) {
 		return TPM_E_INTERNAL_ERROR;
 	}
+
+	_Static_assert(sizeof(session->shared_secret) == VB2_SHA1_DIGEST_SIZE,
+		       "The output size should match the sha1 digest size.");
+	memcpy(session->shared_secret, mac.raw, sizeof(session->shared_secret));
+
 	session->valid = 1;
 
 	return result;
@@ -302,12 +307,15 @@ static uint32_t AddRequestAuthBlock(struct auth_session* auth_session,
 	       auth_session->nonce_odd.nonce, sizeof(TPM_NONCE));
 	buf[TPM_SHA1_160_HASH_LEN + 2 * sizeof(TPM_NONCE)] =
 			continue_auth_session;
-	if (hmac(VB2_HASH_SHA1, auth_session->shared_secret,
-		 sizeof(auth_session->shared_secret), buf, sizeof(buf), cursor,
-		 TPM_SHA1_160_HASH_LEN)) {
+	struct vb2_hash mac;
+	if (vb2_hmac_calculate(false, VB2_HASH_SHA1, auth_session->shared_secret,
+			       sizeof(auth_session->shared_secret), buf, sizeof(buf), &mac)) {
 		return TPM_E_AUTHFAIL;
 	}
-	cursor += TPM_SHA1_160_HASH_LEN;
+
+	memcpy(cursor, mac.sha1, sizeof(mac.sha1));
+
+	cursor += sizeof(mac.sha1);
 
 	return TPM_SUCCESS;
 }
@@ -361,16 +369,16 @@ static uint32_t CheckResponseAuthBlock(struct auth_session* auth_session,
 	auth_session->valid = *cursor++;
 	hmac_input[TPM_SHA1_160_HASH_LEN + 2 * sizeof(TPM_NONCE)] =
 			auth_session->valid;
-	uint8_t mac[TPM_SHA1_160_HASH_LEN];
-	if (hmac(VB2_HASH_SHA1, auth_session->shared_secret,
-		 sizeof(auth_session->shared_secret), hmac_input,
-		 sizeof(hmac_input), mac, sizeof(mac))) {
+	struct vb2_hash mac;
+	if (vb2_hmac_calculate(false, VB2_HASH_SHA1, auth_session->shared_secret,
+			       sizeof(auth_session->shared_secret), hmac_input,
+			       sizeof(hmac_input), &mac)) {
 		auth_session->valid = 0;
 		return TPM_E_AUTHFAIL;
 	}
 
 	/* Check the MAC. */
-	if (vb2_safe_memcmp(mac, cursor, sizeof(mac))) {
+	if (vb2_safe_memcmp(mac.sha1, cursor, sizeof(mac.sha1))) {
 		auth_session->valid = 0;
 		return TPM_E_AUTHFAIL;
 	}

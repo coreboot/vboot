@@ -7,10 +7,9 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 
-int hmac(enum vb2_hash_algorithm alg,
-	 const void *key, uint32_t key_size,
-	 const void *msg, uint32_t msg_size,
-	 uint8_t *mac, uint32_t mac_size)
+int vb2_hmac_calculate(bool allow_hwcrypto, enum vb2_hash_algorithm alg, const void *key,
+		       uint32_t key_size, const void *msg, uint32_t msg_size,
+		       struct vb2_hash *mac)
 {
 	uint32_t block_size;
 	uint32_t digest_size;
@@ -29,11 +28,8 @@ int hmac(enum vb2_hash_algorithm alg,
 	if (!digest_size || !block_size)
 		return -1;
 
-	if (mac_size < digest_size)
-		return -1;
-
 	if (key_size > block_size) {
-		vb2_digest_init(&dc, false, alg, 0);
+		vb2_digest_init(&dc, allow_hwcrypto, alg, 0);
 		vb2_digest_extend(&dc, (uint8_t *)key, key_size);
 		vb2_digest_finalize(&dc, k, block_size);
 		key_size = digest_size;
@@ -48,15 +44,16 @@ int hmac(enum vb2_hash_algorithm alg,
 		i_pad[i] = 0x36 ^ k[i];
 	}
 
-	vb2_digest_init(&dc, false, alg, 0);
+	vb2_digest_init(&dc, allow_hwcrypto, alg, 0);
 	vb2_digest_extend(&dc, i_pad, block_size);
 	vb2_digest_extend(&dc, msg, msg_size);
 	vb2_digest_finalize(&dc, b, digest_size);
 
-	vb2_digest_init(&dc, false, alg, 0);
+	vb2_digest_init(&dc, allow_hwcrypto, alg, 0);
 	vb2_digest_extend(&dc, o_pad, block_size);
 	vb2_digest_extend(&dc, b, digest_size);
-	vb2_digest_finalize(&dc, mac, mac_size);
+	vb2_digest_finalize(&dc, mac->raw, digest_size);
+	mac->algo = alg;
 
 	return 0;
 }
