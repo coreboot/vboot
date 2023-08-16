@@ -156,10 +156,9 @@ main() {
     ) > "${VERSION_FILE}"
   fi
 
-  local eckey_version fkey_version ksubkey_version kdatakey_version
+  local fkey_version ksubkey_version kdatakey_version
 
   # Get the key versions for normal keypairs
-  eckey_version=$(get_version "ec_key_version")
   fkey_version=$(get_version "firmware_key_version")
   # Firmware version is the kernel subkey version.
   ksubkey_version=$(get_version "firmware_version")
@@ -167,8 +166,6 @@ main() {
   kdatakey_version=$(get_version "kernel_key_version")
 
   # Create the normal keypairs
-  make_pair ec_root_key              ${EC_ROOT_KEY_ALGOID}
-  make_pair ec_data_key              ${EC_DATAKEY_ALGOID} ${eckey_version}
   make_pair root_key                 ${root_key_algoid}
   make_pair firmware_data_key        ${FIRMWARE_DATAKEY_ALGOID} ${fkey_version}
   make_pair kernel_subkey            ${KERNEL_SUBKEY_ALGOID} ${ksubkey_version}
@@ -188,8 +185,6 @@ main() {
   # Create the firmware keyblock for use only in Normal mode. This is redundant,
   # since it's never even checked during Recovery mode.
   make_keyblock firmware ${FIRMWARE_KEYBLOCK_MODE} firmware_data_key root_key
-  # Ditto EC keyblock
-  make_keyblock ec ${EC_KEYBLOCK_MODE} ec_data_key ec_root_key
 
   # Create the recovery kernel keyblock for use only in Recovery mode.
   make_keyblock recovery_kernel ${RECOVERY_KERNEL_KEYBLOCK_MODE} recovery_kernel_data_key recovery_key

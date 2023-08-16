@@ -48,9 +48,6 @@ alg_to_keylen() {
 }
 
 # Default algorithms.
-EC_ROOT_KEY_ALGOID=${RSA4096_SHA256_ALGOID}
-EC_DATAKEY_ALGOID=${RSA4096_SHA256_ALGOID}
-
 ROOT_KEY_ALGOID=${RSA4096_SHA512_ALGOID}
 RECOVERY_KEY_ALGOID=${RSA4096_SHA512_ALGOID}
 
@@ -78,8 +75,6 @@ ARV_ROOT_DIR="ApRoV1Signing-PreMP"
 # !MINIOS 0x10  MINIOS 0x20
 # Note that firmware keyblock modes are not used.  Consider deprecating.
 
-# Only allow RW EC firmware in non-recovery + non-miniOS.
-EC_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
 # Only allow RW firmware in non-recovery + non-miniOS.
 FIRMWARE_KEYBLOCK_MODE=$((0x1 | 0x2 | 0x4 | 0x10))
 # Only allow in dev mode + non-recovery + non-miniOS.
