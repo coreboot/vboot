@@ -807,10 +807,10 @@ int VbSetSystemPropertyString(const char *name, const char *value)
 }
 
 /**
- * Get index of the last valid VBNV entry in an EEPROM.
+ * Get index of the last valid VBNV entry.
  *
- * @param buf		Pointer to the beginning of the EEPROM.
- * @param buf_sz	Size of the EEPROM.
+ * @param buf		Pointer to the buffer containing VBNV entries.
+ * @param buf_sz	Size of the buffer.
  * @param vbnv_size	The size of a single VBNV entry for this device.
  *
  * @return The index of the last valid VBNV entry on success, or -1 on
@@ -818,7 +818,7 @@ int VbSetSystemPropertyString(const char *name, const char *value)
  */
 static int vb2_nv_index(const uint8_t *buf, uint32_t buf_sz, int vbnv_size)
 {
-	int index;
+	int used_below, blank_above;
 	uint8_t blank[VB2_NVDATA_SIZE_V2];
 
 	/* The size of the buffer should be an even multiple of the
@@ -830,17 +830,27 @@ static int vb2_nv_index(const uint8_t *buf, uint32_t buf_sz, int vbnv_size)
 	}
 
 	memset(blank, 0xff, sizeof(blank));
-	for (index = 0; index < buf_sz / vbnv_size; index++) {
-		if (!memcmp(blank, &buf[index * vbnv_size], vbnv_size))
-			break;
+
+	/* To match the searching algorithm in firmware, perform binary search
+	   instead of linear search to find the last used index. */
+	used_below = 0;
+	blank_above = buf_sz / vbnv_size;
+	while (used_below + 1 < blank_above) {
+		int mid = (used_below + blank_above) / 2;
+		if (!memcmp(blank, &buf[mid * vbnv_size], vbnv_size))
+			blank_above = mid;
+		else
+			used_below = mid;
 	}
 
-	if (!index) {
+	/* If all entries are blank, used_below will be 0. Otherwise, used_below
+	   will be the index of the last used entry. */
+	if (!memcmp(blank, &buf[used_below * vbnv_size], vbnv_size)) {
 		fprintf(stderr, "VBNV is uninitialized.\n");
 		return -1;
 	}
 
-	return index - 1;
+	return used_below;
 }
 
 #define VBNV_FMAP_REGION "RW_NVRAM"
