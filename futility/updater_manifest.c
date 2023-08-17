@@ -832,14 +832,14 @@ static bool manifest_must_enforce_setvars(struct manifest *manifest)
 	return false;
 }
 
-static void manifest_from_setvars_sh(struct manifest *manifest) {
+static int manifest_from_setvars_sh(struct manifest *manifest) {
 	VB2_DEBUG("Try to build the manifest from *%s\n", PATH_ENDSWITH_SETVARS);
-	archive_walk(manifest->archive, manifest, manifest_scan_entries);
+	return archive_walk(manifest->archive, manifest, manifest_scan_entries);
 }
 
-static void manifest_from_build_artifacts(struct manifest *manifest) {
+static int manifest_from_build_artifacts(struct manifest *manifest) {
 	VB2_DEBUG("Try to build the manifest from a */firmware folder\n");
-	archive_walk(manifest->archive, manifest, manifest_scan_raw_entries);
+	return archive_walk(manifest->archive, manifest, manifest_scan_raw_entries);
 }
 
 /*
@@ -851,7 +851,7 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 	int i;
 	struct manifest manifest = {0}, *new_manifest;
 	bool try_builders = true;
-	void (*manifest_builders[])(struct manifest *) = {
+	int (*manifest_builders[])(struct manifest *) = {
 		manifest_from_signer_config,
 		manifest_from_setvars_sh,
 		manifest_from_build_artifacts,
@@ -870,7 +870,13 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 	}
 
 	for (i = 0; try_builders && i < ARRAY_SIZE(manifest_builders); i++) {
-		manifest_builders[i](&manifest);
+		/*
+		 * For archives manually updated (for testing), it is possible a
+		 * builder can successfully scan the archive but no valid models
+		 * were found, so here we don't need to check the return value.
+		 * Only stop when manifest.num is non-zero.
+		 */
+		(void) manifest_builders[i](&manifest);
 		if (manifest.num)
 			try_builders = false;
 	}
