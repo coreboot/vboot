@@ -24,6 +24,7 @@
 #include "2crypto.h"
 #include "2fw_hash_tags.h"
 #include "2gbb_flags.h"
+#include "2hmac.h"
 #include "2id.h"
 #include "2info.h"
 #include "2recovery_reasons.h"
