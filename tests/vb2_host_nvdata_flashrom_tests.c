@@ -49,6 +49,11 @@ static const uint8_t test_nvdata2_16b[] = {
 	0x00, 0xfe, 0xff, 0x00, 0x00, 0xff, 0xff, 0x78,
 };
 
+static const uint8_t blank_nvdata_16b[] = {
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+};
+
 static void reset_test_data(struct vb2_context *ctx, int nvdata_size)
 {
 	/* Initialize the context value. */
@@ -181,6 +186,20 @@ static void test_read_fail_flashrom(void)
 		 "Reading storage fails when flashrom fails");
 }
 
+static void test_write_ok_uninitialized(void)
+{
+	struct vb2_context ctx;
+
+	reset_test_data(&ctx, sizeof(test_nvdata_16b));
+	memcpy(ctx.nvdata, test_nvdata2_16b, sizeof(test_nvdata2_16b));
+
+	TEST_EQ(vb2_write_nv_storage_flashrom(&ctx), 0,
+		"Writing storage succeeds when the flash is erased");
+	TEST_EQ(memcmp(fake_flash_region, test_nvdata2_16b,
+		       sizeof(test_nvdata2_16b)),
+		0, "Entry 0 in the flash was written");
+}
+
 static void test_write_ok_beginning(void)
 {
 	struct vb2_context ctx;
@@ -193,7 +212,7 @@ static void test_write_ok_beginning(void)
 		"Writing storage succeeds");
 	TEST_EQ(memcmp(fake_flash_region + VB2_NVDATA_SIZE, test_nvdata2_16b,
 		       sizeof(test_nvdata2_16b)),
-		0, "The flash was updated with a new entry");
+		0, "Entry 1 in the flash was written");
 }
 
 static void test_write_ok_2ndentry(void)
@@ -210,7 +229,7 @@ static void test_write_ok_2ndentry(void)
 		"Writing storage succeeds");
 	TEST_EQ(memcmp(fake_flash_region + (2 * VB2_NVDATA_SIZE),
 		       test_nvdata2_16b, sizeof(test_nvdata2_16b)),
-		0, "The flash was updated with a new entry");
+		0, "Entry 2 in the flash was written");
 }
 
 static void test_write_ok_full(void)
@@ -238,14 +257,28 @@ static void test_write_ok_full(void)
 		"the beginning");
 }
 
-static void test_write_fail_uninitialized(void)
+static void test_write_ok_corrupted_flash(void)
 {
 	struct vb2_context ctx;
 
 	reset_test_data(&ctx, sizeof(test_nvdata_16b));
 
-	TEST_NEQ(vb2_write_nv_storage_flashrom(&ctx), 0,
-		 "Writing storage fails when the flash is erased");
+	/* Entry 0 is blank, but entry 1 is used */
+	memcpy(fake_flash_region + VB2_NVDATA_SIZE,
+	       test_nvdata_16b, sizeof(test_nvdata_16b));
+	memcpy(ctx.nvdata, test_nvdata2_16b, sizeof(test_nvdata2_16b));
+
+	TEST_EQ(vb2_write_nv_storage_flashrom(&ctx), 0,
+		"Writing corrupted storage succeeds");
+	TEST_EQ(memcmp(fake_flash_region, test_nvdata2_16b,
+		       sizeof(test_nvdata2_16b)),
+		0, "Entry 0 in the flash was written");
+	TEST_EQ(memcmp(fake_flash_region + VB2_NVDATA_SIZE,
+		       blank_nvdata_16b, sizeof(blank_nvdata_16b)),
+		0, "Entry 1 in the flash was erased");
+	TEST_EQ(memcmp(fake_flash_region + (2 * VB2_NVDATA_SIZE),
+		       blank_nvdata_16b, sizeof(blank_nvdata_16b)),
+		0, "Entry 2 in the flash was not written");
 }
 
 static void test_write_fail_flashrom(void)
@@ -267,10 +300,11 @@ int main(int argc, char *argv[])
 	test_read_ok_full();
 	test_read_fail_uninitialized();
 	test_read_fail_flashrom();
+	test_write_ok_uninitialized();
 	test_write_ok_beginning();
 	test_write_ok_2ndentry();
 	test_write_ok_full();
-	test_write_fail_uninitialized();
+	test_write_ok_corrupted_flash();
 	test_write_fail_flashrom();
 
 	return gTestSuccess ? 0 : 255;
