@@ -1,2 +1,0 @@
-"serial_number"="TEST"
-"region"="us"
