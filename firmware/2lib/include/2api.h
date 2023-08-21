@@ -619,6 +619,10 @@ struct vb2_kernel_params {
 	uint32_t vendor_boot_offset;
 	/* Android init_boot partition offset (in bytes) in kernel_buffer. */
 	uint32_t init_boot_offset;
+	/* Address of the region with kernel cmdline parameters. */
+	char *vboot_cmdline_buffer;
+	/* Size of the region with kernel cmdline parameters. */
+	uint32_t vboot_cmdline_size;
 };
 
 /*****************************************************************************/

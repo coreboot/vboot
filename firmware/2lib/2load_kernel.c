@@ -8,6 +8,7 @@
 
 #include "2api.h"
 #include "2common.h"
+#include "2load_android_kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2packed_key.h"
@@ -342,7 +343,7 @@ static vb2_error_t vb2_verify_kernel_vblock(struct vb2_context *ctx,
 }
 
 /**
- * Load and verify a partition from the stream.
+ * Load and verify a ChromeOS kernel partition from the stream.
  *
  * @param ctx			Vboot context
  * @param params		Load-kernel parameters
@@ -351,10 +352,9 @@ static vb2_error_t vb2_verify_kernel_vblock(struct vb2_context *ctx,
  * @param kernel_version	The kernel version of this partition.
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static vb2_error_t vb2_load_partition(struct vb2_context *ctx,
-				      struct vb2_kernel_params *params,
-				      VbExStream_t stream, uint32_t lpflags,
-				      uint32_t *kernel_version)
+static vb2_error_t vb2_load_chromeos_kernel_partition(
+	struct vb2_context *ctx, struct vb2_kernel_params *params,
+	VbExStream_t stream, uint32_t lpflags, uint32_t *kernel_version)
 {
 	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wb;
@@ -485,8 +485,11 @@ static vb2_error_t try_minios_kernel(struct vb2_context *ctx,
 		return rv;
 	}
 
-	rv = vb2_load_partition(ctx, params, stream, lpflags, &kernel_version);
-	VB2_DEBUG("vb2_load_partition returned: %d\n", rv);
+	/* We are looking for ChromeOS partitions */
+	rv = vb2_load_chromeos_kernel_partition(ctx, params,
+						stream, lpflags,
+						&kernel_version);
+	VB2_DEBUG("vb2_load_chromeos_kernel_partition returned: %d\n", rv);
 
 	VbExStreamClose(stream);
 
@@ -675,8 +678,14 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 		}
 
 		uint32_t kernel_version = 0;
-		rv = vb2_load_partition(ctx, params, stream, lpflags,
-					&kernel_version);
+#ifdef USE_LIBAVB
+		rv = vb2_load_android_kernel(ctx, params, stream, &gpt,
+					     disk_info->handle,
+					     need_valid_keyblock(ctx));
+#else
+		/* Don't allow to boot android without AVB */
+		rv = VB2_ERROR_LK_INVALID_KERNEL_FOUND;
+#endif
 		VbExStreamClose(stream);
 
 		if (rv) {
