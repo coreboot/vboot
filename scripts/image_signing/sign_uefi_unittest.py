@@ -106,6 +106,7 @@ class Test(unittest.TestCase):
             sign_uefi.inject_vbpubk(efi_file, uefi_key_dir)
 
             # Check that the expected command runs.
+            expected_vbpubk = uefi_key_dir.parent / "kernel_subkey.vbpubk"
             self.assertEqual(
                 mock_run.call_args_list,
                 [
@@ -114,7 +115,7 @@ class Test(unittest.TestCase):
                             "sudo",
                             "objcopy",
                             "--update-section",
-                            f'.vbpubk={uefi_key_dir / "../kernel_subkey.vbpubk"}',
+                            f".vbpubk={expected_vbpubk}",
                             efi_file,
                         ],
                         check=True,

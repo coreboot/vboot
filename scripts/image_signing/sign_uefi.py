@@ -105,7 +105,7 @@ def inject_vbpubk(efi_file: os.PathLike, key_dir: os.PathLike):
     """
     section_name = ".vbpubk"
     logging.info("updating section %s in %s", section_name, efi_file.name)
-    section_data_path = key_dir / "../kernel_subkey.vbpubk"
+    section_data_path = key_dir.parent / "kernel_subkey.vbpubk"
     subprocess.run(
         [
             "sudo",
