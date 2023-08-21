@@ -169,4 +169,20 @@ const char *GptErrorText(int error_code);
  */
 size_t CalculateEntriesSectors(GptHeader* h, uint32_t sector_bytes);
 
+/**
+ * Convert UTF8 string to UCS2. The UTF8 string must be null-terminated.
+ * Caller must prepare enough space for UTF16, including a terminating 0x0000.
+ * The caller just needs to prepare the byte length of UTF8 plus the terminating
+ * 0x0000.
+ */
+int UTF8ToUCS2(const uint8_t *utf8_data,
+	       uint16_t *ucs2_data,
+	       size_t ucs2_data_capacity_num_bytes);
+
+/**
+ * This function combines strings a and b into new one.
+ * Caller is responsible for freeing returned string.
+ */
+char *JoinStr(const char *a, const char *b);
+
 #endif  /* VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_ */
