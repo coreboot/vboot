@@ -39,6 +39,7 @@
 SRCDIR := $(shell pwd)
 BUILD = ${SRCDIR}/build
 export BUILD
+LIBAVB_SRCDIR ?= firmware/avb/libavb
 
 # Stuff for 'make install'
 INSTALL = install
@@ -467,6 +468,15 @@ endif
 FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o} ${FWLIB_ASMS:%.S=${BUILD}/%.o}
 TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
+
+# We are adding libavb objs to FWLIB_OBJS thus need to include this file here.
+# Since libavb sources are stored in external library, this needs to be moved
+# into expected location beforehand.
+ifneq ($(filter-out 0,${USE_AVB}),)
+include firmware/avb/Makefile
+FWLIB_SRCS += \
+	firmware/2lib/2load_android_kernel.c
+endif
 
 # Maintain behaviour of default on.
 USE_FLASHROM ?= 1

@@ -613,7 +613,7 @@ struct vb2_kernel_params {
 	uint32_t bootloader_size;
 	/* UniquePartitionGuid for boot partition. */
 	uint8_t partition_guid[16];
-	/* Flags set by signer. */
+	/* Flags with kernel type. */
 	uint32_t flags;
 };
 
