@@ -40,6 +40,7 @@ SRCDIR := $(shell pwd)
 export SRCDIR
 BUILD = ${SRCDIR}/build
 export BUILD
+LIBAVB_SRCDIR ?= firmware/avb/libavb
 
 # Stuff for 'make install'
 INSTALL = install
@@ -446,6 +447,12 @@ FWLIB_OBJS = ${FWLIB_SRCS:%.c=${BUILD}/%.o}
 TLCL_OBJS = ${TLCL_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
 
+# We are adding libavb objs to FWLIB_OBJS thus need to include this file here.
+# Since libavb sources are stored in external library, this needs to be moved
+# into expected location beforehand.
+ifneq (${USE_AVB},)
+include firmware/avb/Makefile
+endif
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
 

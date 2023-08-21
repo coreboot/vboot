@@ -22,6 +22,16 @@
 #include "vboot_kernel.h"
 #include "vboot_struct.h"
 
+#ifdef USE_LIBAVB
+#include "vboot_avb_ops.h"
+
+/* Size of the buffer to convey cmdline properties to bootloader */
+#define AVB_CMDLINE_BUF_SIZE 1024
+#endif
+
+/* Bytes to read at start of the boot/init_boot/vendor_boot partitions */
+#define BOOT_HDR_GKI_SIZE 4096
+
 #define LOWEST_TPM_VERSION 0xffffffff
 
 enum vboot_mode {
@@ -302,7 +312,7 @@ enum vb2_load_partition_flags {
 	(VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES + KBUF_SIZE)
 
 /**
- * Load and verify a partition from the stream.
+ * Load and verify a ChromeOS kernel partition from the stream.
  *
  * @param ctx		Vboot context
  * @param stream	Stream to load kernel from
@@ -314,7 +324,7 @@ enum vb2_load_partition_flags {
  * @param wb            Workbuf for data storage
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static vb2_error_t vb2_load_partition(
+static vb2_error_t vb2_load_chromeos_kernel_partition(
 	struct vb2_context *ctx, VbExStream_t stream,
 	const struct vb2_packed_key *kernel_subkey, uint32_t flags,
 	LoadKernelParams *params, uint32_t min_version,
@@ -436,6 +446,122 @@ static vb2_error_t vb2_load_partition(
 	return VB2_SUCCESS;
 }
 
+#ifdef USE_LIBAVB
+static vb2_error_t vb2_load_avb_android_partition(
+	struct vb2_context *ctx, VbExStream_t stream,
+	VbSharedDataKernelPart *shpart, LoadKernelParams *params,
+	GptData *gpt)
+{
+	char *ab_suffix = NULL;
+	AvbSlotVerifyData *verify_data = NULL;
+	AvbOps *avb_ops;
+	static const char * const boot_partitions[] = {
+		GPT_ENT_NAME_ANDROID_BOOT,
+		GPT_ENT_NAME_ANDROID_INIT_BOOT,
+		GPT_ENT_NAME_ANDROID_VENDOR_BOOT,
+		NULL,
+	};
+	AvbSlotVerifyFlags avb_flags;
+	AvbSlotVerifyResult result;
+	vb2_error_t ret;
+	int need_keyblock_valid = require_official_os(ctx, params);
+
+	ret = GptGetActiveKernelPartitionSuffix(gpt, &ab_suffix);
+	if (ret != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to get kernel partition suffix\n");
+		shpart->check_result = VBSD_LKC_CHECK_INVALID_PARTITIONS;
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	}
+
+	avb_ops = vboot_avb_ops_new(ctx, params, stream, gpt,
+				    params->disk_handle);
+	if (avb_ops == NULL) {
+		free(ab_suffix);
+		VB2_DEBUG("Cannot allocate memory for AVB ops\n");
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	}
+
+	avb_flags = AVB_SLOT_VERIFY_FLAGS_NONE;
+	if (!need_keyblock_valid)
+		avb_flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
+
+	result = avb_slot_verify(avb_ops,
+			boot_partitions,
+			ab_suffix,
+			avb_flags,
+			AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE,
+			&verify_data);
+	vboot_avb_ops_free(avb_ops);
+	free(ab_suffix);
+
+	/* Ignore verification errors in developer mode */
+	if (ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) {
+		switch (result) {
+		case AVB_SLOT_VERIFY_RESULT_OK:
+		case AVB_SLOT_VERIFY_RESULT_ERROR_VERIFICATION:
+		case AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX:
+		case AVB_SLOT_VERIFY_RESULT_ERROR_PUBLIC_KEY_REJECTED:
+			ret = AVB_SLOT_VERIFY_RESULT_OK;
+			break;
+		default:
+			ret = VB2_ERROR_LK_NO_KERNEL_FOUND;
+		}
+	} else {
+		ret = result;
+	}
+
+	/*
+	 * Return from this function early so that caller can try fallback to
+	 * other partition in case of error.
+	 */
+	if (ret != AVB_SLOT_VERIFY_RESULT_OK) {
+		if (verify_data != NULL)
+			avb_slot_verify_data_free(verify_data);
+		shpart->check_result = VBSD_LKP_CHECK_VERIFY_DATA;
+		return ret;
+	}
+
+	/*
+	 * Use a buffer before the GKI header for copying avb cmdline string for
+	 * bootloader.
+	 */
+	params->vboot_cmdline_offset = params->kernel_buffer_size -
+	    BOOT_HDR_GKI_SIZE - AVB_CMDLINE_BUF_SIZE;
+
+	if ((params->init_boot_offset + params->init_boot_size) >
+	    params->vboot_cmdline_offset)
+		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
+
+	if (strlen(verify_data->cmdline) >= AVB_CMDLINE_BUF_SIZE)
+		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
+
+	strcpy((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
+	       verify_data->cmdline);
+
+	/* No need for slot data, partitions should be already at correct
+	 * locations in memory since we are using "get_preloaded_partitions"
+	 * callbacks.
+	 */
+	avb_slot_verify_data_free(verify_data);
+
+	/*
+	 * Bootloader expects kernel image at the very beginning of
+	 * kernel_buffer, but verification requires boot header before
+	 * kernel. Since the verification is done, we need to move kernel
+	 * at proper address.
+	 */
+	memmove((uint8_t *)params->kernel_buffer,
+	       (uint8_t *)params->kernel_buffer + BOOT_HDR_GKI_SIZE,
+	       params->vendor_boot_offset - BOOT_HDR_GKI_SIZE);
+
+	shpart->check_result = VBSD_LKP_CHECK_KERNEL_GOOD;
+	/* Rollback protection hasn't been implemented yet. */
+	shpart->combined_version = LOWEST_TPM_VERSION;
+
+	return ret;
+}
+#endif /* USE_LIBAVB */
+
 vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -538,14 +664,13 @@ vb2_error_t LoadKernel(struct vb2_context *ctx, LoadKernelParams *params)
 			lpflags |= VB2_LOAD_PARTITION_VBLOCK_ONLY;
 		}
 
-		rv = vb2_load_partition(ctx,
-					stream,
-					kernel_subkey,
-					lpflags,
-					params,
-					sd->kernel_version,
-					shpart,
-					&wb);
+#ifdef USE_LIBAVB
+		rv = vb2_load_avb_android_partition(ctx, stream, shpart,
+			params, &gpt);
+#else
+		/* Don't allow to boot android without AVB */
+		rv = VB2_ERROR_LK_INVALID_KERNEL_FOUND;
+#endif
 		VbExStreamClose(stream);
 
 		if (rv != VB2_SUCCESS) {
