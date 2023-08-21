@@ -12,11 +12,71 @@
 
 const static int MIN_SECTOR_SIZE = 512;
 
+#define UTF8_4BYTES_MASK   0xf8
+#define UTF8_4BYTES_START  0xf0
+#define UTF8_3BYTES_MASK   0xf0
+#define UTF8_3BYTES_START  0xe0
+#define UTF8_2BYTES_MASK   0xe0
+#define UTF8_2BYTES_START  0xc0
+
 size_t CalculateEntriesSectors(GptHeader* h, uint32_t sector_bytes)
 {
 	size_t bytes = h->number_of_entries * h->size_of_entry;
 	size_t ret = (bytes + sector_bytes - 1) / sector_bytes;
 	return ret;
+}
+
+char *JoinStr(const char *a, const char *b)
+{
+	size_t len = strlen(a) + strlen(b) + 1;
+	char *ret = (char *)malloc(len);
+	if (ret == NULL)
+		return NULL;
+
+	strcpy(ret, a);
+	return strcat(ret, b);
+}
+
+int UTF8ToUCS2(const uint8_t *utf8_data,
+	       uint16_t *ucs2_data,
+	       size_t ucs2_data_capacity_num_bytes)
+{
+	uint32_t idx8 = 0;
+	uint32_t idx2 = 0;
+
+	if (!utf8_data)
+		return -1;
+
+	do {
+		if (idx2 >= ucs2_data_capacity_num_bytes)
+			break;
+
+		if ((utf8_data[idx8] & UTF8_4BYTES_MASK) == UTF8_4BYTES_START) {
+			/* There are no meaningful UCS characters in that range */
+			return -1;
+		} else if ((utf8_data[idx8] & UTF8_3BYTES_MASK) == UTF8_3BYTES_START) {
+			ucs2_data[idx2] =
+				(uint16_t)((uint16_t)utf8_data[idx8] << 12) |
+				(uint16_t)(((uint16_t)utf8_data[idx8 + 1] << 6) & 0x0FC0) |
+				(uint16_t)((uint16_t)utf8_data[idx8 + 2] & 0x003F);
+			idx8 += 3;
+		} else if ((utf8_data[idx8] & UTF8_2BYTES_MASK) == UTF8_2BYTES_START) {
+			ucs2_data[idx2] =
+				(uint16_t)(((uint16_t)utf8_data[idx8] << 6) & 0x07C0) |
+				(uint16_t)((uint16_t)utf8_data[idx8 + 1] & 0x003F);
+			idx8 += 2;
+		} else if (!(utf8_data[idx8] >> 7)) {
+			ucs2_data[idx2] = (uint16_t)((uint16_t)utf8_data[idx8] & 0x00FF);
+			idx8++;
+		} else {
+			// invalid utf-8
+			return -1;
+		}
+		idx2++;
+	} while (utf8_data[idx8] != 0);
+
+	/* Success */
+	return idx2;
 }
 
 int CheckParameters(GptData *gpt)
