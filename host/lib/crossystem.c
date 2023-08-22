@@ -187,6 +187,7 @@ int vb2_set_nv_storage(enum vb2_nv_param param, int value)
 			free(sh);
 			return -1;
 		}
+		ctx->flags &= ~VB2_CONTEXT_NVDATA_CHANGED;
 	}
 
 	/* Success */
