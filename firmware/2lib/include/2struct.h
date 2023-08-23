@@ -509,14 +509,6 @@ _Static_assert(EXPECTED_VB2_FW_PREAMBLE_SIZE == sizeof(struct vb2_fw_preamble),
 #define VB2_KERNEL_PREAMBLE_HEADER_VERSION_MAJOR 2
 #define VB2_KERNEL_PREAMBLE_HEADER_VERSION_MINOR 2
 
-/* Flags for vb2_kernel_preamble.flags */
-/* Kernel image type = bits 1:0 */
-#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_MASK 0x00000003
-#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_CROS      0
-#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_BOOTIMG   1
-#define VB2_KERNEL_PREAMBLE_KERNEL_TYPE_MULTIBOOT 2
-/* Kernel type 3 is reserved for future use */
-
 /*
  * Preamble block for kernel, version 2.2
  *
@@ -592,12 +584,10 @@ struct vb2_kernel_preamble {
 	 */
 
 	/*
-	 * Flags; see VB2_KERNEL_PREAMBLE_*.  Readers should return 0 for
-	 * header version < 2.2.  Flags field is currently defined as:
+	 * Flags.  Readers should return 0 for header version < 2.2.
+	 * Flags field is currently defined as:
 	 * [31:2] - Reserved (for future use)
-	 * [1:0]  - Kernel image type (0b00 - CrOS,
-	 *                             0b01 - bootimg,
-	 *                             0b10 - multiboot)
+	 * [1:0]  - Kernel image type; see VB2_KERNEL_TYPE_*.
 	 */
 	uint32_t flags;
 } __attribute__((packed));
