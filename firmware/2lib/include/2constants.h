@@ -98,4 +98,10 @@ typedef void *vb2ex_disk_handle_t;
    the struct definition as part of a vb2_api.h include. */
 #define VB2_VBSD_SIZE 1096
 
+/* Kernel image type */
+#define VB2_KERNEL_TYPE_MASK		0x00000003
+#define VB2_KERNEL_TYPE_CROS		0
+#define VB2_KERNEL_TYPE_BOOTIMG		1
+#define VB2_KERNEL_TYPE_MULTIBOOT	2
+
 #endif  /* VBOOT_REFERENCE_2CONSTANTS_H_ */
