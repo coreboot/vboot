@@ -31,6 +31,14 @@
 #include "2rsa.h"
 #include "2secdata_struct.h"
 
+/* Kernel image type */
+#define VB2_KERNEL_TYPE_MASK 0x00000003
+#define VB2_KERNEL_TYPE_CROS        0
+#define VB2_KERNEL_TYPE_BOOTIMG     1
+#define VB2_KERNEL_TYPE_MULTIBOOT   2
+#define VB2_KERNEL_TYPE_ANDROID_GKI 3
+
+
 #define _VB2_TRY_IMPL(expr, ctx, recovery_reason, ...) do { \
 	vb2_error_t _vb2_try_rv = (expr); \
 	struct vb2_context *_vb2_try_ctx = (ctx); \
