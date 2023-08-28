@@ -91,15 +91,15 @@ enum vb2_secdata_kernel_flags {
 	/*
 	 * Phone recovery functionality is disabled.
 	 *
-	 * RW firmware currently clears this flag to enable phone recovery on
-	 * first boot (see function vb2api_kernel_phase1()).  In the case that
-	 * there are TPM communication issues, phone recovery is enabled by the
-	 * default value of 0.  See b/147744345 for details.
+	 * Deprecated with CL:3718621.
 	 */
-	VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_DISABLED = (1 << 0),
+	VB2_SECDATA_KERNEL_DEPRECATED_FLAG_PHONE_RECOVERY_DISABLED = (1 << 0),
 
-	/* Phone recovery instructions in recovery UI are disabled. */
-	VB2_SECDATA_KERNEL_FLAG_PHONE_RECOVERY_UI_DISABLED = (1 << 1),
+	/* Phone recovery instructions in recovery UI are disabled.
+	 *
+	 * Deprecated with CL:3718621.
+	 */
+	VB2_SECDATA_KERNEL_DEPRECATED_FLAG_PHONE_RECOVERY_UI_DISABLED = (1 << 1),
 
 	/*
 	 * Diagnostic UI is disabled.  This includes both hiding the entry

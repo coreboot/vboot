@@ -851,22 +851,6 @@ uint32_t vb2api_get_locale_id(struct vb2_context *ctx);
 void vb2api_set_locale_id(struct vb2_context *ctx, uint32_t locale_id);
 
 /**
- * Whether phone recovery functionality is enabled or not.
- *
- * @param ctx		Vboot context
- * @return 1 if enabled, 0 if disabled.
- */
-int vb2api_phone_recovery_enabled(struct vb2_context *ctx);
-
-/**
- * Whether phone recovery instructions in recovery UI are enabled or not.
- *
- * @param ctx		Vboot context
- * @return 1 if enabled, 0 if disabled.
- */
-int vb2api_phone_recovery_ui_enabled(struct vb2_context *ctx);
-
-/**
  * Whether diagnostic UI functionality is enabled or not.
  *
  * @param ctx		Vboot context

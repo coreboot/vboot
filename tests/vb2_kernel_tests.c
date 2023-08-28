@@ -277,11 +277,6 @@ static void phase1_tests(void)
 	reset_common_data(FOR_PHASE1);
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 	TEST_SUCC(vb2api_kernel_phase1(ctx), "phase1 non-rec good");
-	/* Make sure phone recovery functionality is enabled, but UI disabled */
-	TEST_EQ(vb2api_phone_recovery_enabled(ctx), 1,
-		"  phone recovery enabled");
-	TEST_EQ(vb2api_phone_recovery_ui_enabled(ctx), 0,
-		"  phone recovery ui disabled");
 	/* Make sure diagnostic UI is enabled */
 	TEST_EQ(vb2api_diagnostic_ui_enabled(ctx), 1,
 		"  diagnostic ui enabled");
