@@ -110,24 +110,24 @@ static void VbFixCmosChecksum(FILE* file)
 static char* GetAcpiSysfsPath(const char* name)
 {
 	/*
-	 * TODO: remove the path lookup for legacy firmwares when all existing
-	 * firmwares include https://crrev.com/c/2266713.
+	 * TODO: revert the legacy driver path lookup once all ChromeOS kernels
+	 * switch to use CHROMEOS_ACPI.
 	 */
+	static const char* legacy_driver_path = "/sys/devices/platform/chromeos_acpi";
 	static const char* legacy_fw_path = "/sys/devices/platform/GGL0001:00";
 	static const char* current_path = "/sys/devices/platform/GOOG0016:00";
-	static const char* dir_path = NULL;
 	char* path;
+	struct stat fs;
+	int ret;
 
-	if (!dir_path) {
-		struct stat fs;
+	if (stat(legacy_driver_path, &fs) == 0 && S_ISDIR(fs.st_mode))
+		ret = asprintf(&path, "%s/%s", legacy_driver_path, name);
+	else if (stat(legacy_fw_path, &fs) == 0 && S_ISDIR(fs.st_mode))
+		ret = asprintf(&path, "%s/%s", legacy_fw_path, name);
+	else
+		ret = asprintf(&path, "%s/%s", current_path, name);
 
-		if (stat(legacy_fw_path, &fs) == 0 && S_ISDIR(fs.st_mode))
-			dir_path = legacy_fw_path;
-		else
-			dir_path = current_path;
-	}
-
-	return asprintf(&path, "%s/%s", dir_path, name) == -1 ? NULL : path;
+	return ret == -1 ? NULL : path;
 }
 
 
