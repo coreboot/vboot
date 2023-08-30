@@ -520,6 +520,10 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
+	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC)) {
+		WARN("%s: flashrom support for CrOS EC is EOL.\n", __func__);
+	}
+
 	int r, i;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
 
@@ -547,6 +551,10 @@ int write_system_firmware(struct updater_config *cfg,
 			  const char * const regions[],
 				const size_t regions_len)
 {
+	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC)) {
+		WARN("%s: flashrom support for CrOS EC is EOL.\n", __func__);
+	}
+
 	int r = 0, i;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);
 	struct firmware_image *flash_contents = NULL;
