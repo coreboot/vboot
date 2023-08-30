@@ -18,9 +18,6 @@
 /* Structure(s) declared in updater_archive */
 struct u_archive;
 
-/* flashrom programmers. */
-static const char * const PROG_EC = "ec";
-
 /* Firmware slots */
 static const char * const FWACT_A = "A",
 		  * const FWACT_B = "B";

@@ -1203,7 +1203,7 @@ struct updater_config *updater_new_config(void)
 	cfg->image.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
 	cfg->image_current.programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
 	cfg->original_programmer = FLASHROM_PROGRAMMER_INTERNAL_AP;
-	cfg->ec_image.programmer = PROG_EC;
+	cfg->ec_image.programmer = FLASHROM_PROGRAMMER_INTERNAL_EC;
 
 	cfg->check_platform = 1;
 	cfg->do_verify = 1;
