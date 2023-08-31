@@ -8,17 +8,16 @@ NAME
 SYNOPSIS
 ========
 
-| **futility gbb** \[**\--help**]
-| **futility gbb** \[**-g**|**--get**] \[GET mode options] \[image_file]
-| **futility gbb** \[**-s**|**--set**] \[SET mode options] \[image_file] \[output_file]
-| **futility gbb** \[**-c**|**--create**] \[CREATE mode options]
-| **futility gbb** \[**-g**|**-s**] \[**\--flash**] \[GET|SET mode options] \[FLASH options]
+- **futility gbb** \[**\--help**]
+- **futility gbb** \[**-g**|**--get**] \[GET mode options] \[image_file]
+- **futility gbb** \[**-s**|**--set**] \[SET mode options] \[image_file] \[output_file]
+- **futility gbb** \[**-c**|**--create**] \[CREATE mode options]
+- **futility gbb** \[**-g**|**-s**] \[**\--flash**] \[GET|SET mode options] \[FLASH options]
 
 DESCRIPTION
 ===========
 
-The GBB sub-command allows for the printing and manipulation of
-the GBB flag state machine.
+The GBB sub-command allows for the printing and manipulation of the GBB flag state.
 
 Options
 -------

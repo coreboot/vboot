@@ -179,14 +179,10 @@ static void log_args(int argc, char *argv[])
 static const char *const usage = "\n"
 "Usage: " MYNAME " [options] COMMAND [args...]\n"
 "\n"
-"This is the unified firmware utility, which will eventually replace\n"
-"most of the distinct verified boot tools formerly produced by the\n"
-"vboot_reference package.\n"
+"This is the unified firmware utility, which contains various of distinct\n"
+"verified boot tools as subcommands.\n"
 "\n"
-"When symlinked under the name of one of those previous tools, it should\n"
-"fully implement the original behavior. It can also be invoked directly\n"
-"as " MYNAME ", followed by the original name as the first argument.\n"
-"\n";
+"See the README file for more information about the available commands\n";
 
 static const char *const options =
 "Global options:\n"
