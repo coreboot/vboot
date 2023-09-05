@@ -303,7 +303,7 @@ devs=$(awk '/(mmcblk[0-9])$|(sd[a-z])$|(nvme[0-9]+n[0-9]+)$/ {print "/dev/"$4}' 
 for d in $devs; do
   log cgpt show $d
 done
-log flashrom -V -p host --wp-status
+log futility flash --wp-status
 tpm_fwver=$(crossystem tpm_fwver) || tpm_fwver="UNKNOWN"
 tpm_kernver=$(crossystem tpm_kernver) || tpm_kernver="UNKNOWN"
 set -e
