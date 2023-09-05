@@ -316,7 +316,7 @@ if [ -n "${OPT_BIOS}" ]; then
   fix_old_names
 else
   # First try pulling just the components we want (using new-style names)
-  if log flashrom -p host -r /dev/null \
+  if log flashrom -p internal -r /dev/null \
     -i"GBB":GBB \
     -i"FMAP":FMAP \
     -i"VBLOCK_A":VBLOCK_A \
@@ -326,7 +326,7 @@ else
       log futility dump_fmap FMAP
     else
       info "Couldn't read individual components. Read the whole thing..."
-      if log flashrom -p host -r bios.rom ; then
+      if log flashrom -p internal -r bios.rom ; then
         log futility dump_fmap -x bios.rom
         fix_old_names
       else
