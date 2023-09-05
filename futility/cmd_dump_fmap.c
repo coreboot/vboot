@@ -122,7 +122,7 @@ static int normal_fmap(const FmapHeader *fmh,
 			break;
 		case FMT_FLASH_EC:
 			if (ah->area_size)
-				printf("%s %s\n", buf,
+				printf("%s %d %d %s\n", buf, ah->area_offset, ah->area_size,
 				       IS_PRESERVE(ah->area_flags));
 			break;
 		default:
