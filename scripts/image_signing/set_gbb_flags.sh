@@ -13,7 +13,7 @@ SCRIPT_BASE="$(dirname "$0")"
 # DEFINE_string name default_value description flag
 DEFINE_string file "" "Path to firmware image. Default to system firmware." "f"
 DEFINE_boolean check_wp ${FLAGS_TRUE} "Check write protection states first." ""
-DEFINE_string programmer "host" "Programmer to use when setting GBB flags" "p"
+DEFINE_string programmer "internal" "Programmer to use when setting GBB flags" "p"
 DEFINE_boolean servo "${FLAGS_FALSE}"  "Determine programmer using servo" ""
 
 set -e
@@ -23,7 +23,7 @@ set -e
 check_write_protection() {
   local hw_wp="" sw_wp=""
   local programmer="$1"
-  if [ "${programmer}" = "host" ] && ! crossystem "wpsw_cur?0"; then
+  if [ "${programmer}" = "internal" ] && ! crossystem "wpsw_cur?0"; then
     hw_wp="on"
   fi
   # Keep 'local' declaration split from assignment so return code is checked.
