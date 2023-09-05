@@ -60,9 +60,9 @@ EXEC_LOG="$(make_temp_file)"
 
 flashrom_bios() {
   if is_debug_mode; then
-    flashrom -V -p host "$@"
+    flashrom -V -p internal "$@"
   else
-    flashrom -p host "$@"
+    flashrom -p internal "$@"
   fi
 }
 
@@ -427,8 +427,8 @@ main() {
         Please copy the backup file to a safe place ASAP.
 
         To stop using devkeys and restore original BIOS, execute command:
-          flashrom -p host -w [PATH_TO_BACKUP_BIOS]
-        Ex: flashrom -p host -w ${backup_bios_path}"
+          flashrom -p internal -w [PATH_TO_BACKUP_BIOS]
+        Ex: flashrom -p internal -w ${backup_bios_path}"
       if [ -n "${backup_ec_image}" ]; then
         echo "
         To stop using devkeys and restore original EC, execute command:
