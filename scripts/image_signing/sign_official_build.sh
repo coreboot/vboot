@@ -79,6 +79,29 @@ check_argc() {
   esac
 }
 
+# Setup the default key configuration by using the local key in `key_dir`.
+setup_default_keycfg() {
+  local key_dir=$1
+  KEYCFG_KERNEL_KEYBLOCK="${key_dir}/kernel.keyblock"
+  KEYCFG_KERNEL_VBPRIVK="${key_dir}/kernel_data_key.vbprivk"
+  KEYCFG_MINIOS_KERNEL_KEYBLOCK="${key_dir}/minios_kernel.keyblock"
+  KEYCFG_MINIOS_KERNEL_V1_KEYBLOCK="${key_dir}/minios_kernel.v1.keyblock"
+  KEYCFG_MINIOS_KERNEL_VBPRIVK="${key_dir}/minios_kernel_data_key.vbprivk"
+  KEYCFG_RECOVERY_KERNEL_KEYBLOCK="${key_dir}/recovery_kernel.keyblock"
+  KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK="${key_dir}/recovery_kernel.v1.keyblock"
+  KEYCFG_RECOVERY_KERNEL_VBPRIVK="${key_dir}/recovery_kernel_data_key.vbprivk"
+  KEYCFG_INSTALLER_KERNEL_KEYBLOCK="${key_dir}/installer_kernel.keyblock"
+  KEYCFG_INSTALLER_KERNEL_V1_KEYBLOCK="${key_dir}/installer_kernel.v1.keyblock"
+  KEYCFG_INSTALLER_KERNEL_VBPRIVK="${key_dir}/installer_kernel_data_key.vbprivk"
+  KEYCFG_ARV_PLATFORM_KEYBLOCK="${key_dir}/arv_platform.keyblock"
+  KEYCFG_ARV_PLATFORM_VBPRIVK="${key_dir}/arv_platform.vbprivk"
+}
+
+# Run futility as root with some preserved environment variables.
+sudo_futility() {
+  sudo "KMS_PKCS11_CONFIG=${KMS_PKCS11_CONFIG}" "${FUTILITY}" "$@"
+}
+
 # TODO(gauravsh): These are duplicated from chromeos-setimage. We need
 # to move all signing and rootfs code to one single place where it can be
 # reused. crosbug.com/19543
@@ -300,7 +323,7 @@ update_rootfs_hash() {
       keyblock="${kern_c_keyblock}"
       priv_key="${kern_c_privkey}"
     fi
-    sudo "${FUTILITY}" vbutil_kernel --repack "${loop_kern}" \
+    sudo_futility vbutil_kernel --repack "${loop_kern}" \
       --keyblock "${keyblock}" \
       --signprivate "${priv_key}" \
       --version "${KERNEL_VERSION}" \
@@ -327,9 +350,9 @@ update_stateful_partition_vblock() {
   fi
 
   # vblock should always use kernel keyblock.
-  sudo "${FUTILITY}" vbutil_kernel --repack "${temp_out_vb}" \
-    --keyblock "${KEY_DIR}/kernel.keyblock" \
-    --signprivate "${KEY_DIR}/kernel_data_key.vbprivk" \
+  sudo_futility vbutil_kernel --repack "${temp_out_vb}" \
+    --keyblock "${KEYCFG_KERNEL_KEYBLOCK}" \
+    --signprivate "${KEYCFG_KERNEL_VBPRIVK}" \
     --oldblob "${loop_kern}" \
     --vblockonly
 
@@ -629,8 +652,8 @@ resign_firmware_payload() {
           # Resign the RO_GSCVD FMAP area.
           full_command=(
             "${FUTILITY}" gscvd
-            --keyblock "${KEY_DIR}/arv_platform.keyblock"
-            --platform_priv "${KEY_DIR}/arv_platform.vbprivk"
+            --keyblock "${KEYCFG_ARV_PLATFORM_KEYBLOCK}"
+            --platform_priv "${KEYCFG_ARV_PLATFORM_VBPRIVK}"
             --board_id "${brand_code}"
             --root_pub_key "${arv_root}"
             "${bios_path}"
@@ -976,7 +999,7 @@ update_recovery_kernel_hash() {
   cat "${new_kernel_config}"
 
   # Re-calculate kernel partition signature and command line.
-  sudo "${FUTILITY}" vbutil_kernel --repack "${loop_recovery_kernel}" \
+  sudo_futility vbutil_kernel --repack "${loop_recovery_kernel}" \
     --keyblock "${keyblock}" \
     --signprivate "${privkey}" \
     --version "${KERNEL_VERSION}" \
@@ -1034,7 +1057,7 @@ resign_minios_kernels() {
 
     # Assume this is a miniOS kernel.
     local minios_kernel_version=$((KERNEL_VERSION >> 24))
-    if sudo "${FUTILITY}" vbutil_kernel --repack "${loop_minios}" \
+    if sudo_futility vbutil_kernel --repack "${loop_minios}" \
         --keyblock "${keyblock}" \
         --signprivate "${priv_key}" \
         --version "${minios_kernel_version}" \
@@ -1278,6 +1301,11 @@ main() {
   OUTPUT_IMAGE=$4
   VERSION_FILE=$5
 
+  setup_default_keycfg "${KEY_DIR}"
+  if [ -f "${KEY_DIR}/key_config.sh" ]; then
+    . "${KEY_DIR}/key_config.sh"
+  fi
+
   # Verification
   case ${TYPE} in
   dump_config)
@@ -1318,32 +1346,32 @@ main() {
   # Make all modifications on output copy.
   if [[ "${TYPE}" == "base" ]]; then
     sign_image_file "base" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-      "${KEY_DIR}/kernel.keyblock" \
-      "${KEY_DIR}/kernel_data_key.vbprivk" \
-      "${KEY_DIR}/kernel.keyblock" \
-      "${KEY_DIR}/kernel_data_key.vbprivk" \
+      "${KEYCFG_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_KERNEL_VBPRIVK}" \
+      "${KEYCFG_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_KERNEL_VBPRIVK}" \
       "" \
       "" \
-      "${KEY_DIR}/minios_kernel.keyblock" \
+      "${KEYCFG_MINIOS_KERNEL_KEYBLOCK}" \
       "" \
-      "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+      "${KEYCFG_MINIOS_KERNEL_VBPRIVK}"
   elif [[ "${TYPE}" == "recovery" ]]; then
     sign_image_file "recovery" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 4 \
-      "${KEY_DIR}/recovery_kernel.keyblock" \
-      "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
-      "${KEY_DIR}/kernel.keyblock" \
-      "${KEY_DIR}/kernel_data_key.vbprivk" \
-      "${KEY_DIR}/recovery_kernel.v1.keyblock" \
-      "${KEY_DIR}/recovery_kernel_data_key.vbprivk" \
-      "${KEY_DIR}/minios_kernel.keyblock" \
-      "${KEY_DIR}/minios_kernel.v1.keyblock" \
-      "${KEY_DIR}/minios_kernel_data_key.vbprivk"
+      "${KEYCFG_RECOVERY_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_RECOVERY_KERNEL_VBPRIVK}" \
+      "${KEYCFG_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_KERNEL_VBPRIVK}" \
+      "${KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK}" \
+      "${KEYCFG_RECOVERY_KERNEL_VBPRIVK}" \
+      "${KEYCFG_MINIOS_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_MINIOS_KERNEL_V1_KEYBLOCK}" \
+      "${KEYCFG_MINIOS_KERNEL_VBPRIVK}"
   elif [[ "${TYPE}" == "factory" ]]; then
     sign_image_file "factory_install" "${INPUT_IMAGE}" "${OUTPUT_IMAGE}" 2 \
-      "${KEY_DIR}/installer_kernel.keyblock" \
-      "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
-      "${KEY_DIR}/installer_kernel.v1.keyblock" \
-      "${KEY_DIR}/installer_kernel_data_key.vbprivk" \
+      "${KEYCFG_INSTALLER_KERNEL_KEYBLOCK}" \
+      "${KEYCFG_INSTALLER_KERNEL_VBPRIVK}" \
+      "${KEYCFG_INSTALLER_KERNEL_V1_KEYBLOCK}" \
+      "${KEYCFG_INSTALLER_KERNEL_VBPRIVK}" \
       "" \
       "" \
       "" \
