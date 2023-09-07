@@ -34,9 +34,23 @@ EOF
 # Kernel versions are set at kernel signing time, so they don't matter here.)
 VERSION="2"
 
+# Backup the key and its associated files.
+backup_key() {
+  local key="$1"
+  local ext
+  for ext in "vbpubk" "vbprivk"; do
+    mv "${key}_data_key.${ext}" "${key}_data_key.old.v1.${ext}"
+  done
+  mv "${key}.keyblock" "${key}.old.v1.keyblock"
+}
+
+# Whether this keyset supports minios.
+minios_supported() {
+  [[ -e minios_kernel.keyblock ]]
+}
+
 main() {
   local ext
-  local k
 
   KEY_DIR=$1
 
@@ -59,12 +73,11 @@ main() {
 
   info "Backing up old kernel data keys (no longer needed) as XXX.old.v1.YYY."
 
-  for k in "recovery_kernel" "installer_kernel" "minios_kernel"; do
-    for ext in "vbpubk" "vbprivk"; do
-      mv "${k}_data_key.${ext}" "${k}_data_key.old.v1.${ext}"
-    done
-    mv "${k}.keyblock" "${k}.old.v1.keyblock"
-  done
+  backup_key recovery_kernel
+  backup_key installer_kernel
+  if minios_supported; then
+    backup_key minios_kernel
+  fi
 
   info "Creating new recovery key."
 
@@ -73,20 +86,28 @@ main() {
   info "Creating new recovery, minios and installer kernel data keys."
 
   make_pair recovery_kernel_data_key "${RECOVERY_KERNEL_ALGOID}" "${VERSION}"
-  make_pair minios_kernel_data_key "${MINIOS_KERNEL_ALGOID}" "${VERSION}"
   make_pair installer_kernel_data_key "${INSTALLER_KERNEL_ALGOID}" "${VERSION}"
+  if minios_supported; then
+    make_pair minios_kernel_data_key "${MINIOS_KERNEL_ALGOID}" "${VERSION}"
+  fi
 
   info "Creating new keyblocks signed with new recovery key."
 
   make_keyblock recovery_kernel "${RECOVERY_KERNEL_KEYBLOCK_MODE}" recovery_kernel_data_key recovery_key
-  make_keyblock minios_kernel "${MINIOS_KERNEL_KEYBLOCK_MODE}" minios_kernel_data_key recovery_key
   make_keyblock installer_kernel "${INSTALLER_KERNEL_KEYBLOCK_MODE}" installer_kernel_data_key recovery_key
+  if minios_supported; then
+    make_keyblock minios_kernel "${MINIOS_KERNEL_KEYBLOCK_MODE}" \
+      minios_kernel_data_key recovery_key
+  fi
 
   info "Creating secondary XXX.v1.keyblocks signing new kernel data keys with old recovery key."
 
   make_keyblock recovery_kernel.v1 "${RECOVERY_KERNEL_KEYBLOCK_MODE}" recovery_kernel_data_key recovery_key.v1
-  make_keyblock minios_kernel.v1 "${MINIOS_KERNEL_KEYBLOCK_MODE}" minios_kernel_data_key recovery_key.v1
   make_keyblock installer_kernel.v1 "${INSTALLER_KERNEL_KEYBLOCK_MODE}" installer_kernel_data_key recovery_key.v1
+  if minios_supported; then
+    make_keyblock minios_kernel.v1 "${MINIOS_KERNEL_KEYBLOCK_MODE}" \
+      minios_kernel_data_key recovery_key.v1
+  fi
 
   info "All done."
 }
