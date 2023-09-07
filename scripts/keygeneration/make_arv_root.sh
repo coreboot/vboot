@@ -6,6 +6,7 @@
 # Create AP RO verification Root key pair for PreMp signing.
 
 # Load common constants and functions.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 usage() {

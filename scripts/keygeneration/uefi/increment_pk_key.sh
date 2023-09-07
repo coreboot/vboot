@@ -6,6 +6,7 @@
 # Script to increment UEFI Platform Key (PK).
 
 # Load common constants and variables.
+# shellcheck source=uefi_common.sh
 . "$(dirname "$0")/uefi_common.sh"
 
 # Abort on errors.

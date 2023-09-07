@@ -6,6 +6,7 @@
 
 # Load common constants and functions.
 export HAS_ARG_KEYNAME=1
+# shellcheck source=common_leverage_hammer.sh
 . "$(dirname "$0")/common_leverage_hammer.sh"
 
 main() {

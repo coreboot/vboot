@@ -6,6 +6,7 @@
 # Generate .vbpubk and .vbprivk pairs with the given algorithm id.
 
 # Load common constants and functions.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 if [ $# -ne 2 ]; then

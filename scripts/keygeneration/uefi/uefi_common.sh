@@ -5,6 +5,7 @@
 
 # Common UEFI key generation functions.
 
+# shellcheck source=../common.sh
 . "$(dirname "$0")/../common.sh"
 
 # Checks whether the given key directory name is "uefi".

@@ -5,6 +5,7 @@
 # found in the LICENSE file.
 
 # Load common constants and functions.
+# shellcheck source=../common.sh
 . "$(dirname "$0")/../common.sh"
 
 usage() {

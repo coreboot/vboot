@@ -6,6 +6,7 @@
 # Script to replace the recovery key with a newly generated one. See usage().
 
 # Load common constants and variables.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 # Abort on errors.

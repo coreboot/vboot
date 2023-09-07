@@ -7,6 +7,7 @@
 # Used when revving versions for a firmware update.
 
 # Load common constants and variables.
+# shellcheck source=common.sh
 . "${0%/*}"/common.sh
 
 # Abort on errors.

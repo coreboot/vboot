@@ -7,6 +7,7 @@
 # signing key.
 
 # Load common constants and functions.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 if [ $# -ne 4 ]; then

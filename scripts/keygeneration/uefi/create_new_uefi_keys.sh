@@ -4,6 +4,7 @@
 # found in the LICENSE file.
 
 # Load common constants and functions.
+# shellcheck source=uefi_common.sh
 . "$(dirname "$0")/uefi_common.sh"
 
 usage() {

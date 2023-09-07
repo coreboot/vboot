@@ -7,6 +7,7 @@
 # be exactly like the real keys except that the private keys aren't secret.
 
 # Load common constants and functions.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 usage() {

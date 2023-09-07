@@ -7,6 +7,7 @@
 # match those set in key.versions.
 
 # Load common constants and variables.
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 # Abort on errors.
