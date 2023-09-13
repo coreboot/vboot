@@ -69,6 +69,9 @@ enum {
 /* If this bit is 1, the GPT is stored in another from the streaming data */
 #define GPT_FLAG_EXTERNAL	0x1
 
+#define GPT_ENT_NAME_ANDROID_A_SUFFIX "_a"
+#define GPT_ENT_NAME_ANDROID_B_SUFFIX "_b"
+
 /*
  * A note about stored_on_device and gpt_drive_sectors:
  *
@@ -109,6 +112,9 @@ typedef struct {
 	 * 1-based, but we're using a zero-based index here.
 	 */
 	int current_kernel;
+
+	/* String with active partition suffix ('_a' or '_b') */
+	const char *current_ab_slot;
 
 	/* Internal variables */
 	uint8_t valid_headers, valid_entries, ignored;
