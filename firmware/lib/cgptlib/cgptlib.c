@@ -225,3 +225,39 @@ GptEntry *GptFindNthEntry(GptData *gpt, const Guid *guid, unsigned int n)
 
 	return NULL;
 }
+
+bool GptEntryHasName(GptEntry *entry, const char *name,  const char *opt_suffix)
+{
+	for (int i = 0; i < ARRAY_SIZE(entry->name); i++) {
+		uint16_t wc = entry->name[i];
+		char c = '\0';
+
+		if (*name != '\0')
+			c = *name++;
+		else if (opt_suffix && *opt_suffix != '\0')
+			c = *opt_suffix++;
+
+		if (wc > 0x7f || (char)wc != c)
+			return false;
+
+		if (c == '\0')
+			return true;
+	}
+
+	return false;
+}
+
+GptEntry *GptFindEntryByName(GptData *gpt, const char *name, const char *opt_suffix)
+{
+	GptHeader *header = (GptHeader *)gpt->primary_header;
+	GptEntry *entries = (GptEntry *)gpt->primary_entries;
+	GptEntry *e;
+	int i;
+
+	for (i = 0, e = entries; i < header->number_of_entries; i++, e++) {
+		if (GptEntryHasName(e, name, opt_suffix))
+			return e;
+	}
+
+	return NULL;
+}

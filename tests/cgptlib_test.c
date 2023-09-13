@@ -26,9 +26,14 @@
  *     134    100  root A (index: 1)
  *     234    100  root B (index: 2)
  *     334    100  kernel B (index: 3)
- *     434     32  secondary partition entries
- *     466      1  secondary partition header
- *     467
+ *     434     10  boot A (index: 4)
+ *     444     10  boot B (index: 5)
+ *     454     10  init_boot A (index: 6)
+ *     464     10  init_boot B (index: 7)
+ *     474     10  init_boot B (index: 7)
+ *     484     32  secondary partition entries
+ *     516      1  secondary partition header
+ *     517
  */
 #define KERNEL_A 0
 #define KERNEL_B 1
@@ -36,16 +41,38 @@
 #define ROOTFS_B 3
 #define KERNEL_X 2 /* Overload ROOTFS_A, for some GetNext tests */
 #define KERNEL_Y 3 /* Overload ROOTFS_B, for some GetNext tests */
+#define BOOT_A 4
+#define BOOT_B 5
 
 #define DEFAULT_SECTOR_SIZE 512
 #define MAX_SECTOR_SIZE 4096
-#define DEFAULT_DRIVE_SECTORS 467
+#define DEFAULT_DRIVE_SECTORS 517
 #define TOTAL_ENTRIES_SIZE GPT_ENTRIES_ALLOC_SIZE /* 16384 */
 #define PARTITION_ENTRIES_SIZE TOTAL_ENTRIES_SIZE /* 16384 */
 
 static const Guid guid_zero = {{{0, 0, 0, 0, 0, {0, 0, 0, 0, 0, 0}}}};
 static const Guid guid_kernel = GPT_ENT_TYPE_CHROMEOS_KERNEL;
 static const Guid guid_rootfs = GPT_ENT_TYPE_CHROMEOS_ROOTFS;
+
+static const uint16_t kern_a_name[] = {0x004b, 0x0045, 0x0052, 0x004e, 0x002d,
+				       0x0041, 0x0000};
+static const uint16_t root_a_name[] = {0x0052, 0x004f, 0x004f, 0x0054, 0x002d,
+				       0x0041, 0x0000};
+static const uint16_t kern_b_name[] = {0x004b, 0x0045, 0x0052, 0x004e, 0x002d,
+				       0x0042, 0x0000};
+static const uint16_t root_b_name[] = {0x0052, 0x004f, 0x004f, 0x0054, 0x002d,
+				       0x0042, 0x0000};
+static const uint16_t boot_a_name[] = {0x0062, 0x006f, 0x006f, 0x0074, 0x005f,
+				       0x0061, 0x0000};
+static const uint16_t boot_b_name[] = {0x0062, 0x006f, 0x006f, 0x0074, 0x005f,
+				       0x0062, 0x0000};
+static const uint16_t init_boot_a_name[] = {0x0069, 0x006e, 0x0069, 0x0074, 0x005f,
+					    0x0062, 0x006f, 0x006f, 0x0074, 0x005f,
+					    0x0061, 0x0000};
+static const uint16_t init_boot_b_name[] = {0x0069, 0x006e, 0x0069, 0x0074, 0x005f,
+					    0x0062, 0x006f, 0x006f, 0x0074, 0x005f,
+					    0x0062, 0x0000};
+static const uint16_t misc_name[] = {0x006d, 0x0069, 0x0073, 0x0063, 0x0000};
 
 // cgpt_common.c requires these be defined if linked in.
 const char *progname = "CGPT-TEST";
@@ -146,6 +173,7 @@ static void BuildTestGptData(GptData *gpt)
 	GptEntry *entries, *entries2;
 	Guid chromeos_kernel = GPT_ENT_TYPE_CHROMEOS_KERNEL;
 	Guid chromeos_rootfs = GPT_ENT_TYPE_CHROMEOS_ROOTFS;
+	Guid linux_data = GPT_ENT_TYPE_LINUX_FS;
 
 	gpt->sector_bytes = DEFAULT_SECTOR_SIZE;
 	gpt->streaming_drive_sectors =
@@ -166,36 +194,65 @@ static void BuildTestGptData(GptData *gpt)
 	header->my_lba = 1;
 	header->alternate_lba = DEFAULT_DRIVE_SECTORS - 1;
 	header->first_usable_lba = 34;
-	header->last_usable_lba = DEFAULT_DRIVE_SECTORS - 1 - 32 - 1;  /* 433 */
+	header->last_usable_lba = DEFAULT_DRIVE_SECTORS - 1 - 32 - 1;
 	header->entries_lba = 2;
 	  /* 512B / 128B * 32sectors = 128 entries */
 	header->number_of_entries = 128;
 	header->size_of_entry = 128;  /* bytes */
+	memcpy(&entries[0].name, &kern_a_name, sizeof(kern_a_name));
 	memcpy(&entries[0].type, &chromeos_kernel, sizeof(chromeos_kernel));
 	SetGuid(&entries[0].unique, 0);
 	entries[0].starting_lba = 34;
 	entries[0].ending_lba = 133;
+	memcpy(&entries[1].name, &root_a_name, sizeof(root_a_name));
 	memcpy(&entries[1].type, &chromeos_rootfs, sizeof(chromeos_rootfs));
 	SetGuid(&entries[1].unique, 1);
 	entries[1].starting_lba = 134;
 	entries[1].ending_lba = 232;
+	memcpy(&entries[2].name, &root_b_name, sizeof(root_b_name));
 	memcpy(&entries[2].type, &chromeos_rootfs, sizeof(chromeos_rootfs));
 	SetGuid(&entries[2].unique, 2);
 	entries[2].starting_lba = 234;
 	entries[2].ending_lba = 331;
+	memcpy(&entries[3].name, &kern_b_name, sizeof(kern_b_name));
 	memcpy(&entries[3].type, &chromeos_kernel, sizeof(chromeos_kernel));
 	SetGuid(&entries[3].unique, 3);
 	entries[3].starting_lba = 334;
 	entries[3].ending_lba = 430;
+	memcpy(&entries[4].name, &boot_a_name, sizeof(boot_a_name));
+	memcpy(&entries[4].type, &chromeos_kernel, sizeof(chromeos_kernel));
+	SetGuid(&entries[4].unique, 4);
+	entries[4].starting_lba = 434;
+	entries[4].ending_lba = 443;
+	memcpy(&entries[5].name, &boot_b_name, sizeof(boot_b_name));
+	memcpy(&entries[5].type, &chromeos_kernel, sizeof(chromeos_kernel));
+	SetGuid(&entries[5].unique, 5);
+	entries[5].starting_lba = 444;
+	entries[5].ending_lba = 453;
+	memcpy(&entries[6].name, &init_boot_a_name, sizeof(init_boot_a_name));
+	memcpy(&entries[6].type, &linux_data, sizeof(linux_data));
+	SetGuid(&entries[6].unique, 6);
+	entries[6].starting_lba = 454;
+	entries[6].ending_lba = 463;
+	memcpy(&entries[7].name, &init_boot_b_name, sizeof(init_boot_b_name));
+	memcpy(&entries[7].type, &linux_data, sizeof(linux_data));
+	SetGuid(&entries[7].unique, 7);
+	entries[7].starting_lba = 464;
+	entries[7].ending_lba = 473;
+	memcpy(&entries[8].name, &misc_name, sizeof(misc_name));
+	memcpy(&entries[8].type, &linux_data, sizeof(linux_data));
+	SetGuid(&entries[8].unique, 8);
+	entries[8].starting_lba = 474;
+	entries[8].ending_lba = 483;
 
 	/* Build secondary */
 	header2 = (GptHeader *)gpt->secondary_header;
 	entries2 = (GptEntry *)gpt->secondary_entries;
 	memcpy(header2, header, sizeof(GptHeader));
 	memcpy(entries2, entries, PARTITION_ENTRIES_SIZE);
-	header2->my_lba = DEFAULT_DRIVE_SECTORS - 1;  /* 466 */
+	header2->my_lba = DEFAULT_DRIVE_SECTORS - 1;
 	header2->alternate_lba = 1;
-	header2->entries_lba = DEFAULT_DRIVE_SECTORS - 1 - 32;  /* 434 */
+	header2->entries_lba = DEFAULT_DRIVE_SECTORS - 1 - 32;
 
 	RefreshCrc32(gpt);
 }
@@ -677,16 +734,16 @@ static int FirstUsableLbaAndLastUsableLbaTest(void)
 		int primary_rv;
 		int secondary_rv;
 	} cases[] = {
-		{2,  34, 433,   34, 433, 434,  0, 0},
-		{2,  34, 432,   34, 430, 434,  0, 0},
-		{2,  33, 433,   33, 433, 434,  1, 1},
-		{2,  34, 434,   34, 433, 434,  1, 0},
-		{2,  34, 433,   34, 434, 434,  0, 1},
-		{2,  35, 433,   35, 433, 434,  0, 0},
-		{2, 433, 433,  433, 433, 434,  0, 0},
-		{2, 434, 433,  434, 434, 434,  1, 1},
-		{2, 433,  34,   34, 433, 434,  1, 0},
-		{2,  34, 433,  433,  34, 434,  0, 1},
+		{2,  34, 483,   34, 483, 484,  0, 0},
+		{2,  34, 482,   34, 480, 484,  0, 0},
+		{2,  33, 483,   33, 483, 484,  1, 1},
+		{2,  34, 484,   34, 483, 484,  1, 0},
+		{2,  34, 483,   34, 484, 484,  0, 1},
+		{2,  35, 483,   35, 483, 484,  0, 0},
+		{2, 483, 483,  483, 483, 484,  0, 0},
+		{2, 484, 483,  484, 484, 484,  1, 1},
+		{2, 483,  34,   34, 483, 484,  1, 0},
+		{2,  34, 483,  483,  34, 484,  0, 1},
 	};
 
 	for (i = 0; i < ARRAY_SIZE(cases); ++i) {
@@ -1605,6 +1662,66 @@ static int CheckHeaderOffDevice(void)
 	return TEST_OK;
 }
 
+static int GptFindEntryByNameTest(void)
+{
+	GptData *gpt = GetEmptyGptData();
+	Guid guid;
+	GptEntry *e;
+
+	BuildTestGptData(gpt);
+
+	e = GptFindEntryByName(gpt, "non_exist", NULL);
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "non_exist", "misc");
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "misc", "_a");
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "boot", NULL);
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "non_exist", NULL);
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "miscabcd", NULL);
+	EXPECT(e == NULL);
+	e = GptFindEntryByName(gpt, "boot", "_abcd");
+	EXPECT(e == NULL);
+	SetGuid(&guid, 4);
+	e = GptFindEntryByName(gpt, "boot", "_a");
+	EXPECT(e != NULL);
+	EXPECT(!memcmp(&e->unique, &guid, sizeof(Guid)));
+	EXPECT(e->starting_lba == 434);
+	EXPECT(GptGetEntrySizeLba(e) == 10);
+
+	SetGuid(&guid, 5);
+	e = GptFindEntryByName(gpt, "boot", "_b");
+	EXPECT(e != NULL);
+	EXPECT(!memcmp(&e->unique, &guid, sizeof(Guid)));
+	EXPECT(e->starting_lba == 444);
+	EXPECT(GptGetEntrySizeLba(e) == 10);
+
+	SetGuid(&guid, 6);
+	e = GptFindEntryByName(gpt, "init_boot", "_a");
+	EXPECT(e != NULL);
+	EXPECT(!memcmp(&e->unique, &guid, sizeof(Guid)));
+	EXPECT(e->starting_lba == 454);
+	EXPECT(GptGetEntrySizeLba(e) == 10);
+
+	SetGuid(&guid, 7);
+	e = GptFindEntryByName(gpt, "init_boot", "_b");
+	EXPECT(e != NULL);
+	EXPECT(!memcmp(&e->unique, &guid, sizeof(Guid)));
+	EXPECT(e->starting_lba == 464);
+	EXPECT(GptGetEntrySizeLba(e) == 10);
+
+	SetGuid(&guid, 8);
+	e = GptFindEntryByName(gpt, "misc", NULL);
+	EXPECT(e != NULL);
+	EXPECT(!memcmp(&e->unique, &guid, sizeof(Guid)));
+	EXPECT(e->starting_lba == 474);
+	EXPECT(GptGetEntrySizeLba(e) == 10);
+
+	return TEST_OK;
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
@@ -1645,6 +1762,7 @@ int main(int argc, char *argv[])
 		{ TEST_CASE(GetKernelGuidTest), },
 		{ TEST_CASE(ErrorTextTest), },
 		{ TEST_CASE(CheckHeaderOffDevice), },
+		{ TEST_CASE(GptFindEntryByNameTest), },
 	};
 
 	for (i = 0; i < sizeof(test_cases)/sizeof(test_cases[0]); ++i) {
