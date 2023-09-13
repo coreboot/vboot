@@ -62,6 +62,16 @@ extern "C" {
 #define GUID_SIZE 16
 #define NAME_SIZE 36
 
+/*
+ * Macros for Android partition names
+ */
+#define GPT_ENT_NAME_ANDROID_VBMETA "vbmeta"
+#define GPT_ENT_NAME_ANDROID_INIT_BOOT "init_boot"
+#define GPT_ENT_NAME_ANDROID_VENDOR_BOOT "vendor_boot"
+#define GPT_ENT_NAME_ANDROID_BOOT "boot"
+#define GPT_ENT_NAME_ANDROID_A_SUFFIX "_a"
+#define GPT_ENT_NAME_ANDROID_B_SUFFIX "_b"
+
 /* GUID definition. Defined in appendix A of UEFI standard. */
 typedef struct {
 	union {
