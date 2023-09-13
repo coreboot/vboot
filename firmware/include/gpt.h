@@ -60,6 +60,7 @@ extern "C" {
 
 #define UUID_NODE_LEN 6
 #define GUID_SIZE 16
+#define NAME_SIZE 36
 
 /* GUID definition. Defined in appendix A of UEFI standard. */
 typedef struct {
@@ -128,7 +129,7 @@ typedef struct {
 		} __attribute__((packed)) fields;
 		uint64_t whole;
 	} attrs;
-	uint16_t name[36];  /* UTF-16 encoded partition name */
+	uint16_t name[NAME_SIZE];  /* UTF-16 encoded partition name */
 	/* Remainder of entry is reserved and should be 0 */
 } __attribute__((packed)) GptEntry;
 
