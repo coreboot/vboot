@@ -31,10 +31,12 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 	"enlarge_image,1 enlarge_image,2 "
 
 # Test data files
-LINK_BIOS="${SCRIPT_DIR}/futility/data/bios_link_mp.bin"
-PEPPY_BIOS="${SCRIPT_DIR}/futility/data/bios_peppy_mp.bin"
-VOXEL_BIOS="${SCRIPT_DIR}/futility/data/bios_voxel_dev.bin"
-RO_VPD_BLOB="${SCRIPT_DIR}/futility/data/ro_vpd.bin"
+DATA_DIR="${SCRIPT_DIR}/futility/data"
+LINK_BIOS="${DATA_DIR}/bios_link_mp.bin"
+PEPPY_BIOS="${DATA_DIR}/bios_peppy_mp.bin"
+VOXEL_BIOS="${DATA_DIR}/bios_voxel_dev.bin"
+RO_VPD_BLOB="${DATA_DIR}/ro_vpd.bin"
+SIGNER_CONFIG="${DATA_DIR}/signer_config.csv"
 
 # Work in scratch directory
 cd "$OUTDIR"
@@ -471,7 +473,7 @@ CL_TAG="CL" PATH="${A}/bin:${PATH}" \
 cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
 
 # Test archive with Unified Build contents.
-cp -r "${SCRIPT_DIR}/futility/models" "${A}/"
+cp -f "${SIGNER_CONFIG}" "${A}/"
 mkdir -p "${A}/images"
 mv "${A}/image.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
