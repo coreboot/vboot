@@ -158,6 +158,16 @@ void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
 	memcpy(dest, fake_guid, sizeof(fake_guid));
 }
 
+int GptFindInitBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	return GPT_SUCCESS;
+}
+
+int GptFindVendorBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	return GPT_SUCCESS;
+}
+
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 				  const uint8_t *buf, uint32_t size)
 {

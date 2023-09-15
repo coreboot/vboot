@@ -29,6 +29,44 @@ int GptInit(GptData *gpt)
 	return GPT_SUCCESS;
 }
 
+int GptGetActiveKernelPartitionSuffix(GptData *gpt, char **suffix)
+{
+	GptEntry *entries = (GptEntry *)gpt->primary_entries;
+	GptEntry *e;
+	const char suffix_a[] = GPT_ENT_NAME_ANDROID_A_SUFFIX;
+	const char suffix_b[] = GPT_ENT_NAME_ANDROID_B_SUFFIX;
+	const char *tmp = NULL;
+	int max_suffix_len;
+
+	if (gpt->current_kernel == CGPT_KERNEL_ENTRY_NOT_FOUND) {
+		VB2_DEBUG("Kernel not selected\n");
+		return GPT_ERROR_NO_VALID_KERNEL;
+	}
+
+	max_suffix_len = (sizeof(suffix_a) > sizeof(suffix_b)) ?
+			 sizeof(suffix_a) : sizeof(suffix_b);
+
+	*suffix = malloc(max_suffix_len);
+	if (*suffix == NULL) {
+		VB2_DEBUG("Cannot allocate memory for suffix\n");
+		return GPT_ERROR_NO_VALID_KERNEL;
+	}
+
+	e = &entries[gpt->current_kernel];
+	if (IsAndroidBootPartition(e, suffix_a)) {
+		tmp = suffix_a;
+	} else if (IsAndroidBootPartition(e, suffix_b)) {
+		tmp = suffix_b;
+	} else {
+		free(suffix);
+		return GPT_ERROR_NO_VALID_KERNEL;
+	}
+
+	strncpy(*suffix, tmp, max_suffix_len);
+
+	return GPT_SUCCESS;
+}
+
 int GptNextKernelEntry(GptData *gpt, uint64_t *start_sector, uint64_t *size)
 {
 	GptHeader *header = (GptHeader *)gpt->primary_header;
@@ -228,4 +266,93 @@ GptEntry *GptFindNthEntry(GptData *gpt, const Guid *guid, unsigned int n)
 	}
 
 	return NULL;
+}
+
+int GptFindOffsetByName(GptData *gpt, const char *name,
+			uint64_t *start_sector, uint64_t *size)
+{
+	GptHeader *header = (GptHeader *)gpt->primary_header;
+	GptEntry *entries = (GptEntry *)gpt->primary_entries;
+	GptEntry *e;
+	int i;
+	uint16_t *name_ucs2;
+	int size_ucs2;
+	int ret = GPT_ERROR_NO_SUCH_ENTRY;
+
+	name_ucs2 = calloc(NAME_SIZE, sizeof(*name_ucs2));
+	if (name_ucs2 == NULL)
+		return ret;
+
+	size_ucs2 = UTF8ToUCS2((const uint8_t *)name, name_ucs2, NAME_SIZE - 1);
+	if (size_ucs2 < 0)
+		goto out;
+
+	for (i = 0, e = entries; i < header->number_of_entries; i++, e++) {
+		if (!memcmp(&e->name, name_ucs2, size_ucs2)) {
+			*start_sector = e->starting_lba;
+			*size = e->ending_lba - e->starting_lba + 1;
+			ret = GPT_SUCCESS;
+			break;
+		}
+	}
+
+out:
+	free(name_ucs2);
+	return ret;
+}
+
+int GptFindInitBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	int ret;
+	char *name;
+	char *suffix = NULL;
+
+	ret = GptGetActiveKernelPartitionSuffix(gpt, &suffix);
+	if (ret != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to get kernel partition suffix\n");
+		return ret;
+	}
+
+	/* Construct name */
+	name = JoinStr(GPT_ENT_NAME_ANDROID_INIT_BOOT, suffix);
+	free(suffix);
+	if (name == NULL) {
+		VB2_DEBUG("Unable to construct init_boot partition name\n");
+		return GPT_ERROR_INVALID_ENTRIES;
+	}
+
+	ret = GptFindOffsetByName(gpt, name, start_sector, size);
+	if (ret != GPT_SUCCESS)
+		VB2_DEBUG("Unable to find the %s partition\n", name);
+
+	free(name);
+	return ret;
+}
+
+int GptFindVendorBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	int ret;
+	char *name;
+	char *suffix = NULL;
+
+	ret = GptGetActiveKernelPartitionSuffix(gpt, &suffix);
+	if (ret != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to get kernel partition suffix\n");
+		return ret;
+	}
+
+	/* Construct name */
+	name = JoinStr(GPT_ENT_NAME_ANDROID_VENDOR_BOOT, suffix);
+	free(suffix);
+	if (name == NULL) {
+		VB2_DEBUG("Unable to construct vendor_boot partition name\n");
+		return GPT_ERROR_INVALID_ENTRIES;
+	}
+
+	ret = GptFindOffsetByName(gpt, name, start_sector, size);
+	if (ret != GPT_SUCCESS)
+		VB2_DEBUG("Unable to find the %s partition\n", name);
+
+	free(name);
+	return ret;
 }
