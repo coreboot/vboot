@@ -114,6 +114,17 @@ patch_file "${TO_IMAGE_GBB12}" GBB 6 "\x02"
 GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE_GBB12}")"
 [ "${GBB_OUTPUT}" = "digest: ${HWID_DIGEST}   valid" ]
 
+# Create images with (empty) AP RO verification
+# (Patch FMAP to rename 'RO_UNUSED' to 'RO_GSCVD')
+cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.locked"
+patch_file "${FROM_IMAGE}.locked" FMAP 0x0430 "RO_GSCVD\x00"
+cp -f "${FROM_IMAGE}.locked" "${FROM_IMAGE}.locked_same_desc"
+cp -f "${FROM_IMAGE}.locked" "${FROM_IMAGE}.unlocked"
+patch_file "${FROM_IMAGE}.unlocked" SI_DESC 0x60 \
+	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
+"${FUTILITY}" load_fmap "${FROM_IMAGE}.locked_same_desc" \
+	"SI_DESC:${TMP}.to/SI_DESC"
+
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
@@ -157,6 +168,8 @@ patch_file "${TMP}.expected.me_unlocked" SI_DESC 0x154 \
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_preserved"
 "${FUTILITY}" load_fmap "${TMP}.expected.me_preserved" \
 	"SI_ME:${TMP}.from/SI_ME"
+cp -f "${TMP}.expected.rw" "${TMP}.expected.rw.locked"
+patch_file "${TMP}.expected.rw.locked" FMAP 0x0430 "RO_GSCVD\x00"
 
 # A special set of images that only RO_VPD is preserved (RW_VPD is wiped) using
 # FMAP_AREA_PRESERVE (\010=0x08).
@@ -325,6 +338,19 @@ test_update "Factory mode update (WP=1)" \
 test_update "Factory mode update (GBB=0 -> 0x39)" \
 	"${FROM_IMAGE}.gbb0" "${TMP}.expected.full" \
 	--factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+
+# Test 'AP RO locked with verification turned on'
+test_update "AP RO locked update (locked, SI_DESC is different)" \
+	"${FROM_IMAGE}.locked" "${TMP}.expected.rw.locked" \
+	-i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
+
+test_update "AP RO locked update (locked, SI_DESC is the same)" \
+	"${FROM_IMAGE}.locked_same_desc" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
+
+test_update "AP RO locked update (unlocked)" \
+	"${FROM_IMAGE}.unlocked" "${TMP}.expected.full" \
+	-i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
 
 # Test legacy update
 test_update "Legacy update" \

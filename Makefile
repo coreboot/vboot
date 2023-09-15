@@ -670,6 +670,7 @@ FUTIL_SRCS = \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
 	futility/flash_helpers.c \
+	futility/platform_csme.c \
 	futility/misc.c \
 	futility/vb1_helper.c \
 	futility/vb2_helper.c
