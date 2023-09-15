@@ -6,6 +6,7 @@
 #ifndef VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_
 #define VBOOT_REFERENCE_CGPTLIB_INTERNAL_H_
 
+#include <stdbool.h>
 #include "2sysincludes.h"
 #include "cgptlib.h"
 #include "gpt.h"
@@ -152,6 +153,11 @@ void GptModified(GptData *gpt);
  * Return 1 if the entry is a Chrome OS kernel partition, else 0.
  */
 int IsKernelEntry(const GptEntry *e);
+
+/**
+ * Return true if the entry is a Android OS boot partition, else false.
+ */
+bool IsAndroidBootPartition(const GptEntry *e, const char *suffix);
 
 /**
  * Copy the current kernel partition's UniquePartitionGuid to the dest.
