@@ -199,6 +199,16 @@ int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	return GPT_SUCCESS;
 }
 
+int GptFindInitBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	return GPT_SUCCESS;
+}
+
+int GptFindVendorBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)
+{
+	return GPT_SUCCESS;
+}
+
 void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
 {
 	static char fake_guid[] = "FakeGuid";

@@ -199,6 +199,23 @@ int GptUpdateKernelWithEntry(GptData *gpt, GptEntry *e, uint32_t update_type);
  */
 int GptUpdateKernelEntry(GptData *gpt, uint32_t update_type);
 
+/**
+ * Get kernel partition suffix of active current_kernel.
+ *
+ * Returns GPT_SUCCESS if successful, else
+ *   GPT_ERROR_NO_VALID_KERNEL.
+ */
+int GptGetActiveKernelPartitionSuffix(GptData *gpt, char **suffix);
+
+/**
+ * Provides start_sector and size for given partition by its UTF16LE name.
+ *
+ * Returns GPT_SUCCESS if successful, else
+ *   GPT_ERROR_NO_SUCH_ENTRY.
+ */
+int GptFindOffsetByName(GptData *gpt, const char *name,
+			uint64_t *start_sector, uint64_t *size);
+
 /* Getters and setters for partition attribute fields. */
 
 int GetEntryRequired(const GptEntry *e);
