@@ -155,8 +155,8 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.full.gbb0x27"
 "${FUTILITY}" gbb -s --flags=0x27 "${TMP}.expected.full.gbb0x27"
 cp -f "${TMP}.expected.full" "${TMP}.expected.large"
 dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
-cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked_quirk"
-patch_file "${TMP}.expected.me_unlocked_quirk" SI_DESC 128 \
+cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked_eve"
+patch_file "${TMP}.expected.me_unlocked_eve" SI_DESC 0x60 \
 	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked"
 patch_file "${TMP}.expected.me_unlocked" SI_DESC 128 \
@@ -359,7 +359,7 @@ test_update "Legacy update" \
 test_update "Full update (wrong size)" \
 	"${FROM_IMAGE}.large" "!Failed writing firmware" \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
-	--quirks unlock_me_for_update,eve_smm_store
+	--quirks unlock_csme_eve,eve_smm_store
 
 test_update "Full update (--quirks enlarge_image)" \
 	"${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
@@ -370,9 +370,9 @@ test_update "Full update (multi-line --quirks enlarge_image)" \
 	enlarge_image
 	' -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
-test_update "Full update (--quirks unlock_me_for_update)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_quirk" \
-	--quirks unlock_me_for_update \
+test_update "Full update (--quirks unlock_csme_eve)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_eve" \
+	--quirks unlock_csme_eve \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (--unlock_me)" \

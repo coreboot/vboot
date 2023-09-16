@@ -13,4 +13,7 @@
 
 bool is_flash_descriptor_locked(const struct firmware_image *image);
 
+/* Unlock the flash descriptor for Skylake and Kabylake platforms. */
+int unlock_csme_eve(struct firmware_image *image);
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_PLATFORM_CSME_H_ */
