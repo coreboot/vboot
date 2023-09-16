@@ -30,7 +30,7 @@ struct fmba {
 	uint32_t flmstr6;
 } __attribute__((packed));
 
-static const struct fmba *find_fmba(const struct firmware_image *image) {
+static struct fmba * const find_fmba(const struct firmware_image *image) {
 	struct firmware_section section;
 	const uint32_t signature = 0x0FF0A55A;
 	const struct fdbar *fd;
@@ -51,7 +51,7 @@ static const struct fmba *find_fmba(const struct firmware_image *image) {
 	if (offset + sizeof(struct fmba) > section.size)
 		return NULL;
 
-	return (const struct fmba *)(section.data + offset);
+	return (struct fmba * const)(section.data + offset);
 }
 
 static bool is_flmstr1_locked(const struct fmba * const fmba)
@@ -81,4 +81,51 @@ bool is_flash_descriptor_locked(const struct firmware_image *image)
 		return false;
 	}
 	return is_flmstr1_locked(fmba);
+}
+
+/*
+ * Unlock the flash descriptor by rewriting the FLMSTR1.
+ *
+ * Returns 0 on success, any other values for failure.
+ */
+static int unlock_flmstrs(struct firmware_image *image,
+			  uint32_t flmstr1, uint32_t flmstr2, uint32_t flmstr3)
+{
+	struct fmba * const fmba = find_fmba(image);
+
+	if (!fmba) {
+		ERROR("Failed to unlock the Flash Master values.\n");
+		return -1;
+	}
+
+	if (fmba->flmstr1 == flmstr1 &&
+	    fmba->flmstr2 == flmstr2 &&
+	    fmba->flmstr3 == flmstr3) {
+		VB2_DEBUG("No need to change the Flash Master values.\n");
+		return 0;
+	}
+	VB2_DEBUG("Change flmstr1=%#08x->%#08x\n", fmba->flmstr1, flmstr1);
+	VB2_DEBUG("Change flmstr2=%#08x->%#08x\n", fmba->flmstr2, flmstr2);
+	VB2_DEBUG("Change flmstr3=%#08x->%#08x\n", fmba->flmstr3, flmstr3);
+
+	fmba->flmstr1 = flmstr1;
+	fmba->flmstr2 = flmstr2;
+	fmba->flmstr3 = flmstr3;
+	INFO("Changed Flash Master values to unlocked.\n");
+	return 0;
+}
+
+/*
+ * Unlock the flash descriptor for Skylake and Kabylake platforms.
+ *
+ * The FLMSTR settings are dedicated for the Skylake (glados) and Kabylake (eve)
+ * platforms, and are slightly different to those in the common
+ * unlock_flash_master() function. The common settings might work, but we keep
+ * these as is for now to avoid breaking things on old devices. These settings
+ * are also hardcoded in postinst scripts (e.g. https://crrev.com/i/252522), so
+ * those would probably need to be changed too.
+ */
+int unlock_csme_eve(struct firmware_image *image)
+{
+	return unlock_flmstrs(image, 0xffffff00, 0xffffff00, 0xffffff00);
 }

@@ -394,7 +394,7 @@ static int preserve_management_engine(struct updater_config *cfg,
 			  "preserve ME.\n", image_from->programmer);
 	}
 
-	return try_apply_quirk(QUIRK_UNLOCK_ME_FOR_UPDATE, cfg);
+	return 0;
 }
 
 /* Preserve firmware sections by FMAP area flags. */
@@ -1713,6 +1713,13 @@ int updater_setup_config(struct updater_config *cfg,
 		ERROR("Please remove write protection for factory mode \n"
 		      "( " REMOVE_WP_URL " ).");
 	}
+
+	if (cfg->image.data) {
+		/* Apply any quirks to modify the image before updating. */
+		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME_EVE, cfg);
+	}
+
+	/* The images are ready for updating. Output if needed. */
 	if (!errorcnt && do_output) {
 		const char *r = arg->output_dir;
 		if (!r)
