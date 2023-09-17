@@ -108,7 +108,6 @@ static void print_help(int argc, char *argv[])
 		"    --list-quirks   \tPrint all available quirks\n"
 		"-m, --mode=MODE     \tRun updater in the specified mode\n"
 		"    --manifest      \tScan the archive to print a manifest in JSON\n"
-		"    --unlock_me     \tUnlock the Intel ME before flashing\n"
 		SHARED_FLASH_ARGS_HELP
 		"\n"
 		" * Option --manifest requires either -a,--archive or -i,--image\n"
@@ -131,6 +130,7 @@ static void print_help(int argc, char *argv[])
 		"    --factory       \tAlias for --mode=factory\n"
 		"    --force         \tForce update (skip checking contents)\n"
 		"    --output_dir=DIR\tSpecify the target for --mode=output\n"
+		"    --unlock_me     \t(deprecated) Unlock the Intel ME before flashing\n"
 		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
@@ -198,6 +198,7 @@ static int do_update(int argc, char *argv[])
 			args.unpack = optarg;
 			break;
 		case OPT_UNLOCK_ME:
+			WARN("--unlock_me will be deprecated by --quirks unlock_csme_nissa.\n");
 			args.unlock_me = true;
 			break;
 		case OPT_QUIRKS:
