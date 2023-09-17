@@ -191,15 +191,21 @@ static int quirk_enlarge_image(struct updater_config *cfg)
 }
 
 /*
- * Quirk to unlock a firmware image with SI_ME (management engine) when updating
- * so the system has a chance to make sure SI_ME won't be corrupted on next boot
- * before locking the Flash Master values in SI_DESC.
+ * Platform specific quirks to unlock a firmware image with SI_ME (management
+ * engine). This may be useful when updating so the system has a chance to make
+ * sure SI_ME won't be corrupted on next boot before locking the Flash Master
+ * values in SI_DESC.
  *
  * Returns 0 on success, otherwise failure.
  */
 static int quirk_unlock_csme_eve(struct updater_config *cfg)
 {
 	return unlock_csme_eve(&cfg->image);
+}
+
+static int quirk_unlock_csme_nissa(struct updater_config *cfg)
+{
+	return unlock_csme_nissa(&cfg->image);
 }
 
 /*
@@ -446,6 +452,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "unlock_csme_eve";
 	quirks->help = "b/35568719; (skl, kbl) only lock management engine in board-postinst.";
 	quirks->apply = quirk_unlock_csme_eve;
+
+	quirks = &cfg->quirks[QUIRK_UNLOCK_CSME_NISSA];
+	quirks->name = "unlock_csme_nissa";
+	quirks->help = "b/273168873; (nissa only) unlock the management engine and CSE lite.";
+	quirks->apply = quirk_unlock_csme_nissa;
 
 	quirks = &cfg->quirks[QUIRK_EVE_SMM_STORE];
 	quirks->name = "eve_smm_store";

@@ -55,6 +55,7 @@ enum quirk_types {
 	QUIRK_OVERRIDE_SIGNATURE_ID,
 	QUIRK_EVE_SMM_STORE,
 	QUIRK_UNLOCK_CSME_EVE,
+	QUIRK_UNLOCK_CSME_NISSA,
 	/* End of quirks */
 	QUIRK_MAX,
 };
@@ -95,7 +96,6 @@ struct updater_config {
 	uint32_t gbb_flags;
 	bool detect_model;
 	bool dut_is_remote;
-	bool unlock_me;
 };
 
 struct updater_config_arguments {
@@ -185,7 +185,6 @@ enum updater_error_codes {
 	UPDATE_ERR_TARGET,
 	UPDATE_ERR_ROOT_KEY,
 	UPDATE_ERR_TPM_ROLLBACK,
-	UPDATE_ERR_UNLOCK_ME,
 	UPDATE_ERR_UNKNOWN,
 };
 

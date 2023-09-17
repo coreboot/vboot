@@ -164,19 +164,6 @@ int overwrite_section(struct firmware_image *image,
 			     size_t size, const uint8_t *new_values);
 
 /*
- * Unlock the Flash Master values in SI_DESC.
- */
-int unlock_flash_master(struct firmware_image *image);
-
-/*
- * Unlock the Intel ME by:
- * - Unlocking the FLMSTR values in the descriptor.
- * - Disabling GPR0 in the descriptor.
- * This allows the SI_DESC and SI_ME regions to be updated.
- */
-int unlock_me(struct firmware_image *image);
-
-/*
  * Returns rootkey hash of firmware image, or NULL on failure.
  */
 const char *get_firmware_rootkey_hash(const struct firmware_image *image);

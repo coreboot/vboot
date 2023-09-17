@@ -922,7 +922,6 @@ const char * const updater_error_messages[] = {
 	[UPDATE_ERR_ROOT_KEY] = "RW signed by incompatible root key "
 			        "(different from RO).",
 	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
-	[UPDATE_ERR_UNLOCK_ME] = "Failed to unlock the Intel ME.",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
 
@@ -1099,11 +1098,6 @@ static enum updater_error_codes update_whole_firmware(
 
 	if (preserve_images(cfg))
 		VB2_DEBUG("Failed to preserve some sections - ignore.\n");
-
-	if (cfg->unlock_me && unlock_me(image_to)) {
-		ERROR("Failed unlocking Intel ME.\n");
-		return UPDATE_ERR_UNLOCK_ME;
-	}
 
 	INFO("Checking compatibility...\n");
 	if (!cfg->force_update) {
@@ -1589,8 +1583,6 @@ int updater_setup_config(struct updater_config *cfg,
 		override_dut_property(DUT_PROP_WP_SW, cfg, r);
 	}
 
-	cfg->unlock_me = arg->unlock_me;
-
 	/* Set up archive and load images. */
 	/* Always load images specified from command line directly. */
 	errorcnt += updater_load_images(
@@ -1690,7 +1682,10 @@ int updater_setup_config(struct updater_config *cfg,
 
 	if (cfg->image.data) {
 		/* Apply any quirks to modify the image before updating. */
+		if (arg->unlock_me)
+			cfg->quirks[QUIRK_UNLOCK_CSME_NISSA].value = 1;
 		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME_EVE, cfg);
+		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME_NISSA, cfg);
 	}
 
 	/* The images are ready for updating. Output if needed. */
@@ -1698,11 +1693,6 @@ int updater_setup_config(struct updater_config *cfg,
 		const char *r = arg->output_dir;
 		if (!r)
 			r = ".";
-
-		if (cfg->unlock_me && unlock_me(&cfg->image)) {
-			ERROR("Failed unlocking Intel ME.\n");
-			return ++errorcnt;
-		}
 
 		/* TODO(hungte) Remove bios.bin when migration is done. */
 		errorcnt += updater_output_image(&cfg->image, "bios.bin", r);

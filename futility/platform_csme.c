@@ -129,3 +129,50 @@ int unlock_csme_eve(struct firmware_image *image)
 {
 	return unlock_flmstrs(image, 0xffffff00, 0xffffff00, 0xffffff00);
 }
+
+/*
+ * Disable GPR0 (Global Protected Range). When enabled, it provides
+ * write-protection to part of the SI_ME region, specifically CSE_RO and
+ * part of CSE_DATA, so it must be disabled to allow updating SI_ME.
+ * Returns 0 on success, otherwise failure.
+ *
+ * TODO(b/270275115): Replace with a call to ifdtool, or a generic way.
+ */
+static int disable_gpr0_nissa(struct firmware_image *image)
+{
+	/* This offset varies and the constant below is only for Nissa. DON'T USE IT for MTL. */
+	const int gpr0_offset = 0x154;
+	const uint8_t gpr0_value_disabled[] = { 0x00, 0x00, 0x00, 0x00 };
+
+	if (overwrite_section(image, FMAP_SI_DESC, gpr0_offset,
+			      ARRAY_SIZE(gpr0_value_disabled),
+			      gpr0_value_disabled)) {
+		ERROR("Failed disabling GPR0.\n");
+		return -1;
+	}
+
+	INFO("Disabled GPR0.\n");
+	return 0;
+}
+
+/*
+ * Unlock the CSME for Nissa platforms.
+ *
+ * This allows the SI_DESC and SI_ME regions to be updated.
+ * TODO(b/270275115): Replace with a call to ifdtool.
+ *
+ * Returns 0 on success, otherwise failure.
+ */
+int unlock_csme_nissa(struct firmware_image *image)
+{
+	/* Unlock the FLMSTR values (applies to JSL/TGL and newer platforms). */
+	if (unlock_flmstrs(image, 0xffffffff, 0xffffffff, 0xffffffff))
+		return -1;
+
+	/* Disable the GPR0 in the descriptor for CSE lite. */
+	if (disable_gpr0_nissa(image))
+		return -1;
+
+	INFO("Unlocked Intel ME for Nissa platforms.\n");
+	return 0;
+}
