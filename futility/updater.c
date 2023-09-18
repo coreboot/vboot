@@ -878,10 +878,7 @@ static int update_ec_firmware(struct updater_config *cfg)
 		return r;
 	}
 
-	/** EC may have different WP settings and we want to write
-	 * only if it is OK.
-	 */
-	if (is_write_protection_enabled(cfg)) {
+	if (is_ec_write_protection_enabled(cfg)) {
 		ERROR("Target ec is write protected, skip updating.\n");
 		return 0;
 	}
@@ -935,7 +932,7 @@ static enum updater_error_codes update_try_rw_firmware(
 		struct updater_config *cfg,
 		struct firmware_image *image_from,
 		struct firmware_image *image_to,
-		int wp_enabled)
+		bool wp_enabled)
 {
 	const char *target, *self_target;
 	int has_update = 1;
@@ -1127,7 +1124,7 @@ static enum updater_error_codes update_whole_firmware(
  */
 enum updater_error_codes update_firmware(struct updater_config *cfg)
 {
-	int wp_enabled, done = 0;
+	bool done = false;
 	enum updater_error_codes r = UPDATE_ERR_UNKNOWN;
 
 	/*
@@ -1182,11 +1179,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		return UPDATE_ERR_PLATFORM;
 	}
 
-	wp_enabled = is_write_protection_enabled(cfg);
-	STATUS("Write protection: %d (%s; HW=%d, SW=%d).\n", wp_enabled,
-	       wp_enabled ? "enabled" : "disabled",
-	       dut_get_property(DUT_PROP_WP_HW, cfg),
-	       dut_get_property(DUT_PROP_WP_SW, cfg));
+	bool wp_enabled = is_ap_write_protection_enabled(cfg);
 
 	if (try_apply_quirk(QUIRK_ENLARGE_IMAGE, cfg))
 		return UPDATE_ERR_SYSTEM_IMAGE;
@@ -1209,7 +1202,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		if (r == UPDATE_ERR_NEED_RO_UPDATE)
 			WARN("%s\n", updater_error_messages[r]);
 		else
-			done = 1;
+			done = true;
 	}
 
 	if (!done) {
@@ -1360,7 +1353,7 @@ static int updater_apply_custom_label(struct updater_config *cfg,
 			return 1;
 		}
 		if (get_config_quirk(QUIRK_OVERRIDE_SIGNATURE_ID, cfg) &&
-		    is_write_protection_enabled(cfg))
+		    is_ap_write_protection_enabled(cfg))
 			quirk_override_signature_id(
 					cfg, model, &signature_id);
 	}
@@ -1424,7 +1417,7 @@ static int updater_setup_archive(
 					  arg->signature_id);
 		if (!model->patches.rootkey) {
 			if (is_factory ||
-			    is_write_protection_enabled(cfg) ||
+			    is_ap_write_protection_enabled(cfg) ||
 			    get_config_quirk(QUIRK_ALLOW_EMPTY_CUSTOM_LABEL_TAG,
 					     cfg)) {
 				WARN("No VPD for custom label.\n");
@@ -1606,7 +1599,7 @@ int updater_setup_config(struct updater_config *cfg,
 		/* arg->write_protection must be done after arg->sys_props. */
 		int r = strtol(arg->write_protection, NULL, 0);
 		override_dut_property(DUT_PROP_WP_HW, cfg, r);
-		override_dut_property(DUT_PROP_WP_SW, cfg, r);
+		override_dut_property(DUT_PROP_WP_SW_AP, cfg, r);
 	}
 
 	/* Set up archive and load images. */
@@ -1700,7 +1693,7 @@ int updater_setup_config(struct updater_config *cfg,
 		errorcnt++;
 		ERROR("EC/PD images are not supported in current mode.\n");
 	}
-	if (check_wp_disabled && is_write_protection_enabled(cfg)) {
+	if (check_wp_disabled && is_ap_write_protection_enabled(cfg)) {
 		errorcnt++;
 		ERROR("Please remove write protection for factory mode \n"
 		      "( " REMOVE_WP_URL " ).");

@@ -372,7 +372,7 @@ static int quirk_clear_mrc_data(struct updater_config *cfg)
 		"RW_MRC_CACHE",
 	};
 
-	if (is_write_protection_enabled(cfg) || cfg->try_update)
+	if (is_ap_write_protection_enabled(cfg) || cfg->try_update)
 		flash_now = 1;
 
 	for (i = 0; i < ARRAY_SIZE(mrc_names); i++) {

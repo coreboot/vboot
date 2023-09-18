@@ -358,13 +358,35 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 }
 
 /*
- * Returns true if the write protection is enabled on current system.
+ * Different settings may have different SWWP programmers.
  */
-int is_write_protection_enabled(struct updater_config *cfg)
+static bool is_write_protection_enabled(struct updater_config *cfg,
+					const char *programmer,
+					enum dut_property_type swwp_type)
 {
 	/* Assume HW/SW WP are enabled if -1 error code is returned */
-	return dut_get_property(DUT_PROP_WP_HW, cfg) &&
-	       dut_get_property(DUT_PROP_WP_SW, cfg);
+	bool hwwp = !!dut_get_property(DUT_PROP_WP_HW, cfg);
+	bool swwp = !!dut_get_property(swwp_type, cfg);
+	bool wp_enabled = hwwp && swwp;
+	STATUS("Write protection (%s): %d (%s; HW=%d, SW=%d).\n", programmer,
+	       wp_enabled, wp_enabled ? "enabled" : "disabled", hwwp, swwp);
+	return wp_enabled;
+}
+
+/*
+ * Returns true if the AP write protection is enabled on current system.
+ */
+inline bool is_ap_write_protection_enabled(struct updater_config *cfg)
+{
+	return is_write_protection_enabled(cfg, cfg->image.programmer, DUT_PROP_WP_SW_AP);
+}
+
+/*
+ * Returns true if the EC write protection is enabled on current system.
+ */
+inline bool is_ec_write_protection_enabled(struct updater_config *cfg)
+{
+	return is_write_protection_enabled(cfg, cfg->ec_image.programmer, DUT_PROP_WP_SW_EC);
 }
 
 /*

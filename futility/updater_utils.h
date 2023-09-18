@@ -168,9 +168,14 @@ void strip_string(char *s, const char *pattern);
 int save_file_from_stdin(const char *output);
 
 /*
- * Returns true if the write protection is enabled on current system.
+ * Returns true if the AP write protection is enabled on current system.
  */
-int is_write_protection_enabled(struct updater_config *cfg);
+bool is_ap_write_protection_enabled(struct updater_config *cfg);
+
+/*
+ * Returns true if the EC write protection is enabled on current system.
+ */
+bool is_ec_write_protection_enabled(struct updater_config *cfg);
 
 /*
  * Executes a command on current host and returns stripped command output.
@@ -228,7 +233,8 @@ enum dut_property_type {
 	DUT_PROP_TPM_FWVER,
 	DUT_PROP_PLATFORM_VER,
 	DUT_PROP_WP_HW,
-	DUT_PROP_WP_SW,
+	DUT_PROP_WP_SW_AP,
+	DUT_PROP_WP_SW_EC,
 	DUT_PROP_MAX
 };
 

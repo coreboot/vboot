@@ -351,7 +351,7 @@ static int write_to_flash(struct updater_config *cfg, uint8_t *outbuf,
 			  off_t filesize)
 {
 #ifdef USE_FLASHROM
-	if (is_write_protection_enabled(cfg)) {
+	if (is_ap_write_protection_enabled(cfg)) {
 		ERROR("You must disable write protection before setting flags.\n");
 		return -1;
 	}

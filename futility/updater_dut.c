@@ -122,16 +122,28 @@ static int dut_get_platform_version(struct updater_config *cfg)
 }
 
 /* Helper function to return host software write protection status. */
-static int dut_get_wp_sw(struct updater_config *cfg)
+static int dut_get_wp_sw(const char *programmer)
 {
-	assert(cfg->image.programmer);
+	assert(programmer);
 	bool mode;
 
-	if (flashrom_get_wp(cfg->image.programmer, &mode, NULL, NULL, -1)) {
+	if (flashrom_get_wp(programmer, &mode, NULL, NULL, -1)) {
 		/* Read WP status error */
 		return -1;
 	}
 	return mode;
+}
+
+/* Helper function to return host AP software write protection status. */
+static inline int dut_get_wp_sw_ap(struct updater_config *cfg)
+{
+	return dut_get_wp_sw(cfg->image.programmer);
+}
+
+/* Helper function to return host EC software write protection status. */
+static inline int dut_get_wp_sw_ec(struct updater_config *cfg)
+{
+	return dut_get_wp_sw(cfg->ec_image.programmer);
 }
 
 /* Helper functions to use or configure the DUT properties. */
@@ -164,5 +176,6 @@ void dut_init_properties(struct dut_property *props, int num)
 	props[DUT_PROP_TPM_FWVER].getter = dut_get_tpm_fwver;
 	props[DUT_PROP_PLATFORM_VER].getter = dut_get_platform_version;
 	props[DUT_PROP_WP_HW].getter = dut_get_wp_hw;
-	props[DUT_PROP_WP_SW].getter = dut_get_wp_sw;
+	props[DUT_PROP_WP_SW_AP].getter = dut_get_wp_sw_ap;
+	props[DUT_PROP_WP_SW_EC].getter = dut_get_wp_sw_ec;
 }
