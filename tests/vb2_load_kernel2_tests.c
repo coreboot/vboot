@@ -451,9 +451,11 @@ static void load_minios_kernel_tests(void)
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_SUCCESS);
 	sd->kernel_version_secdata = 5 << 24;
+	kbh.data_key.key_version = 5;
 	kph.kernel_version = 6;
 	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
 		  "newer kernel version");
+	TEST_EQ(sd->kernel_version, 0x50006, "  SD kernel version");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
 }

@@ -543,10 +543,10 @@ void vb2api_export_vbsd(struct vb2_context *ctx, void *dest)
 	if (sd->flags & VB2_SD_FLAG_KERNEL_SIGNED)
 		vbsd->flags |= VBSD_KERNEL_KEY_VERIFIED;
 
-	vbsd->fw_version_tpm_start = sd->fw_version_secdata;
-	vbsd->fw_version_tpm = sd->fw_version;
-	vbsd->kernel_version_tpm_start = sd->kernel_version_secdata;
-	vbsd->kernel_version_tpm = sd->kernel_version;
+	vbsd->fw_version_tpm = sd->fw_version_secdata;
+	vbsd->fw_version_act = sd->fw_version;
+	vbsd->kernel_version_tpm = sd->kernel_version_secdata;
+	vbsd->kernel_version_act = sd->kernel_version;
 
 	vbsd->recovery_reason = sd->recovery_reason;
 	if (sd->recovery_reason)

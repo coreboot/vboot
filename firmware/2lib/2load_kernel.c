@@ -146,17 +146,20 @@ static vb2_error_t vb2_verify_kernel_dev_key_hash(
 /**
  * Verify a kernel vblock.
  *
- * @param ctx		Vboot context
- * @param kbuf		Buffer containing the vblock
- * @param kbuf_size	Size of the buffer in bytes
- * @param lpflags	Flags (one or more of vb2_load_partition_flags)
- * @param wb		Work buffer.  Must be at least
- *			VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
+ * @param ctx			Vboot context
+ * @param kbuf			Buffer containing the vblock
+ * @param kbuf_size		Size of the buffer in bytes
+ * @param lpflags		Flags (one or more of vb2_load_partition_flags)
+ * @param wb			Work buffer.  Must be at least
+ *				VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES bytes.
+ * @param kernel_version	The kernel version of this vblock.
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static vb2_error_t vb2_verify_kernel_vblock(
-	struct vb2_context *ctx, uint8_t *kbuf, uint32_t kbuf_size,
-	uint32_t lpflags, struct vb2_workbuf *wb)
+static vb2_error_t vb2_verify_kernel_vblock(struct vb2_context *ctx,
+					    uint8_t *kbuf, uint32_t kbuf_size,
+					    uint32_t lpflags,
+					    struct vb2_workbuf *wb,
+					    uint32_t *kernel_version)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 
@@ -322,12 +325,12 @@ static vb2_error_t vb2_verify_kernel_vblock(
 		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_RANGE;
 
 	/* Combine with the key version. */
-	sd->kernel_version = key_version << 16 | preamble->kernel_version;
+	*kernel_version = key_version << 16 | preamble->kernel_version;
 
 	/* If not in recovery mode, check for rollback of the kernel version. */
 	if (need_keyblock_valid &&
 	    ctx->boot_mode != VB2_BOOT_MODE_MANUAL_RECOVERY &&
-	    sd->kernel_version < sd->kernel_version_secdata) {
+	    *kernel_version < sd->kernel_version_secdata) {
 		VB2_DEBUG("Kernel version too low.\n");
 		return VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK;
 	}
@@ -339,15 +342,17 @@ static vb2_error_t vb2_verify_kernel_vblock(
 /**
  * Load and verify a partition from the stream.
  *
- * @param ctx		Vboot context
- * @param params	Load-kernel parameters
- * @param stream	Stream to load kernel from
- * @param lpflags	Flags (one or more of vb2_load_partition_flags)
+ * @param ctx			Vboot context
+ * @param params		Load-kernel parameters
+ * @param stream		Stream to load kernel from
+ * @param lpflags		Flags (one or more of vb2_load_partition_flags)
+ * @param kernel_version	The kernel version of this partition.
  * @return VB2_SUCCESS, or non-zero error code.
  */
-static vb2_error_t vb2_load_partition(
-	struct vb2_context *ctx, struct vb2_kernel_params *params,
-	VbExStream_t stream, uint32_t lpflags)
+static vb2_error_t vb2_load_partition(struct vb2_context *ctx,
+				      struct vb2_kernel_params *params,
+				      VbExStream_t stream, uint32_t lpflags,
+				      uint32_t *kernel_version)
 {
 	uint32_t read_ms = 0, start_ts;
 	struct vb2_workbuf wb;
@@ -366,7 +371,8 @@ static vb2_error_t vb2_load_partition(
 	}
 	read_ms += vb2ex_mtime() - start_ts;
 
-	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, lpflags, &wb))
+	if (vb2_verify_kernel_vblock(ctx, kbuf, KBUF_SIZE, lpflags, &wb,
+				     kernel_version))
 		return VB2_ERROR_LOAD_PARTITION_VERIFY_VBLOCK;
 
 	if (lpflags & VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY)
@@ -463,9 +469,11 @@ static vb2_error_t try_minios_kernel(struct vb2_context *ctx,
 				     struct vb2_kernel_params *params,
 				     struct vb2_disk_info *disk_info,
 				     uint64_t sector) {
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
 	VbExStream_t stream;
 	uint64_t sectors_left = disk_info->lba_count - sector;
 	const uint32_t lpflags = VB2_LOAD_PARTITION_FLAG_MINIOS;
+	uint32_t kernel_version = 0;
 	vb2_error_t rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 
 	/* Re-open stream at correct offset to pass to vb2_load_partition. */
@@ -475,13 +483,16 @@ static vb2_error_t try_minios_kernel(struct vb2_context *ctx,
 		return rv;
 	}
 
-	rv = vb2_load_partition(ctx, params, stream, lpflags);
+	rv = vb2_load_partition(ctx, params, stream, lpflags, &kernel_version);
 	VB2_DEBUG("vb2_load_partition returned: %d\n", rv);
 
 	VbExStreamClose(stream);
 
 	if (rv)
 		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+
+	sd->kernel_version = kernel_version;
+
 	return rv;
 }
 
@@ -661,7 +672,9 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 			lpflags |= VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY;
 		}
 
-		rv = vb2_load_partition(ctx, params, stream, lpflags);
+		uint32_t kernel_version = 0;
+		rv = vb2_load_partition(ctx, params, stream, lpflags,
+					&kernel_version);
 		VbExStreamClose(stream);
 
 		if (rv) {
@@ -672,11 +685,11 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 
 		int keyblock_valid = sd->flags & VB2_SD_FLAG_KERNEL_SIGNED;
 		/* Track lowest version from a valid header. */
-		if (keyblock_valid && lowest_version > sd->kernel_version) {
-			lowest_version = sd->kernel_version;
-		}
+		if (keyblock_valid && lowest_version > kernel_version)
+			lowest_version = kernel_version;
+
 		VB2_DEBUG("Keyblock valid: %d\n", keyblock_valid);
-		VB2_DEBUG("Combined version: %u\n", sd->kernel_version);
+		VB2_DEBUG("Combined version: %u\n", kernel_version);
 
 		/*
 		 * If we're only looking at headers, we're done with this
@@ -692,6 +705,8 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 		 * 0.  Adjust here, until cgptlib is fixed.
 		 */
 		params->partition_number = gpt.current_kernel + 1;
+
+		sd->kernel_version = kernel_version;
 
 		/*
 		 * TODO: GetCurrentKernelUniqueGuid() should take a destination
@@ -746,7 +761,7 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 		 */
 		if (lowest_version != LOWEST_TPM_VERSION &&
 		    lowest_version > sd->kernel_version_secdata)
-			sd->kernel_version = lowest_version;
+			sd->kernel_version_secdata = lowest_version;
 
 		/* Success! */
 		rv = VB2_SUCCESS;

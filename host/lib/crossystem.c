@@ -58,7 +58,9 @@ typedef enum VdatIntField {
 	VDAT_INT_KERNEL_KEY_VERIFIED, /* Kernel key verified using
 				       * signature, not just hash */
 	VDAT_INT_RECOVERY_REASON,     /* Recovery reason for current boot */
-	VDAT_INT_FW_BOOT2             /* Firmware selection by vboot2 */
+	VDAT_INT_FW_BOOT2,            /* Firmware selection by vboot2 */
+	VDAT_INT_FW_VERSION_ACT,      /* Current acvite firmware version */
+	VDAT_INT_KERNEL_VERSION_ACT,  /* Current acvite kernel version */
 } VdatIntField;
 
 
@@ -267,16 +269,18 @@ static int GetVdatLoadFirmwareDebug(char *dest, int size,
 				    const VbSharedDataHeader *sh)
 {
 	snprintf(dest, size,
-		 "Check A result=%d\n"
-		 "Check B result=%d\n"
-		 "Firmware index booted=0x%02x\n"
-		 "TPM combined version at start=0x%08x\n"
-		 "Lowest combined version from firmware=0x%08x\n",
-		 sh->check_fw_a_result,
-		 sh->check_fw_b_result,
-		 sh->firmware_index,
-		 sh->fw_version_tpm_start,
-		 sh->fw_version_lowest);
+		"Check A result=%d\n"
+		"Check B result=%d\n"
+		"Firmware index booted=0x%02x\n"
+		"Active firmware version=0x%08x\n"
+		"Firmware version in TPM =0x%08x\n"
+		"Lowest combined version from firmware=0x%08x\n",
+		sh->check_fw_a_result,
+		sh->check_fw_b_result,
+		sh->firmware_index,
+		sh->fw_version_act,
+		sh->fw_version_tpm,
+		sh->fw_version_lowest);
 	return 0;
 }
 
@@ -370,6 +374,20 @@ static int GetVdatInt(VdatIntField field)
 				break;
 			case VDAT_INT_RECOVERY_REASON:
 				value = sh->recovery_reason;
+				break;
+			case VDAT_INT_FW_VERSION_ACT:
+				value = (int)sh->fw_version_act;
+				break;
+			default:
+				break;
+		}
+	}
+
+	/* Fields added in struct version 3 */
+	if (sh->struct_version >= 3) {
+		switch(field) {
+			case VDAT_INT_KERNEL_VERSION_ACT:
+				value = (int)sh->kernel_version_act;
 				break;
 			default:
 				break;
@@ -483,6 +501,10 @@ int VbGetSystemPropertyInt(const char *name)
 		value = GetVdatInt(VDAT_INT_FW_VERSION_TPM);
 	} else if (!strcasecmp(name,"tpm_kernver")) {
 		value = GetVdatInt(VDAT_INT_KERNEL_VERSION_TPM);
+	} else if (!strcasecmp(name,"act_fwver")) {
+		value = GetVdatInt(VDAT_INT_FW_VERSION_ACT);
+	} else if (!strcasecmp(name,"act_kernver")) {
+		value = GetVdatInt(VDAT_INT_KERNEL_VERSION_ACT);
 	} else if (!strcasecmp(name,"tried_fwb")) {
 		value = GetVdatInt(VDAT_INT_TRIED_FIRMWARE_B);
 	} else if (!strcasecmp(name,"recovery_reason")) {

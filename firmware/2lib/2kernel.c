@@ -72,7 +72,6 @@ vb2_error_t vb2api_kernel_phase1(struct vb2_context *ctx)
 	/* Read kernel version from secdata. */
 	sd->kernel_version_secdata =
 		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
-	sd->kernel_version = sd->kernel_version_secdata;
 
 	vb2_fill_dev_boot_flags(ctx);
 
@@ -238,20 +237,25 @@ static void update_kernel_version(struct vb2_context *ctx)
 	 * version to less than the version currently in the TPM.  That is,
 	 * we're limiting rollforward, not allowing rollback.
 	 */
-	if (max_rollforward < sd->kernel_version_secdata)
-		max_rollforward = sd->kernel_version_secdata;
+	uint32_t original_kernel_version =
+		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 
-	if (sd->kernel_version > max_rollforward) {
+	if (max_rollforward < original_kernel_version)
+		max_rollforward = original_kernel_version;
+
+	if (sd->kernel_version_secdata > max_rollforward) {
 		VB2_DEBUG("Limiting TPM kernel version roll-forward "
 			  "to %#x < %#x\n",
-			  max_rollforward, sd->kernel_version);
+			  max_rollforward, sd->kernel_version_secdata);
 
-		sd->kernel_version = max_rollforward;
+		sd->kernel_version_secdata = max_rollforward;
 	}
 
-	if (sd->kernel_version > sd->kernel_version_secdata) {
+	if (sd->kernel_version_secdata > original_kernel_version) {
 		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
-				       sd->kernel_version);
+				       sd->kernel_version_secdata);
+	} else {
+		sd->kernel_version_secdata = original_kernel_version;
 	}
 }
 

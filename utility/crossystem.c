@@ -26,6 +26,8 @@ typedef struct Param {
 
 /* List of parameters, terminated with a param with NULL name */
 const Param sys_param_list[] = {
+  {"act_fwver", 0, "Active firmware version", "0x%08x"},
+  {"act_kernver", 0, "Active kernel version", "0x%08x"},
   {"arch", IS_STRING, "Platform architecture"},
   {"backup_nvram_request", CAN_WRITE,
    "Backup the nvram somewhere at the next boot. Cleared on success."},
