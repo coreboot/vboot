@@ -160,6 +160,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "Failed to get boot mode from Cr50";
 	/* 0x64 */ case VB2_RECOVERY_ESCAPE_NO_BOOT:
 		return "Attempt to escape from NO_BOOT mode was detected";
+	/* 0x65 */ case VB2_RECOVERY_WIDEVINE_PREPARE:
+		return "Failed to prepare widevine";
 	/* 0x7f */ case VB2_RECOVERY_RW_UNSPECIFIED:
 		return "Unspecified/unknown error in RW firmware";
 	/* 0x81 */ case VB2_RECOVERY_DEPRECATED_KE_DM_VERITY:

@@ -277,6 +277,9 @@ enum vb2_nv_recovery {
 	/* Attempt to escape from NO_BOOT mode was detected */
 	VB2_RECOVERY_ESCAPE_NO_BOOT = 0x64,
 
+	/* Failed to prepare the widevine functionality */
+	VB2_RECOVERY_WIDEVINE_PREPARE = 0x65,
+
 	/* Unspecified/unknown error in rewritable firmware */
 	VB2_RECOVERY_RW_UNSPECIFIED = 0x7f,
 
