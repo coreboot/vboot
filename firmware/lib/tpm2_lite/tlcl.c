@@ -537,13 +537,13 @@ uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 		return rv;
 	}
 
-	if (length > response->nvr.buffer.t.size)
+	if (length > response->nvr.buffer.size)
 		return TPM_E_RESPONSE_TOO_LARGE;
 
-	if (length < response->nvr.buffer.t.size)
+	if (length < response->nvr.buffer.size)
 		return TPM_E_READ_EMPTY;
 
-	memcpy(data, response->nvr.buffer.t.buffer, length);
+	memcpy(data, response->nvr.buffer.buffer, length);
 
 	return TPM_SUCCESS;
 }
@@ -555,8 +555,8 @@ uint32_t TlclWrite(uint32_t index, const void *data, uint32_t length)
 	memset(&nv_writec, 0, sizeof(nv_writec));
 
 	nv_writec.nvIndex = HR_NV_INDEX + index;
-	nv_writec.data.t.size = length;
-	nv_writec.data.t.buffer = data;
+	nv_writec.data.size = length;
+	nv_writec.data.buffer = data;
 
 	return tpm_get_response_code(TPM2_NV_Write, &nv_writec);
 }
@@ -714,16 +714,15 @@ uint32_t TlclReadPublic(uint32_t handle, uint8_t *data, uint32_t *length)
 		return rv;
 	}
 
-	if (*length < response->read_pub.buffer.t.size + 2)
+	if (*length < response->read_pub.buffer.size + 2)
 		return TPM_E_RESPONSE_TOO_LARGE;
 
-	*length = response->read_pub.buffer.t.size + 2;
+	*length = response->read_pub.buffer.size + 2;
 
-	data[0] = (response->read_pub.buffer.t.size >> 8) & 0xff;
-	data[1] = response->read_pub.buffer.t.size & 0xff;
+	data[0] = (response->read_pub.buffer.size >> 8) & 0xff;
+	data[1] = response->read_pub.buffer.size & 0xff;
 
-	memcpy(data + 2, response->read_pub.buffer.t.buffer,
-	       response->read_pub.buffer.t.size);
+	memcpy(data + 2, response->read_pub.buffer.buffer, response->read_pub.buffer.size);
 
 	return TPM_SUCCESS;
 }

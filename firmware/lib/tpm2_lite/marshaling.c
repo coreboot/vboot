@@ -104,41 +104,22 @@ static uint32_t unmarshal_u32(void **buffer, int *buffer_space)
 #define unmarshal_TPM_HANDLE(a, b) unmarshal_u32(a, b)
 #define unmarshal_ALG_ID(a, b) unmarshal_u16(a, b)
 
-static void unmarshal_TPM2B_MAX_NV_BUFFER(void **buffer,
-					  int *size,
-					  TPM2B_MAX_NV_BUFFER *nv_buffer)
+static void unmarshal_TPM2B(void **buffer, int *size, TPM2B *tpm2b)
 {
-	nv_buffer->t.size = unmarshal_u16(buffer, size);
-	if (nv_buffer->t.size > *size) {
-		VB2_DEBUG("size mismatch: expected %d, remaining %d\n",
-			  nv_buffer->t.size, *size);
-		return;
-	}
-
-	nv_buffer->t.buffer = *buffer;
-
-	*buffer = ((uint8_t *)(*buffer)) + nv_buffer->t.size;
-	*size -= nv_buffer->t.size;
-}
-
-static void unmarshal_TPM2B_PUBLIC(void **buffer, int *size,
-				   TPM2B_PUBLIC *pub_buffer)
-{
-	pub_buffer->t.size = unmarshal_u16(buffer, size);
-	if (pub_buffer->t.size > *size) {
-		VB2_DEBUG("size mismatch: expected %d, remaining %d\n",
-			  pub_buffer->t.size, *size);
-		pub_buffer->t.buffer = NULL;
-		pub_buffer->t.size = 0;
+	tpm2b->size = unmarshal_u16(buffer, size);
+	if (tpm2b->size > *size) {
+		VB2_DEBUG("size mismatch: expected %d, remaining %d\n", tpm2b->size, *size);
+		tpm2b->buffer = NULL;
+		tpm2b->size = 0;
 		*buffer = NULL;
 		*size = -1;
 		return;
 	}
 
-	pub_buffer->t.buffer = *buffer;
+	tpm2b->buffer = *buffer;
 
-	*buffer = ((uint8_t *)(*buffer)) + pub_buffer->t.size;
-	*size -= pub_buffer->t.size;
+	*buffer = ((uint8_t *)(*buffer)) + tpm2b->size;
+	*size -= tpm2b->size;
 }
 
 static void unmarshal_authorization_section(void **buffer, int *size,
@@ -161,12 +142,11 @@ static void unmarshal_nv_read(void **buffer, int *size,
 {
 	/* Total size of the parameter field. */
 	nvr->params_size = unmarshal_u32(buffer, size);
-	unmarshal_TPM2B_MAX_NV_BUFFER(buffer, size, &nvr->buffer);
+	unmarshal_TPM2B(buffer, size, &nvr->buffer);
 
-	if (nvr->params_size !=
-	    (nvr->buffer.t.size + sizeof(nvr->buffer.t.size))) {
-		VB2_DEBUG("parameter/buffer %d/%d size mismatch",
-			  nvr->params_size, nvr->buffer.t.size);
+	if (nvr->params_size != (nvr->buffer.size + sizeof(nvr->buffer.size))) {
+		VB2_DEBUG("parameter/buffer %d/%d size mismatch", nvr->params_size,
+			  nvr->buffer.size);
 		return;
 	}
 
@@ -179,7 +159,7 @@ static void unmarshal_nv_read(void **buffer, int *size,
 static void unmarshal_read_public(void **buffer, int *size,
 				  struct read_public_response *rpr)
 {
-	unmarshal_TPM2B_PUBLIC(buffer, size, &rpr->buffer);
+	unmarshal_TPM2B(buffer, size, &rpr->buffer);
 
 	if (*size < 0)
 		return;
@@ -187,24 +167,6 @@ static void unmarshal_read_public(void **buffer, int *size,
 	/* Drain the name & authorization sections. */
 	*buffer = ((uint8_t *)(*buffer)) + *size;
 	*size = 0;
-}
-
-static void unmarshal_TPM2B(void **buffer,
-			    int *size,
-			    TPM2B *tpm2b)
-{
-	tpm2b->size = unmarshal_u16(buffer, size);
-	if (tpm2b->size > *size) {
-		VB2_DEBUG("size mismatch: expected %d, remaining %d\n",
-			  tpm2b->size, *size);
-		*size = -1;
-		return;
-	}
-
-	tpm2b->buffer = *buffer;
-
-	*buffer = ((uint8_t *)(*buffer)) + tpm2b->size;
-	*size -= tpm2b->size;
 }
 
 static void unmarshal_TPMS_NV_PUBLIC(void **buffer,
@@ -564,7 +526,7 @@ static void marshal_nv_write(void **buffer,
 	marshal_session_header(buffer, &session_header, buffer_space);
 	tpm_tag = TPM_ST_SESSIONS;
 
-	marshal_TPM2B(buffer, &command_body->data.b, buffer_space);
+	marshal_TPM2B(buffer, &command_body->data, buffer_space);
 	marshal_u16(buffer, command_body->offset, buffer_space);
 }
 

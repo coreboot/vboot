@@ -136,24 +136,8 @@ typedef uint32_t TPMA_NV;
 
 typedef struct {
 	uint16_t      size;
-	uint8_t       *buffer;
+	const uint8_t *buffer;
 } TPM2B, TPM2B_DIGEST, TPM2B_AUTH, TPM2B_NAME;
-
-typedef union {
-	struct {
-		uint16_t  size;
-		const uint8_t   *buffer;
-	} t;
-	TPM2B b;
-} TPM2B_MAX_NV_BUFFER;
-
-typedef union {
-	struct {
-		uint16_t size;
-		const uint8_t *buffer;
-	} t;
-	TPM2B b;
-} TPM2B_PUBLIC;
 
 typedef struct {
 	TPM_PT property;
@@ -214,7 +198,7 @@ struct tpm2_nv_read_cmd {
 
 struct tpm2_nv_write_cmd {
 	TPMI_RH_NV_INDEX nvIndex;
-	TPM2B_MAX_NV_BUFFER data;
+	TPM2B data;
 	uint16_t offset;
 };
 
@@ -275,11 +259,11 @@ struct tpm_header {
 
 struct nv_read_response {
 	uint32_t params_size;
-	TPM2B_MAX_NV_BUFFER buffer;
+	TPM2B buffer;
 };
 
 struct read_public_response {
-	TPM2B_PUBLIC buffer;
+	TPM2B buffer;
 };
 
 struct tpm2_session_attrs {
