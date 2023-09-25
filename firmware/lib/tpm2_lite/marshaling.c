@@ -674,6 +674,24 @@ static void marshal_shutdown(void **buffer,
 	marshal_TPM_SU(buffer, command_body->shutdown_type, buffer_space);
 }
 
+static void marshal_evict_control(void **buffer,
+				  struct tpm2_evict_control_cmd *command_body,
+				  int *buffer_space)
+{
+	struct tpm2_session_header session_header;
+
+	marshal_TPM_HANDLE(buffer, command_body->auth, buffer_space);
+	marshal_TPM_HANDLE(buffer, command_body->object_handle, buffer_space);
+
+	memset(&session_header, 0, sizeof(session_header));
+	session_header.session_handle = TPM_RS_PW;
+	marshal_session_header(buffer, &session_header, buffer_space);
+	tpm_tag = TPM_ST_SESSIONS;
+
+	marshal_TPM_HANDLE(buffer, command_body->persistent_handle,
+			   buffer_space);
+}
+
 static void marshal_TPMT_HA(void **buffer,
 			    TPMT_HA *data,
 			    int *buffer_space)
@@ -793,6 +811,10 @@ int tpm_marshal_command(TPM_CC command, void *tpm_command_body,
 		marshal_read_public(&cmd_body, tpm_command_body, &body_size);
 		break;
 
+	case TPM2_EvictControl:
+		marshal_evict_control(&cmd_body, tpm_command_body, &body_size);
+		break;
+
 	default:
 		body_size = -1;
 		VB2_DEBUG("Request to marshal unsupported command %#x\n",
@@ -870,6 +892,7 @@ int tpm_unmarshal_response(TPM_CC command,
 	case TPM2_NV_DefineSpace:
 	case TPM2_NV_UndefineSpace:
 	case TPM2_PCR_Extend:
+	case TPM2_EvictControl:
 		/* Session data included in response can be safely ignored. */
 		cr_size = 0;
 		break;

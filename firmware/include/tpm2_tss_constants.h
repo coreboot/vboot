@@ -20,6 +20,7 @@ extern "C" {
 #define TPM_ST_SESSIONS    0x8002
 
 /* TPM2 command codes. */
+#define TPM2_EvictControl      ((TPM_CC)0x00000120)
 #define TPM2_Hierarchy_Control ((TPM_CC)0x00000121)
 #define TPM2_NV_UndefineSpace  ((TPM_CC)0x00000122)
 #define TPM2_Clear             ((TPM_CC)0x00000126)
@@ -125,8 +126,10 @@ typedef uint32_t TPM_CC;
 typedef uint32_t TPM_HANDLE;
 typedef TPM_HANDLE TPMI_DH_OBJECT;
 typedef TPM_HANDLE TPMI_DH_PCR;
-typedef TPM_HANDLE TPMI_RH_NV_INDEX;
+typedef TPM_HANDLE TPMI_DH_PERSISTENT;
 typedef TPM_HANDLE TPMI_RH_ENABLES;
+typedef TPM_HANDLE TPMI_RH_NV_INDEX;
+typedef TPM_HANDLE TPMI_RH_PROVISION;
 typedef uint32_t TPM_CAP;
 typedef uint32_t TPM_PT;
 typedef uint16_t TPM_SU;
@@ -248,6 +251,12 @@ struct tpm2_pcr_extend_cmd {
 
 struct tpm2_read_public_cmd {
 	TPMI_DH_OBJECT object_handle;
+};
+
+struct tpm2_evict_control_cmd {
+	TPMI_RH_PROVISION auth;
+	TPMI_DH_OBJECT object_handle;
+	TPMI_DH_PERSISTENT persistent_handle;
 };
 
 /* Common command/response header. */
