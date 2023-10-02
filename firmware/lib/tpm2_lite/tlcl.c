@@ -737,3 +737,28 @@ uint32_t TlclEvictControl(uint32_t auth_handle, uint32_t object_handle,
 
 	return tpm_get_response_code(TPM2_EvictControl, &cmd);
 }
+
+uint32_t TlclCreatePrimary(uint32_t primary_handle, const void *tmpl,
+			   uint32_t tmpl_length, uint32_t *object_handle)
+{
+	uint32_t rv;
+	struct tpm2_create_primary_cmd cmd;
+	struct tpm2_response *response = &tpm2_resp;
+	uint8_t in_sensitive[4] = {0, 0, 0, 0};
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.primary_handle = primary_handle;
+	cmd.in_sensitive.size = sizeof(in_sensitive);
+	cmd.in_sensitive.buffer = in_sensitive;
+	cmd.in_public.size = tmpl_length;
+	cmd.in_public.buffer = tmpl;
+
+	rv = tpm_send_receive(TPM2_CreatePrimary, &cmd, response);
+	if (rv)
+		return rv;
+
+	*object_handle = response->create_primary.object_handle;
+
+	return TPM_SUCCESS;
+}

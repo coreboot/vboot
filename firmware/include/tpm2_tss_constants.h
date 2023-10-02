@@ -25,6 +25,7 @@ extern "C" {
 #define TPM2_NV_UndefineSpace  ((TPM_CC)0x00000122)
 #define TPM2_Clear             ((TPM_CC)0x00000126)
 #define TPM2_NV_DefineSpace    ((TPM_CC)0x0000012A)
+#define TPM2_CreatePrimary     ((TPM_CC)0x00000131)
 #define TPM2_NV_Write          ((TPM_CC)0x00000137)
 #define TPM2_NV_WriteLock      ((TPM_CC)0x00000138)
 #define TPM2_SelfTest          ((TPM_CC)0x00000143)
@@ -45,6 +46,8 @@ extern "C" {
 #define HR_PCR                (TPM_HT_PCR <<  HR_SHIFT)
 #define HR_NV_INDEX           (TPM_HT_NV_INDEX <<  HR_SHIFT)
 #define TPM_RH_OWNER        0x40000001
+#define TPM_RH_NULL         0x40000007
+#define TPM_RH_ENDORSEMENT  0x4000000B
 #define TPM_RH_PLATFORM     0x4000000C
 #define TPM_RS_PW           0x40000009
 
@@ -128,6 +131,7 @@ typedef TPM_HANDLE TPMI_DH_OBJECT;
 typedef TPM_HANDLE TPMI_DH_PCR;
 typedef TPM_HANDLE TPMI_DH_PERSISTENT;
 typedef TPM_HANDLE TPMI_RH_ENABLES;
+typedef TPM_HANDLE TPMI_RH_HIERARCHY;
 typedef TPM_HANDLE TPMI_RH_NV_INDEX;
 typedef TPM_HANDLE TPMI_RH_PROVISION;
 typedef uint32_t TPM_CAP;
@@ -259,6 +263,12 @@ struct tpm2_evict_control_cmd {
 	TPMI_DH_PERSISTENT persistent_handle;
 };
 
+struct tpm2_create_primary_cmd {
+	TPMI_RH_HIERARCHY primary_handle;
+	TPM2B in_sensitive;
+	TPM2B in_public;
+};
+
 /* Common command/response header. */
 struct tpm_header {
 	uint16_t tpm_tag;
@@ -311,6 +321,10 @@ struct nv_read_public_response {
 	TPM2B_NAME nvName;
 } __attribute__((packed));
 
+struct create_primary_response {
+	TPM_HANDLE object_handle;
+} __attribute__((packed));
+
 struct tpm2_response {
 	struct tpm_header hdr;
 	union {
@@ -320,6 +334,7 @@ struct tpm2_response {
 		struct get_random_response random;
 		struct nv_read_public_response nv_read_public;
 		struct read_public_response read_pub;
+		struct create_primary_response create_primary;
 	};
 };
 

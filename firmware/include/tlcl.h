@@ -281,6 +281,15 @@ uint32_t TlclReadPublic(uint32_t handle, uint8_t *data, uint32_t *length);
 uint32_t TlclEvictControl(uint32_t auth_handle, uint32_t object_handle,
 			  uint32_t persistent_handle);
 
+/**
+ * Create a primary object under one of the primary seeds or a temporary object
+ * under TPM_RH_NULL. The command uses a TPMT_PUBLIC as a template[tmpl]] for
+ * the object to be created, and fills the result handle in [object_handle]. The
+ * TPM error code is returned.
+ */
+uint32_t TlclCreatePrimary(uint32_t primary_handle, const void *tmpl,
+			   uint32_t tmpl_length, uint32_t *object_handle);
+
 #ifdef CHROMEOS_ENVIRONMENT
 
 /**
