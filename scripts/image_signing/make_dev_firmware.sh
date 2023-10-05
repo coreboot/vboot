@@ -96,7 +96,7 @@ disable_write_protection() {
   echo "Disabling system software write protection status..."
   (flashrom_bios --wp-disable && flashrom_bios --wp-status) 2>&1 |
     tee "$EXEC_LOG" |
-    grep -q '^WP: .* is disabled\.$'
+    grep -q '^Protection mode: disabled$'
 }
 
 # Reads ${IMAGE_BIOS} from ${FLAGS_from} and ${IMAGE_EC} from ${FLAGS_ec_from}
