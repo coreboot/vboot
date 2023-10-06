@@ -18,6 +18,7 @@
 #include "host_key21.h"
 #include "host_misc.h"
 #include "openssl_compat.h"
+#include "util_misc.h"
 
 void vb2_private_key_free(struct vb2_private_key *key)
 {

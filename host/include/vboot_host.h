@@ -93,16 +93,6 @@ bool vb2_lookup_sig_alg(const char *str, enum vb2_signature_algorithm *sig_alg);
  */
 bool vb2_lookup_hash_alg(const char *str, enum vb2_hash_algorithm *hash_alg);
 
-/**
- * Get the signature algorithm with exponent |exp| and modulus size |bits|
- *
- * @param exp		Exponent of the signature algorithm
- * @param bits		Number of bits in the modulus of the signature algorithm
- * @return		The signature algorithm that matches the condition, VB2_SIG_INVALID
- * otherwise.
- */
-enum vb2_signature_algorithm vb2_get_sig_alg(uint32_t exp, uint32_t bits);
-
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

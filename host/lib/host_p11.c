@@ -14,6 +14,7 @@
 #include "2common.h"
 #include "host_p11.h"
 #include "vboot_host.h"
+#include "util_misc.h"
 
 // We only maintain one global p11 module at a time.
 static CK_FUNCTION_LIST_PTR p11 = NULL;
