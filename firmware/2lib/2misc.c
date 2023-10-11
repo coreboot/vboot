@@ -263,7 +263,7 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 
 	/*
 	 * Check if we've been asked by the caller to disable dev mode.  Note
-	 * that hardware switch and GBB flag will take precedence over this.
+	 * that GBB flag will take precedence over this.
 	 */
 	if (ctx->flags & VB2_CONTEXT_DISABLE_DEVELOPER_MODE)
 		flags &= ~VB2_SECDATA_FIRMWARE_FLAG_DEV_MODE;
@@ -311,8 +311,8 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		 * Note that we do this even if secdata_firmware is having
 		 * issues, since the TPM owner and secdata_firmware may be
 		 * independent, and we want the owner to be cleared if *this
-		 * boot* is different than the last one (perhaps due to GBB or
-		 * hardware override).
+		 * boot* is different than the last one (perhaps due to GBB flag
+		 * override).
 		 */
 		rv = vb2ex_tpm_clear_owner(ctx);
 		/* Check for failure to clear owner */
