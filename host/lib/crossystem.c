@@ -59,8 +59,8 @@ typedef enum VdatIntField {
 				       * signature, not just hash */
 	VDAT_INT_RECOVERY_REASON,     /* Recovery reason for current boot */
 	VDAT_INT_FW_BOOT2,            /* Firmware selection by vboot2 */
-	VDAT_INT_FW_VERSION_ACT,      /* Current acvite firmware version */
-	VDAT_INT_KERNEL_VERSION_ACT,  /* Current acvite kernel version */
+	VDAT_INT_FW_VERSION_ACT,      /* Current active firmware version */
+	VDAT_INT_KERNEL_VERSION_ACT,  /* Current active kernel version */
 } VdatIntField;
 
 
@@ -269,18 +269,18 @@ static int GetVdatLoadFirmwareDebug(char *dest, int size,
 				    const VbSharedDataHeader *sh)
 {
 	snprintf(dest, size,
-		"Check A result=%d\n"
-		"Check B result=%d\n"
-		"Firmware index booted=0x%02x\n"
-		"Active firmware version=0x%08x\n"
-		"Firmware version in TPM =0x%08x\n"
-		"Lowest combined version from firmware=0x%08x\n",
-		sh->check_fw_a_result,
-		sh->check_fw_b_result,
-		sh->firmware_index,
-		sh->fw_version_act,
-		sh->fw_version_tpm,
-		sh->fw_version_lowest);
+		 "Check A result=%d\n"
+		 "Check B result=%d\n"
+		 "Firmware index booted=0x%02x\n"
+		 "Active firmware version=0x%08x\n"
+		 "Firmware version in TPM =0x%08x\n"
+		 "Lowest combined version from firmware=0x%08x\n",
+		 sh->check_fw_a_result,
+		 sh->check_fw_b_result,
+		 sh->firmware_index,
+		 sh->fw_version_act,
+		 sh->fw_version_tpm,
+		 sh->fw_version_lowest);
 	return 0;
 }
 
@@ -353,6 +353,9 @@ static int GetVdatInt(VdatIntField field)
 		case VDAT_INT_FW_BOOT2:
 			value = (sh->flags & VBSD_BOOT_FIRMWARE_VBOOT2 ? 1 : 0);
 			VBOOT_FALLTHROUGH;
+		case VDAT_INT_FW_VERSION_ACT:
+			value = (int)sh->fw_version_act;
+			break;
 		default:
 			break;
 	}
@@ -374,9 +377,6 @@ static int GetVdatInt(VdatIntField field)
 				break;
 			case VDAT_INT_RECOVERY_REASON:
 				value = sh->recovery_reason;
-				break;
-			case VDAT_INT_FW_VERSION_ACT:
-				value = (int)sh->fw_version_act;
 				break;
 			default:
 				break;

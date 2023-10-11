@@ -123,7 +123,10 @@ typedef struct VbSharedDataHeader {
 	uint8_t reserved4[7];
 	/* Flags from firmware keyblock */
 	uint64_t fw_keyblock_flags;
-	/* The active kernel version */
+	/*
+	 * The active kernel version
+	 * this field only available in struct_version >= 3
+	 */
 	uint32_t kernel_version_act;
 	/* Kernel lowest version found */
 	uint32_t kernel_version_lowest;
