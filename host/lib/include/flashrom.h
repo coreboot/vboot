@@ -10,7 +10,7 @@
 #include "2return_codes.h"
 #include "fmap.h"
 
-#define FLASHROM_PROGRAMMER_INTERNAL_AP "host"
+#define FLASHROM_PROGRAMMER_INTERNAL_AP "internal"
 #define FLASHROM_PROGRAMMER_INTERNAL_EC "ec"
 
 /* Utilities for firmware images and (FMAP) sections */
