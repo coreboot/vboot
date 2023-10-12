@@ -322,6 +322,23 @@ static int GetVdatString(char *dest, int size, VdatStringField field)
 	return value;
 }
 
+static int FwidMajorVersion(void)
+{
+	char fwid[VB_MAX_STRING_PROPERTY];
+	int version;
+
+	if (VbGetSystemPropertyString("fwid", fwid, sizeof(fwid)) != 0)
+		return -1;
+
+	if (sscanf(fwid, "%*[^.].%d", &version) != 1 || version <= 0) {
+		fprintf(stderr, "WARNING: Cannot parse major version from %s\n",
+			fwid);
+		return -1;
+	}
+
+	return version;
+}
+
 static int GetVdatInt(VdatIntField field)
 {
 	VbSharedDataHeader* sh = VbSharedDataRead();
@@ -345,7 +362,12 @@ static int GetVdatInt(VdatIntField field)
 			value = (sh->flags & VBSD_KERNEL_KEY_VERIFIED ? 1 : 0);
 			break;
 		case VDAT_INT_FW_VERSION_TPM:
-			value = (int)sh->fw_version_tpm;
+			/* b/269204332#comment5: Before CL:2054270 and CL:2056343,
+			   fw_version_tpm was always 0. */
+			if (sh->struct_version <= 2 && FwidMajorVersion() < 12935)
+				value = (int)sh->fw_version_act;
+			else
+				value = (int)sh->fw_version_tpm;
 			break;
 		case VDAT_INT_KERNEL_VERSION_TPM:
 			value = (int)sh->kernel_version_tpm;
