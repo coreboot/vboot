@@ -416,8 +416,16 @@ FWLIB_ASMS += \
 	firmware/2lib/sha256_armv8a_ce_a64.S
 endif
 
+ifneq ($(filter-out 0,${VB2_X86_RSA_ACCELERATION}),)
+CFLAGS += -DVB2_X86_RSA_ACCELERATION
+FWLIB_SRCS += \
+	firmware/2lib/2modpow_sse2.c
+endif
+
 # Even if X86_SHA_EXT is 0 we need cflags since this will be compiled for tests
 ${BUILD}/firmware/2lib/2sha256_x86.o: CFLAGS += -mssse3 -mno-avx -msha
+
+${BUILD}/firmware/2lib/2modpow_sse2.o: CFLAGS += -msse2 -mno-avx
 
 ifeq (${FIRMWARE_ARCH},)
 # Include BIOS stubs in the firmware library when compiling for host
