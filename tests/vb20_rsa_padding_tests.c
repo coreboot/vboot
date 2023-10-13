@@ -16,8 +16,8 @@
 
 vb2_error_t hwcrypto_modexp_return_value = VB2_SUCCESS;
 vb2_error_t vb2ex_hwcrypto_modexp(const struct vb2_public_key *key,
-				  uint8_t *inout,
-				  uint32_t *workbuf32, int exp) {
+				  uint8_t *inout, void *workbuf,
+				  size_t workbuf_size, int exp) {
 	return hwcrypto_modexp_return_value;
 }
 

@@ -129,14 +129,14 @@ static void montMul1(const struct vb2_public_key *key,
  *
  * @param key		Key to use in signing
  * @param inout		Input and output big-endian byte array
- * @param workbuf32	Work buffer; caller must verify this is
+ * @param workbuf	Work buffer; caller must verify this is
  *			(3 * key->arrsize) elements long.
  * @param exp		RSA public exponent: either 65537 (F4) or 3
  */
 static void modpow(const struct vb2_public_key *key, uint8_t *inout,
-		uint32_t *workbuf32, int exp)
+		void *workbuf, int exp)
 {
-	uint32_t *a = workbuf32;
+	uint32_t *a = workbuf;
 	uint32_t *aR = a + key->arrsize;
 	uint32_t *aaR = aR + key->arrsize;
 	uint32_t *aaa = aaR;  /* Re-use location. */
@@ -337,10 +337,11 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 				  const struct vb2_workbuf *wb)
 {
 	struct vb2_workbuf wblocal = *wb;
-	uint32_t *workbuf32;
+	void *workbuf;
 	uint32_t key_bytes;
 	int sig_size;
 	int pad_size;
+	size_t workbuf_size;
 	int exp;
 	vb2_error_t rv = VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
 
@@ -361,14 +362,16 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 		return VB2_ERROR_RSA_VERIFY_SIG_LEN;
 	}
 
-	workbuf32 = vb2_workbuf_alloc(&wblocal, 3 * key_bytes);
-	if (!workbuf32) {
-		VB2_DEBUG("ERROR - vboot2 work buffer too small!\n");
+	workbuf_size = VB2_MAX(3 * key_bytes, vb2_wb_round_down(wblocal.size));
+	workbuf = vb2_workbuf_alloc(&wblocal, workbuf_size);
+	if (!workbuf) {
+		VB2_DEBUG("ERROR - vboot2 %zd bytes work buffer allocation failed!\n",
+			  workbuf_size);
 		return VB2_ERROR_RSA_VERIFY_WORKBUF;
 	}
 
 	if (key->allow_hwcrypto) {
-		rv = vb2ex_hwcrypto_modexp(key, sig, workbuf32, exp);
+		rv = vb2ex_hwcrypto_modexp(key, sig, workbuf, workbuf_size, exp);
 
 		if (rv == VB2_SUCCESS)
 			VB2_DEBUG("Using HW modexp engine for sig_alg %d\n",
@@ -381,10 +384,10 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 	}
 
 	if (rv != VB2_SUCCESS) {
-		modpow(key, sig, workbuf32, exp);
+		modpow(key, sig, workbuf, exp);
 	}
 
-	vb2_workbuf_free(&wblocal, 3 * key_bytes);
+	vb2_workbuf_free(&wblocal, workbuf_size);
 
 	/*
 	 * Check padding.  Only fail immediately if the padding size is bad.

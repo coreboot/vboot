@@ -98,6 +98,17 @@ struct vb2_public_key;
 #endif
 
 /**
+ * Round down a number to a multiple of VB2_WORKBUF_ALIGN
+ *
+ * @param v		Number to round down
+ * @return The number, rounded down.
+ */
+static inline uint32_t vb2_wb_round_down(uint32_t v)
+{
+	return v & ~(VB2_WORKBUF_ALIGN - 1);
+}
+
+/**
  * Round up a number to a multiple of VB2_WORKBUF_ALIGN
  *
  * @param v		Number to round up
