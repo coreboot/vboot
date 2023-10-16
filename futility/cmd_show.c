@@ -401,11 +401,16 @@ int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 				    &data_key, &wb) != VB2_SUCCESS) {
 			ERROR("Verifying firmware body.\n");
 			FT_PARSEABLE_PRINT("body::signature::invalid\n");
-			return 1;
+			return show_option.strict ? 1 : 0;
 		}
-	} else if (state) { /* Only works for images with at least FW_MAIN_A */
+	} else if (state) { /* Only works if `fname` is a BIOS image */
 		if (fw_show_metadata_hash(fname, body_c, pre2))
-			return 1;
+			return show_option.strict ? 1 : 0;
+	} else {
+		WARN("Metadata hash verification not supported.\n");
+		FT_PARSEABLE_PRINT("body::metadata_hash::ignored\n");
+		FT_PARSEABLE_PRINT("body::signature::ignored\n");
+		return show_option.strict ? 1 : 0;
 	}
 
 done:
