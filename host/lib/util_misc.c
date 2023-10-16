@@ -18,6 +18,7 @@
 #include "2sysincludes.h"
 #include "host_common.h"
 #include "host_key21.h"
+#include "host_p11.h"
 #include "openssl_compat.h"
 #include "util_misc.h"
 
@@ -61,25 +62,22 @@ const char *private_key_sha1_string(const struct vb2_private_key *key)
 	return dest;
 }
 
-int vb_keyb_from_rsa(struct rsa_st *rsa_private_key,
-		     uint8_t **keyb_data, uint32_t *keyb_size)
+static int vb_keyb_from_modulus(const BIGNUM *rsa_private_key_n, uint32_t modulus_size,
+				uint8_t **keyb_data, uint32_t *keyb_size)
 {
-	uint32_t i, nwords;
+	uint32_t i;
+	uint32_t nwords = modulus_size / 4;
 	BIGNUM *N = NULL;
 	BIGNUM *Big1 = NULL, *Big2 = NULL, *Big32 = NULL, *BigMinus1 = NULL;
 	BIGNUM *B = NULL;
 	BIGNUM *N0inv = NULL, *R = NULL, *RR = NULL;
 	BIGNUM *RRTemp = NULL, *NnumBits = NULL;
 	BIGNUM *n = NULL, *rr = NULL;
-	const BIGNUM *rsa_private_key_n;
 	BN_CTX *bn_ctx = BN_CTX_new();
 	uint32_t n0invout;
 	uint32_t bufsize;
 	uint32_t *outbuf;
 	int retval = 1;
-
-	/* Size of RSA key in 32-bit words */
-	nwords = RSA_size(rsa_private_key) / 4;
 
 	bufsize = (2 + nwords + nwords) * sizeof(uint32_t);
 	outbuf = malloc(bufsize);
@@ -108,7 +106,6 @@ int vb_keyb_from_rsa(struct rsa_st *rsa_private_key,
 	NEW_BIGNUM(B);
 #undef NEW_BIGNUM
 
-	RSA_get0_key(rsa_private_key, &rsa_private_key_n, NULL, NULL);
 	BN_copy(N, rsa_private_key_n);
 	BN_set_word(Big1, 1L);
 	BN_set_word(Big2, 2L);
@@ -174,6 +171,53 @@ done:
 	BN_free(rr);
 
 	return retval;
+}
+
+static int vb_keyb_from_p11_key(struct pkcs11_key *p11_key, uint8_t **keyb_data,
+				uint32_t *keyb_size)
+{
+	int ret = 1;
+	uint32_t modulus_size = 0;
+	BIGNUM *N = NULL;
+	uint8_t *modulus = pkcs11_get_modulus(p11_key, &modulus_size);
+	if (!modulus) {
+		fprintf(stderr, "Failed to get modulus from PKCS#11 key\n");
+		goto done;
+	}
+
+	N = BN_bin2bn(modulus, modulus_size, NULL);
+	if (!N) {
+		fprintf(stderr, "Failed to call BN_bin2bn()\n");
+		goto done;
+	}
+	ret = vb_keyb_from_modulus(N, modulus_size, keyb_data, keyb_size);
+done:
+	BN_free(N);
+	free(modulus);
+	return ret;
+}
+
+int vb_keyb_from_rsa(struct rsa_st *rsa_private_key, uint8_t **keyb_data, uint32_t *keyb_size)
+{
+	const BIGNUM *N;
+	RSA_get0_key(rsa_private_key, &N, NULL, NULL);
+	if (!N) {
+		fprintf(stderr, "Failed to get N from RSA private key\n");
+		return 1;
+	}
+	return vb_keyb_from_modulus(N, RSA_size(rsa_private_key), keyb_data, keyb_size);
+}
+
+int vb_keyb_from_private_key(struct vb2_private_key *private_key, uint8_t **keyb_data,
+			     uint32_t *keyb_size)
+{
+	switch (private_key->key_location) {
+	case PRIVATE_KEY_P11:
+		return vb_keyb_from_p11_key(private_key->p11_key, keyb_data, keyb_size);
+	case PRIVATE_KEY_LOCAL:
+		return vb_keyb_from_rsa(private_key->rsa_private_key, keyb_data, keyb_size);
+	}
+	return 1;
 }
 
 enum vb2_signature_algorithm vb2_get_sig_alg(uint32_t exp, uint32_t bits)

@@ -351,8 +351,7 @@ int ft_sign_rwsig(const char *fname)
 		}
 
 		/* Extract the keyb blob */
-		if (vb_keyb_from_rsa(sign_option.prikey->rsa_private_key,
-				     &keyb_data, &keyb_size)) {
+		if (vb_keyb_from_private_key(sign_option.prikey, &keyb_data, &keyb_size)) {
 			ERROR("Couldn't extract the public key\n");
 			goto done;
 		}

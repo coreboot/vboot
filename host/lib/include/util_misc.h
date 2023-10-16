@@ -14,6 +14,7 @@
 struct rsa_st;
 struct vb2_packed_key;
 struct vb2_private_key;
+struct pkcs11_key;
 
 /**
  * Returns the SHA1 digest of the packed key data as a string.
@@ -64,6 +65,20 @@ const char *private_key_sha1_string(const struct vb2_private_key *key);
  */
 int vb_keyb_from_rsa(struct rsa_st *rsa_private_key,
 		     uint8_t **keyb_data, uint32_t *keyb_size);
+
+/*
+ * This function would call vb2_keyb_from_rsa if key_location of the priavte_key is
+ * PRIVATE_KEY_LOCAL. Otherwise, it would get the modulus from pkcs11 and generate the
+ * vb_keyb content.
+ *
+ * @param private_key	      private key (struct vb2_private_key)
+ * @param keyb_data	      Pointer to newly allocated binary blob
+ * @param keyb_size	      Size of newly allocated binary blob
+ *
+ * @return 0 on success, non-zero if it failed.
+ */
+int vb_keyb_from_private_key(struct vb2_private_key *private_key, uint8_t **keyb_data,
+			     uint32_t *keyb_size);
 
 /**
  * Get the signature algorithm with exponent |exp| and modulus size |bits|

@@ -164,8 +164,7 @@ int ft_sign_usbpd1(const char *fname)
 	}
 
 	/* Otherwise, now update the public key */
-	if (vb_keyb_from_rsa(key_ptr->rsa_private_key,
-			     &keyb_data, &keyb_size)) {
+	if (vb_keyb_from_private_key(key_ptr, &keyb_data, &keyb_size)) {
 		ERROR("Could not extract the public key\n");
 		goto done;
 	}

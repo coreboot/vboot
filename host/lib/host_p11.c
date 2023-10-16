@@ -218,6 +218,30 @@ enum vb2_signature_algorithm pkcs11_get_sig_alg(struct pkcs11_key *p11_key)
 	return vb2_get_sig_alg(exp, modulus_bits);
 }
 
+uint8_t *pkcs11_get_modulus(struct pkcs11_key *p11_key, uint32_t *sizeptr)
+{
+	if (!p11) {
+		fprintf(stderr, "pkcs11 is not loaded\n");
+		return NULL;
+	}
+	CK_ATTRIBUTE modulus_attr = {CKA_MODULUS, NULL, 0};
+	if (p11->C_GetAttributeValue(p11_key->session, p11_key->handle, &modulus_attr, 1) !=
+	    CKR_OK) {
+		fprintf(stderr, "Failed to get modulus attribute length\n");
+		return NULL;
+	}
+	CK_ULONG modulus_size = modulus_attr.ulValueLen;
+	modulus_attr.pValue = malloc(modulus_size);
+	if (p11->C_GetAttributeValue(p11_key->session, p11_key->handle, &modulus_attr, 1) !=
+	    CKR_OK) {
+		fprintf(stderr, "Failed to get modulus attribute value\n");
+		free(modulus_attr.pValue);
+		return NULL;
+	}
+	*sizeptr = modulus_size;
+	return modulus_attr.pValue;
+}
+
 vb2_error_t pkcs11_sign(struct pkcs11_key *p11_key, enum vb2_hash_algorithm hash_alg,
 			const uint8_t *data, int data_size, uint8_t *sig, CK_ULONG sig_size)
 {
