@@ -352,7 +352,7 @@ static int GetVdatInt(VdatIntField field)
 			break;
 		case VDAT_INT_FW_BOOT2:
 			value = (sh->flags & VBSD_BOOT_FIRMWARE_VBOOT2 ? 1 : 0);
-			VBOOT_FALLTHROUGH;
+			break;
 		case VDAT_INT_FW_VERSION_ACT:
 			value = (int)sh->fw_version_act;
 			break;
