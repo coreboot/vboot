@@ -588,6 +588,15 @@ static bool is_ap_ro_locked_with_verification(struct updater_config *cfg)
 	return is_flash_descriptor_locked(current);
 }
 
+/* Returns true if the UNLOCK_CSME_* quirks were requested, otherwise false. */
+static bool is_unlock_csme_requested(struct updater_config *cfg)
+{
+	if (get_config_quirk(QUIRK_UNLOCK_CSME_NISSA, cfg) ||
+	    get_config_quirk(QUIRK_UNLOCK_CSME_EVE, cfg))
+		return true;
+	return false;
+}
+
 /*
  * Checks if the given firmware images are compatible with current platform.
  * In current implementation (following Chrome OS style), we assume the platform
@@ -922,6 +931,7 @@ const char * const updater_error_messages[] = {
 	[UPDATE_ERR_ROOT_KEY] = "RW signed by incompatible root key "
 			        "(different from RO).",
 	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
+	[UPDATE_ERR_UNLOCK_CSME] = "The CSME was already locked (b/284913015).",
 	[UPDATE_ERR_UNKNOWN] = "Unknown error.",
 };
 
@@ -1230,6 +1240,8 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 
 	if (!done) {
 		if (!wp_enabled && is_ap_ro_locked_with_verification(cfg)) {
+			if (is_unlock_csme_requested(cfg))
+				return UPDATE_ERR_UNLOCK_CSME;
 			WARN("The AP RO is locked with verification turned on so we can't do "
 			     "full update (b/284913015). Fall back to RW-only update.\n");
 			wp_enabled = 1;
