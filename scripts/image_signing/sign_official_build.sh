@@ -17,6 +17,7 @@
 
 # Load common constants and variables.
 . "$(dirname "$0")/common.sh"
+. "$(dirname "$0")/lib/keycfg.sh"
 
 # Abort on errors.
 set -e
@@ -78,27 +79,6 @@ check_argc() {
   *)
     die "check_argc: incorrect number of arguments"
   esac
-}
-
-# Setup the default key configuration by using the local key in `key_dir`.
-setup_default_keycfg() {
-  local key_dir=$1
-  KEYCFG_KERNEL_KEYBLOCK="${key_dir}/kernel.keyblock"
-  KEYCFG_KERNEL_VBPRIVK="${key_dir}/kernel_data_key.vbprivk"
-  KEYCFG_MINIOS_KERNEL_KEYBLOCK="${key_dir}/minios_kernel.keyblock"
-  KEYCFG_MINIOS_KERNEL_V1_KEYBLOCK="${key_dir}/minios_kernel.v1.keyblock"
-  KEYCFG_MINIOS_KERNEL_VBPRIVK="${key_dir}/minios_kernel_data_key.vbprivk"
-  KEYCFG_RECOVERY_KERNEL_KEYBLOCK="${key_dir}/recovery_kernel.keyblock"
-  KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK="${key_dir}/recovery_kernel.v1.keyblock"
-  KEYCFG_RECOVERY_KERNEL_VBPRIVK="${key_dir}/recovery_kernel_data_key.vbprivk"
-  KEYCFG_INSTALLER_KERNEL_KEYBLOCK="${key_dir}/installer_kernel.keyblock"
-  KEYCFG_INSTALLER_KERNEL_V1_KEYBLOCK="${key_dir}/installer_kernel.v1.keyblock"
-  KEYCFG_INSTALLER_KERNEL_VBPRIVK="${key_dir}/installer_kernel_data_key.vbprivk"
-  KEYCFG_ARV_PLATFORM_KEYBLOCK="${key_dir}/arv_platform.keyblock"
-  KEYCFG_ARV_PLATFORM_VBPRIVK="${key_dir}/arv_platform.vbprivk"
-  KEYCFG_UEFI_PRIVATE_KEY="${KEY_DIR}/uefi/db/db.children/db_child.rsa"
-  KEYCFG_UEFI_SIGN_CERT="${KEY_DIR}/uefi/db/db.children/db_child.pem"
-  KEYCFG_UEFI_VERIFY_CERT="${KEY_DIR}/uefi/db/db.pem"
 }
 
 # Run futility as root with some preserved environment variables.
@@ -1330,10 +1310,7 @@ main() {
   OUTPUT_IMAGE=$4
   VERSION_FILE=$5
 
-  setup_default_keycfg "${KEY_DIR}"
-  if [ -f "${KEY_DIR}/key_config.sh" ]; then
-    . "${KEY_DIR}/key_config.sh"
-  fi
+  setup_keycfg "${KEY_DIR}"
 
   # Verification
   case ${TYPE} in
