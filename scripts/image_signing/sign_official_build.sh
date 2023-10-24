@@ -46,6 +46,7 @@ output_image: File name of the signed output image
 version_file: File name of where to read the kernel and firmware versions.
 --cloud-signing: Instead of relying on a local key directory, retrieve keys
   from Cloud KMS.
+--debug: Show more information for debugging purpose.
 
 If you are signing an image, you must specify an [output_image] and
 optionally, a [version_file].
@@ -99,7 +100,11 @@ setup_default_keycfg() {
 
 # Run futility as root with some preserved environment variables.
 sudo_futility() {
-  sudo "KMS_PKCS11_CONFIG=${KMS_PKCS11_CONFIG}" "${FUTILITY}" "$@"
+  sudo "KMS_PKCS11_CONFIG=${KMS_PKCS11_CONFIG}" "${FUTILITY}" ${FUTILITY_EXTRA_FLAGS} "$@"
+}
+
+do_futility() {
+  "${FUTILITY}" ${FUTILITY_EXTRA_FLAGS} "$@"
 }
 
 # TODO(gauravsh): These are duplicated from chromeos-setimage. We need
@@ -237,7 +242,7 @@ update_rootfs_hash() {
 
   # If we can't find dm parameters in the kernel config, bail out now.
   local kernel_config
-  kernel_config=$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}")
+  kernel_config=$(sudo_futility dump_kernel_config "${loop_kern}")
   local dm_config
   dm_config=$(get_dmparams_from_config "${kernel_config}")
   if [ -z "${dm_config}" ]; then
@@ -293,7 +298,7 @@ update_rootfs_hash() {
   for kernelpart in 2 4 6; do
     loop_kern="${loopdev}p${kernelpart}"
     if ! new_kernel_config="$(
-         sudo "${FUTILITY}" dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
+         sudo_futility dump_kernel_config "${loop_kern}" 2>/dev/null)" &&
        [[ "${kernelpart}" == 4 ]]; then
       # Legacy images don't have partition 4.
       info "Skipping empty kernel partition 4 (legacy images)."
@@ -343,7 +348,7 @@ update_stateful_partition_vblock() {
   temp_out_vb="$(make_temp_file)"
 
   local loop_kern="${loopdev}p4"
-  if [[ -z "$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}" \
+  if [[ -z "$(sudo_futility dump_kernel_config "${loop_kern}" \
         2>/dev/null)" ]]; then
     info "Building vmlinuz_hd.vblock from legacy image partition 2."
     loop_kern="${loopdev}p2"
@@ -447,7 +452,7 @@ sign_update_payload() {
     [8192]=10
   )
 
-  key_output=$(${FUTILITY} show "${key_file}")
+  key_output=$(do_futility show "${key_file}")
   key_size=$(echo "${key_output}" | sed -n '/Key length/s/[^0-9]*//p')
   algo=${algos[${key_size}]}
   if [[ -z ${algo} ]]; then
@@ -576,7 +581,7 @@ resign_firmware_payload() {
             # futility writes byproduct files to CWD, so we cd to temp dir.
             pushd "$(make_temp_dir)" > /dev/null
             full_command=(
-              "${FUTILITY}" sign
+              do_futility sign
               --type rwsig
               --prikey "${KEY_DIR}/key_ec_efs.vbprik2"
               --ecrw_out "${rw_bin}"
@@ -601,7 +606,7 @@ resign_firmware_payload() {
 
         # Resign bios.bin.
         full_command=(
-          "${FUTILITY}" sign
+          do_futility sign
           --signprivate "${signprivate}"
           --keyblock "${keyblock}"
           --kernelkey "${KEY_DIR}/kernel_subkey.vbpubk"
@@ -619,7 +624,7 @@ resign_firmware_payload() {
         # For development phases, when the GBB can be updated still, set the
         # recovery and root keys in the image.
         full_command=(
-          "${FUTILITY}" gbb
+          do_futility gbb
           -s
           --recoverykey="${KEY_DIR}/recovery_key.vbpubk"
           --rootkey="${rootkey}" "${temp_fw}"
@@ -651,7 +656,7 @@ resign_firmware_payload() {
 
           # Resign the RO_GSCVD FMAP area.
           full_command=(
-            "${FUTILITY}" gscvd
+            do_futility gscvd
             --keyblock "${KEYCFG_ARV_PLATFORM_KEYBLOCK}"
             --platform_priv "${KEYCFG_ARV_PLATFORM_VBPRIVK}"
             --board_id "${brand_code}"
@@ -697,7 +702,7 @@ resign_firmware_payload() {
   echo "Signed with keyset in $(readlink -f "${KEY_DIR}") ." >>"${signer_notes}"
   # record recovery_key
   key="${KEY_DIR}/recovery_key.vbpubk"
-  sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+  sha1=$(do_futility vbutil_key --unpack "${key}" \
     | grep sha1sum | cut -d" " -f9)
   echo "recovery: ${sha1}" >>"${signer_notes}"
   # record root_key(s)
@@ -705,14 +710,14 @@ resign_firmware_payload() {
     echo "List sha1sum of all loem/model's signatures:" >>"${signer_notes}"
     for key in "${shellball_keyset_dir}"/rootkey.*; do
       model="${key##*.}"
-      sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+      sha1=$(do_futility vbutil_key --unpack "${key}" \
         | grep sha1sum | cut -d" " -f9)
       echo "  ${model}: ${sha1}" >>"${signer_notes}"
     done
   else
     echo "List sha1sum of single key's signature:" >>"${signer_notes}"
     key="${KEY_DIR}/root_key.vbpubk"
-    sha1=$(${FUTILITY} vbutil_key --unpack "${key}" \
+    sha1=$(do_futility vbutil_key --unpack "${key}" \
       | grep sha1sum | cut -d" " -f9)
     echo "  root: ${sha1}" >>"${signer_notes}"
   fi
@@ -903,7 +908,7 @@ verify_image() {
   local partnum
   for partnum in 2 4; do
     info "Considering Kernel partition ${partnum}"
-    kernel_config=$(sudo "${FUTILITY}" dump_kernel_config \
+    kernel_config=$(sudo_futility dump_kernel_config \
       "${loopdev}p${partnum}")
     local hash_image
     hash_image=$(make_temp_file)
@@ -978,7 +983,7 @@ update_recovery_kernel_hash() {
 
   # Update the kernel B hash in the recovery kernel command line.
   local old_kernel_config
-  old_kernel_config="$(sudo "${FUTILITY}" \
+  old_kernel_config="$(sudo_futility \
     dump_kernel_config "${loop_recovery_kernel}")"
   local old_kernb_hash
   old_kernb_hash="$(echo "${old_kernel_config}" |
@@ -1038,7 +1043,7 @@ resign_minios_kernels() {
     # Skip miniOS partitions which are empty. This happens when miniOS
     # kernels aren't written to the partitions because the feature is not
     # enabled.
-    if ! sudo "${FUTILITY}" dump_kernel_config "${loop_minios}"; then
+    if ! sudo_futility dump_kernel_config "${loop_minios}"; then
       info "Skipping empty miniOS partition ${loop_minios}."
       continue
     fi
@@ -1087,7 +1092,7 @@ update_legacy_bootloader() {
 
   # If we can't find the dm parameter in the kernel config, bail out now.
   local kernel_config
-  kernel_config=$(sudo "${FUTILITY}" dump_kernel_config "${loop_kern}")
+  kernel_config=$(sudo_futility dump_kernel_config "${loop_kern}")
   local root_hexdigest
   root_hexdigest="$(get_hash_from_config "${kernel_config}")"
   if [[ -z "${root_hexdigest}" ]]; then
@@ -1209,7 +1214,7 @@ sign_image_file() {
   # config.
   local loop_kerna="${loopdev}p2"
   local kerna_config
-  kerna_config="$(sudo "${FUTILITY}" dump_kernel_config "${loop_kerna}")"
+  kerna_config="$(sudo_futility dump_kernel_config "${loop_kerna}")"
   if [[ "${image_type}" != "factory_install" &&
         " ${kerna_config} " != *" cros_legacy "* &&
         " ${kerna_config} " != *" cros_efi "* ]]; then
@@ -1268,8 +1273,12 @@ main() {
   # Parse arguments with positional and optional options.
   local script_args=()
   CLOUD_SIGNING=false
+  FUTILITY_EXTRA_FLAGS=""
   while [[ "$#" -gt 0 ]]; do
     case $1 in
+      --debug)
+        FUTILITY_EXTRA_FLAGS+="--debug "
+        ;;
       --cloud-signing)
         CLOUD_SIGNING=true
         ;;
@@ -1313,7 +1322,7 @@ main() {
     loopdev=$(loopback_partscan "${INPUT_IMAGE}")
     for partnum in 2 4; do
       info "kernel config in partition number ${partnum}:"
-      sudo "${FUTILITY}" dump_kernel_config "${loopdev}p${partnum}"
+      sudo_futility dump_kernel_config "${loopdev}p${partnum}"
       echo
     done
     exit 0
@@ -1391,7 +1400,7 @@ main() {
       KEY_NAME="${KEY_DIR}/key"
     fi
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-    ${FUTILITY} sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
+    do_futility sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
     # If one key is present in this container, assume it's the right one.
     # See crbug.com/863464
@@ -1404,7 +1413,7 @@ main() {
       fi
     fi
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-    ${FUTILITY} sign --type rwsig --prikey "${KEY_NAME}" \
+    do_futility sign --type rwsig --prikey "${KEY_NAME}" \
              --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "gsc_firmware" ]]; then
     sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
