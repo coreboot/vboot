@@ -19,7 +19,9 @@
  * they are only allocatable (a) but not writeable (w).
  */
 
+#ifndef CHROMEOS_ENVIRONMENT
 __attribute__((section(".rodata.vb2_sig_names,\"a\"\n# ")))
+#endif
 const char *vb2_sig_names[VB2_SIG_ALG_COUNT] = {
 	[VB2_SIG_NONE]		= "none",
 	[VB2_SIG_RSA1024]	= "RSA1024",
@@ -30,7 +32,9 @@ const char *vb2_sig_names[VB2_SIG_ALG_COUNT] = {
 	[VB2_SIG_RSA3072_EXP3]	= "RSA3072EXP3",
 };
 
+#ifndef CHROMEOS_ENVIRONMENT
 __attribute__((section(".rodata.vb2_hash_names,\"a\"\n# ")))
+#endif
 const char *vb2_hash_names[VB2_HASH_ALG_COUNT] = {
 	[VB2_HASH_NONE]		= "none",
 #if VB2_SUPPORT_SHA1
