@@ -68,6 +68,12 @@ TEST_CASES=(
   # [type] kernel
   "kernel tests/futility/data/kernel_part.bin 1"
   "parseable.kernel tests/futility/data/kernel_part.bin 1 -P"
+  "kernel-pubkey tests/futility/data/kernel_part.bin 0 \
+    -k tests/futility/data/fw_dev_vblock.bin"
+  "kernel-pubkey tests/futility/data/kernel_part.bin 0 \
+    --type kernel -k tests/futility/data/fw_dev_vblock.bin"
+  "kernel-pubkey-wrong tests/futility/data/kernel_part.bin 1 \
+    --type kernel -k tests/futility/data/fw_vblock.bin"
   "rec_kernel tests/futility/data/rec_kernel_part.bin 1"
   "rec_kernel-pubkey tests/futility/data/rec_kernel_part.bin 0 \
     -k tests/devkeys/recovery_key.vbpubk"

@@ -668,6 +668,48 @@ static int show_type(char *filename)
 	return 1;
 }
 
+static int load_publickey(const char *fname, uint8_t **buf_ptr,
+			  struct vb2_public_key *pubkey)
+{
+	uint32_t len = 0;
+	if (vb2_read_file(fname, buf_ptr, &len) != VB2_SUCCESS) {
+		ERROR("Reading publickey %s\n", fname);
+		return 1;
+	}
+
+	struct vb2_keyblock *keyblock;
+	uint8_t *buf = *buf_ptr;
+	enum futil_file_type type = futil_file_type_buf(buf, len);
+	switch (type) {
+	case FILE_TYPE_FW_PREAMBLE:
+		keyblock = (struct vb2_keyblock *)buf;
+		if (vb2_check_keyblock(keyblock, len, &keyblock->keyblock_hash)
+		    != VB2_SUCCESS) {
+			ERROR("Checking publickey keyblock\n");
+			return 1;
+		}
+		struct vb2_fw_preamble *pre =
+			(struct vb2_fw_preamble *)(buf + keyblock->keyblock_size);
+		if (vb2_unpack_key(pubkey, &pre->kernel_subkey) != VB2_SUCCESS) {
+			ERROR("Unpacking publickey from preamble %s\n", fname);
+			return 1;
+		}
+		break;
+	case FILE_TYPE_PUBKEY:
+		if (vb2_unpack_key_buffer(pubkey, buf, len) != VB2_SUCCESS) {
+			ERROR("Unpacking publickey %s\n", fname);
+			return 1;
+		}
+		break;
+	default:
+		ERROR("Unsupported file type '%s' for publickey %s\n",
+		      futil_file_type_name(type), fname);
+		return 1;
+	}
+
+	return 0;
+}
+
 static int do_show(int argc, char *argv[])
 {
 	uint8_t *pubkbuf = NULL;
@@ -675,7 +717,6 @@ static int do_show(int argc, char *argv[])
 	char *infile = 0;
 	int i;
 	int errorcnt = 0;
-	uint32_t len;
 	char *e = 0;
 	int type_override = 0;
 	enum futil_file_type type;
@@ -695,20 +736,11 @@ static int do_show(int argc, char *argv[])
 			}
 			break;
 		case 'k':
-			if (VB2_SUCCESS !=
-			    vb2_read_file(optarg, &pubkbuf, &len)) {
-				ERROR("Reading %s\n", optarg);
+			if (load_publickey(optarg, &pubkbuf, &pubk2)) {
+				ERROR("Loading publickey %s\n", optarg);
 				errorcnt++;
 				break;
 			}
-
-			if (VB2_SUCCESS !=
-			    vb2_unpack_key_buffer(&pubk2, pubkbuf, len)) {
-				ERROR("Unpacking %s\n", optarg);
-				errorcnt++;
-				break;
-			}
-
 			show_option.k = &pubk2;
 			break;
 		case 't':
