@@ -439,12 +439,16 @@ chmod +x "${A}/bin/vpd"
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
 echo "TEST: Manifest (--manifest, bios.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
-cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_bios.manifest.json"
+cmp \
+  <(jq -S <"${TMP}.json.out") \
+  <(jq -S <"${SCRIPT_DIR}/futility/link_bios.manifest.json")
 
 mv -f "${A}/bios.bin" "${A}/image.bin"
 echo "TEST: Manifest (--manifest, image.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
-cmp "${TMP}.json.out" "${SCRIPT_DIR}/futility/link_image.manifest.json"
+cmp \
+  <(jq -S <"${TMP}.json.out") \
+  <(jq -S <"${SCRIPT_DIR}/futility/link_image.manifest.json")
 
 
 cp -f "${TO_IMAGE}" "${A}/image.bin"

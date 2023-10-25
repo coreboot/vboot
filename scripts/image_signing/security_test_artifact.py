@@ -11,7 +11,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+
 DIR = Path(__file__).resolve().parent
+
 
 def exec_test(name, input, args):
     """Runs a given script
