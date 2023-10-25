@@ -783,10 +783,13 @@ vb2_error_t vb2api_gbb_read_hwid(struct vb2_context *ctx, char *hwid,
 vb2_gbb_flags_t vb2api_gbb_get_flags(struct vb2_context *ctx);
 
 /**
- * Get the size of the signed firmware body. This is only legal to call after
- * vb2api_fw_phase3() has returned successfully, and will return 0 otherwise.
- * It will also return 0 when body signature contains metadata hash instead
- * of body hash.
+ * Get the size of the signed firmware body.
+ *
+ * This is only legal to call after vb2api_fw_phase3() has returned
+ * successfully, and will die otherwise. This should never be called when
+ * running from a coreboot image that has CONFIG_VBOOT_CBFS_INTEGRATION=y set,
+ * or it will also die (with data size in signature being 0). In that case,
+ * vb2api_get_metadata_hash() should be used instead.
  *
  * @param ctx		Vboot context
  *
