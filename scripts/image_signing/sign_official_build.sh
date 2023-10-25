@@ -572,7 +572,7 @@ resign_firmware_payload() {
             full_command=(
               do_futility sign
               --type rwsig
-              --prikey "${KEY_DIR}/key_ec_efs.vbprik2"
+              --prikey "${KEYCFG_KEY_EC_EFS_VBPRIK2}"
               --ecrw_out "${rw_bin}"
               "${ec_path}"
             )
@@ -1399,18 +1399,23 @@ main() {
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
     do_futility sign --type usbpd1 --pem "${KEY_NAME}.pem" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "accessory_rwsig" ]]; then
+    # If KEYCFG_ACCESSORY_RWSIG_VBPRIK2 is non-empty, use it.
+    if [[ -n "${KEYCFG_ACCESSORY_RWSIG_VBPRIK2}" ]]; then
+      PRIV_KEY="${KEYCFG_ACCESSORY_RWSIG_VBPRIK2}"
     # If one key is present in this container, assume it's the right one.
     # See crbug.com/863464
-    if [[ ! -e "${KEY_NAME}.vbprik2" ]]; then
+    else
+      shopt -s nullglob
       KEYS=( "${KEY_DIR}"/*.vbprik2 )
+      shopt -u nullglob
       if [[ ${#KEYS[@]} -eq 1 ]]; then
-        KEY_NAME="${KEYS[0]}"
+        PRIV_KEY="${KEYS[0]}"
       else
         die "Expected exactly one key present in keyset for accessory_rwsig"
       fi
     fi
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-    do_futility sign --type rwsig --prikey "${KEY_NAME}" \
+    do_futility sign --type rwsig --prikey "${PRIV_KEY}" \
              --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "gsc_firmware" ]]; then
     sign_gsc_firmware "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
