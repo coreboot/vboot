@@ -25,7 +25,7 @@ ${SCRIPT_DIR}/futility/test_gbb_utility.sh
 ${SCRIPT_DIR}/futility/test_load_fmap.sh
 ${SCRIPT_DIR}/futility/test_main.sh
 ${SCRIPT_DIR}/futility/test_rwsig.sh
-${SCRIPT_DIR}/futility/test_show_contents.sh
+${SCRIPT_DIR}/futility/test_show_and_verify.sh
 ${SCRIPT_DIR}/futility/test_show_kernel.sh
 ${SCRIPT_DIR}/futility/test_show_vs_verify.sh
 ${SCRIPT_DIR}/futility/test_show_usbpd1.sh
@@ -38,6 +38,7 @@ ${SCRIPT_DIR}/futility/test_update.sh
 ${SCRIPT_DIR}/futility/test_file_types.sh
 ${SCRIPT_DIR}/futility/test_gscvd.sh
 ${SCRIPT_DIR}/futility/test_read.sh
+${SCRIPT_DIR}/futility/test_vbutil_output.sh
 "
 
 # Get ready...
