@@ -1,17 +1,17 @@
 kernel::keyblock::valid
 kernel::keyblock::signature::ignored
-kernel::keyblock::size::1464
-kernel::keyblock::flags::15::!DEV:DEV:!REC:REC
-kernel::keyblock::data_key::algorithm::8::RSA4096 SHA512
+kernel::keyblock::size::1208
+kernel::keyblock::flags::23::!DEV:DEV:!REC:!MINIOS
+kernel::keyblock::data_key::algorithm::4::RSA2048 SHA256
 kernel::keyblock::data_key::version::1
-kernel::keyblock::data_key::sha1_sum::50b28df3cebabeefd134b7bc96512207f57b20a5
+kernel::keyblock::data_key::sha1_sum::d6170aa480136f1f29cf339a5ab1b960585fa444
 kernel::preamble::signature::valid
-kernel::preamble::size::64072
-kernel::preamble::header_version::2.0
+kernel::preamble::size::64328
+kernel::preamble::header_version::2.2
 kernel::preamble::kernel_version::1
 kernel::body::address::1048576
-kernel::body::size::73728
+kernel::body::size::57344
 kernel::bootloader::address::1089536
-kernel::bootloader::size::32768
+kernel::bootloader::size::16384
 kernel::flags::0
 kernel::body::signature::valid

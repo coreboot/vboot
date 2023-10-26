@@ -66,8 +66,8 @@ TEST_CASES=(
   "bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1"
   "parseable.bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1 -P"
   # [type] kernel
-  "kernel tests/futility/data/kern_preamble.bin 1"
-  "parseable.kernel tests/futility/data/kern_preamble.bin 1 -P"
+  "kernel tests/futility/data/kernel_part.bin 1"
+  "parseable.kernel tests/futility/data/kernel_part.bin 1 -P"
   "rec_kernel tests/futility/data/rec_kernel_part.bin 1"
   "rec_kernel-pubkey tests/futility/data/rec_kernel_part.bin 0 \
     -k tests/devkeys/recovery_key.vbpubk"

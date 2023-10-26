@@ -33,7 +33,7 @@ test_case "keyblock"        "tests/devkeys/kernel.keyblock"
 test_case "fw_pre"          "tests/futility/data/fw_vblock.bin"
 test_case "gbb"	            "tests/futility/data/fw_gbb.bin"
 test_case "bios"            "tests/futility/data/bios_peppy_mp.bin"
-test_case "kernel"          "tests/futility/data/kern_preamble.bin"
+test_case "kernel"          "tests/futility/data/kernel_part.bin"
 # We don't have a way to identify these (yet?)
 # test_case "RAW_FIRMWARE"
 # test_case "RAW_KERNEL"
