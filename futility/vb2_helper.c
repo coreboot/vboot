@@ -91,7 +91,7 @@ int ft_show_vb21_pubkey(const char *fname)
 	int rv;
 
 	if (show_option.parseable) {
-		ERROR("Parseable output not supported for this file.");
+		ERROR("Parseable output not supported for this file.\n");
 		return 1;
 	}
 
@@ -129,7 +129,7 @@ int ft_show_vb21_privkey(const char *fname)
 	int rv = 0;
 
 	if (show_option.parseable) {
-		ERROR("Parseable output not supported for this file.");
+		ERROR("Parseable output not supported for this file.\n");
 		return 1;
 	}
 
@@ -214,7 +214,7 @@ int ft_show_pem(const char *fname)
 	int rv = 0;
 
 	if (show_option.parseable) {
-		ERROR("Parseable output not supported for this file.");
+		ERROR("Parseable output not supported for this file.\n");
 		return 1;
 	}
 
