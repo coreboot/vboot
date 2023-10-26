@@ -214,11 +214,11 @@ static int fw_show_metadata_hash(const char *fname, enum bios_component body_c,
 
 	FT_READABLE_PRINT("  Body metadata hash:    %s ",
 			  vb2_get_hash_algorithm_name(body_hash->algo));
-	FT_PARSEABLE_PRINT("body::metatadata_hash::algorithm::%d::%s\n",
+	FT_PARSEABLE_PRINT("body::metadata_hash::algorithm::%d::%s\n",
 			   body_hash->algo,
 			   vb2_get_hash_algorithm_name(body_hash->algo));
 	if (vb2_digest_size(body_hash->algo)) {
-		FT_PARSEABLE_PRINT("body::metatadata_hash::hex::");
+		FT_PARSEABLE_PRINT("body::metadata_hash::hex::");
 		print_bytes((uint8_t *)body_hash->raw,
 			    vb2_digest_size(body_hash->algo));
 		putchar('\n');

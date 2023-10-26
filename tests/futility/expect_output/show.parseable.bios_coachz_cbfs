@@ -40,8 +40,8 @@ bios::VBLOCK_A::preamble::kernel_subkey::version::1
 bios::VBLOCK_A::preamble::kernel_subkey::sha1_sum::5d2b220899c4403d564092ada3f12d3cc4483223
 bios::VBLOCK_A::preamble::flags::0
 bios::VBLOCK_A::body::size::0
-bios::VBLOCK_A::body::metatadata_hash::algorithm::2::SHA256
-bios::VBLOCK_A::body::metatadata_hash::hex::e4a0de4b12ffa0cfa7022f3f16f5dabf77de0d1fb35c6c5d72969113bd48e979
+bios::VBLOCK_A::body::metadata_hash::algorithm::2::SHA256
+bios::VBLOCK_A::body::metadata_hash::hex::e4a0de4b12ffa0cfa7022f3f16f5dabf77de0d1fb35c6c5d72969113bd48e979
 bios::VBLOCK_A::body::metadata_hash::valid
 bios::VBLOCK_A::body::signature::valid
 bios::VBLOCK_B::keyblock::valid
@@ -60,8 +60,8 @@ bios::VBLOCK_B::preamble::kernel_subkey::version::1
 bios::VBLOCK_B::preamble::kernel_subkey::sha1_sum::5d2b220899c4403d564092ada3f12d3cc4483223
 bios::VBLOCK_B::preamble::flags::0
 bios::VBLOCK_B::body::size::0
-bios::VBLOCK_B::body::metatadata_hash::algorithm::2::SHA256
-bios::VBLOCK_B::body::metatadata_hash::hex::e4a0de4b12ffa0cfa7022f3f16f5dabf77de0d1fb35c6c5d72969113bd48e979
+bios::VBLOCK_B::body::metadata_hash::algorithm::2::SHA256
+bios::VBLOCK_B::body::metadata_hash::hex::e4a0de4b12ffa0cfa7022f3f16f5dabf77de0d1fb35c6c5d72969113bd48e979
 bios::VBLOCK_B::body::metadata_hash::invalid
 bios::VBLOCK_B::body::metadata_hash::expected::algorithm::2::SHA256
 bios::VBLOCK_B::body::metadata_hash::expected::hex::5dcf350a320d69c3b93288ef34ff391901419ba0836b45a65ae292b4fdbf59f2
