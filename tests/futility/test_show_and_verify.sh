@@ -35,11 +35,26 @@ TEST_CASES=(
   "key_rsa2048.pem tests/testkeys/key_rsa2048.pem 0"
   "key_rsa8192.pub.pem tests/testkeys/key_rsa8192.pub.pem 0"
   ## [type] keyblock
+  "fw.keyblock tests/devkeys/firmware.keyblock 1"
+  "parseable.fw.keyblock tests/devkeys/firmware.keyblock 1 -P"
+  "fw.keyblock-pubkey tests/devkeys/firmware.keyblock 0 \
+    --publickey tests/devkeys/root_key.vbpubk"
   "kernel.keyblock tests/devkeys/kernel.keyblock 1"
   "parseable.kernel.keyblock tests/devkeys/kernel.keyblock 1 -P"
   ## [type] fw_pre
   "fw_vblock tests/futility/data/fw_vblock.bin 1"
   "parseable.fw_vblock tests/futility/data/fw_vblock.bin 1 -P"
+  "fw_vblock-pubkey tests/futility/data/fw_vblock.bin 1 \
+    -k tests/futility/data/peppy_mp_root_key.vbpubk"
+  "fw_vblock-pubkey-with-fv tests/futility/data/fw_vblock.bin 0 \
+    -k tests/futility/data/peppy_mp_root_key.vbpubk \
+    --fv tests/futility/data/fw_main_peppy.bin"
+  "parseable.fw_vblock-pubkey-with-fv tests/futility/data/fw_vblock.bin 0 \
+    -k tests/futility/data/peppy_mp_root_key.vbpubk \
+    --fv tests/futility/data/fw_main_peppy.bin -P"
+  "fw_vblock-pubkey-wrong tests/futility/data/fw_vblock.bin 1 \
+    -k tests/devkeys/root_key.vbpubk \
+    --fv tests/futility/data/fw_main_peppy.bin"
   ## [type] gbb
   "gbb tests/futility/data/fw_gbb.bin 0"
   "parseable.gbb tests/futility/data/fw_gbb.bin 0 -P"
@@ -53,6 +68,13 @@ TEST_CASES=(
   # [type] kernel
   "kernel tests/futility/data/kern_preamble.bin 1"
   "parseable.kernel tests/futility/data/kern_preamble.bin 1 -P"
+  "rec_kernel tests/futility/data/rec_kernel_part.bin 1"
+  "rec_kernel-pubkey tests/futility/data/rec_kernel_part.bin 0 \
+    -k tests/devkeys/recovery_key.vbpubk"
+  "parseable.rec_kernel-pubkey tests/futility/data/rec_kernel_part.bin 0 \
+    -k tests/devkeys/recovery_key.vbpubk -P"
+  "rec_kernel-pubkey-wrong tests/futility/data/rec_kernel_part.bin 1 \
+    -k tests/devkeys/kernel_subkey.vbpubk"
 )
 
 for test_case in "${TEST_CASES[@]}"; do

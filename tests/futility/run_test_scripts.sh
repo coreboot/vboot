@@ -27,7 +27,6 @@ ${SCRIPT_DIR}/futility/test_main.sh
 ${SCRIPT_DIR}/futility/test_rwsig.sh
 ${SCRIPT_DIR}/futility/test_show_and_verify.sh
 ${SCRIPT_DIR}/futility/test_show_kernel.sh
-${SCRIPT_DIR}/futility/test_show_vs_verify.sh
 ${SCRIPT_DIR}/futility/test_show_usbpd1.sh
 ${SCRIPT_DIR}/futility/test_sign_firmware.sh
 ${SCRIPT_DIR}/futility/test_sign_fw_main.sh
