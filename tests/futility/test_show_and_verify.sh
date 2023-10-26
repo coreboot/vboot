@@ -65,7 +65,12 @@ TEST_CASES=(
   # bios with VBOOT_CBFS_INTEGRATION; invalid metadata hash in VBLOCK_B
   "bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1"
   "parseable.bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1 -P"
-  # [type] kernel
+  # valid bios with VBOOT_CBFS_INTEGRATION
+  "bios_geralt_cbfs tests/futility/data/bios_geralt_cbfs.bin 0"
+  "bios_geralt_cbfs tests/futility/data/bios_geralt_cbfs.bin 0 --type bios"
+  "parseable.bios_geralt_cbfs tests/futility/data/bios_geralt_cbfs.bin 0 \
+    --type bios -P"
+  ## [type] kernel
   "kernel tests/futility/data/kernel_part.bin 1"
   "parseable.kernel tests/futility/data/kernel_part.bin 1 -P"
   "kernel-pubkey tests/futility/data/kernel_part.bin 0 \
