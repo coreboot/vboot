@@ -7,7 +7,7 @@ kernel::keyblock::data_key::version::1
 kernel::keyblock::data_key::sha1_sum::e78ce746a037837155388a1096212ded04fb86eb
 kernel::preamble::signature::valid
 kernel::preamble::size::62280
-kernel::preamble::header_version::2.0
+kernel::preamble::header_version::2.2
 kernel::preamble::kernel_version::1
 kernel::body::address::1048576
 kernel::body::size::4018176

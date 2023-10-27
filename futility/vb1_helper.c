@@ -82,6 +82,10 @@ uint8_t *ReadConfigFile(const char *config_file, uint32_t *config_size)
 		if ('\n' == config_buf[i])
 			config_buf[i] = ' ';
 
+	/* Trim trailing spaces */
+	while (*config_size > 0 && config_buf[*config_size - 1] == ' ')
+		(*config_size)--;
+
 	return config_buf;
 }
 

@@ -170,7 +170,8 @@ else
 fi
 
 # Finally make sure that the kernel command line stays good.
-orig=$(tr '\012' ' ' < "${CONFIG}")
+# vbutil_kernel replaces newlines with spaces, and trims trailing spaces.
+orig=$(tr '\012' ' ' < "${CONFIG}" | sed 's/ *$//g')
 packed=$("${FUTILITY}" dump_kernel_config "${USB_KERN}")
 echo -n "check USB kernel config ..."
 : $(( tests++ ))
