@@ -97,7 +97,7 @@ enum vb2_nv_recovery {
 	VB2_RECOVERY_DEPRECATED_FW_HEADER_VALID = 0x18,
 
 	/* Latest tried RW firmware unable to get firmware body */
-	VB2_RECOVERY_DEPRECATED_FW_GET_FW_BODY = 0x19,
+	VB2_RECOVERY_FW_GET_FW_BODY = 0x19,
 
 	/* Latest tried RW firmware hash wrong size */
 	VB2_RECOVERY_DEPRECATED_FW_HASH_WRONG_SIZE = 0x1a,

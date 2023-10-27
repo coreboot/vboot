@@ -49,8 +49,8 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "RW firmware version rollback detected";
 	/* 0x18 */ case VB2_RECOVERY_DEPRECATED_FW_HEADER_VALID:
 		return "RW firmware header is valid";
-	/* 0x19 */ case VB2_RECOVERY_DEPRECATED_FW_GET_FW_BODY:
-		return "RW firmware unable to get firmware body";
+	/* 0x19 */ case VB2_RECOVERY_FW_GET_FW_BODY:
+		return "RW firmware error when accessing firmware body";
 	/* 0x1a */ case VB2_RECOVERY_DEPRECATED_FW_HASH_WRONG_SIZE:
 		return "RW firmware hash is wrong size";
 	/* 0x1b */ case VB2_RECOVERY_FW_BODY:
