@@ -67,6 +67,12 @@ sign_framework_apks() {
   local counter_networkstack=0
   local counter_total=0
 
+  if [[ "${FLAGS_use_apksigner}" == "${FLAGS_FALSE}" ]]; then
+    info "Using signapk to sign the Framework apk's."
+  else
+    info "Using apksigner to sign the Framework apk's."
+  fi
+
   local apk
   while read -d $'\0' -r apk; do
     local sha1=""
@@ -443,6 +449,14 @@ sign_android_internal() {
 
     # List all files inside the image.
     sudo find "${system_mnt}" > "${working_dir}/image_file_list.orig"
+  fi
+
+  # Override apksigner flag if file is available, ref b/307968835.
+  local use_apksigner_file_path
+  use_apksigner_file_path="${system_mnt}/system/etc/signing_use_apksigner"
+  if [[ -f "${use_apksigner_file_path}" ]]; then
+    info "Changing apksigner flag from ${FLAGS_use_apksigner} to True"
+    FLAGS_use_apksigner=${FLAGS_TRUE}
   fi
 
   snapshot_file_properties "${system_mnt}" > "${working_dir}/properties.orig"
