@@ -1733,9 +1733,13 @@ int updater_setup_config(struct updater_config *cfg,
 	return errorcnt;
 }
 
+/* Enough to hold standard CCD programmer options plus serial number */
+static char ccd_programmer[128];
+
 int handle_flash_argument(struct updater_config_arguments *args, int opt,
 			  char *optarg)
 {
+	int ret;
 	switch (opt) {
 	case 'p':
 		args->use_flash = 1;
@@ -1746,7 +1750,14 @@ int handle_flash_argument(struct updater_config_arguments *args, int opt,
 		args->fast_update = 1;
 		args->force_update = 1;
 		args->write_protection = "0";
-		args->programmer = "raiden_debug_spi:target=AP";
+		ret = snprintf(ccd_programmer, sizeof(ccd_programmer),
+			       "raiden_debug_spi:target=AP%s%s",
+			       optarg ? ",serial=" : "", optarg ?: "");
+		if (ret >= sizeof(ccd_programmer)) {
+			ERROR("%s: CCD serial number was too long\n", __func__);
+			return 0;
+		}
+		args->programmer = ccd_programmer;
 		break;
 	case OPT_EMULATE:
 		args->use_flash = 1;
