@@ -147,7 +147,7 @@ build flavor '${flavor_prop}'."
                                        "update re-signed apk ${apk}"; then
       return 1
     fi
-  done < <(find "${system_mnt}/system" -type f -name '*.apk' -print0)
+  done < <(sudo find "${system_mnt}/system" -type f -name '*.apk' -print0)
 
   info "Found ${counter_platform} platform APKs."
   info "Found ${counter_media} media APKs."
@@ -506,7 +506,7 @@ sign_android_internal() {
         sudo "${fsck_erofs}" "--extract=${vendor_mnt}/vendor" "${vendor_img}"
       fi
 
-      if ! arc_generate_packages_cache "${system_mnt}" "${vendor_mnt}" \
+      if ! sudo arc_generate_packages_cache "${system_mnt}" "${vendor_mnt}" \
           "${working_dir}/packages_cache.xml" \
           "${working_dir}/file_hash_cache"; then
         die "Failed to generate packages cache."

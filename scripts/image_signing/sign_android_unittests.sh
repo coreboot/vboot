@@ -4,6 +4,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+. "$(dirname "$0")/lib/sudo_stub.sh"
 . "$(dirname "$0")/lib/sign_android_lib.sh"
 
 # Expected APK signatures depending on the type of APK and the type of build.

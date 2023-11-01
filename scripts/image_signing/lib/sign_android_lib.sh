@@ -96,7 +96,8 @@ android_get_build_flavor_prop() {
   local build_prop_file="$1"
   local flavor_prop=""
 
-  if ! flavor_prop=$(grep -a "^ro\.build\.flavor=" "${build_prop_file}"); then
+  if ! flavor_prop=$(sudo \
+      grep -a "^ro\.build\.flavor=" "${build_prop_file}"); then
     return 1
   fi
   flavor_prop=$(echo "${flavor_prop}" | cut -d "=" -f2)
