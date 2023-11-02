@@ -92,20 +92,22 @@ class Signer:
         subprocess.run(["sudo", "sbattach", "--remove", target], check=False)
 
         signed_file = self.temp_dir / target.name
+        sign_cmd = [
+            "sbsign",
+            "--key",
+            self.keys.private_key,
+            "--cert",
+            self.keys.sign_cert,
+            "--output",
+            signed_file,
+            target,
+        ]
+        if self.keys.is_private_key_pkcs11():
+            sign_cmd += ["--engine", "pkcs11"]
+
         try:
-            subprocess.run(
-                [
-                    "sbsign",
-                    "--key",
-                    self.keys.private_key,
-                    "--cert",
-                    self.keys.sign_cert,
-                    "--output",
-                    signed_file,
-                    target,
-                ],
-                check=True,
-            )
+            logging.info("running sbsign: %r", sign_cmd)
+            subprocess.run(sign_cmd, check=True)
         except subprocess.CalledProcessError:
             logging.warning("cannot sign %s", target)
             return

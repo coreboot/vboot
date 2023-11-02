@@ -96,6 +96,9 @@ setup_default_keycfg() {
   KEYCFG_INSTALLER_KERNEL_VBPRIVK="${key_dir}/installer_kernel_data_key.vbprivk"
   KEYCFG_ARV_PLATFORM_KEYBLOCK="${key_dir}/arv_platform.keyblock"
   KEYCFG_ARV_PLATFORM_VBPRIVK="${key_dir}/arv_platform.vbprivk"
+  KEYCFG_UEFI_PRIVATE_KEY="${KEY_DIR}/uefi/db/db.children/db_child.rsa"
+  KEYCFG_UEFI_SIGN_CERT="${KEY_DIR}/uefi/db/db.children/db_child.pem"
+  KEYCFG_UEFI_VERIFY_CERT="${KEY_DIR}/uefi/db/db.pem"
 }
 
 # Run futility as root with some preserved environment variables.
@@ -841,9 +844,9 @@ sign_uefi_binaries() {
   fi
   "${SCRIPT_DIR}/sign_uefi.py" \
       --target-dir "${esp_dir}" \
-      --private-key "${KEY_DIR}/uefi/db/db.children/db_child.rsa" \
-      --sign-cert "${KEY_DIR}/uefi/db/db.children/db_child.pem" \
-      --verify-cert "${KEY_DIR}/uefi/db/db.pem" \
+      --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
+      --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
+      --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
       --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
       --efi-glob "${efi_glob}"
   sudo umount "${esp_dir}"
@@ -853,9 +856,9 @@ sign_uefi_binaries() {
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
   "${SCRIPT_DIR}/sign_uefi.py" \
       --target-dir "${rootfs_dir}/boot" \
-      --private-key "${KEY_DIR}/uefi/db/db.children/db_child.rsa" \
-      --sign-cert "${KEY_DIR}/uefi/db/db.children/db_child.pem" \
-      --verify-cert "${KEY_DIR}/uefi/db/db.pem" \
+      --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
+      --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
+      --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
       --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
       --efi-glob "${efi_glob}"
   sudo umount "${rootfs_dir}"
