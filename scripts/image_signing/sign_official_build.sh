@@ -841,7 +841,10 @@ sign_uefi_binaries() {
   fi
   "${SCRIPT_DIR}/sign_uefi.py" \
       --target-dir "${esp_dir}" \
-      --key-dir "${KEY_DIR}/uefi" \
+      --private-key "${KEY_DIR}/uefi/db/db.children/db_child.rsa" \
+      --sign-cert "${KEY_DIR}/uefi/db/db.children/db_child.pem" \
+      --verify-cert "${KEY_DIR}/uefi/db/db.pem" \
+      --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
       --efi-glob "${efi_glob}"
   sudo umount "${esp_dir}"
 
@@ -850,7 +853,10 @@ sign_uefi_binaries() {
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
   "${SCRIPT_DIR}/sign_uefi.py" \
       --target-dir "${rootfs_dir}/boot" \
-      --key-dir "${KEY_DIR}/uefi" \
+      --private-key "${KEY_DIR}/uefi/db/db.children/db_child.rsa" \
+      --sign-cert "${KEY_DIR}/uefi/db/db.children/db_child.pem" \
+      --verify-cert "${KEY_DIR}/uefi/db/db.pem" \
+      --kernel-subkey-vbpubk "${KEY_DIR}/kernel_subkey.vbpubk" \
       --efi-glob "${efi_glob}"
   sudo umount "${rootfs_dir}"
 

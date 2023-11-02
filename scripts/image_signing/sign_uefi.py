@@ -9,6 +9,7 @@ The target directory can be either the root of ESP or /boot of root filesystem.
 """
 
 import argparse
+import dataclasses
 import logging
 import os
 from pathlib import Path
@@ -40,21 +41,34 @@ def ensure_file_exists(path, message):
         sys.exit(f"{message}: {path}")
 
 
+@dataclasses.dataclass(frozen=True)
+class Keys:
+    """Public and private keys paths.
+
+    Attributes:
+        private_key: Path of the private signing key
+        sign_cert: Path of the signing certificate
+        verify_cert: Path of the verification certificate
+        kernel_subkey_vbpubk: Path of the kernel subkey public key
+    """
+
+    private_key: os.PathLike
+    sign_cert: os.PathLike
+    verify_cert: os.PathLike
+    kernel_subkey_vbpubk: os.PathLike
+
+
 class Signer:
     """EFI file signer.
 
     Attributes:
         temp_dir: Path of a temporary directory used as a workspace.
-        priv_key: Path of the private key.
-        sign_cert: Path of the signing certificate.
-        verify_cert: Path of the certificate used to verify the signature.
+        keys: An instance of Keys.
     """
 
-    def __init__(self, temp_dir, priv_key, sign_cert, verify_cert):
+    def __init__(self, temp_dir: os.PathLike, keys: Keys):
         self.temp_dir = temp_dir
-        self.priv_key = priv_key
-        self.sign_cert = sign_cert
-        self.verify_cert = verify_cert
+        self.keys = keys
 
     def sign_efi_file(self, target):
         """Sign an EFI binary file, if possible.
@@ -75,9 +89,9 @@ class Signer:
                 [
                     "sbsign",
                     "--key",
-                    self.priv_key,
+                    self.keys.private_key,
                     "--cert",
-                    self.sign_cert,
+                    self.keys.sign_cert,
                     "--output",
                     signed_file,
                     target,
@@ -93,13 +107,14 @@ class Signer:
         )
         try:
             subprocess.run(
-                ["sbverify", "--cert", self.verify_cert, target], check=True
+                ["sbverify", "--cert", self.keys.verify_cert, target],
+                check=True,
             )
         except subprocess.CalledProcessError:
             sys.exit("Verification failed")
 
 
-def inject_vbpubk(efi_file: os.PathLike, key_dir: os.PathLike):
+def inject_vbpubk(efi_file: os.PathLike, keys: Keys):
     """Update a UEFI executable's vbpubk section.
 
     The crdyboot bootloader contains an embedded public key in the
@@ -108,48 +123,43 @@ def inject_vbpubk(efi_file: os.PathLike, key_dir: os.PathLike):
 
     Args:
         efi_file: Path of a UEFI file.
-        key_dir: Path of the UEFI key directory.
+        keys: An instance of Keys.
     """
     section_name = ".vbpubk"
     logging.info("updating section %s in %s", section_name, efi_file.name)
-    section_data_path = key_dir.parent / "kernel_subkey.vbpubk"
     subprocess.run(
         [
             "sudo",
             "objcopy",
             "--update-section",
-            f"{section_name}={section_data_path}",
+            f"{section_name}={keys.kernel_subkey_vbpubk}",
             efi_file,
         ],
         check=True,
     )
 
 
-def sign_target_dir(target_dir, key_dir, efi_glob):
+def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
     """Sign various EFI files under |target_dir|.
 
     Args:
         target_dir: Path of a boot directory. This can be either the
             root of the ESP or /boot of the root filesystem.
-        key_dir: Path of a directory containing the key and cert files.
+        keys: An instance of Keys.
         efi_glob: Glob pattern of EFI files to sign, e.g. "*.efi".
     """
     bootloader_dir = target_dir / "efi/boot"
     syslinux_dir = target_dir / "syslinux"
     kernel_dir = target_dir
 
-    verify_cert = key_dir / "db/db.pem"
-    ensure_file_exists(verify_cert, "No verification cert")
-
-    sign_cert = key_dir / "db/db.children/db_child.pem"
-    ensure_file_exists(sign_cert, "No signing cert")
-
-    sign_key = key_dir / "db/db.children/db_child.rsa"
-    ensure_file_exists(sign_key, "No signing key")
+    ensure_file_exists(keys.verify_cert, "No verification cert")
+    ensure_file_exists(keys.sign_cert, "No signing cert")
+    ensure_file_exists(keys.private_key, "No signing key")
+    ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
 
     with tempfile.TemporaryDirectory() as working_dir:
         working_dir = Path(working_dir)
-        signer = Signer(working_dir, sign_key, sign_cert, verify_cert)
+        signer = Signer(working_dir, keys)
 
         for efi_file in sorted(bootloader_dir.glob(efi_glob)):
             if efi_file.is_file():
@@ -157,7 +167,7 @@ def sign_target_dir(target_dir, key_dir, efi_glob):
 
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
             if efi_file.is_file():
-                inject_vbpubk(efi_file, key_dir)
+                inject_vbpubk(efi_file, keys)
                 signer.sign_efi_file(efi_file)
 
         for syslinux_kernel_file in sorted(syslinux_dir.glob("vmlinuz.?")):
@@ -180,9 +190,27 @@ def get_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
-        "--key-dir",
+        "--private-key",
         type=Path,
-        help="Path of a directory containing the key and cert files",
+        help="Path of the private signing key",
+        required=True,
+    )
+    parser.add_argument(
+        "--sign-cert",
+        type=Path,
+        help="Path of the signing certificate",
+        required=True,
+    )
+    parser.add_argument(
+        "--verify-cert",
+        type=Path,
+        help="Path of the verification certificate",
+        required=True,
+    )
+    parser.add_argument(
+        "--kernel-subkey-vbpubk",
+        type=Path,
+        help="Path of the kernel subkey public key",
         required=True,
     )
     parser.add_argument(
@@ -212,7 +240,14 @@ def main(argv: Optional[List[str]] = None) -> Optional[int]:
     ):
         ensure_executable_available(tool)
 
-    sign_target_dir(opts.target_dir, opts.key_dir, opts.efi_glob)
+    keys = Keys(
+        private_key=opts.private_key,
+        sign_cert=opts.sign_cert,
+        verify_cert=opts.verify_cert,
+        kernel_subkey_vbpubk=opts.kernel_subkey_vbpubk,
+    )
+
+    sign_target_dir(opts.target_dir, keys, opts.efi_glob)
 
 
 if __name__ == "__main__":

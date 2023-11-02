@@ -27,9 +27,12 @@ class Test(unittest.TestCase):
             tmp_dir = Path(tmp_dir)
 
             # Get key paths.
-            key_dir = tmp_dir / "keys"
-            db_dir = key_dir / "db"
-            db_children_dir = db_dir / "db.children"
+            keys = sign_uefi.Keys(
+                private_key=tmp_dir / "private_key.rsa",
+                sign_cert=tmp_dir / "sign_cert.pem",
+                verify_cert=tmp_dir / "verify_cert.pem",
+                kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
+            )
 
             # Get target paths.
             target_dir = tmp_dir / "boot"
@@ -39,12 +42,12 @@ class Test(unittest.TestCase):
             # Make test dirs.
             syslinux_dir.mkdir(parents=True)
             efi_boot_dir.mkdir(parents=True)
-            db_children_dir.mkdir(parents=True)
 
             # Make key files.
-            (db_dir / "db.pem").touch()
-            (db_children_dir / "db_child.pem").touch()
-            (db_children_dir / "db_child.rsa").touch()
+            (keys.private_key).touch()
+            (keys.sign_cert).touch()
+            (keys.verify_cert).touch()
+            (keys.kernel_subkey_vbpubk).touch()
 
             # Make EFI files.
             (efi_boot_dir / "bootia32.efi").touch()
@@ -62,7 +65,7 @@ class Test(unittest.TestCase):
             efi_glob = "test*.efi"
 
             # Sign, but with the actual signing mocked out.
-            sign_uefi.sign_target_dir(target_dir, key_dir, efi_glob)
+            sign_uefi.sign_target_dir(target_dir, keys, efi_glob)
 
             # Check that the correct list of files got signed.
             self.assertEqual(
@@ -88,8 +91,8 @@ class Test(unittest.TestCase):
             self.assertEqual(
                 mock_inject_vbpubk.call_args_list,
                 [
-                    mock.call(efi_boot_dir / "crdybootia32.efi", key_dir),
-                    mock.call(efi_boot_dir / "crdybootx64.efi", key_dir),
+                    mock.call(efi_boot_dir / "crdybootia32.efi", keys),
+                    mock.call(efi_boot_dir / "crdybootx64.efi", keys),
                 ],
             )
 
@@ -98,15 +101,17 @@ class Test(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
 
-            key_dir = tmp_dir / "key_dir"
-            uefi_key_dir = key_dir / "uefi"
-            uefi_key_dir.mkdir(parents=True)
+            keys = sign_uefi.Keys(
+                private_key=None,
+                sign_cert=None,
+                verify_cert=None,
+                kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
+            )
 
             efi_file = tmp_dir / "test_efi_file"
-            sign_uefi.inject_vbpubk(efi_file, uefi_key_dir)
+            sign_uefi.inject_vbpubk(efi_file, keys)
 
             # Check that the expected command runs.
-            expected_vbpubk = uefi_key_dir.parent / "kernel_subkey.vbpubk"
             self.assertEqual(
                 mock_run.call_args_list,
                 [
@@ -115,7 +120,7 @@ class Test(unittest.TestCase):
                             "sudo",
                             "objcopy",
                             "--update-section",
-                            f".vbpubk={expected_vbpubk}",
+                            f".vbpubk={keys.kernel_subkey_vbpubk}",
                             efi_file,
                         ],
                         check=True,
