@@ -52,6 +52,8 @@ setup_default_keycfg() {
   # This is for `sign_official_build.sh accessory_rwsig`, which uses arbitrary
   # one of .vbprik2 in KEY_DIR if KEYCFG_ACCESSORY_RWSIG_VBPRIK2 is empty or unset.
   export KEYCFG_ACCESSORY_RWSIG_VBPRIK2=""
+  # update payload key
+  export KEYCFG_UPDATE_KEY_PEM="${key_dir}/update_key.pem"
 }
 
 # Setup the key configuration. This setups the default configuration and source

@@ -423,9 +423,27 @@ sign_firmware() {
 # Args: INPUT_IMAGE KEY_DIR OUTPUT_IMAGE
 sign_update_payload() {
   local image=$1
-  local key_dir=$2
+  local key_info=$2
   local output=$3
-  local key_output key_size key_file="${key_dir}/update_key.pem"
+  local key_output key_size
+
+  if [[ "${key_info}" == "remote:"* ]]; then
+    # get label from key_info with format "remote:<libkmsp11.so>:<slot>:<label>"
+    IFS=":" read -r -a parsed_info <<< "${key_info}"
+    if [[ "${#parsed_info[@]}" -ne 4 ]]; then
+      die "Failed to parse key info '${key_info}'"
+    fi
+    local p11_module="${parsed_info[1]}"
+    local slot_id="${parsed_info[2]}"
+    local key_label="${parsed_info[3]}"
+    # Hashing algorithm is always SHA-256.
+    PKCS11_MODULE_PATH="${p11_module}" openssl dgst -sha256 -engine pkcs11 \
+      -keyform engine -sign "slot_${slot_id}-label_${key_label}" "${image}" \
+      > "${output}"
+    return
+  fi
+  # Strip the prefix "local:"
+  key_info="${key_info#local:}"
   # Maps key size to verified boot's algorithm id (for pad_digest_utility).
   # Hashing algorithm is always SHA-256.
   local algo algos=(
@@ -435,7 +453,7 @@ sign_update_payload() {
     [8192]=10
   )
 
-  key_output=$(do_futility show "${key_file}")
+  key_output=$(do_futility show "${key_info}")
   key_size=$(echo "${key_output}" | sed -n '/Key length/s/[^0-9]*//p')
   algo=${algos[${key_size}]}
   if [[ -z ${algo} ]]; then
@@ -443,7 +461,7 @@ sign_update_payload() {
   fi
 
   pad_digest_utility "${algo}" "${image}" | \
-    openssl rsautl -sign -pkcs -inkey "${key_file}" -out "${output}"
+    openssl rsautl -sign -pkcs -inkey "${key_info}" -out "${output}"
 }
 
 # Re-sign the firmware AU payload inside the image rootfs with a new keys.
@@ -1390,7 +1408,7 @@ main() {
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
     sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
   elif [[ "${TYPE}" == "update_payload" ]]; then
-    sign_update_payload "${INPUT_IMAGE}" "${KEY_DIR}" "${OUTPUT_IMAGE}"
+    sign_update_payload "${INPUT_IMAGE}" "${KEYCFG_UPDATE_KEY_PEM}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
     KEY_NAME="${KEY_DIR}/key_$(basename "$(dirname "${INPUT_IMAGE}")")"
     if [[ ! -e "${KEY_NAME}.pem" ]]; then
