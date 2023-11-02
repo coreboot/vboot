@@ -173,18 +173,22 @@ def get_parser() -> argparse.ArgumentParser:
     """Get CLI parser."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "target_dir",
+        "--target-dir",
         type=Path,
         help="Path of a boot directory, either the root of the ESP or "
         "/boot of the root filesystem",
+        required=True,
     )
     parser.add_argument(
-        "key_dir",
+        "--key-dir",
         type=Path,
         help="Path of a directory containing the key and cert files",
+        required=True,
     )
     parser.add_argument(
-        "efi_glob", help="Glob pattern of EFI files to sign, e.g. '*.efi'"
+        "--efi-glob",
+        help="Glob pattern of EFI files to sign, e.g. '*.efi'",
+        required=True,
     )
     return parser
 

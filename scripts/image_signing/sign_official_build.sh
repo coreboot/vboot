@@ -833,14 +833,19 @@ sign_uefi_binaries() {
     # change the glob so that they don't get resigned.
     efi_glob="grub*.efi"
   fi
-  "${SCRIPT_DIR}/sign_uefi.py" "${esp_dir}" "${KEY_DIR}/uefi" "${efi_glob}"
+  "${SCRIPT_DIR}/sign_uefi.py" \
+      --target-dir "${esp_dir}" \
+      --key-dir "${KEY_DIR}/uefi" \
+      --efi-glob "${efi_glob}"
   sudo umount "${esp_dir}"
 
   local rootfs_dir
   rootfs_dir="$(make_temp_dir)"
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
-  "${SCRIPT_DIR}/sign_uefi.py" "${rootfs_dir}/boot" "${KEY_DIR}/uefi" \
-                               "${efi_glob}"
+  "${SCRIPT_DIR}/sign_uefi.py" \
+      --target-dir "${rootfs_dir}/boot" \
+      --key-dir "${KEY_DIR}/uefi" \
+      --efi-glob "${efi_glob}"
   sudo umount "${rootfs_dir}"
 
   info "Signed UEFI binaries"
