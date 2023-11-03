@@ -57,6 +57,14 @@ class Keys:
     verify_cert: os.PathLike
     kernel_subkey_vbpubk: os.PathLike
 
+    def is_private_key_pkcs11(self) -> bool:
+        """Check if the private key is a PKCS#11 URI.
+
+        If the private key starts with "pkcs11:", it should be treated
+        as a PKCS#11 URI instead of a local file path.
+        """
+        return str(self.private_key).startswith("pkcs11:")
+
 
 class Signer:
     """EFI file signer.
@@ -152,10 +160,14 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
     syslinux_dir = target_dir / "syslinux"
     kernel_dir = target_dir
 
+    # Check for the existence of the key files.
     ensure_file_exists(keys.verify_cert, "No verification cert")
     ensure_file_exists(keys.sign_cert, "No signing cert")
-    ensure_file_exists(keys.private_key, "No signing key")
     ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
+    # Only check the private key if it's a local path rather than a
+    # PKCS#11 URI.
+    if not keys.is_private_key_pkcs11():
+        ensure_file_exists(keys.private_key, "No signing key")
 
     with tempfile.TemporaryDirectory() as working_dir:
         working_dir = Path(working_dir)
