@@ -525,6 +525,8 @@ resign_firmware_payload() {
 
         rootkey="${KEY_DIR}/root_key.vbpubk"
 
+        info "Signing firmware image ${bios_image} for ${output_name}"
+
         # If there are OEM specific keys available, we're going to use them.
         # Otherwise, we're going to ignore key_id from the config file and
         # just use the common keys present in the keyset.
@@ -533,17 +535,22 @@ resign_firmware_payload() {
         # whether dynamic signature blocks are available or not.
         # This is what updater4.sh currently uses to make the decision.
         if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-          # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
           local match
-          match="$(grep -E "[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"
           local key_index
+
+          # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
+          if ! match="$(grep -E "^[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"; then
+            die "The loem key_id ${key_id} not found in loem.ini!"
+          fi
+
           # shellcheck disable=SC2001
           key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
           info "Detected key index from loem.ini as ${key_index} for ${key_id}"
           if [[ -z "${key_index}" ]]; then
-            die "Failed to find key_id ${key_id} in loem.ini file for " \
+            die "Failed to extract key_index ${key_id} in loem.ini file for" \
               "${output_name}"
           fi
+
           key_suffix=".loem${key_index}"
           shellball_keyset_dir="${shellball_dir}/keyset"
           mkdir -p "${shellball_keyset_dir}"
@@ -555,8 +562,7 @@ resign_firmware_payload() {
           cp "${rootkey}" "${shellball_keyset_dir}/rootkey.${output_name}"
         fi
 
-        info "Signing firmware image ${bios_image} for ${output_name} " \
-          "with key suffix ${key_suffix}"
+        info "Using root key: ${rootkey##*/}"
 
         local temp_fw
         temp_fw=$(make_temp_file)
