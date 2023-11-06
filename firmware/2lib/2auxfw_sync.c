@@ -52,6 +52,9 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 {
 	enum vb2_auxfw_update_severity fw_update = VB2_AUXFW_NO_UPDATE;
 
+	VB2_DEBUG("TROGDOR HACK: Skipping auxfw sync\n");
+	goto skip;
+
 	/* Check for update severity */
 	VB2_TRY(auxfw_sync_check_update(ctx, &fw_update));
 
@@ -66,5 +69,6 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 
+skip:
 	return vb2ex_auxfw_finalize(ctx);
 }
