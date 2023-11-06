@@ -313,12 +313,10 @@ int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 	if (sign_key && VB2_SUCCESS ==
 	    vb2_verify_keyblock(keyblock, len, sign_key, &wb))
 		good_sig = 1;
+	else if (show_option.strict)
+		retval = 1;
 
 	show_keyblock(keyblock, print_name, !!sign_key, good_sig);
-	ft_print_header2 = NULL;
-
-	if (show_option.strict && (!sign_key || !good_sig))
-		retval = 1;
 
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
@@ -413,21 +411,13 @@ int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 		return show_option.strict ? 1 : 0;
 	}
 
+	FT_PRINT("Body verification succeeded.\n",
+		 "body::signature::valid\n");
+
 done:
-	/* Can't trust the BIOS unless everything is signed (in which case
-	 * we've already returned), but standalone files are okay. */
-	if (state || (sign_key && good_sig)) {
-		if (!(flags & VB2_FIRMWARE_PREAMBLE_USE_RO_NORMAL))
-			FT_PRINT("Body verification succeeded.\n",
-				 "body::signature::valid\n");
-		if (state)
-			state->area[state->c].is_valid = 1;
-	} else {
-		FT_PRINT("Seems legit, but the signature is unverified.\n",
-			 "body::signature::ignored\n");
-		if (show_option.strict)
-			retval = 1;
-	}
+	/* Can't trust the BIOS unless everything is signed. */
+	if (good_sig && state)
+		state->area[state->c].is_valid = 1;
 
 	return retval;
 }

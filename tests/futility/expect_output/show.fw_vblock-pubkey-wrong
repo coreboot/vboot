@@ -14,4 +14,4 @@ Firmware Preamble:
   Kernel key sha1sum:    cc05423373b76acbec23ec45dfa3696a2ea6dc0f
   Firmware body size:    146456
   Preamble flags:        0
-Seems legit, but the signature is unverified.
+Body verification succeeded.

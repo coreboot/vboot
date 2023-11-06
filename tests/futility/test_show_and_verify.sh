@@ -55,6 +55,9 @@ TEST_CASES=(
   "fw_vblock-pubkey-wrong tests/futility/data/fw_vblock.bin 1 \
     -k tests/devkeys/root_key.vbpubk \
     --fv tests/futility/data/fw_main_peppy.bin"
+  "parseable.fw_vblock-pubkey-wrong tests/futility/data/fw_vblock.bin 1 \
+    -k tests/devkeys/root_key.vbpubk \
+    --fv tests/futility/data/fw_main_peppy.bin -P"
   ## [type] gbb
   "gbb tests/futility/data/fw_gbb.bin 0"
   "parseable.gbb tests/futility/data/fw_gbb.bin 0 -P"
@@ -65,6 +68,11 @@ TEST_CASES=(
   # valid bios without VBOOT_CBFS_INTEGRATION
   "bios_brya tests/futility/data/bios_brya_mp.bin 0"
   "parseable.bios_brya tests/futility/data/bios_brya_mp.bin 0 -P"
+  # bios without VBOOT_CBFS_INTEGRATION; invalid keyblock in VBLOCK_B
+  "bios_brya_invalid_keyblock \
+    tests/futility/data/bios_brya_mp_invalid_vblock_b.bin 1"
+  "parseable.bios_brya_invalid_keyblock \
+    tests/futility/data/bios_brya_mp_invalid_vblock_b.bin 1 -P"
   # bios with VBOOT_CBFS_INTEGRATION; invalid metadata hash in VBLOCK_B
   "bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1"
   "parseable.bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1 -P"
