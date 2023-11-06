@@ -131,7 +131,11 @@ main() {
   lsb_syntaxcheck "$lsb" || testfail=1
 
   lsbequals $lsb CHROMEOS_AUSERVER "$expected_auserver" || testfail=1
-  lsbequals $lsb CHROMEOS_RELEASE_NAME "$expected_release_name" || testfail=1
+  if [[ "${#expected_release_names[@]}" -eq 0 ]]; then
+    expected_release_names=( "${expected_release_name}" )
+  fi
+  check_keyval_in_list "${lsb}" CHROMEOS_RELEASE_NAME \
+    "${expected_release_names[@]}" || testfail=1
   check_keyval_in_list $lsb CHROMEOS_RELEASE_TRACK \
     "${expected_release_tracks[@]}" || testfail=1
 
