@@ -168,6 +168,10 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	kparams->flags = lkp.flags;
 	kparams->kernel_buffer = lkp.kernel_buffer;
 	kparams->kernel_buffer_size = lkp.kernel_buffer_size;
+	kparams->vendor_boot_offset = lkp.vendor_boot_offset;
+	kparams->init_boot_offset = lkp.init_boot_offset;
+	kparams->init_boot_size = lkp.init_boot_size;
+	kparams->vboot_cmdline_offset = lkp.vboot_cmdline_offset;
 	memcpy(kparams->partition_guid, lkp.partition_guid,
 	       sizeof(kparams->partition_guid));
 }
