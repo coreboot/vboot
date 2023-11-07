@@ -608,14 +608,21 @@ static const struct vb2_keyblock *get_keyblock(
 {
 	struct firmware_section section;
 
-	find_firmware_section(&section, image, section_name);
+	if (find_firmware_section(&section, image, section_name) != 0) {
+		ERROR("Section %s not found", section_name);
+		return NULL;
+	}
+	const struct vb2_keyblock *block = (const struct vb2_keyblock *)section.data;
+	if (vb2_check_keyblock(block, section.size, &block->keyblock_signature)) {
+		ERROR("Invalid keyblock in %s\n", section_name);
+		return NULL;
+	}
 	/* A keyblock must be followed by a vb2_fw_preamble. */
-	if (section.size < sizeof(struct vb2_keyblock) +
-	    sizeof(struct vb2_fw_preamble)) {
+	if (section.size < block->keyblock_size + sizeof(struct vb2_fw_preamble)) {
 		ERROR("Invalid section: %s\n", section_name);
 		return NULL;
 	}
-	return (const struct vb2_keyblock *)section.data;
+	return block;
 }
 
 /*
