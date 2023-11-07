@@ -174,23 +174,25 @@ int ft_show_keyblock(const char *fname)
 	if (futil_open_and_map_file(fname, &fd, FILE_RO, (uint8_t **)&block, &len))
 		return 1;
 
+	ft_print_header = "keyblock";
+
 	/* Check the hash only first */
 	if (vb2_verify_keyblock_hash(block, len, &wb)) {
 		ERROR("%s is invalid\n", fname);
-		FT_PARSEABLE_PRINT("keyblock::invalid\n");
+		FT_PARSEABLE_PRINT("invalid\n");
 		retval = 1;
 		goto done;
+	} else {
+		FT_PARSEABLE_PRINT("valid\n");
 	}
 
 	/* Check the signature if we have one */
 	if (sign_key &&
 	    VB2_SUCCESS == vb2_verify_keyblock(block, len, sign_key, &wb))
 		good_sig = 1;
-
-	if (show_option.strict && (!sign_key || !good_sig))
+	else if (show_option.strict)
 		retval = 1;
 
-	ft_print_header = "keyblock";
 	show_keyblock(block, fname, !!sign_key, good_sig);
 
 done:
