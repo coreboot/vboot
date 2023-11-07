@@ -615,6 +615,10 @@ struct vb2_kernel_params {
 	uint8_t partition_guid[16];
 	/* Flags set by signer. */
 	uint32_t flags;
+	/* Android vendor_boot partition offset (in bytes) in kernel_buffer. */
+	uint32_t vendor_boot_offset;
+	/* Android init_boot partition offset (in bytes) in kernel_buffer. */
+	uint32_t init_boot_offset;
 };
 
 /*****************************************************************************/
