@@ -44,7 +44,7 @@ dd if=/dev/urandom bs=32768 count=1 of="${TMP}.kernel.bin"
 echo 'Verifying test kernel'
 
 # Verify the kernel
-"${FUTILITY}" show "${TMP}.kernel.test" \
+"${FUTILITY}" verify "${TMP}.kernel.test" \
     --publickey "${DEVKEYS}/kernel_subkey.vbpubk" \
   | grep -E 'Signature.*valid'
 
@@ -52,7 +52,7 @@ echo 'Test kernel blob looks good'
 
 # Mess up the padding, make sure it fails.
 rc=0
-"${FUTILITY}" show "${TMP}.kernel.test" \
+"${FUTILITY}" verify "${TMP}.kernel.test" \
     --pad 0x100 \
     --publickey "${DEVKEYS}/kernel_subkey.vbpubk" \
   || rc=$?
@@ -63,7 +63,7 @@ echo 'Invalid args are invalid'
 
 # Look waaaaaay off the end of the file, make sure it fails.
 rc=0
-"${FUTILITY}" show "${TMP}.kernel.test" \
+"${FUTILITY}" verify "${TMP}.kernel.test" \
     --pad 0x100000 \
     --publickey "${DEVKEYS}/kernel_subkey.vbpubk" \
   || rc=$?

@@ -444,7 +444,7 @@ int ft_show_kernel_preamble(const char *fname)
 {
 	struct vb2_keyblock *keyblock;
 	struct vb2_public_key *sign_key = show_option.k;
-	int retval = 1;
+	int retval = 0;
 	int fd = -1;
 	uint8_t *buf;
 	uint32_t len;
@@ -459,6 +459,7 @@ int ft_show_kernel_preamble(const char *fname)
 	if (VB2_SUCCESS != vb2_verify_keyblock_hash(keyblock, len, &wb)) {
 		ERROR("%s keyblock component is invalid\n", fname);
 		FT_PARSEABLE_PRINT("invalid\n");
+		retval = 1;
 		goto done;
 	} else {
 		FT_PARSEABLE_PRINT("valid\n");
@@ -469,6 +470,8 @@ int ft_show_kernel_preamble(const char *fname)
 	if (sign_key && VB2_SUCCESS ==
 	    vb2_verify_keyblock(keyblock, len, sign_key, &wb))
 		good_sig = 1;
+	else if (show_option.strict)
+		retval = 1;
 
 	FT_READABLE_PRINT("Kernel partition:        %s\n", fname);
 	show_keyblock(keyblock, NULL, !!sign_key, good_sig);
@@ -476,6 +479,7 @@ int ft_show_kernel_preamble(const char *fname)
 	struct vb2_public_key data_key;
 	if (VB2_SUCCESS != vb2_unpack_key(&data_key, &keyblock->data_key)) {
 		ERROR("Parsing data key in %s\n", fname);
+		retval = 1;
 		goto done;
 	}
 
@@ -487,6 +491,7 @@ int ft_show_kernel_preamble(const char *fname)
 						      &data_key, &wb)) {
 		ERROR("%s is invalid\n", fname);
 		FT_PARSEABLE_PRINT("kernel_preamble::signature::invalid\n");
+		retval = 1;
 		goto done;
 	}
 
@@ -545,8 +550,10 @@ int ft_show_kernel_preamble(const char *fname)
 	}
 
 	if (!kernel_blob) {
-		/* TODO: Is this always a failure? The preamble is okay. */
-		ERROR("No kernel blob available to verify.\n");
+		FT_PRINT("No kernel blob available to verify.\n",
+			 "body::signature::ignored\n");
+		if (show_option.strict)
+			retval = 1;
 		goto done;
 	}
 
@@ -555,6 +562,8 @@ int ft_show_kernel_preamble(const char *fname)
 			    &data_key, &wb)) {
 		ERROR("Verifying kernel body.\n");
 		FT_PARSEABLE_PRINT("body::signature::invalid\n");
+		if (show_option.strict)
+			retval = 1;
 		goto done;
 	}
 
@@ -564,8 +573,6 @@ int ft_show_kernel_preamble(const char *fname)
 	FT_READABLE_PRINT("Config:\n%s\n",
 			  kernel_blob + kernel_cmd_line_offset(pre2));
 
-	if (!show_option.strict || (sign_key && good_sig))
-		retval = 0;
 done:
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return retval;
