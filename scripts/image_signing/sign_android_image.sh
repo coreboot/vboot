@@ -558,7 +558,7 @@ sign_android_internal() {
     info "Repacking erofs image"
     # TODO(b/286165395): Detect the original EROFS compression type and use it
     #                    instead of always using lz4hc.
-    sudo "${mkfs_erofs}" -z lz4hc -C262144 --file-contexts "${file_contexts}" \
+    sudo "${mkfs_erofs}" -z lz4hc -C32768 --file-contexts "${file_contexts}" \
       "${system_img}" "${system_mnt}"
   fi
 
