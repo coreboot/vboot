@@ -147,18 +147,9 @@ extract_kerns_from_file() {
 }
 
 format_as_tpm_version() {
-  local a
-  local b
-  local what
-  local num
-  local rest
-
-  a='/(Data|Kernel) key version/ {print $1,$4}'
-  b='/Kernel version/ {print $1, $3}'
-  awk "$a $b" "$1" | while read what num rest; do
-    [ "${what}" = "Data" ] && block="${num}"
-    [ "${what}" = "Kernel" ] && printf '0x%04x%04x' "${block}" "${num}"
-  done
+  local data_key_ver="$1"
+  local ver="$2"
+  printf '0x%04x%04x' "${data_key_ver}" "${ver}"
 }
 
 fix_old_names() {
@@ -310,30 +301,18 @@ set -e
 
 
 info "Extracting BIOS components..."
-if [ -n "${OPT_BIOS}" ]; then
-  # If we've already got a file, just extract everything.
-  log futility dump_fmap -x "${OPT_BIOS}"
-  fix_old_names
-else
-  # First try pulling just the components we want (using new-style names)
-  if log flashrom -p internal -r /dev/null \
-    -i"GBB":GBB \
-    -i"FMAP":FMAP \
-    -i"VBLOCK_A":VBLOCK_A \
-    -i"VBLOCK_B":VBLOCK_B \
-    -i"FW_MAIN_A":FW_MAIN_A \
-    -i"FW_MAIN_B":FW_MAIN_B ; then
-      log futility dump_fmap FMAP
-    else
-      info "Couldn't read individual components. Read the whole thing..."
-      if log flashrom -p internal -r bios.rom ; then
-        log futility dump_fmap -x bios.rom
-        fix_old_names
-      else
-        logdie "Can't read BIOS at all. Giving up."
-      fi
+BIOS_IMAGE="${OPT_BIOS}"
+if [ -z "${BIOS_IMAGE}" ]; then
+  info "Reading BIOS image from flash..."
+  BIOS_IMAGE="bios.rom"
+  if ! log futility read "${BIOS_IMAGE}" ; then
+    logdie "Fail to read BIOS."
   fi
 fi
+
+# Extract all FMAP sections.
+log futility dump_fmap -x "${BIOS_IMAGE}"
+fix_old_names
 
 info "Pulling root and recovery keys from GBB..."
 log futility gbb -g --rootkey rootkey.vbpubk \
@@ -344,19 +323,19 @@ log futility vbutil_key --unpack recoverykey.vbpubk
 futility vbutil_key --unpack rootkey.vbpubk |
   grep -q b11d74edd286c144e1135b49e7f0bc20cf041f10 &&
   info "  Looks like dev-keys"
-# Okay if one of the firmware verifications fails
+
+# Okay if firmware verification fails.
 set +e
+log futility verify -P "${BIOS_IMAGE}"
+# Rerun to get version numbers.
+futility verify -P "${BIOS_IMAGE}" > tmp.txt
 for fw in A B; do
   infon "Verify firmware ${fw} with root key: "
-  log futility vbutil_firmware --verify "VBLOCK_${fw}" \
-    --signpubkey rootkey.vbpubk \
-    --fv "FW_MAIN_${fw}" --kernelkey "kern_subkey_${fw}.vbpubk" ; result
+  grep -q "^bios::VBLOCK_${fw}::verified" tmp.txt ; result
   if [ "${LAST_RESULT}" = "0" ]; then
-    # rerun to get version numbers
-    futility vbutil_firmware --verify "VBLOCK_${fw}" \
-      --signpubkey rootkey.vbpubk \
-      --fv "FW_MAIN_${fw}" > tmp.txt
-    ver=$(format_as_tpm_version tmp.txt)
+    data_key_ver="$(sed -nE "s/^bios::VBLOCK_${fw}::keyblock::data_key::version::(.*)$/\1/p" tmp.txt)"
+    fw_ver="$(sed -nE "s/^bios::VBLOCK_${fw}::preamble::firmware_version::(.*)$/\1/p" tmp.txt)"
+    ver="$(format_as_tpm_version "${data_key_ver}" "${fw_ver}")"
     info "  TPM=${tpm_fwver}, this=${ver}"
   fi
 done
@@ -376,7 +355,7 @@ else
 fi
 [ -n "${kernparts}" ] || logdie "No kernels found"
 
-# Okay if any of the kernel verifications fails
+# Okay if any of the kernel verifications fails.
 set +e
 kc=0
 for kname in ${kernparts}; do
@@ -394,13 +373,15 @@ for kname in ${kernparts}; do
     loghead od -Ax -tx1 "${kfile}"
   else
     # Test each kernel with each key
-    for key in kern_subkey_A.vbpubk kern_subkey_B.vbpubk recoverykey.vbpubk; do
+    for key in VBLOCK_A VBLOCK_B recoverykey.vbpubk; do
       infon "  Verify ${kname} with $key: "
-      log futility vbutil_kernel --verify "${kfile}" --signpubkey "$key" ; result
+      log futility verify -P --publickey "${key}" "${kfile}" ; result
       if [ "${LAST_RESULT}" = "0" ]; then
         # rerun to get version numbers
-        futility vbutil_kernel --verify "${kfile}" --signpubkey "$key" > tmp.txt
-        ver=$(format_as_tpm_version tmp.txt)
+        futility verify -P --publickey "${key}" "${kfile}" > tmp.txt
+        data_key_ver="$(sed -nE "s/^kernel::keyblock::data_key::version::(.*)$/\1/p" tmp.txt)"
+        kernel_ver="$(sed -nE "s/^kernel::preamble::kernel_version::(.*)$/\1/p" tmp.txt)"
+        ver="$(format_as_tpm_version "${data_key_ver}" "${kernel_ver}")"
         info "    TPM=${tpm_kernver} this=${ver}"
       fi
     done
