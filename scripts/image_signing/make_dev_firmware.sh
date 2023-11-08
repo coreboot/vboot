@@ -282,8 +282,6 @@ main() {
   fi
 
   debug_msg "Extract firmware version and data key version"
-  ${FUTILITY} gbb -g --rootkey="${expanded_firmware_dir}/rootkey" \
-    "${IMAGE_BIOS}" >/dev/null 2>&1
 
   local data_key_version firmware_version
   # When we are going to flash directly from or to system, the versions stored
@@ -297,15 +295,13 @@ main() {
     # TODO(hungte) On Vboot2, A/B slot may contain different firmware so we may
     # need to check both and decide from largest number.
     debug_msg "Guessing TPM version from original firmware."
-    local fw_info="$(vbutil_firmware \
-                     --verify "${expanded_firmware_dir}/VBLOCK_A" \
-                     --signpubkey "${expanded_firmware_dir}/rootkey" \
-                     --fv "${expanded_firmware_dir}/FW_MAIN_A" 2>/dev/null)" ||
-        die "Failed to verify firmware slot A."
-    data_key_version="$(
-      echo "$fw_info" | sed -n '/^ *Data key version:/s/.*:[ \t]*//p')"
-    firmware_version="$(
-      echo "$fw_info" | sed -n '/^ *Firmware version:/s/.*:[ \t]*//p')"
+    local fw_info
+    fw_info="$(futility show -P "${IMAGE_BIOS}" 2>/dev/null)" \
+      || die "Failed to show firmware info"
+    data_key_version="$(echo "${fw_info}" | \
+      sed -nE 's/bios::VBLOCK_A::keyblock::data_key::version::(.*)/\1/p')"
+    firmware_version="$(echo "${fw_info}" | \
+      sed -nE 's/bios::VBLOCK_A::preamble::firmware_version::(.*)/\1/p')"
   fi
 
   local new_data_key_version="$(
@@ -441,7 +437,7 @@ main() {
     fi
   fi
 
-  # TODO(hungte) use vbutil_firmware to check if the new firmware is valid.
+  # TODO(hungte) use 'futility verify' to check if the new firmware is valid.
   # Or, do verification in resign_firmwarefd.sh and trust it.
 
   debug_msg "Write the image"
