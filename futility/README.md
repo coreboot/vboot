@@ -92,7 +92,7 @@ read
 
         (dut) futility read $IMG_OUT
         (host) futility read --servo $IMG_OUT
-        (host) futility read --ccd -r RO_VPD $IMG_OUT
+        (host) futility read --ccd_without_servod -r RO_VPD $IMG_OUT
 
 show
 
