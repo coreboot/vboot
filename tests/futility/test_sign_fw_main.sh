@@ -24,9 +24,10 @@ dd bs=1024 count=16 if=/dev/urandom of="${TMP}.fw_main"
   --flags 42
 
 # verify
-"${FUTILITY}" vbutil_firmware --verify "${TMP}.vblock.old" \
-  --signpubkey "${KEYDIR}/root_key.vbpubk" \
-  --fv "${TMP}.fw_main"
+"${FUTILITY}" verify --type fw_pre \
+  --publickey "${KEYDIR}/root_key.vbpubk" \
+  --fv "${TMP}.fw_main" \
+  "${TMP}.vblock.old"
 
 # and the new way
 "${FUTILITY}" --debug sign \

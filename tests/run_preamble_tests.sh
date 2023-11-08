@@ -39,10 +39,10 @@ for d in $algs; do
       fi
       : $(( tests++ ))
       echo -n "${what} fw_${d}_${r}.vblock with root_${rr}.vbpubk ... "
-      "${FUTILITY}" vbutil_firmware \
-        --verify "${V2DIR}/fw_${d}_${r}.vblock" \
-        --signpubkey "${DATADIR}/root_${rr}.vbpubk" \
-        --fv "${DATADIR}/FWDATA" >/dev/null 2>&1
+      "${FUTILITY}" verify --type fw_pre \
+        --publickey "${DATADIR}/root_${rr}.vbpubk" \
+        --fv "${DATADIR}/FWDATA" \
+        "${V2DIR}/fw_${d}_${r}.vblock" >/dev/null 2>&1
       if [[ ( $? != 0 && $what == "verify" ) || \
             ( $? == 0 && $what == "reject" ) ]]
       then
@@ -67,9 +67,9 @@ for d in $algs; do
       fi
       : $(( tests++ ))
       echo -n "${what} kern_${d}_${r}.vblock with root_${rr}.vbpubk ... "
-      "${FUTILITY}" vbutil_kernel \
-        --verify "${V2DIR}/kern_${d}_${r}.vblock" \
-        --signpubkey "${DATADIR}/root_${rr}.vbpubk" >/dev/null 2>&1
+      "${FUTILITY}" verify --type kernel \
+        --publickey "${DATADIR}/root_${rr}.vbpubk" \
+        "${V2DIR}/kern_${d}_${r}.vblock" >/dev/null 2>&1
       if [[ ( $? != 0 && $what == "verify" ) || \
             ( $? == 0 && $what == "reject" ) ]]
       then
