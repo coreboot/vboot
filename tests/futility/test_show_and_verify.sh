@@ -59,9 +59,12 @@ TEST_CASES=(
   "gbb tests/futility/data/fw_gbb.bin 0"
   "parseable.gbb tests/futility/data/fw_gbb.bin 0 -P"
   ## [type] bios
-  # valid bios without VBOOT_CBFS_INTEGRATION
+  # valid bios with non-CBFS FW_MAIN_* sections
   "bios_peppy tests/futility/data/bios_peppy_mp.bin 0"
   "parseable.bios_peppy tests/futility/data/bios_peppy_mp.bin 0 -P"
+  # valid bios without VBOOT_CBFS_INTEGRATION
+  "bios_brya tests/futility/data/bios_brya_mp.bin 0"
+  "parseable.bios_brya tests/futility/data/bios_brya_mp.bin 0 -P"
   # bios with VBOOT_CBFS_INTEGRATION; invalid metadata hash in VBLOCK_B
   "bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1"
   "parseable.bios_coachz_cbfs tests/futility/data/bios_coachz_cbfs.bin 1 -P"
