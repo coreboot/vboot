@@ -58,6 +58,13 @@ TEST_CASES=(
   "parseable.fw_vblock-pubkey-wrong tests/futility/data/fw_vblock.bin 1 \
     -k tests/devkeys/root_key.vbpubk \
     --fv tests/futility/data/fw_main_peppy.bin -P"
+  # invalid data key algorithm
+  # NOTE: '--type fw_pre' is necessary; otherwise the file will be recognized
+  # as a keyblock file and 'futility show' will succeed.
+  "fw_vblock_invalid_data_key \
+    tests/futility/data/fw_vblock_invalid_data_key.bin 2 --type fw_pre"
+  "parseable.fw_vblock_invalid_data_key \
+    tests/futility/data/fw_vblock_invalid_data_key.bin 2 --type fw_pre -P"
   ## [type] gbb
   "gbb tests/futility/data/fw_gbb.bin 0"
   "parseable.gbb tests/futility/data/fw_gbb.bin 0 -P"
@@ -103,6 +110,14 @@ TEST_CASES=(
   "parseable.kernel_vblock tests/futility/data/kernel_vblock.bin 1 -P"
 )
 
+check_diff()
+{
+  local gotfile="$1"
+  local wantfile="$2"
+  [[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
+  diff "${gotfile}" "${wantfile}"
+}
+
 for test_case in "${TEST_CASES[@]}"; do
   read -ra arr <<<"${test_case}"
   name="${arr[0]}"
@@ -114,7 +129,8 @@ for test_case in "${TEST_CASES[@]}"; do
   fi
 
   outfile="show.${name}"
-  gotfile="${OUTDIR}/${outfile}"
+  succ_gotfile="${OUTDIR}/${outfile}"
+  fail_gotfile="${OUTDIR}/${outfile}-fail"
   wantfile="${SRCDIR}/tests/futility/expect_output/${outfile}"
 
   succ_cmd=""
@@ -130,15 +146,17 @@ for test_case in "${TEST_CASES[@]}"; do
 
   if [ -n "${succ_cmd}" ]; then
     ( cd "${SRCDIR}" && "${FUTILITY}" "${succ_cmd}" "${file}" "${opts[@]}" ) \
-      | tee "${gotfile}"
-
-    [[ "${UPDATE_MODE}" -gt 0 ]] && cp "${gotfile}" "${wantfile}"
-    diff "${wantfile}" "${gotfile}"
+      | tee "${succ_gotfile}"
+    check_diff "${succ_gotfile}" "${wantfile}"
   fi
 
   if [ -n "${fail_cmd}" ]; then
     ( cd "${SRCDIR}" && ! "${FUTILITY}" "${fail_cmd}" "${file}" "${opts[@]}" ) \
+      | tee "${fail_gotfile}" \
       || ( echo "Command expected to fail, but succeeded" && false )
+
+    # The output of 'show' and 'verify' should be the same.
+    check_diff "${fail_gotfile}" "${wantfile}"
   fi
 done
 
