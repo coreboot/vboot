@@ -235,7 +235,7 @@ int ft_sign_usbpd1(const char *fname)
 done:
 	futil_unmap_and_close_file(fd, FILE_MODE_SIGN(sign_option), buf, len);
 	if (key_ptr)
-		vb2_private_key_free(key_ptr);
+		vb2_free_private_key(key_ptr);
 	if (keyb_data)
 		free(keyb_data);
 

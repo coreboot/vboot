@@ -31,7 +31,7 @@ enum futil_file_type ft_recognize_vb21_key(uint8_t *buf, uint32_t len)
 
 	/* The private key unpacks into new structs */
 	if (VB2_SUCCESS == vb21_private_key_unpack(&privkey, buf, len)) {
-		vb2_private_key_free(privkey);
+		vb2_free_private_key(privkey);
 		return FILE_TYPE_VB2_PRIVKEY;
 	}
 
@@ -157,7 +157,7 @@ int ft_show_vb21_privkey(const char *fname)
 		print_bytes(hash.sha1, sizeof(hash.sha1));
 		printf("\n");
 	}
-	vb2_private_key_free(key);
+	vb2_free_private_key(key);
 done:
 	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
 	return rv;

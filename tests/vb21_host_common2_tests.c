@@ -299,7 +299,7 @@ static int test_algorithm(int key_algorithm, const char *keys_dir)
 	free(keyb_data);
 	free(key2);
 	free(sig2);
-	vb2_private_key_free(prik);
+	vb2_free_private_key(prik);
 	vb2_public_key_free(pubk);
 
 	return 0;

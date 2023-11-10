@@ -159,7 +159,7 @@ static void sig_tests(const struct alg_combo *combo,
 
 	free(buf);
 
-	vb2_private_key_free(prik);
+	vb2_free_private_key(prik);
 	vb2_public_key_free(pubk);
 }
 

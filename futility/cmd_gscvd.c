@@ -1344,7 +1344,7 @@ static int do_gscvd(int argc, char *argv[])
 	free(gvd);
 	free(root_pubk);
 	free(kblock);
-	vb2_private_key_free(plat_privk);
+	vb2_free_private_key(plat_privk);
 
 	if (ap_firmware_file.fd != -1)
 		futil_unmap_and_close_file(ap_firmware_file.fd, FILE_RW,

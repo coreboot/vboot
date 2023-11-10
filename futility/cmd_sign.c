@@ -961,8 +961,8 @@ static int do_sign(int argc, char *argv[])
 			}
 			break;
 		case OPT_PRIKEY:
-			if (vb21_private_key_read(&sign_option.prikey,
-						  optarg)) {
+			sign_option.prikey = vb2_read_private_key(optarg);
+			if (!sign_option.prikey) {
 				ERROR("Reading %s\n", optarg);
 				errorcnt++;
 			}
@@ -1157,7 +1157,7 @@ done:
 	free(sign_option.keyblock);
 	free(sign_option.kernel_subkey);
 	if (sign_option.prikey)
-		vb2_private_key_free(sign_option.prikey);
+		vb2_free_private_key(sign_option.prikey);
 
 	if (errorcnt)
 		ERROR("Use --help for usage instructions\n");

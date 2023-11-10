@@ -290,7 +290,7 @@ done:
 	RSA_free(rsa_key);
 	if (privkey)				/* prevent double-free */
 		privkey->rsa_private_key = 0;
-	vb2_private_key_free(privkey);
+	vb2_free_private_key(privkey);
 	vb2_public_key_free(pubkey);
 	free(keyb_data);
 	return ret;

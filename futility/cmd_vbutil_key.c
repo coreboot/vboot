@@ -103,7 +103,7 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 	return 1;
 }
 
-/* Unpack a .vbpubk or .vbprivk */
+/* Unpack a .vbpubk, .vbprivk, or .vbprik2 */
 static int do_unpack(const char *infile, const char *outfile)
 {
 	struct vb2_packed_key *pubkey;

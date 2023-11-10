@@ -44,17 +44,10 @@ struct vb2_packed_private_key {
 };
 
 /**
- * Free a private key.
- *
- * @param key		Key containing internal data to free.
- */
-void vb2_private_key_free(struct vb2_private_key *key);
-
-/**
  * Unpack a private key from vb21_packed_private_key format.
  *
  * @param key_ptr	Destination for newly allocated key; this must be
- *			freed with vb2_private_key_free().
+ *			freed with vb2_free_private_key().
  * @param buf		Source buffer containing packed key
  * @param size		Size of buffer in bytes
  * @return VB2_SUCCESS, or non-zero error code if error.
@@ -63,15 +56,15 @@ vb2_error_t vb21_private_key_unpack(struct vb2_private_key **key_ptr,
 				    const uint8_t *buf, uint32_t size);
 
 /**
- * Read a private key from vb21_packed_private_key format.
+ * Unpack a private key from vb21_packed_private_key format.
  *
- * @param key_ptr	Destination for newly allocated key; this must be
- *			freed with vb2_private_key_free().
- * @param filename	File to read key data from.
+ * @param buf		Source buffer containing packed key
+ * @param size		Size of buffer in bytes
+ * @param key		Unpacked key
  * @return VB2_SUCCESS, or non-zero error code if error.
  */
-vb2_error_t vb21_private_key_read(struct vb2_private_key **key_ptr,
-				  const char *filename);
+vb2_error_t vb21_private_key_unpack_raw(const uint8_t *buf, uint32_t size,
+					       struct vb2_private_key *key);
 
 /**
  * Read a private key from a .pem file.
@@ -80,7 +73,7 @@ vb2_error_t vb21_private_key_read(struct vb2_private_key **key_ptr,
  * other fields in *key_ptr, since those are not contained in the .pem file.
  *
  * @param key_ptr	Destination for newly allocated key; this must be
- *			freed with vb2_private_key_free().
+ *			freed with vb2_free_private_key().
  * @param filename	File to read key data from.
  * @return VB2_SUCCESS, or non-zero error code if error.
  */

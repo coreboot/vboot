@@ -48,7 +48,7 @@ static void private_key_tests(const struct alg_combo *combo,
 	TEST_PTR_NEQ(key, NULL, "  key_ptr");
 	TEST_PTR_NEQ(key->rsa_private_key, NULL, "  rsa_private_key");
 	TEST_PTR_EQ(key->desc, NULL, "  desc");
-	vb2_private_key_free(key);
+	vb2_free_private_key(key);
 
 	TEST_EQ(vb2_private_key_read_pem(&key, "no_such_key"),
 		VB2_ERROR_READ_PEM_FILE_OPEN, "Read pem - no key");
@@ -67,7 +67,7 @@ static void private_key_tests(const struct alg_combo *combo,
 	TEST_SUCC(vb2_private_key_set_desc(key, NULL), "Clear desc");
 	TEST_PTR_EQ(key->desc, NULL, "  desc");
 	TEST_SUCC(vb2_private_key_set_desc(key, testdesc), "Set desc");
-	vb2_private_key_free(key);
+	vb2_free_private_key(key);
 
 	TEST_SUCC(vb2_private_key_read_pem(&key, pemfile), "Read pem - good3");
 	TEST_SUCC(vb2_private_key_set_desc(key, testdesc), "Set desc");
@@ -77,19 +77,19 @@ static void private_key_tests(const struct alg_combo *combo,
 
 	unlink(testfile);
 
-	TEST_EQ(vb21_private_key_read(&k2, testfile),
-		VB2_ERROR_READ_FILE_OPEN, "Read key no file");
+	k2 = vb2_read_private_key(testfile);
+	TEST_PTR_EQ(k2, NULL, "  key_ptr");
 	TEST_EQ(vb21_private_key_write(key, "no/such/dir"),
 		VB2_ERROR_PRIVATE_KEY_WRITE_FILE, "Write key to bad path");
 
 	TEST_SUCC(vb21_private_key_write(key, testfile), "Write key good");
-	TEST_SUCC(vb21_private_key_read(&k2, testfile), "Read key good");
+	k2 = vb2_read_private_key(testfile);
 	TEST_PTR_NEQ(k2, NULL, "  key_ptr");
 	TEST_EQ(k2->sig_alg, key->sig_alg, "  sig alg");
 	TEST_EQ(k2->hash_alg, key->hash_alg, "  hash alg");
 	TEST_EQ(memcmp(&k2->id, &key->id, sizeof(k2->id)), 0, "  id");
 	TEST_EQ(strcmp(k2->desc, testdesc), 0, "  desc");
-	vb2_private_key_free(k2);
+	vb2_free_private_key(k2);
 
 	TEST_SUCC(vb2_read_file(testfile, &buf, &bufsize), "Read key raw");
 	pkey = (struct vb21_packed_private_key *)buf;
@@ -100,7 +100,7 @@ static void private_key_tests(const struct alg_combo *combo,
 
 	TEST_SUCC(vb21_private_key_unpack(&k2, buf, bufsize),
 		  "Unpack private key good");
-	vb2_private_key_free(k2);
+	vb2_free_private_key(k2);
 
 	memcpy(buf, buf2, bufsize);
 	pkey->c.magic = VB21_MAGIC_PACKED_KEY;
@@ -131,7 +131,7 @@ static void private_key_tests(const struct alg_combo *combo,
 	pkey->c.struct_version_minor++;
 	TEST_SUCC(vb21_private_key_unpack(&k2, buf, bufsize),
 		  "Unpack private key minor version");
-	vb2_private_key_free(k2);
+	vb2_free_private_key(k2);
 
 	memcpy(buf, buf2, bufsize);
 	pkey->key_size -= 32;
@@ -162,7 +162,8 @@ static void private_key_tests(const struct alg_combo *combo,
 		       sizeof(ckey->id)), 0, "  id");
 
 	TEST_SUCC(vb21_private_key_write(ckey, testfile), "Write hash key");
-	TEST_SUCC(vb21_private_key_read(&key, testfile), "Read hash key");
+	key = vb2_read_private_key(testfile);
+	TEST_PTR_NEQ(key, NULL, "  key_ptr");
 	unlink(testfile);
 }
 

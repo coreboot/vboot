@@ -17,10 +17,11 @@
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "host_common.h"
+#include "host_common21.h"
 #include "host_key21.h"
-#include "host_p11.h"
 #include "host_key.h"
 #include "host_misc.h"
+#include "host_p11.h"
 
 enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
 	enum vb2_hash_algorithm hash_alg,
@@ -37,24 +38,17 @@ enum vb2_crypto_algorithm vb2_get_crypto_algorithm(
 		+ (hash_alg - VB2_HASH_SHA1);
 };
 
-static vb2_error_t vb2_read_local_private_key(const char *filename, struct vb2_private_key *key)
+static vb2_error_t vb2_read_local_private_key(uint8_t *buf, uint32_t bufsize,
+					      struct vb2_private_key *key)
 {
-	uint8_t *buf = NULL;
-	uint32_t bufsize = 0;
-	if (VB2_SUCCESS != vb2_read_file(filename, &buf, &bufsize)) {
-		VB2_DEBUG("unable to read from file %s\n", filename);
-		return VB2_ERROR_UNKNOWN;
-	}
-
 	uint64_t alg = *(uint64_t *)buf;
+	key->key_location = PRIVATE_KEY_LOCAL;
 	key->hash_alg = vb2_crypto_to_hash(alg);
 	key->sig_alg = vb2_crypto_to_signature(alg);
 	const unsigned char *start = buf + sizeof(alg);
 
-	key->rsa_private_key =
-		d2i_RSAPrivateKey(0, &start, bufsize - sizeof(alg));
+	key->rsa_private_key = d2i_RSAPrivateKey(0, &start, bufsize - sizeof(alg));
 
-	free(buf);
 	if (!key->rsa_private_key) {
 		VB2_DEBUG("Unable to parse RSA private key\n");
 		return VB2_ERROR_UNKNOWN;
@@ -102,6 +96,14 @@ done:
 	return ret;
 }
 
+static bool is_vb21_private_key(const uint8_t *buf, uint32_t bufsize)
+{
+	const struct vb21_packed_private_key *pkey =
+		(const struct vb21_packed_private_key *)buf;
+	return bufsize >= sizeof(pkey->c.magic) &&
+	       pkey->c.magic == VB21_MAGIC_PACKED_PRIVATE_KEY;
+}
+
 struct vb2_private_key *vb2_read_private_key(const char *key_info)
 {
 	struct vb2_private_key *key = (struct vb2_private_key *)calloc(sizeof(*key), 1);
@@ -126,12 +128,28 @@ struct vb2_private_key *vb2_read_private_key(const char *key_info)
 		if (!strncmp(key_info, local_prefix, prefix_size))
 			key_info = colon + 1;
 	}
-	if (vb2_read_local_private_key(key_info, key) != VB2_SUCCESS) {
-		VB2_DEBUG("Unable to read local private key\n");
-		free(key);
+
+	// Read the private key from local file.
+	uint8_t *buf = NULL;
+	uint32_t bufsize = 0;
+	if (vb2_read_file(key_info, &buf, &bufsize) != VB2_SUCCESS) {
+		VB2_DEBUG("unable to read from file %s\n", key_info);
 		return NULL;
 	}
 
+	vb2_error_t rv;
+	bool is_vb21 = is_vb21_private_key(buf, bufsize);
+	if (is_vb21)
+		rv = vb21_private_key_unpack_raw(buf, bufsize, key);
+	else
+		rv = vb2_read_local_private_key(buf, bufsize, key);
+
+	free(buf);
+	if (rv != VB2_SUCCESS) {
+		VB2_DEBUG("Unable to read local %s private key\n", is_vb21 ? "vb21" : "vb2");
+		free(key);
+		return NULL;
+	}
 	return key;
 }
 
@@ -179,10 +197,15 @@ void vb2_free_private_key(struct vb2_private_key *key)
 {
 	if (!key)
 		return;
+
 	if (key->key_location == PRIVATE_KEY_LOCAL && key->rsa_private_key)
 		RSA_free(key->rsa_private_key);
 	else if (key->key_location == PRIVATE_KEY_P11 && key->p11_key)
 		pkcs11_free_key(key->p11_key);
+
+	if (key->desc)
+		free(key->desc);
+
 	free(key);
 }
 
