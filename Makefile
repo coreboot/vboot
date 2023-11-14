@@ -1353,6 +1353,7 @@ runcgpttests: install_for_test
 runtestscripts: install_for_test ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_android_unittests.sh
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_uefi_unittest.py
+	${RUNTEST} $(SRC_RUN)/scripts/image_signing/lib/generate_android_cloud_config_unittest.py
 	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
 	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt -D 358400
