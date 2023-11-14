@@ -28,8 +28,11 @@ class Test(unittest.TestCase):
         )
 
     @mock.patch("sign_uefi.inject_vbpubk")
+    @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
     @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
-    def test_successful_sign(self, mock_sign, mock_inject_vbpubk):
+    def test_successful_sign(
+        self, mock_sign, mock_detached_sig, mock_inject_vbpubk
+    ):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
 
@@ -39,6 +42,7 @@ class Test(unittest.TestCase):
                 sign_cert=tmp_dir / "sign_cert.pem",
                 verify_cert=tmp_dir / "verify_cert.pem",
                 kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
+                crdyshim_private_key=tmp_dir / "crdyshim.priv.pem",
             )
 
             # Get target paths.
@@ -55,6 +59,7 @@ class Test(unittest.TestCase):
             (keys.sign_cert).touch()
             (keys.verify_cert).touch()
             (keys.kernel_subkey_vbpubk).touch()
+            (keys.crdyshim_private_key).touch()
 
             # Make EFI files.
             (efi_boot_dir / "bootia32.efi").touch()
@@ -111,6 +116,16 @@ class Test(unittest.TestCase):
                 ],
             )
 
+            # Check that `create_detached_signature` was called on both
+            # the crdyboot executables.
+            self.assertEqual(
+                mock_detached_sig.call_args_list,
+                [
+                    mock.call(efi_boot_dir / "crdybootia32.efi"),
+                    mock.call(efi_boot_dir / "crdybootx64.efi"),
+                ],
+            )
+
     @mock.patch("sign_uefi.subprocess.run")
     def test_inject_vbpubk(self, mock_run):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -121,6 +136,7 @@ class Test(unittest.TestCase):
                 sign_cert=None,
                 verify_cert=None,
                 kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
+                crdyshim_private_key=None,
             )
 
             efi_file = tmp_dir / "test_efi_file"
@@ -140,6 +156,54 @@ class Test(unittest.TestCase):
                         ],
                         check=True,
                     )
+                ],
+            )
+
+    @mock.patch("sign_uefi.subprocess.run")
+    def test_create_detached_signature(self, mock_run):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = Path(tmp_dir)
+
+            keys = sign_uefi.Keys(
+                private_key=None,
+                sign_cert=None,
+                verify_cert=None,
+                kernel_subkey_vbpubk=None,
+                crdyshim_private_key=tmp_dir / "crdyshim.priv.pem",
+            )
+            signer = sign_uefi.Signer(tmp_dir, keys)
+
+            efi_file = tmp_dir / "boot/crdybootx64.efi"
+            signer.create_detached_signature(efi_file)
+
+            # Check that the expected commands run.
+            self.assertEqual(
+                mock_run.call_args_list,
+                [
+                    mock.call(
+                        [
+                            "openssl",
+                            "pkeyutl",
+                            "-sign",
+                            "-rawin",
+                            "-in",
+                            efi_file,
+                            "-inkey",
+                            keys.crdyshim_private_key,
+                            "-out",
+                            tmp_dir / "crdybootx64.sig",
+                        ],
+                        check=True,
+                    ),
+                    mock.call(
+                        [
+                            "sudo",
+                            "cp",
+                            tmp_dir / "crdybootx64.sig",
+                            tmp_dir / "boot/crdybootx64.sig",
+                        ],
+                        check=True,
+                    ),
                 ],
             )
 

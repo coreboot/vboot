@@ -59,12 +59,14 @@ class Keys:
         sign_cert: Path of the signing certificate
         verify_cert: Path of the verification certificate
         kernel_subkey_vbpubk: Path of the kernel subkey public key
+        crdyshim_private_key: Path of the private crdyshim key
     """
 
     private_key: os.PathLike
     sign_cert: os.PathLike
     verify_cert: os.PathLike
     kernel_subkey_vbpubk: os.PathLike
+    crdyshim_private_key: os.PathLike
 
 
 class Signer:
@@ -124,6 +126,41 @@ class Signer:
         except subprocess.CalledProcessError:
             sys.exit("Verification failed")
 
+    def create_detached_signature(self, input_path: os.PathLike):
+        """Create a detached signature using the crdyshim private key.
+
+        The signature file will be created at the same location as
+        |efi_file|, but with the extension changed to ".sig".
+
+        Args:
+            input_path: Path of the file to sign.
+        """
+        sig_name = input_path.stem + ".sig"
+
+        # Create the signature in the temporary dir so that openssl
+        # doesn't have to run as root.
+        temp_sig_path = self.temp_dir / sig_name
+        cmd = [
+            "openssl",
+            "pkeyutl",
+            "-sign",
+            "-rawin",
+            "-in",
+            input_path,
+            "-inkey",
+            self.keys.crdyshim_private_key,
+            "-out",
+            temp_sig_path,
+        ]
+        if is_pkcs11_key_path(self.keys.private_key):
+            cmd += ["--engine", "pkcs11"]
+
+        logging.info("creating signature: %r", cmd)
+        subprocess.run(cmd, check=True)
+
+        output_path = input_path.parent / sig_name
+        subprocess.run(["sudo", "cp", temp_sig_path, output_path], check=True)
+
 
 def inject_vbpubk(efi_file: os.PathLike, keys: Keys):
     """Update a UEFI executable's vbpubk section.
@@ -164,10 +201,12 @@ def check_keys(keys: Keys):
     ensure_file_exists(keys.verify_cert, "No verification cert")
     ensure_file_exists(keys.sign_cert, "No signing cert")
     ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
-    # Only check the private key if it's a local path rather than a
+    # Only check the private keys if they are local paths rather than a
     # PKCS#11 URI.
     if not is_pkcs11_key_path(keys.private_key):
         ensure_file_exists(keys.private_key, "No signing key")
+    if not is_pkcs11_key_path(keys.crdyshim_private_key):
+        ensure_file_exists(keys.crdyshim_private_key, "No crdyshim private key")
 
 
 def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
@@ -197,6 +236,7 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
             if efi_file.is_file():
                 inject_vbpubk(efi_file, keys)
+                signer.create_detached_signature(efi_file)
 
         for syslinux_kernel_file in sorted(syslinux_dir.glob("vmlinuz.?")):
             if syslinux_kernel_file.is_file():
@@ -306,6 +346,7 @@ def main(argv: Optional[List[str]] = None) -> Optional[int]:
         sign_cert=opts.sign_cert,
         verify_cert=opts.verify_cert,
         kernel_subkey_vbpubk=opts.kernel_subkey_vbpubk,
+        crdyshim_private_key=opts.crdyshim_private_key,
     )
 
     if opts.target_dir:
