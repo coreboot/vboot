@@ -215,6 +215,7 @@ main() {
 
   if [[ "${uefi_keys}" == "true" ]]; then
     mkdir -p uefi
+    "${SCRIPT_DIR}"/uefi/create_new_crdyshim_key.sh uefi
     "${SCRIPT_DIR}"/uefi/create_new_uefi_keys.sh --output uefi
   fi
 
