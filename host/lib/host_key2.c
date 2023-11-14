@@ -64,11 +64,11 @@ static vb2_error_t vb2_read_local_private_key(const char *filename, struct vb2_p
 
 static vb2_error_t vb2_read_p11_private_key(const char *key_info, struct vb2_private_key *key)
 {
-	/* The format of p11 key info: "pkcs11:{lib_path}:{slot_id}:{key_label}" */
+	/* The format of p11 key info: "remote:{lib_path}:{slot_id}:{key_label}" */
 	char *p11_lib = NULL, *p11_label = NULL;
 	int p11_slot_id;
 	vb2_error_t ret = VB2_ERROR_UNKNOWN;
-	if (sscanf(key_info, "pkcs11:%m[^:]:%i:%m[^:]", &p11_lib, &p11_slot_id, &p11_label) !=
+	if (sscanf(key_info, "remote:%m[^:]:%i:%m[^:]", &p11_lib, &p11_slot_id, &p11_label) !=
 	    3) {
 		VB2_DEBUG("Failed to parse pkcs11 key info\n");
 		goto done;
@@ -110,7 +110,7 @@ struct vb2_private_key *vb2_read_private_key(const char *key_info)
 		return NULL;
 	}
 
-	static const char p11_prefix[] = "pkcs11";
+	static const char p11_prefix[] = "remote";
 	static const char local_prefix[] = "local";
 	char *colon = strchr(key_info, ':');
 	if (colon) {
