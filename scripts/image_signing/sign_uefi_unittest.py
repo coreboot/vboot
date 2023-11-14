@@ -20,23 +20,11 @@ import sign_uefi
 class Test(unittest.TestCase):
     """Test sign_uefi.py."""
 
-    def test_is_private_key_pkcs11(self):
-        self.assertFalse(
-            sign_uefi.Keys(
-                private_key=Path("private_key.rsa"),
-                sign_cert=None,
-                verify_cert=None,
-                kernel_subkey_vbpubk=None,
-            ).is_private_key_pkcs11()
-        )
+    def test_is_pkcs11_key_path(self):
+        self.assertFalse(sign_uefi.is_pkcs11_key_path(Path("private_key.rsa")))
 
         self.assertTrue(
-            sign_uefi.Keys(
-                private_key="pkcs11:object=private_key",
-                sign_cert=None,
-                verify_cert=None,
-                kernel_subkey_vbpubk=None,
-            ).is_private_key_pkcs11()
+            sign_uefi.is_pkcs11_key_path("pkcs11:object=private_key")
         )
 
     @mock.patch("sign_uefi.inject_vbpubk")

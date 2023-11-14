@@ -41,6 +41,15 @@ def ensure_file_exists(path, message):
         sys.exit(f"{message}: {path}")
 
 
+def is_pkcs11_key_path(path: os.PathLike) -> bool:
+    """Check if the key path is a PKCS#11 URI.
+
+    If the key path starts with "pkcs11:", it should be treated as a
+    PKCS#11 URI instead of a local file path.
+    """
+    return str(path).startswith("pkcs11:")
+
+
 @dataclasses.dataclass(frozen=True)
 class Keys:
     """Public and private keys paths.
@@ -56,14 +65,6 @@ class Keys:
     sign_cert: os.PathLike
     verify_cert: os.PathLike
     kernel_subkey_vbpubk: os.PathLike
-
-    def is_private_key_pkcs11(self) -> bool:
-        """Check if the private key is a PKCS#11 URI.
-
-        If the private key starts with "pkcs11:", it should be treated
-        as a PKCS#11 URI instead of a local file path.
-        """
-        return str(self.private_key).startswith("pkcs11:")
 
 
 class Signer:
@@ -102,7 +103,7 @@ class Signer:
             signed_file,
             target,
         ]
-        if self.keys.is_private_key_pkcs11():
+        if is_pkcs11_key_path(self.keys.private_key):
             sign_cmd += ["--engine", "pkcs11"]
 
         try:
@@ -165,7 +166,7 @@ def check_keys(keys: Keys):
     ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
     # Only check the private key if it's a local path rather than a
     # PKCS#11 URI.
-    if not keys.is_private_key_pkcs11():
+    if not is_pkcs11_key_path(keys.private_key):
         ensure_file_exists(keys.private_key, "No signing key")
 
 
