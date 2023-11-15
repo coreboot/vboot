@@ -533,6 +533,8 @@ static int do_dump_fmap(int argc, char *argv[])
 					     (const char **)(argv + optind + 1),
 					     argc - optind - 1);
 		}
+	} else {
+		ERROR("FMAP header not found in %s\n", argv[optind]);
 	}
 
 	if (munmap(base_of_rom, sb.st_size)) {
