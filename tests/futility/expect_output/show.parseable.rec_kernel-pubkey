@@ -5,6 +5,7 @@ kernel::keyblock::flags::11::!DEV:DEV:REC
 kernel::keyblock::data_key::algorithm::11::RSA8192 SHA512
 kernel::keyblock::data_key::version::1
 kernel::keyblock::data_key::sha1_sum::e78ce746a037837155388a1096212ded04fb86eb
+kernel::preamble::valid
 kernel::preamble::signature::valid
 kernel::preamble::size::62280
 kernel::preamble::header_version::2.2

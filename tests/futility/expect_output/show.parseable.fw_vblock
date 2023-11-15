@@ -6,6 +6,7 @@ fw_pre::keyblock::data_key::algorithm::8::RSA4096 SHA512
 fw_pre::keyblock::data_key::version::1
 fw_pre::keyblock::data_key::sha1_sum::f917ad29e36aa8a286f978c1aa0550ea31c6a561
 fw_pre::preamble::valid
+fw_pre::preamble::signature::valid
 fw_pre::preamble::size::2164
 fw_pre::preamble::header_version::2.1
 fw_pre::preamble::firmware_version::2

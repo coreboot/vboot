@@ -5,6 +5,7 @@ kernel::keyblock::flags::23::!DEV:DEV:!REC:!MINIOS
 kernel::keyblock::data_key::algorithm::4::RSA2048 SHA256
 kernel::keyblock::data_key::version::1
 kernel::keyblock::data_key::sha1_sum::d6170aa480136f1f29cf339a5ab1b960585fa444
+kernel::preamble::valid
 kernel::preamble::signature::valid
 kernel::preamble::size::64328
 kernel::preamble::header_version::2.2

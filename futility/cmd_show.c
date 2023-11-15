@@ -334,9 +334,11 @@ int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 						  &data_key, &wb)) {
 		ERROR("%s is invalid\n", print_name);
 		FT_PARSEABLE_PRINT("invalid\n");
+		FT_PARSEABLE_PRINT("signature::invalid\n");
 		return 1;
 	} else {
 		FT_PARSEABLE_PRINT("valid\n");
+		FT_PARSEABLE_PRINT("signature::valid\n");
 	}
 
 	uint32_t flags = pre2->flags;
@@ -483,6 +485,7 @@ int ft_show_kernel_preamble(const char *fname)
 		goto done;
 	}
 
+	ft_print_header2 = NULL;
 	uint32_t more = keyblock->keyblock_size;
 	struct vb2_kernel_preamble *pre2 =
 		(struct vb2_kernel_preamble *)(buf + more);
@@ -490,13 +493,15 @@ int ft_show_kernel_preamble(const char *fname)
 	if (VB2_SUCCESS != vb2_verify_kernel_preamble(pre2, len - more,
 						      &data_key, &wb)) {
 		ERROR("%s is invalid\n", fname);
-		FT_PARSEABLE_PRINT("kernel_preamble::signature::invalid\n");
+		FT_PARSEABLE_PRINT("preamble::invalid\n");
+		FT_PARSEABLE_PRINT("preamble::signature::invalid\n");
 		retval = 1;
 		goto done;
 	}
 
-	ft_print_header2 = NULL;
-	FT_PRINT("Kernel Preamble:\n", "preamble::signature::valid\n");
+	FT_PARSEABLE_PRINT("preamble::valid\n");
+	FT_PARSEABLE_PRINT("preamble::signature::valid\n");
+	FT_READABLE_PRINT("Kernel Preamble:\n");
 	FT_PRINT("  Size:                  %#x\n",
 		 "preamble::size::%d\n", pre2->preamble_size);
 	FT_PRINT("  Header version:        %d.%d\n",

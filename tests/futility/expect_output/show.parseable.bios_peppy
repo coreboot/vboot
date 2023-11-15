@@ -32,6 +32,7 @@ bios::VBLOCK_A::keyblock::data_key::algorithm::8::RSA4096 SHA512
 bios::VBLOCK_A::keyblock::data_key::version::1
 bios::VBLOCK_A::keyblock::data_key::sha1_sum::f917ad29e36aa8a286f978c1aa0550ea31c6a561
 bios::VBLOCK_A::preamble::valid
+bios::VBLOCK_A::preamble::signature::valid
 bios::VBLOCK_A::preamble::size::2164
 bios::VBLOCK_A::preamble::header_version::2.1
 bios::VBLOCK_A::preamble::firmware_version::2
@@ -49,6 +50,7 @@ bios::VBLOCK_B::keyblock::data_key::algorithm::8::RSA4096 SHA512
 bios::VBLOCK_B::keyblock::data_key::version::1
 bios::VBLOCK_B::keyblock::data_key::sha1_sum::f917ad29e36aa8a286f978c1aa0550ea31c6a561
 bios::VBLOCK_B::preamble::valid
+bios::VBLOCK_B::preamble::signature::valid
 bios::VBLOCK_B::preamble::size::2164
 bios::VBLOCK_B::preamble::header_version::2.1
 bios::VBLOCK_B::preamble::firmware_version::2
