@@ -511,6 +511,9 @@ int ft_show_kernel_preamble(const char *fname)
 	FT_PRINT("  Kernel version:        %u\n",
 		 "preamble::kernel_version::%u\n",
 		 pre2->kernel_version);
+	FT_PRINT("  Flags:                 %#x\n",
+		 "preamble::flags::%d\n", vb2_kernel_get_flags(pre2));
+
 	FT_PRINT("  Body load address:     0x%" PRIx64 "\n",
 		 "body::address::%" PRIu64 "\n",
 		 pre2->body_load_address);
@@ -537,9 +540,6 @@ int ft_show_kernel_preamble(const char *fname)
 			 "vmlinuz_header::size::%d\n",
 			 vmlinuz_header_size);
 	}
-
-	FT_PRINT("  Flags:                 %#x\n",
-		 "flags::%d\n", vb2_kernel_get_flags(pre2));
 
 	/* Verify kernel body */
 	uint8_t *kernel_blob = 0;
