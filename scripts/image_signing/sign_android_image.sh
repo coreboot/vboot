@@ -381,28 +381,45 @@ sign_android_internal() {
   fi
   info "Detected ARC system image type: ${image_type}"
 
-  local squashfs_comp_flags=()
-  if [[ "${image_type}" == "squashfs" ]]; then
-    # NOTE: Keep squashfs_comp_flags aligned with
-    # project-cheets-private/scripts/board_specific_setup.sh
-    local compression
-    compression="$("${unsquashfs}" -s "${system_img}" \
-      | awk '$1 == "Compression" {print $2}')"
-    case "${compression}" in
-      "gzip")
-        squashfs_comp_flags=(-comp gzip)
-        ;;
-      "lz4")
-        squashfs_comp_flags=(-comp lz4 -Xhc -b 256K)
-        ;;
-      "zstd")
-        squashfs_comp_flags=(-comp zstd -b 256K)
-        ;;
-      *)
-        die "Unexpected compression type: ${compression}"
-        ;;
-    esac
-    info "Detected squashfs compression type: ${compression}"
+  # Detect image compression flags.
+  local compression_flags=()
+  local compression_flags_path="${android_dir}/image_compression_flags"
+  if [[ -f "${compression_flags_path}" ]]; then
+    # The file contains a line such as:
+    # mkfs.erofs -z lz4hc -C32768
+    read -r -a tokens <"${compression_flags_path}"
+    if [[ ("${image_type}" == "squashfs" && "${tokens[0]}" != "mksquashfs") ||
+          ("${image_type}" == "erofs" && "${tokens[0]}" != "mkfs.erofs") ]]; then
+      die "Compression tool '${tokens[0]}' found in image_compression_flags" \
+          "doesn't match detected image type '${image_type}'"
+    fi
+    compression_flags=("${tokens[@]:1}")
+    info "Detected compression flags: ${compression_flags[*]}"
+  else
+    if [[ "${image_type}" == "erofs" ]]; then
+      compression_flags=(-z lz4hc -C32768)
+    elif [[ "${image_type}" == "squashfs" ]]; then
+      local compression
+      compression="$("${unsquashfs}" -s "${system_img}" \
+        | awk '$1 == "Compression" {print $2}')"
+      case "${compression}" in
+        "gzip")
+          compression_flags=(-comp gzip)
+          ;;
+        "lz4")
+          compression_flags=(-comp lz4 -Xhc -b 256K)
+          ;;
+        "zstd")
+          compression_flags=(-comp zstd -b 256K)
+          ;;
+        *)
+          die "Unexpected compression type: ${compression}"
+          ;;
+      esac
+    fi
+    info "image_compression_flags does not exist." \
+         "(This is expected for versions older than R121-15679.)" \
+         "Using default compression flags: ${compression_flags[*]}"
   fi
 
   if ! type -P zipalign &>/dev/null || ! type -P signapk &>/dev/null \
@@ -543,10 +560,10 @@ sign_android_internal() {
   sudo rm -rf "${system_img}"
 
   if [[ "${image_type}" == "squashfs" ]]; then
-    info "Repacking squashfs image with ${squashfs_comp_flags[*]}"
+    info "Repacking squashfs image with ${compression_flags[*]}"
     sudo "${mksquashfs}" "${system_mnt}" "${system_img}" \
       -context-file "${file_contexts}" -mount-point "/" \
-      -no-progress "${squashfs_comp_flags[@]}"
+      -no-progress "${compression_flags[@]}"
 
     list_files_in_squashfs_image "${unsquashfs}" "${system_img}" > \
         "${working_dir}/image_file_list.new"
@@ -555,10 +572,9 @@ sign_android_internal() {
     # List all files inside the image.
     sudo find "${system_mnt}" > "${working_dir}/image_file_list.new"
 
-    info "Repacking erofs image"
-    # TODO(b/286165395): Detect the original EROFS compression type and use it
-    #                    instead of always using lz4hc.
-    sudo "${mkfs_erofs}" -z lz4hc -C32768 --file-contexts "${file_contexts}" \
+    info "Repacking erofs image with ${compression_flags[*]}"
+    sudo "${mkfs_erofs}" "${compression_flags[@]}" \
+      --file-contexts "${file_contexts}" \
       "${system_img}" "${system_mnt}"
   fi
 
