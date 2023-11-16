@@ -196,7 +196,6 @@ int ft_sign_kern_preamble(const char *fname)
 
 	/* Note: This just sets some static pointers. It doesn't malloc. */
 	kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
-					     sign_option.padding,
 					     &keyblock, &preamble, &kblob_size);
 
 	if (!kblob_data) {

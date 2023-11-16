@@ -39,7 +39,6 @@ try_arch () {
 
   # verify the old way
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.blob1.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/recovery_key.vbpubk" > "${TMP}.verify1"
 
   # pack it up the new way
@@ -55,7 +54,6 @@ try_arch () {
     --outfile "${TMP}.blob2.${arch}"
 
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.blob2.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/recovery_key.vbpubk" > "${TMP}.verify2"
 
   # they should be identical
@@ -76,7 +74,6 @@ try_arch () {
 
   # verify the old way
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.blob3.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify3"
 
   # repack it the new way
@@ -90,7 +87,6 @@ try_arch () {
     "${TMP}.blob4.${arch}"
 
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.blob4.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify4"
 
   # they should be identical
@@ -110,7 +106,6 @@ try_arch () {
     "${TMP}.blob5.${arch}"
 
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.blob5.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify5"
 
   # they should be identical
@@ -219,7 +214,6 @@ try_arch () {
 
   # Make sure the partitions verify
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.part1.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/recovery_key.vbpubk" > "${TMP}.verify6"
 
   # The partition should verify the same way as the blob
@@ -237,7 +231,6 @@ try_arch () {
 
   # verify the old way
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.part6.${arch}" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify6.old"
 
   # this "partition" should actually be the same as the old-way blob
@@ -254,7 +247,6 @@ try_arch () {
     "${TMP}.part6.${arch}.new1"
 
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.part6.${arch}.new1" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify6.new1"
 
   # The verification should be indentical
@@ -278,7 +270,6 @@ try_arch () {
     "${TMP}.part6.${arch}.new2"
 
   "${FUTILITY}" vbutil_kernel --verify "${TMP}.part6.${arch}.new2" \
-    --pad "${padding}" \
     --signpubkey "${DEVKEYS}/kernel_subkey.vbpubk" > "${TMP}.verify6.new2"
 
   # The input file should not have changed (just being sure).

@@ -41,7 +41,6 @@ int WriteSomeParts(const char *outfile,
  *
  * @param kpart_data	Kernel partition data
  * @param kpart_size	Size of kernel partition data in bytes
- * @param padding	Expected max size of keyblock+preamble
  * @param keyblock_ptr	Pointer to keyblock stored here on exit
  * @param preamble_ptr	Pointer to premable stored here on exit
  * @param blob_size_ptr	Size of kernel data blob stored here on exit
@@ -50,7 +49,6 @@ int WriteSomeParts(const char *outfile,
  */
 uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 				 uint32_t kpart_size,
-				 uint32_t padding,
 				 struct vb2_keyblock **keyblock_ptr,
 				 struct vb2_kernel_preamble **preamble_ptr,
 				 uint32_t *blob_size_ptr);

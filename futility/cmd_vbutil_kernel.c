@@ -492,8 +492,8 @@ static int do_vbutil_kernel(int argc, char *argv[])
 			FATAL("%s is not a kernel blob\n", oldfile);
 
 		kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
-						     opt_pad, &keyblock,
-						     &preamble, &kblob_size);
+						     &keyblock, &preamble,
+						     &kblob_size);
 
 		if (!kblob_data)
 			FATAL("Unable to unpack kernel partition\n");
@@ -560,8 +560,7 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		kpart_data = ReadOldKPartFromFileOrDie(filename, &kpart_size);
 
 		kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
-						     opt_pad, 0, 0,
-						     &kblob_size);
+						     0, 0, &kblob_size);
 		if (!kblob_data)
 			FATAL("Unable to unpack kernel partition\n");
 
@@ -582,8 +581,8 @@ static int do_vbutil_kernel(int argc, char *argv[])
 		kpart_data = ReadOldKPartFromFileOrDie(filename, &kpart_size);
 
 		kblob_data = unpack_kernel_partition(kpart_data, kpart_size,
-						     opt_pad, &keyblock,
-						     &preamble, &kblob_size);
+						     &keyblock, &preamble,
+						     &kblob_size);
 
 		if (!kblob_data)
 			FATAL("Unable to unpack kernel partition\n");

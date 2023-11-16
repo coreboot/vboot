@@ -316,7 +316,6 @@ int UpdateKernelBlobConfig(uint8_t *kblob_data, uint32_t kblob_size,
 /* Split a kernel partition into separate vblock and blob parts. */
 uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 				 uint32_t kpart_size,
-				 uint32_t padding,
 				 struct vb2_keyblock **keyblock_ptr,
 				 struct vb2_kernel_preamble **preamble_ptr,
 				 uint32_t *blob_size_ptr)
@@ -335,12 +334,6 @@ uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 			"keyblock_size advances past the end of the blob\n");
 		return NULL;
 	}
-	if (now > padding) {
-		fprintf(stderr,
-			"keyblock_size advances past %u byte padding\n",
-			padding);
-		return NULL;
-	}
 
 	/* LGTM */
 	g_keyblock = keyblock;
@@ -352,11 +345,6 @@ uint8_t *unpack_kernel_partition(uint8_t *kpart_data,
 	if (now > kpart_size) {
 		fprintf(stderr,
 			"preamble_size advances past the end of the blob\n");
-		return NULL;
-	}
-	if (now > padding) {
-		fprintf(stderr, "preamble_size advances past %u"
-			" byte padding\n", padding);
 		return NULL;
 	}
 	/* LGTM */
