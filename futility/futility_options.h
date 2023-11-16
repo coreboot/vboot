@@ -21,7 +21,6 @@ struct show_option_s {
 	struct vb2_public_key *k;
 	uint8_t *fv;
 	uint64_t fv_size;
-	uint32_t padding;
 	int strict;
 	int t_flag;
 	enum futil_file_type type;

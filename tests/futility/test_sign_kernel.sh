@@ -181,7 +181,6 @@ try_arch () {
      of="${TMP}.blob3.${arch}.kb0"
   # and verify it using the new vblock (no way to do that with vbutil_kernel)
   "${FUTILITY}" --debug verify \
-    --pad "${padding}" \
     --publickey "${DEVKEYS}/kernel_subkey.vbpubk" \
     --fv "${TMP}.blob3.${arch}.kb0" \
     "${TMP}.blob3.${arch}.vb1" > "${TMP}.verify3v"
@@ -207,7 +206,6 @@ try_arch () {
      of="${TMP}.blob4.${arch}.kb0"
   # and verify it using the new vblock (no way to do that with vbutil_kernel)
   "${FUTILITY}" --debug verify \
-    --pad "${padding}" \
     --publickey "${DEVKEYS}/kernel_subkey.vbpubk" \
     --fv "${TMP}.blob4.${arch}.kb0" \
     "${TMP}.blob4.${arch}.vb1" > "${TMP}.verify4v"

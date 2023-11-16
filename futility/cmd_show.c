@@ -36,7 +36,6 @@
 
 /* Options */
 struct show_option_s show_option = {
-	.padding = 65536,
 	.type = FILE_TYPE_UNKNOWN,
 };
 
@@ -499,6 +498,7 @@ int ft_show_kernel_preamble(const char *fname)
 		goto done;
 	}
 
+	more += pre2->preamble_size;
 	FT_PARSEABLE_PRINT("preamble::valid\n");
 	FT_PARSEABLE_PRINT("preamble::signature::valid\n");
 	FT_READABLE_PRINT("Kernel Preamble:\n");
@@ -542,19 +542,19 @@ int ft_show_kernel_preamble(const char *fname)
 	}
 
 	/* Verify kernel body */
-	uint8_t *kernel_blob = 0;
-	uint64_t kernel_size = 0;
+	uint8_t *kernel_blob;
+	uint64_t kernel_size;
 	if (show_option.fv) {
 		/* It's in a separate file, which we've already read in */
 		kernel_blob = show_option.fv;
 		kernel_size = show_option.fv_size;
-	} else if (len > show_option.padding) {
+	} else {
 		/* It should be at an offset within the input file. */
-		kernel_blob = buf + show_option.padding;
-		kernel_size = len - show_option.padding;
+		kernel_blob = buf + more;
+		kernel_size = len - more;
 	}
 
-	if (!kernel_blob) {
+	if (!kernel_size) {
 		FT_PRINT("No kernel blob available to verify.\n",
 			 "body::signature::ignored\n");
 		if (show_option.strict)
@@ -584,8 +584,7 @@ done:
 }
 
 enum no_short_opts {
-	OPT_PADDING = 1000,
-	OPT_TYPE,
+	OPT_TYPE = 1000,
 	OPT_PUBKEY,
 	OPT_HELP,
 };
@@ -612,7 +611,6 @@ static const char usage[] = "\n"
 	"  -k|--publickey   FILE.vbpubk     Public key in vb1 format\n"
 	"  --pubkey         FILE.vpubk2     Public key in vb2 format\n"
 	"  -f|--fv          FILE            Verify this payload (FW_MAIN_A/B)\n"
-	"  --pad            NUM             Kernel vblock padding size\n"
 	"  --strict                         "
 	"Fail unless all signatures are valid\n"
 	"\n";
@@ -632,7 +630,6 @@ static const struct option long_opts[] = {
 	/* name    hasarg *flag val */
 	{"publickey",   1, 0, 'k'},
 	{"fv",          1, 0, 'f'},
-	{"pad",         1, NULL, OPT_PADDING},
 	{"type",        1, NULL, OPT_TYPE},
 	{"strict",      0, &show_option.strict, 1},
 	{"pubkey",      1, NULL, OPT_PUBKEY},
@@ -721,7 +718,6 @@ static int do_show(int argc, char *argv[])
 	char *infile = 0;
 	int i;
 	int errorcnt = 0;
-	char *e = 0;
 	int type_override = 0;
 	enum futil_file_type type;
 
@@ -752,13 +748,6 @@ static int do_show(int argc, char *argv[])
 			break;
 		case 'P':
 			show_option.parseable = true;
-			break;
-		case OPT_PADDING:
-			show_option.padding = strtoul(optarg, &e, 0);
-			if (!*optarg || (e && *e)) {
-				ERROR("Invalid --padding \"%s\"\n", optarg);
-				errorcnt++;
-			}
 			break;
 		case OPT_TYPE:
 			if (!futil_str_to_file_type(optarg,
