@@ -82,6 +82,7 @@ TEST_CASES=(
   "parseable.bios_geralt_cbfs tests/futility/data/bios_geralt_cbfs.bin 0 \
     --type bios -P"
   ## [type] kernel
+  # kernel partition
   "kernel tests/futility/data/kernel_part.bin 1"
   "parseable.kernel tests/futility/data/kernel_part.bin 1 -P"
   "kernel-pubkey tests/futility/data/kernel_part.bin 0 \
@@ -97,6 +98,9 @@ TEST_CASES=(
     -k tests/devkeys/recovery_key.vbpubk -P"
   "rec_kernel-pubkey-wrong tests/futility/data/rec_kernel_part.bin 1 \
     -k tests/devkeys/kernel_subkey.vbpubk"
+  # kernel vblock
+  "kernel_vblock tests/futility/data/kernel_vblock.bin 1"
+  "parseable.kernel_vblock tests/futility/data/kernel_vblock.bin 1 -P"
 )
 
 for test_case in "${TEST_CASES[@]}"; do
