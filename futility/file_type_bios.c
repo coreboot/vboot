@@ -357,9 +357,13 @@ static int sign_bios_at_end(struct bios_state_s *state)
 	return retval;
 }
 
-/* Prepare firmware slot for signing.
-   If fw_size is not zero, then it will be used as new length of signed area,
-   for zero the length will be taken form FlashMap or preamble. */
+/*
+ * Prepare firmware slot for signing.
+ *
+ * If state->area[fw_c].fw_size is non-zero, then it will be used as new length
+ * of the signed area. Otherwise the signing length will be taken from FlashMap
+ * or preamble.
+ */
 static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 			enum bios_component vblock_c,
 			struct bios_state_s *state)
@@ -385,19 +389,12 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 	}
 	fmap_limit_area(ah, len);
 	state->area[fw_c].buf = buf + ah->area_offset;
-	state->area[fw_c].is_valid = 1;
 	if (state->area[fw_c].fw_size > ah->area_size) {
 		ERROR("%s size is incorrect.\n", fmap_name[fw_c]);
 		return 1;
-	} else if (state->area[fw_c].fw_size) {
-		state->area[fw_c].len = state->area[fw_c].fw_size;
-	} else {
-		if (state->area[fw_c].metadata_hash.algo == VB2_HASH_INVALID)
-			WARN("%s does not contain CBFS. Trying to sign entire "
-			     "area.\n",
-			     fmap_name[fw_c]);
-		state->area[fw_c].len = ah->area_size;
 	}
+	state->area[fw_c].len = ah->area_size;
+	state->area[fw_c].is_valid = 1;
 
 	/* Corresponding VBLOCK */
 	if (!fmap_find_by_name(buf, len, fmap, vblock_name, &ah)) {
@@ -410,7 +407,7 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 
 	struct vb2_keyblock *keyblock =
 		(struct vb2_keyblock *)state->area[vblock_c].buf;
-	int keyblock_valid = 0;
+	int vblock_valid = 0;
 
 	if (vb2_verify_keyblock_hash(keyblock, state->area[vblock_c].len,
 				     &wb) != VB2_SUCCESS) {
@@ -449,31 +446,37 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 		goto end;
 	}
 
-	if (state->area[fw_c].fw_size == 0) {
-		if (preamble->body_signature.data_size >
-		    state->area[fw_c].len) {
-			ERROR("%s says the firmware is larger than we have.\n",
-			      vblock_name);
-			goto end;
-		} else {
-			state->area[fw_c].len =
-				preamble->body_signature.data_size;
-		}
+	if (preamble->body_signature.data_size > state->area[fw_c].len) {
+		ERROR("%s signing len %#x is larger than FMAP area size %#x.\n",
+		      vblock_name, preamble->body_signature.data_size,
+		      state->area[fw_c].len);
+		goto end;
 	}
 
-	keyblock_valid = 1;
+	vblock_valid = 1;
 
 end:
+	/* Override the signing length. fw_size takes precedence. */
+	if (state->area[fw_c].fw_size) {
+		state->area[fw_c].len = state->area[fw_c].fw_size;
+	} else if (vblock_valid) {
+		state->area[fw_c].len = preamble->body_signature.data_size;
+	} else if (state->area[fw_c].metadata_hash.algo == VB2_HASH_INVALID) {
+		/* Default length is FMAP size, which has been set above. */
+		WARN("%s does not contain CBFS. Trying to sign entire area.\n",
+		     fmap_name[fw_c]);
+	}
+
 	if (sign_option.flags_specified)
 		state->area[vblock_c].flags = sign_option.flags;
-	else if (keyblock_valid)
+	else if (vblock_valid)
 		state->area[vblock_c].flags = preamble->flags;
 	else
 		state->area[vblock_c].flags = 0;
 
 	if (sign_option.version_specified)
 		state->area[vblock_c].version = sign_option.version;
-	else if (keyblock_valid)
+	else if (vblock_valid)
 		state->area[vblock_c].version = preamble->firmware_version;
 	else
 		state->area[vblock_c].version = 1;
