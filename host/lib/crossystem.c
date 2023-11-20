@@ -30,9 +30,8 @@
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"
 
-/* Filename for the TPM simulator NV data */
-#define TPM_SIMULATOR_NVCHIP_PATH \
-	"/mnt/stateful_partition/unencrypted/tpm2-simulator/NVChip"
+/* Filename for the tpm_clear_request executable. */
+#define TPM_CLEAR_REQUEST_EXEC_NAME "/usr/sbin/tpm_clear_request"
 
 /* Fields that GetVdatString() can get */
 typedef enum VdatStringField {
@@ -449,12 +448,16 @@ int VbGetSystemPropertyInt(const char *name)
 	} else if (!strcasecmp(name,"disable_dev_request")) {
 		value = vb2_get_nv_storage(VB2_NV_DISABLE_DEV_REQUEST);
 	} else if (!strcasecmp(name,"clear_tpm_owner_request")) {
-		if (TPM2_SIMULATOR)
-			/* Check TPM simulator NVChip status */
-			value = access(TPM_SIMULATOR_NVCHIP_PATH, F_OK) != 0;
-		else
-			value = vb2_get_nv_storage(
-				VB2_NV_CLEAR_TPM_OWNER_REQUEST);
+		if (EXTERNAL_TPM_CLEAR_REQUEST) {
+			const char *const argv[] = {
+				TPM_CLEAR_REQUEST_EXEC_NAME,
+				NULL,
+			};
+			value = subprocess_run(argv, &subprocess_null, &subprocess_null,
+					       &subprocess_null);
+		} else {
+			value = vb2_get_nv_storage(VB2_NV_CLEAR_TPM_OWNER_REQUEST);
+		}
 	} else if (!strcasecmp(name,"clear_tpm_owner_done")) {
 		value = vb2_get_nv_storage(VB2_NV_CLEAR_TPM_OWNER_DONE);
 	} else if (!strcasecmp(name,"tpm_rebooted")) {
@@ -670,20 +673,14 @@ static int VbSetSystemPropertyIntInternal(const char *name, int value)
 	} else if (!strcasecmp(name,"disable_dev_request")) {
 		return vb2_set_nv_storage(VB2_NV_DISABLE_DEV_REQUEST, value);
 	} else if (!strcasecmp(name,"clear_tpm_owner_request")) {
-		if (TPM2_SIMULATOR) {
-			/* We don't support to set clear_tpm_owner_request to 0
-			 * on simulator */
-			if (value == 0)
-				return -1;
-			/* Check TPM simulator data status */
-			if (!access(TPM_SIMULATOR_NVCHIP_PATH, F_OK)) {
-				/* Remove the TPM2.0 simulator data */
-				return remove(TPM_SIMULATOR_NVCHIP_PATH);
-			} else {
-				/* Return success when the file is already
-				 * removed */
-				return 0;
-			}
+		if (EXTERNAL_TPM_CLEAR_REQUEST) {
+			const char *const argv[] = {
+				TPM_CLEAR_REQUEST_EXEC_NAME,
+				value ? "1" : "0",
+				NULL,
+			};
+			return subprocess_run(argv, &subprocess_null, &subprocess_null,
+					      &subprocess_null);
 		} else {
 			return vb2_set_nv_storage(
 				VB2_NV_CLEAR_TPM_OWNER_REQUEST, value);

@@ -206,11 +206,12 @@ ifneq ($(filter-out 0,${MOCK_TPM}),)
 CFLAGS += -DMOCK_TPM
 endif
 
-# TPM2_SIMULATOR indicates whether the TPM2 simulator feature is enable or not.
-ifneq ($(filter-out 0,${TPM2_SIMULATOR}),)
-CFLAGS += -DTPM2_SIMULATOR=1
+# EXTERNAL_TPM_CLEAR_REQUEST indicates whether we want to use the external
+# tpm_clear_request tool or not.
+ifneq ($(filter-out 0,${EXTERNAL_TPM_CLEAR_REQUEST}),)
+CFLAGS += -DEXTERNAL_TPM_CLEAR_REQUEST=1
 else
-CFLAGS += -DTPM2_SIMULATOR=0
+CFLAGS += -DEXTERNAL_TPM_CLEAR_REQUEST=0
 endif
 
 # NOTE: We don't use these files but they are useful for other packages to
