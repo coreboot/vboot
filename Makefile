@@ -120,7 +120,22 @@ COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls -Wshadow \
 	-Wwrite-strings -Wstrict-aliasing -Wdate-time \
 	-ffunction-sections -fdata-sections \
-	-Wformat -Wno-format-security ${DEBUG_FLAGS} ${CPPFLAGS}
+	-Wformat -Wno-format-security -std=gnu11 ${DEBUG_FLAGS} ${CPPFLAGS}
+
+# test_ccflag
+# $(1): compiler flags to test
+# $(2): code to insert into test snippet
+# returns: $(1) if compiler was successful, empty string otherwise
+test_ccflag = $(shell \
+	printf "$(2)\nvoid _start(void) {}\n" | \
+	$(CC) -nostdlib -Werror $(1) -xc -c - -o /dev/null \
+	>/dev/null 2>&1 && echo "$(1)")
+
+COMMON_FLAGS += $(call test_ccflag,-Wimplicit-fallthrough)
+COMMON_FLAGS += $(call test_ccflag,-Wno-address-of-packed-member)
+COMMON_FLAGS += $(call test_ccflag,-Wno-unknown-warning)
+
+TEST_FLAGS := $(call test_ccflag,-Wno-address-of-packed-member)
 
 # FIRMWARE_ARCH is only defined by the ChromiumOS ebuild if compiling
 # for a firmware target (coreboot or depthcharge). It must map to the same
@@ -146,28 +161,17 @@ CFLAGS ?= -fvisibility=hidden -fomit-frame-pointer \
 else ifeq (${FIRMWARE_ARCH},x86_64)
 CFLAGS ?= ${FIRMWARE_FLAGS} ${COMMON_FLAGS} -fvisibility=hidden \
 	-fomit-frame-pointer
+else ifeq (${FIRMWARE_ARCH},mock)
+FIRMWARE_STUB := 1
+CFLAGS += ${TEST_FLAGS}
 else ifneq (${FIRMWARE_ARCH},)
 $(error Unexpected FIRMWARE_ARCH ${FIRMWARE_ARCH})
 else
 # FIRMWARE_ARCH not defined; assuming local compile.
+FIRMWARE_STUB := 1
 CC ?= gcc
 CFLAGS += -DCHROMEOS_ENVIRONMENT ${COMMON_FLAGS}
 endif
-
-CFLAGS += -std=gnu11
-
-# test_ccflag
-# $(1): compiler flags to test
-# $(2): code to insert into test snippet
-# returns: $(1) if compiler was successful, empty string otherwise
-test_ccflag = $(shell \
-	printf "$(2)\nvoid _start(void) {}\n" | \
-	$(CC) -nostdlib -Werror $(1) -xc -c - -o /dev/null \
-	>/dev/null 2>&1 && echo "$(1)")
-
-COMMON_FLAGS += $(call test_ccflag,-Wimplicit-fallthrough)
-COMMON_FLAGS += $(call test_ccflag,-Wno-address-of-packed-member)
-COMMON_FLAGS += $(call test_ccflag,-Wno-unknown-warning)
 
 # Needs -Wl because LD is actually set to CC by default.
 LDFLAGS += -Wl,--gc-sections
@@ -336,7 +340,7 @@ INCLUDES += \
 
 # If we're not building for a specific target, just stub out things like the
 # TPM commands and various external functions that are provided by the BIOS.
-ifeq (${FIRMWARE_ARCH},)
+ifneq (${FIRMWARE_STUB},)
 INCLUDES += -Ihost/include -Ihost/lib/include
 INCLUDES += -Ihost/lib21/include
 ifeq ($(shell uname -s), OpenBSD)
@@ -435,7 +439,7 @@ ${BUILD}/firmware/2lib/2sha256_x86.o: CFLAGS += -mssse3 -mno-avx -msha
 
 ${BUILD}/firmware/2lib/2modpow_sse2.o: CFLAGS += -msse2 -mno-avx
 
-ifeq (${FIRMWARE_ARCH},)
+ifneq (${FIRMWARE_STUB},)
 # Include BIOS stubs in the firmware library when compiling for host
 # TODO: split out other stub funcs too
 FWLIB_SRCS += \
