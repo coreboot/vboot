@@ -111,17 +111,6 @@ else
 	CROSSYSTEM_ARCH_C := host/arch/stub/lib/crossystem_arch.c
 endif
 
-# FIRMWARE_ARCH is only defined by the ChromiumOS ebuild if compiling
-# for a firmware target (coreboot or depthcharge). It must map to the same
-# consistent set of architectures as the host.
-ifeq (${FIRMWARE_ARCH},i386)
-  override FIRMWARE_ARCH := x86
-else ifeq (${FIRMWARE_ARCH},amd64)
-  override FIRMWARE_ARCH := x86_64
-else ifeq (${FIRMWARE_ARCH},armv7)
-  override FIRMWARE_ARCH := arm
-endif
-
 # Provide default CC and CFLAGS for firmware builds; if you have any -D flags,
 # please add them after this point (e.g., -DVBOOT_DEBUG).
 DEBUG_FLAGS := $(if $(filter-out 0,${DEBUG}),-g -Og,-g -Os)
@@ -133,8 +122,17 @@ COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-ffunction-sections -fdata-sections \
 	-Wformat -Wno-format-security ${DEBUG_FLAGS} ${CPPFLAGS}
 
-# FIRMWARE_ARCH is defined if compiling for a firmware target
-# (coreboot or depthcharge).
+# FIRMWARE_ARCH is only defined by the ChromiumOS ebuild if compiling
+# for a firmware target (coreboot or depthcharge). It must map to the same
+# consistent set of architectures as the host.
+ifeq (${FIRMWARE_ARCH},i386)
+  override FIRMWARE_ARCH := x86
+else ifeq (${FIRMWARE_ARCH},amd64)
+  override FIRMWARE_ARCH := x86_64
+else ifneq ($(filter arm64 armv7 armv8 armv8_64,${FIRMWARE_ARCH}),)
+  override FIRMWARE_ARCH := arm
+endif
+
 ifeq (${FIRMWARE_ARCH},arm)
 CC ?= armv7a-cros-linux-gnueabihf-gcc
 CFLAGS ?= -march=armv5 -fno-common -ffixed-r8 -mfloat-abi=hard -marm
@@ -148,6 +146,8 @@ CFLAGS ?= -fvisibility=hidden -fomit-frame-pointer \
 else ifeq (${FIRMWARE_ARCH},x86_64)
 CFLAGS ?= ${FIRMWARE_FLAGS} ${COMMON_FLAGS} -fvisibility=hidden \
 	-fomit-frame-pointer
+else ifneq (${FIRMWARE_ARCH},)
+$(error Unexpected FIRMWARE_ARCH ${FIRMWARE_ARCH})
 else
 # FIRMWARE_ARCH not defined; assuming local compile.
 CC ?= gcc
