@@ -37,7 +37,7 @@ static void print_help(int argc, char *argv[])
 	       "-d, --debug            \tPrint debugging messages\n"
 	       "-r, --region=REGIONS   \tComma delimited regions to read (optional)\n"
 	       "-v, --verbose          \tPrint verbose messages\n"
-	       "-s, --split-output     \tOutput each comma delimited regions to own {FILE}.{region_name} (optional)\n"
+	       "-s, --split-output     \tOutput each comma delimited regions to own {FILE}_{region_name} (optional)\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
 }
