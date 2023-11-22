@@ -6,7 +6,7 @@
 #
 # Generate version information
 
-if ghash=$(git rev-parse --short --verify HEAD 2>/dev/null); then
+if ghash=$(git rev-parse --short=12 --verify HEAD 2>/dev/null); then
 	if gdesc=$(git describe --dirty --match='v*' 2>/dev/null); then
 		IFS="-" fields=($gdesc)
 		tag="${fields[0]}"
@@ -28,6 +28,4 @@ else
 	ver="unknown"
 fi
 
-date=$(date '+%F %T')
-
-echo "const char futility_version[] = \"${ver} ${date} ${USER}\";";
+echo "const char futility_version[] = \"${ver}\";";
