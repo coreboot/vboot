@@ -931,6 +931,9 @@ ${TLCL}: ${TLCL_OBJS}
 # ----------------------------------------------------------------------------
 # Host library(s)
 
+# Some UTILLIB files need dlopen(), doesn't hurt to just link it everywhere.
+LDLIBS += -ldl
+
 .PHONY: utillib
 utillib: ${UTILLIB}
 
