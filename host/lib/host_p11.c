@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <dlfcn.h>
 
-#include <nss/pkcs11.h>
+#include <pkcs11.h>
 
 #include "2common.h"
 #include "host_p11.h"

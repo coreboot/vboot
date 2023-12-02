@@ -6,7 +6,7 @@
 #ifndef VBOOT_REFERENCE_HOST_P11_H_
 #define VBOOT_REFERENCE_HOST_P11_H_
 
-#include <nss/pkcs11.h>
+#include <pkcs11.h>
 
 #include "2id.h"
 #include "2return_codes.h"
