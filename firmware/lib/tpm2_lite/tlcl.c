@@ -714,15 +714,12 @@ uint32_t TlclReadPublic(uint32_t handle, uint8_t *data, uint32_t *length)
 		return rv;
 	}
 
-	if (*length < response->read_pub.buffer.size + 2)
+	if (*length < response->read_pub.buffer.size)
 		return TPM_E_RESPONSE_TOO_LARGE;
 
-	*length = response->read_pub.buffer.size + 2;
+	*length = response->read_pub.buffer.size;
 
-	data[0] = (response->read_pub.buffer.size >> 8) & 0xff;
-	data[1] = response->read_pub.buffer.size & 0xff;
-
-	memcpy(data + 2, response->read_pub.buffer.buffer, response->read_pub.buffer.size);
+	memcpy(data, response->read_pub.buffer.buffer, response->read_pub.buffer.size);
 
 	return TPM_SUCCESS;
 }
