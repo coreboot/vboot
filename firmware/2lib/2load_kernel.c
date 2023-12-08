@@ -283,6 +283,8 @@ static vb2_error_t vb2_verify_kernel_vblock(struct vb2_context *ctx,
 		return rv;
 	}
 
+	data_key.allow_hwcrypto = kernel_key.allow_hwcrypto;
+
 	/* Verify the preamble, which follows the keyblock */
 	struct vb2_kernel_preamble *preamble = get_preamble(kbuf);
 	rv = vb2_verify_kernel_preamble(preamble,
