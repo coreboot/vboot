@@ -231,7 +231,10 @@ CFLAGS += -D_GNU_SOURCE
 # but if the environment doesn't support it, at least compile support
 # for what is possible.
 # Pass through cflags_use_64bits to evaluate it only once, here.
-cflags_use_64bits := $(call test_ccflag,-D_FILE_OFFSET_BITS=64,\#include <fts.h>)
+HASH_CONST := \#
+cflags_use_64bits := $(call test_ccflag,$\
+		     -D_FILE_OFFSET_BITS=64,$\
+		     ${HASH_CONST}include <fts.h>)
 CFLAGS += $(cflags_use_64bits)
 
 # Code coverage
