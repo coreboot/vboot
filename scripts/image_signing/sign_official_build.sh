@@ -434,12 +434,14 @@ sign_update_payload() {
       die "Failed to parse key info '${key_info}'"
     fi
     local p11_module="${parsed_info[1]}"
-    local slot_id="${parsed_info[2]}"
+    # We omit slot because the pkeyutl command will look in every keyring in the
+    # config file for the named key.
     local key_label="${parsed_info[3]}"
     # Hashing algorithm is always SHA-256.
-    PKCS11_MODULE_PATH="${p11_module}" openssl dgst -sha256 -engine pkcs11 \
-      -keyform engine -sign "slot_${slot_id}-label_${key_label}" "${image}" \
-      > "${output}"
+    PKCS11_MODULE_PATH="${p11_module}" openssl pkeyutl -pkeyopt \
+      rsa_padding_mode:pkcs1 -pkeyopt digest:sha256 -engine pkcs11 \
+      -keyform engine -sign --inkey "pkcs11:object=${key_label}" \
+      -in "${image}" -out "${output}"
     return
   fi
   # Strip the prefix "local:"
