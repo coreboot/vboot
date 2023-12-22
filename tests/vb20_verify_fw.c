@@ -11,11 +11,20 @@
 
 #include "2common.h"
 #include "2misc.h"
+#include "2secdata.h"
 #include "2sysincludes.h"
 
 const char *gbb_fname;
 const char *vblock_fname;
 const char *body_fname;
+
+#if defined(VB2_X86_RSA_ACCELERATION)
+bool vb2api_hwcrypto_allowed(struct vb2_context *ctx)
+{
+	printf("hwcrypto is allowed.\n");
+	return true;
+}
+#endif
 
 /**
  * Local implementation which reads resources from individual files.  Could be

@@ -61,4 +61,16 @@ vb2_error_t vb2_rsa_verify_digest(const struct vb2_public_key *key,
 				  uint8_t *sig, const uint8_t *digest,
 				  const struct vb2_workbuf *wb);
 
+/**
+ * In-place public exponentiation.
+ *
+ * @param key		Key to use in signing
+ * @param inout		Input and output big-endian byte array
+ * @param workbuf	Work buffer; caller must verify this is
+ *			(3 * key->arrsize) elements long.
+ * @param exp		RSA public exponent: either 65537 (F4) or 3
+ */
+void vb2_modexp(const struct vb2_public_key *key, uint8_t *inout,
+		void *workbuf, int exp);
+
 #endif  /* VBOOT_REFERENCE_2RSA_H_ */

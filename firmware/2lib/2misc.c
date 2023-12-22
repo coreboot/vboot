@@ -787,6 +787,7 @@ void vb2_set_boot_mode(struct vb2_context *ctx)
 	}
 }
 
+test_mockable
 bool vb2api_hwcrypto_allowed(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);

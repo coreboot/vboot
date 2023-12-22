@@ -97,6 +97,12 @@ run_test()
 
 	# Verify the firmware using vboot2 checks
 	"${BUILD_RUN}/tests/vb20_verify_fw" gbb.test vblock.test body.test
+	if [ "$ENABLE_HWCRYPTO_RSA_TESTS" -eq 1 ]
+	then
+		echo "Verifying test firmware using vb20_hwcrypto_verify_fw" \
+			"(root=${root_algo}, fw=${fw_algo}, kernel=${kern_algo})"
+		"${BUILD_RUN}/tests/vb20_hwcrypto_verify_fw" gbb.test vblock.test body.test
+	fi
 
 	happy 'vb2_verify_fw succeeded'
 }
