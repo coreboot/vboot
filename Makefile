@@ -791,7 +791,6 @@ TEST2X_NAMES = \
 
 TEST20_NAMES = \
 	tests/vb20_api_kernel_tests \
-	tests/vb20_verify_fw.c \
 	tests/vb20_kernel_tests \
 	tests/vb20_rsa_padding_tests \
 	tests/vb20_verify_fw
