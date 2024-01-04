@@ -36,7 +36,7 @@ vb2_error_t vb2ex_hwcrypto_rsa_verify_digest(const struct vb2_public_key *key,
 	return VB2_ERROR_EX_HWCRYPTO_UNSUPPORTED;
 }
 
-#if !defined(VB2_X86_RSA_ACCELERATION)
+#if !defined(VB2_X86_RSA_ACCELERATION) && !defined(ARM64_RSA_ACCELERATION)
 __attribute__((weak))
 vb2_error_t vb2ex_hwcrypto_modexp(const struct vb2_public_key *key, uint8_t *inout,
 				  void *workbuf, size_t workbuf_size, int exp)

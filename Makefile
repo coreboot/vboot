@@ -423,6 +423,12 @@ FWLIB_ASMS += \
 	firmware/2lib/sha256_armv8a_ce_a64.S
 endif
 
+ifneq ($(filter-out 0,${ARM64_RSA_ACCELERATION}),)
+CFLAGS += -DARM64_RSA_ACCELERATION
+FWLIB_SRCS += \
+	firmware/2lib/2modpow_neon.c
+endif
+
 ifneq ($(filter-out 0,${VB2_X86_RSA_ACCELERATION}),)
 CFLAGS += -DVB2_X86_RSA_ACCELERATION
 FWLIB_SRCS += \
