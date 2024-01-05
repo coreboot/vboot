@@ -16,7 +16,7 @@ bool is_flash_descriptor_locked(const struct firmware_image *image);
 /* Unlock the flash descriptor for Skylake and Kabylake platforms. */
 int unlock_csme_eve(struct firmware_image *image);
 
-/* Unlock the CSME for the nissa platform. */
-int unlock_csme_nissa(struct firmware_image *image);
+/* Unlock the CSME for recent Intel platforms (CML onwards). */
+int unlock_csme(struct updater_config *cfg);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_PLATFORM_CSME_H_ */

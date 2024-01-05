@@ -83,6 +83,9 @@ int load_system_firmware(struct updater_config *cfg,
 /* Frees the allocated resource from a firmware image object. */
 void free_firmware_image(struct firmware_image *image);
 
+/* Preserves meta data and reloads image contents from given file path. */
+int reload_firmware_image(const char *file_path, struct firmware_image *image);
+
 /*
  * Generates a temporary file for snapshot of firmware image contents.
  *

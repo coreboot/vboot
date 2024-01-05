@@ -554,7 +554,7 @@ static bool is_ap_ro_locked_with_verification(struct updater_config *cfg)
 /* Returns true if the UNLOCK_CSME_* quirks were requested, otherwise false. */
 static bool is_unlock_csme_requested(struct updater_config *cfg)
 {
-	if (get_config_quirk(QUIRK_UNLOCK_CSME_NISSA, cfg) ||
+	if (get_config_quirk(QUIRK_UNLOCK_CSME, cfg) ||
 	    get_config_quirk(QUIRK_UNLOCK_CSME_EVE, cfg))
 		return true;
 	return false;
@@ -1721,9 +1721,9 @@ int updater_setup_config(struct updater_config *cfg,
 	if (cfg->image.data) {
 		/* Apply any quirks to modify the image before updating. */
 		if (arg->unlock_me)
-			cfg->quirks[QUIRK_UNLOCK_CSME_NISSA].value = 1;
+			cfg->quirks[QUIRK_UNLOCK_CSME].value = 1;
 		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME_EVE, cfg);
-		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME_NISSA, cfg);
+		errorcnt += try_apply_quirk(QUIRK_UNLOCK_CSME, cfg);
 	}
 
 	/* The images are ready for updating. Output if needed. */

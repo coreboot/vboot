@@ -274,6 +274,13 @@ void free_firmware_image(struct firmware_image *image)
 	image->programmer = programmer;
 }
 
+/* Preserves meta data and reloads image contents from given file path. */
+int reload_firmware_image(const char *file_path, struct firmware_image *image)
+{
+	free_firmware_image(image);
+	return load_firmware_image(image, file_path, NULL);
+}
+
 /*
  * Finds a firmware section by given name in the firmware image.
  * If successful, return zero and *section argument contains the address and

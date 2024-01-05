@@ -203,7 +203,7 @@ static int do_update(int argc, char *argv[])
 			args.unpack = optarg;
 			break;
 		case OPT_UNLOCK_ME:
-			WARN("--unlock_me will be deprecated by --quirks unlock_csme_nissa.\n");
+			WARN("--unlock_me will be deprecated by --quirks unlock_csme.\n");
 			args.unlock_me = true;
 			break;
 		case OPT_QUIRKS:
