@@ -7,6 +7,8 @@
  */
 
 #include <string.h>
+
+#include "cbfstool.h"
 #include "platform_csme.h"
 #include "updater.h"
 
@@ -131,48 +133,116 @@ int unlock_csme_eve(struct firmware_image *image)
 }
 
 /*
- * Disable GPR0 (Global Protected Range). When enabled, it provides
- * write-protection to part of the SI_ME region, specifically CSE_RO and
- * part of CSE_DATA, so it must be disabled to allow updating SI_ME.
- * Returns 0 on success, otherwise failure.
+ * Determine the platform to pass to ifdtool (e.g. 'adl') by extracting
+ * CONFIG_IFD_CHIPSET from the config file in CBFS. However, old nissa firmware
+ * may not have all config fields in the CBFS file, so fall back to a hack of
+ * checking for 'nissa' in the descriptor file path.
  *
- * TODO(b/270275115): Replace with a call to ifdtool, or a generic way.
+ * On success, returns the platform, which must be freed by the caller.
+ * On failure, returns NULL.
  */
-static int disable_gpr0_nissa(struct firmware_image *image)
+static char *determine_ifd_platform(const char *image_path)
 {
-	/* This offset varies and the constant below is only for Nissa. DON'T USE IT for MTL. */
-	const int gpr0_offset = 0x154;
-	const uint8_t gpr0_value_disabled[] = { 0x00, 0x00, 0x00, 0x00 };
+	char *platform;
+	char *ifd_path;
 
-	if (overwrite_section(image, FMAP_SI_DESC, gpr0_offset,
-			      ARRAY_SIZE(gpr0_value_disabled),
-			      gpr0_value_disabled)) {
-		ERROR("Failed disabling GPR0.\n");
-		return -1;
+	cbfstool_get_config_value(image_path, NULL, "CONFIG_IFD_CHIPSET", &platform);
+	if (platform)
+		return platform;
+
+	/* Fall back to checking for nissa in the descriptor file path */
+	cbfstool_get_config_value(image_path, NULL, "CONFIG_IFD_BIN_PATH", &ifd_path);
+	if (ifd_path && strstr(ifd_path, "/nissa/")) {
+		VB2_DEBUG("Use platform 'adl' since descriptor path contains 'nissa'\n");
+		ASPRINTF(&platform, "adl");
 	}
 
-	INFO("Disabled GPR0.\n");
-	return 0;
+	if (ifd_path)
+		free(ifd_path);
+
+	return platform;
 }
 
 /*
- * Unlock the CSME for Nissa platforms.
- *
- * This allows the SI_DESC and SI_ME regions to be updated.
- * TODO(b/270275115): Replace with a call to ifdtool.
+ * Run ifdtool with the given options.
  *
  * Returns 0 on success, otherwise failure.
  */
-int unlock_csme_nissa(struct firmware_image *image)
+static int run_ifdtool(const char *image_path, char *platform, const char *extra_options)
 {
-	/* Unlock the FLMSTR values (applies to JSL/TGL and newer platforms). */
-	if (unlock_flmstrs(image, 0xffffffff, 0xffffffff, 0xffffffff))
-		return -1;
+	char *command;
+	int ret = 0;
 
-	/* Disable the GPR0 in the descriptor for CSE lite. */
-	if (disable_gpr0_nissa(image))
-		return -1;
+	ASPRINTF(&command, "ifdtool -p %s -O \"%s\" \"%s\" %s 2>&1",
+		 platform, image_path, image_path, extra_options);
+	if (system(command)) {
+		ERROR("Failed to run: %s\n", command);
+		ret = -1;
+	}
 
-	INFO("Unlocked Intel ME for Nissa platforms.\n");
-	return 0;
+	free(command);
+	return ret;
+}
+
+/*
+ * Unlock the CSME for recent Intel platforms (CML onwards).
+ *
+ * This allows the SI_DESC and SI_ME regions to be updated.
+ *
+ * Returns 0 on success, otherwise failure.
+ */
+int unlock_csme(struct updater_config *cfg)
+{
+	const char *temp_path;
+	char *platform;
+	int ret = -1;
+
+	temp_path = get_firmware_image_temp_file(&cfg->image, &cfg->tempfiles);
+	if (!temp_path) {
+		ERROR("Failed to get image temp file\n");
+		return ret;
+	}
+
+	platform = determine_ifd_platform(temp_path);
+	if (!platform) {
+		ERROR("Failed to determine IFD platform\n");
+		return ret;
+	}
+
+	VB2_DEBUG("Using platform '%s'\n", platform);
+
+	/* Unlock FMLSTRs */
+	if (run_ifdtool(temp_path, platform, "-u")) {
+		ERROR("Failed to unlock FLMSTRs\n");
+		goto cleanup;
+	}
+
+	/*
+	 * Disable GPR0 (Global Protected Range). When enabled, it provides
+	 * write-protection to part of the SI_ME region, specifically CSE_RO and
+	 * part of CSE_DATA, so it must be disabled to allow updating SI_ME.
+	 */
+	if (run_ifdtool(temp_path, platform, "-g")) {
+		ERROR("Failed to disable GPR0\n");
+		goto cleanup;
+	}
+
+	if (reload_firmware_image(temp_path, &cfg->image)) {
+		ERROR("Failed to reload firmware image\n");
+		goto cleanup;
+	}
+
+	/* Double check the descriptor was actually unlocked */
+	if (is_flash_descriptor_locked(&cfg->image)) {
+		ERROR("Descriptor is still locked after running ifdtool\n");
+		goto cleanup;
+	}
+
+	INFO("Unlocked Intel ME on platform '%s'\n", platform);
+	ret = 0;
+
+cleanup:
+	free(platform);
+
+	return ret;
 }

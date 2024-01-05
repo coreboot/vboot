@@ -160,11 +160,6 @@ dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${TMP}.expected.large"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked_eve"
 patch_file "${TMP}.expected.me_unlocked_eve" SI_DESC 0x60 \
 	"\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
-cp -f "${TMP}.expected.full" "${TMP}.expected.me_unlocked_nissa"
-patch_file "${TMP}.expected.me_unlocked_nissa" SI_DESC 0x60 \
-	"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-patch_file "${TMP}.expected.me_unlocked_nissa" SI_DESC 0x154 \
-	"\x00\x00\x00\x00"
 cp -f "${TMP}.expected.full" "${TMP}.expected.me_preserved"
 "${FUTILITY}" load_fmap "${TMP}.expected.me_preserved" \
 	"SI_ME:${TMP}.from/SI_ME"
@@ -180,6 +175,58 @@ cp -f "${TMP}.expected.full" "${TMP}.expected.full.empty_rw_vpd"
 "${FUTILITY}" load_fmap "${TMP}.expected.full.empty_rw_vpd" \
 	RW_VPD:"${TMP}.to/RW_VPD"
 patch_file "${TMP}.expected.full.empty_rw_vpd" FMAP 0x3fc "$(printf '\010')"
+
+# Generate images for testing --unlock_me.
+# There are two ways to detect the platform:
+#  - Read CONFIG_IFD_CHIPSET from config file in CBFS
+#  - Fallback for nissa: check if CONFIG_IFD_BIN_PATH contains 'nissa'
+
+# Rename BOOT_STUB to COREBOOT, which is the default region used by cbfstool.
+rename_boot_stub() {
+	local image="$1"
+
+	"${FUTILITY}" dump_fmap "${image}" -x "FMAP:${TMP}.fmap"
+	sed -i 's/BOOT_STUB/COREBOOT\x00/g' "${TMP}.fmap"
+	"${FUTILITY}" load_fmap "${image}" "FMAP:${TMP}.fmap"
+}
+
+# Add the given line to the config file in CBFS.
+add_config() {
+	local image="$1"
+	local config_line="$2"
+
+	rename_boot_stub "${image}"
+
+	cbfstool "${image}" extract -n config -f "${TMP}.config"
+	echo "${config_line}" >> "${TMP}.config"
+	cbfstool "${image}" remove -n config
+	cbfstool "${image}" add -n config -f "${TMP}.config" -t raw
+}
+
+unlock_me() {
+	local image="$1"
+
+	patch_file "${image}" SI_DESC 0x60 \
+		"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+	patch_file "${image}" SI_DESC 0x154 \
+		"\x00\x00\x00\x00"
+}
+
+IFD_CHIPSET="CONFIG_IFD_CHIPSET=\"adl\""
+IFD_PATH="CONFIG_IFD_BIN_PATH=\"3rdparty/blobs/mainboard/google/nissa/descriptor-craask.bin\""
+cp -f "${TO_IMAGE}" "${TO_IMAGE}.ifd_chipset"
+cp -f "${TO_IMAGE}" "${TO_IMAGE}.ifd_path"
+cp -f "${TMP}.expected.full" "${TMP}.expected.ifd_chipset"
+cp -f "${TMP}.expected.full" "${TMP}.expected.ifd_path"
+add_config "${TO_IMAGE}.ifd_chipset" "${IFD_CHIPSET}"
+add_config "${TO_IMAGE}.ifd_path" "${IFD_PATH}"
+add_config "${TMP}.expected.ifd_chipset" "${IFD_CHIPSET}"
+add_config "${TMP}.expected.ifd_path" "${IFD_PATH}"
+
+cp -f "${TMP}.expected.ifd_chipset" "${TMP}.expected.me_unlocked.ifd_chipset"
+cp -f "${TMP}.expected.ifd_path" "${TMP}.expected.me_unlocked.ifd_path"
+unlock_me "${TMP}.expected.me_unlocked.ifd_chipset"
+unlock_me "${TMP}.expected.me_unlocked.ifd_path"
 
 # Has 3 modes:
 # 1. $3 = "!something", run command, expect failure,
@@ -377,13 +424,19 @@ test_update "Full update (--quirks unlock_csme_eve)" \
 	--quirks unlock_csme_eve \
 	-i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
-test_update "Full update (--quirks unlock_csme_nissa)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_nissa" \
-	--quirks unlock_csme_nissa -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+test_update "Full update (--quirks unlock_csme)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
+	--quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" \
+	--wp=0 --sys_props 0,0x10001
+
+test_update "Full update (--quirks unlock_csme)" \
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_path" \
+	--quirks unlock_csme -i "${TO_IMAGE}.ifd_path" \
+	--wp=0 --sys_props 0,0x10001
 
 test_update "Full update (--unlock_me)" \
-	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked_nissa" \
-	--unlock_me -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+	"${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
+	--unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0 --sys_props 0,0x10001
 
 test_update "Full update (failure by --quirks min_platform_version)" \
 	"${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
@@ -462,10 +515,10 @@ mkdir -p "${TMP}.output"
 	--output_dir="${TMP}.output"
 cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
 
-echo "TEST: Output (--mode=output, --quirks unlock_csme_nissa)"
-"${FUTILITY}" update -i "${TMP}.expected.full" --mode=output \
-	--output_dir="${TMP}.output" --quirks unlock_csme_nissa
-cmp "${TMP}.expected.me_unlocked_nissa" "${TMP}.output/image.bin"
+echo "TEST: Output (--mode=output, --quirks unlock_csme)"
+"${FUTILITY}" update -i "${TMP}.expected.ifd_chipset" --mode=output \
+	--output_dir="${TMP}.output" --quirks unlock_csme
+cmp "${TMP}.expected.me_unlocked.ifd_chipset" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/image.bin"

@@ -46,14 +46,6 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Phaser.", .quirks = "override_signature_id" },
 };
 
-/* Preserves meta data and reload image contents from given file path. */
-static int reload_firmware_image(const char *file_path,
-				 struct firmware_image *image)
-{
-	free_firmware_image(image);
-	return load_firmware_image(image, file_path, NULL);
-}
-
 /*
  * Returns True if the system has EC software sync enabled.
  */
@@ -195,9 +187,9 @@ static int quirk_unlock_csme_eve(struct updater_config *cfg)
 	return unlock_csme_eve(&cfg->image);
 }
 
-static int quirk_unlock_csme_nissa(struct updater_config *cfg)
+static int quirk_unlock_csme(struct updater_config *cfg)
 {
-	return unlock_csme_nissa(&cfg->image);
+	return unlock_csme(cfg);
 }
 
 /*
@@ -445,10 +437,11 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "b/35568719; (skl, kbl) only lock management engine in board-postinst.";
 	quirks->apply = quirk_unlock_csme_eve;
 
-	quirks = &cfg->quirks[QUIRK_UNLOCK_CSME_NISSA];
-	quirks->name = "unlock_csme_nissa";
-	quirks->help = "b/273168873; (nissa only) unlock the management engine and CSE lite.";
-	quirks->apply = quirk_unlock_csme_nissa;
+	quirks = &cfg->quirks[QUIRK_UNLOCK_CSME];
+	quirks->name = "unlock_csme";
+	quirks->help = "b/273168873; unlock the Intel management engine. "
+			"Applies to all recent Intel platforms (CML onwards)";
+	quirks->apply = quirk_unlock_csme;
 
 	quirks = &cfg->quirks[QUIRK_EVE_SMM_STORE];
 	quirks->name = "eve_smm_store";
