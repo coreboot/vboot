@@ -675,7 +675,7 @@ const Guid guid_unused =            GPT_ENT_TYPE_UNUSED;
 const Guid guid_chromeos_minios =   GPT_ENT_TYPE_CHROMEOS_MINIOS;
 const Guid guid_chromeos_hibernate = GPT_ENT_TYPE_CHROMEOS_HIBERNATE;
 
-const static struct {
+static const struct {
   const Guid *type;
   const char *name;
   const char *description;

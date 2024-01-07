@@ -20,7 +20,7 @@
 
 vb2_error_t vb2_validate_gbb_signature(uint8_t *sig)
 {
-	const static uint8_t sig_xor[VB2_GBB_SIGNATURE_SIZE] =
+	static const uint8_t sig_xor[VB2_GBB_SIGNATURE_SIZE] =
 			VB2_GBB_XOR_SIGNATURE;
 	int i;
 	for (i = 0; i < VB2_GBB_SIGNATURE_SIZE; i++) {

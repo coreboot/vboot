@@ -10,7 +10,7 @@
 #include "gpt.h"
 #include "gpt_misc.h"
 
-const static int MIN_SECTOR_SIZE = 512;
+static const int MIN_SECTOR_SIZE = 512;
 
 size_t CalculateEntriesSectors(GptHeader* h, uint32_t sector_bytes)
 {
