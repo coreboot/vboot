@@ -152,6 +152,12 @@ make_keyblock() {
   local flags=$2
   local pubkey=$3
   local signkey=$4
+  local excl_extn=$5
+
+  local privkey="${signkey}"
+  if [[-z "${excl_extn}" ]]; then
+    privkey="${signkey}.vbprivk"
+  fi
 
   echo "creating $base keyblock..."
 
@@ -160,7 +166,7 @@ make_keyblock() {
     --pack "${base}.keyblock" \
     --flags $flags \
     --datapubkey "${pubkey}.vbpubk" \
-    --signprivate "${signkey}.vbprivk"
+    --signprivate "${privkey}"
 
   # verify it
   vbutil_keyblock \
