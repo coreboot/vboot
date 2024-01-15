@@ -149,6 +149,26 @@ def inject_vbpubk(efi_file: os.PathLike, keys: Keys):
     )
 
 
+def check_keys(keys: Keys):
+    """Checks existence of the keys used for signing.
+
+    Exits the process if the check fails and a key is
+    not present.
+
+    Args:
+        keys: The keys to check.
+    """
+
+    # Check for the existence of the key files.
+    ensure_file_exists(keys.verify_cert, "No verification cert")
+    ensure_file_exists(keys.sign_cert, "No signing cert")
+    ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
+    # Only check the private key if it's a local path rather than a
+    # PKCS#11 URI.
+    if not keys.is_private_key_pkcs11():
+        ensure_file_exists(keys.private_key, "No signing key")
+
+
 def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
     """Sign various EFI files under |target_dir|.
 
@@ -162,14 +182,8 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
     syslinux_dir = target_dir / "syslinux"
     kernel_dir = target_dir
 
-    # Check for the existence of the key files.
-    ensure_file_exists(keys.verify_cert, "No verification cert")
-    ensure_file_exists(keys.sign_cert, "No signing cert")
-    ensure_file_exists(keys.kernel_subkey_vbpubk, "No kernel subkey public key")
-    # Only check the private key if it's a local path rather than a
-    # PKCS#11 URI.
-    if not keys.is_private_key_pkcs11():
-        ensure_file_exists(keys.private_key, "No signing key")
+    # Verify all keys are present for signing.
+    check_keys(keys)
 
     with tempfile.TemporaryDirectory() as working_dir:
         working_dir = Path(working_dir)
@@ -193,6 +207,27 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
             signer.sign_efi_file(kernel_file)
 
 
+def sign_target_file(target_file: os.PathLike, keys: Keys):
+    """Signs a single EFI file.
+
+    Args:
+        target_file: Path a file to sign.
+        keys: An instance of Keys.
+    """
+
+    # Verify all keys are present for signing.
+    check_keys(keys)
+
+    with tempfile.TemporaryDirectory() as working_dir:
+        working_dir = Path(working_dir)
+        signer = Signer(working_dir, keys)
+
+        if target_file.is_file():
+            signer.sign_efi_file(target_file)
+        else:
+            sys.exit("File not found")
+
+
 def get_parser() -> argparse.ArgumentParser:
     """Get CLI parser."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -201,7 +236,13 @@ def get_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path of a boot directory, either the root of the ESP or "
         "/boot of the root filesystem",
-        required=True,
+        required=False,
+    )
+    parser.add_argument(
+        "--target-file",
+        type=Path,
+        help="Path of an EFI binary file to sign",
+        required=False,
     )
     parser.add_argument(
         "--private-key",
@@ -230,7 +271,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--efi-glob",
         help="Glob pattern of EFI files to sign, e.g. '*.efi'",
-        required=True,
+        required=False,
     )
     return parser
 
@@ -261,7 +302,16 @@ def main(argv: Optional[List[str]] = None) -> Optional[int]:
         kernel_subkey_vbpubk=opts.kernel_subkey_vbpubk,
     )
 
-    sign_target_dir(opts.target_dir, keys, opts.efi_glob)
+    if opts.target_dir:
+        if not opts.efi_glob:
+            sys.exit("Unable to run: specify '--efi-glob'")
+        sign_target_dir(opts.target_dir, keys, opts.efi_glob)
+    elif opts.target_file:
+        sign_target_file(opts.target_file, keys)
+    else:
+        sys.exit(
+            "Unable to run, either provide '--target-dir' or '--target-file'"
+        )
 
 
 if __name__ == "__main__":

@@ -105,6 +105,17 @@ class Test(unittest.TestCase):
                 ],
             )
 
+            # Test signing a specific file.
+            sign_uefi.sign_target_file(efi_boot_dir / "bootia32.efi", keys)
+
+            # Check that we called the correct sign request.
+            self.assertIn(
+                [
+                    mock.call(efi_boot_dir / "bootia32.efi"),
+                ],
+                mock_sign.call_args_list,
+            )
+
             # Check that `inject_vbpubk` was called on both the crdyboot
             # executables.
             self.assertEqual(
