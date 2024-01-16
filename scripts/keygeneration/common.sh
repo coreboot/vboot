@@ -152,10 +152,9 @@ make_keyblock() {
   local flags=$2
   local pubkey=$3
   local signkey=$4
-  local excl_extn=$5
 
   local privkey="${signkey}"
-  if [[-z "${excl_extn}" ]]; then
+  if [[ "${signkey}" != "remote:"* ]]; then
     privkey="${signkey}.vbprivk"
   fi
 
