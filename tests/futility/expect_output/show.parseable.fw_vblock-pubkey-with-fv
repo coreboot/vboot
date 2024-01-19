@@ -16,3 +16,4 @@ fw_pre::preamble::kernel_subkey::sha1_sum::cc05423373b76acbec23ec45dfa3696a2ea6d
 fw_pre::preamble::flags::0
 fw_pre::body::size::146456
 fw_pre::body::signature::valid
+fw_pre::verified

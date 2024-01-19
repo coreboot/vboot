@@ -45,6 +45,7 @@ bios::VBLOCK_A::body::metadata_hash::algorithm::2::SHA256
 bios::VBLOCK_A::body::metadata_hash::hex::e4a0de4b12ffa0cfa7022f3f16f5dabf77de0d1fb35c6c5d72969113bd48e979
 bios::VBLOCK_A::body::metadata_hash::valid
 bios::VBLOCK_A::body::signature::valid
+bios::VBLOCK_A::verified
 bios::VBLOCK_B::keyblock::valid
 bios::VBLOCK_B::keyblock::signature::valid
 bios::VBLOCK_B::keyblock::size::2232

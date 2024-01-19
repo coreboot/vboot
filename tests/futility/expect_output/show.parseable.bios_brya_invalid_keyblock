@@ -42,6 +42,7 @@ bios::VBLOCK_A::preamble::kernel_subkey::sha1_sum::b047ada00a098f208eaba08a9d2fb
 bios::VBLOCK_A::preamble::flags::0
 bios::VBLOCK_A::body::size::1931904
 bios::VBLOCK_A::body::signature::valid
+bios::VBLOCK_A::verified
 bios::VBLOCK_B::keyblock::valid
 bios::VBLOCK_B::keyblock::signature::invalid
 bios::VBLOCK_B::keyblock::size::1208

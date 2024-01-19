@@ -419,8 +419,11 @@ int show_fw_preamble_buf(const char *fname, uint8_t *buf, uint32_t len,
 
 done:
 	/* Can't trust the BIOS unless everything is signed. */
-	if (good_sig && state)
-		state->area[state->c].is_valid = 1;
+	if (good_sig) {
+		if (state)
+			state->area[state->c].is_valid = 1;
+		FT_PARSEABLE_PRINT("verified\n");
+	}
 
 	return retval;
 }
@@ -574,6 +577,8 @@ int ft_show_kernel_preamble(const char *fname)
 
 	FT_PRINT("Body verification succeeded.\n",
 		 "body::signature::valid\n");
+	if (good_sig)
+		FT_PARSEABLE_PRINT("verified\n");
 
 	FT_READABLE_PRINT("Config:\n%s\n",
 			  kernel_blob + kernel_cmd_line_offset(pre2));
