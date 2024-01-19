@@ -40,26 +40,27 @@ function generate_fuzzing_images {
     --flags 15
 
   echo "Generating signed firmware test image..."
-  "${FUTILITY}" vbutil_firmware \
-    --vblock "${TESTCASE_DIR}/firmware.vblock" \
-    --keyblock "${TESTCASE_DIR}/firmware.keyblock" \
+  "${FUTILITY}" sign \
     --signprivate "${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk" \
+    --keyblock "${TESTCASE_DIR}/firmware.keyblock" \
+    --kernelkey "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk" \
     --version 1 \
-    --fv  "$1" \
-    --kernelkey "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk"
+    --fv "$1" \
+    --outfile "${TESTCASE_DIR}/firmware.vblock"
   # TODO(gauravsh): ALso test with (optional) flags.
   cp "${TESTKEY_DIR}/key_rsa8192.sha512.vbpubk" \
     "${TESTCASE_DIR}/root_key.vbpubk"
 
   echo "Generating signed kernel test image..."
-  "${FUTILITY}" vbutil_kernel \
-    --pack "${TESTCASE_DIR}/kernel.vblock.image" \
-    --keyblock "${TESTCASE_DIR}/kernel.keyblock" \
+  "${FUTILITY}" sign \
     --signprivate "${TESTKEY_DIR}/key_rsa4096.sha256.vbprivk" \
+    --keyblock "${TESTCASE_DIR}/kernel.keyblock" \
+    --config "${TEST_CONFIG_FILE}" \
+    --arch x86 \
     --version 1 \
-    --vmlinuz "${TEST_IMAGE_FILE}" \
     --bootloader "${TEST_BOOTLOADER_FILE}" \
-    --config "${TEST_CONFIG_FILE}"
+    --vmlinuz "${TEST_IMAGE_FILE}" \
+    --outfile "${TESTCASE_DIR}/kernel.vblock.image"
   # TODO(gauravsh): Also test with (optional) padding.
   cp "${TESTKEY_DIR}/key_rsa4096.sha512.vbpubk" \
     "${TESTCASE_DIR}/firmware_key.vbpubk"

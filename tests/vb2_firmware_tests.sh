@@ -84,13 +84,13 @@ run_test()
       --signprivate "${TESTKEY_DIR}/key_${root_rsa}.${root_sha}.vbprivk"
 
   # Firmware preamble is signed with the firmware subkey
-  "${FUTILITY}" vbutil_firmware \
-      --vblock vblock.test \
-      --keyblock keyblock.test \
-      --signprivate "${TESTKEY_DIR}/key_${fw_rsa}.${fw_sha}.vbprivk" \
-      --fv body.test \
-      --version 1 \
-      --kernelkey kernkey.test
+  "${FUTILITY}" sign \
+    --version 1 \
+    --signprivate "${TESTKEY_DIR}/key_${fw_rsa}.${fw_sha}.vbprivk" \
+    --keyblock keyblock.test \
+    --kernelkey kernkey.test \
+    --fv body.test \
+    --outfile vblock.test
 
   echo "Verifying test firmware using vb2_verify_fw" \
     "(root=${root_algo}, fw=${fw_algo}, kernel=${kern_algo})"

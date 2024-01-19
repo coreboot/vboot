@@ -63,18 +63,20 @@ dd if=/dev/urandom of="${DATADIR}/KERNDATA" bs=32768 count=1
 # pre-change tools.
 for d in $algs; do
   for r in $algs; do
-      vbutil_firmware --vblock "${V2DIR}/fw_${d}_${r}.vblock" \
-        --keyblock "${DATADIR}/kb_${d}_${r}.keyblock" \
-        --signprivate "${DATADIR}/data_${d}.vbprivk" \
-        --version 1 \
-        --kernelkey "${DATADIR}/dummy_0.vbpubk" \
-        --fv "${DATADIR}/FWDATA"
-     vbutil_kernel --pack "${V2DIR}/kern_${d}_${r}.vblock" \
-       --keyblock "${DATADIR}/kb_${d}_${r}.keyblock" \
-       --signprivate "${DATADIR}/data_${d}.vbprivk" \
-       --version 1 \
-       --arch arm \
-       --vmlinuz "${DATADIR}/KERNDATA" \
-       --config "${DATADIR}/dummy_config.txt"
+    "${FUTILITY}" sign \
+      --signprivate "${DATADIR}/data_${d}.vbprivk" \
+      --keyblock "${DATADIR}/kb_${d}_${r}.keyblock" \
+      --kernelkey "${DATADIR}/dummy_0.vbpubk" \
+      --version 1 \
+      --fv "${DATADIR}/FWDATA" \
+      --outfile "${V2DIR}/fw_${d}_${r}.vblock"
+    "${FUTILITY}" sign \
+      --signprivate "${DATADIR}/data_${d}.vbprivk" \
+      --keyblock "${DATADIR}/kb_${d}_${r}.keyblock" \
+      --config "${DATADIR}/dummy_config.txt" \
+      --arch arm \
+      --version 1 \
+      --vmlinuz "${DATADIR}/KERNDATA" \
+      --outfile "${V2DIR}/kern_${d}_${r}.vblock"
   done
 done
