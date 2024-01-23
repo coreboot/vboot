@@ -526,7 +526,7 @@ resign_firmware_payload() {
         local full_command=()
         local board_name
 
-	rootkey="$(get_root_key_vbpubk)"
+        rootkey="$(get_root_key_vbpubk)"
 
         info "Signing firmware image ${bios_image} for ${output_name}"
 

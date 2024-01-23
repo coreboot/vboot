@@ -82,16 +82,16 @@ INFILES="${INFILES} ${ONEMORE}"
 
 # args: xxd_patch_file input_file
 function apply_xxd_patch {
-	xxd -r "${1}" "${2}"
+  xxd -r "${1}" "${2}"
 }
 
 # args: file1 file2
 function cmp_first_line {
-	cmp <(head -n1 "${1}") <(head -n1 "${2}")
+  cmp <(head -n1 "${1}") <(head -n1 "${2}")
 }
 
 function cmp_last_line {
-	cmp <(tail -n1 "${1}") <(tail -n1 "${2}")
+  cmp <(tail -n1 "${1}") <(tail -n1 "${2}")
 }
 
 set -o pipefail
