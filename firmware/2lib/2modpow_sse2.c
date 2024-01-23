@@ -168,7 +168,7 @@ vb2_error_t vb2ex_hwcrypto_modexp(const struct vb2_public_key *key,
 				  uint8_t *inout, void *workbuf,
 				  size_t workbuf_size, int exp)
 {
-	const uint32_t mu = (uint32_t)(1ULL << 32) - key->n0inv;
+	const uint32_t mu = -key->n0inv;
 	uint32_t *a = workbuf;
 	uint32_t *aR = a + key->arrsize;
 	uint32_t *aaR = aR + key->arrsize;
