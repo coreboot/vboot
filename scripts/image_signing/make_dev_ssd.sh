@@ -138,8 +138,8 @@ remove_parameter() {
   local cmdline="$1"
   local param="$2"
 
-  cmdline=$(echo "${cmdline}" | sed '
-    s/'"${param} "'//g')
+  cmdline=$(echo "${cmdline}" | \
+    sed -E 's/(^|\s)\s*'"${param}"'(=\S*|="(\\"|[^"])*")?\s*/\1/g');
 
   echo "${cmdline}"
 }
@@ -294,7 +294,7 @@ resign_ssd_kernel() {
 
     if [ "${FLAGS_enable_console}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Enabling serial console"
-      kernel_config="$(remove_parameter "${kernel_config}" "console=")"
+      kernel_config="$(remove_parameter "${kernel_config}" "console")"
       debug_msg "New kernel config: ${kernel_config}"
     elif [ "${FLAGS_disable_console}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Disabling serial console"
@@ -308,7 +308,7 @@ resign_ssd_kernel() {
       debug_msg "New kernel config: ${kernel_config}"
     elif [ "${FLAGS_disable_kdump}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Disabling kdump"
-      kernel_config="$(remove_parameter "${kernel_config}" "crashkernel=256M")"
+      kernel_config="$(remove_parameter "${kernel_config}" "crashkernel")"
       debug_msg "New kernel config: ${kernel_config}"
     fi
 
