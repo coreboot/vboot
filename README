@@ -78,16 +78,18 @@ Some useful utilities:
 
 futility vbutil_key         Convert a public key into .vbpubk format
 futility vbutil_keyblock    Wrap a public key inside a signature and checksum
-futility vbutil_firmware    Create a .vblock with signature info for a
+futility sign               Sign a blob. Supported operations include:
+                            * Create a .vblock with signature info for a
                               firmware image
-futility vbutil_kernel      Pack a kernel image, bootloader, and config into
-                              a signed binary
+                            * Re-sign a firmware image
+                            * Pack a vmlinuz image, bootloader and config into a
+                              kernel partition
+futility verify             Verify a blob such as a firmware image or a kernel
+                              partition
 
 dumpRSAPublicKey            Dump RSA Public key (from a DER-encoded X509
                             certificate) in a format suitable for use by
                             RSAVerify* functions in crypto/.
-
-verify_data.c               Verify a given signature on a given file.
 
 
 
