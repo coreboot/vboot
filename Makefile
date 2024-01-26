@@ -1317,7 +1317,7 @@ runcgpttests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/cgptlib_test
 
 .PHONY: runtestscripts
-runtestscripts: install_for_test genfuzztestcases
+runtestscripts: install_for_test
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_android_unittests.sh
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_uefi_unittest.py
 	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
