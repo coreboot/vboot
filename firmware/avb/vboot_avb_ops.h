@@ -16,11 +16,19 @@
  * Initialize platform callbacks used within libavb.
  *
  * @param  vb2_ctx     Vboot context
+ * @param  params      Vboot kernel parameters
+ * @param  stream      Open stream to kernel partition
+ * @param  gpt         Pointer to gpt struct correlated with boot disk
+ * @param  disk_handle Handle to boot disk
  * @return pointer to AvbOps structure which should be used for invocation of
  *         libavb methods. This should be freed using vboot_avb_ops_free().
  *         NULL in case of error.
  */
-AvbOps *vboot_avb_ops_new(struct vb2_context *vb2_ctx);
+AvbOps *vboot_avb_ops_new(struct vb2_context *vb2_ctx,
+			  struct vb2_kernel_params *params,
+			  VbExStream_t stream,
+			  GptData *gpt,
+			  vb2ex_disk_handle_t disk_handle);
 
 void vboot_avb_ops_free(AvbOps *ops);
 
