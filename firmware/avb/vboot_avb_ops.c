@@ -13,6 +13,7 @@
 #include "vboot_avb_ops.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
+#include "android_image_hdr.h"
 
 struct vboot_avb_data {
 	struct vb2_kernel_params *params;
@@ -262,6 +263,260 @@ out:
 	return AVB_IO_RESULT_OK;
 }
 
+static vb2_error_t vb2_load_ramdisk(GptData *gpt, struct vb2_kernel_params *params,
+				    vb2ex_disk_handle_t disk_handle,
+				    uint64_t *part_start, uint64_t *part_size,
+				    uint32_t *bytes_used)
+{
+	VbExStream_t stream;
+	uint32_t read_ms = 0, start_ts;
+	uint64_t part_bytes;
+	uint8_t *part_ramdisk_buf;
+	vb2_error_t res = VB2_ERROR_LOAD_PARTITION_READ_BODY;
+
+	if (VbExStreamOpen(disk_handle, *part_start, *part_size,
+			   &stream)) {
+		VB2_DEBUG("Unable to open disk handle.\n");
+		return res;
+	}
+
+	part_bytes = gpt->sector_bytes * *part_size;
+	if (part_bytes > (params->kernel_buffer_size - *bytes_used)) {
+		VB2_DEBUG("No space left to load ramdisk partition\n");
+		goto out;
+	}
+
+	part_ramdisk_buf = params->kernel_buffer + *bytes_used;
+	/* Load partition to memory */
+	start_ts = vb2ex_mtime();
+	if (VbExStreamRead(stream, part_bytes, part_ramdisk_buf)) {
+		VB2_DEBUG("Unable to read ramdisk partition\n");
+		goto out;
+	}
+	read_ms += vb2ex_mtime() - start_ts;
+
+	if (read_ms == 0)  /* Avoid division by 0 in speed calculation */
+		read_ms = 1;
+	VB2_DEBUG("read %u KB in %u ms at %u KB/s.\n",
+		  (uint32_t)(part_bytes) / 1024, read_ms,
+		  (uint32_t)(((part_bytes) * VB2_MSEC_PER_SEC) /
+			  (read_ms * 1024)));
+
+	*bytes_used += part_bytes;
+
+	res = VB2_SUCCESS;
+out:
+	VbExStreamClose(stream);
+	return res;
+}
+
+static vb2_error_t vb2_load_vendor_boot_ramdisk(struct vb2_context *ctx, GptData *gpt,
+						struct vb2_kernel_params *params,
+						vb2ex_disk_handle_t disk_handle,
+						uint32_t *bytes_used)
+{
+	uint64_t part_start, part_size;
+
+	if (GptFindVendorBoot(gpt, &part_start, &part_size) != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to find vendor_boot partition\n");
+		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
+	}
+
+	params->vendor_boot_offset = *bytes_used;
+
+	if (vb2_load_ramdisk(gpt, params, disk_handle, &part_start,
+			     &part_size, bytes_used)) {
+		VB2_DEBUG("Unable to load vendor_boot partition\n");
+		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
+	}
+
+	return VB2_SUCCESS;
+}
+
+static vb2_error_t vb2_load_init_boot_ramdisk(struct vb2_context *ctx, GptData *gpt,
+					      struct vb2_kernel_params *params,
+					      vb2ex_disk_handle_t disk_handle,
+					      uint32_t *bytes_used)
+{
+	uint64_t part_start, part_size;
+
+	if (GptFindInitBoot(gpt, &part_start, &part_size) != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to find init_boot partition\n");
+		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
+	}
+
+	params->init_boot_offset = *bytes_used;
+
+	if (vb2_load_ramdisk(gpt, params, disk_handle, &part_start,
+			     &part_size, bytes_used)) {
+		VB2_DEBUG("Unable to load init_boot partition\n");
+		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
+	}
+
+	return VB2_SUCCESS;
+}
+
+static vb2_error_t vb2_load_android_ramdisks(struct vb2_context *ctx, GptData *gpt,
+					     struct vb2_kernel_params *params,
+					     vb2ex_disk_handle_t disk_handle,
+					     uint32_t *bytes_used)
+{
+	vb2_error_t ret;
+
+	ret = vb2_load_vendor_boot_ramdisk(ctx, gpt, params, disk_handle, bytes_used);
+	if (ret != VB2_SUCCESS) {
+		VB2_DEBUG("Unable to read vendor_boot partition\n");
+		return ret;
+	}
+
+	ret = vb2_load_init_boot_ramdisk(ctx, gpt, params, disk_handle, bytes_used);
+	if (ret != VB2_SUCCESS) {
+		VB2_DEBUG("Unable to read init_boot partition\n");
+		return ret;
+	}
+
+	/* Update flags to mark loaded GKI image */
+	params->flags &= ~VB2_KERNEL_TYPE_MASK;
+	params->flags |= VB2_KERNEL_TYPE_ANDROID_GKI;
+
+	return VB2_SUCCESS;
+}
+
+static vb2_error_t load_android_kernel(struct vb2_kernel_params *params,
+				       VbExStream_t stream, uint32_t num_bytes)
+{
+	uint32_t read_ms, start_ts;
+	uint8_t *kernbuf;
+	uint32_t kernbuf_size;
+	struct boot_img_hdr_v4 *hdr;
+
+	kernbuf = params->kernel_buffer;
+	kernbuf_size = params->kernel_buffer_size;
+	if (!kernbuf || !kernbuf_size) {
+		VB2_DEBUG("Caller have not defined kernel_buffer and it's size\n");
+		return VB2_ERROR_LOAD_PARTITION_BODY_SIZE;
+	}
+
+	if (kernbuf_size < num_bytes) {
+		VB2_DEBUG("Not enough space for kernel\n");
+		return VB2_ERROR_LOAD_PARTITION_BODY_SIZE;
+	}
+
+	/* Read kernel data starting from kernel header till end of partition */
+	start_ts = vb2ex_mtime();
+	if (VbExStreamRead(stream, num_bytes, kernbuf)) {
+		VB2_DEBUG("Unable to read kernel data.\n");
+		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
+	}
+
+	read_ms = vb2ex_mtime() - start_ts;
+	if (read_ms == 0)  /* Avoid division by 0 in speed calculation */
+		read_ms = 1;
+	VB2_DEBUG("read %u KB in %u ms at %u KB/s.\n",
+		  (uint32_t)(num_bytes / 1024), read_ms,
+		  (uint32_t)((num_bytes *
+				  VB2_MSEC_PER_SEC) / (read_ms * 1024)));
+
+	/* Validate read partition */
+	hdr = (struct boot_img_hdr_v4 *)kernbuf;
+	if (memcmp(hdr->magic, BOOT_MAGIC, BOOT_MAGIC_SIZE)) {
+		VB2_DEBUG("BOOT_MAGIC mismatch!\n");
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	}
+	if (hdr->header_version != 4) {
+		VB2_DEBUG("Unsupported header version %d\n", hdr->header_version);
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	}
+
+	return VB2_SUCCESS;
+}
+
+/*
+ * Do all the heavy lifting here. Instead of using heap (huge
+ * allocations) lets use the buffer which is intended to have kernel and
+ * ramdisk images anyway.
+ * */
+static AvbIOResult vboot_avb_get_preloaded_partition(AvbOps *ops,
+				       const char *partition,
+				       size_t num_bytes,
+				       uint8_t **out_pointer,
+				       size_t *out_num_bytes_preloaded)
+{
+
+	/* Keep this through the invocation of this function to properly lay
+	 * content in memory */
+	static uint32_t bytes_used;
+	static bool ramdisk_preloaded = false;
+	struct vboot_avb_data *avb_data = (struct vboot_avb_data *)ops->user_data;
+	char *suffix = NULL;
+	char *short_partition_name;
+	int ret;
+
+	/*
+	 * Only load the partitions with suffix matching to the currently
+	 * selected slot.
+	 */
+	ret = GptGetActiveKernelPartitionSuffix(avb_data->gpt, &suffix);
+	if (ret != GPT_SUCCESS) {
+		VB2_DEBUG("Unable to get kernel partition suffix\n");
+		return ret;
+	}
+	if (strcmp(&partition[strlen(partition) - strlen(suffix)], suffix)) {
+		free(suffix);
+		return AVB_IO_RESULT_ERROR_NO_SUCH_PARTITION;
+	}
+
+	/*
+	 * Below we only need to compare partition name without suffix, since
+	 * the suffix is already verified above.
+	 */
+	short_partition_name = malloc(strlen(partition) - strlen(suffix) + 1);
+	memcpy(short_partition_name, partition, strlen(partition) - strlen(suffix));
+	short_partition_name[strlen(partition) - strlen(suffix)] = '\0';
+	free(suffix);
+
+	*out_pointer = NULL;
+	if (!strcmp(short_partition_name, "boot")) {
+		if (load_android_kernel(avb_data->params, avb_data->stream, num_bytes)) {
+			ret = AVB_IO_RESULT_ERROR_IO;
+			goto out;
+		}
+		bytes_used = num_bytes;
+		*out_num_bytes_preloaded = num_bytes;
+		*out_pointer = (uint8_t *)avb_data->params->kernel_buffer;
+
+		ret = AVB_IO_RESULT_OK;
+	} else if (!strcmp(short_partition_name, "vendor_boot") ||
+		   !strcmp(short_partition_name, "init_boot")) {
+
+		if (!ramdisk_preloaded) {
+			ret = vb2_load_android_ramdisks(avb_data->vb2_ctx,
+						avb_data->gpt, avb_data->params,
+						avb_data->disk_handle, &bytes_used);
+			if (ret) {
+				ret = AVB_IO_RESULT_ERROR_IO;
+				goto out;
+			}
+			ramdisk_preloaded = true;
+		}
+
+		*out_num_bytes_preloaded = num_bytes;
+		if (!strcmp(short_partition_name, "vendor_boot"))
+			*out_pointer = (uint8_t *)avb_data->params->kernel_buffer +
+				       avb_data->params->vendor_boot_offset;
+		if (!strcmp(short_partition_name, "init_boot"))
+			*out_pointer = (uint8_t *)avb_data->params->kernel_buffer +
+				       avb_data->params->init_boot_offset;
+
+		ret = AVB_IO_RESULT_OK;
+	}
+
+out:
+	free(short_partition_name);
+	return ret;
+
+}
+
 /*
  * Initialize platform callbacks used within libavb.
  *
@@ -307,6 +562,7 @@ AvbOps *vboot_avb_ops_new(struct vb2_context *vb2_ctx,
 	ops->read_rollback_index = vboot_avb_read_rollback_index;
 	ops->get_unique_guid_for_partition = get_unique_guid_for_partition;
 	ops->validate_vbmeta_public_key = validate_vbmeta_public_key;
+	ops->get_preloaded_partition = vboot_avb_get_preloaded_partition;
 
 	return ops;
 }
