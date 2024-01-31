@@ -516,7 +516,8 @@ ALL_OBJS += ${UTILLIB_OBJS}
 
 # Externally exported library for some target userspace apps to link with
 # (cryptohome, updater, etc.)
-HOSTLIB = ${BUILD}/libvboot_host.a
+HOSTLIB = ${BUILD}/libvboot_host.so
+HOSTLIB_STATIC = ${BUILD}/libvboot_host.a
 
 HOSTLIB_SRCS = \
 	cgpt/cgpt_add.c \
@@ -960,6 +961,9 @@ ${TLCL}: ${TLCL_OBJS}
 
 # Some UTILLIB files need dlopen(), doesn't hurt to just link it everywhere.
 LDLIBS += -ldl
+ifneq ($(filter-out 0,${USE_FLASHROM}),)
+${HOSTLIB}: LDLIBS += ${FLASHROM_LIBS}
+endif
 
 .PHONY: utillib
 utillib: ${UTILLIB}
@@ -972,14 +976,20 @@ ${UTILLIB}: ${UTILLIB_OBJS} ${FWLIB_OBJS} ${TLCL_OBJS}
 	${Q}ar qc $@ $^
 
 .PHONY: hostlib
-hostlib: ${HOSTLIB}
+hostlib: ${HOSTLIB} ${HOSTLIB_STATIC}
 
 # TODO: better way to make .a than duplicating this recipe each time?
-${HOSTLIB}: ${HOSTLIB_OBJS}
+${HOSTLIB_STATIC}: ${HOSTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
 	@${PRINTF} "    AR            $(subst ${BUILD}/,,$@)\n"
 	${Q}ar qc $@ $^
+
+${HOSTLIB}: ${HOSTLIB_OBJS}
+	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
+	${Q}rm -f $@
+	@${PRINTF} "    LD          $(subst ${BUILD}/,,$@)\n"
+	${Q}${LD} ${LDFLAGS} ${LDLIBS} -shared -Wl,-soname,$(subst ${BUILD}/,,$@) $^ -o $@
 
 .PHONY: headers_install
 headers_install:
@@ -997,7 +1007,7 @@ headers_install:
 		firmware/include/tpm2_tss_constants.h
 
 .PHONY: lib_install
-lib_install: ${HOSTLIB}
+lib_install: ${HOSTLIB} ${HOSTLIB_STATIC}
 	@${PRINTF} "    INSTALL       HOSTLIB\n"
 	${Q}mkdir -p ${UL_DIR}
 	${Q}${INSTALL} -t ${UL_DIR} -m644 $^

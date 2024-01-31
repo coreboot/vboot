@@ -5,6 +5,6 @@ libdir=${prefix}/@LIBDIR@
 
 Name: libvboot_host
 Version: 2
-Description: Static library of functions related to vboot and cgpt.
+Description: Dynamic library of functions related to vboot and cgpt.
 Cflags: -I${includedir}
 Libs: -L${libdir} -lvboot_host @LDLIBS@
