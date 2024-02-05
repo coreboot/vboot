@@ -23,15 +23,6 @@ EOF
   fi
 }
 
-generate_ed25519_key() {
-  local output_dir="$1"
-
-  # Generate ed25519 private and public key.
-  openssl genpkey -algorithm Ed25519 -out "${output_dir}/key_hps.priv.pem"
-  openssl pkey -in "${output_dir}/key_hps.priv.pem" -pubout -text_pub \
-    -out "${output_dir}/key_hps.pub.pem"
-}
-
 main() {
   set -euo pipefail
 
@@ -59,7 +50,7 @@ main() {
     shift
   done
 
-  generate_ed25519_key "${output_dir}"
+  generate_ed25519_key "${output_dir}/key_hps"
 }
 
 main "$@"

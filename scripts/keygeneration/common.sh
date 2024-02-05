@@ -294,3 +294,15 @@ increment_version() {
   fi
   echo ${new_version}
 }
+
+# Create a new ed25519 key pair given a base name. For example, if the
+# base is "dir/foo", this will create "dir/foo.priv.pem" and
+# "dir/foo.pub.pem".
+# Args: BASE
+generate_ed25519_key() {
+  local base="$1"
+
+  # Generate ed25519 private and public key.
+  openssl genpkey -algorithm Ed25519 -out "${base}.priv.pem"
+  openssl pkey -in "${base}.priv.pem" -pubout -text_pub -out "${base}.pub.pem"
+}
