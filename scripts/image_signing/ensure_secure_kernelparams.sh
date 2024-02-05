@@ -125,7 +125,7 @@ main() {
     output+="$(printf "\t'%s'\n" "${required_dmparams_regex[@]}")\n)\n"
 
     # Divide the dm params from the rest and process seperately.
-    local kparams=$(sudo dump_kernel_config "${loop_kern}")
+    local kparams=$(sudo futility dump_kernel_config "${loop_kern}")
     local dmparams=$(get_dmparams "$kparams")
     local kparams_nodm=$(kparams_remove_dm "$kparams")
 

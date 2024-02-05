@@ -258,7 +258,7 @@ main() {
 
   debug_msg "Detecting developer firmware keyblock"
   local use_devfw_keyblock="$FLAGS_FALSE"
-  (cd "${expanded_firmware_dir}"; dump_fmap -x "${IMAGE_BIOS}" \
+  (cd "${expanded_firmware_dir}"; "${FUTILITY}" dump_fmap -x "${IMAGE_BIOS}" \
     >/dev/null 2>&1) || die "Failed to extract firmware image."
   if [ -f "$expanded_firmware_dir/VBLOCK_A" ]; then
     local has_dev=$FLAGS_TRUE has_norm=$FLAGS_TRUE
@@ -266,9 +266,9 @@ main() {
     # "DEV" means "bootable on developer mode". Here we try to match the pattern
     # in output of vbutil_block, and disable the flags (has_dev, has_norm) if
     # the pattern was not found.
-    vbutil_keyblock --unpack "$expanded_firmware_dir/VBLOCK_A" |
+    "${FUTILITY}" vbutil_keyblock --unpack "$expanded_firmware_dir/VBLOCK_A" |
       grep -qw '!DEV' || has_norm=$FLAGS_FALSE
-    vbutil_keyblock --unpack "$expanded_firmware_dir/VBLOCK_A" |
+    "${FUTILITY}" vbutil_keyblock --unpack "$expanded_firmware_dir/VBLOCK_A" |
       grep -qw '[^!]DEV' || has_dev=$FLAGS_FALSE
     if [ "$has_norm" = "$FLAGS_FALSE" -a "$has_dev" = "$FLAGS_TRUE" ]; then
       use_devfw_keyblock=$FLAGS_TRUE
