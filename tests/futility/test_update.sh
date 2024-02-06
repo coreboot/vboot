@@ -424,20 +424,6 @@ test_update "Full update (--quirks unlock_csme_eve)" \
   --quirks unlock_csme_eve \
   -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
-test_update "Full update (--quirks unlock_csme)" \
-  "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
-  --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" \
-  --wp=0 --sys_props 0,0x10001
-
-test_update "Full update (--quirks unlock_csme)" \
-  "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_path" \
-  --quirks unlock_csme -i "${TO_IMAGE}.ifd_path" \
-  --wp=0 --sys_props 0,0x10001
-
-test_update "Full update (--unlock_me)" \
-  "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
-  --unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0 --sys_props 0,0x10001
-
 test_update "Full update (failure by --quirks min_platform_version)" \
   "${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
   --quirks min_platform_version=3 \
@@ -514,11 +500,6 @@ mkdir -p "${TMP}.output"
 "${FUTILITY}" update -i "${LINK_BIOS}" --mode=output \
   --output_dir="${TMP}.output"
 cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
-
-echo "TEST: Output (--mode=output, --quirks unlock_csme)"
-"${FUTILITY}" update -i "${TMP}.expected.ifd_chipset" --mode=output \
-  --output_dir="${TMP}.output" --quirks unlock_csme
-cmp "${TMP}.expected.me_unlocked.ifd_chipset" "${TMP}.output/image.bin"
 
 mkdir -p "${A}/keyset"
 cp -f "${LINK_BIOS}" "${A}/image.bin"
@@ -655,6 +636,27 @@ if type cbfstool >/dev/null 2>&1; then
   test_update "Full update (failure by CBFS quirks)" \
     "${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
     -i "${TO_IMAGE}.quirk" --wp=0 --sys_props 0,0x10001,2
+fi
+
+if type ifdtool >/dev/null 2>&1; then
+  test_update "Full update (--quirks unlock_csme)" \
+    "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
+    --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" \
+    --wp=0 --sys_props 0,0x10001
+
+  test_update "Full update (--quirks unlock_csme)" \
+    "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_path" \
+    --quirks unlock_csme -i "${TO_IMAGE}.ifd_path" \
+    --wp=0 --sys_props 0,0x10001
+
+  test_update "Full update (--unlock_me)" \
+    "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
+    --unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0 --sys_props 0,0x10001
+
+  echo "TEST: Output (--mode=output, --quirks unlock_csme)"
+  "${FUTILITY}" update -i "${TMP}.expected.ifd_chipset" --mode=output \
+    --output_dir="${TMP}.output" --quirks unlock_csme
+  cmp "${TMP}.expected.me_unlocked.ifd_chipset" "${TMP}.output/image.bin"
 fi
 
 rm -rf "${TMP}"*
