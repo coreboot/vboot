@@ -83,20 +83,16 @@ else
 PRINTF := :
 endif
 
-# Architecture detection
-_machname := $(shell uname -m)
-HOST_ARCH ?= ${_machname}
-
 # ARCH and/or FIRMWARE_ARCH are defined by the ChromiumOS ebuild.
 # Pick a valid target architecture if none is defined.
 ifeq (${ARCH},)
-  ARCH := ${HOST_ARCH}
+  ARCH := $(shell uname -m)
 endif
 
 ifeq (${ARCH},armv7l)
   override ARCH := arm
-else ifneq (,$(filter aarch64 arm64,${ARCH}))
-  override ARCH := arm
+else ifeq (${ARCH},aarch64)
+  override ARCH := arm64
 else ifeq (${ARCH},i386)
   override ARCH := x86
 else ifeq (${ARCH},i686)
@@ -105,10 +101,12 @@ else ifeq (${ARCH},amd64)
   override ARCH := x86_64
 endif
 
-ifneq ($(wildcard host/arch/${ARCH}/lib/crossystem_arch.c),)
-	CROSSYSTEM_ARCH_C := host/arch/${ARCH}/lib/crossystem_arch.c
+ifneq (,$(filter arm arm64,${ARCH}))
+	ARCH_DIR := arm
+else ifneq (,$(filter x86 x86_64,${ARCH}))
+	ARCH_DIR := x86
 else
-	CROSSYSTEM_ARCH_C := host/arch/stub/lib/crossystem_arch.c
+	ARCH_DIR := stub
 endif
 
 # Provide default CC and CFLAGS for firmware builds; if you have any -D flags,
@@ -490,7 +488,7 @@ UTILLIB_SRCS = \
 	cgpt/cgpt_repair.c \
 	cgpt/cgpt_show.c \
 	futility/dump_kernel_config_lib.c \
-	$(CROSSYSTEM_ARCH_C) \
+	host/arch/${ARCH_DIR}/lib/crossystem_arch.c \
 	host/lib/chromeos_config.c \
 	host/lib/crossystem.c \
 	host/lib/crypto.c \
@@ -554,7 +552,7 @@ HOSTLIB_SRCS = \
 	firmware/stub/tpm_lite_stub.c \
 	firmware/stub/vboot_api_stub_disk.c \
 	futility/dump_kernel_config_lib.c \
-	$(CROSSYSTEM_ARCH_C) \
+	host/arch/${ARCH_DIR}/lib/crossystem_arch.c \
 	host/lib/chromeos_config.c \
 	host/lib/crossystem.c \
 	host/lib/crypto.c \
