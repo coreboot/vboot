@@ -435,7 +435,7 @@ FWLIB_SRCS += \
 	firmware/2lib/2modpow_sse2.c
 endif
 
-ifneq (,$(filter x86 x86_64,${ARCH}))
+ifneq (,$(filter arm64 x86 x86_64,${ARCH}))
 ENABLE_HWCRYPTO_RSA_TESTS := 1
 endif
 
@@ -1199,9 +1199,16 @@ ${BUILD}/tests/vb2_sha256_x86_tests: \
 
 ifeq (${ENABLE_HWCRYPTO_RSA_TESTS},1)
 define enable_hwcrypto_rsa_tests
+${BUILD}/$(1): CFLAGS += -DENABLE_HWCRYPTO_RSA_TESTS
+ifeq (${ARCH},arm64)
+${BUILD}/$(1): CFLAGS += -DARM64_RSA_ACCELERATION
+${BUILD}/$(1): ${BUILD}/firmware/2lib/2modpow_neon.o
+${BUILD}/$(1): LIBS += ${BUILD}/firmware/2lib/2modpow_neon.o
+else
 ${BUILD}/$(1): CFLAGS += -DVB2_X86_RSA_ACCELERATION
 ${BUILD}/$(1): ${BUILD}/firmware/2lib/2modpow_sse2.o
 ${BUILD}/$(1): LIBS += ${BUILD}/firmware/2lib/2modpow_sse2.o
+endif
 endef
 
 $(foreach test, ${HWCRYPTO_RSA_TESTS}, \

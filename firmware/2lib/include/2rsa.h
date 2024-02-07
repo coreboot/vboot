@@ -42,7 +42,7 @@ uint32_t vb2_rsa_sig_size(enum vb2_signature_algorithm sig_alg);
 uint32_t vb2_packed_key_size(enum vb2_signature_algorithm sig_alg);
 
 /* Size of work buffer sufficient for vb2_rsa_verify_digest() worst case */
-#ifdef VB2_X86_RSA_ACCELERATION
+#if defined(ENABLE_HWCRYPTO_RSA_TESTS)
 #define VB2_VERIFY_RSA_DIGEST_WORKBUF_BYTES ((11 * 1024) + 8)
 #else
 #define VB2_VERIFY_RSA_DIGEST_WORKBUF_BYTES (3 * 1024)

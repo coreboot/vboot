@@ -14,7 +14,7 @@
 #include "host_key.h"
 #include "rsa_padding_test.h"
 
-#if defined(VB2_X86_RSA_ACCELERATION)
+#if defined(ENABLE_HWCRYPTO_RSA_TESTS)
 void vb2_modexp(const struct vb2_public_key *key, uint8_t *inout,
 		void *workbuf, int exp) {
 	TEST_TRUE(0, "vb2_modexp() unexpectedly executed");
@@ -43,7 +43,7 @@ static void test_signatures(struct vb2_public_key *key)
 
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
-#if defined(VB2_X86_RSA_ACCELERATION)
+#if defined(ENABLE_HWCRYPTO_RSA_TESTS)
 	key->allow_hwcrypto = 1;
 #endif
 
@@ -89,9 +89,9 @@ static void test_verify_digest(struct vb2_public_key *key) {
 	key->allow_hwcrypto = 1;
 	memcpy(sig, signatures[0], sizeof(sig));
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
-#if defined(VB2_X86_RSA_ACCELERATION)
+#if defined(ENABLE_HWCRYPTO_RSA_TESTS)
 	TEST_SUCC(vb2_rsa_verify_digest(key, sig, test_message_sha1_hash, &wb),
-		"vb2_rsa_verify_digest() hwcrypto modexp fails");
+		"vb2_rsa_verify_digest() hwcrypto modexp");
 #else
 	hwcrypto_modexp_return_value = VB2_SUCCESS;
 	TEST_NEQ(vb2_rsa_verify_digest(key, sig, test_message_sha1_hash, &wb),
