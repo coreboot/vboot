@@ -533,7 +533,6 @@ HOSTLIB_SRCS = \
 	firmware/2lib/2crc8.c \
 	firmware/2lib/2crypto.c \
 	firmware/2lib/2hmac.c \
-	firmware/2lib/2kernel.c \
 	firmware/2lib/2nvstorage.c \
 	firmware/2lib/2recovery_reasons.c \
 	firmware/2lib/2rsa.c \
