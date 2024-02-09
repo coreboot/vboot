@@ -519,6 +519,10 @@ ALL_OBJS += ${UTILLIB_OBJS}
 HOSTLIB = ${BUILD}/libvboot_host.so
 HOSTLIB_STATIC = ${BUILD}/libvboot_host.a
 
+# For testing purposes files contianing some libvboot_host symbols.
+HOSTLIB_DEF = ${BUILD}/tests/libvboot_host_def.txt
+HOSTLIB_UNDEF = ${BUILD}/tests/libvboot_host_undef.txt
+
 HOSTLIB_SRCS = \
 	cgpt/cgpt_add.c \
 	cgpt/cgpt_boot.c \
@@ -988,8 +992,17 @@ ${HOSTLIB_STATIC}: ${HOSTLIB_OBJS}
 ${HOSTLIB}: ${HOSTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
-	@${PRINTF} "    LD          $(subst ${BUILD}/,,$@)\n"
+	@${PRINTF} "    LD            $(subst ${BUILD}/,,$@)\n"
 	${Q}${LD} ${LDFLAGS} ${LDLIBS} -shared -Wl,-soname,$(subst ${BUILD}/,,$@) $^ -o $@
+
+${HOSTLIB_DEF}: ${HOSTLIB_STATIC}
+	@${PRINTF} "    NMd           $(subst ${BUILD}/,,$@)\n"
+	${Q}nm --defined-only --format=just-symbols $^ > $@
+
+${HOSTLIB_UNDEF}: ${HOSTLIB_STATIC}
+	@${PRINTF} "    NMu           $(subst ${BUILD}/,,$@)\n"
+	${Q}nm --undefined-only --format=just-symbols $^ > $@
+
 
 .PHONY: headers_install
 headers_install:
@@ -1326,7 +1339,7 @@ runcgpttests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/cgptlib_test
 
 .PHONY: runtestscripts
-runtestscripts: install_for_test
+runtestscripts: install_for_test ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_android_unittests.sh
 	${RUNTEST} ${SRC_RUN}/scripts/image_signing/sign_uefi_unittest.py
 	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
@@ -1337,6 +1350,7 @@ runtestscripts: install_for_test
 	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/vb2_rsa_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/vb2_firmware_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/vhost_reference.sh ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 
 .PHONY: runmisctests
 runmisctests: install_for_test
