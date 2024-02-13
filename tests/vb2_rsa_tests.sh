@@ -34,7 +34,7 @@ function test_signatures {
   echo -e "Peforming ${COL_YELLOW}PKCS #1 v1.5 Padding Tests${COL_STOP}..."
   "${TEST_DIR}/vb20_rsa_padding_tests" \
     "${TESTKEY_DIR}/rsa_padding_test_pubkey.keyb"
-  if [ "$ENABLE_HWCRYPTO_RSA_TESTS" -eq 1 ]
+  if [ -e "${TEST_DIR}/vb20_hwcrypto_rsa_padding_tests" ]
   then
     "${TEST_DIR}/vb20_hwcrypto_rsa_padding_tests" \
       "${TESTKEY_DIR}/rsa_padding_test_pubkey.keyb"

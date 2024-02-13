@@ -430,7 +430,7 @@ FWLIB_SRCS += \
 endif
 
 ifneq (,$(filter x86 x86_64,${ARCH}))
-export ENABLE_HWCRYPTO_RSA_TESTS := 1
+ENABLE_HWCRYPTO_RSA_TESTS := 1
 endif
 
 # Even if X86_SHA_EXT is 0 we need cflags since this will be compiled for tests
@@ -1192,14 +1192,14 @@ ${BUILD}/tests/vb2_sha256_x86_tests: \
 	LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
 
 ifeq (${ENABLE_HWCRYPTO_RSA_TESTS},1)
-define enable_hwcrypto_sse2_test
+define enable_hwcrypto_rsa_tests
 ${BUILD}/$(1): CFLAGS += -DVB2_X86_RSA_ACCELERATION
 ${BUILD}/$(1): ${BUILD}/firmware/2lib/2modpow_sse2.o
 ${BUILD}/$(1): LIBS += ${BUILD}/firmware/2lib/2modpow_sse2.o
 endef
 
 $(foreach test, ${HWCRYPTO_RSA_TESTS}, \
-	$(eval $(call enable_hwcrypto_sse2_test,${test})))
+	$(eval $(call enable_hwcrypto_rsa_tests,${test})))
 endif
 
 .PHONY: install_dut_test
