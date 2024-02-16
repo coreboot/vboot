@@ -151,11 +151,18 @@ make_keyblock() {
   local base=$1
   local flags=$2
   local pubkey=$3
-  local signkey=$4
+  # (Local) path to the key we're using to sign the keyblock.
+  # This is required, since the public key (as specified with --signpubkey)
+  # must always be local.
+  local signkey_path=$4
+  # Remote URI to the key we're using to sign the keyblock.
+  # Optional, if not set we'll look for the private key in signkey_path.
+  local signkey_uri=$5
 
-  local privkey="${signkey}"
-  if [[ "${signkey}" != "remote:"* ]]; then
-    privkey="${signkey}.vbprivk"
+  local signkey_priv="${signkey_path}.vbprivk"
+  # If the URI is set, the private key is remote.
+  if [[ -n "${signkey_uri}" ]]; then
+    signkey_priv="${signkey_uri}"
   fi
 
   echo "creating $base keyblock..."
@@ -165,12 +172,12 @@ make_keyblock() {
     --pack "${base}.keyblock" \
     --flags $flags \
     --datapubkey "${pubkey}.vbpubk" \
-    --signprivate "${privkey}"
+    --signprivate "${signkey_priv}"
 
   # verify it
   vbutil_keyblock \
     --unpack "${base}.keyblock" \
-    --signpubkey "${signkey}.vbpubk"
+    --signpubkey "${signkey_path}.vbpubk"
 }
 
 # File to read current versions from.
