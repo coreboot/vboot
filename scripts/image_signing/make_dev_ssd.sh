@@ -250,19 +250,7 @@ resign_ssd_kernel() {
       local new_config_file="$(make_temp_file)"
       echo "${kernel_config}" >"${new_config_file}"
       local old_md5sum="$(md5sum "${new_config_file}")"
-      local editor="${VISUAL:-${EDITOR:-vi}}"
-      info "${name}: Editing kernel config:"
-      # On ChromiumOS, some builds may come with broken EDITOR that refers to
-      # nano so we want to check again if the editor really exists.
-      if type "${editor}" >/dev/null 2>&1; then
-        "${editor}" "${new_config_file}"
-      else
-        # This script runs under dash but we want readline in bash to support
-        # editing in in console.
-        bash -c "read -e -i '${kernel_config}' &&
-                 echo \"\${REPLY}\" >${new_config_file}" ||
-          die "Failed to run editor. Please specify editor name by VISUAL."
-      fi
+      "${EDITOR}" "${new_config_file}"
       kernel_config="$(cat "${new_config_file}")"
       if [ "$(md5sum "${new_config_file}")" = "${old_md5sum}" ]; then
         info "${name}: Config not changed."
@@ -423,7 +411,7 @@ validity_check_crossystem_flags() {
   you really want to make this change, allow the firmware to boot self-signed
   images by running:
 
-    sudo crossystem dev_boot_signed_only=0
+    sudo -E crossystem dev_boot_signed_only=0
 
   before re-executing this command.
   "
@@ -449,7 +437,7 @@ validity_check_live_partitions() {
   change the partition you have booted with. To do that, re-execute this command
   as:
 
-    sudo $ORIGINAL_CMD $ORIGINAL_PARAMS --partitions $ROOTDEV_KERNEL
+    sudo -E $ORIGINAL_CMD $ORIGINAL_PARAMS --partitions $ROOTDEV_KERNEL
 
   If you are sure to modify other partition, please invoke the command again and
   explicitly assign only one target partition for each time  (--partitions N )
@@ -492,17 +480,17 @@ validity_check_live_firmware() {
   You need to either install developer firmware, or change system root key.
 
    - To install developer firmware: type command
-     sudo chromeos-firmwareupdate --mode=todev
+     sudo -E chromeos-firmwareupdate --mode=todev
 
    - To change system rootkey: disable firmware write protection (a hardware
      switch) and then type command:
-     sudo $SCRIPT_BASE/make_dev_firmware.sh
+     sudo -E $SCRIPT_BASE/make_dev_firmware.sh
 
   If you are sure that you want to make such image without developer
   firmware or you've already changed system root keys, please run this
   command again with --force paramemeter:
 
-     sudo $ORIGINAL_CMD --force $ORIGINAL_PARAMS
+     sudo -E $ORIGINAL_CMD --force $ORIGINAL_PARAMS
   "
   return $FLAGS_FALSE
 }
