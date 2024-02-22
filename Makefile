@@ -117,8 +117,7 @@ FIRMWARE_FLAGS := -nostdinc -ffreestanding -fno-builtin -fno-stack-protector
 COMMON_FLAGS := -pipe ${WERROR} -Wall -Wstrict-prototypes -Wtype-limits \
 	-Wundef -Wmissing-prototypes -Wno-trigraphs -Wredundant-decls -Wshadow \
 	-Wwrite-strings -Wstrict-aliasing -Wdate-time \
-	-Wint-conversion -Wincompatible-function-pointer-types \
-	-ffunction-sections -fdata-sections \
+	-Wint-conversion -ffunction-sections -fdata-sections \
 	-Wformat -Wno-format-security -std=gnu11 ${DEBUG_FLAGS} ${CPPFLAGS}
 
 # test_ccflag
@@ -133,6 +132,7 @@ test_ccflag = $(shell \
 COMMON_FLAGS += $(call test_ccflag,-Wimplicit-fallthrough)
 COMMON_FLAGS += $(call test_ccflag,-Wno-address-of-packed-member)
 COMMON_FLAGS += $(call test_ccflag,-Wno-unknown-warning)
+COMMON_FLAGS += $(call test_ccflag,-Wincompatible-function-pointer-types)
 
 TEST_FLAGS := $(call test_ccflag,-Wno-address-of-packed-member)
 
