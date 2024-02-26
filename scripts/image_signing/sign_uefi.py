@@ -268,6 +268,12 @@ def get_parser() -> argparse.ArgumentParser:
         required=True,
     )
     parser.add_argument(
+        "--crdyshim-private-key",
+        type=Path,
+        help="Path of the crdyshim private key",
+        required=True,
+    )
+    parser.add_argument(
         "--efi-glob",
         help="Glob pattern of EFI files to sign, e.g. '*.efi'",
         required=False,
