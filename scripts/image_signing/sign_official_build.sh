@@ -839,25 +839,23 @@ sign_uefi_binaries() {
     # change the glob so that they don't get resigned.
     efi_glob="grub*.efi"
   fi
-  "${SCRIPT_DIR}/sign_uefi.py" \
-      --target-dir "${esp_dir}" \
-      --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
-      --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
-      --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
-      --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}" \
+
+  local sign_uefi_cmd=(
+      "${SCRIPT_DIR}/sign_uefi.py"
+      --private-key "${KEYCFG_UEFI_PRIVATE_KEY}"
+      --sign-cert "${KEYCFG_UEFI_SIGN_CERT}"
+      --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}"
+      --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}"
       --efi-glob "${efi_glob}"
+  )
+
+  "${sign_uefi_cmd[@]}" --target-dir "${esp_dir}"
   sudo umount "${esp_dir}"
 
   local rootfs_dir
   rootfs_dir="$(make_temp_dir)"
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
-  "${SCRIPT_DIR}/sign_uefi.py" \
-      --target-dir "${rootfs_dir}/boot" \
-      --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
-      --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
-      --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
-      --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}" \
-      --efi-glob "${efi_glob}"
+  "${sign_uefi_cmd[@]}" --target-dir "${rootfs_dir}/boot"
   sudo umount "${rootfs_dir}"
 
   info "Signed UEFI binaries"
