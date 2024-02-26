@@ -94,9 +94,6 @@ class Test(unittest.TestCase):
                     # the boot*.efi files don't.
                     mock.call(efi_boot_dir / "testia32.efi"),
                     mock.call(efi_boot_dir / "testx64.efi"),
-                    # Two crdyboot files.
-                    mock.call(efi_boot_dir / "crdybootia32.efi"),
-                    mock.call(efi_boot_dir / "crdybootx64.efi"),
                     # Two syslinux kernels.
                     mock.call(syslinux_dir / "vmlinuz.A"),
                     mock.call(syslinux_dir / "vmlinuz.B"),

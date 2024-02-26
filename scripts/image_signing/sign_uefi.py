@@ -196,7 +196,6 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
             if efi_file.is_file():
                 inject_vbpubk(efi_file, keys)
-                signer.sign_efi_file(efi_file)
 
         for syslinux_kernel_file in sorted(syslinux_dir.glob("vmlinuz.?")):
             if syslinux_kernel_file.is_file():
