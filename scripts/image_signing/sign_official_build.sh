@@ -1304,15 +1304,11 @@ main() {
 
   # Parse arguments with positional and optional options.
   local script_args=()
-  CLOUD_SIGNING=false
   FUTILITY_EXTRA_FLAGS=""
   while [[ "$#" -gt 0 ]]; do
     case $1 in
       --debug)
         FUTILITY_EXTRA_FLAGS+="--debug "
-        ;;
-      --cloud-signing)
-        CLOUD_SIGNING=true
         ;;
       -h|--help)
         usage
@@ -1331,9 +1327,6 @@ main() {
     shift
   done
 
-  if [[ "${CLOUD_SIGNING}" == true ]]; then
-    info "signing with cloud keys"
-  fi
   set -- "${script_args[@]}"
 
   TYPE=$1
