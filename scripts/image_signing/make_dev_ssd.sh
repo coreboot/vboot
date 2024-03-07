@@ -96,7 +96,7 @@ remove_rootfs_verification() {
     rw_root_opt="s| rw | ro |"
   fi
 
-  echo "$*" | sed '
+  echo "$* chromiumos.allow_overlayfs" | sed '
     s| dm=\"2 [^"]*bootcache[^"]* vroot | dm=\"1 vroot |
     s| root=/dev/dm-[0-9] | root='"$new_root"' |
     s| dm_verity.dev_wait=1 | dm_verity.dev_wait=0 |
