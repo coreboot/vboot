@@ -515,6 +515,10 @@ validity_check() {
     debug_msg "Device is a VM, skipping firmware checks"
     return $FLAGS_TRUE
   fi
+  if crossystem 'mainfw_type?nonchrome'; then
+    debug_msg "Device is nonchrome, skipping firmware checks"
+    return $FLAGS_TRUE
+  fi
 
   validity_check_live_firmware || return $FLAGS_FALSE
   validity_check_crossystem_flags || return $FLAGS_FALSE
