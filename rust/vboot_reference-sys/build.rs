@@ -100,9 +100,11 @@ fn generate_vboot_host_binding() -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    pkg_config::Config::new()
-        .probe("vboot_host")
-        .context("unable to find package vboot_host")?;
+    if pkg_config::Config::new().probe("vboot_host").is_err() {
+        // Fallback to generate bindings even if the library is not installed.
+        println!("cargo:rustc-link-lib=dylib=vboot_host");
+        println!("cargo:rustc-link-lib=dylib=dl");
+    }
     generate_crossystem_bindings()?;
     generate_vboot_host_binding()
 }
