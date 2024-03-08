@@ -25,12 +25,6 @@ fn get_bindgen_builder() -> Builder {
         .default_enum_style(EnumVariation::Rust {
             non_exhaustive: false,
         })
-        .blocklist_type("__rlim64_t")
-        .raw_line("pub type __rlim64_t = u64;")
-        .blocklist_type("__u\\d{1,2}")
-        .raw_line("pub type __u8 = u8;")
-        .raw_line("pub type __u16 = u16;")
-        .raw_line("pub type __u32 = u32;")
         .layout_tests(false)
         .disable_header_comment()
 }
@@ -46,7 +40,7 @@ fn generate_crossystem_bindings() -> Result<()> {
     println!("cargo:rerun-if-changed={}", header_path.display());
 
     let bindings = get_bindgen_builder()
-        .blocklist_type("__uint64_t")
+        .allowlist_function("Vb.*")
         .clang_args(COMMON_CFLAGS)
         .header(header_path.display().to_string())
         .generate()
@@ -73,18 +67,11 @@ fn generate_vboot_host_binding() -> Result<()> {
     }
 
     let bindings = get_bindgen_builder()
-        // Some functions or types define a `long double`, which is turned into u128
-        // by bindgen, which is not FFI-safe. See
-        // https://github.com/rust-lang/rust-bindgen/issues/1549 for more information.
-        // We blocklist those functions and types here.
-        .blocklist_function("qfcvt")
-        .blocklist_function("qgcvt")
-        .blocklist_function("qecvt")
-        .blocklist_function("qecvt_r")
-        .blocklist_function("qfcvt_r")
-        .blocklist_function("strtold")
-        .blocklist_type("_Float64x")
-        .blocklist_type("max_align_t")
+        .allowlist_function("Cgpt.*")
+        .allowlist_function(".*Guid.*")
+        .allowlist_function("FindKernelConfig")
+        .allowlist_function("ExtractVmlinuz")
+        .allowlist_function("vb2_.*")
         .size_t_is_usize(false)
         .clang_args(COMMON_CFLAGS)
         .clang_arg("-Iinclude")
