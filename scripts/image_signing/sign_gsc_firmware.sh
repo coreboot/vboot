@@ -25,6 +25,7 @@ set -u
 
 PRE_PVT_BID_FLAG=0x10
 MP_BID_FLAG=0x10000
+NIGHTLY_BID_FLAG=0x20000
 
 # Convert unsigned 32 bit value into a signed one.
 to_int32() {
@@ -143,8 +144,9 @@ paste_bin() {
   dd if="${blob}" of="${file}" seek="${offset}" bs=1 conv=notrunc
 }
 
-# This function accepts one argument, the name of the GSC manifest file which
-# needs to be verified and in certain cases altered.
+# This function accepts two arguments, the name of the GSC manifest file which
+# needs to be verified and in certain cases altered and the generation of the
+# chip (h or g).
 #
 # The function verifies that the input manifest is a proper json file, and
 # that the manifest conforms to GSC board ID flags conventions for various
@@ -158,12 +160,16 @@ paste_bin() {
 #
 # - when signing mp images (major version number is odd), the 0x10000 flags
 #   bit must be set (this can be overridden by signing instructions).
+#
+# - when signing nightly images (major version number is 26), the flags are
+#   0x20000
 verify_and_prepare_gsc_manifest() {
-  if [[ $# -ne 1 ]]; then
-    die "Usage: verify_and_prepare_gsc_manifest <manifest .json file>"
+  if [[ $# -ne 2 ]]; then
+    die "Usage: verify_and_prepare_gsc_manifest <manifest .json file> <generation>"
   fi
 
   local manifest_json="$1"
+  local generation="$2"
 
   local bid_flags
   local config1
@@ -190,6 +196,17 @@ verify_and_prepare_gsc_manifest() {
   fi
 
   case "${INSN_TARGET:-}" in
+
+    (Nightly)
+      # At this point Nightly builds must have the major version 26 and
+      # 0x20000 board id flags, so it can't run on released devices.
+      if (( (major == 26 ) && (bid_flags == NIGHTLY_BID_FLAG) )); then
+        # The Nightly target is only valid for ti50 devices.
+        if [[ "${generation}" == "d" ]] ; then
+          return 0
+        fi
+      fi
+      ;;
 
     (NodeLocked)
       if [[ -z ${INSN_DEVICE_ID:-} ]]; then
@@ -240,11 +257,13 @@ verify_and_prepare_gsc_manifest() {
       ;;
 
     (*)
-      die "Unsupported target '${INSN_TARGET:-}'"
+      die "Unsupported target '${INSN_TARGET:-}': " \
+	  "generation = '${generation}' major = '${major}'"
   esac
 
-  die "Inconsistent manifest ${manifest_json}: major = '${major}'," \
-      "board_id_flags = '${bid_flags}' target = '${INSN_TARGET}'"
+  die "Inconsistent manifest ${manifest_json}: generation = '${generation}'," \
+      "major = '${major}',board_id_flags = '${bid_flags}' " \
+      "target = '${INSN_TARGET}'"
 }
 
 # This function accepts two arguments, names of two binary files.
@@ -522,7 +541,7 @@ sign_gsc_firmware() {
       ;;
   esac
 
-  verify_and_prepare_gsc_manifest "${manifest_file}"
+  verify_and_prepare_gsc_manifest "${manifest_file}" "${generation}"
 
   dd if=/dev/zero bs="${IMAGE_SIZE}" count=1 status=none |
     tr '\000' '\377' > "${output_file}"
