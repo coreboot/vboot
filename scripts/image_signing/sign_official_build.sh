@@ -1288,7 +1288,8 @@ sign_uefi_kernel() {
     --private-key "${KEYCFG_UEFI_PRIVATE_KEY}" \
     --sign-cert "${KEYCFG_UEFI_SIGN_CERT}" \
     --verify-cert "${KEYCFG_UEFI_VERIFY_CERT}" \
-    --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}"
+    --kernel-subkey-vbpubk "${KEYCFG_KERNEL_SUBKEY_VBPUBK}" \
+    --crdyshim-private-key "${KEYCFG_UEFI_CRDYSHIM_PRIVATE_KEY}"
 }
 
 main() {
