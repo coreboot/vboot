@@ -4,6 +4,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Declare these arrays up-front so they can be used.
+declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM KEYCFG_FIRMARE_VBPRIVK_LOEM \
+  KEYCFG_FIRMARE_KEYBLOCK_LOEM
+
 # Setup the default key configuration by using the local key in `key_dir`.
 setup_default_keycfg() {
   local key_dir=$1
@@ -11,13 +15,10 @@ setup_default_keycfg() {
   # Root keys with LOEM variants. Avoid using them directly; instead, use
   # get_root_key_vbpubk().
   export KEYCFG_ROOT_KEY_VBPUBK="${key_dir}/root_key.vbpubk"
-  declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM
   # Firmware data keys with LOEM variants. Avoid using them directly; instead, use
   # get_firmware_vbprivk() and get_firmware_keyblock().
   export KEYCFG_FIRMWARE_VBPRIVK="${key_dir}/firmware_data_key.vbprivk"
-  declare -a KEYCFG_FIRMARE_VBPRIVK_LOEM
   export KEYCFG_FIRMWARE_KEYBLOCK="${key_dir}/firmware.keyblock"
-  declare -a KEYCFG_FIRMARE_KEYBLOCK_LOEM
 
   # Kernel subkey
   export KEYCFG_KERNEL_SUBKEY_VBPUBK="${key_dir}/kernel_subkey.vbpubk"
@@ -64,7 +65,10 @@ setup_keycfg() {
   setup_default_keycfg "${key_dir}"
   export KEYCFG_KEY_DIR="${key_dir}"
   if [ -f "${key_dir}/key_config.sh" ]; then
-    . "${key_dir}/key_config.sh"
+    # Use process substitution to pass in the array to the key_config.sh file.
+    BASH_ENV=<(declare -p KEYCFG_ROOT_KEY_VBPUBK_LOEM \
+      KEYCFG_FIRMARE_VBPRIVK_LOEM KEYCFG_FIRMARE_KEYBLOCK_LOEM) \
+      . "${key_dir}/key_config.sh"
   fi
 }
 
@@ -107,7 +111,7 @@ get_firmware_vbprivk() {
     return
   fi
   local default="${KEYCFG_KEY_DIR}/firmware_data_key.loem${loem_index}.vbprivk"
-  echo "${KEYCFG_FIRMARE_VBPRIVK_LOEM[${loem_index}]:-${default}}"
+  echo "${KEYCFG_FIRMWARE_VBPRIVK_LOEM[${loem_index}]:-${default}}"
 }
 
 # Get the default or configured path of firmware key block with loem suffix. It
@@ -122,5 +126,5 @@ get_firmware_keyblock() {
     return
   fi
   local default="${KEYCFG_KEY_DIR}/firmware.loem${loem_index}.keyblock"
-  echo "${KEYCFG_FIRMARE_KEYBLOCK_LOEM[${loem_index}]:-${default}}"
+  echo "${KEYCFG_FIRMWARE_KEYBLOCK_LOEM[${loem_index}]:-${default}}"
 }
