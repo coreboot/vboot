@@ -5,8 +5,8 @@
 # found in the LICENSE file.
 
 # Declare these arrays up-front so they can be used.
-declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM KEYCFG_FIRMARE_VBPRIVK_LOEM \
-  KEYCFG_FIRMARE_KEYBLOCK_LOEM
+declare -a KEYCFG_ROOT_KEY_VBPUBK_LOEM KEYCFG_FIRMWARE_VBPRIVK_LOEM \
+  KEYCFG_FIRMWARE_KEYBLOCK_LOEM
 
 # Setup the default key configuration by using the local key in `key_dir`.
 setup_default_keycfg() {
@@ -67,7 +67,7 @@ setup_keycfg() {
   if [ -f "${key_dir}/key_config.sh" ]; then
     # Use process substitution to pass in the array to the key_config.sh file.
     BASH_ENV=<(declare -p KEYCFG_ROOT_KEY_VBPUBK_LOEM \
-      KEYCFG_FIRMARE_VBPRIVK_LOEM KEYCFG_FIRMARE_KEYBLOCK_LOEM) \
+      KEYCFG_FIRMWARE_VBPRIVK_LOEM KEYCFG_FIRMWARE_KEYBLOCK_LOEM) \
       . "${key_dir}/key_config.sh"
   fi
 }
