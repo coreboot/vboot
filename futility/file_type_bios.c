@@ -488,18 +488,9 @@ end:
 
 static bool image_uses_cbfs_integration(const char *file)
 {
-	char *value;
-	bool rv = false;
-
-	if (cbfstool_get_config_value(file, NULL,
-				      "CONFIG_VBOOT_CBFS_INTEGRATION",
-				      &value) != VB2_SUCCESS)
-		return false;
-
-	if (value && strcmp("y", value) == 0)
-		rv = true;
-
-	free(value);
+	bool rv;
+	cbfstool_get_config_bool(file, NULL,
+				 "CONFIG_VBOOT_CBFS_INTEGRATION", &rv);
 	return rv;
 }
 

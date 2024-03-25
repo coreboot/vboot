@@ -146,12 +146,12 @@ static char *determine_ifd_platform(const char *image_path)
 	char *platform;
 	char *ifd_path;
 
-	cbfstool_get_config_value(image_path, NULL, "CONFIG_IFD_CHIPSET", &platform);
+	cbfstool_get_config_string(image_path, NULL, "CONFIG_IFD_CHIPSET", &platform);
 	if (platform)
 		return platform;
 
 	/* Fall back to checking for nissa in the descriptor file path */
-	cbfstool_get_config_value(image_path, NULL, "CONFIG_IFD_BIN_PATH", &ifd_path);
+	cbfstool_get_config_string(image_path, NULL, "CONFIG_IFD_BIN_PATH", &ifd_path);
 	if (ifd_path && strstr(ifd_path, "/nissa/")) {
 		VB2_DEBUG("Use platform 'adl' since descriptor path contains 'nissa'\n");
 		ASPRINTF(&platform, "adl");
@@ -173,7 +173,7 @@ static int run_ifdtool(const char *image_path, char *platform, const char *extra
 	char *command;
 	int ret = 0;
 
-	ASPRINTF(&command, "ifdtool -p %s -O \"%s\" \"%s\" %s 2>&1",
+	ASPRINTF(&command, "ifdtool -p \"%s\" -O \"%s\" \"%s\" %s 2>&1",
 		 platform, image_path, image_path, extra_options);
 	if (system(command)) {
 		ERROR("Failed to run: %s\n", command);

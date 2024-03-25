@@ -3,6 +3,8 @@
  * found in the LICENSE file.
  */
 
+#include <stdbool.h>
+
 #include "2return_codes.h"
 #include "2sha.h"
 
@@ -24,14 +26,25 @@ vb2_error_t cbfstool_get_metadata_hash(const char *file, const char *region,
 				       struct vb2_hash *hash);
 
 /*
- * Get value of `config` file field.
+ * Get value of a bool Kconfig option from "config" file in CBFS.
  *
  * This function extracts "config" file from selected region, parses it to find
- * value of `config_field`, and returns it to `value` as allocated string
- * (which has to be freed) or NULL if value was not found.
+ * value of `config_field`, and stores it in `value`. On failure, `value` will
+ * be false.
  *
  * If `region` is NULL, then region option will not be passed to cbfstool.
  * Operations will be performed on default `COREBOOT` region.
  */
-vb2_error_t cbfstool_get_config_value(const char *file, const char *region,
-				      const char *config_field, char **value);
+vb2_error_t cbfstool_get_config_bool(const char *file, const char *region,
+				     const char *config_field, bool *value);
+
+/*
+ * Get value of a str Kconfig option from "config" file in CBFS.
+ *
+ * This is similar to cbfstool_get_config_bool(). On success, the extracted
+ * value is stored in `value` as an allocated string (which has to be freed by
+ * the caller). If the value is not found, an error will be returned, and
+ * `value` will be NULL.
+ */
+vb2_error_t cbfstool_get_config_string(const char *file, const char *region,
+				       const char *config_field, char **value);
