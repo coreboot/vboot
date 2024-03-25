@@ -639,12 +639,12 @@ if type cbfstool >/dev/null 2>&1; then
 fi
 
 if type ifdtool >/dev/null 2>&1; then
-  test_update "Full update (--quirks unlock_csme)" \
+  test_update "Full update (--quirks unlock_csme, IFD chipset)" \
     "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
     --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" \
     --wp=0 --sys_props 0,0x10001
 
-  test_update "Full update (--quirks unlock_csme)" \
+  test_update "Full update (--quirks unlock_csme, IFD bin path)" \
     "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_path" \
     --quirks unlock_csme -i "${TO_IMAGE}.ifd_path" \
     --wp=0 --sys_props 0,0x10001
