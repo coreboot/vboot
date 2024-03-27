@@ -752,6 +752,7 @@ TEST_OBJS += ${TESTLIB_OBJS}
 
 # And some compiled tests.
 TEST_NAMES = \
+	tests/cbfstool_tests \
 	tests/cgptlib_test \
 	tests/chromeos_config_tests \
 	tests/gpt_misc_tests \
@@ -1366,6 +1367,7 @@ runtestscripts: install_for_test ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 
 .PHONY: runmisctests
 runmisctests: install_for_test
+	${RUNTEST} ${BUILD_RUN}/tests/cbfstool_tests
 	${RUNTEST} ${BUILD_RUN}/tests/gpt_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/subprocess_tests
 ifeq ($(filter-out 0,${MOCK_TPM})$(filter-out 0,${TPM2_MODE}),)
