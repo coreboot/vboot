@@ -115,6 +115,28 @@ class TestSign(unittest.TestCase):
             ],
         )
 
+    @mock.patch("sign_uefi.inject_vbpubk")
+    @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
+    @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
+    def test_no_crdyshim_key(
+        self, _mock_sign, _mock_detached_sig, _mock_inject_vbpubk
+    ):
+        """Test for older keysets that don't have the crdyshim key."""
+        self.keys.crdyshim_private_key.unlink()
+
+        # Error: crdyboot files are supposed to be signed, but the
+        # crdyshim key isn't present.
+        with self.assertRaises(SystemExit):
+            sign_uefi.sign_target_dir(
+                self.target_dir, self.keys, "crdyboot*.efi"
+            )
+
+        # Success: the crdyboot files aren't present, so the crdyshim
+        # key is not required.
+        (self.efi_boot_dir / "crdybootia32.efi").unlink()
+        (self.efi_boot_dir / "crdybootx64.efi").unlink()
+        sign_uefi.sign_target_dir(self.target_dir, self.keys, "crdyboot*.efi")
+
     @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
     def test_sign_target_file(self, mock_sign):
         # Test signing a specific file.
