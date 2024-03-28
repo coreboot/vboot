@@ -17,163 +17,148 @@ from unittest import mock
 import sign_uefi
 
 
-class Test(unittest.TestCase):
-    """Test sign_uefi.py."""
+class TestSign(unittest.TestCase):
+    """Test signing functions in sign_uefi.py."""
 
-    def test_is_pkcs11_key_path(self):
-        self.assertFalse(sign_uefi.is_pkcs11_key_path(Path("private_key.rsa")))
+    def setUp(self):
+        # pylint: disable=consider-using-with
+        self.tempdir = tempfile.TemporaryDirectory()
+        tempdir = Path(self.tempdir.name)
 
-        self.assertTrue(
-            sign_uefi.is_pkcs11_key_path("pkcs11:object=private_key")
+        # Get key paths.
+        self.keys = sign_uefi.Keys(
+            private_key=tempdir / "private_key.rsa",
+            sign_cert=tempdir / "sign_cert.pem",
+            verify_cert=tempdir / "verify_cert.pem",
+            kernel_subkey_vbpubk=tempdir / "kernel_subkey.vbpubk",
+            crdyshim_private_key=tempdir / "crdyshim.priv.pem",
         )
+
+        # Get target paths.
+        self.target_dir = tempdir / "boot"
+        self.syslinux_dir = self.target_dir / "syslinux"
+        self.efi_boot_dir = self.target_dir / "efi/boot"
+
+        # Make test dirs.
+        self.syslinux_dir.mkdir(parents=True)
+        self.efi_boot_dir.mkdir(parents=True)
+
+        # Make key files.
+        (self.keys.private_key).touch()
+        (self.keys.sign_cert).touch()
+        (self.keys.verify_cert).touch()
+        (self.keys.kernel_subkey_vbpubk).touch()
+        (self.keys.crdyshim_private_key).touch()
+
+        # Make EFI files.
+        (self.efi_boot_dir / "bootia32.efi").touch()
+        (self.efi_boot_dir / "bootx64.efi").touch()
+        (self.efi_boot_dir / "testia32.efi").touch()
+        (self.efi_boot_dir / "testx64.efi").touch()
+        (self.efi_boot_dir / "crdybootia32.efi").touch()
+        (self.efi_boot_dir / "crdybootx64.efi").touch()
+        (self.syslinux_dir / "vmlinuz.A").touch()
+        (self.syslinux_dir / "vmlinuz.B").touch()
+        (self.target_dir / "vmlinuz-5.10.156").touch()
+        (self.target_dir / "vmlinuz").symlink_to(
+            self.target_dir / "vmlinuz-5.10.156"
+        )
+
+    def tearDown(self):
+        self.tempdir.cleanup()
 
     @mock.patch("sign_uefi.inject_vbpubk")
     @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
     @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
-    def test_successful_sign(
+    def test_sign_target_dir(
         self, mock_sign, mock_detached_sig, mock_inject_vbpubk
     ):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
+        # Set an EFI glob that matches only some of the EFI files.
+        efi_glob = "test*.efi"
 
-            # Get key paths.
-            keys = sign_uefi.Keys(
-                private_key=tmp_dir / "private_key.rsa",
-                sign_cert=tmp_dir / "sign_cert.pem",
-                verify_cert=tmp_dir / "verify_cert.pem",
-                kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
-                crdyshim_private_key=tmp_dir / "crdyshim.priv.pem",
-            )
+        # Sign, but with the actual signing mocked out.
+        sign_uefi.sign_target_dir(self.target_dir, self.keys, efi_glob)
 
-            # Get target paths.
-            target_dir = tmp_dir / "boot"
-            syslinux_dir = target_dir / "syslinux"
-            efi_boot_dir = target_dir / "efi/boot"
+        # Check that the correct list of files got signed.
+        self.assertEqual(
+            mock_sign.call_args_list,
+            [
+                # The test*.efi files match the glob,
+                # the boot*.efi files don't.
+                mock.call(self.efi_boot_dir / "testia32.efi"),
+                mock.call(self.efi_boot_dir / "testx64.efi"),
+                # Two syslinux kernels.
+                mock.call(self.syslinux_dir / "vmlinuz.A"),
+                mock.call(self.syslinux_dir / "vmlinuz.B"),
+                # One kernel in the target dir.
+                mock.call(self.target_dir / "vmlinuz-5.10.156"),
+            ],
+        )
 
-            # Make test dirs.
-            syslinux_dir.mkdir(parents=True)
-            efi_boot_dir.mkdir(parents=True)
+        # Check that `inject_vbpubk` was called on both the crdyboot
+        # executables.
+        self.assertEqual(
+            mock_inject_vbpubk.call_args_list,
+            [
+                mock.call(self.efi_boot_dir / "crdybootia32.efi", self.keys),
+                mock.call(self.efi_boot_dir / "crdybootx64.efi", self.keys),
+            ],
+        )
 
-            # Make key files.
-            (keys.private_key).touch()
-            (keys.sign_cert).touch()
-            (keys.verify_cert).touch()
-            (keys.kernel_subkey_vbpubk).touch()
-            (keys.crdyshim_private_key).touch()
+        # Check that `create_detached_signature` was called on both
+        # the crdyboot executables.
+        self.assertEqual(
+            mock_detached_sig.call_args_list,
+            [
+                mock.call(self.efi_boot_dir / "crdybootia32.efi"),
+                mock.call(self.efi_boot_dir / "crdybootx64.efi"),
+            ],
+        )
 
-            # Make EFI files.
-            (efi_boot_dir / "bootia32.efi").touch()
-            (efi_boot_dir / "bootx64.efi").touch()
-            (efi_boot_dir / "testia32.efi").touch()
-            (efi_boot_dir / "testx64.efi").touch()
-            (efi_boot_dir / "crdybootia32.efi").touch()
-            (efi_boot_dir / "crdybootx64.efi").touch()
-            (syslinux_dir / "vmlinuz.A").touch()
-            (syslinux_dir / "vmlinuz.B").touch()
-            (target_dir / "vmlinuz-5.10.156").touch()
-            (target_dir / "vmlinuz").symlink_to(target_dir / "vmlinuz-5.10.156")
+    @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
+    def test_sign_target_file(self, mock_sign):
+        # Test signing a specific file.
+        sign_uefi.sign_target_file(
+            self.efi_boot_dir / "bootia32.efi", self.keys
+        )
 
-            # Set an EFI glob that matches only some of the EFI files.
-            efi_glob = "test*.efi"
-
-            # Sign, but with the actual signing mocked out.
-            sign_uefi.sign_target_dir(target_dir, keys, efi_glob)
-
-            # Check that the correct list of files got signed.
-            self.assertEqual(
-                mock_sign.call_args_list,
-                [
-                    # The test*.efi files match the glob,
-                    # the boot*.efi files don't.
-                    mock.call(efi_boot_dir / "testia32.efi"),
-                    mock.call(efi_boot_dir / "testx64.efi"),
-                    # Two syslinux kernels.
-                    mock.call(syslinux_dir / "vmlinuz.A"),
-                    mock.call(syslinux_dir / "vmlinuz.B"),
-                    # One kernel in the target dir.
-                    mock.call(target_dir / "vmlinuz-5.10.156"),
-                ],
-            )
-
-            # Test signing a specific file.
-            sign_uefi.sign_target_file(efi_boot_dir / "bootia32.efi", keys)
-
-            # Check that we called the correct sign request.
-            self.assertIn(
-                [
-                    mock.call(efi_boot_dir / "bootia32.efi"),
-                ],
-                mock_sign.call_args_list,
-            )
-
-            # Check that `inject_vbpubk` was called on both the crdyboot
-            # executables.
-            self.assertEqual(
-                mock_inject_vbpubk.call_args_list,
-                [
-                    mock.call(efi_boot_dir / "crdybootia32.efi", keys),
-                    mock.call(efi_boot_dir / "crdybootx64.efi", keys),
-                ],
-            )
-
-            # Check that `create_detached_signature` was called on both
-            # the crdyboot executables.
-            self.assertEqual(
-                mock_detached_sig.call_args_list,
-                [
-                    mock.call(efi_boot_dir / "crdybootia32.efi"),
-                    mock.call(efi_boot_dir / "crdybootx64.efi"),
-                ],
-            )
+        # Check that we made the expected signer call.
+        self.assertIn(
+            [
+                mock.call(self.efi_boot_dir / "bootia32.efi"),
+            ],
+            mock_sign.call_args_list,
+        )
 
     @mock.patch("sign_uefi.subprocess.run")
     def test_inject_vbpubk(self, mock_run):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
+        efi_file = self.efi_boot_dir / "crdybootx64.efi"
+        sign_uefi.inject_vbpubk(efi_file, self.keys)
 
-            keys = sign_uefi.Keys(
-                private_key=None,
-                sign_cert=None,
-                verify_cert=None,
-                kernel_subkey_vbpubk=tmp_dir / "kernel_subkey.vbpubk",
-                crdyshim_private_key=None,
-            )
-
-            efi_file = tmp_dir / "test_efi_file"
-            sign_uefi.inject_vbpubk(efi_file, keys)
-
-            # Check that the expected command runs.
-            self.assertEqual(
-                mock_run.call_args_list,
-                [
-                    mock.call(
-                        [
-                            "sudo",
-                            "objcopy",
-                            "--update-section",
-                            f".vbpubk={keys.kernel_subkey_vbpubk}",
-                            efi_file,
-                        ],
-                        check=True,
-                    )
-                ],
-            )
+        # Check that the expected command runs.
+        self.assertEqual(
+            mock_run.call_args_list,
+            [
+                mock.call(
+                    [
+                        "sudo",
+                        "objcopy",
+                        "--update-section",
+                        f".vbpubk={self.keys.kernel_subkey_vbpubk}",
+                        efi_file,
+                    ],
+                    check=True,
+                )
+            ],
+        )
 
     @mock.patch("sign_uefi.subprocess.run")
     def test_create_detached_signature(self, mock_run):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = Path(tmp_dir)
+        with tempfile.TemporaryDirectory() as tempdir:
+            tempdir = Path(tempdir)
+            signer = sign_uefi.Signer(tempdir, self.keys)
 
-            keys = sign_uefi.Keys(
-                private_key=None,
-                sign_cert=None,
-                verify_cert=None,
-                kernel_subkey_vbpubk=None,
-                crdyshim_private_key=tmp_dir / "crdyshim.priv.pem",
-            )
-            signer = sign_uefi.Signer(tmp_dir, keys)
-
-            efi_file = tmp_dir / "boot/crdybootx64.efi"
+            efi_file = self.efi_boot_dir / "crdybootx64.efi"
             signer.create_detached_signature(efi_file)
 
             # Check that the expected commands run.
@@ -189,9 +174,9 @@ class Test(unittest.TestCase):
                             "-in",
                             efi_file,
                             "-inkey",
-                            keys.crdyshim_private_key,
+                            self.keys.crdyshim_private_key,
                             "-out",
-                            tmp_dir / "crdybootx64.sig",
+                            tempdir / "crdybootx64.sig",
                         ],
                         check=True,
                     ),
@@ -199,13 +184,24 @@ class Test(unittest.TestCase):
                         [
                             "sudo",
                             "cp",
-                            tmp_dir / "crdybootx64.sig",
-                            tmp_dir / "boot/crdybootx64.sig",
+                            tempdir / "crdybootx64.sig",
+                            self.efi_boot_dir / "crdybootx64.sig",
                         ],
                         check=True,
                     ),
                 ],
             )
+
+
+class TestUtils(unittest.TestCase):
+    """Test utility functions in sign_uefi.py."""
+
+    def test_is_pkcs11_key_path(self):
+        self.assertFalse(sign_uefi.is_pkcs11_key_path(Path("private_key.rsa")))
+
+        self.assertTrue(
+            sign_uefi.is_pkcs11_key_path("pkcs11:object=private_key")
+        )
 
 
 if __name__ == "__main__":
