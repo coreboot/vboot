@@ -169,9 +169,8 @@ build flavor '${flavor_prop}'."
     fi
 
     # Copy the content instead of mv to avoid owner/mode changes.
-    if ! sudo cp "${signed_apk}" "${apk}" && rm -f "${signed_apk}"; then
-      die "Unable to copy signed apk."
-    fi
+    #TODO(b/331944273): Fail when copy of apk fails.
+    sudo cp "${signed_apk}" "${apk}" && rm -f "${signed_apk}"
 
     # Set timestamp rounded to second since squash file system has resolution
     # in seconds. Required in order for the packages cache generator output is
