@@ -28,8 +28,9 @@ cmp "${SCRIPT_DIR}/futility/data_fmap_expect_e.txt" "${TMP}"
 if "${FUTILITY}" dump_fmap -x "${SCRIPT_DIR}/futility/data_fmap.bin" FMAP; \
   then false; fi
 
-# This should fail too
-if "${FUTILITY}" show "${SCRIPT_DIR}/futility/data_fmap.bin"; then false; fi
+# This should fail because of invalid section name.
+if "${FUTILITY}" dump_fmap -x "${SCRIPT_DIR}/futility/data_fmap.bin" NO_SUCH; \
+  then false; fi
 
 # However, this should work.
 "${FUTILITY}" dump_fmap -x "${SCRIPT_DIR}/futility/data_fmap.bin" SI_DESC > \

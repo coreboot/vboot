@@ -55,10 +55,12 @@ static int normal_fmap(const FmapHeader *fmh,
 	char buf[80];		/* DWR: magic number */
 	const FmapAreaHeader *ah = (const FmapAreaHeader *) (fmh + 1);
         /* Size must greater than 0, else behavior is undefined. */
-	char *extract_names[names_len >= 1 ? names_len : 1];
-	char *outname = 0;
+	struct {
+		char *outname;
+		bool found;
+	} sections[names_len >= 1 ? names_len : 1];
 
-	memset(extract_names, 0, sizeof(extract_names));
+	memset(sections, 0, sizeof(sections));
 
 	if (extract) {
 		/* prepare the filenames to write areas to */
@@ -73,7 +75,7 @@ static int normal_fmap(const FmapHeader *fmh,
 				continue;
 			}
 			*f++ = '\0';
-			extract_names[i] = f;
+			sections[i].outname = f;
 		}
 		if (retval)
 			return retval;
@@ -95,14 +97,15 @@ static int normal_fmap(const FmapHeader *fmh,
 
 	for (uint16_t i = 0; i < fmh->fmap_nareas; i++, ah++) {
 		snprintf(buf, FMAP_NAMELEN + 1, "%s", ah->area_name);
+		char *outname = NULL;
 
 		if (names_len) {
-			int found = 0;
-			outname = NULL;
+			bool found = false;
 			for (int j = 0; j < names_len; j++)
 				if (!strcmp(names[j], buf)) {
-					found = 1;
-					outname = extract_names[j];
+					found = true;
+					sections[j].found = true;
+					outname = sections[j].outname;
 					break;
 				}
 			if (!found)
@@ -168,6 +171,12 @@ static int normal_fmap(const FmapHeader *fmh,
 				fclose(fp);
 		}
 	}
+
+	for (int j = 0; j < names_len; j++)
+		if (!sections[j].found) {
+			ERROR("FMAP section %s not found\n", names[j]);
+			retval = 1;
+		}
 
 	return retval;
 }
