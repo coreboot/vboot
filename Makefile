@@ -666,7 +666,9 @@ SIGNING_SCRIPTS_BOARD = \
 	scripts/image_signing/common_minimal.sh
 
 # SDK installations just want everything.
-SIGNING_SCRIPTS_SDK = $(wildcard scripts/image_signing/*.sh)
+SIGNING_SCRIPTS_SDK = \
+	$(wildcard scripts/image_signing/*.sh) \
+	scripts/image_signing/swap_ec_rw
 
 # Unified firmware utility.
 FUTIL_BIN = ${BUILD}/futility/futility
@@ -1361,6 +1363,7 @@ runtestscripts: install_for_test ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 	${RUNTEST} ${SRC_RUN}/tests/run_preamble_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_kernel_arg_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_tests.sh
+	${RUNTEST} ${SRC_RUN}/tests/swap_ec_rw_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/vb2_rsa_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/vb2_firmware_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/vhost_reference.sh ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
