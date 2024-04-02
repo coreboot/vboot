@@ -143,25 +143,22 @@ static int normal_fmap(const FmapHeader *fmh,
 						*s = '_';
 				outname = buf;
 			}
-			const char *first_name = names[0];
 			FILE *fp = fopen(outname, "wb");
 			if (!fp) {
-				ERROR("%s: can't open %s: %s\n",
-					first_name, outname, strerror(errno));
+				ERROR("can't open %s: %s\n",
+				      outname, strerror(errno));
 				retval = 1;
 			} else if (!ah->area_size) {
-				ERROR(
-					"%s: section %s has zero size\n",
-					first_name, buf);
+				ERROR("section %s has zero size\n", buf);
+				retval = 1;
 			} else if (ah->area_offset + ah->area_size >
 				   size_of_rom) {
-				ERROR("%s: section %s is larger"
-					" than the image\n", first_name, buf);
+				ERROR("section %s is larger than the image\n", buf);
 				retval = 1;
 			} else if (1 != fwrite(base_of_rom + ah->area_offset,
 					       ah->area_size, 1, fp)) {
-				ERROR("%s: can't write %s: %s\n",
-					first_name, buf, strerror(errno));
+				ERROR("can't write %s: %s\n",
+				      buf, strerror(errno));
 				retval = 1;
 			} else {
 				if (FMT_NORMAL == format)
