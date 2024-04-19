@@ -468,6 +468,9 @@ static vb2_error_t vb2_load_chromeos_kernel_partition(
 }
 
 #ifdef USE_LIBAVB
+
+#define VERIFIED_BOOT_PROPERTY_NAME "androidboot.verifiedbootstate="
+
 static vb2_error_t vb2_load_avb_android_partition(
 	struct vb2_context *ctx, struct vb2_kernel_params *params,
 	VbExStream_t stream, GptData *gpt, vb2ex_disk_handle_t disk_handle)
@@ -485,6 +488,7 @@ static vb2_error_t vb2_load_avb_android_partition(
 	AvbSlotVerifyResult result;
 	vb2_error_t ret;
 	int need_keyblock_valid = need_valid_keyblock(ctx);
+	char *verified_str;
 
 	ret = GptGetActiveKernelPartitionSuffix(gpt, &ab_suffix);
 	if (ret != GPT_SUCCESS) {
@@ -538,6 +542,16 @@ static vb2_error_t vb2_load_avb_android_partition(
 		return ret;
 	}
 
+	/* TODO(b/335901799): Add support for marking verifiedbootstate yellow */
+	/* Possible values for this property are "yellow", "orange" and "green"
+	 * so allocate 6 bytes plus 1 byte for NULL terminator.
+	 */
+	verified_str = malloc(strlen(VERIFIED_BOOT_PROPERTY_NAME) + 7);
+	if (verified_str == NULL)
+		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+	sprintf(verified_str, "%s%s", VERIFIED_BOOT_PROPERTY_NAME,
+		(ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ? "orange" : "green");
+
 	/*
 	 * Use a buffer before the GKI header for copying avb cmdline string for
 	 * bootloader.
@@ -549,11 +563,20 @@ static vb2_error_t vb2_load_avb_android_partition(
 	    params->vboot_cmdline_offset)
 		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
 
-	if (strlen(verify_data->cmdline) >= AVB_CMDLINE_BUF_SIZE)
+	if ((strlen(verify_data->cmdline) + strlen(verified_str) + 1) >=
+	    AVB_CMDLINE_BUF_SIZE)
 		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
 
 	strcpy((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
 	       verify_data->cmdline);
+
+	/* Append verifiedbootstate property to cmdline */
+	strcat((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
+	       " ");
+	strcat((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
+	       verified_str);
+
+	free(verified_str);
 
 	/* No need for slot data, partitions should be already at correct
 	 * locations in memory since we are using "get_preloaded_partitions"
