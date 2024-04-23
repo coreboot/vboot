@@ -176,6 +176,10 @@ const char *vb2_get_recovery_reason_string(uint8_t code)
 		return "User-mode requested DRAM train and reboot";
 	/* 0xff */ case VB2_RECOVERY_US_UNSPECIFIED:
 		return "Unspecified/unknown error in user-mode";
+	default:
+		if (code > VB2_RECOVERY_HACK_SECDATA_CORRUPTION_START &&
+		    code <= VB2_RECOVERY_HACK_SECDATA_CORRUPTION_LAST)
+			return "Secdata corruption; please return device to vendor (RMA)";
 	}
 	return "Unknown error code";
 }

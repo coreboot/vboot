@@ -1565,4 +1565,8 @@ uint32_t vb2ex_mtime(void);
  */
 void vb2api_prepare_for_extra_reboot(struct vb2_context *ctx);
 
+/* Returns 0 if no compromise found, otherwise a value that contains all
+   relevant information for logging. */
+uint16_t vb2hack_is_secdata_compromised(struct vb2_context *ctx, int index);
+
 #endif  /* VBOOT_REFERENCE_2API_H_ */
