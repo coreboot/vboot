@@ -320,3 +320,79 @@ uint32_t vb2api_get_kernel_rollback_version(struct vb2_context *ctx)
 {
 	return vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
 }
+
+#include "2nvstorage.h"
+#include "2nvstorage_fields.h"
+uint16_t vb2hack_is_secdata_compromised(struct vb2_context *ctx, int index)
+{
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	uint8_t size = VB2_SECDATA_KERNEL_MAX_SIZE;
+	uint8_t recovery_request = vb2_nv_get(ctx, VB2_NV_RECOVERY_REQUEST);
+	uint8_t subcode = 0;
+	int i;
+
+	/* Don't log it twice, we want to know when we *first* detected it. */
+	if (recovery_request >= VB2_RECOVERY_HACK_SECDATA_CORRUPTION_START &&
+	    recovery_request <= VB2_RECOVERY_HACK_SECDATA_CORRUPTION_LAST)
+		return 0;
+
+	/* Once the corrupted data is in the TPM, we don't want to log anything more. */
+	if (sd->recovery_reason == VB2_RECOVERY_SECDATA_KERNEL_INIT)
+		return 0;
+
+	if (vb2api_secdata_kernel_check(ctx, &size) == VB2_SUCCESS)
+		return 0;
+
+	/* Bit 0: are all (40) bytes in secdata_kernel 0xff */
+	subcode |= 1 << 0;
+	for (i = 0; i < VB2_SECDATA_KERNEL_SIZE_V10; i++)
+		if (ctx->secdata_kernel[i] != 0xff)
+			subcode &= ~(1 << 0);
+
+	/* Bit 1: is secdata_firmware also corrupted */
+	if (vb2api_secdata_firmware_check(ctx) != VB2_SUCCESS)
+		subcode |= 1 << 1;
+
+	/* Bit 2: is nvdata signature invalid */
+	if ((ctx->nvdata[0] & VB2_NV_HEADER_SIGNATURE_MASK) != VB2_NV_HEADER_SIGNATURE_V1)
+		subcode |= 1 << 2;
+
+	/* Bit 3: is the sd->magic overwritten */
+	if (sd->magic != VB2_SHARED_DATA_MAGIC)
+		subcode |= 1 << 3;
+
+	/* Bit 4: is sd->status invalid (all bits above 6 are reserved0, some
+	          bits should always be set in our case) */
+	if ((sd->status & 0xffffff80) || (~sd->status & (VB2_SD_STATUS_NV_INIT |
+	    VB2_SD_STATUS_SECDATA_FIRMWARE_INIT | VB2_SD_STATUS_CHOSE_SLOT |
+	    VB2_SD_STATUS_SECDATA_KERNEL_INIT)))
+		subcode |= 1 << 4;
+
+	/* Bit 5: workbuf_used is sane (this may false-positive in depthcharge) */
+	if (sd->workbuf_used > sd->workbuf_size ||
+	    sd->workbuf_used > VB2_FIRMWARE_WORKBUF_RECOMMENDED_SIZE)
+		subcode |= 1 << 5;
+
+	/* Bit 6: VB2_SD_STATUS_EC_SYNC_COMPLETE */
+	if (sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE)
+		subcode |= 1 << 6;
+
+	/* Bit 7: CAR stack canary smashed, if we're in romstage */
+	__attribute__((weak)) extern uint32_t _car_stack[];
+	if ((uintptr_t)_car_stack != 0) {
+		const int num_guards = 64;
+		const uint32_t stack_guard = 0xdeadbeef;
+		for (i = 0; i < num_guards; i++)
+			if (_car_stack[i] != stack_guard)
+				subcode |= 1 << 7;
+	}
+
+	/* vb2api_fail() has a bunch of complicated logic that may not behave
+	   correctly if some of vboot's internal structures have become corrupted.
+	   Easier to just set the recovery request manually. */
+	uint8_t reason = VB2_RECOVERY_HACK_SECDATA_CORRUPTION_START + index;
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_REQUEST, reason);
+	vb2_nv_set(ctx, VB2_NV_RECOVERY_SUBCODE, subcode);
+
+	return (uint16_t)reason << 8 | subcode;
+}

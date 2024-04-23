@@ -294,6 +294,10 @@ enum vb2_nv_recovery {
 	/* DM-verity error (deprecated) */
 	VB2_RECOVERY_DEPRECATED_KE_DM_VERITY = 0x81,
 
+	VB2_RECOVERY_HACK_SECDATA_CORRUPTION_START = 0x90,
+
+	VB2_RECOVERY_HACK_SECDATA_CORRUPTION_LAST = 0xaf,
+
 	/* Unspecified/unknown error in kernel (deprecated) */
 	VB2_RECOVERY_DEPRECATED_KE_UNSPECIFIED = 0xbf,
 
