@@ -27,6 +27,7 @@ set -e
 FMAP_REGIONS=( "FW_MAIN_A" "FW_MAIN_B" )
 CBFS_ECRW_NAME="ecrw"
 CBFS_ECRW_HASH_NAME="ecrw.hash"
+CBFS_ECRW_VERSION_NAME="ecrw.version"
 CBFS_ECRW_CONFIG_NAME="ecrw.config"
 
 swap_ecrw() {
@@ -36,18 +37,21 @@ swap_ecrw() {
   local info
   local ecrw_file
   local ecrw_hash_file
+  local ecrw_version_file
   local ecrw_type
   local ecrw_comp_type
   local ecrw_version
   temp_dir=$(mktemp -d)
-  cp "${ec_file}" "${temp_dir}/"
-  ( cd "${temp_dir}" && dump_fmap -x "$(basename "${ec_file}")" RW_FW >/dev/null )
-  ecrw_file="${temp_dir}/RW_FW"
+  ecrw_file="${temp_dir}/ecrw"
+  futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null
   info "EC RW extracted to ${ecrw_file}"
 
   ecrw_hash_file="${temp_dir}/ecrw.hash"
   openssl dgst -sha256 -binary "${ecrw_file}" > "${ecrw_hash_file}"
   info "EC RW hash saved to ${ecrw_hash_file}"
+
+  ecrw_version_file="${temp_dir}/ecrw.version"
+  futility dump_fmap -x "${ec_file}" "RW_FWID:${ecrw_version_file}" >/dev/null
 
   for region in "${FMAP_REGIONS[@]}"
   do
@@ -59,6 +63,8 @@ swap_ecrw() {
     ecrw_comp_type=${ecrw_comp_type:-none}
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_NAME}"
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_HASH_NAME}"
+    cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_VERSION_NAME}" \
+      || warn "${CBFS_ECRW_VERSION_NAME} not found, but will be added"
     # TODO(b/307788351): Update ecrw.config. Right now the config info cannot
     # be obtained from ec.bin.
     cbfstool "${ap_file}" remove -r "${region}" \
@@ -68,6 +74,8 @@ swap_ecrw() {
       -c "${ecrw_comp_type}" -f "${ecrw_file}" -n "${CBFS_ECRW_NAME}"
     cbfstool "${ap_file}" add -r "${region}" -t "${ecrw_type}" \
       -c none -f "${ecrw_hash_file}" -n "${CBFS_ECRW_HASH_NAME}"
+    cbfstool "${ap_file}" add -r "${region}" -t "${ecrw_type}" \
+      -c none -f "${ecrw_version_file}" -n "${CBFS_ECRW_VERSION_NAME}"
   done
 
   # 'futility sign' will call 'cbfstool truncate' if needed
