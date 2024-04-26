@@ -215,6 +215,20 @@ get_cert() {
   echo "${cert}"
 }
 
+# Extract certificate from the provided certificate yaml file.
+get_cert_from_yaml() {
+  # Full path to the yaml file. It must exist, and must have exactly 1 cert.
+  local public_key=$1
+  local cert
+  cert=$(awk '/(BEGIN CERTIFICATE)/,/(END CERTIFICATE)/' \
+    "${public_key}" | sed -E '/(BEGIN|END) CERTIFICATE/d' | \
+    tr -d ' ' | tr -d '\n' | base64 --decode | hexdump -v -e '/1 "%02x"')
+  if [[ -z "${cert}" ]]; then
+    die "Unable to get the public platform key"
+  fi
+  echo "${cert}"
+}
+
 # Replaces particular certificate in mac_permissions xml file with new one.
 # Note, this does not fail if particular entry is not found. For example
 # network_stack does not exist in P.
@@ -235,16 +249,29 @@ update_sepolicy() {
   local system_mnt=$1
   local key_dir=$2
 
-  # Only platform is used at this time.
-  local public_platform_key="${key_dir}/platform.x509.pem"
-  local public_media_key="${key_dir}/media.x509.pem"
-  local public_network_stack_key="${key_dir}/networkstack.x509.pem"
-
   info "Start updating sepolicy"
 
-  local new_platform_cert=$(get_cert "${public_platform_key}")
-  local new_media_cert=$(get_cert "${public_media_key}")
-  local new_network_stack_cert=$(get_cert "${public_network_stack_key}")
+  local new_platform_cert
+  local new_media_cert
+  local new_network_stack_cert
+
+  if [[ -n ${KEYCFG_ANDROID_CLOUD_KEY_PREFIX} ]]; then
+    local platform_cert_yaml="${key_dir}/platform_config.yaml"
+    local media_cert_yaml="${key_dir}/media_config.yaml"
+    local network_cert_yaml="${key_dir}/networkstack_config.yaml"
+
+    new_platform_cert=$(get_cert_from_yaml "${platform_cert_yaml}")
+    new_media_cert=$(get_cert_from_yaml "${media_cert_yaml}")
+    new_network_stack_cert=$(get_cert_from_yaml "${network_cert_yaml}")
+  else
+    local public_platform_key="${key_dir}/platform.x509.pem"
+    local public_media_key="${key_dir}/media.x509.pem"
+    local public_network_stack_key="${key_dir}/networkstack.x509.pem"
+
+    new_platform_cert=$(get_cert "${public_platform_key}")
+    new_media_cert=$(get_cert "${public_media_key}")
+    new_network_stack_cert=$(get_cert "${public_network_stack_key}")
+  fi
 
   shopt -s nullglob
   local xml_list=( "${system_mnt}"/system/etc/**/*mac_permissions.xml )
@@ -266,6 +293,34 @@ update_sepolicy() {
   if cmp "${xml}" "${orig}"; then
     die "Failed to replace SELinux policy cert"
   fi
+}
+
+replace_ota_cert_cloud() {
+  local system_mnt=$1
+  local key_dir=$2
+  local keyname=$3
+
+  info "Replacing OTA cert for cloud"
+
+  local temp_cert
+  temp_cert=$(make_temp_file)
+  local cert
+  cert=$(awk '/(BEGIN CERTIFICATE)/,/(END CERTIFICATE)/' \
+    "${key_dir}/${keyname}_config.yaml" | sed 's/^\s*//')
+  echo "${cert}" > "${temp_cert}"
+
+  local ota_zip="${system_mnt}/system/etc/security/otacerts.zip"
+
+  local temp_dir
+  temp_dir=$(make_temp_dir)
+  pushd "${temp_dir}" > /dev/null
+  cp "${temp_cert}" "${keyname}.x509.pem"
+  local temp_zip
+  temp_zip=$(make_temp_file)
+  zip -q -r "${temp_zip}.zip" .
+  # Copy the content instead of mv to avoid owner/mode changes.
+  sudo cp "${temp_zip}.zip" "${ota_zip}"
+  popd > /dev/null
 }
 
 # Replace the debug key in OTA cert with release key.
@@ -529,7 +584,14 @@ sign_android_internal() {
     return 1
   fi
 
-  replace_ota_cert "${system_mnt}" "${key_dir}/releasekey.x509.pem"
+  local ota_cert_kn="releasekey"
+
+  if [[ -n ${KEYCFG_ANDROID_CLOUD_KEY_PREFIX} ]]; then
+    replace_ota_cert_cloud "${system_mnt}" "${key_dir}" "${ota_cert_kn}"
+  else
+    replace_ota_cert "${system_mnt}" "${key_dir}/${ota_cert_kn}.x509.pem"
+  fi
+
   if ! image_content_integrity_check "${system_mnt}" "${working_dir}" \
                                      "replace_ota_cert"; then
     return 1
