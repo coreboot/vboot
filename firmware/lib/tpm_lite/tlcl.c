@@ -1285,9 +1285,9 @@ uint32_t TlclReadPubek(uint32_t* public_exponent,
 	return result;
 }
 
-uint32_t TlclTakeOwnership(uint8_t enc_owner_auth[TPM_RSA_2048_LEN],
-			   uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
-			   uint8_t owner_auth[TPM_AUTH_DATA_LEN])
+uint32_t TlclTakeOwnership(const uint8_t enc_owner_auth[TPM_RSA_2048_LEN],
+			   const uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
+			   const uint8_t owner_auth[TPM_AUTH_DATA_LEN])
 {
 	/* Start an OAIP session. */
 	struct auth_session auth_session;

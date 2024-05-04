@@ -324,9 +324,9 @@ uint32_t TlclReadPubek(uint32_t* public_exponent,
  * and SRK authorization secrets encrypted under the endorsement key. The clear
  * text [owner_auth] needs to be passed as well for command auth.
  */
-uint32_t TlclTakeOwnership(uint8_t enc_owner_auth[TPM_RSA_2048_LEN],
-			   uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
-			   uint8_t owner_auth[TPM_AUTH_DATA_LEN]);
+uint32_t TlclTakeOwnership(const uint8_t enc_owner_auth[TPM_RSA_2048_LEN],
+			   const uint8_t enc_srk_auth[TPM_RSA_2048_LEN],
+			   const uint8_t owner_auth[TPM_AUTH_DATA_LEN]);
 
 /**
  * Create a delegation family with the specified [family_label].
