@@ -481,14 +481,29 @@ resign_firmware_payload() {
   local rootfs_dir
   rootfs_dir=$(make_temp_dir)
   mount_loop_image_partition "${loopdev}" 3 "${rootfs_dir}"
-  local firmware_bundle="${rootfs_dir}/usr/sbin/chromeos-firmwareupdate"
+
+  local ret=0
+  resign_firmware_shellball "${rootfs_dir}/usr/sbin/chromeos-firmwareupdate" || ret=$?
+  sudo umount "${rootfs_dir}"
+  if [[ "${ret}" == 0 ]]; then
+    "Re-signed firmware AU payload in ${loopdev}"
+  else
+    error "Couldn't sign firmware AU payload in ${loopdev}"
+  fi
+  return "${ret}"
+}
+
+# Re-sign the firmware AU payload provided with a new key.
+# Args: firmware_bundle
+resign_firmware_shellball() {
+  local firmware_bundle=$1
+
   local shellball_dir
   shellball_dir=$(make_temp_dir)
 
   # extract_firmware_bundle can fail if the image has no firmware update.
   if ! extract_firmware_bundle "${firmware_bundle}" "${shellball_dir}"; then
     # Unmount now to prevent changes.
-    sudo umount "${rootfs_dir}"
     info "Didn't find a firmware update. Not signing firmware."
     return
   fi
@@ -524,7 +539,6 @@ resign_firmware_payload() {
       do
         local extra_args=()
         local full_command=()
-        local board_name
 
         rootkey="$(get_root_key_vbpubk)"
 
@@ -646,9 +660,7 @@ resign_firmware_payload() {
         echo "After setting GBB on ${bios_path}: md5 =" \
           "$(md5sum "${bios_path}" | awk '{print $1}')"
 
-        board_name="$(get_boardvar_from_lsb_release "${rootfs_dir}")"
-        echo "Board name from lsb-release: ${board_name}"
-        if [[ ${board_name} == *guybrush* ]]; then
+        if [[ -e "${shellball_dir}/models/guybrush" ]]; then
           echo "Not looking for RO_GSCVD on guybrush, b/263378945"
         elif futility dump_fmap -p "${bios_path}" | grep -q RO_GSCVD; then
           # Attempt AP RO verification signing only in case the FMAP includes
@@ -732,15 +744,13 @@ resign_firmware_payload() {
     echo "  root: ${sha1}" >>"${signer_notes}"
   fi
 
+  local new_shellball
   new_shellball=$(make_temp_file)
   cp -f "${firmware_bundle}" "${new_shellball}"
   chmod a+rx "${new_shellball}"
   repack_firmware_bundle "${shellball_dir}" "${new_shellball}"
   sudo cp -f "${new_shellball}" "${firmware_bundle}"
   sudo chmod a+rx "${firmware_bundle}"
-  # Unmount now to flush changes.
-  sudo umount "${rootfs_dir}"
-  info "Re-signed firmware AU payload in ${loopdev}"
 }
 
 # Remove old container key if it exists.
@@ -1416,6 +1426,10 @@ main() {
     fi
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
     sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
+  elif [[ "${TYPE}" == "shellball" ]]; then
+    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+    resign_firmware_shellball "${OUTPUT_IMAGE}"
+    info "Signed firmware shellball ${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "update_payload" ]]; then
     sign_update_payload "${INPUT_IMAGE}" "${KEYCFG_UPDATE_KEY_PEM}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "accessory_usbpd" ]]; then
