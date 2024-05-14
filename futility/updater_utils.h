@@ -206,23 +206,6 @@ char *host_detect_servo(const char **prepare_ctrl_name);
  */
 void prepare_servo_control(const char *control_name, bool on);
 
-/*
- * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
- * section of an image file, otherwise 0.
- */
-int cbfs_file_exists(const char *image_file,
-		     const char *section_name,
-		     const char *cbfs_entry_name);
-
-/*
- * Extracts files from a CBFS on given region (section) of image_file.
- * Returns the path to a temporary file on success, otherwise NULL.
- */
-const char *cbfs_extract_file(const char *image_file,
-			      const char *cbfs_region,
-			      const char *cbfs_name,
-			      struct tempfile *tempfiles);
-
 /* DUT related functions (implementations in updater_dut.c) */
 
 struct dut_property {

@@ -11,6 +11,36 @@
 #define ENV_CBFSTOOL "CBFSTOOL"
 #define DEFAULT_CBFSTOOL "cbfstool"
 
+/*
+ * Check the existence of a CBFS file.
+ *
+ * @param image_file	Firmware image file.
+ * @param region	FMAP region (section). If `region` is NULL, then the
+ *			region option will not be passed to cbfstool, and hence
+ *			opterations will be performed on the default "COREBOOT"
+ *			region.
+ * @param name		CBFS file name.
+ * @return true if the CBFS file exists; false otherwise.
+ */
+bool cbfstool_file_exists(const char *image_file, const char *region,
+			  const char *name);
+
+/*
+ * Extract a CBFS file from a firmware image file.
+ *
+ * @param image_file	Firmware image file.
+ * @param region	FMAP region (section). If `region` is NULL, then the
+ *			region option will not be passed to cbfstool, and hence
+ *			opterations will be performed on the default "COREBOOT"
+ *			region.
+ * @param name		CBFS file name to extract.
+ * @param file		File path to store the extracted file to.
+ * @return 0 on success; non-zero on failure.
+ */
+int cbfstool_extract(const char *image_file, const char *region,
+		     const char *name, const char *file);
+
+/* Truncate CBFS region and store the new CBFS size to `new_size`. */
 vb2_error_t cbfstool_truncate(const char *file, const char *region,
 			      size_t *new_size);
 

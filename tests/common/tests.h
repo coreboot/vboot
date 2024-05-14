@@ -13,6 +13,9 @@
 #define STRINGIFY(x)	#x
 #define TOSTRING(x)	STRINGIFY(x)
 
+/* Create a temp dir under ${BUILD_RUN}. */
+const char *create_test_tmp_dir(const char *name);
+
 extern int gTestSuccess;
 extern int gTestAbortArmed;
 extern jmp_buf gTestJmpEnv;
@@ -156,6 +159,12 @@ int test_abort(int aborted,
 #define COL_YELLOW "\x1b[1;33m"
 #define COL_RED "\x1b[0;31m"
 #define COL_STOP "\x1b[m"
+
+#define die(...) \
+	do { \
+		fprintf(stderr, __VA_ARGS__); \
+		abort(); \
+	} while (0)
 
 /* Abort if asprintf fails. */
 #define xasprintf(...) \

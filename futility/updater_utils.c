@@ -71,54 +71,6 @@ int save_file_from_stdin(const char *output)
 }
 
 /*
- * Returns 1 if a given file (cbfs_entry_name) exists inside a particular CBFS
- * section of an image file, otherwise 0.
- */
-int cbfs_file_exists(const char *image_file,
-		     const char *section_name,
-		     const char *cbfs_entry_name)
-{
-	char *cmd;
-	int r;
-
-	ASPRINTF(&cmd,
-		 "cbfstool '%s' print -r %s 2>/dev/null | grep -q '^%s '",
-		 image_file, section_name, cbfs_entry_name);
-	r = system(cmd);
-	free(cmd);
-	return !r;
-}
-
-/*
- * Extracts files from a CBFS on given region (section) of image_file.
- * Returns the path to a temporary file on success, otherwise NULL.
- */
-const char *cbfs_extract_file(const char *image_file,
-			      const char *cbfs_region,
-			      const char *cbfs_name,
-			      struct tempfile *tempfiles)
-{
-	const char *output = create_temp_file(tempfiles);
-	char *command, *result;
-
-	if (!output)
-		return NULL;
-
-	ASPRINTF(&command, "cbfstool \"%s\" extract -r %s -n \"%s\" "
-		 "-f \"%s\" 2>&1", image_file, cbfs_region,
-		 cbfs_name, output);
-
-	result = host_shell(command);
-	free(command);
-
-	if (!*result)
-		output = NULL;
-
-	free(result);
-	return output;
-}
-
-/*
  * Loads the firmware information from an FMAP section in loaded firmware image.
  * The section should only contain ASCIIZ string as firmware version.
  * Returns 0 if a non-empty version string is stored in *version, otherwise -1.

@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 
 #include "2rsa.h"
+#include "cbfstool.h"
 #include "futility.h"
 #include "host_misc.h"
 #include "platform_csme.h"
@@ -769,7 +770,7 @@ static enum rootkey_compat_result check_compatible_root_key(
  */
 static int legacy_needs_update(struct updater_config *cfg)
 {
-	int has_from, has_to;
+	bool has_from, has_to;
 	const char * const tag = "cros_allow_auto_update";
 	const char *section = FMAP_RW_LEGACY;
 	const char *tmp_to, *tmp_from;
@@ -782,8 +783,8 @@ static int legacy_needs_update(struct updater_config *cfg)
 	if (!tmp_from || !tmp_to)
 		return 0;
 
-	has_to = cbfs_file_exists(tmp_to, section, tag);
-	has_from = cbfs_file_exists(tmp_from, section, tag);
+	has_to = cbfstool_file_exists(tmp_to, section, tag);
+	has_from = cbfstool_file_exists(tmp_from, section, tag);
 
 	if (!has_from || !has_to) {
 		VB2_DEBUG("Current legacy firmware has%s updater tag (%s) and "

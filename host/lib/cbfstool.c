@@ -11,6 +11,8 @@
 #include "subprocess.h"
 #include "vboot_host.h"
 
+#define ARGV_END(region) region ? "-r" : NULL, region, NULL,
+
 static const char *get_cbfstool_path(void)
 {
 	static const char *cbfstool = NULL;
@@ -26,6 +28,83 @@ static const char *get_cbfstool_path(void)
 
 	cbfstool = DEFAULT_CBFSTOOL;
 	return cbfstool;
+}
+
+static bool find_cbfs_file(const char *buf, const char *name)
+{
+	char *to_find = NULL;
+	if (asprintf(&to_find, "\n%s\t", name) < 0) {
+		fprintf(stderr, "Out of Memory\n");
+		exit(1);
+	}
+
+	const char *start = strstr(buf, to_find);
+
+	free(to_find);
+	return !!start;
+}
+
+bool cbfstool_file_exists(const char *image_file, const char *region,
+			  const char *name)
+{
+	int status;
+	char *buffer;
+	const size_t buffer_size = 1024 * 128;
+	const char *cbfstool = get_cbfstool_path();
+	bool res = false;
+
+	buffer = malloc(buffer_size);
+	if (!buffer)
+		goto done;
+
+	struct subprocess_target output = {
+		.type = TARGET_BUFFER_NULL_TERMINATED,
+		.buffer = {
+			.buf = buffer,
+			.size = buffer_size,
+		},
+	};
+	const char *const argv[] = {
+		cbfstool, image_file, "print", "-k", ARGV_END(region)
+	};
+
+	status = subprocess_run(argv, &subprocess_null, &output,
+				&subprocess_null);
+	if (status < 0) {
+		fprintf(stderr, "%s(): cbfstool invocation failed: %m\n",
+			__func__);
+		exit(1);
+	}
+	if (status > 0)
+		goto done;
+
+	res = find_cbfs_file(buffer, name);
+
+done:
+	free(buffer);
+	return res;
+}
+
+int cbfstool_extract(const char *image_file, const char *region,
+		     const char *name, const char *file)
+{
+	int status;
+	const char *cbfstool = get_cbfstool_path();
+
+	const char *const argv[] = {
+		cbfstool, image_file, "extract", "-n", name, "-f", file,
+		ARGV_END(region)
+	};
+
+	status = subprocess_run(argv, &subprocess_null, &subprocess_null,
+				&subprocess_null);
+	if (status < 0) {
+		fprintf(stderr, "%s(): cbfstool invocation failed: %m\n",
+			__func__);
+		exit(1);
+	}
+
+	return status;
 }
 
 vb2_error_t cbfstool_truncate(const char *file, const char *region,
@@ -141,8 +220,7 @@ vb2_error_t cbfstool_get_metadata_hash(const char *file, const char *region,
 		},
 	};
 	const char *argv[] = {
-		cbfstool, file, "print", "-kv",
-		region ? "-r" : NULL, region, NULL
+		cbfstool, file, "print", "-kv", ARGV_END(region)
 	};
 
 	status = subprocess_run(argv, &subprocess_null, &output,
@@ -212,7 +290,7 @@ static vb2_error_t get_config_value(const char *file, const char *region,
 	};
 	const char *argv[] = {
 		cbfstool, file, "extract", "-n", "config", "-f", "/dev/stdout",
-		region ? "-r" : NULL, region, NULL
+		ARGV_END(region)
 	};
 
 	status = subprocess_run(argv, &subprocess_null, &output,

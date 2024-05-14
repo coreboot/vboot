@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "cbfstool.h"
 #include "crossystem.h"
 #include "futility.h"
 #include "host_misc.h"
@@ -88,20 +89,24 @@ static int ec_ro_software_sync(struct updater_config *cfg)
 	uint32_t ec_ro_len;
 	int is_same_ec_ro;
 	struct firmware_section ec_ro_sec;
-	const char *tmp_path = get_firmware_image_temp_file(
+	const char *image_file = get_firmware_image_temp_file(
 			&cfg->image, &cfg->tempfiles);
 
-	if (!tmp_path)
+	if (!image_file)
 		return 1;
 	find_firmware_section(&ec_ro_sec, &cfg->ec_image, "EC_RO");
 	if (!ec_ro_sec.data || !ec_ro_sec.size) {
 		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
 		return 1;
 	}
-	ec_ro_path = cbfs_extract_file(tmp_path, FMAP_RO_CBFS, "ecro",
-				       &cfg->tempfiles);
-	if (!ec_ro_path ||
-	    !cbfs_file_exists(tmp_path, FMAP_RO_CBFS, "ecro.hash")) {
+
+	ec_ro_path = create_temp_file(&cfg->tempfiles);
+	if (!ec_ro_path) {
+		ERROR("Failed to create temp file.\n");
+		return 1;
+	}
+	if (cbfstool_extract(image_file, FMAP_RO_CBFS, "ecro", ec_ro_path) ||
+	    !cbfstool_file_exists(image_file, FMAP_RO_CBFS, "ecro.hash")) {
 		INFO("No valid EC RO for software sync in AP firmware.\n");
 		return 1;
 	}
@@ -232,9 +237,13 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
 	if (!temp_image)
 		return -1;
 
-	old_store = cbfs_extract_file(temp_image, FMAP_RW_LEGACY,
-				      smm_store_name, &cfg->tempfiles);
+	old_store = create_temp_file(&cfg->tempfiles);
 	if (!old_store) {
+		ERROR("Failed to create temp file.\n");
+		return 1;
+	}
+	if (cbfstool_extract(temp_image, FMAP_RW_LEGACY, smm_store_name,
+			     old_store)) {
 		VB2_DEBUG("cbfstool failure or SMM store not available. "
 			  "Don't preserve.\n");
 		return 0;
@@ -538,22 +547,26 @@ char *updater_get_cbfs_quirks(struct updater_config *cfg)
 		return NULL;
 	}
 
-	const char *tmp_path = get_firmware_image_temp_file(
+	const char *image_file = get_firmware_image_temp_file(
 			&cfg->image, &cfg->tempfiles);
 	uint8_t *data = NULL;
 	uint32_t size = 0;
+	const char *entry_file;
 
 	/* Although the name exists, it may not be a real file. */
-	if (!cbfs_file_exists(tmp_path, cbfs_region, entry_name)) {
+	if (!cbfstool_file_exists(image_file, cbfs_region, entry_name)) {
 		VB2_DEBUG("Found string '%s' but not a file.\n", entry_name);
 		return NULL;
 	}
 
 	VB2_DEBUG("Found %s from CBFS %s\n", entry_name, cbfs_region);
-	tmp_path = cbfs_extract_file(tmp_path, cbfs_region, entry_name,
-				     &cfg->tempfiles);
-	if (!tmp_path ||
-	    vb2_read_file(tmp_path, &data, &size) != VB2_SUCCESS) {
+	entry_file = create_temp_file(&cfg->tempfiles);
+	if (!entry_file) {
+		ERROR("Failed to create temp file.\n");
+		return NULL;
+	}
+	if (cbfstool_extract(image_file, cbfs_region, entry_name, entry_file) ||
+	    vb2_read_file(entry_file, &data, &size) != VB2_SUCCESS) {
 		ERROR("Failed to read [%s] from CBFS [%s].\n",
 		      entry_name, cbfs_region);
 		return NULL;

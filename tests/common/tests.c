@@ -8,9 +8,28 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "2common.h"
 #include "common/tests.h"
+
+#define ENV_BUILD_RUN "BUILD_RUN"
+
+const char *create_test_tmp_dir(const char *name)
+{
+	const char *build_run = getenv(ENV_BUILD_RUN);
+	if (!build_run)
+		die("Failed to get env %s\n", ENV_BUILD_RUN);
+
+	char *dir = NULL;
+	xasprintf(&dir, "%s/tests/%s.tmp", build_run, name);
+
+	struct stat st = {0};
+	if (stat(dir, &st) == -1 && mkdir(dir, 0700))
+		die("Failed to create dir %s\n", dir);
+	return dir;
+}
 
 /* Global test success flag. */
 int gTestSuccess = 1;
