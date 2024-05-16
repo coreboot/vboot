@@ -32,6 +32,7 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 
 # Test data files
 DATA_DIR="${SCRIPT_DIR}/futility/data"
+GERALT_BIOS="${DATA_DIR}/bios_geralt_cbfs.bin"
 LINK_BIOS="${DATA_DIR}/bios_link_mp.bin"
 PEPPY_BIOS="${DATA_DIR}/bios_peppy_mp.bin"
 VOXEL_BIOS="${DATA_DIR}/bios_voxel_dev.bin"
@@ -469,6 +470,14 @@ test_update "Full update (--quirks preserve_me, factory)" \
   --quirks preserve_me -m factory \
   -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
 
+# Test manifest.
+echo "TEST: Manifest (--manifest, -i, image.bin)"
+cp -f "${GERALT_BIOS}" image.bin
+"${FUTILITY}" update -i image.bin --manifest >"${TMP}.json.out"
+cmp \
+  <(jq -S <"${TMP}.json.out") \
+  <(jq -S <"${SCRIPT_DIR}/futility/bios_geralt_cbfs.manifest.json")
+
 # Test archive and manifest. CL_TAG is for custom_label_tag.
 A="${TMP}.archive"
 mkdir -p "${A}/bin"
@@ -476,14 +485,14 @@ echo "echo \"\${CL_TAG}\"" >"${A}/bin/vpd"
 chmod +x "${A}/bin/vpd"
 
 cp -f "${LINK_BIOS}" "${A}/bios.bin"
-echo "TEST: Manifest (--manifest, bios.bin)"
+echo "TEST: Manifest (--manifest, -a, bios.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
 cmp \
   <(jq -S <"${TMP}.json.out") \
   <(jq -S <"${SCRIPT_DIR}/futility/link_bios.manifest.json")
 
 mv -f "${A}/bios.bin" "${A}/image.bin"
-echo "TEST: Manifest (--manifest, image.bin)"
+echo "TEST: Manifest (--manifest, -a, image.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP}.json.out"
 cmp \
   <(jq -S <"${TMP}.json.out") \

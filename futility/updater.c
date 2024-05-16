@@ -1163,13 +1163,18 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (!image_to->data)
 		return UPDATE_ERR_NO_IMAGE;
 
-	STATUS("Target image: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
-	     image_to->file_name, image_to->ro_version,
-	     image_to->rw_version_a, image_to->rw_version_b);
+	STATUS("Target image: %s (RO:%s, RW/A:%s (w/ECRW:%s), RW/B:%s (w/ECRW:%s)).\n",
+	       image_to->file_name, image_to->ro_version,
+	       image_to->rw_version_a, image_to->ecrw_version_a,
+	       image_to->rw_version_b, image_to->ecrw_version_b);
 	if (strcmp(image_to->rw_version_a, image_to->rw_version_b))
 		WARN("Different versions in %s (%s) and %s (%s).\n",
 		     FMAP_RW_FWID_A, image_to->rw_version_a,
 		     FMAP_RW_FWID_B, image_to->rw_version_b);
+	if (strcmp(image_to->ecrw_version_a, image_to->ecrw_version_b))
+		WARN("Different ecrw versions in %s (%s) and %s (%s).\n",
+		     FMAP_RW_FW_MAIN_A, image_to->ecrw_version_a,
+		     FMAP_RW_FW_MAIN_B, image_to->ecrw_version_b);
 
 	try_apply_quirk(QUIRK_NO_VERIFY, cfg);
 	if (try_apply_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg)) {
@@ -1189,9 +1194,10 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 		} else if (ret)
 			return UPDATE_ERR_SYSTEM_IMAGE;
 	}
-	STATUS("Current system: %s (RO:%s, RW/A:%s, RW/B:%s).\n",
+	STATUS("Current system: %s (RO:%s, RW/A:%s (w/ECRW:%s), RW/B:%s (w/ECRW:%s)).\n",
 	       image_from->file_name, image_from->ro_version,
-	       image_from->rw_version_a, image_from->rw_version_b);
+	       image_from->rw_version_a, image_from->ecrw_version_a,
+	       image_from->rw_version_b, image_from->ecrw_version_b);
 
 	try_apply_quirk(QUIRK_NO_CHECK_PLATFORM, cfg);
 	if (cfg->check_platform && check_compatible_platform(cfg)) {

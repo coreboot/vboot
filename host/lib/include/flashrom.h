@@ -26,6 +26,9 @@ struct firmware_image {
 	uint8_t *data; /* data allocated buffer to read/write with. */
 	char *file_name;
 	char *ro_version, *rw_version_a, *rw_version_b;
+	/* AP RW sections may contain a special ECRW binary for syncing EC
+	   firmware on boot. These 2 fields are valid only for AP image. */
+	char *ecrw_version_a, *ecrw_version_b;
 	FmapHeader *fmap_header;
 	bool is_ec;
 };

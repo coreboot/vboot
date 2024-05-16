@@ -942,9 +942,17 @@ static void print_json_image(
 		return;
 	if (!is_first)
 		printf(",\n");
-	printf("%*s\"%s\": { \"versions\": { \"ro\": \"%s\", \"rw\": \"%s\" },",
-	       indent, "", name, image.ro_version, image.rw_version_a);
+	printf("%*s\"%s\": {", indent, "", name);
 	indent += 2;
+	printf("\n%*s\"versions\": {", indent, "");
+	indent += 2;
+	printf("\n%*s\"ro\": \"%s\"", indent, "", image.ro_version);
+	printf(",\n%*s\"rw\": \"%s\"", indent, "", image.rw_version_a);
+	if (is_host && image.ecrw_version_a[0] != '\0')
+		printf(",\n%*s\"ecrw\": \"%s\"", indent, "",
+		       image.ecrw_version_a);
+	indent -= 2;
+	printf("\n%*s},", indent, "");
 	if (is_host) {
 		if (patch_image_by_model(&image, m, archive))
 			ERROR("Failed to patch images by model: %s\n", m->name);
@@ -960,7 +968,9 @@ static void print_json_image(
 		       get_gbb_key_hash(gbb, gbb->recovery_key_offset,
 					gbb->recovery_key_size));
 	}
-	printf("\n%*s\"image\": \"%s\" }", indent, "", fpath);
+	printf("\n%*s\"image\": \"%s\"", indent, "", fpath);
+	indent -= 2;
+	printf("\n%*s}", indent, "");
 	free_firmware_image(&image);
 }
 
