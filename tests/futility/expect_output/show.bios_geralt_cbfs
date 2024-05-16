@@ -43,7 +43,7 @@ Firmware Preamble:
   Kernel key sha1sum:    5d2b220899c4403d564092ada3f12d3cc4483223
   Firmware body size:    0
   Preamble flags:        0
-  Body metadata hash:    SHA256 2a7c59681a4a8ec9ac952163f346ea65082d3086d1e74e731ce60822e777b755
+  Body metadata hash:    SHA256 81c301db828912ad0eab0866293ece02d58d402d67062af8abc74e64342821ee
   Body metadata hash valid!
 Body verification succeeded.
 Keyblock:                VBLOCK_B

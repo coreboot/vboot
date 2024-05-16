@@ -22,7 +22,6 @@ DATA="${SRCDIR:?}/tests/swap_ec_rw_data"
 # Intentionally use AP and EC images from different boards
 AP_IMAGE="${DATA}/bios_geralt.bin"
 EC_IMAGE="${DATA}/ec_krabby.bin"
-EC_RW_FWID="${DATA}/RW_FWID"
 
 echo "Testing swap_ec_rw..."
 
@@ -37,11 +36,10 @@ cmp "${TMP}" "${DATA}/bios.expect.bin"
 
 # Good case: swap ecrw.version
 cp -f "${AP_IMAGE}" "${TMP}"
-cbfstool "${TMP}" add -r "FW_MAIN_A,FW_MAIN_B" -t raw \
-  -c none -f "${EC_RW_FWID}" -n ecrw.version
+cbfstool "${TMP}" extract -r "FW_MAIN_A" -n ecrw.version -f "${TMPD}/v.old"
 "${SWAP}" -i "${TMP}" -e "${EC_IMAGE}"
-cbfstool "${TMP}" extract -r "FW_MAIN_A" -n ecrw.version -f "${TMPD}/v"
-cmp -s "${TMPD}/v" "${EC_RW_FWID}" && error "ecrw.version was not modified"
+cbfstool "${TMP}" extract -r "FW_MAIN_A" -n ecrw.version -f "${TMPD}/v.new"
+cmp -s "${TMPD}/v.old" "${TMPD}/v.new" && error "ecrw.version was not modified"
 
 # Cleanup
 rm -rf "${TMPD}"

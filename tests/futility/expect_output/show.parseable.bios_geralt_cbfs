@@ -42,7 +42,7 @@ bios::VBLOCK_A::preamble::kernel_subkey::sha1_sum::5d2b220899c4403d564092ada3f12
 bios::VBLOCK_A::preamble::flags::0
 bios::VBLOCK_A::body::size::0
 bios::VBLOCK_A::body::metadata_hash::algorithm::2::SHA256
-bios::VBLOCK_A::body::metadata_hash::hex::2a7c59681a4a8ec9ac952163f346ea65082d3086d1e74e731ce60822e777b755
+bios::VBLOCK_A::body::metadata_hash::hex::81c301db828912ad0eab0866293ece02d58d402d67062af8abc74e64342821ee
 bios::VBLOCK_A::body::metadata_hash::valid
 bios::VBLOCK_A::body::signature::valid
 bios::VBLOCK_A::verified
