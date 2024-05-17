@@ -450,6 +450,12 @@ int vb2api_need_reboot_for_display(struct vb2_context *ctx)
 	return 0;
 }
 
+int vb2api_in_manual_recovery_mode(struct vb2_context *ctx)
+{
+	return (ctx->flags & VB2_CONTEXT_RECOVERY_MODE) &&
+	       vb2_allow_recovery(ctx);
+}
+
 uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx)
 {
 	return vb2_get_sd(ctx)->recovery_reason;

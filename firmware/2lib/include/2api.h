@@ -822,6 +822,14 @@ uint32_t vb2api_get_kernel_rollback_version(struct vb2_context *ctx);
 int vb2api_need_reboot_for_display(struct vb2_context *ctx);
 
 /**
+ * Return whether the current boot mode is manual recovery.
+ *
+ * @param ctx           Vboot2 context
+ * @return 1 for manual recovery, or 0 otherwise.
+ */
+int vb2api_in_manual_recovery_mode(struct vb2_context *ctx);
+
+/**
  * Get the current recovery reason.
  *
  * See enum vb2_nv_recovery in 2recovery_reasons.h.
