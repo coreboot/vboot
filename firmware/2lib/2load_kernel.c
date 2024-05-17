@@ -748,6 +748,9 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 		goto gpt_done;
 	}
 
+	/* Store context flags for fallback */
+	const uint64_t ctx_flags = ctx->flags;
+
 	/* Loop over candidate kernel partitions */
 	uint64_t part_start, part_size;
 	while (GptNextKernelEntry(&gpt, &part_start, &part_size) ==
@@ -788,9 +791,41 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 #endif
 		VbExStreamClose(stream);
 
+		/* If there's an error with GKI boot,
+		 * then try to fallback to ChromeOS
+		 */
+		if (rv) {
+			/* Set up and reopen the stream again */
+			stream = NULL;
+			if (VbExStreamOpen(disk_info->handle,
+					   part_start, part_size, &stream)) {
+				VB2_DEBUG("Cros fallback - unable to reopen stream\n");
+				VB2_DEBUG("Marking kernel as invalid.\n");
+				GptUpdateKernelEntry(&gpt, GPT_UPDATE_ENTRY_BAD);
+				continue;
+			}
+
+			lpflags = 0;
+			if (params->partition_number > 0) {
+				/*
+				 * If we already have a good kernel, we only needed to
+				 * look at the vblock versions to check for rollback.
+				 */
+				lpflags |= VB2_LOAD_PARTITION_FLAG_VBLOCK_ONLY;
+			}
+
+			/* Append status and try to load chromeos partition */
+			rv = vb2_load_chromeos_kernel_partition(ctx, params, stream,
+								lpflags);
+
+			VbExStreamClose(stream);
+		}
+
 		if (rv) {
 			VB2_DEBUG("Marking kernel as invalid (err=%x).\n", rv);
 			GptUpdateKernelEntry(&gpt, GPT_UPDATE_ENTRY_BAD);
+			/* Restore original ctx->flags */
+			ctx->flags = ctx_flags;
 			continue;
 		}
 
