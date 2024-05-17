@@ -486,7 +486,7 @@ resign_firmware_payload() {
   resign_firmware_shellball "${rootfs_dir}/usr/sbin/chromeos-firmwareupdate" || ret=$?
   sudo umount "${rootfs_dir}"
   if [[ "${ret}" == 0 ]]; then
-    "Re-signed firmware AU payload in ${loopdev}"
+    info "Re-signed firmware AU payload in ${loopdev}"
   else
     error "Couldn't sign firmware AU payload in ${loopdev}"
   fi
