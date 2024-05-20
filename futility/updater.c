@@ -1457,26 +1457,48 @@ static int updater_setup_archive(
 static int check_arg_compatibility(
 			 const struct updater_config_arguments *arg)
 {
-	if (!arg->archive) {
-		if (arg->repack || arg->unpack) {
-			ERROR("--{re,un}pack needs --archive.\n");
+	/*
+	 * The following args are mutually exclusive:
+	 * - detect_model_only
+	 * - do_manifest
+	 * - repack
+	 * - unpack
+	 */
+	if (arg->detect_model_only) {
+		if (arg->do_manifest || arg->repack || arg->unpack) {
+			ERROR("--manifest/--repack/--unpack"
+			      " is not compatible with --detect-model-only.\n");
 			return -1;
 		}
-		if (arg->detect_model_only) {
+		if (!arg->archive) {
 			ERROR("--detect-model-only needs --archive.\n");
 			return -1;
 		}
-		if (arg->do_manifest && !(arg->image || arg->ec_image)) {
-			ERROR("--manifest needs -a, -i or -e\n");
+	} else if (arg->do_manifest) {
+		if (arg->repack || arg->unpack) {
+			ERROR("--repack/--unpack"
+			      " is not compatible with --manifest.\n");
 			return -1;
 		}
-	} else {
-		if (arg->do_manifest && (arg->image || arg->ec_image)) {
-				ERROR("--manifest for archive (-a) does not accept \n"
-				      "additional images (--image, --ec_image).");
-				return -1;
+		if (!arg->archive && !(arg->image || arg->ec_image)) {
+			ERROR("--manifest needs -a, -i or -e.\n");
+			return -1;
+		} else if (arg->archive && (arg->image || arg->ec_image)) {
+			ERROR("--manifest for archive (-a) does not accept"
+			      " additional images (--image, --ec_image).\n");
+			return -1;
+		}
+	} else if (arg->repack || arg->unpack) {
+		if (arg->repack && arg->unpack) {
+			ERROR("--unpack is incompatible with --repack.\n");
+			return -1;
+		}
+		if (!arg->archive) {
+			ERROR("--{re,un}pack needs --archive.\n");
+			return -1;
 		}
 	}
+
 	return 0;
 }
 
