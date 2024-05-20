@@ -261,6 +261,19 @@ int load_ec_firmware_image(struct firmware_image *image, const char *file_name,
 	return load_firmware_image(image, file_name, archive);
 }
 
+void check_firmware_versions(const struct firmware_image *image)
+{
+	if (strcmp(image->rw_version_a, image->rw_version_b))
+		WARN("Different versions in %s (%s) and %s (%s).\n",
+		     FMAP_RW_FWID_A, image->rw_version_a,
+		     FMAP_RW_FWID_B, image->rw_version_b);
+	if (image->ecrw_version_a && image->ecrw_version_b &&
+	    strcmp(image->ecrw_version_a, image->ecrw_version_b))
+		WARN("Different ecrw versions in %s (%s) and %s (%s).\n",
+		     FMAP_RW_FW_MAIN_A, image->ecrw_version_a,
+		     FMAP_RW_FW_MAIN_B, image->ecrw_version_b);
+}
+
 /*
  * Generates a temporary file for snapshot of firmware image contents.
  *

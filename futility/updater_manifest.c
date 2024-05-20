@@ -971,6 +971,7 @@ static void print_json_image(
 	printf("\n%*s\"image\": \"%s\"", indent, "", fpath);
 	indent -= 2;
 	printf("\n%*s}", indent, "");
+	check_firmware_versions(&image);
 	free_firmware_image(&image);
 }
 
