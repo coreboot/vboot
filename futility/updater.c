@@ -1398,13 +1398,6 @@ static int updater_setup_archive(
 	struct u_archive *ar = cfg->archive;
 	const struct model_config *model;
 
-	if (arg->do_manifest) {
-		assert(!arg->image);
-		print_json_manifest(manifest);
-		/* No additional error. */
-		return errorcnt;
-	}
-
 	if (cfg->detect_model)
 		model = manifest_detect_model_from_frid(cfg, manifest);
 	else
@@ -1593,6 +1586,67 @@ bool updater_should_update(const struct updater_config_arguments *arg)
 	return true;
 }
 
+/*
+ * Prints manifest.
+ *
+ * Returns number of errors on failure, or zero on success.
+ */
+static int print_manifest(const struct updater_config_arguments *arg)
+{
+	assert(arg->do_manifest);
+
+	if (!arg->archive) {
+		char name[] = "default";
+		struct model_config model = {
+			.name = name,
+			.image = arg->image,
+			.ec_image = arg->ec_image,
+		};
+		struct manifest manifest = {
+			.num = 1,
+			.models = &model,
+		};
+		print_json_manifest(&manifest);
+		return 0;
+	}
+
+	struct u_archive *archive = archive_open(arg->archive);
+	if (!archive) {
+		ERROR("Failed to open archive: %s\n", arg->archive);
+		return 1;
+	}
+
+	if (arg->fast_update) {
+		/* Quickly load and dump the manifest file from the archive. */
+		const char *manifest_name = "manifest.json";
+		uint8_t *data = NULL;
+		uint32_t size = 0;
+
+		if (!archive_has_entry(archive, manifest_name) ||
+		    archive_read_file(archive, manifest_name, &data, &size,
+				      NULL)) {
+			ERROR("Failed to read the cached manifest: %s\n",
+			      manifest_name);
+			return 1;
+		}
+		/* data is NUL-terminated. */
+		printf("%s\n", data);
+		free(data);
+	} else {
+		struct manifest *manifest =
+			new_manifest_from_archive(archive);
+		if (!manifest) {
+			ERROR("Failed to read manifest from archive: %s\n",
+			      arg->archive);
+			return 1;
+		}
+		print_json_manifest(manifest);
+		delete_manifest(manifest);
+	}
+
+	return 0;
+}
+
 int updater_setup_config(struct updater_config *cfg,
 			 const struct updater_config_arguments *arg)
 {
@@ -1647,11 +1701,17 @@ int updater_setup_config(struct updater_config *cfg,
 		override_dut_property(DUT_PROP_WP_SW_AP, cfg, r);
 	}
 
-	/* Set up archive and load images. */
+	/* Process the manifest. */
+	if (arg->do_manifest) {
+		errorcnt += print_manifest(arg);
+		return errorcnt;
+	}
+
 	/* Always load images specified from command line directly. */
 	errorcnt += updater_load_images(
 			cfg, arg, arg->image, arg->ec_image);
 
+	/* Set up archive. */
 	if (!archive_path)
 		archive_path = ".";
 	cfg->archive = archive_open(archive_path);
@@ -1683,25 +1743,8 @@ int updater_setup_config(struct updater_config *cfg,
 		return errorcnt;
 	}
 
-	/* Process the manifest and load images from the archive. */
-	if (arg->archive && arg->do_manifest && arg->fast_update) {
-		/* Quickly load and dump the manifest file from the archive. */
-		const char *manifest_name = "manifest.json";
-		uint8_t *data = NULL;
-		uint32_t size = 0;
-
-		if (archive_has_entry(cfg->archive, manifest_name) &&
-		    archive_read_file(cfg->archive, manifest_name, &data, &size,
-				      NULL) == 0) {
-			/* data is NUL-terminated. */
-			printf("%s\n", data);
-			free(data);
-		} else {
-			ERROR("Failed to read the cached manifest: %s\n",
-			      manifest_name);
-			errorcnt++;
-		}
-	} else if (arg->archive) {
+	/* Load images from the archive. */
+	if (arg->archive) {
 		struct manifest *m = new_manifest_from_archive(cfg->archive);
 		if (m) {
 			errorcnt += updater_setup_archive(
@@ -1711,18 +1754,6 @@ int updater_setup_config(struct updater_config *cfg,
 			ERROR("Failure in archive: %s\n", arg->archive);
 			++errorcnt;
 		}
-	} else if (arg->do_manifest) {
-		char name[] = "default";
-		struct model_config model = {
-			.name = name,
-			.image = arg->image,
-			.ec_image = arg->ec_image,
-		};
-		struct manifest manifest = {
-			.num = 1,
-			.models = &model,
-		};
-		print_json_manifest(&manifest);
 	}
 
 	/*
