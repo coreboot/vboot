@@ -153,15 +153,9 @@ static int parse_firmware_image(struct firmware_image *image)
 	return ret;
 }
 
-/*
- * Loads a firmware image from file.
- * If archive is provided and file_name is a relative path, read the file from
- * archive.
- * Returns IMAGE_LOAD_SUCCESS on success, IMAGE_READ_FAILURE on file I/O
- * failure, or IMAGE_PARSE_FAILURE for non-vboot images.
- */
-int load_firmware_image(struct firmware_image *image, const char *file_name,
-			struct u_archive *archive)
+static int load_firmware_image(struct firmware_image *image,
+			       const char *file_name,
+			       struct u_archive *archive)
 {
 	if (!file_name) {
 		ERROR("No file name given\n");
@@ -185,6 +179,19 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 	return parse_firmware_image(image);
 }
 
+int load_ap_firmware_image(struct firmware_image *image, const char *file_name,
+			   struct u_archive *archive)
+{
+	image->is_ec = false;
+	return load_firmware_image(image, file_name, archive);
+}
+
+int load_ec_firmware_image(struct firmware_image *image, const char *file_name,
+			   struct u_archive *archive)
+{
+	image->is_ec = true;
+	return load_firmware_image(image, file_name, archive);
+}
 /*
  * Generates a temporary file for snapshot of firmware image contents.
  *
@@ -212,8 +219,8 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 void free_firmware_image(struct firmware_image *image)
 {
 	/*
-	 * The programmer is not allocated by load_firmware_image and must be
-	 * preserved explicitly.
+	 * The programmer is not allocated by load_ap_firmware_image and
+	 * load_ec_firmware_image, and therefore must be preserved explicitly.
 	 */
 	const char *programmer = image->programmer;
 
@@ -226,11 +233,13 @@ void free_firmware_image(struct firmware_image *image)
 	image->programmer = programmer;
 }
 
-/* Preserves meta data and reloads image contents from given file path. */
 int reload_firmware_image(const char *file_path, struct firmware_image *image)
 {
 	free_firmware_image(image);
-	return load_firmware_image(image, file_path, NULL);
+	if (image->is_ec)
+		return load_ec_firmware_image(image, file_path, NULL);
+	else
+		return load_ap_firmware_image(image, file_path, NULL);
 }
 
 /*
@@ -513,6 +522,7 @@ int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
 	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC)) {
+		image->is_ec = true;
 		WARN("%s: flashrom support for CrOS EC is EOL.\n", __func__);
 	}
 

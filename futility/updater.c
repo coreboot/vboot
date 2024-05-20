@@ -1318,7 +1318,7 @@ static int updater_load_images(struct updater_config *cfg,
 			if (image)
 				errorcnt += !!save_file_from_stdin(image);
 		}
-		errorcnt += !!load_firmware_image(&cfg->image, image, ar);
+		errorcnt += !!load_ap_firmware_image(&cfg->image, image, ar);
 		if (!errorcnt)
 			errorcnt += updater_setup_quirks(cfg, arg);
 	}
@@ -1326,7 +1326,7 @@ static int updater_load_images(struct updater_config *cfg,
 		return errorcnt;
 
 	if (!cfg->ec_image.data && ec_image)
-		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
+		errorcnt += !!load_ec_firmware_image(&cfg->ec_image, ec_image, ar);
 	return errorcnt;
 }
 

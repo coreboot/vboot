@@ -27,6 +27,7 @@ struct firmware_image {
 	char *file_name;
 	char *ro_version, *rw_version_a, *rw_version_b;
 	FmapHeader *fmap_header;
+	bool is_ec;
 };
 
 /**
