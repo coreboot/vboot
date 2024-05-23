@@ -218,9 +218,8 @@ static int parse_firmware_image(struct firmware_image *image)
 	return ret;
 }
 
-static int load_firmware_image(struct firmware_image *image,
-			       const char *file_name,
-			       struct u_archive *archive)
+int load_firmware_image(struct firmware_image *image, const char *file_name,
+			struct u_archive *archive)
 {
 	if (!file_name) {
 		ERROR("No file name given\n");
@@ -242,20 +241,6 @@ static int load_firmware_image(struct firmware_image *image,
 	image->file_name = strdup(file_name);
 
 	return parse_firmware_image(image);
-}
-
-int load_ap_firmware_image(struct firmware_image *image, const char *file_name,
-			   struct u_archive *archive)
-{
-	image->is_ec = false;
-	return load_firmware_image(image, file_name, archive);
-}
-
-int load_ec_firmware_image(struct firmware_image *image, const char *file_name,
-			   struct u_archive *archive)
-{
-	image->is_ec = true;
-	return load_firmware_image(image, file_name, archive);
 }
 
 void check_firmware_versions(const struct firmware_image *image)
@@ -298,8 +283,8 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 void free_firmware_image(struct firmware_image *image)
 {
 	/*
-	 * The programmer is not allocated by load_ap_firmware_image and
-	 * load_ec_firmware_image, and therefore must be preserved explicitly.
+	 * The programmer is not allocated by load_firmware_image and must be
+	 * preserved explicitly.
 	 */
 	const char *programmer = image->programmer;
 
@@ -317,10 +302,7 @@ void free_firmware_image(struct firmware_image *image)
 int reload_firmware_image(const char *file_path, struct firmware_image *image)
 {
 	free_firmware_image(image);
-	if (image->is_ec)
-		return load_ec_firmware_image(image, file_path, NULL);
-	else
-		return load_ap_firmware_image(image, file_path, NULL);
+	return load_firmware_image(image, file_path, NULL);
 }
 
 /*
@@ -602,10 +584,8 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
-	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC)) {
-		image->is_ec = true;
+	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC))
 		WARN("%s: flashrom support for CrOS EC is EOL.\n", __func__);
-	}
 
 	int r, i;
 	const int tries = 1 + get_config_quirk(QUIRK_EXTRA_RETRIES, cfg);

@@ -585,7 +585,7 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	if (archive_has_entry(archive, ec_name))
 		model.ec_image = strdup(ec_name);
 	/* Extract model name from FWID: $Vendor_$Platform.$Version */
-	if (!load_ap_firmware_image(&image, image_name, archive)) {
+	if (!load_firmware_image(&image, image_name, archive)) {
 		char *token = NULL;
 		if (strtok(image.ro_version, "_"))
 			token = strtok(NULL, ".");
@@ -697,7 +697,7 @@ manifest_detect_model_from_frid(struct updater_config *cfg,
 		struct model_config *m = &manifest->models[i];
 		struct firmware_image image = {0};
 
-		if (load_ap_firmware_image(&image, m->image, manifest->archive))
+		if (load_firmware_image(&image, m->image, manifest->archive))
 			return NULL;
 
 		VB2_DEBUG("Comparing '%*.*s' with '%*.*s'\n", len, len,
@@ -936,9 +936,7 @@ static void print_json_image(
 	const struct vb2_gbb_header *gbb = NULL;
 	if (!fpath)
 		return;
-	if (is_host && load_ap_firmware_image(&image, fpath, archive))
-		return;
-	else if (!is_host && load_ec_firmware_image(&image, fpath, archive))
+	if (load_firmware_image(&image, fpath, archive))
 		return;
 	if (!is_first)
 		printf(",\n");

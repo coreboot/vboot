@@ -30,7 +30,6 @@ struct firmware_image {
 	   firmware on boot. These 2 fields are valid only for AP image. */
 	char *ecrw_version_a, *ecrw_version_b;
 	FmapHeader *fmap_header;
-	bool is_ec;
 };
 
 /**
