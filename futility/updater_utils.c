@@ -122,11 +122,9 @@ static char *load_ecrw_version(const struct firmware_image *image,
 	char *version = NULL;
 	struct tempfile tempfile_head = {0};
 
-	if (!firmware_section_exists(image, section_name)) {
-		WARN("No valid section '%s', missing ecrw version info\n",
-		     section_name);
+	/* EC image or older AP images may not have the section. */
+	if (!firmware_section_exists(image, section_name))
 		goto done;
-	}
 
 	const char *ecrw_version_file = create_temp_file(&tempfile_head);
 	if (!ecrw_version_file)
@@ -215,8 +213,7 @@ static int parse_firmware_image(struct firmware_image *image)
 	load_firmware_version(image, section_a, &image->rw_version_a);
 	load_firmware_version(image, section_b, &image->rw_version_b);
 
-	if (!image->is_ec)
-		load_ecrw_versions(image);
+	load_ecrw_versions(image);
 
 	return ret;
 }
