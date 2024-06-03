@@ -159,10 +159,11 @@ static struct option const long_opts[] = {
 	{"wp-disable", 0, NULL, 'd'},
 	{"flash-info", 0, NULL, 'i'},
 	{"flash-size", 0, NULL, 'z'},
+	{"verbose", 0, NULL, 'v'},
 	{NULL, 0, NULL, 0},
 };
 
-static const char *const short_opts = "h" SHARED_FLASH_ARGS_SHORTOPTS;
+static const char *const short_opts = "hsoedizv" SHARED_FLASH_ARGS_SHORTOPTS;
 
 static void print_help(int argc, char *argv[])
 {
@@ -171,13 +172,14 @@ static void print_help(int argc, char *argv[])
 	       "\n"
 	       "Usage:  " MYNAME " %s [OPTIONS] \n"
 	       "\n"
-	       "    --wp-status          \tGet the current flash WP state.\n"
+	       "-s, --wp-status          \tGet the current flash WP state.\n"
 	       "    --wp-status          \tGet the current HW and SW WP state.\n"
-	       "        [--ignore-hw]    \tGet SW WP state only.\n"
-	       "    --wp-enable          \tEnable protection for the RO image section.\n"
-	       "    --wp-disable         \tDisable all write protection.\n"
-	       "    --flash-size         \tGet flash size.\n"
-	       "    --flash-info         \tGet flash info.\n"
+	       "-o,     [--ignore-hw]    \tGet SW WP state only.\n"
+	       "-e, --wp-enable          \tEnable protection for the RO image section.\n"
+	       "-d, --wp-disable         \tDisable all write protection.\n"
+	       "-i, --flash-info         \tGet flash info.\n"
+	       "-z, --flash-size         \tGet flash size.\n"
+	       "-v, --verbose            \tPrint verbose messages\n"
 	       "\n"
 	       SHARED_FLASH_ARGS_HELP,
 	       argv[0]);
