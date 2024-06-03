@@ -977,10 +977,6 @@ int VbGetArchPropertyInt(const char* name)
 		value = vb2_get_nv_storage(VB2_NV_DEBUG_RESET_MODE);
 		if (-1 == value)
 			value = VbGetCmosRebootField(CMOSRF_DEBUG_RESET);
-	} else if (!strcasecmp(name,"fwb_tries")) {
-		value = vb2_get_nv_storage(VB2_NV_TRY_COUNT);
-		if (-1 == value)
-			value = VbGetCmosRebootField(CMOSRF_TRY_B);
 	}
 
 	/* Firmware update tries is now stored in the kernel field.  On
@@ -1063,10 +1059,6 @@ int VbSetArchPropertyInt(const char* name, int value)
 		if (0 == vb2_set_nv_storage(VB2_NV_DEBUG_RESET_MODE, value))
 			return 0;
 		return  VbSetCmosRebootField(CMOSRF_DEBUG_RESET, value);
-	} else if (!strcasecmp(name,"fwb_tries")) {
-		if (0 == vb2_set_nv_storage(VB2_NV_TRY_COUNT, value))
-			return 0;
-		return VbSetCmosRebootField(CMOSRF_TRY_B, value);
 	}
 	/* Firmware update tries is now stored in the kernel field.  On
 	 * older systems where it's not, it was stored in a file in the

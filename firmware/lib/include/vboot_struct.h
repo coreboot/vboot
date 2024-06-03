@@ -32,8 +32,8 @@ extern "C" {
  */
 
 /* LoadFirmware() tried firmware B because of VbNvStorage firmware B tries;
-   Deprecated as part of chromium:1010389. */
-#define VBSD_FWB_TRIED        0x00000001
+   Deprecated as part of b:172342538. */
+#define VBSD_DEPRECATED_FWB_TRIED        0x00000001
 /*
  * vb2api_load_kernel() verified the good kernel keyblock using the kernel
  * subkey from the firmware.  If this flag is not present, it just used the
