@@ -57,7 +57,7 @@ static int print_flash_size(struct updater_config *cfg)
 		return -1;
 	}
 
-	printf("Flash size: %#010x\n", flash_size);
+	printf("Flash size: 0x%08" PRIx32 "\n", flash_size);
 	return 0;
 }
 
@@ -83,13 +83,14 @@ static int print_flash_info(struct updater_config *cfg)
 	free(name);
 	const uint64_t vidpid = (uint64_t) vid << 32 | pid;
 	printf("Flash vid-pid: 0x%" PRIx64 "\n", vidpid);
-	printf("Flash size: %#010x\n", flash_size);
+	printf("Flash size: 0x%08" PRIx32 "\n", flash_size);
 
 	/* Get WP_RO region start and length from image */
 	uint32_t ro_start, ro_len;
 	if (get_ro_range(cfg, &ro_start, &ro_len))
 		return -1;
-	printf("Expected WP SR configuration by FW image: (start = %#010x, length = %#010x)\n", ro_start, ro_len);
+	printf("Expected WP SR configuration by FW image: (start = 0x%08" PRIx32
+	       ", length = 0x%08" PRIx32 ")\n", ro_start, ro_len);
 
 	return 0;
 }
@@ -118,7 +119,8 @@ static int print_wp_status(struct updater_config *cfg, bool ignore_hw)
 	} else if (wp_mode && wp_start == ro_start && wp_len == ro_len) {
 		printf("WP status: enabled\n");
 	} else {
-		printf("WP status: misconfigured (srp = %d, start = %#010x, length = %#010x)\n",
+		printf("WP status: misconfigured (srp = %d, start = 0x%08" PRIx32
+		       ", length = 0x%08" PRIx32 ")\n",
 		     wp_mode, wp_start, wp_len);
 	}
 
