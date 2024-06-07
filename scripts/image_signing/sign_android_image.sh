@@ -141,6 +141,12 @@ build flavor '${flavor_prop}'."
       local extra_flags
       local lineage_file="${key_dir}/${keyname}.lineage"
       local apksigner_min_sdk_version=28
+      local temp_zipaligned_apk="${temp_dir}/temp_zipaligned.apk"
+
+      # If using apksigner zipalign needs to be done before signing.
+      if ! zipalign -p -f 4 "${temp_apk}" "${temp_zipaligned_apk}"; then
+        die "Zipalign failed to align the apk."
+      fi
 
       if [[ -f ${lineage_file} ]]; then
         extra_flags="--lineage ${lineage_file}"
@@ -154,12 +160,13 @@ build flavor '${flavor_prop}'."
           --provider-arg "${gen_key_config_dir}/pkcs11_java.cfg" --ks "NONE" \
           --ks-type "PKCS11" \
           --ks-key-alias "${KEYCFG_ANDROID_CLOUD_KEY_PREFIX}${keyname}" \
-          --ks-pass pass:\"\" --in "${temp_apk}" --out "${signed_apk}"  \
+          --ks-pass pass:\"\" \
+          --in "${temp_zipaligned_apk}" --out "${signed_apk}"  \
           ${extra_flags}
       else
         apksigner sign --key "${key_dir}/${keyname}.pk8" \
           --cert "${key_dir}/${keyname}.x509.pem" \
-          --in "${temp_apk}" --out "${signed_apk}" \
+          --in "${temp_zipaligned_apk}" --out "${signed_apk}" \
           ${extra_flags}
       fi
     fi
