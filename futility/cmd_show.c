@@ -63,15 +63,21 @@ void show_pubkey(const struct vb2_packed_key *pubkey, const char *sp)
 static void show_keyblock(struct vb2_keyblock *keyblock, const char *print_name,
 			  int sign_key, int good_sig)
 {
+	const struct vb2_signature *sig = &keyblock->keyblock_signature;
+
 	if (print_name)
 		FT_READABLE_PRINT("Keyblock:                %s\n", print_name);
 	else
 		FT_READABLE_PRINT("Keyblock:\n");
 
-	FT_PRINT("  Signature:             %s\n", "signature::%s\n",
-		 sign_key ? (good_sig ? "valid" : "invalid") : "ignored");
 	FT_PRINT("  Size:                  %#x\n",
 		 "size::%d\n", keyblock->keyblock_size);
+	FT_PRINT("  Signature:             %s\n", "signature::%s\n",
+		 sign_key ? (good_sig ? "valid" : "invalid") : "ignored");
+	FT_PRINT("    Size:                %#x\n", "signature::size::%u\n",
+		 sig->sig_size);
+	FT_PRINT("    Data size:           %#x\n", "signature::data_size::%u\n",
+		 sig->data_size);
 	FT_PRINT("  Flags:                 %d ",
 		 "flags::%d:", keyblock->keyblock_flags);
 	if (keyblock->keyblock_flags & VB2_KEYBLOCK_FLAG_DEVELOPER_0)

@@ -28,8 +28,10 @@ Firmware body:           FW_MAIN_B
   Offset:                0x01010000
   Size:                  0x004fffc0
 Keyblock:                VBLOCK_A
-  Signature:             valid
   Size:                  0x6b8
+  Signature:             valid
+    Size:                0x200
+    Data size:           0x478
   Flags:                 23  !DEV DEV !REC !MINIOS
   Data key algorithm:    7 RSA4096 SHA256
   Data key version:      1
@@ -45,8 +47,10 @@ Firmware Preamble:
   Preamble flags:        0
 Body verification succeeded.
 Keyblock:                VBLOCK_B
-  Signature:             invalid
   Size:                  0x4b8
+  Signature:             invalid
+    Size:                0
+    Data size:           0
   Flags:                 23  !DEV DEV !REC !MINIOS
   Data key algorithm:    7 RSA4096 SHA256
   Data key version:      1

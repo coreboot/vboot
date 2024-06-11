@@ -1,6 +1,8 @@
 Keyblock:                tests/devkeys/firmware.keyblock
-  Signature:             valid
   Size:                  0x8b8
+  Signature:             valid
+    Size:                0x400
+    Data size:           0x478
   Flags:                 23  !DEV DEV !REC !MINIOS
   Data key algorithm:    7 RSA4096 SHA256
   Data key version:      1

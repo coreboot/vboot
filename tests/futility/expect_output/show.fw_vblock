@@ -1,6 +1,8 @@
 Keyblock:                tests/futility/data/fw_vblock.bin
-  Signature:             ignored
   Size:                  0x8b8
+  Signature:             ignored
+    Size:                0x400
+    Data size:           0x478
   Flags:                 7  !DEV DEV !REC
   Data key algorithm:    8 RSA4096 SHA512
   Data key version:      1

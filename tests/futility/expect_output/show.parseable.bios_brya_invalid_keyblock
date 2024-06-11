@@ -25,8 +25,10 @@ bios::GBB::recovery_key::algorithm::8::RSA4096 SHA512
 bios::GBB::recovery_key::version::1
 bios::GBB::recovery_key::sha1_sum::e3c39daf95da1940936aa29eef2d101eb09905c0
 bios::VBLOCK_A::keyblock::valid
-bios::VBLOCK_A::keyblock::signature::valid
 bios::VBLOCK_A::keyblock::size::1720
+bios::VBLOCK_A::keyblock::signature::valid
+bios::VBLOCK_A::keyblock::signature::size::512
+bios::VBLOCK_A::keyblock::signature::data_size::1144
 bios::VBLOCK_A::keyblock::flags::23::!DEV:DEV:!REC:!MINIOS
 bios::VBLOCK_A::keyblock::data_key::algorithm::7::RSA4096 SHA256
 bios::VBLOCK_A::keyblock::data_key::version::1
@@ -44,8 +46,10 @@ bios::VBLOCK_A::body::size::1931904
 bios::VBLOCK_A::body::signature::valid
 bios::VBLOCK_A::verified
 bios::VBLOCK_B::keyblock::valid
-bios::VBLOCK_B::keyblock::signature::invalid
 bios::VBLOCK_B::keyblock::size::1208
+bios::VBLOCK_B::keyblock::signature::invalid
+bios::VBLOCK_B::keyblock::signature::size::0
+bios::VBLOCK_B::keyblock::signature::data_size::0
 bios::VBLOCK_B::keyblock::flags::23::!DEV:DEV:!REC:!MINIOS
 bios::VBLOCK_B::keyblock::data_key::algorithm::7::RSA4096 SHA256
 bios::VBLOCK_B::keyblock::data_key::version::1

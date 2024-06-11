@@ -1,7 +1,9 @@
 Kernel partition:        tests/futility/data/rec_kernel_part.bin
 Keyblock:
-  Signature:             ignored
   Size:                  0xcb8
+  Signature:             ignored
+    Size:                0x400
+    Data size:           0x878
   Flags:                 11  !DEV DEV REC
   Data key algorithm:    11 RSA8192 SHA512
   Data key version:      1

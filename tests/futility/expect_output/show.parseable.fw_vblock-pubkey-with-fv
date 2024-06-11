@@ -1,6 +1,8 @@
 fw_pre::keyblock::valid
-fw_pre::keyblock::signature::valid
 fw_pre::keyblock::size::2232
+fw_pre::keyblock::signature::valid
+fw_pre::keyblock::signature::size::1024
+fw_pre::keyblock::signature::data_size::1144
 fw_pre::keyblock::flags::7::!DEV:DEV:!REC
 fw_pre::keyblock::data_key::algorithm::8::RSA4096 SHA512
 fw_pre::keyblock::data_key::version::1

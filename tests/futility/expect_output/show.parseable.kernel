@@ -1,6 +1,8 @@
 kernel::keyblock::valid
-kernel::keyblock::signature::ignored
 kernel::keyblock::size::1208
+kernel::keyblock::signature::ignored
+kernel::keyblock::signature::size::512
+kernel::keyblock::signature::data_size::632
 kernel::keyblock::flags::23::!DEV:DEV:!REC:!MINIOS
 kernel::keyblock::data_key::algorithm::4::RSA2048 SHA256
 kernel::keyblock::data_key::version::1

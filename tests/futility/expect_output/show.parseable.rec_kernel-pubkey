@@ -1,6 +1,8 @@
 kernel::keyblock::valid
-kernel::keyblock::signature::valid
 kernel::keyblock::size::3256
+kernel::keyblock::signature::valid
+kernel::keyblock::signature::size::1024
+kernel::keyblock::signature::data_size::2168
 kernel::keyblock::flags::11::!DEV:DEV:REC
 kernel::keyblock::data_key::algorithm::11::RSA8192 SHA512
 kernel::keyblock::data_key::version::1
