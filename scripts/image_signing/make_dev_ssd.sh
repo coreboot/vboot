@@ -61,6 +61,9 @@ DEFINE_boolean force "$FLAGS_FALSE" \
   "Skip validity checks and make the change" "f"
 DEFINE_boolean default_rw_root "${FLAGS_TRUE}" \
   "When --remove_rootfs_verification is set, change root mount option to RW." ""
+DEFINE_boolean enable_proc_mem_ptrace "${FLAGS_TRUE}" \
+  "When --remove_rootfs_verification is set, allow ptracers to write proc/mem" \
+  ""
 # If neither --enable_kdump nor --disable_kdump was provided, the enablement
 # status won't be changed.
 DEFINE_boolean enable_kdump "${FLAGS_FALSE}" \
@@ -96,7 +99,14 @@ remove_rootfs_verification() {
     rw_root_opt="s| rw | ro |"
   fi
 
-  echo "$* chromiumos.allow_overlayfs" | sed '
+  local ptracer_opt="proc_mem.restrict_write=ptracer proc_mem.restrict_foll_force=ptracer"
+  if [ "${FLAGS_enable_proc_mem_ptrace}" = "${FLAGS_FALSE}" ]; then
+    # we could set proc_mem.restrict_write=all, however that's already default
+    # via Kconfig and we don't want to clutter the cmdline with redundant params
+    ptracer_opt=""
+  fi
+
+  echo "$* chromiumos.allow_overlayfs ${ptracer_opt}" | sed '
     s| dm=\"2 [^"]*bootcache[^"]* vroot | dm=\"1 vroot |
     s| root=/dev/dm-[0-9] | root='"$new_root"' |
     s| dm_verity.dev_wait=1 | dm_verity.dev_wait=0 |
