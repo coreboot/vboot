@@ -73,10 +73,9 @@ static vb2_error_t vb2_read_p11_private_key(const char *key_info, struct vb2_pri
 		goto done;
 	}
 
-	struct pkcs11_key *p11_key = malloc(sizeof(struct pkcs11_key));
-	if (pkcs11_get_key(p11_slot_id, p11_label, p11_key) != VB2_SUCCESS) {
+	struct pkcs11_key *p11_key = pkcs11_get_key(p11_slot_id, p11_label);
+	if (!p11_key) {
 		VB2_DEBUG("Unable to get pkcs11 key\n");
-		free(p11_key);
 		goto done;
 	}
 
@@ -86,7 +85,7 @@ static vb2_error_t vb2_read_p11_private_key(const char *key_info, struct vb2_pri
 	key->hash_alg = pkcs11_get_hash_alg(p11_key);
 	if (key->sig_alg == VB2_SIG_INVALID || key->hash_alg == VB2_HASH_INVALID) {
 		VB2_DEBUG("Unable to get signature or hash algorithm\n");
-		free(p11_key);
+		pkcs11_free_key(p11_key);
 		goto done;
 	}
 	ret = VB2_SUCCESS;

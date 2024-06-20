@@ -16,6 +16,11 @@
 #include "vboot_host.h"
 #include "util_misc.h"
 
+struct pkcs11_key {
+	CK_OBJECT_HANDLE handle;
+	CK_SESSION_HANDLE session;
+};
+
 // We only maintain one global p11 module at a time.
 static CK_FUNCTION_LIST_PTR p11 = NULL;
 
@@ -114,18 +119,26 @@ vb2_error_t pkcs11_init(const char *pkcs11_lib)
 	return VB2_SUCCESS;
 }
 
-vb2_error_t pkcs11_get_key(int slot_id, char *label, struct pkcs11_key *p11_key)
+struct pkcs11_key *pkcs11_get_key(int slot_id, char *label)
 {
 	if (!p11) {
 		fprintf(stderr, "pkcs11 is not loaded\n");
-		return VB2_ERROR_UNKNOWN;
+		return NULL;
+	}
+
+	struct pkcs11_key *p11_key = malloc(sizeof(struct pkcs11_key));
+	if (!p11_key) {
+		fprintf(stderr, "Failed to allocate pkcs11 key\n");
+		return NULL;
 	}
 
 	CK_RV result = p11->C_OpenSession(slot_id, CKF_SERIAL_SESSION | CKF_RW_SESSION, NULL,
 					  NULL, &p11_key->session);
+
 	if (result != CKR_OK) {
 		fprintf(stderr, "Failed to open session with slot id %d\n", slot_id);
-		return VB2_ERROR_UNKNOWN;
+		free(p11_key);
+		return NULL;
 	}
 
 	/* Find the private key */
@@ -137,10 +150,11 @@ vb2_error_t pkcs11_get_key(int slot_id, char *label, struct pkcs11_key *p11_key)
 	if (pkcs11_find(p11_key->session, attributes, ARRAY_SIZE(attributes),
 			&p11_key->handle) != VB2_SUCCESS) {
 		fprintf(stderr, "Failed to find the key with label '%s'\n", label);
-		return VB2_ERROR_UNKNOWN;
+		pkcs11_free_key(p11_key);
+		return NULL;
 	}
 
-	return VB2_SUCCESS;
+	return p11_key;
 }
 
 enum vb2_hash_algorithm pkcs11_get_hash_alg(struct pkcs11_key *p11_key)
@@ -243,7 +257,7 @@ uint8_t *pkcs11_get_modulus(struct pkcs11_key *p11_key, uint32_t *sizeptr)
 }
 
 vb2_error_t pkcs11_sign(struct pkcs11_key *p11_key, enum vb2_hash_algorithm hash_alg,
-			const uint8_t *data, int data_size, uint8_t *sig, CK_ULONG sig_size)
+			const uint8_t *data, int data_size, uint8_t *sig, uint32_t sig_size)
 {
 	if (!p11) {
 		fprintf(stderr, "pkcs11 is not loaded\n");
@@ -273,8 +287,9 @@ vb2_error_t pkcs11_sign(struct pkcs11_key *p11_key, enum vb2_hash_algorithm hash
 		fprintf(stderr, "Failed to sign init\n");
 		return VB2_ERROR_UNKNOWN;
 	}
-	result =
-		p11->C_Sign(p11_key->session, (unsigned char *)data, data_size, sig, &sig_size);
+	CK_ULONG ck_sig_size = sig_size;
+	result = p11->C_Sign(p11_key->session, (unsigned char *)data, data_size, sig,
+			     &ck_sig_size);
 	if (result != CKR_OK) {
 		fprintf(stderr, "Failed to sign\n");
 		return VB2_ERROR_UNKNOWN;

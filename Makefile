@@ -299,7 +299,7 @@ ifeq ($(HAVE_NSS),1)
   CFLAGS += -DHAVE_NSS $(shell ${PKG_CONFIG} --cflags nss)
   # The LIBS is not needed because we only use the header.
 else
-  $(error Missing NSS. Please install libnss3-dev if it is not installed.)
+  $(warning Missing NSS. PKCS11 signing not supported. Install libnss3 to enable this feature.)
 endif
 
 # Get major version of openssl (e.g. version 3.0.5 -> "3")
@@ -509,11 +509,18 @@ UTILLIB_SRCS = \
 	host/lib/host_signature2.c \
 	host/lib/signature_digest.c \
 	host/lib/util_misc.c \
-	host/lib/host_p11.c \
 	host/lib21/host_common.c \
 	host/lib21/host_key.c \
 	host/lib21/host_misc.c \
 	host/lib21/host_signature.c
+
+ifeq ($(HAVE_NSS),1)
+UTILLIB_SRCS += \
+	host/lib/host_p11.c
+else
+UTILLIB_SRCS += \
+	host/lib/host_p11_stub.c
+endif
 
 UTILLIB_OBJS = ${UTILLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${UTILLIB_OBJS}
