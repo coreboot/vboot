@@ -811,6 +811,8 @@ static const struct GpioChipset chipsets_supported[] = {
 	{ "INTC1057:00", FindGpioChipOffsetByLabel },
 	/* INTC108x are for Meteor Lake */
 	{ "INTC1083:00", FindGpioChipOffsetByLabel },
+	/* INTC10Bx are for Panther Lake */
+	{ "INTC10BC:00", FindGpioChipOffsetByLabel },
 	/* INT3453 are for GLK */
 	{ "INT3453:00", FindGpioChipOffsetByLabel },
 	{ "INT3453:01", FindGpioChipOffsetByLabel },
