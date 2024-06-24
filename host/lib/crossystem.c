@@ -119,6 +119,21 @@ static int ReleaseCrossystemLock(int lock_fd)
 	return 0;
 }
 
+/* Check if system FW type is equivalent to a given name */
+static bool CheckFwType(const char *name)
+{
+	char fwtype_buf[VB_MAX_STRING_PROPERTY];
+	int fwtype_ret;
+
+	fwtype_ret = VbGetSystemPropertyString("mainfw_type",
+		fwtype_buf, sizeof(fwtype_buf));
+
+	if (fwtype_ret == 0 && !strcasecmp(fwtype_buf, name))
+		return true;
+
+	return false;
+}
+
 static struct vb2_context *get_fake_context(void)
 {
 	static uint8_t fake_workbuf[sizeof(struct vb2_shared_data) + 16]
@@ -444,7 +459,7 @@ int VbGetSystemPropertyInt(const char *name)
 	} else if (!strcasecmp(name,"disable_dev_request")) {
 		value = vb2_get_nv_storage(VB2_NV_DISABLE_DEV_REQUEST);
 	} else if (!strcasecmp(name,"clear_tpm_owner_request")) {
-		if (EXTERNAL_TPM_CLEAR_REQUEST) {
+		if (EXTERNAL_TPM_CLEAR_REQUEST && CheckFwType("nonchrome")) {
 			const char *const argv[] = {
 				TPM_CLEAR_REQUEST_EXEC_NAME,
 				NULL,
@@ -666,7 +681,7 @@ static int VbSetSystemPropertyIntInternal(const char *name, int value)
 	} else if (!strcasecmp(name,"disable_dev_request")) {
 		return vb2_set_nv_storage(VB2_NV_DISABLE_DEV_REQUEST, value);
 	} else if (!strcasecmp(name,"clear_tpm_owner_request")) {
-		if (EXTERNAL_TPM_CLEAR_REQUEST) {
+		if (EXTERNAL_TPM_CLEAR_REQUEST && CheckFwType("nonchrome")) {
 			const char *const argv[] = {
 				TPM_CLEAR_REQUEST_EXEC_NAME,
 				value ? "1" : "0",
