@@ -250,12 +250,8 @@ static const char *decide_rw_target(struct updater_config *cfg,
 static int set_try_cookies(struct updater_config *cfg, const char *target,
 			   int has_update)
 {
-	int tries = 8;
+	int tries = 10;
 	const char *slot;
-
-	/* EC Software Sync needs few more reboots. */
-	if (cfg->ec_image.data)
-		tries += 2;
 
 	if (!has_update)
 		tries = 0;
