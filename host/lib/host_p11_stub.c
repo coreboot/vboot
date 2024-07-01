@@ -3,6 +3,7 @@
  * found in the LICENSE file.
  */
 
+#include "2common.h"
 #include "host_p11.h"
 
 #define MISSING_PKCS11                                                                         \
