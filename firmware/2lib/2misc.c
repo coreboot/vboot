@@ -494,7 +494,17 @@ void vb2api_clear_recovery(struct vb2_context *ctx)
 
 int vb2api_need_reboot_for_display(struct vb2_context *ctx)
 {
-	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
+	/*
+	 * Hack: Display is always initialized for Rex, but coreboot doesn't
+	 * set VB2_CONTEXT_DISPLAY_INIT correctly. Therefore vboot doesn't know
+	 * display is available in normal mode. To save us 2 unnecessary reboots
+	 * before and after EC sync, explicitly fix the ctx and sd flags here.
+	 */
+	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	ctx->flags |= VB2_CONTEXT_DISPLAY_INIT;
+	sd->flags |= VB2_SD_FLAG_DISPLAY_AVAILABLE;
+
+	if (!(sd->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {
 		VB2_DEBUG("Need reboot to initialize display\n");
 		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 		return 1;
