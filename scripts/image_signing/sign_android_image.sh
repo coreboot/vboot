@@ -135,8 +135,6 @@ build flavor '${flavor_prop}'."
       # apksigner rotate --out media.lineage --old-signer --key old-media.pk8
       # --cert old-media.x509.pem --new-signer --key new-media.pk8 --cert
       # new-media.x509.pem
-      #
-      # TODO(b/132818552): disable v1 signing once a check is removed.
 
       local extra_flags
       local lineage_file="${key_dir}/${keyname}.lineage"
@@ -164,8 +162,10 @@ build flavor '${flavor_prop}'."
           --in "${temp_zipaligned_apk}" --out "${signed_apk}"  \
           ${extra_flags}
       else
+        # b/349826228: explicitly disabling v1/v2 signing due to lineage error
         apksigner sign --key "${key_dir}/${keyname}.pk8" \
           --cert "${key_dir}/${keyname}.x509.pem" \
+          --v1-signing-enabled false --v2-signing-enabled false \
           --in "${temp_zipaligned_apk}" --out "${signed_apk}" \
           ${extra_flags}
       fi
