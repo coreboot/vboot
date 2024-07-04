@@ -30,6 +30,7 @@ static vb2_error_t ec_vboot_done_retval;
 static int ec_vboot_done_calls;
 
 static int mock_display_available;
+static int need_display_called;
 static uint8_t mock_ec_ro_hash[32];
 static uint8_t mock_ec_rw_hash[32];
 static uint8_t hmir[32];
@@ -58,6 +59,7 @@ static void ResetMocks(void)
 	memset(&gbb, 0, sizeof(gbb));
 
 	mock_display_available = 1;
+	need_display_called = 0;
 
 	ec_ro_updated = 0;
 	ec_rw_updated = 0;
@@ -106,6 +108,12 @@ static void ResetMocks(void)
 struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 {
 	return &gbb;
+}
+
+int vb2api_need_reboot_for_display(struct vb2_context *c)
+{
+	need_display_called = 1;
+	return !mock_display_available;
 }
 
 vb2_error_t vb2ex_ec_running_rw(int *in_rw)
@@ -161,8 +169,9 @@ vb2_error_t vb2ex_ec_update_image(enum vb2_firmware_selection select)
 	if (update_retval)
 		return update_retval;
 
-	if (!mock_display_available)
-		return VB2_REQUEST_REBOOT;
+	if (ctx->flags & VB2_CONTEXT_EC_SYNC_SLOW)
+		if (vb2api_need_reboot_for_display(ctx))
+			return VB2_REQUEST_REBOOT;
 
 	if (select == VB_SELECT_FIRMWARE_READONLY) {
 		ec_ro_updated = 1;
@@ -335,6 +344,22 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
 
+	/* Hexp != Hmir == Heff (display not available) */
+	ResetMocks();
+	hmir[0] = 43;
+	vb2_secdata_kernel_set_ec_hash(ctx, hmir);
+	ec_run_image = 1;
+	mock_ec_rw_hash[0] = 43;
+	mock_display_available = 0;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO,
+		   0, "Reboot after synching Hmir (display not available)");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 1, "  ec run image");
+	TEST_TRUE(need_display_called, "  need display");
+
 	/* Hexp == Hmir != Heff */
 	ResetMocks();
 	ec_run_image = 0;
@@ -448,24 +473,28 @@ static void VbSoftwareSyncTest(void)
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
 	mock_display_available = 0;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	test_ssync(VB2_REQUEST_REBOOT, 0,
 		   "Reboot for display - ec rw");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
+	TEST_TRUE(need_display_called, "  need display");
 
 	/* Display not available - RO */
 	ResetMocks();
 	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	mock_ec_ro_hash[0]++;
 	mock_display_available = 0;
+	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
 	test_ssync(VB2_REQUEST_REBOOT, 0,
 		   "Reboot for display - ec ro");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
+	TEST_TRUE(need_display_called, "  need display");
 
 	/* RW cases, no update */
 	ResetMocks();
