@@ -8,6 +8,7 @@
 #include "2api.h"
 #include "2common.h"
 #include "2misc.h"
+#include "2nvstorage.h"
 
 /**
  * Determine if we are allowed to update auxfw.
@@ -61,9 +62,16 @@ vb2_error_t vb2api_auxfw_sync(struct vb2_context *ctx)
 		VB2_DEBUG("Updating auxfw\n");
 		VB2_TRY(vb2ex_auxfw_update(), ctx, VB2_RECOVERY_AUXFW_UPDATE);
 		/*
-		 * auxfw update is applied successfully. Request EC reboot to
-		 * RO, so that the chips that had FW update get reset to a
-		 * clean state.
+		 * EC sync (if any) happens before auxfw sync. Now that auxfw
+		 * sync is applied successfully, we are almost sure there will
+		 * be no EC/auxfw sync in the next boot. Therefore, clear
+		 * DISPLAY_REQUEST in advance so that the device can boot to
+		 * kernel in normal mode where DISPLAY_REQUEST is not allowed.
+		 */
+		vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 0);
+		/*
+		 * Request EC reboot to RO, so that the chips that had FW update
+		 * get reset to a clean state.
 		 */
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
