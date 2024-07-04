@@ -287,6 +287,10 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	 */
 	if ((sd->flags & SYNC_FLAG(VB_SELECT_FIRMWARE_EC_ACTIVE)) &&
 	    (sd->flags & VB2_SD_FLAG_ECSYNC_EC_IN_RW) && !EC_EFS) {
+		if (ctx->flags & VB2_CONTEXT_EC_SYNC_SLOW) {
+			/* Ignore the return value. */
+			vb2api_need_reboot_for_display(ctx);
+		}
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
 	}
 

@@ -492,6 +492,7 @@ void vb2api_clear_recovery(struct vb2_context *ctx)
 	}
 }
 
+test_mockable
 int vb2api_need_reboot_for_display(struct vb2_context *ctx)
 {
 	if (!(vb2_get_sd(ctx)->flags & VB2_SD_FLAG_DISPLAY_AVAILABLE)) {

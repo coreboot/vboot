@@ -107,9 +107,9 @@ enum vb2_context_flags {
 	/*
 	 * EC software sync is slow to update; warning screen should be
 	 * displayed.  Caller may set this flag at any time before calling
-	 * vb2api_kernel_phase2().  Deprecated as part of chromium:1038259.
+	 * vb2api_kernel_phase2().
 	 */
-	VB2_CONTEXT_DEPRECATED_EC_SYNC_SLOW = (1 << 16),
+	VB2_CONTEXT_EC_SYNC_SLOW = (1 << 16),
 
 	/*
 	 * EC firmware supports early firmware selection; two EC images exist,
