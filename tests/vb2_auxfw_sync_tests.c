@@ -145,11 +145,14 @@ static void VbSoftwareSyncTest(void)
 		     "Slow auxfw update needed - reboot for display");
 
 	ResetMocks();
+	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
 	auxfw_mock_severity = VB2_AUXFW_SLOW_UPDATE;
 	test_auxsync(VB2_REQUEST_REBOOT_EC_TO_RO, 0,
 		     "Slow auxfw update needed");
 	TEST_EQ(auxfw_update_req, 1, "  auxfw update requested");
 	TEST_EQ(auxfw_protected, 0, "  auxfw protected");
+	TEST_FALSE(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST),
+		   "  display request cleared");
 
 	ResetMocks();
 	auxfw_mock_severity = VB2_AUXFW_FAST_UPDATE;
