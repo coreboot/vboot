@@ -409,6 +409,11 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 		(struct vb2_keyblock *)state->area[vblock_c].buf;
 	int vblock_valid = 0;
 
+	if (keyblock->magic[0] == 0xff) {
+		/* Keyblock does not exist yet. Skip directly to creating a new one. */
+		goto end;
+	}
+
 	if (vb2_verify_keyblock_hash(keyblock, state->area[vblock_c].len,
 				     &wb) != VB2_SUCCESS) {
 		WARN("%s keyblock is invalid.\n", vblock_name);
