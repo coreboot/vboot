@@ -60,7 +60,7 @@ static uint8_t *ReadFile(const char *filename, uint64_t *size) {
     return NULL;
   }
 
-  if(1 != fread(buf, *size, 1, f)) {
+  if (1 != fread(buf, *size, 1, f)) {
     fclose(f);
     free(buf);
     return NULL;

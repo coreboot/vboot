@@ -11,7 +11,7 @@
 vb2_error_t vb2_check_keyblock(const struct vb2_keyblock *block, uint32_t size,
 			       const struct vb2_signature *sig)
 {
-	if(size < sizeof(*block)) {
+	if (size < sizeof(*block)) {
 		VB2_DEBUG("Not enough space for keyblock header.\n");
 		return VB2_ERROR_KEYBLOCK_TOO_SMALL_FOR_HEADER;
 	}
@@ -95,7 +95,7 @@ vb2_error_t vb2_verify_fw_preamble(struct vb2_fw_preamble *preamble,
 	VB2_DEBUG("Verifying preamble.\n");
 
 	/* Validity checks before attempting signature of data */
-	if(size < sizeof(*preamble)) {
+	if (size < sizeof(*preamble)) {
 		VB2_DEBUG("Not enough data for preamble header\n");
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;
 	}
@@ -204,7 +204,7 @@ vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 	VB2_DEBUG("Verifying kernel preamble.\n");
 
 	/* Make sure it's even safe to look at the struct */
-	if(size < min_size) {
+	if (size < min_size) {
 		VB2_DEBUG("Not enough data for preamble header.\n");
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;
 	}
@@ -218,7 +218,7 @@ vb2_error_t vb2_verify_kernel_preamble(struct vb2_kernel_preamble *preamble,
 		min_size = EXPECTED_VB2_KERNEL_PREAMBLE_2_2_SIZE;
 	else if (preamble->header_version_minor == 1)
 		min_size = EXPECTED_VB2_KERNEL_PREAMBLE_2_1_SIZE;
-	if(preamble->preamble_size < min_size) {
+	if (preamble->preamble_size < min_size) {
 		VB2_DEBUG("Preamble size too small for header.\n");
 		return VB2_ERROR_PREAMBLE_TOO_SMALL_FOR_HEADER;
 	}

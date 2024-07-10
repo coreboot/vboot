@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 		fprintf(stderr,
 			"where <algorithm> depends on the signature algorithm"
 			" used:\n");
-		for(i = 0; i < VB2_ALG_COUNT; i++)
+		for (i = 0; i < VB2_ALG_COUNT; i++)
 			fprintf(stderr, "\t%d for %s\n", i,
 				vb2_get_crypto_algorithm_name(i));
 		return -1;

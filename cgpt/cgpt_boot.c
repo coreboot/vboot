@@ -43,7 +43,7 @@ int CgptGetBootPartitionNumber(CgptBootParams *params) {
 
   int numEntries = GetNumberOfEntries(&drive);
   int i;
-  for(i = 0; i < numEntries; i++) {
+  for (i = 0; i < numEntries; i++) {
       GptEntry *entry = GetEntry(&drive.gpt, ANY_VALID, i);
 
       if (GuidEqual(&entry->unique, &drive.pmbr.boot_guid)) {

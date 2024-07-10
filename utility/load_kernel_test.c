@@ -205,7 +205,7 @@ int main(int argc, char* argv[])
 
 	/* Allocate a buffer for the kernel */
 	lkp.kernel_buffer = malloc(KERNEL_BUFFER_SIZE);
-	if(!lkp.kernel_buffer) {
+	if (!lkp.kernel_buffer) {
 		fprintf(stderr, "Unable to allocate kernel buffer.\n");
 		return 1;
 	}

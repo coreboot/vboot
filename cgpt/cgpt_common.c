@@ -263,7 +263,7 @@ static int GptSave(struct drive *drive) {
   // Only start writing secondary GPT if primary was written correctly.
   if (!errors && !(drive->gpt.ignored & MASK_SECONDARY)) {
     if (drive->gpt.modified & GPT_MODIFIED_HEADER2) {
-      if(CGPT_OK != Save(drive, drive->gpt.secondary_header,
+      if (CGPT_OK != Save(drive, drive->gpt.secondary_header,
                          drive->gpt.gpt_drive_sectors - GPT_PMBR_SECTORS,
                          drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
         errors++;
@@ -1071,7 +1071,7 @@ int CgptGetNumNonEmptyPartitions(CgptShowParams *params) {
   params->num_partitions = 0;
   int numEntries = GetNumberOfEntries(&drive);
   int i;
-  for(i = 0; i < numEntries; i++) {
+  for (i = 0; i < numEntries; i++) {
       GptEntry *entry = GetEntry(&drive.gpt, ANY_VALID, i);
       if (GuidIsZero(&entry->type))
         continue;

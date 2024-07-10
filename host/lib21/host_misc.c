@@ -49,7 +49,7 @@ vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
 	}
 	buf[size] = '\0';
 
-	if(1 != fread(buf, size, 1, f)) {
+	if (1 != fread(buf, size, 1, f)) {
 		VB2_DEBUG("Unable to read file %s\n", filename);
 		fclose(f);
 		free(buf);

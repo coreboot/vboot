@@ -47,7 +47,7 @@ uint8_t* ReadFile(const char* filename, uint64_t* sizeptr)
 		return NULL;
 	}
 
-	if(1 != fread(buf, size, 1, f)) {
+	if (1 != fread(buf, size, 1, f)) {
 		fprintf(stderr, "Unable to read from file %s\n", filename);
 		fclose(f);
 		free(buf);
