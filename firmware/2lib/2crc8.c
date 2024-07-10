@@ -20,7 +20,7 @@ uint8_t vb2_crc8(const void *vptr, uint32_t size)
 	   but for only a few bytes it isn't worth the code size. */
 	for (j = size; j; j--, data++) {
 		crc ^= (*data << 8);
-		for(i = 8; i; i--) {
+		for (i = 8; i; i--) {
 			if (crc & 0x8000)
 				crc ^= (0x1070 << 3);
 			crc <<= 1;

@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 
 	uint32_t signature_digest_len = digest_size + digestinfo_size;
 	signature_digest = SignatureDigest(buf, len, algorithm);
-	if(signature_digest &&
+	if (signature_digest &&
 	   fwrite(signature_digest, signature_digest_len, 1, stdout) == 1)
 		error_code = 0;
 

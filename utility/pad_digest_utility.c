@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	}
 
 	padded_digest = PrependDigestInfo(hash_alg, digest);
-	if(padded_digest &&
+	if (padded_digest &&
 	   fwrite(padded_digest, padded_digest_len, 1, stdout) == 1)
 		error_code = 0;
 

@@ -27,7 +27,7 @@ vb2_error_t DigestFile(char *input_file, enum vb2_hash_algorithm alg,
 	uint8_t data[VB2_SHA1_BLOCK_SIZE];
 	struct vb2_digest_context ctx;
 
-	if( (input_fd = open(input_file, O_RDONLY)) == -1 ) {
+	if ((input_fd = open(input_file, O_RDONLY)) == -1) {
 		fprintf(stderr, "Couldn't open %s\n", input_file);
 		return VB2_ERROR_UNKNOWN;
 	}

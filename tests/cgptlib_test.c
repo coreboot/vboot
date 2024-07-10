@@ -832,7 +832,7 @@ static int OverlappedPartitionTest(void) {
 	for (i = 0; i < ARRAY_SIZE(cases); ++i) {
 		BuildTestGptData(gpt);
 		ZeroEntries(gpt);
-		for(j = 0; j < ARRAY_SIZE(cases[0].entries); ++j) {
+		for (j = 0; j < ARRAY_SIZE(cases[0].entries); ++j) {
 			if (!cases[i].entries[j].starting_lba)
 				break;
 
@@ -1492,7 +1492,7 @@ static int DuplicateUniqueGuidTest(void)
 	for (i = 0; i < ARRAY_SIZE(cases); ++i) {
 		BuildTestGptData(gpt);
 		ZeroEntries(gpt);
-		for(j = 0; j < ARRAY_SIZE(cases[0].entries); ++j) {
+		for (j = 0; j < ARRAY_SIZE(cases[0].entries); ++j) {
 			if (!cases[i].entries[j].starting_lba)
 				break;
 

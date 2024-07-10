@@ -928,7 +928,7 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 			VB2_DEBUG("Same kernel version\n");
 			break;
 		}
-	} /* while(GptNextKernelEntry) */
+	} /* while (GptNextKernelEntry) */
 
  gpt_done:
 	/* Write and free GPT data */

@@ -194,7 +194,7 @@ static void sha1_transform(struct vb2_sha1_context *ctx)
 	uint8_t *p = ctx->buf;
 	int t;
 
-	for(t = 0; t < 16; ++t) {
+	for (t = 0; t < 16; ++t) {
 		uint32_t tmp = (uint32_t)*p++ << 24;
 		tmp |= *p++ << 16;
 		tmp |= *p++ << 8;
@@ -202,7 +202,7 @@ static void sha1_transform(struct vb2_sha1_context *ctx)
 		W[t] = tmp;
 	}
 
-	for(; t < 80; t++) {
+	for (; t < 80; t++) {
 		W[t] = rol(1,W[t-3] ^ W[t-8] ^ W[t-14] ^ W[t-16]);
 	}
 
@@ -212,7 +212,7 @@ static void sha1_transform(struct vb2_sha1_context *ctx)
 	D = ctx->state[3];
 	E = ctx->state[4];
 
-	for(t = 0; t < 80; t++) {
+	for (t = 0; t < 80; t++) {
 		uint32_t tmp = rol(5,A) + E + W[t];
 
 		if (t < 20)

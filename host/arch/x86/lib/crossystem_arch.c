@@ -371,7 +371,7 @@ static uint8_t* VbGetBuffer(const char* filename, int* buffer_size)
 			if (buffer_size)
 				*buffer_size = parsed_size;
 		}
-	} while(0);
+	} while (0);
 
 	/* wrap up */
 	if (f)
@@ -575,7 +575,7 @@ static int FindGpioChipOffset(unsigned *gpio_num, unsigned *offset,
 		return 0;
 	}
 
-	while(0 != (ent = readdir(dir))) {
+	while (0 != (ent = readdir(dir))) {
 		if (1 == sscanf(ent->d_name, "gpiochip%u", offset)) {
 			match++;
 		}
@@ -605,7 +605,7 @@ static int FindGpioChipOffsetByLabel(unsigned *gpio_num, unsigned *offset,
 		return 0;
 	}
 
-	while(0 != (ent = readdir(dir))) {
+	while (0 != (ent = readdir(dir))) {
 		if (1 == sscanf(ent->d_name, "gpiochip%u",
 				&controller_offset)) {
 			/*
@@ -655,7 +655,7 @@ static int FindGpioChipOffsetByNumber(unsigned *gpio_num, unsigned *offset,
 			break;
 		}
 		data++;
-	} while(1);
+	} while (1);
 
 	if (data->uid == 0) {
 		return 0;
@@ -666,7 +666,7 @@ static int FindGpioChipOffsetByNumber(unsigned *gpio_num, unsigned *offset,
 		return 0;
 	}
 
-	while(0 != (ent = readdir(dir))) {
+	while (0 != (ent = readdir(dir))) {
 		/* For every gpiochip entry determine uid. */
 		if (1 == sscanf(ent->d_name, "gpiochip%u", offset)) {
 			char uid_file[128];

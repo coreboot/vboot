@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 	ClockTimerState ct;
 
 	/* Iterate through all the hash functions. */
-	for(i = VB2_HASH_SHA1; i < VB2_HASH_ALG_COUNT; i++) {
+	for (i = VB2_HASH_SHA1; i < VB2_HASH_ALG_COUNT; i++) {
 		StartTimer(&ct);
 		vb2_hash_calculate(false, buffer, TEST_BUFFER_SIZE, i, &hash);
 		StopTimer(&ct);
