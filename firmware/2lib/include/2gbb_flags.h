@@ -93,6 +93,9 @@ enum vb2_gbb_flag {
 
 	/* Enable USB Device Controller */
 	VB2_GBB_FLAG_ENABLE_UDC = 1 << 16,
+
+	/* Enforce CSE SYNC, even if current CSE is same as CBFS CSE */
+	VB2_GBB_FLAG_FORCE_CSE_SYNC = 1 << 17,
 };
 
 vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
