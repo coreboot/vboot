@@ -156,9 +156,9 @@ vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
 		*description =
 			"Allow booting Legacy OSes even if dev_boot_altfw=0.";
 		break;
-	case VB2_GBB_FLAG_RUNNING_FAFT:
-		*name = "VB2_GBB_FLAG_RUNNING_FAFT";
-		*description = "Currently running FAFT tests.";
+	case VB2_GBB_FLAG_DEPRECATED_RUNNING_FAFT:
+		*name = "VB2_GBB_FLAG_DEPRECATED_RUNNING_FAFT";
+		*description = "Deprecated, do not use.";
 		break;
 	case VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC:
 		*name = "VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC";
