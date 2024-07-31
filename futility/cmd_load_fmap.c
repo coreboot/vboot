@@ -75,8 +75,8 @@ static int copy_to_area(const char *file, uint8_t *buf,
 				area, file, strerror(errno));
 		retval = 1;
 	} else if (n < len) {
-		ERROR("Warning on area %s: only read %zu "
-			"(not %d) from %s\n", area, n, len, file);
+		WARN("area %s: only read %zu (not %d) from %s\n",
+				area, n, len, file);
 	}
 
 	if (fclose(fp)) {
