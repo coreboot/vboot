@@ -76,8 +76,13 @@ swap_ecrw() {
       -c none -f "${ecrw_version_file}" -n "${CBFS_ECRW_VERSION_NAME}"
   done
 
+  local keyset
+  for keyset in /usr/share/vboot/devkeys "${SCRIPT_BASE}/../../tests/devkeys"; do
+    [[ -d "${keyset}" ]] && break
+  done
+
   # 'futility sign' will call 'cbfstool truncate' if needed
-  futility sign "${ap_file}"
+  futility sign "${ap_file}" --keyset "${keyset}"
 
   ecrw_version=$(futility update --manifest -e "${ec_file}" \
     | jq -r '.default.ec.versions.rw')
