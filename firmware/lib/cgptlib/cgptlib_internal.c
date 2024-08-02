@@ -34,7 +34,8 @@ char *JoinStr(const char *a, const char *b)
 		return NULL;
 
 	strcpy(ret, a);
-	return strcat(ret, b);
+	strcpy(&ret[strlen(a)], b);
+	return ret;
 }
 
 int UTF8ToUCS2(const uint8_t *utf8_data,
