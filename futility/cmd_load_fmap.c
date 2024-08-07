@@ -75,8 +75,10 @@ static int copy_to_area(const char *file, uint8_t *buf,
 				area, file, strerror(errno));
 		retval = 1;
 	} else if (n < len) {
-		WARN("area %s: only read %zu (not %d) from %s\n",
-				area, n, len, file);
+		WARN("area %s: %s size (%zu) smaller than area size %u; "
+		     "erasing remaining data to 0xff\n",
+		     area, file, n, len);
+		memset(buf + n, 0xff, len - n);
 	}
 
 	if (fclose(fp)) {
