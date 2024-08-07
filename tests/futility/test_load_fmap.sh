@@ -38,6 +38,18 @@ for a in "${AREAS[@]}"; do
   cmp "$a" "$a.rand"
 done
 
+# File size smaller than area size
+cp -f "${IN}" "${BIOS}"
+"${FUTILITY}" dump_fmap -x "${BIOS}" VBLOCK_A
+cp -f VBLOCK_A VBLOCK_A.truncated
+truncate --size=-5 VBLOCK_A.truncated
+cp -f VBLOCK_A.truncated VBLOCK_A.new
+printf '\xFF%.s' {1..5} >> VBLOCK_A.new
+cmp -s VBLOCK_A.new VBLOCK_A && error "VBLOCK_A.new is the same as VBLOCK_A"
+"${FUTILITY}" load_fmap "${BIOS}" VBLOCK_A:VBLOCK_A.truncated
+"${FUTILITY}" dump_fmap -x "${BIOS}" VBLOCK_A:VBLOCK_A.readback
+cmp VBLOCK_A.readback VBLOCK_A.new
+
 # cleanup
 rm -f "${TMP}"* "${AREAS[@]}" ./*.rand ./*.good
 exit 0
