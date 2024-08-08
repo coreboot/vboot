@@ -34,10 +34,6 @@ enum vb2_load_partition_flags {
 /* Bytes to read at start of the boot/init_boot/vendor_boot partitions */
 #define BOOT_HDR_GKI_SIZE 4096
 
-/* Minimum context work buffer size needed for vb2_load_partition() */
-#define VB2_LOAD_PARTITION_WORKBUF_BYTES	\
-	(VB2_VERIFY_KERNEL_PREAMBLE_WORKBUF_BYTES + KBUF_SIZE)
-
 #define LOWEST_TPM_VERSION 0xffffffff
 
 /**
