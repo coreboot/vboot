@@ -19,6 +19,28 @@
 #define GPT_ENT_NAME_ANDROID_A_SUFFIX "_a"
 #define GPT_ENT_NAME_ANDROID_B_SUFFIX "_b"
 
+/* Android BCB (boot control block) commands */
+enum vb2_boot_command {
+	VB2_BOOT_CMD_NORMAL_BOOT,
+	VB2_BOOT_CMD_RECOVERY_BOOT,
+	VB2_BOOT_CMD_BOOTLOADER_BOOT,
+};
+
+/* BCB structure from Android recovery bootloader_message.h */
+struct bootloader_message {
+	char command[32];
+	char status[32];
+	char recovery[768];
+	char stage[32];
+	char reserved[1184];
+};
+_Static_assert(sizeof(struct bootloader_message) == 2048,
+	       "bootloader_message size is incorrect");
+
+/* Possible values of BCB command */
+#define BCB_CMD_BOOTONCE_BOOTLOADER "bootonce-bootloader"
+#define BCB_CMD_BOOT_RECOVERY "boot-recovery"
+
 static vb2_error_t vb2_map_libavb_errors(AvbSlotVerifyResult avb_error)
 {
 	/* Map AVB error into VB2 */
@@ -44,6 +66,44 @@ static vb2_error_t vb2_map_libavb_errors(AvbSlotVerifyResult avb_error)
 	default:
 		return VB2_ERROR_AVB_ERROR_VERIFICATION;
 	}
+}
+
+static enum vb2_boot_command bcb_command(AvbOps *ops)
+{
+	struct bootloader_message bcb;
+	AvbIOResult io_ret;
+	size_t num_bytes_read;
+	enum vb2_boot_command cmd;
+
+	io_ret = ops->read_from_partition(ops,
+					  GptPartitionNames[GPT_ANDROID_MISC],
+					  0,
+					  sizeof(bcb),
+					  &bcb,
+					  &num_bytes_read);
+	if (io_ret != AVB_IO_RESULT_OK || num_bytes_read != sizeof(bcb)) {
+		/*
+		 * TODO(b/349304841): Handle IO errors, for now just try to boot
+		 *                    normally
+		 */
+		VB2_DEBUG("Cannot read misc partition, err: %d\n", io_ret);
+		return VB2_BOOT_CMD_NORMAL_BOOT;
+	}
+
+	/* BCB command field is for the bootloader */
+	if (!strcmp(bcb.command, BCB_CMD_BOOT_RECOVERY)) {
+		cmd = VB2_BOOT_CMD_RECOVERY_BOOT;
+	} else if (!strcmp(bcb.command, BCB_CMD_BOOTONCE_BOOTLOADER)) {
+		cmd = VB2_BOOT_CMD_BOOTLOADER_BOOT;
+	} else {
+		/* If empty or unknown command, just boot normally */
+		if (bcb.command[0] != '\0')
+			VB2_DEBUG("Unknown boot command \"%.*s\". Use normal boot.\n",
+				  (int)sizeof(bcb.command), bcb.command);
+		cmd = VB2_BOOT_CMD_NORMAL_BOOT;
+	}
+
+	return cmd;
 }
 
 /*
@@ -83,13 +143,124 @@ static vb2_error_t save_bootconfig(struct vendor_boot_img_hdr_v4 *vendor_hdr,
 	return VB2_SUCCESS;
 }
 
+static bool gki_is_recovery_boot(enum vb2_boot_command boot_command)
+{
+	switch (boot_command) {
+	case VB2_BOOT_CMD_NORMAL_BOOT:
+		return false;
+
+	case VB2_BOOT_CMD_BOOTLOADER_BOOT:
+		/*
+		 * TODO(b/358088653): We should enter fastboot mode and clear
+		 * BCB command in misc partition. For now ignore that and boot
+		 * to recovery where fastbootd should be available.
+		 */
+		return true;
+
+	case VB2_BOOT_CMD_RECOVERY_BOOT:
+		return true;
+	}
+
+	return false;
+}
+
+static bool gki_ramdisk_fragment_needed(struct vendor_ramdisk_table_entry_v4 *fragment,
+					bool recovery_boot)
+{
+	/* Ignore all other properties except ramdisk type */
+	switch (fragment->ramdisk_type) {
+	case VENDOR_RAMDISK_TYPE_PLATFORM:
+	case VENDOR_RAMDISK_TYPE_DLKM:
+		return true;
+
+	case VENDOR_RAMDISK_TYPE_RECOVERY:
+		return recovery_boot;
+
+	default:
+		printf("Unknown ramdisk type 0x%x\n", fragment->ramdisk_type);
+		return false;
+	}
+}
+
+/*
+ * This function removes unnecessary ramdisks from ramdisk table, concatenates rest of
+ * them and returns start and end of new ramdisk.
+ */
+static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor_hdr,
+					   size_t total_size,
+					   bool recovery_boot,
+					   uint8_t **vendor_ramdisk,
+					   uint8_t **vendor_ramdisk_end)
+{
+	uint32_t ramdisk_offset;
+	uint32_t ramdisk_table_offset;
+	uint32_t ramdisk_table_size = vendor_hdr->vendor_ramdisk_table_size;
+	uint32_t ramdisk_table_entry_size = vendor_hdr->vendor_ramdisk_table_entry_size;
+	uint32_t ramdisk_table_entry_num = vendor_hdr->vendor_ramdisk_table_entry_num;
+	uint32_t page_size = vendor_hdr->page_size;
+	uintptr_t fragment_ptr;
+
+	/* Calculate address offset of vendor_ramdisk section on vendor_boot partition */
+	ramdisk_offset = VB2_ALIGN_UP(sizeof(struct vendor_boot_img_hdr_v4), page_size);
+	ramdisk_table_offset = ramdisk_offset +
+		VB2_ALIGN_UP(vendor_hdr->vendor_ramdisk_size, page_size) +
+		VB2_ALIGN_UP(vendor_hdr->dtb_size, page_size);
+
+	/* Check if vendor ramdisk table is correct */
+	if (ramdisk_offset > total_size ||
+	    ramdisk_table_offset > total_size ||
+	    ramdisk_table_entry_size < sizeof(struct vendor_ramdisk_table_entry_v4) ||
+	    total_size - ramdisk_offset < vendor_hdr->vendor_ramdisk_size ||
+	    total_size - ramdisk_table_offset < ramdisk_table_size ||
+	    ramdisk_table_size < (ramdisk_table_entry_num * ramdisk_table_entry_size)) {
+		VB2_DEBUG("Broken 'vendor_boot' image\n");
+		return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
+	}
+
+	*vendor_ramdisk = (uint8_t *)vendor_hdr + ramdisk_offset;
+	*vendor_ramdisk_end = *vendor_ramdisk;
+	fragment_ptr = (uintptr_t)vendor_hdr + ramdisk_table_offset;
+	/* Go through all ramdisk fragments and keep only the required ones */
+	for (int i = 0; i < ramdisk_table_entry_num;
+	    fragment_ptr += ramdisk_table_entry_size, i++) {
+		struct vendor_ramdisk_table_entry_v4 *fragment;
+		uint8_t *fragment_src;
+
+		fragment = (struct vendor_ramdisk_table_entry_v4 *)fragment_ptr;
+		if (!gki_ramdisk_fragment_needed(fragment, recovery_boot))
+			continue;
+
+		uint32_t fragment_size = fragment->ramdisk_size;
+		uint32_t fragment_offset = fragment->ramdisk_offset;
+
+		if (fragment_offset > vendor_hdr->vendor_ramdisk_size ||
+		    vendor_hdr->vendor_ramdisk_size - fragment_offset < fragment_size) {
+			VB2_DEBUG("Incorrect fragment - offset:%x size:%x, ramdisk_size: %x\n",
+				  fragment_offset, fragment_size,
+				  vendor_hdr->vendor_ramdisk_size);
+		}
+		fragment_src = *vendor_ramdisk + fragment_offset;
+		if (*vendor_ramdisk_end != fragment_src)
+			/*
+			 * A fragment was skipped before, we need to move current one
+			 * at the correct place.
+			 */
+			memmove(*vendor_ramdisk_end, fragment_src, fragment_size);
+
+		/* Update location of the end of vendor ramdisk */
+		*vendor_ramdisk_end += fragment_size;
+	}
+
+	return VB2_SUCCESS;
+}
 
 /*
  * This function validates the partitions magic numbers and move them into place requested
  * from linux.
  */
 static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
-					struct vb2_kernel_params *params)
+					struct vb2_kernel_params *params,
+					bool recovery_boot)
 {
 	struct vendor_boot_img_hdr_v4 *vendor_hdr;
 	struct boot_img_hdr_v4 *init_hdr;
@@ -114,6 +285,11 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	/* Save bootconfig for depthcharge, it can be overwritten when ramdisk are moved */
 	VB2_TRY(save_bootconfig(vendor_hdr, vendor_boot_size, params));
 
+	/* Remove unused ramdisks */
+	VB2_TRY(prepare_vendor_ramdisks(vendor_hdr, vendor_boot_size, recovery_boot,
+					&params->ramdisk, &vendor_ramdisk_end));
+	params->ramdisk_size = vendor_ramdisk_end - params->ramdisk;
+
 	/* Validate init_boot partition */
 	if (init_boot_size < BOOT_HEADER_SIZE ||
 	    init_boot_size - BOOT_HEADER_SIZE < init_hdr->ramdisk_size ||
@@ -137,9 +313,6 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	 * ramdisk (from init_boot) overlaid on the vendor ramdisk (from
 	 * vendor_boot) file structure.
 	 */
-	vendor_ramdisk_end = (uint8_t *)vendor_hdr +
-		VB2_ALIGN_UP(sizeof(*vendor_hdr), vendor_hdr->page_size) +
-		vendor_hdr->vendor_ramdisk_size;
 	VB2_ASSERT(vendor_ramdisk_end < init_boot_ramdisk);
 	memmove(vendor_ramdisk_end, init_boot_ramdisk, init_boot_ramdisk_size);
 	params->ramdisk_size += init_boot_ramdisk_size;
@@ -209,12 +382,17 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	if (rv != VB2_SUCCESS)
 		goto out;
 
+	/* Check "misc" partition for boot type */
+	enum vb2_boot_command boot_command = bcb_command(avb_ops);
+	bool recovery_boot = gki_is_recovery_boot(boot_command);
+
 	/*
 	 * Before booting we need to rearrange buffers with partition data, which includes:
 	 * - save bootconfig in separate buffer, so depthcharge can modify it
+	 * - remove unused ramdisks depending on boot type (normal/recovery)
 	 * - concatenate ramdisks from vendor_boot & init_boot partitions
 	 */
-	rv = rearrange_partitions(avb_ops, params);
+	rv = rearrange_partitions(avb_ops, params, recovery_boot);
 
 out:
 	/* No need for slot data */
