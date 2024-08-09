@@ -593,6 +593,13 @@ vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx);
  */
 vb2_error_t vb2api_kernel_finalize(struct vb2_context *ctx);
 
+/* Android BCB commands */
+enum vb2_boot_command {
+	VB2_BOOT_CMD_NORMAL_BOOT = 0,
+	VB2_BOOT_CMD_RECOVERY_BOOT = 1,
+	VB2_BOOT_CMD_BOOTLOADER_BOOT = 2,
+};
+
 struct vb2_kernel_params {
 	/* Inputs to vb2api_load_kernel(). */
 	/* Destination buffer for kernel (normally at 0x100000 on x86). */
@@ -623,6 +630,8 @@ struct vb2_kernel_params {
 	char *vboot_cmdline_buffer;
 	/* Size of the region with kernel cmdline parameters. */
 	uint32_t vboot_cmdline_size;
+	/* Boot command from Android BCB on misc partition. */
+	enum vb2_boot_command boot_command;
 };
 
 /*****************************************************************************/
