@@ -44,6 +44,13 @@ typedef struct VbSharedDataHeader VbSharedDataHeader;
  */
 typedef void *VbExDiskHandle_t;
 
+/* Android BCB commands */
+enum vb2_boot_command {
+	VB2_BOOT_CMD_NORMAL_BOOT = 0,
+	VB2_BOOT_CMD_RECOVERY_BOOT = 1,
+	VB2_BOOT_CMD_BOOTLOADER_BOOT = 2,
+};
+
 /* Data used only by VbSelectAndLoadKernel() */
 typedef struct VbSelectAndLoadKernelParams {
 	/* Inputs to VbSelectAndLoadKernel() */
@@ -84,6 +91,8 @@ typedef struct VbSelectAndLoadKernelParams {
 	uint32_t init_boot_size;
 	/* Offset (in bytes) to the region with vboot cmdline parameters. */
 	uint32_t vboot_cmdline_offset;
+	/* Boot command from Android BCB on misc partition. */
+	enum vb2_boot_command boot_command;
 	/* Size of pvmfw partition in bytes in pvmfw buffer. */
 	uint32_t pvmfw_size;
 	/*

@@ -27,6 +27,22 @@
 
 /* Size of the buffer to convey cmdline properties to bootloader */
 #define AVB_CMDLINE_BUF_SIZE 1024
+
+/* BCB structure from Android recovery bootloader_message.h */
+struct bootloader_message {
+	char command[32];
+	char status[32];
+	char recovery[768];
+	char stage[32];
+	char reserved[1184];
+};
+_Static_assert(sizeof(struct bootloader_message) == 2048,
+	       "bootloader_message size is incorrect");
+
+/* Possible values of BCB command */
+#define BCB_CMD_BOOTONCE_BOOTLOADER "bootonce-bootloader"
+#define BCB_CMD_BOOT_RECOVERY "boot-recovery"
+
 #endif
 
 /* Bytes to read at start of the boot/init_boot/vendor_boot partitions */
@@ -450,6 +466,48 @@ static vb2_error_t vb2_load_chromeos_kernel_partition(
 
 #define VERIFIED_BOOT_PROPERTY_NAME "androidboot.verifiedbootstate="
 
+static enum vb2_boot_command vb2_bcb_command(AvbOps *ops)
+{
+	struct bootloader_message bcb;
+	AvbIOResult io_ret;
+	size_t num_bytes_read;
+	enum vb2_boot_command cmd;
+
+	io_ret = ops->read_from_partition(ops,
+					  GPT_ENT_NAME_ANDROID_MISC,
+					  0,
+					  sizeof(struct bootloader_message),
+					  &bcb,
+					  &num_bytes_read);
+	if (io_ret != AVB_IO_RESULT_OK ||
+	    num_bytes_read != sizeof(struct bootloader_message)) {
+		/*
+		 * TODO(b/349304841): Handle IO errors, for now just try to boot
+		 *                    normally
+		 */
+		VB2_DEBUG("Cannot read misc partition.\n");
+		return VB2_BOOT_CMD_NORMAL_BOOT;
+	}
+
+	/* BCB command field is for the bootloader */
+	if (!strncmp(bcb.command, BCB_CMD_BOOT_RECOVERY,
+		     VB2_MIN(sizeof(BCB_CMD_BOOT_RECOVERY) - 1, sizeof(bcb.command)))) {
+		cmd = VB2_BOOT_CMD_RECOVERY_BOOT;
+	} else if (!strncmp(bcb.command, BCB_CMD_BOOTONCE_BOOTLOADER,
+			    VB2_MIN(sizeof(BCB_CMD_BOOTONCE_BOOTLOADER) - 1,
+				    sizeof(bcb.command)))) {
+		cmd = VB2_BOOT_CMD_BOOTLOADER_BOOT;
+	} else {
+		/* If empty or unknown command, just boot normally */
+		if (bcb.command[0] != '\0')
+			VB2_DEBUG("Unknown boot command \"%.*s\". Use normal boot.",
+				  (int)sizeof(bcb.command), bcb.command);
+		cmd = VB2_BOOT_CMD_NORMAL_BOOT;
+	}
+
+	return cmd;
+}
+
 static vb2_error_t vb2_load_avb_android_partition(
 	struct vb2_context *ctx, VbExStream_t stream,
 	VbSharedDataKernelPart *shpart, LoadKernelParams *params,
@@ -541,6 +599,8 @@ static vb2_error_t vb2_load_avb_android_partition(
 		shpart->check_result = VBSD_LKP_CHECK_VERIFY_DATA;
 		return ret;
 	}
+
+	params->boot_command = vb2_bcb_command(avb_ops);
 
 	/* TODO(b/335901799): Add support for marking verifiedbootstate yellow */
 	/* Possible values for this property are "yellow", "orange" and "green"

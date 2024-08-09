@@ -176,6 +176,7 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	kparams->init_boot_offset = lkp.init_boot_offset;
 	kparams->init_boot_size = lkp.init_boot_size;
 	kparams->vboot_cmdline_offset = lkp.vboot_cmdline_offset;
+	kparams->boot_command = lkp.boot_command;
 	kparams->pvmfw_size = lkp.pvmfw_size;
 	memcpy(kparams->partition_guid, lkp.partition_guid,
 	       sizeof(kparams->partition_guid));
