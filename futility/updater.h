@@ -32,6 +32,7 @@ static const char * const FMAP_RO = "WP_RO",
 		  * const FMAP_RW_SHARED = "RW_SHARED",
 		  * const FMAP_RW_LEGACY = "RW_LEGACY",
 		  * const FMAP_RW_VPD = "RW_VPD",
+		  * const FMAP_RW_DIAG_NVRAM = "DIAG_NVRAM",
 		  * const FMAP_SI_DESC = "SI_DESC",
 		  * const FMAP_SI_ME = "SI_ME";
 
