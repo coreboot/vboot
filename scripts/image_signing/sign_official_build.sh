@@ -557,7 +557,7 @@ resign_firmware_shellball() {
 
           # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
           if ! match="$(grep -E "^[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"; then
-            die "The loem key_id ${key_id} not found in loem.ini!"
+            die "The loem key_id ${key_id} not found in loem.ini! (${KEY_DIR}/loem.ini)"
           fi
 
           # shellcheck disable=SC2001
