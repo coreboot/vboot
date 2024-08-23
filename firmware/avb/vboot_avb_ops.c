@@ -353,7 +353,7 @@ static vb2_error_t vb2_load_init_boot_ramdisk(struct vb2_context *ctx, GptData *
 		return VB2_ERROR_LOAD_PARTITION_READ_BODY;
 	}
 
-	params->init_boot_size = params->init_boot_offset - *bytes_used;
+	params->init_boot_size = *bytes_used - params->init_boot_offset;
 
 	return VB2_SUCCESS;
 }
