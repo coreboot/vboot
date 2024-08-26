@@ -261,11 +261,11 @@ test_update() {
 # Test Full update.
 test_update "Full update" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" --wp=0 --sys_props 0,0x10001
+  -i "${LINK_BIOS}" --wp=0
 
 test_update "Full update (TPM Anti-rollback: data key)" \
   "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
@@ -277,54 +277,53 @@ test_update "Full update (TPM Anti-rollback: kernel key)" \
 
 test_update "Full update (TPM Anti-rollback: 0 as tpm_fwver)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x0
+  -i "${TO_IMAGE}" --wp=0 --sys_props ,0x0
 
 test_update "Full update (TPM check failure due to invalid tpm_fwver)" \
   "${FROM_IMAGE}" "!Invalid tpm_fwver: -1" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,-1
+  -i "${TO_IMAGE}" --wp=0 --sys_props ,-1
 
 test_update "Full update (Skip TPM check with --force)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,-1 --force
+  -i "${TO_IMAGE}" --wp=0 --sys_props ,-1 --force
 
 test_update "Full update (from stdin)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i - --wp=0 --sys_props 0,-1 --force <"${TO_IMAGE}"
+  -i - --wp=0 --sys_props ,-1 --force <"${TO_IMAGE}"
 
 test_update "Full update (GBB=0 -> 0)" \
   "${FROM_IMAGE}.gbb0" "${TMP}.expected.full.gbb0" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (GBB flags -> 0x27)" \
   "${FROM_IMAGE}" "${TMP}.expected.full.gbb0x27" \
-  -i "${TO_IMAGE}" --gbb_flags=0x27 --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --gbb_flags=0x27 --wp=0
 
 test_update "Full update (--host_only)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
-  --host_only --ec_image non-exist.bin
+  -i "${TO_IMAGE}" --wp=0 --host_only --ec_image non-exist.bin
 
 test_update "Full update (GBB1.2 hwid digest)" \
   "${FROM_IMAGE}" "${TMP}.expected.full.gbb12" \
-  -i "${TO_IMAGE_GBB12}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE_GBB12}" --wp=0
 
 test_update "Full update (Preserve VPD using FMAP_AREA_PRESERVE)" \
   "${FROM_IMAGE}" "${TMP}.expected.full.empty_rw_vpd" \
-  -i "${TO_IMAGE_WIPE_RW_VPD}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE_WIPE_RW_VPD}" --wp=0
 
 
 # Test RW-only update.
 test_update "RW update" \
   "${FROM_IMAGE}" "${TMP}.expected.rw" \
-  -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=1
 
 test_update "RW update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" --wp=1 --sys_props 0,0x10001
+  -i "${LINK_BIOS}" --wp=1
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
-  -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
   "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
@@ -337,22 +336,22 @@ test_update "RW update (TPM Anti-rollback: kernel key)" \
 # Test Try-RW update (vboot2).
 test_update "RW update (A->B)" \
   "${FROM_IMAGE}" "${TMP}.expected.b" \
-  -i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" -t --wp=1 --sys_props 0
 
 test_update "RW update (B->A)" \
   "${FROM_IMAGE}" "${TMP}.expected.a" \
-  -i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x10001
+  -i "${TO_IMAGE}" -t --wp=1 --sys_props 1
 
 test_update "RW update -> fallback to RO+RW Full update" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10002
 test_update "RW update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" -t --wp=1 --sys_props 0,0x10001
+  -i "${LINK_BIOS}" -t --wp=1
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
-  -i "${TO_IMAGE}" -t --wp=1 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" -t --wp=1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
   "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
@@ -369,36 +368,36 @@ test_update "RW update -> fallback to RO+RW Full update (TPM Anti-rollback)" \
 # Test 'factory mode'
 test_update "Factory mode update (WP=0)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 --mode=factory
+  -i "${TO_IMAGE}" --wp=0 --mode=factory
 
 test_update "Factory mode update (WP=0)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  --factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  --factory -i "${TO_IMAGE}" --wp=0
 
 test_update "Factory mode update (WP=1)" \
   "${FROM_IMAGE}" "!remove write protection for factory mode" \
-  -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001 --mode=factory
+  -i "${TO_IMAGE}" --wp=1 --mode=factory
 
 test_update "Factory mode update (WP=1)" \
   "${FROM_IMAGE}" "!remove write protection for factory mode" \
-  --factory -i "${TO_IMAGE}" --wp=1 --sys_props 0,0x10001
+  --factory -i "${TO_IMAGE}" --wp=1
 
 test_update "Factory mode update (GBB=0 -> 0x39)" \
   "${FROM_IMAGE}.gbb0" "${TMP}.expected.full" \
-  --factory -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  --factory -i "${TO_IMAGE}" --wp=0
 
 # Test 'AP RO locked with verification turned on'
 test_update "AP RO locked update (locked, SI_DESC is different)" \
   "${FROM_IMAGE}.locked" "${TMP}.expected.rw.locked" \
-  -i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0 --debug
 
 test_update "AP RO locked update (locked, SI_DESC is the same)" \
   "${FROM_IMAGE}.locked_same_desc" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0 --debug
 
 test_update "AP RO locked update (unlocked)" \
   "${FROM_IMAGE}.unlocked" "${TMP}.expected.full" \
-  -i "${TO_IMAGE}" --wp=0 --debug --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0 --debug
 
 # Test legacy update
 test_update "Legacy update" \
@@ -408,67 +407,67 @@ test_update "Legacy update" \
 # Test quirks
 test_update "Full update (wrong size)" \
   "${FROM_IMAGE}.large" "!Failed writing firmware" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
+  -i "${TO_IMAGE}" --wp=0 \
   --quirks unlock_csme_eve,eve_smm_store
 
 test_update "Full update (--quirks enlarge_image)" \
   "${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks enlarge_image \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (multi-line --quirks enlarge_image)" \
   "${FROM_IMAGE}.large" "${TMP}.expected.large" --quirks '
   enlarge_image
-  ' -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  ' -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks unlock_csme_eve)" \
   "${FROM_IMAGE}" "${TMP}.expected.me_unlocked_eve" \
   --quirks unlock_csme_eve \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (failure by --quirks min_platform_version)" \
   "${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
   --quirks min_platform_version=3 \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,2
+  -i "${TO_IMAGE}" --wp=0 --sys_props ,,2
 
 test_update "Full update (--quirks min_platform_version)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   --quirks min_platform_version=3 \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,3
+  -i "${TO_IMAGE}" --wp=0 --sys_props ,,3
 
 test_update "Full update (incompatible platform)" \
   "${FROM_IMAGE}".unpatched "!platform is not compatible" \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks no_check_platform)" \
   "${FROM_IMAGE}".unpatched "${TMP}.expected.full" \
   --quirks no_check_platform \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me with non-host programmer)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   --quirks preserve_me \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
+  -i "${TO_IMAGE}" --wp=0 \
   -p raiden_debug_spi:target=AP
 
 test_update "Full update (--quirks preserve_me)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   --quirks preserve_me \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, autoupdate)" \
   "${FROM_IMAGE}" "${TMP}.expected.me_preserved" \
   --quirks preserve_me -m autoupdate \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, deferupdate_hold)" \
   "${FROM_IMAGE}" "${TMP}.expected.me_preserved" \
   --quirks preserve_me -m deferupdate_hold \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, factory)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   --quirks preserve_me -m factory \
-  -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001
+  -i "${TO_IMAGE}" --wp=0
 
 # Test manifest.
 echo "TEST: Manifest (--manifest, -i, image.bin)"
@@ -502,7 +501,7 @@ cmp \
 cp -f "${TO_IMAGE}" "${A}/image.bin"
 test_update "Full update (--archive, single package)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3
+  -a "${A}" --wp=0 --sys_props ,,3
 
 echo "TEST: Output (--mode=output)"
 mkdir -p "${TMP}.output"
@@ -521,25 +520,25 @@ cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.CL"
 
 test_update "Full update (--archive, custom label, no VPD)" \
   "${A}/image.bin" "!Need VPD set for custom" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3
+  -a "${A}" --wp=0 --sys_props ,,3
 
 test_update "Full update (--archive, custom label, no VPD - factory mode)" \
   "${LINK_BIOS}" "${A}/image.bin" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --mode=factory
+  -a "${A}" --wp=0 --sys_props ,,3 --mode=factory
 
 test_update "Full update (--archive, custom label, no VPD - quirk mode)" \
   "${LINK_BIOS}" "${A}/image.bin" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
+  -a "${A}" --wp=0 --sys_props ,,3 \
   --quirks=allow_empty_custom_label_tag
 
 test_update "Full update (--archive, custom label, single package)" \
   "${A}/image.bin" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --signature_id=CL
+  -a "${A}" --wp=0 --sys_props ,,3 --signature_id=CL
 
 CL_TAG="CL" PATH="${A}/bin:${PATH}" \
   test_update "Full update (--archive, custom label, fake vpd)" \
   "${A}/image.bin" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3
+  -a "${A}" --wp=0 --sys_props ,,3
 
 echo "TEST: Output (-a, --mode=output)"
 mkdir -p "${TMP}.outa"
@@ -631,7 +630,7 @@ if type cbfstool >/dev/null 2>&1; then
     -f "${TMP}.smm" -t raw -b 0x1bf000
   test_update "Legacy update (--quirks eve_smm_store)" \
     "${TMP}.from.smm" "${TMP}.expected.full_smm" \
-    -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001 \
+    -i "${TO_IMAGE}" --wp=0 \
     --quirks eve_smm_store
 
   echo "min_platform_version=3" >"${TMP}.quirk"
@@ -650,17 +649,15 @@ fi
 if type ifdtool >/dev/null 2>&1; then
   test_update "Full update (--quirks unlock_csme, IFD chipset)" \
     "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
-    --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" \
-    --wp=0 --sys_props 0,0x10001
+    --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" --wp=0
 
   test_update "Full update (--quirks unlock_csme, IFD bin path)" \
     "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_path" \
-    --quirks unlock_csme -i "${TO_IMAGE}.ifd_path" \
-    --wp=0 --sys_props 0,0x10001
+    --quirks unlock_csme -i "${TO_IMAGE}.ifd_path" --wp=0
 
   test_update "Full update (--unlock_me)" \
     "${FROM_IMAGE}" "${TMP}.expected.me_unlocked.ifd_chipset" \
-    --unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0 --sys_props 0,0x10001
+    --unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0
 
   echo "TEST: Output (--mode=output, --quirks unlock_csme)"
   "${FUTILITY}" update -i "${TMP}.expected.ifd_chipset" --mode=output \

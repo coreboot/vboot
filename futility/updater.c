@@ -71,6 +71,24 @@ static void override_dut_property(enum dut_property_type property_type,
 }
 
 /*
+ * Overrides DUT properties with default values.
+ * With emulation, dut_get_property() calls would fail without specifying the
+ * fake DUT properties via --sys_props. Therefore, this function provides
+ * reasonable default values for emulation.
+ */
+static void override_properties_with_default(struct updater_config *cfg)
+{
+	assert(cfg->emulation);
+
+	override_dut_property(DUT_PROP_MAINFW_ACT, cfg, SLOT_A);
+	override_dut_property(DUT_PROP_TPM_FWVER, cfg, 0x10001);
+	override_dut_property(DUT_PROP_PLATFORM_VER, cfg, 0);
+	override_dut_property(DUT_PROP_WP_HW, cfg, 0);
+	override_dut_property(DUT_PROP_WP_SW_AP, cfg, 0);
+	override_dut_property(DUT_PROP_WP_SW_EC, cfg, 0);
+}
+
+/*
  * Overrides DUT properties from a given list.
  * The list should be string of integers eliminated by comma and/or space.
  * For example, "1 2 3" and "1,2,3" both overrides first 3 properties.
@@ -1675,6 +1693,8 @@ int updater_setup_config(struct updater_config *cfg,
 	if (prog_arg_emulation(cfg, arg, &check_single_image) < 0)
 		return 1;
 
+	if (arg->emulation)
+		override_properties_with_default(cfg);
 	if (arg->sys_props)
 		override_properties_from_list(arg->sys_props, cfg);
 	if (arg->write_protection) {
