@@ -186,6 +186,22 @@ static bool gki_ramdisk_fragment_needed(struct vendor_ramdisk_table_entry_v4 *fr
 	}
 }
 
+/* Function for finding a loaded partition in AvbSlotVerifyData */
+static AvbPartitionData *avb_find_part(AvbSlotVerifyData *verify_data, enum GptPartition name)
+{
+	size_t i;
+	AvbPartitionData *part;
+
+	for (i = 0; i < verify_data->num_loaded_partitions; i++) {
+		part = &verify_data->loaded_partitions[i];
+
+		if (!strcmp(part->partition_name, GptPartitionNames[name]))
+			return part;
+	}
+
+	return NULL;
+}
+
 /*
  * This function removes unnecessary ramdisks from ramdisk table, concatenates rest of
  * them and returns start and end of new ramdisk.
@@ -258,6 +274,41 @@ static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor
 	return VB2_SUCCESS;
 }
 
+static vb2_error_t prepare_pvmfw(AvbSlotVerifyData *verify_data,
+				 struct vb2_kernel_params *params)
+{
+	AvbPartitionData *part;
+	struct boot_img_hdr_v4 *pvmfw_hdr;
+
+	part = avb_find_part(verify_data, GPT_ANDROID_PVMFW);
+	if (!part) {
+		VB2_DEBUG("Ignoring lack of pvmfw partition\n");
+		params->pvmfw_out_size = 0;
+		return VB2_SUCCESS;
+	}
+
+	pvmfw_hdr = (void *)part->data;
+
+	/* If loaded pvmfw is smaller then boot header or the boot header magic is invalid
+	 * or the header kernel size exceeds buffer size, then fail */
+	if (part->data_size < BOOT_HEADER_SIZE ||
+	    memcmp(pvmfw_hdr->magic, BOOT_MAGIC, BOOT_MAGIC_SIZE) ||
+	    part->data_size - BOOT_HEADER_SIZE < pvmfw_hdr->kernel_size) {
+		VB2_DEBUG("Incorrect magic or size (%zx) of 'pvmfw' image\n", part->data_size);
+		return VB2_ERROR_ANDROID_BROKEN_PVMFW;
+	}
+
+	/* Get pvmfw code size */
+	params->pvmfw_out_size = pvmfw_hdr->kernel_size;
+
+	/* pvmfw code starts after the boot header. Discard the boot header, by
+	 * moving the buffer start and trimming its size. */
+	params->pvmfw_buffer = ((void *)pvmfw_hdr) + BOOT_HEADER_SIZE;
+	params->pvmfw_buffer_size -= BOOT_HEADER_SIZE;
+
+	return VB2_SUCCESS;
+}
+
 /*
  * This function validates the partitions magic numbers and move them into place requested
  * from linux.
@@ -275,7 +326,7 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 				   &vendor_boot_size) ||
 	    vb2_android_get_buffer(avb_ops, GPT_ANDROID_INIT_BOOT, (void **)&init_hdr,
 				   &init_boot_size)) {
-		VB2_DEBUG("Cannot get information about preloaded paritition\n");
+		VB2_DEBUG("Cannot get information about preloaded partition\n");
 		return VB2_ERROR_ANDROID_RAMDISK_ERROR;
 	}
 
@@ -340,10 +391,21 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 		GptPartitionNames[GPT_ANDROID_BOOT],
 		GptPartitionNames[GPT_ANDROID_INIT_BOOT],
 		GptPartitionNames[GPT_ANDROID_VENDOR_BOOT],
+		GptPartitionNames[GPT_ANDROID_PVMFW],
 		NULL,
 	};
 	const char *slot_suffix = NULL;
 	bool need_verification = vb2_need_kernel_verification(ctx);
+
+	/*
+	 * Check if the pvmfw buffer is zero sized
+	 * (ie. pvmfw loading is not requested)
+	 */
+	if (params->pvmfw_buffer_size == 0) {
+		VB2_DEBUG("Not loading pvmfw: not requested.\n");
+		boot_partitions[3] = NULL;
+		params->pvmfw_out_size = 0;
+	}
 
 	/* Update flags to mark loaded GKI image */
 	params->flags = VB2_KERNEL_TYPE_BOOTIMG;
@@ -419,7 +481,10 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 		VB2_DEBUG("ERROR: Command line doesn't fit provided buffer: %s\n",
 			  verify_data->cmdline);
 		rv = VB2_ERROR_ANDROID_CMDLINE_BUF_TOO_SMALL;
+		goto out;
 	}
+
+	rv = prepare_pvmfw(verify_data, params);
 
 out:
 	/* No need for slot data */

@@ -144,7 +144,7 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	struct vb2_kernel_params *params = avbctx->params;
 	struct avb_preload_buffer *parts = avbctx->preloaded;
 	const char *slot_suffix = avbctx->slot_suffix;
-	uint64_t size;
+	uint64_t size, available;
 	const char *partition_name;
 	AvbIOResult err;
 
@@ -153,15 +153,19 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	enum GptPartition part;
 
 	for (part = GPT_ANDROID_BOOT; part < GPT_ANDROID_PRELOADED_NUM; part++) {
+		/* Skip pvmfw for now and set up it later */
+		if (part == GPT_ANDROID_PVMFW)
+			continue;
+
 		partition_name = GptPartitionNames[part];
 		err = get_partition_size(gpt, partition_name, slot_suffix, &size);
 		if (err)
 			return err;
-		if (buffer + size > kernel_buffer_end) {
-			VB2_DEBUG("Buffer too small for '%s': has %lu requested %" PRIu64 "\n",
-				  partition_name, kernel_buffer_end - buffer, size);
-			return AVB_IO_RESULT_ERROR_INSUFFICIENT_SPACE;
-		}
+
+		available = kernel_buffer_end - buffer;
+		if (size > available)
+			goto overflow;
+
 		parts[part].buffer = buffer;
 		parts[part].alloced_size = size;
 		parts[part].loaded_size = 0;
@@ -170,7 +174,31 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 		buffer += size;
 	}
 
+	/* If pvmfw is not requested to load then skip any preparions */
+	if (params->pvmfw_buffer_size == 0)
+		return AVB_IO_RESULT_OK;
+
+	partition_name = GptPartitionNames[GPT_ANDROID_PVMFW];
+	err = get_partition_size(gpt, partition_name, slot_suffix, &size);
+	if (err)
+		return err;
+
+	/* Make sure the buffer is big enough */
+	available = params->pvmfw_buffer_size;
+	if (size > available)
+		goto overflow;
+
+	parts[GPT_ANDROID_PVMFW].buffer = params->pvmfw_buffer;
+	parts[GPT_ANDROID_PVMFW].alloced_size = params->pvmfw_buffer_size;
+	parts[GPT_ANDROID_PVMFW].loaded_size = 0;
+
 	return AVB_IO_RESULT_OK;
+overflow:
+	VB2_DEBUG("Buffer too small for '%s': has %lu requested %" PRIu64 "\n",
+			partition_name, kernel_buffer_end - buffer, size);
+
+	return AVB_IO_RESULT_ERROR_INSUFFICIENT_SPACE;
+
 }
 
 AvbIOResult vb2_android_get_buffer(AvbOps *ops,
