@@ -44,4 +44,15 @@ int GptFindInitBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size);
  */
 int GptFindVendorBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size);
 
+/**
+ * Find pvmfw partition for selected slot.
+ * Must be called after GptNextKernelEntry.
+ *
+ * On return the start_sector parameter contains the LBA sector for the start
+ * of the pvmfw partition, and the size parameter contains the size of the
+ * pvmfw partition in LBA sectors.
+ * Returns GPT_SUCCESS if successful.
+ */
+int GptFindPvmfw(GptData *gpt, uint64_t *start_sector, uint64_t *size);
+
 #endif  /* VBOOT_REFERENCE_CGPTLIB_H_ */
