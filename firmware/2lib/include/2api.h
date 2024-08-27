@@ -629,6 +629,22 @@ struct vb2_kernel_params {
 	char *vboot_cmdline_buffer;
 	/* Size of the region with kernel cmdline parameters. */
 	uint32_t vboot_cmdline_size;
+
+	/*
+	 * Destination buffer for pvmfw. Shall be ignored if pvmfw_buffer_size is 0.
+	 * This field can be overwritten by implementation and the caller needs
+	 * to respect the new value.
+	 */
+	void *pvmfw_buffer;
+	/*
+	 * Size of pvmfw buffer in bytes. If non-zero then implementation shall
+	 * try to load pvmfw to the pvmfw buffer. This field can be overwritten
+	 * by implementation and the caller needs to respect the new value.
+	 * If successful the pvmfw_out_size shall be set to the correct non-zero value.
+	 */
+	uint32_t pvmfw_buffer_size;
+	/* Size of pvmfw partition in bytes in pvmfw buffer. */
+	uint32_t pvmfw_out_size;
 };
 
 /*****************************************************************************/
