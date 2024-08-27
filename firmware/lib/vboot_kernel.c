@@ -458,10 +458,11 @@ static vb2_error_t vb2_load_avb_android_partition(
 	char *ab_suffix = NULL;
 	AvbSlotVerifyData *verify_data = NULL;
 	AvbOps *avb_ops;
-	static const char * const boot_partitions[] = {
+	const char *boot_partitions[] = {
 		GPT_ENT_NAME_ANDROID_BOOT,
 		GPT_ENT_NAME_ANDROID_INIT_BOOT,
 		GPT_ENT_NAME_ANDROID_VENDOR_BOOT,
+		GPT_ENT_NAME_ANDROID_PVMFW,
 		NULL,
 	};
 	AvbSlotVerifyFlags avb_flags;
@@ -469,6 +470,22 @@ static vb2_error_t vb2_load_avb_android_partition(
 	vb2_error_t ret;
 	int need_keyblock_valid = require_official_os(ctx, params);
 	char *verified_str;
+
+	/*
+	 * Check if the buffer is zero sized (ie. pvmfw loading is not
+	 * requested) or the pvmfw partition does not exist. If so skip
+	 * loading and verifying it.
+	 */
+	uint64_t pvmfw_start;
+	uint64_t pvmfw_size;
+	if (params->pvmfw_buffer_size == 0 ||
+	    GptFindPvmfw(gpt, &pvmfw_start, &pvmfw_size) != GPT_SUCCESS) {
+		if (params->pvmfw_buffer_size != 0)
+			VB2_DEBUG("Couldn't find pvmfw partition. Ignoring.\n");
+
+		boot_partitions[3] = NULL;
+		params->pvmfw_size = 0;
+	}
 
 	ret = GptGetActiveKernelPartitionSuffix(gpt, &ab_suffix);
 	if (ret != GPT_SUCCESS) {
