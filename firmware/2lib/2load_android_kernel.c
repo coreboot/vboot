@@ -118,6 +118,7 @@ vb2_error_t vb2_load_android_kernel(
 		GptPartitionNames[GPT_ANDROID_BOOT],
 		GptPartitionNames[GPT_ANDROID_INIT_BOOT],
 		GptPartitionNames[GPT_ANDROID_VENDOR_BOOT],
+		GptPartitionNames[GPT_ANDROID_PVMFW],
 		NULL,
 	};
 
@@ -129,6 +130,20 @@ vb2_error_t vb2_load_android_kernel(
 		gpt->current_ab_slot = GPT_ENT_NAME_ANDROID_B_SUFFIX;
 	else
 		return VB2_ERROR_LK_NO_KERNEL_FOUND;
+
+	/*
+	 * Check if the buffer is zero sized (ie. pvmfw loading is not
+	 * requested) or the pvmfw partition does not exist. If so skip
+	 * loading and verifying it.
+	 */
+	e = GptFindEntryByName(gpt, GptPartitionNames[GPT_ANDROID_PVMFW], gpt->current_ab_slot);
+	if (params->pvmfw_buffer_size == 0 || !e) {
+		if (!e)
+			VB2_DEBUG("Couldn't find pvmfw partition. Ignoring.\n");
+
+		boot_partitions[3] = NULL;
+		params->pvmfw_size = 0;
+	}
 
 	avb_ops = vboot_avb_ops_new(ctx, params, stream, gpt, disk_handle);
 	if (avb_ops == NULL) {
