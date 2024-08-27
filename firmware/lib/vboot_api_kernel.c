@@ -145,6 +145,8 @@ static vb2_error_t vb2_kernel_init_kparams(struct vb2_context *ctx,
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.kernel_buffer = kparams->kernel_buffer;
 	lkp.kernel_buffer_size = kparams->kernel_buffer_size;
+	lkp.pvmfw_buffer = kparams->pvmfw_buffer;
+	lkp.pvmfw_buffer_size = kparams->pvmfw_buffer_size;
 
 	/* Clear output params in case we fail */
 	kparams->disk_handle = NULL;
@@ -168,10 +170,13 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	kparams->flags = lkp.flags;
 	kparams->kernel_buffer = lkp.kernel_buffer;
 	kparams->kernel_buffer_size = lkp.kernel_buffer_size;
+	kparams->pvmfw_buffer = lkp.pvmfw_buffer;
+	kparams->pvmfw_buffer_size = lkp.pvmfw_buffer_size;
 	kparams->vendor_boot_offset = lkp.vendor_boot_offset;
 	kparams->init_boot_offset = lkp.init_boot_offset;
 	kparams->init_boot_size = lkp.init_boot_size;
 	kparams->vboot_cmdline_offset = lkp.vboot_cmdline_offset;
+	kparams->pvmfw_size = lkp.pvmfw_size;
 	memcpy(kparams->partition_guid, lkp.partition_guid,
 	       sizeof(kparams->partition_guid));
 }
