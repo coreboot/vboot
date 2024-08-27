@@ -50,6 +50,14 @@ typedef struct VbSelectAndLoadKernelParams {
 	void *kernel_buffer;
 	/* Size of kernel buffer in bytes */
 	uint32_t kernel_buffer_size;
+	/* Destination buffer for pvmfw. Shall be ignored if pvmfw_size is 0 */
+	void *pvmfw_buffer;
+	/*
+	 * Size of pvmfw buffer in bytes. If non-zero then implementation shall
+	 * try to load pvmfw to the pvmfw buffer. If successful the pvmfw_size
+	 * shall be set to the correct non-zero value.
+	 */
+	uint32_t pvmfw_buffer_size;
 
 	/*
 	 * Outputs from VbSelectAndLoadKernel(); valid only if it returns
@@ -75,6 +83,8 @@ typedef struct VbSelectAndLoadKernelParams {
 	uint32_t init_boot_size;
 	/* Offset (in bytes) to the region with vboot cmdline parameters. */
 	uint32_t vboot_cmdline_offset;
+	/* Size of pvmfw partition in bytes in pvmfw buffer. */
+	uint32_t pvmfw_size;
 	/*
 	 * TODO: in H2C, all that pretty much just gets passed to the
 	 * bootloader as KernelBootloaderOptions, though the disk handle is
