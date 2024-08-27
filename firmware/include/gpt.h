@@ -65,6 +65,7 @@ extern "C" {
 #define GPT_ENT_NAME_ANDROID_INIT_BOOT "init_boot"
 #define GPT_ENT_NAME_ANDROID_VENDOR_BOOT "vendor_boot"
 #define GPT_ENT_NAME_ANDROID_BOOT "boot"
+#define GPT_ENT_NAME_ANDROID_PVMFW "pvmfw"
 #define GPT_ENT_NAME_ANDROID_A_SUFFIX "_a"
 #define GPT_ENT_NAME_ANDROID_B_SUFFIX "_b"
 
