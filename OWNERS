@@ -1,4 +1,1 @@
-kitching@chromium.org
-jwerner@chromium.org
-rspangler@chromium.org
-*
+include chromiumos/owners:v1:/firmware/OWNERS.android
