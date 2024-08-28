@@ -417,6 +417,57 @@ list_files_in_squashfs_image() {
   "${unsquashfs}" -l "${system_img}" | grep ^squashfs-root
 }
 
+# This function is needed to set the VB meta digest parameter for
+# Verified Boot. The value is calculated by calculating the hash
+# of hashes of the system and vendor images. It will be written
+# to a file in the same directory as the system image and will be
+# read by ARC Keymint. See ​​go/arc-vboot-param-design for more details.
+write_arcvm_vbmeta_digest() {
+  local android_dir=$1
+  local system_img_path=$2
+  local vendor_img_path=$3
+
+  local vbmeta_digest_path="${android_dir}/arcvm_vbmeta_digest.sha256"
+
+  # Calculate hashes of the system and vendor images.
+  local system_img_hash vendor_img_hash combined_hash vbmeta_digest
+  if ! system_img_hash=$(sha256sum -b "${system_img_path}"); then
+    warn "Error calculating system image hash"
+    return 1
+  fi
+  if ! vendor_img_hash=$(sha256sum -b "${vendor_img_path}"); then
+    warn "Error calculating vendor image hash"
+    return 1
+  fi
+
+  # Cut off the end of sha256sum output since it includes the file name.
+  system_img_hash="$(echo -n "${system_img_hash}" | awk '{print $1}')"
+  vendor_img_hash="$(echo -n "${vendor_img_hash}" | awk '{print $1}')"
+
+  # Combine the two hashes and calculate the hash of that value.
+  combined_hash=$(printf "%s%s" "${system_img_hash}" "${vendor_img_hash}")
+  if ! vbmeta_digest=$(echo -n "${combined_hash}" | sha256sum -b); then
+    warn "Error calculating the hash of the combined hash of the images"
+    return 1
+  fi
+
+  vbmeta_digest="$(echo -n "${vbmeta_digest}" | awk '{print $1}')"
+
+  # If there is an existing digest, compare the two values.
+  if [[ -f "${vbmeta_digest_path}" ]]; then
+    local prev_vbmeta_digest
+    prev_vbmeta_digest=$(cat "${vbmeta_digest_path}")
+    if [[ "${vbmeta_digest}" == "${prev_vbmeta_digest}" ]]; then
+      warn "Error: existing and re-calculated digests are the same"
+      return 1
+    fi
+  fi
+
+  info "Writing re-calculated VB meta digest to arcvm_vbmeta_digest.sha256"
+  echo -n "${vbmeta_digest}" > "${vbmeta_digest_path}"
+  return 0
+}
+
 sign_android_internal() {
   local root_fs_dir=$1
   local key_dir=$2
@@ -690,6 +741,15 @@ sign_android_internal() {
   local new_size
   new_size=$(stat -c '%s' "${system_img}")
   info "Android system image size change: ${old_size} -> ${new_size}"
+
+  # Calculate the hash of the system and vendor images and store the value
+  # in a file. The digest was initially calculated and written when the
+  # image was built. This recalculates the digest of the signed image and
+  # replaces the original value.
+  # Any changes to the images must occur before this method.
+  if ! write_arcvm_vbmeta_digest "${android_dir}" "${system_img}" "${vendor_img}"; then
+    warn "ARCVM vbmeta digest was not overwritten"
+  fi
 
   if d=$(grep -v -F -x -f "${working_dir}"/image_file_list.{new,orig}); then
     # If we have a line in image_file_list.orig which does not appear in
