@@ -1,7 +1,1 @@
-jwerner@chromium.org
-yupingso@chromium.org
-twawrzynczak@chromium.org
-hungte@chromium.org
-roccochen@chromium.org
-lmajczak@google.com
-pbusse@google.com
+include chromiumos/owners:v1:/firmware/OWNERS.android
