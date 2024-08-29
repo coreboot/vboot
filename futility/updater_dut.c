@@ -13,16 +13,6 @@
 #include "crossystem.h"
 #include "updater.h"
 
-/**
- * dut_get_manifest_key() - Wrapper to get the firmware manifest key from crosid
- *
- * @manifest_key_out - Output parameter of the firmware manifest key.
- *
- * Returns:
- * - <0 if libcrosid is unavailable or there was an error reading
- *   device data
- * - >=0 (the matched device index) success
- */
 int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
 {
 	if (cfg->dut_is_remote) {
@@ -148,12 +138,6 @@ static inline int dut_get_wp_sw_ec(struct updater_config *cfg)
 
 /* Helper functions to use or configure the DUT properties. */
 
-/*
- * Gets the DUT system property by given type.
- * If the property was not loaded yet, invoke the property getter function
- * and cache the result.
- * Returns the property value.
- */
 int dut_get_property(enum dut_property_type property_type,
 		     struct updater_config *cfg)
 {
