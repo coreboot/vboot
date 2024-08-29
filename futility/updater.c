@@ -113,14 +113,12 @@ static void override_properties_from_list(const char *override_list,
 	}
 }
 
-/* Gets the value (setting) of specified quirks from updater configuration. */
 int get_config_quirk(enum quirk_types quirk, const struct updater_config *cfg)
 {
 	assert(quirk < QUIRK_MAX);
 	return cfg->quirks[quirk].value;
 }
 
-/* Prints the name and description from all supported quirks. */
 void updater_list_config_quirks(const struct updater_config *cfg)
 {
 	const struct quirk_entry *entry = cfg->quirks;
@@ -580,9 +578,6 @@ static int check_compatible_platform(struct updater_config *cfg)
 	return strncasecmp(image_from->ro_version, image_to->ro_version, len);
 }
 
-/*
- * Returns a valid root key from GBB header, or NULL on failure.
- */
 const struct vb2_packed_key *get_rootkey(
 		const struct vb2_gbb_header *gbb)
 {
@@ -1132,10 +1127,6 @@ static enum updater_error_codes update_whole_firmware(
 	return UPDATE_ERR_DONE;
 }
 
-/*
- * The main updater to update system firmware using the configuration parameter.
- * Returns UPDATE_ERR_DONE if success, otherwise failure.
- */
 enum updater_error_codes update_firmware(struct updater_config *cfg)
 {
 	bool done = false;
@@ -1243,10 +1234,6 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	return r;
 }
 
-/*
- * Allocates and initializes a updater_config object with default values.
- * Returns the newly allocated object, or NULL on error.
- */
 struct updater_config *updater_new_config(void)
 {
 	struct updater_config *cfg = (struct updater_config *)calloc(
@@ -1846,9 +1833,6 @@ int handle_flash_argument(struct updater_config_arguments *args, int opt,
 	return 1;
 }
 
-/*
- * Releases all resources in an updater configuration object.
- */
 void updater_delete_config(struct updater_config *cfg)
 {
 	assert(cfg);

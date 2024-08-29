@@ -540,12 +540,6 @@ static int archive_zip_write_file(void *handle, const char *fname,
  * -- The public functions for using u_archive. --
  */
 
-/*
- * Opens an archive from given path.
- * The type of archive will be determined automatically.
- * Returns a pointer to reference to archive (must be released by archive_close
- * when not used), otherwise NULL on error.
- */
 struct u_archive *archive_open(const char *path)
 {
 	struct stat path_stat;
@@ -622,10 +616,6 @@ struct u_archive *archive_open(const char *path)
 	return ar;
 }
 
-/*
- * Closes an archive reference.
- * Returns 0 on success, otherwise non-zero as failure.
- */
 int archive_close(struct u_archive *ar)
 {
 	int r = ar->close(ar->handle);
@@ -633,12 +623,6 @@ int archive_close(struct u_archive *ar)
 	return r;
 }
 
-/*
- * Checks if an entry (either file or directory) exists in archive.
- * If entry name (fname) is an absolute path (/file), always check
- * with real file system.
- * Returns 1 if exists, otherwise 0
- */
 int archive_has_entry(struct u_archive *ar, const char *name)
 {
 	if (!ar || *name == '/')
@@ -646,13 +630,6 @@ int archive_has_entry(struct u_archive *ar, const char *name)
 	return ar->has_entry(ar->handle, name);
 }
 
-/*
- * Traverses all files within archive (directories are ignored).
- * For every entry, the path (relative the archive root) will be passed to
- * callback function, until the callback returns non-zero.
- * The arg argument will also be passed to callback.
- * Returns 0 on success otherwise non-zero as failure.
- */
 int archive_walk(struct u_archive *ar, void *arg,
 		 int (*callback)(const char *path, void *arg))
 {
@@ -661,15 +638,6 @@ int archive_walk(struct u_archive *ar, void *arg,
 	return ar->walk(ar->handle, arg, callback);
 }
 
-/*
- * Reads a file from archive.
- * If entry name (fname) is an absolute path (/file), always read
- * from real file system.
- * The returned data must always have one extra (not included by size) '\0' in
- * the end of the allocated buffer for C string processing.
- * Returns 0 on success (data and size reflects the file content),
- * otherwise non-zero as failure.
- */
 int archive_read_file(struct u_archive *ar, const char *fname,
 		      uint8_t **data, uint32_t *size, int64_t *mtime)
 {
@@ -678,12 +646,6 @@ int archive_read_file(struct u_archive *ar, const char *fname,
 	return ar->read_file(ar->handle, fname, data, size, mtime);
 }
 
-/*
- * Writes a file into archive.
- * If entry name (fname) is an absolute path (/file), always write into real
- * file system.
- * Returns 0 on success, otherwise non-zero as failure.
- */
 int archive_write_file(struct u_archive *ar, const char *fname,
 		       uint8_t *data, uint32_t size, int64_t mtime)
 {
@@ -716,10 +678,6 @@ static int archive_copy_callback(const char *path, void *_arg)
 	return r;
 }
 
-/*
- * Copies all entries from one archive to another.
- * Returns 0 on success, otherwise non-zero as failure.
- */
 int archive_copy(struct u_archive *from, struct u_archive *to)
 {
 	struct _copy_arg arg = { .from = from, .to = to };

@@ -422,9 +422,6 @@ static int quirk_no_verify(struct updater_config *cfg)
 	return 0;
 }
 
-/*
- * Registers known quirks to a updater_config object.
- */
 void updater_register_quirks(struct updater_config *cfg)
 {
 	struct quirk_entry *quirks;
@@ -502,10 +499,6 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->apply = quirk_clear_mrc_data;
 }
 
-/*
- * Gets the default quirk config string from target image name.
- * Returns a string (in same format as --quirks) to load or NULL if no quirks.
- */
 const char * const updater_get_model_quirks(struct updater_config *cfg)
 {
 	const char *pattern = cfg->image.ro_version;
@@ -526,10 +519,6 @@ const char * const updater_get_model_quirks(struct updater_config *cfg)
 	return NULL;
 }
 
-/*
- * Gets the quirk config string from target image CBFS.
- * Returns a string (in same format as --quirks) to load or NULL if no quirks.
- */
 char *updater_get_cbfs_quirks(struct updater_config *cfg)
 {
 	const char *entry_name = "updater_quirks";
@@ -575,10 +564,6 @@ char *updater_get_cbfs_quirks(struct updater_config *cfg)
 	return (char *)data;
 }
 
-/*
- * Overrides signature id if the device was shipped with known
- * special rootkey.
- */
 int quirk_override_signature_id(struct updater_config *cfg,
 				struct model_config *model,
 				const char **signature_id)
