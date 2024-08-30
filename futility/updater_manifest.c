@@ -46,31 +46,14 @@
  *  - rootkey.$MANIFEST_KEY
  *  - vblock_A.$MANIFEST_KEY
  *  - vblock_B.$MANIFEST_KEY
- *
- * Historically (the original design in Unified Build) there should also be a
- * models/ folder, and each model should appear as a sub folder, with
- * a 'setvars.sh' file inside. The 'setvars.sh' is a shell script
- * describing what files should be used and the signature ID ($SIGID) to
- * use as firmware manifest key. If $SIGID starts with 'sig-id-in-*' then we
- * have to replace it by VPD value 'custom_label_tag' as '$MODEL-$CLTAG'.
- *
- * The current implementation is to try `signer_config.csv` approach first, and
- * then fallback to `setvars.sh` on failure.
  */
 
-static const char * const SETVARS_IMAGE_MAIN = "IMAGE_MAIN",
-		  * const SETVARS_IMAGE_EC = "IMAGE_EC",
-		  * const SETVARS_SIGNATURE_ID = "SIGNATURE_ID",
-		  * const SIG_ID_IN_VPD_PREFIX = "sig-id-in",
-		  * const DIR_MODELS = "models",
-		  * const DEFAULT_MODEL_NAME = "default",
+static const char * const DEFAULT_MODEL_NAME = "default",
 		  * const VPD_CUSTOM_LABEL_TAG = "custom_label_tag",
 		  * const VPD_CUSTOM_LABEL_TAG_LEGACY = "whitelabel_tag",
 		  * const VPD_CUSTOMIZATION_ID = "customization_id",
-		  * const ENV_VAR_MODEL_DIR = "${MODEL_DIR}",
 		  * const PATH_KEYSET_FOLDER = "keyset/",
-		  * const PATH_SIGNER_CONFIG = "signer_config.csv",
-		  * const PATH_ENDSWITH_SETVARS = "/setvars.sh";
+		  * const PATH_SIGNER_CONFIG = "signer_config.csv";
 
 /* Utility function to convert a string. */
 static void str_convert(char *s, int (*convert)(int c))
@@ -83,21 +66,6 @@ static void str_convert(char *s, int (*convert)(int c))
 			continue;
 		*s = convert(c);
 	}
-}
-
-/* Returns 1 if name ends by given pattern, otherwise 0. */
-static int str_endswith(const char *name, const char *pattern)
-{
-	size_t name_len = strlen(name), pattern_len = strlen(pattern);
-	if (name_len < pattern_len)
-		return 0;
-	return strcmp(name + name_len - pattern_len, pattern) == 0;
-}
-
-/* Returns 1 if name starts by given pattern, otherwise 0. */
-static int str_startswith(const char *name, const char *pattern)
-{
-	return strncmp(name, pattern, strlen(pattern)) == 0;
 }
 
 /* Returns the VPD value by given key name, or NULL on error (or no value). */
@@ -115,66 +83,6 @@ static char *vpd_get_value(const char *fpath, const char *key)
 		result = NULL;
 	}
 	return result;
-}
-
-/*
- * Reads and parses a setvars type file from archive, then stores into config.
- * Returns 0 on success (at least one entry found), otherwise failure.
- */
-static int model_config_parse_setvars_file(
-		struct model_config *cfg, struct u_archive *archive,
-		const char *fpath)
-{
-	uint8_t *data;
-	uint32_t len;
-
-	char *ptr_line = NULL, *ptr_token = NULL;
-	char *line, *k, *v;
-	int valid = 0;
-
-	if (archive_read_file(archive, fpath, &data, &len, NULL) != 0) {
-		ERROR("Failed reading: %s\n", fpath);
-		return -1;
-	}
-
-	/* Valid content should end with \n, or \"; ensure ASCIIZ for parsing */
-	if (len)
-		data[len - 1] = '\0';
-
-	for (line = strtok_r((char *)data, "\n\r", &ptr_line); line;
-	     line = strtok_r(NULL, "\n\r", &ptr_line)) {
-		char *expand_path = NULL;
-		int found_valid = 1;
-
-		/* Format: KEY="value" */
-		k = strtok_r(line, "=", &ptr_token);
-		if (!k)
-			continue;
-		v = strtok_r(NULL, "\"", &ptr_token);
-		if (!v)
-			continue;
-
-		/* Some legacy updaters may be still using ${MODEL_DIR}. */
-		if (str_startswith(v, ENV_VAR_MODEL_DIR)) {
-			ASPRINTF(&expand_path, "%s/%s%s", DIR_MODELS, cfg->name,
-				 v + strlen(ENV_VAR_MODEL_DIR));
-		}
-
-		if (strcmp(k, SETVARS_IMAGE_MAIN) == 0)
-			cfg->image = strdup(v);
-		else if (strcmp(k, SETVARS_IMAGE_EC) == 0)
-			cfg->ec_image = strdup(v);
-		else if (strcmp(k, SETVARS_SIGNATURE_ID) == 0) {
-			cfg->signature_id = strdup(v);
-			if (str_startswith(v, SIG_ID_IN_VPD_PREFIX))
-				cfg->is_custom_label = 1;
-		} else
-			found_valid = 0;
-		free(expand_path);
-		valid += found_valid;
-	}
-	free(data);
-	return valid == 0;
 }
 
 /*
@@ -343,46 +251,6 @@ static struct model_config *manifest_add_model(
 }
 
 /*
- * A callback function for manifest to scan files in archive.
- * Returns 0 to keep scanning, or non-zero to stop.
- */
-static int manifest_scan_entries(const char *name, void *arg)
-{
-	struct manifest *manifest = (struct manifest *)arg;
-	struct u_archive *archive = manifest->archive;
-	struct model_config model = {0};
-	char *slash;
-
-	if (!str_endswith(name, PATH_ENDSWITH_SETVARS))
-		return 0;
-
-	/* name: models/$MODEL/setvars.sh */
-	model.name = strdup(strchr(name, '/') + 1);
-	slash = strchr(model.name, '/');
-	if (slash)
-		*slash = '\0';
-
-	VB2_DEBUG("Found model <%s> setvars: %s\n", model.name, name);
-	if (model_config_parse_setvars_file(&model, archive, name)) {
-		ERROR("Invalid setvars file: %s\n", name);
-		return 0;
-	}
-
-	/* In legacy setvars.sh, the ec_image may not exist. */
-	if (model.ec_image && !archive_has_entry(archive, model.ec_image)) {
-		VB2_DEBUG("Ignore non-exist EC image: %s\n", model.ec_image);
-		free(model.ec_image);
-		model.ec_image = NULL;
-	}
-
-	/* Find patch files. */
-	if (model.signature_id)
-		find_patches_for_model(&model, archive, model.signature_id);
-
-	return !manifest_add_model(manifest, &model);
-}
-
-/*
  * A callback function for manifest to scan files in raw /firmware archive.
  * Returns 0 to keep scanning, or non-zero to stop.
  */
@@ -519,22 +387,24 @@ static int manifest_from_signer_config(struct manifest *manifest)
 				base_model_config->is_custom_label = 1;
 				/*
 				 * Rewriting signature_id is not necessary,
-				 * but in order to generate the same manifest
-				 * from setvars, we want to temporarily use
-				 * the special value.
+				 * but currently the special signature_id (from
+				 * legacy setvars) is still the only way to
+				 * identify custom label models.
+				 * TODO(hungte) Remove the rewriting when we
+				 * have changed the custom label models to real
+				 * models.
 				 */
 				free(base_model_config->signature_id);
 				base_model_config->signature_id = strdup(
 						"sig-id-in-customization-id");
 				/*
-				 * Historically (e.g., setvars.sh), custom label
-				 * devices will have signature ID set to
-				 * 'sig-id-in-*' so the patch files will be
-				 * discovered later from VPD. We want to
-				 * follow that behavior until fully migrated.
+				 * Currently we are merging all custom label
+				 * models into one single model in the manifest,
+				 * and will discover the patches later from VPD.
+				 * As a result, the existing patches should be
+				 * cleared.
 				 */
-				clear_patch_config(
-						&base_model_config->patches);
+				clear_patch_config(&base_model_config->patches);
 			}
 		}
 
@@ -812,31 +682,6 @@ int model_apply_custom_label(
 	return r;
 }
 
-/*
- * b/251040363: Checks if the archive must be parsed using setvars.sh.
- */
-static bool manifest_must_enforce_setvars(struct manifest *manifest)
-{
-	int i;
-	const char *setvars_list[] = {
-		"setvars_sh_only",
-	};
-
-	for (i = 0; i < ARRAY_SIZE(setvars_list); i++) {
-		if (archive_has_entry(manifest->archive, setvars_list[i])) {
-			INFO("Detected %s, will use *%s.\n",
-			     setvars_list[i], PATH_ENDSWITH_SETVARS);
-			return true;
-		}
-	}
-	return false;
-}
-
-static int manifest_from_setvars_sh(struct manifest *manifest) {
-	VB2_DEBUG("Try to build the manifest from *%s\n", PATH_ENDSWITH_SETVARS);
-	return archive_walk(manifest->archive, manifest, manifest_scan_entries);
-}
-
 static int manifest_from_build_artifacts(struct manifest *manifest) {
 	VB2_DEBUG("Try to build the manifest from a */firmware folder\n");
 	return archive_walk(manifest->archive, manifest, manifest_scan_raw_entries);
@@ -850,10 +695,8 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 {
 	int i;
 	struct manifest manifest = {0}, *new_manifest;
-	bool try_builders = true;
 	int (*manifest_builders[])(struct manifest *) = {
 		manifest_from_signer_config,
-		manifest_from_setvars_sh,
 		manifest_from_build_artifacts,
 		manifest_from_simple_folder,
 	};
@@ -864,12 +707,7 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 		manifest.has_keyset = 1;
 	VB2_DEBUG("Has keyset: %s\n", manifest.has_keyset ? "True" : "False");
 
-	if (manifest_must_enforce_setvars(&manifest)) {
-		try_builders = false;
-		manifest_from_setvars_sh(&manifest);
-	}
-
-	for (i = 0; try_builders && i < ARRAY_SIZE(manifest_builders); i++) {
+	for (i = 0; !manifest.num && i < ARRAY_SIZE(manifest_builders); i++) {
 		/*
 		 * For archives manually updated (for testing), it is possible a
 		 * builder can successfully scan the archive but no valid models
@@ -877,8 +715,6 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 		 * Only stop when manifest.num is non-zero.
 		 */
 		(void) manifest_builders[i](&manifest);
-		if (manifest.num)
-			try_builders = false;
 	}
 
 	VB2_DEBUG("%d model(s) loaded.\n", manifest.num);
