@@ -348,7 +348,7 @@ test_update "RW update -> fallback to RO+RW Full update" \
   -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10002
 test_update "RW update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" -t --wp=1 --sys_props 0x10001
+  -i "${LINK_BIOS}" -t --wp=1 --sys_props 0,0x10001
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
