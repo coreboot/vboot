@@ -14,6 +14,7 @@
 #define VBOOT_REFERENCE_2SYSINCLUDES_H_
 
 #include <ctype.h>
+#include <endian.h>
 #include <inttypes.h>  /* For PRIu64 */
 #include <stdbool.h>
 #include <stddef.h>
