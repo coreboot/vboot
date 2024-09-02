@@ -288,7 +288,7 @@ int GptFindOffsetByName(GptData *gpt, const char *name,
 		goto out;
 
 	for (i = 0, e = entries; i < header->number_of_entries; i++, e++) {
-		if (!memcmp(&e->name, name_ucs2, size_ucs2)) {
+		if (!memcmp(&e->name, name_ucs2, size_ucs2 * sizeof(*name_ucs2))) {
 			*start_sector = e->starting_lba;
 			*size = e->ending_lba - e->starting_lba + 1;
 			ret = GPT_SUCCESS;
