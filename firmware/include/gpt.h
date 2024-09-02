@@ -56,6 +56,7 @@ extern "C" {
 
 #define UUID_NODE_LEN 6
 #define GUID_SIZE 16
+#define GUID_STRLEN 37
 #define NAME_SIZE 36
 
 /*
