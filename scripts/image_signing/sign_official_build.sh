@@ -23,7 +23,7 @@
 set -e
 
 # Our random local constants.
-MINIOS_KERNEL_GUID="09845860-705f-4bb5-b16c-8a8a099caf52"
+MINIOS_KERNEL_GUID="09845860-705F-4BB5-B16C-8A8A099CAF52"
 FIRMWARE_VERSION=1
 KERNEL_VERSION=1
 
@@ -1038,51 +1038,22 @@ update_recovery_kernel_hash() {
     --config "${new_kernel_config}"
 }
 
-# Re-sign miniOS kernels with new keys.
-# Args: LOOPDEV MINIOS_A_KEYBLOCK MINIOS_B_KEYBLOCK PRIVKEY
-resign_minios_kernels() {
-  local loopdev="$1"
-  local minios_a_keyblock="$2"
-  local minios_b_keyblock="$3"
-  local priv_key="$4"
+# Resign a single miniOS kernel partition.
+# Args: LOOP_MINIOS KEYBLOCK PRIVKEY
+resign_minios_kernel() {
+  local loop_minios="$1"
+  local keyblock="$2"
+  local priv_key="$3"
 
-  info "Searching for miniOS kernels to resign..."
-
-  local loop_minios
-  for loop_minios in "${loopdev}p"*; do
-    local part_type_guid
-    part_type_guid=$(sudo lsblk -rnb -o PARTTYPE "${loop_minios}")
-    if [[ "${part_type_guid}" != "${MINIOS_KERNEL_GUID}" ]]; then
-      continue
-    fi
-
-    local keyblock
-    if [[ "${loop_minios}" == "${loopdev}p9" ]]; then
-      keyblock="${minios_a_keyblock}"
-    elif [[ "${loop_minios}" == "${loopdev}p10" ]]; then
-      keyblock="${minios_b_keyblock}"
-    else
-      error "Unexpected miniOS partition ${loop_minios}"
-      return 1
-    fi
-
-    # Skip miniOS partitions which are empty. This happens when miniOS
-    # kernels aren't written to the partitions because the feature is not
-    # enabled.
-    if ! sudo_futility dump_kernel_config "${loop_minios}"; then
-      info "Skipping empty miniOS partition ${loop_minios}."
-      continue
-    fi
-
-    # Delay checking that keyblock and private key exist until we are certain
-    # of a valid miniOS partition.  Images that don't support miniOS might not
-    # provide these.  (This check is repeated twice, but that's okay.)
+  if sudo_futility dump_kernel_config "${loop_minios}"; then
+    # Delay checking that keyblock exists until we are certain of a valid miniOS
+    # partition. Images that don't support miniOS might not provide these.
+    # (This check is repeated twice, but that's okay.)
+    # Update (9/3/24): we no longer check if the private key exists on disk
+    # because it may live in Cloud KMS instead, opting instead to let futility
+    # below fail if the key is missing.
     if [[ ! -e "${keyblock}" ]]; then
       error "Resign miniOS: keyblock doesn't exist: ${keyblock}"
-      return 1
-    fi
-    if [[ ! -e "${priv_key}" ]]; then
-      error "Resign miniOS: private key doesn't exist: ${priv_key}"
       return 1
     fi
 
@@ -1093,12 +1064,60 @@ resign_minios_kernels() {
         --signprivate "${priv_key}" \
         --version "${minios_kernel_version}" \
         --oldblob "${loop_minios}"; then
+      echo
       info "Resign miniOS ${loop_minios}: done"
     else
       error "Resign miniOS ${loop_minios}: failed"
       return 1
     fi
-  done
+  else
+    info "Skipping empty miniOS partition ${loop_minios}."
+  fi
+}
+
+# Get the partition type of the loop device.
+get_partition_type() {
+  local loopdev=$1
+  local device=$2
+  # Prefer cgpt, fall back on lsblk.
+  if command -v cgpt &> /dev/null; then
+    echo "$(cgpt show -i "${device}" -t "${loopdev}")"
+  else
+    echo "$(sudo lsblk -rnb -o PARTTYPE "${loopdev}p${device}")"
+  fi
+}
+
+# Re-sign miniOS kernels with new keys.
+# Args: LOOPDEV MINIOS_A_KEYBLOCK MINIOS_B_KEYBLOCK PRIVKEY
+resign_minios_kernels() {
+  local loopdev="$1"
+  local minios_a_keyblock="$2"
+  local minios_b_keyblock="$3"
+  local priv_key="$4"
+
+  info "Searching for miniOS kernels to resign..."
+
+  # Attempt to sign miniOS A and miniOS B partitions, one at a time.
+  # miniOS A - loop device 9.
+  local loop_minios_a="${loopdev}p9"
+  local part_type_a
+  part_type_a="$(get_partition_type "${loopdev}" 9)"
+  # miniOS B - loop device 10.
+  local loop_minios_b="${loopdev}p10"
+  local part_type_b
+  part_type_b="$(get_partition_type "${loopdev}" 9)"
+
+  # Make sure the loop devices have a miniOS partition type.
+  if [[ "${part_type_a^^}" == "${MINIOS_KERNEL_GUID}" ]]; then
+    if ! resign_minios_kernel "${loop_minios_a}" "${minios_a_keyblock}" "${priv_key}"; then
+      return 1
+    fi
+  fi
+  if [[ "${part_type_b^^}" == "${MINIOS_KERNEL_GUID}" ]]; then
+    if ! resign_minios_kernel "${loop_minios_b}" "${minios_b_keyblock}" "${priv_key}"; then
+      return 1
+    fi
+  fi
 }
 
 # Update the legacy bootloader templates in EFI partition if available.
