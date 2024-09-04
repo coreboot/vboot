@@ -350,7 +350,7 @@ static int manifest_from_signer_config(struct manifest *manifest)
 	for (s = strtok_r(NULL, "\n", &tok_ptr); s != NULL;
 	     s = strtok_r(NULL, "\n", &tok_ptr)) {
 
-		struct model_config model = {0};
+		struct model_config model = { .is_unibuild = true, };
 		int discard_model = 0;
 
 		/*
@@ -384,19 +384,7 @@ static int manifest_from_signer_config(struct manifest *manifest)
 			if (!base_model_config) {
 				ERROR("Invalid CL-model: %s\n", base_model);
 			} else if (!base_model_config->is_custom_label) {
-				base_model_config->is_custom_label = 1;
-				/*
-				 * Rewriting signature_id is not necessary,
-				 * but currently the special signature_id (from
-				 * legacy setvars) is still the only way to
-				 * identify custom label models.
-				 * TODO(hungte) Remove the rewriting when we
-				 * have changed the custom label models to real
-				 * models.
-				 */
-				free(base_model_config->signature_id);
-				base_model_config->signature_id = strdup(
-						"sig-id-in-customization-id");
+				base_model_config->is_custom_label = true;
 				/*
 				 * Currently we are merging all custom label
 				 * models into one single model in the manifest,
@@ -418,7 +406,6 @@ static int manifest_from_signer_config(struct manifest *manifest)
 		/* Find patch files. */
 		find_patches_for_model(&model, archive, model.name);
 
-		model.signature_id = strdup(model.name);
 		if (!manifest_add_model(manifest, &model))
 			break;
 	}
@@ -468,7 +455,7 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	if (!model.name)
 		model.name = strdup(DEFAULT_MODEL_NAME);
 	if (manifest->has_keyset)
-		model.is_custom_label = 1;
+		model.is_custom_label = true;
 	manifest_add_model(manifest, &model);
 	manifest->default_model = manifest->num - 1;
 
@@ -598,7 +585,7 @@ cleanup:
  */
 static char *resolve_signature_id(struct model_config *model, const char *image)
 {
-	int is_unibuild = model->signature_id ? 1 : 0;
+	bool is_unibuild = model->is_unibuild;
 	char *tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG);
 	char *sig_id = NULL;
 
@@ -740,7 +727,6 @@ void delete_manifest(struct manifest *manifest)
 	for (i = 0; i < manifest->num; i++) {
 		struct model_config *model = &manifest->models[i];
 		free(model->name);
-		free(model->signature_id);
 		free(model->image);
 		free(model->ec_image);
 		clear_patch_config(&model->patches);
@@ -846,9 +832,6 @@ void print_json_manifest(const struct manifest *manifest)
 				printf(", \"gscvd\": \"%s\"", p->gscvd);
 			printf(" }");
 		}
-		if (m->signature_id)
-			printf(",\n%*s\"signature_id\": \"%s\"", indent, "",
-			       m->signature_id);
 		printf("\n  }");
 		indent -= 2;
 		assert(indent == 2);
