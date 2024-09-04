@@ -167,8 +167,7 @@ struct model_config {
 	char *name;
 	char *image, *ec_image;
 	struct patch_config patches;
-	char *signature_id;
-	int is_custom_label;
+	bool is_custom_label, is_unibuild;
 };
 
 struct manifest {
