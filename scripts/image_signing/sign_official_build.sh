@@ -1105,7 +1105,7 @@ resign_minios_kernels() {
   # miniOS B - loop device 10.
   local loop_minios_b="${loopdev}p10"
   local part_type_b
-  part_type_b="$(get_partition_type "${loopdev}" 9)"
+  part_type_b="$(get_partition_type "${loopdev}" 10)"
 
   # Make sure the loop devices have a miniOS partition type.
   if [[ "${part_type_a^^}" == "${MINIOS_KERNEL_GUID}" ]]; then
