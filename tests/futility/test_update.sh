@@ -104,6 +104,12 @@ cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.large"
 truncate -s $((8388608 * 2)) "${FROM_IMAGE}.large"
 
+# Create the FROM_SAME_RO_IMAGE using the RO from TO_IMAGE."
+FROM_SAME_RO_IMAGE="${FROM_IMAGE}.same_ro"
+cp -f "${FROM_IMAGE}" "${FROM_SAME_RO_IMAGE}"
+"${FUTILITY}" load_fmap "${FROM_SAME_RO_IMAGE}" \
+  "RO_SECTION:${TMP}.to/RO_SECTION"
+
 # Create GBB v1.2 images (for checking digest)
 GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE}")"
 [ "${GBB_OUTPUT}" = "digest: <none>" ]
@@ -131,6 +137,7 @@ cp -f "${TO_IMAGE}" "${TMP}.expected.full"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.rw"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.a"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.b"
+cp -f "${FROM_SAME_RO_IMAGE}" "${TMP}.FROM_SAME_RO_IMAGE.expected.b"
 cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 "${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${TMP}.expected.full"
 "${FUTILITY}" load_fmap "${TMP}.expected.full" \
@@ -144,6 +151,8 @@ cp -f "${FROM_IMAGE}" "${TMP}.expected.legacy"
 "${FUTILITY}" load_fmap "${TMP}.expected.a" \
   "RW_SECTION_A:${TMP}.to/RW_SECTION_A"
 "${FUTILITY}" load_fmap "${TMP}.expected.b" \
+  "RW_SECTION_B:${TMP}.to/RW_SECTION_B"
+"${FUTILITY}" load_fmap "${TMP}.FROM_SAME_RO_IMAGE.expected.b" \
   "RW_SECTION_B:${TMP}.to/RW_SECTION_B"
 "${FUTILITY}" load_fmap "${TMP}.expected.legacy" \
   "RW_LEGACY:${TMP}.to/RW_LEGACY"
@@ -341,6 +350,14 @@ test_update "RW update (A->B)" \
 test_update "RW update (B->A)" \
   "${FROM_IMAGE}" "${TMP}.expected.a" \
   -i "${TO_IMAGE}" -t --wp=1 --sys_props 1
+
+test_update "RW update, same RO, wp=0 (A->B)" \
+  "${FROM_SAME_RO_IMAGE}" "${TMP}.FROM_SAME_RO_IMAGE.expected.b" \
+  -i "${TO_IMAGE}" -t --wp=0 --sys_props 0
+
+test_update "RW update, same RO, wp=1 (A->B)" \
+  "${FROM_SAME_RO_IMAGE}" "${TMP}.FROM_SAME_RO_IMAGE.expected.b" \
+  -i "${TO_IMAGE}" -t --wp=1 --sys_props 0
 
 test_update "RW update -> fallback to RO+RW Full update" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
