@@ -151,4 +151,13 @@ vb2_error_t VbBootDeveloperLegacyMenu(struct vb2_context *ctx);
  */
 vb2_error_t VbBootRecoveryLegacyMenu(struct vb2_context *ctx);
 
+/**
+ * Check if the parameters require an officially signed OS.
+ *
+ * @param params	Load kernel parameters
+ * @return 1 if official OS required; 0 if self-signed kernels are ok
+ */
+int require_official_os(struct vb2_context *ctx,
+		        const LoadKernelParams *params);
+
 #endif  /* VBOOT_REFERENCE_VBOOT_KERNEL_H_ */

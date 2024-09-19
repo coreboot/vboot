@@ -452,6 +452,8 @@ ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
 # into expected location beforehand.
 ifneq (${USE_AVB},)
 include firmware/avb/Makefile
+FWLIB_SRCS += \
+	firmware/lib/vboot_android_kernel.c
 endif
 # Intermediate library for the vboot_reference utilities to link against.
 UTILLIB = ${BUILD}/libvboot_util.a
