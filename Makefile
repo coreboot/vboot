@@ -423,6 +423,8 @@ ALL_OBJS += ${FWLIB_OBJS} ${TLCL_OBJS}
 # into expected location beforehand.
 ifneq (${USE_AVB},)
 include firmware/avb/Makefile
+FWLIB_SRCS += \
+	firmware/2lib/2load_android_kernel.c
 endif
 
 # Maintain behaviour of default on.
