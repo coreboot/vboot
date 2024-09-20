@@ -520,55 +520,20 @@ test_update "Full update (--archive, single package)" \
   "${FROM_IMAGE}" "${TMP}.expected.full" \
   -a "${A}" --wp=0 --sys_props ,,3
 
-echo "TEST: Output (--mode=output)"
-mkdir -p "${TMP}.output"
-"${FUTILITY}" update -i "${LINK_BIOS}" --mode=output \
-  --output_dir="${TMP}.output"
-cmp "${LINK_BIOS}" "${TMP}.output/image.bin"
+echo "TEST: Output (--archive, --mode=output)"
+TMP_OUTPUT="${TMP}.out_archive" && mkdir -p "${TMP_OUTPUT}"
+"${FUTILITY}" update -a "${A}" --mode=output \
+  --output_dir="${TMP_OUTPUT}"
+cmp "${TMP_OUTPUT}/image.bin" "${TO_IMAGE}"
 
-mkdir -p "${A}/keyset"
+# Test Unified Build archives.
+mkdir -p "${A}/keyset" "${A}/images"
+cp -f "${SIGNER_CONFIG}" "${A}/"
 cp -f "${LINK_BIOS}" "${A}/image.bin"
-cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.CL"
-cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.CL"
-cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.CL"
 "${FUTILITY}" gbb -s --rootkey="${TMP}.from/rootkey" "${A}/image.bin"
 "${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_A:"${TMP}.from/VBLOCK_A"
 "${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_B:"${TMP}.from/VBLOCK_B"
-
-test_update "Full update (--archive, custom label, no VPD)" \
-  "${A}/image.bin" "!Need VPD set for custom" \
-  -a "${A}" --wp=0 --sys_props ,,3
-
-test_update "Full update (--archive, custom label, no VPD - factory mode)" \
-  "${LINK_BIOS}" "${A}/image.bin" \
-  -a "${A}" --wp=0 --sys_props ,,3 --mode=factory
-
-test_update "Full update (--archive, custom label, no VPD - quirk mode)" \
-  "${LINK_BIOS}" "${A}/image.bin" \
-  -a "${A}" --wp=0 --sys_props ,,3 \
-  --quirks=allow_empty_custom_label_tag
-
-test_update "Full update (--archive, custom label, single package)" \
-  "${A}/image.bin" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props ,,3 --signature_id=CL
-
-CL_TAG="CL" PATH="${A}/bin:${PATH}" \
-  test_update "Full update (--archive, custom label, fake vpd)" \
-  "${A}/image.bin" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props ,,3
-
-echo "TEST: Output (-a, --mode=output)"
-mkdir -p "${TMP}.outa"
-cp -f "${A}/image.bin" "${TMP}.emu"
-CL_TAG="CL" PATH="${A}/bin:${PATH}" \
-  "${FUTILITY}" update -a "${A}" --mode=output --emu="${TMP}.emu" \
-  --output_dir="${TMP}.outa"
-cmp "${LINK_BIOS}" "${TMP}.outa/image.bin"
-
-# Test archive with Unified Build contents.
-cp -f "${SIGNER_CONFIG}" "${A}/"
-mkdir -p "${A}/images"
-mv "${A}/image.bin" "${A}/images/bios_coral.bin"
+mv -f "${A}/image.bin" "${A}/images/bios_coral.bin"
 cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
 cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.customtip-cl"
@@ -589,10 +554,6 @@ test_update "Full update (--archive, model=peppy)" \
 test_update "Full update (--archive, model=unknown)" \
   "${FROM_IMAGE}.ap" "!Unsupported model: 'unknown'" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=unknown
-test_update "Full update (--archive, model=customtip, signature_id=CL)" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip \
-  --signature_id=customtip-cl
 
 test_update "Full update (--archive, detect-model)" \
   "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
@@ -608,21 +569,33 @@ echo "*** Test Item: Detect model (--archive, --detect-model-only)"
   --emulate "${FROM_IMAGE}.ap" --detect-model-only >"${TMP}.model.out"
 cmp "${TMP}.model.out" <(echo peppy)
 
+test_update "Full update (--archive, custom label, signature_id=customtip-cl)" \
+  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip \
+  --signature_id=customtip-cl
+CL_TAG="bad" PATH="${A}/bin:${PATH}" \
+  test_update "Full update (--archive, custom label, wrong image)" \
+  "${FROM_IMAGE}.al" "!The firmware image for custom label" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --debug --model=customtip
 CL_TAG="cl" PATH="${A}/bin:${PATH}" \
-  test_update "Full update (-a, model=customtip, fake VPD)" \
+  test_update "Full update (--archive, custom label, fake VPD)" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
 
-# Custom label + Unibuild without default keys
-test_update "Full update (--a, model=customtip, no VPD, no default keys)" \
-  "${FROM_IMAGE}.al" "!Need VPD set for custom" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
+# The output mode (without specifying signature id) for custom label would still
+# need a source (emulate) image to decide the VPD, which is not a real use case.
+echo "TEST: Output (--archive, --mode=output, custom label, signature_id)"
+TMP_OUTPUT="${TMP}.out_custom_label" && mkdir -p "${TMP_OUTPUT}"
+"${FUTILITY}" update -a "${A}" --mode=output \
+  --output_dir="${TMP_OUTPUT}" --model=customtip \
+  --signature_id=customtip-cl
+cmp "${TMP_OUTPUT}/image.bin" "${LINK_BIOS}"
 
 # Custom label + Unibuild with default keys as model name
 cp -f "${TMP}.to/rootkey" "${A}/keyset/rootkey.customtip"
 cp -f "${TMP}.to/VBLOCK_A" "${A}/keyset/vblock_A.customtip"
 cp -f "${TMP}.to/VBLOCK_B" "${A}/keyset/vblock_B.customtip"
-test_update "Full update (-a, model=customtip, no VPD, default keys)" \
+test_update "Full update (--archive, custom label, no VPD, default keys)" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
 
@@ -677,9 +650,11 @@ if type ifdtool >/dev/null 2>&1; then
     --unlock_me -i "${TO_IMAGE}.ifd_chipset" --wp=0
 
   echo "TEST: Output (--mode=output, --quirks unlock_csme)"
+  TMP_OUTPUT="${TMP}.out_csme" && mkdir -p "${TMP_OUTPUT}"
+  mkdir -p "${TMP_OUTPUT}"
   "${FUTILITY}" update -i "${TMP}.expected.ifd_chipset" --mode=output \
-    --output_dir="${TMP}.output" --quirks unlock_csme
-  cmp "${TMP}.expected.me_unlocked.ifd_chipset" "${TMP}.output/image.bin"
+    --output_dir="${TMP_OUTPUT}" --quirks unlock_csme
+  cmp "${TMP_OUTPUT}/image.bin" "${TMP}.expected.me_unlocked.ifd_chipset"
 fi
 
 rm -rf "${TMP}"*

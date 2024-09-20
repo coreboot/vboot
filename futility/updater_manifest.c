@@ -22,30 +22,36 @@
  * image files in the top folder:
  *  - host: 'image.bin'
  *  - ec: 'ec.bin'
- *  - pd: 'pd.bin'
- *
- * If custom label is supported, a 'keyset/' folder will be available, with key
- * files in it:
- *  - rootkey.$CLTAG
- *  - vblock_A.$CLTAG
- *  - vblock_B.$CLTAG
- *
- * The $CLTAG should come from VPD value 'custom_label_tag'. For legacy devices,
- * the VPD name may be 'whitelabel_tag', or 'customization_id'.
- * The 'customization_id' has a different format: LOEM[-VARIANT] and we can only
- * take LOEM as $CLTAG, for example A-B => $CLTAG=A.
  *
  * A package for Unified Build is more complicated.
  *
- * You need to look at the signer_config.csv file to find image files and their
- * firmware manifest key (usually the same as the model name), then search for
- * patch files in the keyset/ folder.
+ * You need to look at the signer_config.csv file to find the columns of
+ * model_name, image files (firmware_image, ec_image) and then search for
+ * patch files (root key, vblock files, GSC verification data, ...) in the
+ * keyset/ folder:
  *
- * Similar to custom label in non-Unified-Build, the keys and vblock files will
- * be available in the 'keyset/' folder:
- *  - rootkey.$MANIFEST_KEY
- *  - vblock_A.$MANIFEST_KEY
- *  - vblock_B.$MANIFEST_KEY
+ *  - rootkey.$MODEL_NAME
+ *  - vblock_A.$MODEL_NAME
+ *  - vblock_B.$MODEL_NAME
+ *  - gscvd.$MODEL_NAME
+ *
+ * In the runtime, the updater should query for firmware manifest key (
+ * `crosid -f FIRMWARE_MANIFEST_KEY`) and use that to match the 'model_name'
+ * in the manifest database.
+ *
+ * If the model_name in `signer_config.csv` contains '-' then it is a custom
+ * label device. Today the FIRMWARE_MANIFEST_KEY from crosid won't handle custom
+ * label information and we have to add the custom label tag in the matching
+ * process.
+ *
+ * To do that, find the custom label tag from the VPD.
+ * - Newer devices: model_name = FIRMWARE_MANIFEST_KEY-$custom_label_tag
+ * - Old devices: model_name = FIRMWARE_MANIFEST_KEY-$whitelabel_tag
+ *
+ * For legacy devices manufactured before Unified Build, they have the VPD
+ * 'customization_id' in a special format: LOEM[-VARIANT].
+ * For example: "A-B" => LOEM="A".
+ * - Legacy devices: model_name = FIRMWARE_MANIFEST_KEY-$LOEM
  */
 
 static const char * const DEFAULT_MODEL_NAME = "default",
@@ -350,8 +356,7 @@ static int manifest_from_signer_config(struct manifest *manifest)
 	for (s = strtok_r(NULL, "\n", &tok_ptr); s != NULL;
 	     s = strtok_r(NULL, "\n", &tok_ptr)) {
 
-		struct model_config model = { .is_unibuild = true, };
-		int discard_model = 0;
+		struct model_config model = {0};
 
 		/*
 		 * Both keyid (%3) and ec_image (%4) are optional so we want to
@@ -360,47 +365,37 @@ static int manifest_from_signer_config(struct manifest *manifest)
 		if (sscanf(s, "%m[^,],%m[^,],%*[^,],%m[^,]",
 		    &model.name, &model.image, &model.ec_image) < 2) {
 			ERROR("Invalid entry(%s): %s\n", PATH_SIGNER_CONFIG, s);
-			discard_model = 1;
-		} else if (strchr(model.name, '-')) {
-			/* format: BaseModel-CustomLabel */
-			char *tok_dash;
-			char *base_model;
-			struct model_config *base_model_config;
-
-			VB2_DEBUG("Found custom-label: %s\n", model.name);
-			discard_model = 1;
-			base_model = strtok_r(model.name, "-", &tok_dash);
-			assert(base_model);
-
-			/*
-			 * Currently we assume the base model (e.g., base_model)
-			 * is always listed before CL models in the CSV file -
-			 * this is based on how the signerbot and the
-			 * chromeos-config works today (validated on octopus).
-			 */
-			base_model_config = manifest_get_model_config(
-					manifest, base_model);
-
-			if (!base_model_config) {
-				ERROR("Invalid CL-model: %s\n", base_model);
-			} else if (!base_model_config->is_custom_label) {
-				base_model_config->is_custom_label = true;
-				/*
-				 * Currently we are merging all custom label
-				 * models into one single model in the manifest,
-				 * and will discover the patches later from VPD.
-				 * As a result, the existing patches should be
-				 * cleared.
-				 */
-				clear_patch_config(&base_model_config->patches);
-			}
-		}
-
-		if (discard_model) {
 			free(model.name);
 			free(model.image);
 			free(model.ec_image);
 			continue;
+		}
+
+		if (strchr(model.name, '-')) {
+			/* format: BaseModelName-CustomLabelTag */
+			struct model_config *base_model;
+			char *tok_dash;
+			char *base_name = strdup(model.name);
+
+			VB2_DEBUG("Found custom-label: %s\n", model.name);
+			base_name = strtok_r(base_name, "-", &tok_dash);
+			assert(base_name);
+
+			/*
+			 * Currently we assume the base model (e.g., base_name)
+			 * is always listed before CL models in the CSV file -
+			 * this is based on how the signerbot and the
+			 * chromeos-config works today (validated on octopus).
+			 */
+			base_model = manifest_get_model_config(manifest, base_name);
+
+			if (!base_model) {
+				ERROR("Invalid base model for custom label: %s\n", base_name);
+			} else if (!base_model->has_custom_label) {
+				base_model->has_custom_label = true;
+			}
+
+			free(base_name);
 		}
 
 		/* Find patch files. */
@@ -454,8 +449,6 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	}
 	if (!model.name)
 		model.name = strdup(DEFAULT_MODEL_NAME);
-	if (manifest->has_keyset)
-		model.is_custom_label = true;
 	manifest_add_model(manifest, &model);
 	manifest->default_model = manifest->num - 1;
 
@@ -579,94 +572,78 @@ cleanup:
 }
 
 /*
- * Determines the signature ID to use for custom label.
- * Returns the signature ID for looking up rootkey and vblock files.
+ * Determines the custom label tag.
+ * Returns the tag string, or NULL if not found.
  * Caller must free the returned string.
  */
-static char *resolve_signature_id(struct model_config *model, const char *image)
+static char *get_custom_label_tag(const char *image_file)
 {
-	bool is_unibuild = model->is_unibuild;
-	char *tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG);
-	char *sig_id = NULL;
+	/* TODO(hungte) Switch to look at /sys/firmware/vpd/ro/$KEY. */
+	char *tag;
 
-	if (tag == NULL)
-		tag = vpd_get_value(image, VPD_CUSTOM_LABEL_TAG_LEGACY);
-
-	/*
-	 * All active non-unibuild devices have now migrated to run unibuild
-	 * software, so we have to check customization_id first for those
-	 * devices (in particular, 'haha').
-	 */
-	/* The tag should be the LOEM part of the customization_id. */
-	if (!tag) {
-		char *cid = vpd_get_value(image, VPD_CUSTOMIZATION_ID);
-		if (cid) {
-			/* customization_id in format LOEM[-VARIANT]. */
-			char *dash = strchr(cid, '-');
-			if (dash)
-				*dash = '\0';
-			tag = cid;
-			WARN("From %s: tag=%s\n", VPD_CUSTOMIZATION_ID, tag);
-		}
-	}
-
-	/* Unified build: $model.$tag, or $model (b/126800200). */
-	if (is_unibuild) {
-		if (!tag) {
-			WARN("No VPD '%s' set for custom label. "
-			     "Use model name '%s' as default.\n",
-			     VPD_CUSTOM_LABEL_TAG, model->name);
-			return strdup(model->name);
-		}
-
-		ASPRINTF(&sig_id, "%s-%s", model->name, tag);
-		free(tag);
-		return sig_id;
-	}
-
-	/* Non-unibuilds are always upper cased. */
+	tag = vpd_get_value(image_file, VPD_CUSTOM_LABEL_TAG);
 	if (tag)
-		str_convert(tag, toupper);
+		return tag;
+
+	tag = vpd_get_value(image_file, VPD_CUSTOM_LABEL_TAG_LEGACY);
+	if (tag)
+		return tag;
+
+	tag = vpd_get_value(image_file, VPD_CUSTOMIZATION_ID);
+	/* VPD_CUSTOMIZATION_ID is complicated and can't be returned directly. */
+	if (!tag)
+		return NULL;
+
+	/* For VPD_CUSTOMIZATION_ID=LOEM[-VARIANT], we need only capitalized LOEM. */
+	INFO("Using deprecated custom label tag: %s=%s\n", VPD_CUSTOMIZATION_ID, tag);
+	char *dash = strchr(tag, '-');
+	if (dash)
+		*dash = '\0';
+	str_convert(tag, toupper);
+	VB2_DEBUG("Applied tag from %s: %s\n", tag, VPD_CUSTOMIZATION_ID);
 	return tag;
 }
 
-/*
- * Applies custom label information to an existing model configuration.
- * Collects signature ID information from either parameter signature_id or
- * image file (via VPD) and updates model.patches for key files.
- * Returns 0 on success, otherwise failure.
- */
-int model_apply_custom_label(
-		struct model_config *model,
-		struct u_archive *archive,
-		const char *signature_id,
-		const char *image)
+const struct model_config *manifest_find_custom_label_model(
+		struct updater_config *cfg,
+		const struct manifest *manifest,
+		const struct model_config *base_model,
+		const char *signature)
 {
-	char *sig_id = NULL;
-	int r = 0;
+	const struct model_config *model = base_model;
+	char *new_sig = NULL;
 
-	if (!signature_id) {
-		sig_id = resolve_signature_id(model, image);
-		signature_id = sig_id;
+	if (!signature) {
+		assert(cfg->image_current.data);
+		const char *tmp_image = get_firmware_image_temp_file(
+				&cfg->image_current, &cfg->tempfiles);
+		if (!tmp_image) {
+			ERROR("Failed to save the system firmware to a file.\n");
+			return NULL;
+		}
+		char *tag = get_custom_label_tag(tmp_image);
+		if (!tag) {
+			WARN("No custom label tag (VPD '%s'). "
+			     "Use default keys from the base model.\n",
+			     VPD_CUSTOM_LABEL_TAG);
+			return base_model;
+		}
+		VB2_DEBUG("Found custom label tag: %s\n", tag);
+		ASPRINTF(&new_sig, "%s-%s", base_model->name, tag);
+		free(tag);
+		signature = new_sig;
+	}
+	INFO("Find custom label model info using '%s'...\n", signature);
+	model = manifest_find_model(cfg, manifest, signature);
+
+	if (model) {
+		INFO("Applied custom label model: %s\n", signature);
+	} else {
+		ERROR("Invalid custom label model: %s\n", signature);
 	}
 
-	if (signature_id) {
-		VB2_DEBUG("Find custom label patches by signature ID: '%s'.\n",
-		      signature_id);
-		find_patches_for_model(model, archive, signature_id);
-	} else {
-		signature_id = "";
-		WARN("No VPD '%s' set for custom label - use default keys.\n",
-		     VPD_CUSTOM_LABEL_TAG);
-	}
-	if (!model->patches.rootkey) {
-		ERROR("No keys found for signature_id: '%s'\n", signature_id);
-		r = 1;
-	} else {
-		INFO("Applied for custom label: %s\n", signature_id);
-	}
-	free(sig_id);
-	return r;
+	free(new_sig);
+	return model;
 }
 
 static int manifest_from_build_artifacts(struct manifest *manifest) {
@@ -690,9 +667,6 @@ struct manifest *new_manifest_from_archive(struct u_archive *archive)
 
 	manifest.archive = archive;
 	manifest.default_model = -1;
-	if (archive_has_entry(archive, PATH_KEYSET_FOLDER))
-		manifest.has_keyset = 1;
-	VB2_DEBUG("Has keyset: %s\n", manifest.has_keyset ? "True" : "False");
 
 	for (i = 0; !manifest.num && i < ARRAY_SIZE(manifest_builders); i++) {
 		/*
