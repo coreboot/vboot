@@ -569,10 +569,9 @@ echo "*** Test Item: Detect model (--archive, --detect-model-only)"
   --emulate "${FROM_IMAGE}.ap" --detect-model-only >"${TMP}.model.out"
 cmp "${TMP}.model.out" <(echo peppy)
 
-test_update "Full update (--archive, custom label, signature_id=customtip-cl)" \
+test_update "Full update (--archive, custom label with tag specified)" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip \
-  --signature_id=customtip-cl
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip-cl
 CL_TAG="bad" PATH="${A}/bin:${PATH}" \
   test_update "Full update (--archive, custom label, wrong image)" \
   "${FROM_IMAGE}.al" "!The firmware image for custom label" \
@@ -584,11 +583,10 @@ CL_TAG="cl" PATH="${A}/bin:${PATH}" \
 
 # The output mode (without specifying signature id) for custom label would still
 # need a source (emulate) image to decide the VPD, which is not a real use case.
-echo "TEST: Output (--archive, --mode=output, custom label, signature_id)"
+echo "TEST: Output (--archive, --mode=output, custom label with tag specified)"
 TMP_OUTPUT="${TMP}.out_custom_label" && mkdir -p "${TMP_OUTPUT}"
 "${FUTILITY}" update -a "${A}" --mode=output \
-  --output_dir="${TMP_OUTPUT}" --model=customtip \
-  --signature_id=customtip-cl
+  --output_dir="${TMP_OUTPUT}" --model=customtip-cl
 cmp "${TMP_OUTPUT}/image.bin" "${LINK_BIOS}"
 
 # Custom label + Unibuild with default keys as model name

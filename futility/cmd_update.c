@@ -136,6 +136,7 @@ static void print_help(int argc, char *argv[])
 		"    --force         \tForce update (skip checking contents)\n"
 		"    --output_dir=DIR\tSpecify the target for --mode=output\n"
 		"    --unlock_me     \t(deprecated) Unlock the Intel ME before flashing\n"
+		"    --signature_id=S\t(deprecated) Same as --model\n"
 		"\n"
 		"Debugging and testing options:\n"
 		"    --wp=1|0        \tSpecify write protection status\n"
@@ -143,7 +144,6 @@ static void print_help(int argc, char *argv[])
 		"    --model=MODEL   \tOverride system model for images\n"
 		"    --detect-model-only\tDetect model by reading the FRID and exit\n"
 		"    --gbb_flags=FLAG\tOverride new GBB flags\n"
-		"    --signature_id=S\tOverride signature ID for key files\n"
 		"    --sys_props=LIST\tList of system properties to override\n"
 		"-d, --debug         \tPrint debugging messages\n"
 		"-v, --verbose       \tPrint verbose messages\n"
@@ -158,6 +158,7 @@ static int do_update(int argc, char *argv[])
 	const char *prepare_ctrl_name = NULL;
 	char *servo_programmer = NULL;
 	char *endptr;
+	const char *sig = NULL;
 
 	struct updater_config *cfg = updater_new_config();
 	assert(cfg);
@@ -217,13 +218,21 @@ static int do_update(int argc, char *argv[])
 			args.output_dir = optarg;
 			break;
 		case OPT_MODEL:
+			if (sig) {
+				WARN("Ignore --model=%s because --signature_id=%s is already specified.\n", optarg, sig);
+			} else {
+				args.model = optarg;
+			}
+			break;
+		case OPT_SIGNATURE:
+			WARN("--signature_id is deprecated by --model. "
+			      "Please change to `--model=%s` in future.\n",
+			      optarg);
+			sig = optarg;
 			args.model = optarg;
 			break;
 		case OPT_DETECT_MODEL_ONLY:
 			args.detect_model_only = true;
-			break;
-		case OPT_SIGNATURE:
-			args.signature_id = optarg;
 			break;
 		case OPT_WRITE_PROTECTION:
 			args.write_protection = optarg;
