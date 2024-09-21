@@ -205,8 +205,7 @@ int patch_image_by_model(
  * Updates `model` argument with path of patch files.
  */
 static void find_patches_for_model(struct model_config *model,
-				   struct u_archive *archive,
-				   const char *signature_id)
+				   struct u_archive *archive)
 {
 	char *path;
 	int i;
@@ -227,7 +226,7 @@ static void find_patches_for_model(struct model_config *model,
 
 	assert(ARRAY_SIZE(names) == ARRAY_SIZE(targets));
 	for (i = 0; i < ARRAY_SIZE(names); i++) {
-		ASPRINTF(&path, "%s%s.%s", PATH_KEYSET_FOLDER, names[i], signature_id);
+		ASPRINTF(&path, "%s%s.%s", PATH_KEYSET_FOLDER, names[i], model->name);
 		if (archive_has_entry(archive, path))
 			*targets[i] = path;
 		else
@@ -336,8 +335,8 @@ static int manifest_from_signer_config(struct manifest *manifest)
 	/*
 	 * CSV format: model_name,firmware_image,key_id,ec_image
 	 *
-	 * Note the key_id is not signature_id and won't be used, and ec_image
-	 * may be optional (for example sarien).
+	 * Note the key_id is for signer and won't be used by the updater,
+	 * and ec_image may be optional (for example sarien).
 	 */
 
 	if (archive_read_file(archive, PATH_SIGNER_CONFIG, &data, &size,NULL)) {
@@ -399,7 +398,7 @@ static int manifest_from_signer_config(struct manifest *manifest)
 		}
 
 		/* Find patch files. */
-		find_patches_for_model(&model, archive, model.name);
+		find_patches_for_model(&model, archive);
 
 		if (!manifest_add_model(manifest, &model))
 			break;
@@ -607,42 +606,50 @@ static char *get_custom_label_tag(const char *image_file)
 const struct model_config *manifest_find_custom_label_model(
 		struct updater_config *cfg,
 		const struct manifest *manifest,
-		const struct model_config *base_model,
-		const char *signature)
+		const struct model_config *base_model)
 {
-	const struct model_config *model = base_model;
-	char *new_sig = NULL;
+	const struct model_config *model;
 
-	if (!signature) {
-		assert(cfg->image_current.data);
-		const char *tmp_image = get_firmware_image_temp_file(
-				&cfg->image_current, &cfg->tempfiles);
-		if (!tmp_image) {
-			ERROR("Failed to save the system firmware to a file.\n");
-			return NULL;
-		}
-		char *tag = get_custom_label_tag(tmp_image);
-		if (!tag) {
-			WARN("No custom label tag (VPD '%s'). "
-			     "Use default keys from the base model.\n",
-			     VPD_CUSTOM_LABEL_TAG);
-			return base_model;
-		}
-		VB2_DEBUG("Found custom label tag: %s\n", tag);
-		ASPRINTF(&new_sig, "%s-%s", base_model->name, tag);
-		free(tag);
-		signature = new_sig;
+	/*
+	 * Some custom label devices shipped with wrong key and must change
+	 * their model names to match the right data.
+	 */
+	if (get_config_quirk(QUIRK_OVERRIDE_CUSTOM_LABEL, cfg)) {
+		model = quirk_override_custom_label(cfg, manifest, base_model);
+		if (model)
+			return model;
 	}
-	INFO("Find custom label model info using '%s'...\n", signature);
-	model = manifest_find_model(cfg, manifest, signature);
+
+	assert(cfg->image_current.data);
+	const char *tmp_image = get_firmware_image_temp_file(
+			&cfg->image_current, &cfg->tempfiles);
+	if (!tmp_image) {
+		ERROR("Failed to save the system firmware to a file.\n");
+		return NULL;
+	}
+
+	char *tag = get_custom_label_tag(tmp_image);
+	if (!tag) {
+		WARN("No custom label tag (VPD '%s'). "
+		     "Use default keys from the base model '%s'.\n",
+		     VPD_CUSTOM_LABEL_TAG, base_model->name);
+		return base_model;
+	}
+
+	VB2_DEBUG("Found custom label tag: %s (base=%s)\n", tag, base_model->name);
+	char *name;
+	ASPRINTF(&name, "%s-%s", base_model->name, tag);
+	free(tag);
+
+	INFO("Find custom label model info using '%s'...\n", name);
+	model = manifest_find_model(cfg, manifest, name);
 
 	if (model) {
-		INFO("Applied custom label model: %s\n", signature);
+		INFO("Applied custom label model: %s\n", name);
 	} else {
-		ERROR("Invalid custom label model: %s\n", signature);
+		ERROR("Invalid custom label model: %s\n", name);
 	}
-
-	free(new_sig);
+	free(name);
 	return model;
 }
 

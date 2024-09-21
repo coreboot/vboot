@@ -1386,29 +1386,50 @@ static int updater_setup_archive(
 	errorcnt += updater_load_images(
 			cfg, arg, model->image, model->ec_image);
 
-	if (model->has_custom_label) {
+	/*
+	 * For custom label devices, we have to read the system firmware
+	 * (image_current) to get the tag from VPD. Some quirks may also need
+	 * the system firmware to identify if they should override the tags.
+	 *
+	 * The only exception is `--mode=output` (cfg->output_only), which we
+	 * usually add `--model=MODEL` to specify the target model (note some
+	 * people may still run without `--model` to get "the image to update
+	 * when running on this device"). The MODEL can be either the BASEMODEL
+	 * (has_custom_label=true) or BASEMODEL-TAG (has_custom_label=false).
+	 * So the only case we have to warn the user that they may forget to
+	 * provide the TAG is when has_custom_label=true (only BASEMODEL).
+	 */
+	if (cfg->output_only && arg->model && model->has_custom_label) {
+		printf(">> Generating output for a custom label device without tags (e.g., base model). "
+		       "The firmware images will be signed using the base model (or DEFAULT) keys. "
+		       "To get the images signed by the LOEM keys, "
+		       "add the corresponding tag from one of the following list: \n");
 
+		size_t len = strlen(arg->model);
+		bool printed = false;
+		int i;
+
+		for (i = 0; i < manifest->num; i++) {
+			const struct model_config *m = &manifest->models[i];
+			if (strncmp(m->name, arg->model, len) || m->name[len] != '-')
+				continue;
+			printf("%s `--model=%s`", printed ? "," : "", m->name);
+			printed = true;
+		}
+		printf("\n\n");
+	} else if (model->has_custom_label) {
 		if (!cfg->image_current.data) {
 			INFO("Loading system firmware for custom label...\n");
 			load_system_firmware(cfg, &cfg->image_current);
 		}
 
-		const char *signature_id = arg->signature_id;
-		const struct model_config *base_model = model;
-
-		if (!signature_id &&
-		    get_config_quirk(QUIRK_OVERRIDE_SIGNATURE_ID, cfg) &&
-		    is_ap_write_protection_enabled(cfg))
-			quirk_override_signature_id(
-					cfg, model, &signature_id);
-
 		/*
 		 * For custom label devices, manifest_find_model may return the
 		 * base model instead of the custom label ones so we have to
-		 * look up again using the signature_id.
+		 * look up again.
 		 */
-		model = manifest_find_custom_label_model(
-				cfg, manifest, base_model, signature_id);
+		const struct model_config *base_model = model;
+		model = manifest_find_custom_label_model(cfg, manifest, base_model);
 		if (!model)
 			return ++errorcnt;
 		/*
