@@ -56,7 +56,7 @@ enum quirk_types {
 	QUIRK_CLEAR_MRC_DATA,
 	QUIRK_PRESERVE_ME,
 	/* Platform-specific quirks (removed after AUE) */
-	QUIRK_OVERRIDE_SIGNATURE_ID,
+	QUIRK_OVERRIDE_CUSTOM_LABEL,
 	QUIRK_EVE_SMM_STORE,
 	QUIRK_UNLOCK_CSME_EVE,
 	QUIRK_UNLOCK_CSME,
@@ -108,7 +108,7 @@ struct updater_config_arguments {
 	char *image, *ec_image;
 	char *archive, *quirks, *mode;
 	const char *programmer, *write_protection;
-	char *model, *signature_id;
+	char *model;
 	char *emulation, *sys_props;
 	char *output_dir;
 	char *repack, *unpack;
@@ -266,12 +266,13 @@ const char * const updater_get_model_quirks(struct updater_config *cfg);
 char * updater_get_cbfs_quirks(struct updater_config *cfg);
 
 /*
- * Overrides signature id if the device was shipped with known
+ * Overrides the custom label config if the device was shipped with known
  * special rootkey.
  */
-int quirk_override_signature_id(const struct updater_config *cfg,
-				const struct model_config *model,
-				const char **signature_id);
+const struct model_config *quirk_override_custom_label(
+		struct updater_config *cfg,
+		const struct manifest *manifest,
+		const struct model_config *model);
 
 /* Functions from updater_archive.c */
 
@@ -369,14 +370,12 @@ manifest_detect_model_from_frid(struct updater_config *cfg,
 /*
  * Finds the custom label model config from the base model + system tag.
  * The system tag came from the firmware VPD section.
- * We may also override model+tag by the 'signature' parameter.
  * Returns the matched model_config, base if no applicable custom label data,
  * or NULL for any critical error.
  */
 const struct model_config *manifest_find_custom_label_model(
 		struct updater_config *cfg,
 		const struct manifest *manifest,
-		const struct model_config *base_model,
-		const char *signature);
+		const struct model_config *base_model);
 
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_H_ */
