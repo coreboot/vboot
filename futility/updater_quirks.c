@@ -40,8 +40,6 @@ static const struct quirks_record quirks_records[] = {
 	{ .match = "Google_Trogdor.", .quirks = "min_platform_version=2" },
 
         /* Legacy custom label units. */
-	/* reference design: oak */
-	{ .match = "Google_Hana.", .quirks = "allow_empty_custom_label_tag" },
 
 	/* reference design: octopus */
 	{ .match = "Google_Phaser.", .quirks = "override_signature_id" },
@@ -454,12 +452,6 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->help = "b/70682365; preserve UEFI SMM store without "
 		       "dedicated FMAP section.";
 	quirks->apply = quirk_eve_smm_store;
-
-	quirks = &cfg->quirks[QUIRK_ALLOW_EMPTY_CUSTOM_LABEL_TAG];
-	quirks->name = "allow_empty_custom_label_tag";
-	quirks->help = "chromium/906962; allow devices without custom label "
-		       "tags set to use default keys.";
-	quirks->apply = NULL;  /* Simple config. */
 
 	quirks = &cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY];
 	quirks->name = "ec_partial_recovery";
