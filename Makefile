@@ -217,6 +217,10 @@ else
 CFLAGS += -DEXTERNAL_TPM_CLEAR_REQUEST=0
 endif
 
+# Directory used by crossystem to create a lock file
+CROSSYSTEM_LOCK_DIR := /run/lock
+CFLAGS += -DCROSSYSTEM_LOCK_DIR=\"${CROSSYSTEM_LOCK_DIR}\"
+
 # NOTE: We don't use these files but they are useful for other packages to
 # query about required compiling/linking flags.
 PC_IN_FILES = vboot_host.pc.in
