@@ -25,7 +25,7 @@
 #include "vboot_struct.h"
 
 /* Filename for crossystem lock */
-#define CROSSYSTEM_LOCK_PATH "/run/lock/crossystem.lock"
+#define CROSSYSTEM_LOCK_PATH (CROSSYSTEM_LOCK_DIR "/crossystem.lock")
 
 /* Filename for kernel command line */
 #define KERNEL_CMDLINE_PATH "/proc/cmdline"

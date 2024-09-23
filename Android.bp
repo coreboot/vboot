@@ -63,8 +63,20 @@ cc_defaults {
     ],
 
     target: {
+        android: {
+            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"/data/local/tmp\""],
+        },
         darwin: {
-            cflags: ["-DHAVE_MACOS"],
+            cflags: [
+                "-DHAVE_MACOS",
+                "-DCROSSYSTEM_LOCK_DIR=\"/tmp\"",
+            ],
+        },
+        linux: {
+            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"/run/lock\""],
+        },
+        windows: {
+            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"c:\\windows\\temp\""],
         },
     },
 }
