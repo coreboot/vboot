@@ -1322,11 +1322,17 @@ static int updater_load_images(struct updater_config *cfg,
 		if (!errorcnt)
 			errorcnt += updater_setup_quirks(cfg, arg);
 	}
-	if (arg->host_only || arg->emulation)
+
+	/*
+	 * In emulation mode, we want to prevent unexpected writing to EC
+	 * so we should not load EC; however in output mode that is fine.
+	 */
+	if (arg->host_only || (arg->emulation && !cfg->output_only))
 		return errorcnt;
 
 	if (!cfg->ec_image.data && ec_image)
 		errorcnt += !!load_firmware_image(&cfg->ec_image, ec_image, ar);
+
 	return errorcnt;
 }
 
