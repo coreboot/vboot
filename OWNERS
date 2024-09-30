@@ -1,1 +1,5 @@
 include chromiumos/owners:v1:/firmware/OWNERS.android
+
+hungte@chromium.org
+knoxchiou@chromium.org
+yidilin@chromium.org
