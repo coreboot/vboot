@@ -139,7 +139,6 @@ vb2_error_t vb2_load_android_kernel(
 			avb_flags,
 			AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE,
 			&verify_data);
-	vboot_avb_ops_free(avb_ops);
 	free(ab_suffix);
 
 	/* Ignore verification errors in developer mode */
@@ -166,10 +165,12 @@ vb2_error_t vb2_load_android_kernel(
 		if (verify_data != NULL)
 			avb_slot_verify_data_free(verify_data);
 		shpart->check_result = VBSD_LKP_CHECK_VERIFY_DATA;
+		vboot_avb_ops_free(avb_ops);
 		return ret;
 	}
 
 	params->boot_command = vb2_bcb_command(avb_ops);
+	vboot_avb_ops_free(avb_ops);
 
 	/* TODO(b/335901799): Add support for marking verifiedbootstate yellow */
 	/* Possible values for this property are "yellow", "orange" and "green"
