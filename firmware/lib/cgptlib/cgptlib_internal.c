@@ -233,7 +233,7 @@ bool IsAndroidBootPartition(const GptEntry *e, const char *suffix)
 	if (size_ucs2 < 0)
 		goto cleanup;
 
-	if (memcmp(&e->name, name_ucs2, size_ucs2))
+	if (memcmp(&e->name, name_ucs2, size_ucs2 * sizeof(*name_ucs2)))
 		goto cleanup;
 
 	is_android_boot_part = true;
