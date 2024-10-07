@@ -561,8 +561,18 @@ int load_system_firmware(struct updater_config *cfg,
 		INFO("Reading SPI Flash..\n");
 		r = flashrom_read_image(image, NULL, 0, verbose);
 	}
-	if (!r)
+	if (r) {
+		/* Read failure, the content cannot be trusted. */
+		free_firmware_image(image);
+	} else {
+		/*
+		 * Parse the contents. Note the image->data will remain even
+		 * if parsing failed - this is important for system firmware
+		 * because we may be trying to recover a device with corrupted
+		 * firmware.
+		 */
 		r = parse_firmware_image(image);
+	}
 	return r;
 }
 
