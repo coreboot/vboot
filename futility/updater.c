@@ -1423,6 +1423,10 @@ static int updater_setup_archive(
 			load_system_firmware(cfg, &cfg->image_current);
 		}
 
+		if (!cfg->image_current.data) {
+			ERROR("Cannot read the system firmware for tags.\n");
+			return ++errorcnt;
+		}
 		/*
 		 * For custom label devices, manifest_find_model may return the
 		 * base model instead of the custom label ones so we have to
