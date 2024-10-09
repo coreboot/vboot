@@ -14,7 +14,7 @@
 #include "vboot_avb_ops.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
-#include "android_image_hdr.h"
+#include "vb2_android_bootimg.h"
 
 struct vboot_avb_data {
 	VbSelectAndLoadKernelParams *params;
