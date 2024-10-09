@@ -8,8 +8,8 @@
  * Commit: a306f82e5a60ca1fc0be77ca2afa31a01d797295
  */
 
-#ifndef ANDROID_IMAGE_HDR_H_
-#define ANDROID_IMAGE_HDR_H_
+#ifndef VB2_ANDROID_BOOTIMG_H_
+#define VB2_ANDROID_BOOTIMG_H_
 
 #include <stdint.h>
 
@@ -187,4 +187,4 @@ struct vendor_ramdisk_table_entry_v4 {
 	uint32_t board_id[VENDOR_RAMDISK_TABLE_ENTRY_BOARD_ID_SIZE];
 } __attribute__((packed));
 
-#endif /* ANDROID_IMAGE_HDR_H_ */
+#endif /* VB2_ANDROID_BOOTIMG_H_ */
