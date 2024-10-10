@@ -233,7 +233,7 @@ int IsUnusedEntry(const GptEntry *e)
  * Desc: This function returns size(in lba) of a partition represented by
  * given GPT entry.
  */
-size_t GptGetEntrySizeLba(const GptEntry *e)
+uint64_t GptGetEntrySizeLba(const GptEntry *e)
 {
 	return (e->ending_lba - e->starting_lba + 1);
 }
@@ -243,7 +243,7 @@ size_t GptGetEntrySizeLba(const GptEntry *e)
  * Desc: This function returns size(in bytes) of a partition represented by
  * given GPT entry.
  */
-size_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e)
+uint64_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e)
 {
 	return GptGetEntrySizeLba(e) * gpt->sector_bytes;
 }
