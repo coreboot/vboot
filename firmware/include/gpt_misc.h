@@ -171,12 +171,12 @@ int IsUnusedEntry(const GptEntry *e);
 /**
  * Return size(in lba) of a partition represented by given GPT entry.
  */
-size_t GptGetEntrySizeLba(const GptEntry *e);
+uint64_t GptGetEntrySizeLba(const GptEntry *e);
 
 /**
  * Return size(in bytes) of a partition represented by given GPT entry.
  */
-size_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e);
+uint64_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e);
 
 /**
  * Updates the kernel entry with the specified index, using the specified type
