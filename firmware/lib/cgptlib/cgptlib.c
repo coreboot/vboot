@@ -268,16 +268,14 @@ GptEntry *GptFindNthEntry(GptData *gpt, const Guid *guid, unsigned int n)
 	return NULL;
 }
 
-int GptFindOffsetByName(GptData *gpt, const char *name,
-			uint64_t *start_sector, uint64_t *size)
+static GptEntry *GptFindEntryByName(GptData *gpt, const char *name)
 {
 	GptHeader *header = (GptHeader *)gpt->primary_header;
 	GptEntry *entries = (GptEntry *)gpt->primary_entries;
-	GptEntry *e;
+	GptEntry *ret = NULL, *e;
 	int i;
 	uint16_t *name_ucs2;
 	int size_ucs2;
-	int ret = GPT_ERROR_NO_SUCH_ENTRY;
 
 	name_ucs2 = calloc(NAME_SIZE, sizeof(*name_ucs2));
 	if (name_ucs2 == NULL)
@@ -289,9 +287,7 @@ int GptFindOffsetByName(GptData *gpt, const char *name,
 
 	for (i = 0, e = entries; i < header->number_of_entries; i++, e++) {
 		if (!memcmp(&e->name, name_ucs2, size_ucs2 * sizeof(*name_ucs2))) {
-			*start_sector = e->starting_lba;
-			*size = e->ending_lba - e->starting_lba + 1;
-			ret = GPT_SUCCESS;
+			ret = e;
 			break;
 		}
 	}
@@ -299,6 +295,34 @@ int GptFindOffsetByName(GptData *gpt, const char *name,
 out:
 	free(name_ucs2);
 	return ret;
+}
+
+int GptFindUniqueByName(GptData *gpt, const char *name, Guid *guid)
+{
+	GptEntry *e;
+
+	e = GptFindEntryByName(gpt, name);
+	if (e == NULL)
+		return GPT_ERROR_NO_SUCH_ENTRY;
+
+	memcpy(guid, &e->unique, GUID_SIZE);
+
+	return GPT_SUCCESS;
+}
+
+int GptFindOffsetByName(GptData *gpt, const char *name,
+			uint64_t *start_sector, uint64_t *size)
+{
+	GptEntry *e;
+
+	e = GptFindEntryByName(gpt, name);
+	if (e == NULL)
+		return GPT_ERROR_NO_SUCH_ENTRY;
+
+	*start_sector = e->starting_lba;
+	*size = e->ending_lba - e->starting_lba + 1;
+
+	return GPT_SUCCESS;
 }
 
 int GptFindInitBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size)

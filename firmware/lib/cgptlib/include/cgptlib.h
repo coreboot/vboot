@@ -55,4 +55,22 @@ int GptFindVendorBoot(GptData *gpt, uint64_t *start_sector, uint64_t *size);
  */
 int GptFindPvmfw(GptData *gpt, uint64_t *start_sector, uint64_t *size);
 
+/**
+ * Provides start_sector and size for given partition by its UTF16LE name.
+ *
+ * Returns GPT_SUCCESS if successful, else
+ *   GPT_ERROR_NO_SUCH_ENTRY.
+ */
+int GptFindOffsetByName(GptData *gpt, const char *name,
+			uint64_t *start_sector, uint64_t *size);
+
+/**
+ * Find unique GUID for given partition name.
+ *
+ * On successful return the guid contains the unique GUID of partition.
+ * Returns GPT_SUCCESS if successful, else
+ *   GPT_ERROR_NO_SUCH_ENTRY.
+ */
+int GptFindUniqueByName(GptData *gpt, const char *name, Guid *guid);
+
 #endif  /* VBOOT_REFERENCE_CGPTLIB_H_ */
