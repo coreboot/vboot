@@ -51,6 +51,14 @@ static const Guid guid_rootfs = GPT_ENT_TYPE_CHROMEOS_ROOTFS;
 const char *progname = "CGPT-TEST";
 const char *command = "TEST";
 
+static const uint16_t kern_a_name[] = {0x004b, 0x0045, 0x0052, 0x004e,
+				       0x002d, 0x0041, 0x0000};
+static const uint16_t root_a_name[] = {0x0052, 0x004f, 0x004f, 0x0054,
+				       0x002d, 0x0041, 0x0000};
+static const uint16_t kern_b_name[] = {0x004b, 0x0045, 0x0052, 0x004e,
+				       0x002d, 0x0042, 0x0000};
+static const uint16_t root_b_name[] = {0x0052, 0x004f, 0x004f, 0x0054,
+				       0x002d, 0x0042, 0x0000};
 /*
  * Copy a random-for-this-program-only Guid into the dest. The num parameter
  * completely determines the Guid.
@@ -171,18 +179,22 @@ static void BuildTestGptData(GptData *gpt)
 	  /* 512B / 128B * 32sectors = 128 entries */
 	header->number_of_entries = 128;
 	header->size_of_entry = 128;  /* bytes */
+	memcpy(&entries[0].name, &kern_a_name, sizeof(kern_a_name));
 	memcpy(&entries[0].type, &chromeos_kernel, sizeof(chromeos_kernel));
 	SetGuid(&entries[0].unique, 0);
 	entries[0].starting_lba = 34;
 	entries[0].ending_lba = 133;
+	memcpy(&entries[1].name, &root_a_name, sizeof(root_a_name));
 	memcpy(&entries[1].type, &chromeos_rootfs, sizeof(chromeos_rootfs));
 	SetGuid(&entries[1].unique, 1);
 	entries[1].starting_lba = 134;
 	entries[1].ending_lba = 232;
+	memcpy(&entries[2].name, &root_b_name, sizeof(root_b_name));
 	memcpy(&entries[2].type, &chromeos_rootfs, sizeof(chromeos_rootfs));
 	SetGuid(&entries[2].unique, 2);
 	entries[2].starting_lba = 234;
 	entries[2].ending_lba = 331;
+	memcpy(&entries[3].name, &kern_b_name, sizeof(kern_a_name));
 	memcpy(&entries[3].type, &chromeos_kernel, sizeof(chromeos_kernel));
 	SetGuid(&entries[3].unique, 3);
 	entries[3].starting_lba = 334;
@@ -1605,6 +1617,33 @@ static int CheckHeaderOffDevice(void)
 	return TEST_OK;
 }
 
+static int FindUniqueByNameTest(void)
+{
+	GptData *gpt = GetEmptyGptData();
+	Guid guid1, guid2;
+
+	BuildTestGptData(gpt);
+
+	SetGuid(&guid2, 0);
+	EXPECT(GptFindUniqueByName(gpt, "KERN-A", &guid1) == GPT_SUCCESS);
+	EXPECT(!memcmp(&guid1, &guid2, sizeof(Guid)));
+
+	SetGuid(&guid2, 1);
+	EXPECT(GptFindUniqueByName(gpt, "ROOT-A", &guid1) == GPT_SUCCESS);
+	EXPECT(!memcmp(&guid1, &guid2, sizeof(Guid)));
+
+	SetGuid(&guid2, 2);
+	EXPECT(GptFindUniqueByName(gpt, "ROOT-B", &guid1) == GPT_SUCCESS);
+	EXPECT(!memcmp(&guid1, &guid2, sizeof(Guid)));
+
+	SetGuid(&guid2, 3);
+	EXPECT(GptFindUniqueByName(gpt, "KERN-B", &guid1) == GPT_SUCCESS);
+	EXPECT(!memcmp(&guid1, &guid2, sizeof(Guid)));
+
+	EXPECT(GptFindUniqueByName(gpt, "NON-EXISTENT", &guid1) == GPT_ERROR_NO_SUCH_ENTRY);
+	return TEST_OK;
+}
+
 int main(int argc, char *argv[])
 {
 	int i;
@@ -1645,6 +1684,7 @@ int main(int argc, char *argv[])
 		{ TEST_CASE(GetKernelGuidTest), },
 		{ TEST_CASE(ErrorTextTest), },
 		{ TEST_CASE(CheckHeaderOffDevice), },
+		{ TEST_CASE(FindUniqueByNameTest), },
 	};
 
 	for (i = 0; i < sizeof(test_cases)/sizeof(test_cases[0]); ++i) {
