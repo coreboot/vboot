@@ -5,6 +5,7 @@
 cc_defaults {
     name: "vboot_defaults",
     visibility: ["//visibility:public"],
+    init_rc: ["vboot.rc"],
 
     cflags: [
         "-Wall",
@@ -64,19 +65,29 @@ cc_defaults {
 
     target: {
         android: {
-            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"/data/local/tmp\""],
+            cflags: [
+                "-DCROSSYSTEM_LOCK_DIR=\"/data/vendor/vboot/tmp\"",
+                "-DVBOOT_TMP_DIR=\"/data/vendor/vboot/tmp\"",
+            ],
         },
         darwin: {
             cflags: [
                 "-DHAVE_MACOS",
                 "-DCROSSYSTEM_LOCK_DIR=\"/tmp\"",
+                "-DVBOOT_TMP_DIR=\"/tmp\"",
             ],
         },
         linux: {
-            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"/run/lock\""],
+            cflags: [
+                "-DCROSSYSTEM_LOCK_DIR=\"/run/lock\"",
+                "-DVBOOT_TMP_DIR=\"/tmp\"",
+            ],
         },
         windows: {
-            cflags: ["-DCROSSYSTEM_LOCK_DIR=\"c:\\windows\\temp\""],
+            cflags: [
+                "-DCROSSYSTEM_LOCK_DIR=\"c:\\windows\\temp\"",
+                "-DVBOOT_TMP_DIR=\"c:\\windows\\temp\"",
+            ],
         },
     },
 }

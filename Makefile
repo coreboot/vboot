@@ -214,6 +214,10 @@ else
 CFLAGS += -DEXTERNAL_TPM_CLEAR_REQUEST=0
 endif
 
+# Configurable temporary directory for host tools
+VBOOT_TMP_DIR := /tmp
+CFLAGS += -DVBOOT_TMP_DIR=\"${VBOOT_TMP_DIR}\"
+
 # Directory used by crossystem to create a lock file
 CROSSYSTEM_LOCK_DIR := /run/lock
 CFLAGS += -DCROSSYSTEM_LOCK_DIR=\"${CROSSYSTEM_LOCK_DIR}\"

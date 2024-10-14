@@ -615,7 +615,8 @@ int write_system_firmware(struct updater_config *cfg,
 const char *create_temp_file(struct tempfile *head)
 {
 	struct tempfile *new_temp;
-	char new_path[] = P_tmpdir "/fwupdater.XXXXXX";
+	char new_path[] = VBOOT_TMP_DIR "/fwupdater.XXXXXX";
+
 	int fd;
 	mode_t umask_save;
 
