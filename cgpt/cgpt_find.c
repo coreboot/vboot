@@ -236,7 +236,7 @@ static int scan_spi_gpt(CgptFindParams *params) {
                partname, &sz, &erasesz, name) != 4)
       continue;
     if (strcmp(partname, "mtd0") == 0) {
-      char temp_dir[] = "/tmp/cgpt_find.XXXXXX";
+      char temp_dir[] = VBOOT_TMP_DIR "/cgpt_find.XXXXXX";
       if (params->drive_size == 0) {
         if (GetMtdSize("/dev/mtd0", &params->drive_size) != 0) {
           perror("GetMtdSize");
