@@ -203,6 +203,14 @@ resign_ssd_kernel() {
   local ssd_device="$1"
   local bs="$(blocksize "${ssd_device}")"
 
+  # `fflash` and `cros flash` write their updates to block device partitions,
+  # while this script uses the parent block device plus a block offset.
+  # Sync and flush the page cache to avoid cache aliasing issues.
+  sync; sync; sync
+  if [ -w /proc/sys/vm/drop_caches ]; then
+    echo 1 > /proc/sys/vm/drop_caches
+  fi
+
   # reasonable size for current kernel partition
   local min_kernel_size=$((8000 * 1024 / bs))
   local resigned_kernels=0
@@ -385,10 +393,13 @@ resign_ssd_kernel() {
       fi
     fi
 
-    # Sometimes doing "dump_kernel_config" or other I/O now (or after return to
-    # shell) will get the data before modification. Not a problem now, but for
-    # safety, let's try to sync more.
+    # `fflash` and `cros flash` write their updates to block device partitions,
+    # while this script uses the parent block device plus a block offset.
+    # Sync and flush the page cache to avoid cache aliasing issues.
     sync; sync; sync
+    if [ -w /proc/sys/vm/drop_caches ]; then
+      echo 1 > /proc/sys/vm/drop_caches
+    fi
 
     info "${name}: Re-signed with developer keys successfully."
   done
