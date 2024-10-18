@@ -194,7 +194,7 @@ static void BuildTestGptData(GptData *gpt)
 	SetGuid(&entries[2].unique, 2);
 	entries[2].starting_lba = 234;
 	entries[2].ending_lba = 331;
-	memcpy(&entries[3].name, &kern_b_name, sizeof(kern_a_name));
+	memcpy(&entries[3].name, &kern_b_name, sizeof(kern_b_name));
 	memcpy(&entries[3].type, &chromeos_kernel, sizeof(chromeos_kernel));
 	SetGuid(&entries[3].unique, 3);
 	entries[3].starting_lba = 334;
