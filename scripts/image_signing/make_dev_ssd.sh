@@ -99,7 +99,10 @@ remove_rootfs_verification() {
     rw_root_opt="s| rw | ro |"
   fi
 
-  local ptracer_opt="proc_mem.restrict_write=ptracer proc_mem.restrict_foll_force=ptracer"
+  local ptracer_opt="proc_mem.restrict_write=ptracer proc_mem.force_override=ptrace"
+  # This is kept for compatibility with ChromeOS kernels until all of them
+  # are up-to-date with the corresponding stable branch.
+  ptracer_opt="${ptracer_opt} proc_mem.restrict_foll_force=ptracer"
   if [ "${FLAGS_enable_proc_mem_ptrace}" = "${FLAGS_FALSE}" ]; then
     # we could set proc_mem.restrict_write=all, however that's already default
     # via Kconfig and we don't want to clutter the cmdline with redundant params
