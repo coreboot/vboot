@@ -62,6 +62,7 @@ extern "C" {
 
 #define UUID_NODE_LEN 6
 #define GUID_SIZE 16
+#define GUID_STRLEN 37
 
 /* GUID definition. Defined in appendix A of UEFI standard. */
 typedef struct {

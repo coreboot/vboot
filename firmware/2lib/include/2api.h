@@ -1039,7 +1039,7 @@ bool vb2api_hwcrypto_allowed(struct vb2_context *ctx);
  * Implementation should reboot or halt the machine, or fall back to some
  * alternative boot flow.  Retrying vboot is unlikely to succeed.
  */
-void vb2ex_abort(void);
+void vb2ex_abort(void) __attribute__((noreturn));
 
 /**
  * Commit any pending data to disk.
