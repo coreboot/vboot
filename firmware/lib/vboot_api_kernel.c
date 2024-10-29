@@ -145,6 +145,8 @@ static vb2_error_t vb2_kernel_init_kparams(struct vb2_context *ctx,
 	memset(&lkp, 0, sizeof(lkp));
 	lkp.kernel_buffer = kparams->kernel_buffer;
 	lkp.kernel_buffer_size = kparams->kernel_buffer_size;
+	lkp.kernel_cmdline_buffer = kparams->kernel_cmdline_buffer;
+	lkp.kernel_cmdline_size = kparams->kernel_cmdline_size;
 	lkp.pvmfw_buffer = kparams->pvmfw_buffer;
 	lkp.pvmfw_buffer_size = kparams->pvmfw_buffer_size;
 
@@ -170,6 +172,8 @@ static void vb2_kernel_fill_kparams(struct vb2_context *ctx,
 	kparams->flags = lkp.flags;
 	kparams->kernel_buffer = lkp.kernel_buffer;
 	kparams->kernel_buffer_size = lkp.kernel_buffer_size;
+	kparams->kernel_cmdline_buffer = lkp.kernel_cmdline_buffer;
+	kparams->kernel_cmdline_size = lkp.kernel_cmdline_size;
 	kparams->pvmfw_buffer = lkp.pvmfw_buffer;
 	kparams->pvmfw_buffer_size = lkp.pvmfw_buffer_size;
 	kparams->vendor_boot_offset = lkp.vendor_boot_offset;

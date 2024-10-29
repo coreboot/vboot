@@ -66,6 +66,10 @@ typedef struct LoadKernelParams {
 	uint32_t init_boot_size;
 	/* Offset (in bytes) to the region with vboot cmdline parameters. */
 	uint32_t vboot_cmdline_offset;
+	/* Address of the region with kernel cmdline parameters. */
+	char *kernel_cmdline_buffer;
+	/* Size of the region with kernel cmdline parameters. */
+	uint32_t kernel_cmdline_size;
 	/* Boot command from Android BCB on misc partition. */
 	enum vb2_boot_command boot_command;
 	/* Size of pvmfw partition in bytes in pvmfw buffer. */

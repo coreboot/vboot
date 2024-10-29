@@ -11,9 +11,6 @@
 #include "cgptlib_internal.h"
 #include "vboot_avb_ops.h"
 
-/* Size of the buffer to convey cmdline properties to bootloader */
-#define AVB_CMDLINE_BUF_SIZE 1024
-
 /* Bytes to read at start of the boot/init_boot/vendor_boot partitions */
 #define BOOT_HDR_GKI_SIZE 4096
 /* BCB structure from Android recovery bootloader_message.h */
@@ -182,29 +179,15 @@ vb2_error_t vb2_load_android_kernel(
 	sprintf(verified_str, "%s%s", VERIFIED_BOOT_PROPERTY_NAME,
 		(ctx->flags & VB2_CONTEXT_DEVELOPER_MODE) ? "orange" : "green");
 
-	/*
-	 * Use a buffer before the GKI header for copying avb cmdline string for
-	 * bootloader.
-	 */
-	params->vboot_cmdline_offset = params->kernel_buffer_size -
-	    BOOT_HDR_GKI_SIZE - AVB_CMDLINE_BUF_SIZE;
-
-	if ((params->init_boot_offset + params->init_boot_size) >
-	    params->vboot_cmdline_offset)
-		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
-
 	if ((strlen(verify_data->cmdline) + strlen(verified_str) + 1) >=
-	    AVB_CMDLINE_BUF_SIZE)
+	    params->kernel_cmdline_size)
 		return VB2_ERROR_LOAD_PARTITION_WORKBUF;
 
-	strcpy((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
-	       verify_data->cmdline);
+	strcpy(params->kernel_cmdline_buffer, verify_data->cmdline);
 
 	/* Append verifiedbootstate property to cmdline */
-	strcat((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
-	       " ");
-	strcat((char *)(params->kernel_buffer + params->vboot_cmdline_offset),
-	       verified_str);
+	strcat(params->kernel_cmdline_buffer, " ");
+	strcat(params->kernel_cmdline_buffer, verified_str);
 
 	free(verified_str);
 
