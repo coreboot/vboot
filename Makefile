@@ -183,10 +183,6 @@ ifneq ($(filter-out 0,${NDEBUG}),)
 CFLAGS += -DNDEBUG
 endif
 
-ifneq ($(filter-out 0,${FORCE_LOGGING_ON}),)
-CFLAGS += -DFORCE_LOGGING_ON=${FORCE_LOGGING_ON}
-endif
-
 ifneq ($(filter-out 0,${TPM2_MODE}),)
 CFLAGS += -DTPM2_MODE
 endif
