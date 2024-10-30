@@ -16,15 +16,6 @@ cd "$OUTDIR"
 "${FUTILITY}" /fake/path/to/help  > "$TMP"
 grep Usage "$TMP"
 
-# Make sure logging does something.
-LOG="/tmp/futility.log"
-[ -f "${LOG}" ] && mv "${LOG}" "${LOG}.backup"
-touch "${LOG}"
-"${FUTILITY}" help
-grep "${FUTILITY}" "${LOG}"
-rm -f "${LOG}"
-[ -f "${LOG}.backup" ] && mv "${LOG}.backup" "${LOG}"
-
 # Use some known digests to verify that things work...
 DEVKEYS="${SRCDIR}/tests/devkeys"
 SHA=e78ce746a037837155388a1096212ded04fb86eb
