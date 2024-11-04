@@ -13,7 +13,7 @@
 extern "C" {
 #endif  /* __cplusplus */
 
-#define TPM_BUFFER_SIZE 512
+#define TPM_BUFFER_SIZE 1024
 
 /* Tpm2 command tags. */
 #define TPM_ST_NO_SESSIONS 0x8001
