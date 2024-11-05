@@ -26,6 +26,7 @@ set -e
 MINIOS_KERNEL_GUID="09845860-705F-4BB5-B16C-8A8A099CAF52"
 FIRMWARE_VERSION=1
 KERNEL_VERSION=1
+V1_SUFFIX=".v1"
 
 # Print usage string
 usage() {
@@ -1484,6 +1485,16 @@ main() {
       --private-key "${KEY_DIR}/key_hps.priv.pem"
   elif [[ "${TYPE}" == "uefi_kernel" ]]; then
       sign_uefi_kernel "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+  elif [[ "${TYPE}" == "recovery_kernel" ]]; then
+    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
+    if [[ -f "${KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK}" ]]; then
+      local output_image_v1="${OUTPUT_IMAGE}${V1_SUFFIX}"
+      cp "${OUTPUT_IMAGE}" "${output_image_v1}"
+      do_futility sign -b "${KEYCFG_RECOVERY_KERNEL_V1_KEYBLOCK}" -s \
+        "${KEYCFG_RECOVERY_KERNEL_VBPRIVK}" "${output_image_v1}"
+    fi
+    do_futility sign -b "${KEYCFG_RECOVERY_KERNEL_KEYBLOCK}" -s \
+      "${KEYCFG_RECOVERY_KERNEL_VBPRIVK}" "${OUTPUT_IMAGE}"
   else
     die "Invalid type ${TYPE}"
   fi
