@@ -100,14 +100,6 @@ filegroup {
     ],
 }
 
-cc_library_static {
-    name: "tlcl",
-    defaults: ["vboot_defaults"],
-    host_supported: true,
-    vendor_available: true,
-    srcs: [":tlcl_srcs"],
-}
-
 filegroup {
     name: "vboot_fw_srcs",
     srcs: [
@@ -151,14 +143,6 @@ filegroup {
         "firmware/stub/vboot_api_stub_stream.c",
         "firmware/2lib/2stub.c",
     ],
-}
-
-cc_library_static {
-    name: "vboot_fw",
-    defaults: ["vboot_defaults"],
-    host_supported: true,
-    vendor_available: true,
-    srcs: [":vboot_fw_srcs"],
 }
 
 cc_defaults {
