@@ -29,31 +29,6 @@ enum vb2_load_partition_flags {
 #define LOWEST_TPM_VERSION 0xffffffff
 
 /**
- * Check if a valid keyblock is required.
- *
- * @param ctx		Vboot context
- * @return 1 if valid keyblock required (officially signed kernel);
- *         0 if valid hash is enough (self-signed kernel).
- */
-static int need_valid_keyblock(struct vb2_context *ctx)
-{
-	/* Normal and recovery modes always require official OS */
-	if (ctx->boot_mode != VB2_BOOT_MODE_DEVELOPER)
-		return 1;
-
-	/* FWMP can require developer mode to use signed kernels */
-	if (vb2_secdata_fwmp_get_flag(
-		ctx, VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY))
-		return 1;
-
-	/* Developers may require signed kernels */
-	if (vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY))
-		return 1;
-
-	return 0;
-}
-
-/**
  * Return a pointer to the keyblock inside a vblock.
  *
  * Must only be called during or after vb2_verify_kernel_vblock().
@@ -164,7 +139,7 @@ static vb2_error_t vb2_verify_kernel_vblock(struct vb2_context *ctx,
 	uint32_t key_size;
 	struct vb2_public_key kernel_key;
 
-	int need_keyblock_valid = need_valid_keyblock(ctx);
+	bool need_keyblock_valid = vb2_need_kernel_verification(ctx);
 	int keyblock_valid = 1;  /* Assume valid */
 
 	vb2_error_t rv;

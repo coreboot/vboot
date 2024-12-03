@@ -807,3 +807,21 @@ bool vb2api_hwcrypto_allowed(struct vb2_context *ctx)
 	return vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_FLAGS) &
 		VB2_SECDATA_KERNEL_FLAG_HWCRYPTO_ALLOWED;
 }
+
+bool vb2_need_kernel_verification(struct vb2_context *ctx)
+{
+	/* Normal and recovery modes always require official OS */
+	if (ctx->boot_mode != VB2_BOOT_MODE_DEVELOPER)
+		return true;
+
+	/* FWMP can require developer mode to use signed kernels */
+	if (vb2_secdata_fwmp_get_flag(
+		ctx, VB2_SECDATA_FWMP_DEV_ENABLE_OFFICIAL_ONLY))
+		return true;
+
+	/* Developers may require signed kernels */
+	if (vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY))
+		return true;
+
+	return false;
+}

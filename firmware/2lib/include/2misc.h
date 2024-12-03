@@ -184,4 +184,13 @@ void vb2_fill_dev_boot_flags(struct vb2_context *ctx);
  */
 void vb2_set_boot_mode(struct vb2_context *ctx);
 
+/**
+ * Check if a kernel partitions needs verification.
+ *
+ * @param ctx		Vboot context
+ * @return true if verification needed
+ *         false otherwise (self-signed kernel, device unlocked).
+ */
+bool vb2_need_kernel_verification(struct vb2_context *ctx);
+
 #endif  /* VBOOT_REFERENCE_2MISC_H_ */
