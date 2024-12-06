@@ -270,8 +270,11 @@ static int VbGetCrosDebug(void)
 		return 0;
 	}
 
-	/* Command line is silent; allow debug if the dev switch is on. */
-	if (1 == VbGetSystemPropertyInt("devsw_boot"))
+	/* Command line is silent; allow debug if this was a developer boot.
+	 * NOTE: This should intentionally never be true in recovery mode,
+	 * since the recovery initramfs is supposed to remain trusted even when
+	 * the developer switch is on. */
+	if (CheckFwType("developer"))
 		return 1;
 
 	/* All other cases disallow debug. */
