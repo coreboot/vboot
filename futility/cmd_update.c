@@ -24,6 +24,7 @@ enum {
 	OPT_GBB_FLAGS,
 	OPT_HOST_ONLY,
 	OPT_MANIFEST,
+	OPT_PARSEABLE_MANIFEST,
 	OPT_MODEL,
 	OPT_OUTPUT_DIR,
 	OPT_QUIRKS,
@@ -60,6 +61,7 @@ static struct option const long_opts[] = {
 	{"quirks", 1, NULL, OPT_QUIRKS},
 	{"list-quirks", 0, NULL, OPT_QUIRKS_LIST},
 	{"manifest", 0, NULL, OPT_MANIFEST},
+	{"parseable-manifest", 0, NULL, OPT_PARSEABLE_MANIFEST},
 	{"model", 1, NULL, OPT_MODEL},
 	{"output_dir", 1, NULL, OPT_OUTPUT_DIR},
 	{"repack", 1, NULL, OPT_REPACK},
@@ -108,6 +110,9 @@ static void print_help(int argc, char *argv[])
 		"    --list-quirks   \tPrint all available quirks\n"
 		"-m, --mode=MODE     \tRun updater in the specified mode\n"
 		"    --manifest      \tScan the archive to print a manifest in JSON\n"
+		"    --parseable-manifest\n"
+		"                    \tScan the archive to print a manifest\n"
+		"                    \tin shell-parseable format\n"
 		SHARED_FLASH_ARGS_HELP
 		"\n"
 		" * Option --manifest requires either -a,--archive or -i,--image\n"
@@ -241,6 +246,11 @@ static int do_update(int argc, char *argv[])
 			break;
 		case OPT_MANIFEST:
 			args.do_manifest = 1;
+			args.manifest_format = MANIFEST_PRINT_FORMAT_JSON;
+			break;
+		case OPT_PARSEABLE_MANIFEST:
+			args.do_manifest = 1;
+			args.manifest_format = MANIFEST_PRINT_FORMAT_PARSEABLE;
 			break;
 		case OPT_FACTORY:
 			args.is_factory = 1;

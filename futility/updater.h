@@ -104,6 +104,11 @@ struct updater_config {
 	bool output_only;
 };
 
+enum manifest_print_format {
+	MANIFEST_PRINT_FORMAT_JSON = 0,
+	MANIFEST_PRINT_FORMAT_PARSEABLE,
+};
+
 struct updater_config_arguments {
 	char *image, *ec_image;
 	char *archive, *quirks, *mode;
@@ -113,6 +118,7 @@ struct updater_config_arguments {
 	char *output_dir;
 	char *repack, *unpack;
 	int is_factory, try_update, force_update, do_manifest, host_only;
+	enum manifest_print_format manifest_format;
 	int fast_update;
 	int verbosity;
 	int override_gbb_flags;
@@ -340,6 +346,9 @@ void delete_manifest(struct manifest *manifest);
 
 /* Prints the information of objects in manifest (models and images) in JSON. */
 void print_json_manifest(const struct manifest *manifest);
+
+/* Prints the manifest in parseable double-colon-separated tokens format. */
+void print_parseable_manifest(const struct manifest *manifest);
 
 /*
  * Modifies a firmware image from patch information specified in model config.

@@ -819,3 +819,62 @@ void print_json_manifest(const struct manifest *manifest)
 	}
 	printf("\n}\n");
 }
+
+static void print_parseable_image(const char *name, const char *fpath, struct model_config *m,
+				 struct u_archive *archive, bool is_host)
+{
+	struct firmware_image image = {0};
+	const struct vb2_gbb_header *gbb = NULL;
+
+	if (!fpath)
+		return;
+	if (load_firmware_image(&image, fpath, archive))
+		return;
+
+	printf("%s::%s::versions::ro::%s\n", m->name, name, image.ro_version);
+	printf("%s::%s::versions::rw::%s\n", m->name, name, image.rw_version_a);
+	if (is_host) {
+		if (image.ecrw_version_a[0] != '\0')
+			printf("%s::%s::versions::ecrw::%s\n", m->name, name,
+			       image.ecrw_version_a);
+
+		if (patch_image_by_model(&image, m, archive))
+			ERROR("Failed to patch images by model: %s\n", m->name);
+		else
+			gbb = find_gbb(&image);
+
+		if (gbb != NULL) {
+			printf("%s::%s::keys::root::%s\n", m->name, name,
+			       get_gbb_key_hash(gbb, gbb->rootkey_offset, gbb->rootkey_size));
+			printf("%s::%s::keys::recovery::%s\n", m->name, name,
+			       get_gbb_key_hash(gbb, gbb->recovery_key_offset,
+						gbb->recovery_key_size));
+		}
+	}
+	printf("%s::%s::image::%s\n", m->name, name, fpath);
+	check_firmware_versions(&image);
+	free_firmware_image(&image);
+}
+
+void print_parseable_manifest(const struct manifest *manifest)
+{
+	struct u_archive *ar = manifest->archive;
+
+	for (int i = 0; i < manifest->num; ++i) {
+		struct model_config *m = &manifest->models[i];
+		if (m->image)
+			print_parseable_image("host", m->image, m, ar, true);
+
+		if (m->ec_image)
+			print_parseable_image("ec", m->ec_image, m, ar, false);
+
+		if (m->patches.rootkey) {
+			struct patch_config *p = &m->patches;
+			printf("%s::patches::rootkey::%s\n", m->name, p->rootkey);
+			printf("%s::patches::vblock_a::%s\n", m->name, p->vblock_a);
+			printf("%s::patches::vblock_b::%s\n", m->name, p->vblock_b);
+			if (p->gscvd)
+				printf("%s::gscvd::%s\n", m->name, p->gscvd);
+		}
+	}
+}
