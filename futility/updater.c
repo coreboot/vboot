@@ -17,8 +17,6 @@
 #include "updater.h"
 #include "util_misc.h"
 
-#define REMOVE_WP_URL "https://goo.gl/ces83U"
-
 static const char ROOTKEY_HASH_DEV[] =
 		"b11d74edd286c144e1135b49e7f0bc20cf041f10";
 
@@ -1247,7 +1245,7 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	/* Providing more hints for what to do on failure. */
 	if (r == UPDATE_ERR_ROOT_KEY && wp_enabled)
 		ERROR("To change keys in RO area, you must first remove "
-		      "write protection ( " REMOVE_WP_URL " ).\n");
+		      "write protection.\n");
 
 	return r;
 }
@@ -1807,8 +1805,7 @@ int updater_setup_config(struct updater_config *cfg,
 	}
 	if (check_wp_disabled && is_ap_write_protection_enabled(cfg)) {
 		errorcnt++;
-		ERROR("Please remove write protection for factory mode \n"
-		      "( " REMOVE_WP_URL " ).");
+		ERROR("Please remove write protection for factory mode\n");
 	}
 
 	if (cfg->image.data) {
