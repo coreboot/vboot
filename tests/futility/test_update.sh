@@ -506,6 +506,14 @@ cmp \
   <(jq -S <"${TMP_JSON_OUT}") \
   <(jq -S <"${SCRIPT_DIR}/futility/bios_geralt_cbfs.manifest.json")
 
+TMP_PARSEABLE_OUT="${TMP}/manifest.parseable"
+echo "TEST: Manifest parseable (--parseable-manifest, --image)"
+(cd "${TMP}" &&
+ "${FUTILITY}" update -i image.bin --parseable-manifest) >"${TMP_PARSEABLE_OUT}"
+cmp \
+  <(sort "${TMP_PARSEABLE_OUT}") \
+  <(sort "${SCRIPT_DIR}/futility/bios_geralt_cbfs.manifest.parseable")
+
 # Test archive and manifest. CL_TAG is for custom_label_tag.
 A="${TMP}/archive"
 mkdir -p "${A}/bin"
@@ -519,6 +527,12 @@ cmp \
   <(jq -S <"${TMP_JSON_OUT}") \
   <(jq -S <"${SCRIPT_DIR}/futility/link_bios.manifest.json")
 
+echo "TEST: Manifest parseable (--parseable-manifest, -a, bios.bin)"
+"${FUTILITY}" update -a "${A}" --parseable-manifest >"${TMP_PARSEABLE_OUT}"
+diff -u \
+  <(sort "${TMP_PARSEABLE_OUT}") \
+  <(sort "${SCRIPT_DIR}/futility/link_bios.manifest.parseable")
+
 mv -f "${A}/bios.bin" "${A}/image.bin"
 echo "TEST: Manifest (--manifest, -a, image.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP_JSON_OUT}"
@@ -526,6 +540,11 @@ cmp \
   <(jq -S <"${TMP_JSON_OUT}") \
   <(jq -S <"${SCRIPT_DIR}/futility/link_image.manifest.json")
 
+echo "TEST: Manifest parseable (--parseable-manifest, -a, image.bin)"
+"${FUTILITY}" update -a "${A}" --parseable-manifest >"${TMP_PARSEABLE_OUT}"
+diff -u \
+  <(sort "${TMP_PARSEABLE_OUT}") \
+  <(sort "${SCRIPT_DIR}/futility/link_image.manifest.parseable")
 
 cp -f "${TO_IMAGE}" "${A}/image.bin"
 test_update "Full update (--archive, single package)" \
