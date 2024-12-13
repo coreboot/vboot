@@ -161,6 +161,8 @@ CFLAGS ?= -fvisibility=hidden -fomit-frame-pointer \
 else ifeq (${FIRMWARE_ARCH},x86_64)
 CFLAGS ?= ${FIRMWARE_FLAGS} ${COMMON_FLAGS} -fvisibility=hidden \
 	-fomit-frame-pointer
+else ifeq (${FIRMWARE_ARCH},riscv)
+CC ?= riscv64-linux-gnu-gcc
 else ifeq (${FIRMWARE_ARCH},mock)
 FIRMWARE_STUB := 1
 CFLAGS += ${TEST_FLAGS}
