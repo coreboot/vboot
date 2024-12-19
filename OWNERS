@@ -3,3 +3,6 @@ include chromiumos/owners:v1:/firmware/OWNERS.android
 hungte@chromium.org
 knoxchiou@chromium.org
 yidilin@chromium.org
+
+# ChromeOS Prod
+chromeos-ci-prod@chromeos-bot.iam.gserviceaccount.com #{LAST_RESORT_SUGGESTION}
