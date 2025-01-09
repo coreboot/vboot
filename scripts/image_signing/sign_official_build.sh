@@ -1483,7 +1483,7 @@ main() {
   elif [[ "${TYPE}" == "hps_firmware" ]]; then
     hps-sign-rom --input "${INPUT_IMAGE}" --output "${OUTPUT_IMAGE}" \
       --private-key "${KEY_DIR}/key_hps.priv.pem"
-  elif [[ "${TYPE}" == "uefi_kernel" ]]; then
+  elif [[ "${TYPE}" == "uefi_kernel" || "${TYPE}" == "flexor_kernel" ]]; then
       sign_uefi_kernel "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "recovery_kernel" ]]; then
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
