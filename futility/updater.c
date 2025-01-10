@@ -264,7 +264,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
 static int set_try_cookies(struct updater_config *cfg, const char *target,
 			   int has_update)
 {
-	int tries = 13;
+	int tries = 17;
 	const char *slot;
 
 	if (!has_update)
