@@ -406,6 +406,8 @@ vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 		 */
 		sd->fw_slot = 1 - sd->fw_slot;
 		vb2_nv_set(ctx, VB2_NV_TRY_NEXT, sd->fw_slot);
+		VB2_DEBUG("try_count used up; falling back to slot %s\n",
+			  vb2_slot_string(sd->fw_slot));
 	}
 
 	if (tries > 0) {
