@@ -133,7 +133,7 @@ int CgptPrioritize(CgptPrioritizeParams *params) {
     }
     index = params->set_partition - 1;
     // it must be a kernel
-    if (!IsKernel(&drive, PRIMARY, index)) {
+    if (!IsBootable(&drive, PRIMARY, index)) {
       Error("partition %d is not a ChromeOS kernel\n", params->set_partition);
       goto bad;
     }
@@ -142,7 +142,7 @@ int CgptPrioritize(CgptPrioritizeParams *params) {
   // How many kernel partitions do I have?
   num_kernels = 0;
   for (i = 0; i < max_part; i++) {
-    if (IsKernel(&drive, PRIMARY, i))
+    if (IsBootable(&drive, PRIMARY, i))
       num_kernels++;
   }
 
@@ -150,7 +150,7 @@ int CgptPrioritize(CgptPrioritizeParams *params) {
     // Determine the current priority groups
     groups = NewGroupList(num_kernels);
     for (i = 0; i < max_part; i++) {
-      if (!IsKernel(&drive, PRIMARY, i))
+      if (!IsBootable(&drive, PRIMARY, i))
         continue;
 
       priority = GetPriority(&drive, PRIMARY, i);

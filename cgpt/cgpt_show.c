@@ -123,7 +123,8 @@ void EntryDetails(GptEntry *entry, uint32_t index, int raw) {
 
   clen = 0;
   if (!raw) {
-    if (GuidEqual(&guid_chromeos_kernel, &entry->type)) {
+    if (GuidEqual(&guid_chromeos_kernel, &entry->type) ||
+        GuidEqual(&guid_android_vbmeta, &entry->type)) {
       int tries = (entry->attrs.fields.gpt_att &
                    CGPT_ATTRIBUTE_TRIES_MASK) >>
           CGPT_ATTRIBUTE_TRIES_OFFSET;

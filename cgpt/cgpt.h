@@ -99,6 +99,7 @@ int Save(struct drive *drive, const uint8_t *buf,
 extern const Guid guid_chromeos_firmware;
 extern const Guid guid_chromeos_kernel;
 extern const Guid guid_chromeos_rootfs;
+extern const Guid guid_android_vbmeta;
 extern const Guid guid_linux_data;
 extern const Guid guid_chromeos_reserved;
 extern const Guid guid_efi;
@@ -165,7 +166,7 @@ void UpdateCrc(GptData *gpt);
 int IsSynonymous(const GptHeader* a, const GptHeader* b);
 
 int IsUnused(struct drive *drive, int secondary, uint32_t index);
-int IsKernel(struct drive *drive, int secondary, uint32_t index);
+int IsBootable(struct drive *drive, int secondary, uint32_t index);
 
 // Optional. Applications that need this must provide an implementation.
 //
