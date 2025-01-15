@@ -16,6 +16,7 @@
 #include "2sysincludes.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
+#include "gpt.h"
 #include "gpt_misc.h"
 #include "vboot_api.h"
 
@@ -647,9 +648,10 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 	const uint64_t ctx_flags = ctx->flags;
 
 	/* Loop over candidate kernel partitions */
-	uint64_t part_start, part_size;
-	while (GptNextKernelEntry(&gpt, &part_start, &part_size) ==
-	       GPT_SUCCESS) {
+	GptEntry *entry;
+	while ((entry = GptNextKernelEntry(&gpt))) {
+		uint64_t part_start = entry->starting_lba;
+		uint64_t part_size = GptGetEntrySizeLba(entry);
 
 		VB2_DEBUG("Found kernel entry at %"
 			  PRIu64 " size %" PRIu64 "\n",

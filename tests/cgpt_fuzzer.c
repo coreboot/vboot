@@ -72,11 +72,11 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	gpt.flags = params.flags;
 
 	if (0 == AllocAndReadGptData(0, &gpt)) {
-		int result = GptInit(&gpt);
-		while (GPT_SUCCESS == result) {
-			uint64_t part_start, part_size;
-			result = GptNextKernelEntry(&gpt, &part_start,
-						    &part_size);
+		if (GptInit(&gpt) == GPT_SUCCESS) {
+			GptEntry *entry = NULL;
+			do {
+				entry = GptNextKernelEntry(&gpt);
+			} while (entry);
 		}
 	}
 
