@@ -235,9 +235,12 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
 
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
             # This key is required to create the detached signature.
-            ensure_file_exists(
-                keys.crdyshim_private_key, "No crdyshim private key"
-            )
+            # Only check the private keys if they are local paths rather than a
+            # PKCS#11 URI.
+            if not is_pkcs11_key_path(keys.crdyshim_private_key):
+                ensure_file_exists(
+                    keys.crdyshim_private_key, "No crdyshim private key"
+                )
 
             if efi_file.is_file():
                 inject_vbpubk(efi_file, keys)
