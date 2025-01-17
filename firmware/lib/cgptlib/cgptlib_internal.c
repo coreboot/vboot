@@ -12,6 +12,19 @@
 
 static const int MIN_SECTOR_SIZE = 512;
 
+/* global types to compare against */
+const Guid guid_chromeos_firmware = GPT_ENT_TYPE_CHROMEOS_FIRMWARE;
+const Guid guid_chromeos_kernel = GPT_ENT_TYPE_CHROMEOS_KERNEL;
+const Guid guid_chromeos_rootfs = GPT_ENT_TYPE_CHROMEOS_ROOTFS;
+const Guid guid_android_vbmeta = GPT_ENT_TYPE_ANDROID_VBMETA;
+const Guid guid_basic_data = GPT_ENT_TYPE_BASIC_DATA;
+const Guid guid_linux_data = GPT_ENT_TYPE_LINUX_FS;
+const Guid guid_chromeos_reserved = GPT_ENT_TYPE_CHROMEOS_RESERVED;
+const Guid guid_efi = GPT_ENT_TYPE_EFI;
+const Guid guid_unused = GPT_ENT_TYPE_UNUSED;
+const Guid guid_chromeos_minios = GPT_ENT_TYPE_CHROMEOS_MINIOS;
+const Guid guid_chromeos_hibernate = GPT_ENT_TYPE_CHROMEOS_HIBERNATE;
+
 size_t CalculateEntriesSectors(GptHeader* h, uint32_t sector_bytes)
 {
 	size_t bytes = h->number_of_entries * h->size_of_entry;
@@ -153,10 +166,19 @@ int CheckHeader(GptHeader *h, int is_secondary,
 	return 0;
 }
 
-int IsKernelEntry(const GptEntry *e)
+bool IsChromeOS(const GptEntry *e)
 {
-	static Guid chromeos_kernel = GPT_ENT_TYPE_CHROMEOS_KERNEL;
-	return !memcmp(&e->type, &chromeos_kernel, sizeof(Guid));
+	return !memcmp(&e->type, &guid_chromeos_kernel, sizeof(Guid));
+}
+
+bool IsAndroid(const GptEntry *e)
+{
+	return !memcmp(&e->type, &guid_android_vbmeta, sizeof(Guid));
+}
+
+bool IsBootableEntry(const GptEntry *e)
+{
+	return IsChromeOS(e) || IsAndroid(e);
 }
 
 int CheckEntries(GptEntry *entries, GptHeader *h)

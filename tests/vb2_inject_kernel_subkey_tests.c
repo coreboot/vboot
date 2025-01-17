@@ -155,6 +155,16 @@ void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
 	memcpy(dest, fake_guid, sizeof(fake_guid));
 }
 
+bool IsChromeOS(const GptEntry *e)
+{
+	return true;
+}
+
+bool IsAndroid(const GptEntry *e)
+{
+	return false;
+}
+
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
 				  const uint8_t *buf, uint32_t size)
 {
