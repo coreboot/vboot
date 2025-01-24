@@ -917,7 +917,7 @@ FUZZ_TEST_BINS = $(addprefix ${BUILD}/,${FUZZ_TEST_NAMES})
 # so it happens before trying to generate/include dependencies.
 SUBDIRS := firmware host cgpt utility futility tests tests/tpm_lite
 _dir_create := $(foreach d, \
-	$(shell find ${SUBDIRS} -name '*.c' -exec  dirname {} \; | sort -u), \
+	$(shell find ${SUBDIRS} -name '*.c' -exec  dirname {} + | sort -u), \
 	$(shell [ -d ${BUILD}/${d} ] || mkdir -p ${BUILD}/${d}))
 
 .PHONY: clean
