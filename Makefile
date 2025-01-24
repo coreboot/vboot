@@ -283,26 +283,30 @@ endif
 LIBZIP_VERSION := $(shell ${PKG_CONFIG} --modversion libzip 2>/dev/null)
 HAVE_LIBZIP := $(if ${LIBZIP_VERSION},1)
 ifneq ($(filter-out 0,${HAVE_LIBZIP}),)
-  CFLAGS += -DHAVE_LIBZIP $(shell ${PKG_CONFIG} --cflags libzip)
+  LIBZIP_CFLAGS := $(shell ${PKG_CONFIG} --cflags libzip)
+  CFLAGS += -DHAVE_LIBZIP $(LIBZIP_CFLAGS)
   LIBZIP_LIBS := $(shell ${PKG_CONFIG} --libs libzip)
 endif
 
 LIBARCHIVE_VERSION := $(shell ${PKG_CONFIG} --modversion libarchive 2>/dev/null)
 HAVE_LIBARCHIVE := $(if ${LIBARCHIVE_VERSION},1)
 ifneq ($(filter-out 0,${HAVE_LIBARCHIVE}),)
-  CFLAGS += -DHAVE_LIBARCHIVE $(shell ${PKG_CONFIG} --cflags libarchive)
+  LIBARCHIVE_CFLAGS := $(shell ${PKG_CONFIG} --cflags libarchive)
+  CFLAGS += -DHAVE_LIBARCHIVE $(LIBARCHIVE_CFLAGS)
   LIBARCHIVE_LIBS := $(shell ${PKG_CONFIG} --libs libarchive)
 endif
 
 HAVE_CROSID := $(shell ${PKG_CONFIG} --exists crosid && echo 1)
 ifeq ($(HAVE_CROSID),1)
-  CFLAGS += -DHAVE_CROSID $(shell ${PKG_CONFIG} --cflags crosid)
+  CROSID_CFLAGS := $(shell ${PKG_CONFIG} --cflags crosid)
+  CFLAGS += -DHAVE_CROSID $(CROSID_CFLAGS)
   CROSID_LIBS := $(shell ${PKG_CONFIG} --libs crosid)
 endif
 
 HAVE_NSS := $(shell ${PKG_CONFIG} --exists nss && echo 1)
 ifeq ($(HAVE_NSS),1)
-  CFLAGS += -DHAVE_NSS $(shell ${PKG_CONFIG} --cflags nss)
+  NSS_CFLAGS := $(shell ${PKG_CONFIG} --cflags nss)
+  CFLAGS += -DHAVE_NSS $(NSS_CFLAGS)
   # The LIBS is not needed because we only use the header.
 else
   $(warning Missing NSS. PKCS11 signing not supported. Install libnss3 to enable this feature.)
