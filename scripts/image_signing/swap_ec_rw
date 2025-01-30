@@ -37,9 +37,11 @@ swap_ecrw() {
   local info
   local ecrw_file
   local ecrw_hash_file
-  local ecrw_version_file
+  local ecrw_ver_file
   local ecrw_comp_type
-  local ecrw_version
+  local ecrw_ver
+  local apro_ver
+  local aprw_ver
   temp_dir=$(mktemp -d)
   ecrw_file="${temp_dir}/ecrw"
   futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null
@@ -49,8 +51,8 @@ swap_ecrw() {
   openssl dgst -sha256 -binary "${ecrw_file}" > "${ecrw_hash_file}"
   info "EC RW hash saved to ${ecrw_hash_file}"
 
-  ecrw_version_file="${temp_dir}/ecrw.version"
-  futility dump_fmap -x "${ec_file}" "RW_FWID:${ecrw_version_file}" >/dev/null
+  ecrw_ver_file="${temp_dir}/ecrw.version"
+  futility dump_fmap -x "${ec_file}" "RW_FWID:${ecrw_ver_file}" >/dev/null
 
   for region in "${FMAP_REGIONS[@]}"
   do
@@ -73,7 +75,7 @@ swap_ecrw() {
     cbfstool "${ap_file}" add -r "${region}" -t raw \
       -c none -f "${ecrw_hash_file}" -n "${CBFS_ECRW_HASH_NAME}"
     cbfstool "${ap_file}" add -r "${region}" -t raw \
-      -c none -f "${ecrw_version_file}" -n "${CBFS_ECRW_VERSION_NAME}"
+      -c none -f "${ecrw_ver_file}" -n "${CBFS_ECRW_VERSION_NAME}"
   done
 
   local keyset
@@ -84,9 +86,13 @@ swap_ecrw() {
   # 'futility sign' will call 'cbfstool truncate' if needed
   futility sign "${ap_file}" --keyset "${keyset}"
 
-  ecrw_version=$(futility update --manifest -e "${ec_file}" \
+  ecrw_ver=$(futility update --manifest -e "${ec_file}" \
     | jq -r '.default.ec.versions.rw')
-  info "${CBFS_ECRW_NAME} (${ecrw_version}) swapped in ${ap_file}"
+  apro_ver=$(futility update --manifest -i "${ap_file}" \
+    | jq -r '.default.host.versions.ro')
+  aprw_ver=$(futility update --manifest -i "${ap_file}" \
+    | jq -r '.default.host.versions.rw')
+  info "${CBFS_ECRW_NAME} (${ecrw_ver}) swapped in ${ap_file} (RO:${apro_ver}, RW:${aprw_ver})"
   info "Done"
 }
 
