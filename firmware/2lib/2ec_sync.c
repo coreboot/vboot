@@ -244,6 +244,26 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 }
 
 /**
+ * determine if we can update the EC
+ *
+ * @param ctx		Vboot2 context
+ * @return boolean (true iff we can update the EC)
+ */
+
+static int ec_sync_allowed(struct vb2_context *ctx)
+{
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
+
+	/* Reasons not to do sync at all */
+	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
+		return 0;
+	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
+		return 0;
+
+	return 1;
+}
+
+/**
  * EC sync, phase 1
  *
  * This checks whether the EC is running the correct image to do EC sync, and
@@ -256,12 +276,9 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
 	/* Reasons not to do sync at all */
-	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
-		return VB2_SUCCESS;
-	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
+	if (!ec_sync_allowed(ctx))
 		return VB2_SUCCESS;
 
 	/* Set VB2_SD_FLAG_ECSYNC_EC_IN_RW flag */
@@ -295,26 +312,6 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	}
 
 	return VB2_SUCCESS;
-}
-
-/**
- * determine if we can update the EC
- *
- * @param ctx		Vboot2 context
- * @return boolean (true iff we can update the EC)
- */
-
-static int ec_sync_allowed(struct vb2_context *ctx)
-{
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-
-	/* Reasons not to do sync at all */
-	if (!(ctx->flags & VB2_CONTEXT_EC_SYNC_SUPPORTED))
-		return 0;
-	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
-		return 0;
-
-	return 1;
 }
 
 /**
