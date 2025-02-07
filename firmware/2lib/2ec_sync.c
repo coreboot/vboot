@@ -313,8 +313,7 @@ static int ec_sync_allowed(struct vb2_context *ctx)
 		return 0;
 	if (gbb->flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)
 		return 0;
-	if (ctx->flags & VB2_CONTEXT_RECOVERY_MODE)
-		return 0;
+
 	return 1;
 }
 
