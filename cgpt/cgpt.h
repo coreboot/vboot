@@ -168,6 +168,8 @@ int IsSynonymous(const GptHeader* a, const GptHeader* b);
 int IsUnused(struct drive *drive, int secondary, uint32_t index);
 int IsBootable(struct drive *drive, int secondary, uint32_t index);
 
+uint64_t DriveLastUsableLBA(const struct drive *drive);
+
 // Optional. Applications that need this must provide an implementation.
 //
 // Explanation:

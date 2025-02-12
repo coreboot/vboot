@@ -392,6 +392,15 @@ int DriveClose(struct drive *drive, int update_as_needed) {
   return errors ? CGPT_FAILED : CGPT_OK;
 }
 
+uint64_t DriveLastUsableLBA(const struct drive *drive) {
+  GptHeader *h = (GptHeader *)drive->gpt.primary_header;
+
+  if (!(drive->gpt.flags & GPT_FLAG_EXTERNAL))
+    return (drive->gpt.streaming_drive_sectors - GPT_HEADER_SECTORS
+            - CalculateEntriesSectors(h, drive->gpt.sector_bytes) - 1);
+
+  return (drive->gpt.streaming_drive_sectors - 1);
+}
 
 /* GUID conversion functions. Accepted format:
  *
