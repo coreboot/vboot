@@ -8,10 +8,25 @@
 
 #include "2api.h"
 #include "2common.h"
+#include "cgptlib.h"
 #include "gpt_misc.h"
 #include "vboot_api.h"
 
 #include <libavb.h>
+
+/**
+ * Gets address of buffer and size of preloaded partition.
+ *
+ * @param ops			AVB ops struct
+ * @param name			Name of partition
+ * @param buffer		Address of the pointer to buffer
+ * @param data_size		Address of the partition size variable
+ * @return AVB_IO_RESULT_OK on success or AVB_IO_RESULT_ERROR_IO otherwise.
+ */
+AvbIOResult vb2_android_get_buffer(AvbOps *ops,
+				   enum GptPartition name,
+				   void **buffer,
+				   size_t *data_size);
 
 /*
  * Initialize platform callbacks used within libavb.

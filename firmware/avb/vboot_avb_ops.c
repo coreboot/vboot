@@ -9,6 +9,7 @@
 
 #include "2avb.h"
 #include "2common.h"
+#include "2load_android_kernel.h"
 #include "2misc.h"
 #include "2nvstorage.h"
 #include "2secdata.h"
@@ -172,6 +173,22 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	return AVB_IO_RESULT_OK;
 }
 
+AvbIOResult vb2_android_get_buffer(AvbOps *ops,
+				   enum GptPartition name,
+				   void **buffer,
+				   size_t *data_size)
+{
+	struct vboot_avb_ctx *avbctx = user_data(ops);
+	struct avb_preload_buffer *parts = avbctx->preloaded;
+
+	if (name >= GPT_ANDROID_PRELOADED_NUM || parts[name].loaded_size == 0)
+		return AVB_IO_RESULT_ERROR_IO;
+
+	*buffer = parts[name].buffer;
+	*data_size = parts[name].loaded_size;
+
+	return AVB_IO_RESULT_OK;
+}
 
 /*
  * Instead of using heap (huge allocations) lets use the buffer which is intended

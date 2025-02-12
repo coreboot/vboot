@@ -75,6 +75,9 @@ struct vb2_public_key;
 	VB2_DEBUG("IGNORING ABORT IN RECOVERY MODE!!!\n"); \
 } while (0)
 
+#define VB2_ALIGN_MASK(x, mask) (((x) + (mask)) & ~(mask))
+#define VB2_ALIGN_UP(x, a) VB2_ALIGN_MASK(x, (__typeof__(x))(a) - 1UL)
+
 /*
  * Define test_mockable and for mocking functions when compiled for Chrome OS
  * environment (that is, not for firmware).

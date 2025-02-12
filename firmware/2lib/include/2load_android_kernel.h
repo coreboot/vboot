@@ -9,6 +9,7 @@
 #define VBOOT_REFERENCE_2LOAD_ANDROID_KERNEL_H_
 
 #include "2api.h"
+#include "2avb.h"
 #include "cgptlib.h"
 #include "gpt_misc.h"
 #include "vboot_api.h"

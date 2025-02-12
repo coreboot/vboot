@@ -46,6 +46,111 @@ static vb2_error_t vb2_map_libavb_errors(AvbSlotVerifyResult avb_error)
 	}
 }
 
+/*
+ * Copy bootconfig into separate buffer, it can be overwritten when ramdisks
+ * are concatenated. Bootconfig buffer will be processed by depthcharge.
+ */
+static vb2_error_t save_bootconfig(struct vendor_boot_img_hdr_v4 *vendor_hdr,
+				   size_t total_size,
+				   struct vb2_kernel_params *params)
+{
+	uint8_t *bootconfig;
+	size_t bootconfig_offset;
+	uint32_t page_size = vendor_hdr->page_size;
+
+	if (!vendor_hdr->bootconfig_size)
+		return VB2_SUCCESS;
+
+	bootconfig_offset = VB2_ALIGN_UP(sizeof(struct vendor_boot_img_hdr_v4), page_size) +
+			    VB2_ALIGN_UP(vendor_hdr->vendor_ramdisk_size, page_size) +
+			    VB2_ALIGN_UP(vendor_hdr->dtb_size, page_size) +
+			    VB2_ALIGN_UP(vendor_hdr->vendor_ramdisk_table_size, page_size);
+	if (bootconfig_offset > total_size ||
+	    total_size - bootconfig_offset < vendor_hdr->bootconfig_size) {
+		VB2_DEBUG("Broken 'vendor_boot' image\n");
+		return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
+	}
+
+	params->bootconfig = malloc(vendor_hdr->bootconfig_size);
+	if (!params->bootconfig) {
+		VB2_DEBUG("Cannot malloc %u bytes for bootconfig", vendor_hdr->bootconfig_size);
+		return VB2_ERROR_ANDROID_MEMORY_ALLOC;
+	}
+
+	bootconfig = (uint8_t *)vendor_hdr + bootconfig_offset;
+	memcpy(params->bootconfig, bootconfig, vendor_hdr->bootconfig_size);
+	params->bootconfig_size = vendor_hdr->bootconfig_size;
+	return VB2_SUCCESS;
+}
+
+
+/*
+ * This function validates the partitions magic numbers and move them into place requested
+ * from linux.
+ */
+static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
+					struct vb2_kernel_params *params)
+{
+	struct vendor_boot_img_hdr_v4 *vendor_hdr;
+	struct boot_img_hdr_v4 *init_hdr;
+	size_t vendor_boot_size, init_boot_size;
+	uint8_t *vendor_ramdisk_end = 0;
+
+	if (vb2_android_get_buffer(avb_ops, GPT_ANDROID_VENDOR_BOOT, (void **)&vendor_hdr,
+				   &vendor_boot_size) ||
+	    vb2_android_get_buffer(avb_ops, GPT_ANDROID_INIT_BOOT, (void **)&init_hdr,
+				   &init_boot_size)) {
+		VB2_DEBUG("Cannot get information about preloaded paritition\n");
+		return VB2_ERROR_ANDROID_RAMDISK_ERROR;
+	}
+
+	if (vendor_boot_size < sizeof(*vendor_hdr) ||
+	    memcmp(vendor_hdr->magic, VENDOR_BOOT_MAGIC, VENDOR_BOOT_MAGIC_SIZE)) {
+		VB2_DEBUG("Incorrect magic or size (%zx) of 'vendor_boot' image\n",
+			  vendor_boot_size);
+		return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
+	}
+
+	/* Save bootconfig for depthcharge, it can be overwritten when ramdisk are moved */
+	VB2_TRY(save_bootconfig(vendor_hdr, vendor_boot_size, params));
+
+	/* Validate init_boot partition */
+	if (init_boot_size < BOOT_HEADER_SIZE ||
+	    init_boot_size - BOOT_HEADER_SIZE < init_hdr->ramdisk_size ||
+	    init_hdr->kernel_size != 0 ||
+	    memcmp(init_hdr->magic, BOOT_MAGIC, BOOT_MAGIC_SIZE)) {
+		VB2_DEBUG("Incorrect 'init_boot' header, total size: %zx\n",
+			  init_boot_size);
+		return VB2_ERROR_ANDROID_BROKEN_INIT_BOOT;
+	}
+
+	/* On init_boot there's no kernel, so ramdisk follows the header */
+	uint8_t *init_boot_ramdisk = (uint8_t *)init_hdr + BOOT_HEADER_SIZE;
+	size_t init_boot_ramdisk_size = init_hdr->ramdisk_size;
+
+	/*
+	 * Move init_boot ramdisk to directly follow the vendor_boot ramdisk.
+	 * This is a requirement from Android system. The cpio/gzip/lz4
+	 * compression formats support this type of concatenation. After
+	 * the kernel decompresses, it extracts concatenated file into
+	 * an initramfs, which results in a file structure that's a generic
+	 * ramdisk (from init_boot) overlaid on the vendor ramdisk (from
+	 * vendor_boot) file structure.
+	 */
+	vendor_ramdisk_end = (uint8_t *)vendor_hdr +
+		VB2_ALIGN_UP(sizeof(*vendor_hdr), vendor_hdr->page_size) +
+		vendor_hdr->vendor_ramdisk_size;
+	VB2_ASSERT(vendor_ramdisk_end < init_boot_ramdisk);
+	memmove(vendor_ramdisk_end, init_boot_ramdisk, init_boot_ramdisk_size);
+	params->ramdisk_size += init_boot_ramdisk_size;
+
+	/* Save vendor cmdline for booting */
+	vendor_hdr->cmdline[sizeof(vendor_hdr->cmdline) - 1] = '\0';
+	params->vendor_cmdline_buffer = (char *)vendor_hdr->cmdline;
+
+	return VB2_SUCCESS;
+}
+
 vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *entry,
 			     struct vb2_kernel_params *params, vb2ex_disk_handle_t disk_handle)
 {
@@ -101,7 +206,17 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 
 	/* Map AVB return code into VB2 code */
 	rv = vb2_map_libavb_errors(result);
+	if (rv != VB2_SUCCESS)
+		goto out;
 
+	/*
+	 * Before booting we need to rearrange buffers with partition data, which includes:
+	 * - save bootconfig in separate buffer, so depthcharge can modify it
+	 * - concatenate ramdisks from vendor_boot & init_boot partitions
+	 */
+	rv = rearrange_partitions(avb_ops, params);
+
+out:
 	/* No need for slot data */
 	if (verify_data != NULL)
 		avb_slot_verify_data_free(verify_data);
