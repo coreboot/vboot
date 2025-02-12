@@ -320,6 +320,17 @@ dd if=/dev/zero of=${DEV} seek=$((NUM_SECTORS - 33)) conv=notrunc bs=512 \
 "${CGPT}" repair "${MTD[@]}" ${DEV}
 ("${CGPT}" show "${MTD[@]}" ${DEV} | grep -q INVALID) && error
 
+# Double size. Check without|with MTD "-D 358400' (1000->2000|700->700 sectors).
+"${CGPT}" create "${MTD[@]}" ${DEV}
+"${CGPT}" show -v "${MTD[@]}" ${DEV} | grep -q -E 'Alternate LBA: 999' || error
+"${CGPT}" show -v "${MTD[@]}" ${DEV} | grep -q -E 'Last LBA: (966|699)' || error
+dd if=/dev/zero of=${DEV} bs=512 seek=$((2 * NUM_SECTORS)) count=0 2>/dev/null
+"${CGPT}" repair "${MTD[@]}" ${DEV}
+"${CGPT}" show -v "${MTD[@]}" ${DEV} | grep -q -E 'Alternate LBA: 1999' || error
+"${CGPT}" show -v "${MTD[@]}" ${DEV} | grep -q -E 'Last LBA: (1966|699)' || error
+# Restore size (truncate).
+dd if=/dev/zero of=${DEV} bs=512 count=${NUM_SECTORS} 2>/dev/null
+
 echo "Test with IGNOREME primary GPT..."
 "${CGPT}" create "${MTD[@]}" ${DEV}
 "${CGPT}" legacy "${MTD[@]}" -p ${DEV}
