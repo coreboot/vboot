@@ -399,7 +399,7 @@ cc_binary {
 cc_binary {
     name: "crossystem",
     defaults: ["vboot_defaults"],
-    vendor_available: true,
+    vendor: true,
 
     srcs: ["utility/crossystem.c"],
     static_libs: ["libvboot_util"],
