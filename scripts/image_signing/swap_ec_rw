@@ -15,6 +15,7 @@ Swap the EC RW (ecrw) within an AP firmware (BIOS) image.
 # Flags.
 DEFINE_string image "" "The AP firmware file (e.g 'image-steelix.bin') to swap out ecrw" i
 DEFINE_string ec "" "The EC firmware file (e.g 'ec.bin')" e
+DEFINE_string ec_config "" "The EC config file (default is 'ec.config')"
 
 # Parse command line.
 FLAGS "$@" || exit 1
@@ -33,6 +34,7 @@ CBFS_ECRW_CONFIG_NAME="ecrw.config"
 swap_ecrw() {
   local ap_file=$1
   local ec_file=$2
+  local ec_config_file=$3
   local temp_dir
   local info
   local ecrw_file
@@ -65,10 +67,8 @@ swap_ecrw() {
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_HASH_NAME}"
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_VERSION_NAME}" \
       || warn "${CBFS_ECRW_VERSION_NAME} not found, but will be added"
-    # TODO(b/307788351): Update ecrw.config. Right now the config info cannot
-    # be obtained from ec.bin.
     cbfstool "${ap_file}" remove -r "${region}" \
-      -n "${CBFS_ECRW_CONFIG_NAME_NAME}" || true
+      -n "${CBFS_ECRW_CONFIG_NAME}" || true
     cbfstool "${ap_file}" expand -r "${region}"
     cbfstool "${ap_file}" add -r "${region}" -t raw \
       -c "${ecrw_comp_type}" -f "${ecrw_file}" -n "${CBFS_ECRW_NAME}"
@@ -76,6 +76,12 @@ swap_ecrw() {
       -c none -f "${ecrw_hash_file}" -n "${CBFS_ECRW_HASH_NAME}"
     cbfstool "${ap_file}" add -r "${region}" -t raw \
       -c none -f "${ecrw_ver_file}" -n "${CBFS_ECRW_VERSION_NAME}"
+    # Add ecrw.config if provided.
+    if [ -n "${ec_config_file}" ] ; then
+      cbfstool "${ap_file}" add -r "${region}" -t raw \
+        -c "${ecrw_comp_type}" -f "${ec_config_file}" \
+        -n "${CBFS_ECRW_CONFIG_NAME}"
+    fi
   done
 
   local keyset
@@ -105,8 +111,12 @@ main() {
     flags_help
     die "-e or --ec required."
   fi
+  if [[ -z "${FLAGS_ec_config}" ]] && [[ -f "$(dirname ${FLAGS_ec})/ec.config" ]]; then
+        FLAGS_ec_config="$(dirname ${FLAGS_ec})/ec.config"
+        info "Using ec.config from ${FLAGS_ec_config}"
+  fi
 
-  swap_ecrw "${FLAGS_image}" "${FLAGS_ec}"
+  swap_ecrw "${FLAGS_image}" "${FLAGS_ec}" "${FLAGS_ec_config}"
 }
 
 main "$@"
