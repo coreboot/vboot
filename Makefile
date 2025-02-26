@@ -808,7 +808,6 @@ TEST2X_NAMES = \
 	tests/vb2_firmware_tests \
 	tests/vb2_gbb_init_tests \
 	tests/vb2_gbb_tests \
-	tests/vb2_host_flashrom_tests \
 	tests/vb2_host_key_tests \
 	tests/vb2_host_nvdata_flashrom_tests \
 	tests/vb2_inject_kernel_subkey_tests \
@@ -826,6 +825,11 @@ TEST2X_NAMES = \
 	tests/vb2_sha_api_tests \
 	tests/vb2_sha_tests \
 	tests/hmac_test
+
+ifneq ($(filter-out 0,${USE_FLASHROM}),)
+TEST2X_NAMES += \
+	tests/vb2_host_flashrom_tests
+endif
 
 TEST20_NAMES = \
 	tests/vb20_api_kernel_tests \
