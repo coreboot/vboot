@@ -93,8 +93,9 @@ static vb2_error_t secdata_kernel_check_v1(struct vb2_context *ctx,
 	}
 
 	if (*size < sec->struct_size) {
-		VB2_DEBUG("secdata_kernel: incomplete data (missing %d bytes)\n",
-			  sec->struct_size - *size);
+		VB2_DEBUG("secdata_kernel: size %u smaller than struct size %u;"
+			  " returning correct size\n",
+			  *size, sec->struct_size);
 		*size = sec->struct_size;
 		return VB2_ERROR_SECDATA_KERNEL_INCOMPLETE;
 	}
