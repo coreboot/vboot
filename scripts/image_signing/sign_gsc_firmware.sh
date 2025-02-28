@@ -3,6 +3,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# shellcheck source=common.sh
 . "$(dirname "$0")/common.sh"
 
 load_shflags || exit 1
@@ -10,8 +11,9 @@ load_shflags || exit 1
 DEFINE_boolean override_keyid "${FLAGS_TRUE}" \
   "Override keyid from manifest." ""
 
-FLAGS_HELP="Usage: ${PROG} [options] <input_dir> <cr50 key> <ti50 key>
-<output_image>
+# shellcheck disable=SC2154
+FLAGS_HELP="Usage: ${PROG} [options] <input_dir> <cr50 key> `
+                   `<ti50 key> <output_image>
 
 Signs <input_dir> with keys specified.
 "
@@ -71,10 +73,10 @@ parse_segment() {
 
     case "${type}" in
       (02)
-        segment=$(( value << 4 ))
+        segment=$(( value * 16 ))
         ;;
       (04)
-        segment=$(( value << 16 ))
+        segment=$(( value * 65536 ))
         ;;
       (*)
         error "unknown segment record type ${type}"
@@ -497,10 +499,10 @@ verify_ro() {
   die "RO key (${key_byte}) in ${ro_bin} does not match type prod"
 }
 
-# This function prepares a full GSC image, consisting of two ROs and two RWs
-# placed at their respective offsets into the resulting blob. It invokes the
-# bs (binary signer) script to actually convert ELF versions of RWs into
-# binaries and sign them.
+# This function prepares a full H1 or DT GSC image, consisting of two ROs and
+# two RWs placed at their respective offsets into the resulting blob. It
+# invokes the bs (binary signer) script to actually convert ELF versions of
+# RWs into binaries and sign them.
 #
 # The signed image is placed in the directory named as concatenation of RO and
 # RW version numbers and board ID fields, if set to non-default. The ebuild
@@ -584,6 +586,161 @@ sign_gsc_firmware() {
   info "Image successfully signed to ${output_file}"
 }
 
+# Given a file containing an ECDSA signature in ASN.1 wrapping extract the R
+# and S components, change their endianness and concatenate them together in
+# a single 64 byte blob.
+ecdsa_sig_to_raw() {
+  if [[ $# -ne 2 ]]; then
+    die "Usage: ecdsa_sig_to_raw <ASN.1 DER ECDSA sig> <RAW ECDSA SIG>"
+  fi
+
+  local asn1_sig="$1"
+  local raw_sig="$2"
+
+  # When parsing the signature, the two components are printed as 32 byte hex
+  # numbers in the following format:
+  #    2:d=1  hl=2 l=  33 prim: INTEGER :<hex ascii value>
+  # let's pick them up, reverse the values and save in a single blob
+  for line in $(openssl asn1parse -inform der -in "${asn1_sig}" |
+               awk -F: '/INTEGER/ {print $4}'); do
+    echo "${line}" |
+      xxd -r -p |
+      /usr/bin/od -An -tx1 -w32 |
+      tr ' ' '\n' |
+      tac |
+      xargs |
+      sed 's/ //g'
+  done | xxd -r -p > "${raw_sig}"
+}
+
+make_nt_image() {
+  if [[ $# -ne 4 ]]; then
+    die "Usage: `
+        `make_nt_image <rom_ext_{a,b}> <signed_rw_bin> <output>"
+  fi
+
+  local rom_ext_a="$1"
+  local rom_ext_b="$2"
+  local signed_rw_bin="$3"
+  local output="$4"
+
+  local full_image_size_kb=1024
+  local rw_kb_offset=64
+
+  # Now build a full OT image
+  tr '\000' '\377' < /dev/zero | dd of="${output}.tmp" \
+                                        bs=1K count="${full_image_size_kb}" status=none
+  for x in "${rom_ext_a}:0" "${rom_ext_b}:$(( full_image_size_kb/2 ))" \
+                                "${signed_rw_bin}:${rw_kb_offset}" \
+                                "${signed_rw_bin}:$(( full_image_size_kb/2 + rw_kb_offset ))"
+  do
+    local tuple
+
+    # shellcheck disable=SC2206
+    IFS=: tuple=( ${x} )
+    dd if="${tuple[0]}" of="${output}.tmp" bs=1k seek="${tuple[1]}" \
+       conv=notrunc status=none
+  done
+  mv "${output}.tmp" "${output}"
+}
+
+# Sign image with a cloud KMS key using openssl with a PKCS#11 plugin. This
+# function expects KMS_PKCS11_CONFIG env variable to be the name of the
+# appropriate yaml file, and KEYCFG_TI50_KEY to be the name of the key to pass
+# to the openssl invocation.
+openssl_sign_firmware() {
+  if [[ $# -ne 5 ]]; then
+    die "Usage: openssl_sign_firmware <rom_ext_{a,b}> <rw_bin> <ti50 key> <output>"
+  fi
+
+  if [[ -z ${KMS_PKCS11_CONFIG:-} ]]; then
+    die "KMS_PKCS11_CONFIG must be defined in the environment"
+  fi
+  local rom_ext_a="$1"
+  local rom_ext_b="$2"
+  local rw_bin="$3"
+  local ti50_key="$4"
+  local output="$5"
+
+  local hex_code_end
+  local ot_tbs
+  local sig_space_size
+  local signature
+  local signed_rw_bin
+  local tmpd
+
+  tmpd=$(make_temp_dir)
+
+  ot_tbs="${tmpd}/tbs"
+  signature="${tmpd}/signature"
+  signed_rw_bin="${tmpd}/signed.bin"
+
+  # Read the code end location from the manifest, where it is placed at offset
+  # of 828 hardcoded below.
+  hex_code_end="$(dd if="${rw_bin}"  bs=1 count=4 skip=828 status=none | \
+                     /usr/bin/od -An -tx4 | awk '{print "0x"$1}')"
+
+  # Signature space is allocated at offset zero of the image.
+  sig_space_size=384
+  # Extract the TBS section of the binary which is everything above the
+  # signature until code end.
+  dd if="${rw_bin}" of="${ot_tbs}" bs=1 skip="${sig_space_size}" \
+     count=$(( hex_code_end - sig_space_size )) status=none
+
+  (
+    export KMS_PKCS11_CONFIG
+    export PKCS11_MODULE_PATH
+
+    openssl dgst -sha256 \
+            -engine pkcs11 -keyform engine \
+            -sign "${ti50_key}" \
+            -out "${signature}" < "${ot_tbs}"
+  )
+
+  plug_in_signatures "${signature}" ""  "${rw_bin}" "${signed_rw_bin}"
+
+  make_nt_image "${rom_ext_a}" "${rom_ext_b}" "${signed_rw_bin}" "${output}"
+
+  # Tell the signer how to rename the @CHIP@ portion of the output.
+  echo "ti50" > "${output}.rename"
+}
+
+plug_in_signatures() {
+  local ecdsa_sig="$1"
+  local spx_sig="$2"
+  local rw_bin="$3"
+  local signed_bin="$4"
+
+  local tmp_signed_bin="${signed_bin}.tmp"
+
+  cp "${rw_bin}" "${tmp_signed_bin}"
+
+  if [[ -n ${ecdsa_sig} ]]; then
+    local ecdsa_sig_raw="${ecdsa_sig}.raw"
+
+    ecdsa_sig_to_raw "${ecdsa_sig}" "${ecdsa_sig_raw}"
+
+    # ECDSA signature is at the very bottom of the binary
+    dd if="${ecdsa_sig_raw}" of="${tmp_signed_bin}" conv=notrunc status=none
+  fi
+
+  if [[ -n ${spx_sig} ]]; then
+    # During the build process, when SPX key is added to the image, the signature
+    # space is also allocated so the image is extended to cover the space
+    # which will eventually be taken by the SPX signature.
+    #
+    # We expect the manifest to point at the SPX signature at the very end of
+    # the extended input binary blob.
+    local spx_sig_offset
+
+    spx_sig_offset=$(( "$(stat -c '%s' "${rw_bin}")" -
+                       "$(stat -c '%s' "${spx_sig}")" ))
+    dd if="${spx_sig}" of="${tmp_signed_bin}" seek="${spx_sig_offset}" bs=1 \
+       conv=notrunc status=none
+  fi
+  mv "${tmp_signed_bin}" "${signed_bin}"
+}
+
 # Sign the directory holding GSC firmware.
 sign_gsc_firmware_dir() {
   if [[ $# -ne 4 ]]; then
@@ -602,6 +759,13 @@ sign_gsc_firmware_dir() {
   local key_file
   local base_name
 
+   # shellcheck disable=SC2012
+  if [[  -n $(ls "${input}"/pao* 2>/dev/null) ]]; then
+    # This is an Opentitan tarball, sign it with Cloud KMS
+    openssl_sign_firmware "${input}/rom_ext.A" "${input}/rom_ext.B" \
+                          "${input}/rw.bin" "${ti50_key}" "${output}"
+    return
+  fi
   manifest_source="${input}/prod.json"
   manifest_file="${manifest_source}.updated"
 
@@ -675,6 +839,6 @@ main() {
     die "Missing input directory: ${input}"
   fi
 
-  sign_gsc_firmware_dir "${input}" "${cr50_key}" "${ti50_key} "${output}"
+  sign_gsc_firmware_dir "${input}" "${cr50_key}" "${ti50_key}" "${output}"
 }
 main "$@"
