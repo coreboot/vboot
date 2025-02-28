@@ -136,6 +136,17 @@ typedef struct {
 
 #define GPTENTRY_EXPECTED_SIZE 128
 
+#define GUID_STRLEN 37
+
+typedef enum {
+	GPT_GUID_LOWERCASE,
+	GPT_GUID_UPPERCASE,
+} GptGuidLetterCase;
+
+void GptGuidToStr(const Guid *guid, char *str, unsigned int buflen,
+		  GptGuidLetterCase case_type);
+
+
 #ifdef __cplusplus
 }
 #endif  /* __cplusplus */

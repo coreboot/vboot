@@ -38,7 +38,7 @@ int CgptGetBootPartitionNumber(CgptBootParams *params)
 	}
 
 	char buf[GUID_STRLEN];
-	GuidToStr(&drive.pmbr.boot_guid, buf, sizeof(buf));
+	GptGuidToStr(&drive.pmbr.boot_guid, buf, sizeof(buf), GPT_GUID_UPPERCASE);
 
 	int numEntries = GetNumberOfEntries(&drive);
 	int i;
@@ -138,7 +138,7 @@ int CgptBoot(CgptBootParams *params)
 	}
 
 	char buf[GUID_STRLEN];
-	GuidToStr(&drive.pmbr.boot_guid, buf, sizeof(buf));
+	GptGuidToStr(&drive.pmbr.boot_guid, buf, sizeof(buf), GPT_GUID_UPPERCASE);
 	printf("%s\n", buf);
 
 	// Write it all out, if needed.

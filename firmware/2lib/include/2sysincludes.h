@@ -21,5 +21,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
+#include <sys/endian.h>
+#else
+#include <endian.h>
+#endif
 
 #endif  /* VBOOT_REFERENCE_2SYSINCLUDES_H_ */

@@ -247,3 +247,23 @@ uint64_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e)
 {
 	return GptGetEntrySizeLba(e) * gpt->sector_bytes;
 }
+
+void GptGuidToStr(const Guid *guid, char *str, unsigned int buflen,
+		  GptGuidLetterCase case_type)
+{
+	VB2_ASSERT(buflen >= GUID_STRLEN);
+
+	const char *format_string;
+	if (case_type == GPT_GUID_LOWERCASE)
+		format_string = "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x";
+	else
+		format_string = "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X";
+
+	snprintf(str, buflen, format_string,
+		 le32toh(guid->u.Uuid.time_low), le16toh(guid->u.Uuid.time_mid),
+		 le16toh(guid->u.Uuid.time_high_and_version),
+		 guid->u.Uuid.clock_seq_high_and_reserved, guid->u.Uuid.clock_seq_low,
+		 guid->u.Uuid.node[0], guid->u.Uuid.node[1], guid->u.Uuid.node[2],
+		 guid->u.Uuid.node[3], guid->u.Uuid.node[4],
+		 guid->u.Uuid.node[5]);
+}

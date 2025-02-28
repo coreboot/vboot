@@ -449,17 +449,6 @@ int StrToGuid(const char *str, Guid *guid)
 
 	return CGPT_OK;
 }
-void GuidToStr(const Guid *guid, char *str, unsigned int buflen)
-{
-	require(buflen >= GUID_STRLEN);
-	require(snprintf(str, buflen, "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-			 le32toh(guid->u.Uuid.time_low), le16toh(guid->u.Uuid.time_mid),
-			 le16toh(guid->u.Uuid.time_high_and_version),
-			 guid->u.Uuid.clock_seq_high_and_reserved, guid->u.Uuid.clock_seq_low,
-			 guid->u.Uuid.node[0], guid->u.Uuid.node[1], guid->u.Uuid.node[2],
-			 guid->u.Uuid.node[3], guid->u.Uuid.node[4],
-			 guid->u.Uuid.node[5]) == GUID_STRLEN - 1);
-}
 
 /* Convert possibly unterminated UTF16 string to UTF8.
  * Caller must prepare enough space for UTF8, which could be up to
@@ -1123,7 +1112,7 @@ void PMBRToStr(struct pmbr *pmbr, char *str, unsigned int buflen)
 	if (GuidIsZero(&pmbr->boot_guid)) {
 		require(snprintf(str, buflen, "PMBR") < buflen);
 	} else {
-		GuidToStr(&pmbr->boot_guid, buf, sizeof(buf));
+		GptGuidToStr(&pmbr->boot_guid, buf, sizeof(buf), GPT_GUID_UPPERCASE);
 		require(snprintf(str, buflen, "PMBR (Boot GUID: %s)", buf) < buflen);
 	}
 }

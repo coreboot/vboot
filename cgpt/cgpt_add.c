@@ -23,11 +23,11 @@ static void PrintCgptAddParams(const CgptAddParams *params)
 	if (params->set_size)
 		fprintf(stderr, "-s %llu ", (unsigned long long)params->size);
 	if (params->set_type) {
-		GuidToStr(&params->type_guid, tmp, sizeof(tmp));
+		GptGuidToStr(&params->type_guid, tmp, sizeof(tmp), GPT_GUID_UPPERCASE);
 		fprintf(stderr, "-t %s ", tmp);
 	}
 	if (params->set_unique) {
-		GuidToStr(&params->unique_guid, tmp, sizeof(tmp));
+		GptGuidToStr(&params->unique_guid, tmp, sizeof(tmp), GPT_GUID_UPPERCASE);
 		fprintf(stderr, "-u %s ", tmp);
 	}
 	if (params->set_error_counter)
