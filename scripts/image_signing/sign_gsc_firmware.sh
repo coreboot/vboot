@@ -10,9 +10,10 @@ load_shflags || exit 1
 DEFINE_boolean override_keyid "${FLAGS_TRUE}" \
   "Override keyid from manifest." ""
 
-FLAGS_HELP="Usage: ${PROG} [options] <input_dir> <key_dir> <output_image>
+FLAGS_HELP="Usage: ${PROG} [options] <input_dir> <cr50 key> <ti50 key>
+<output_image>
 
-Signs <input_dir> with keys in <key_dir>.
+Signs <input_dir> with keys specified.
 "
 
 # Parse command line.
@@ -585,13 +586,14 @@ sign_gsc_firmware() {
 
 # Sign the directory holding GSC firmware.
 sign_gsc_firmware_dir() {
-  if [[ $# -ne 3 ]]; then
-    die "Usage: sign_gsc_firmware_dir <input> <key dir> <output>"
+  if [[ $# -ne 4 ]]; then
+    die "Usage: sign_gsc_firmware_dir <input> <cr_50 key> <ti50 key> <output>"
   fi
 
   local input="${1%/}"
-  local key_dir="$2"
-  local output="$3"
+  local cr50_key="$2"
+  local ti50_key="$3"
+  local output="$4"
   local generation
   local rw_a
   local rw_b
@@ -614,11 +616,13 @@ sign_gsc_firmware_dir() {
     (h|null)
       generation="h"
       base_name="cr50"
+      key_file="${cr50_key}"
       rw_a="${input}/ec.RW.elf"
       rw_b="${input}/ec.RW_B.elf"
       ;;
     (d)
       base_name="ti50"
+      key_file="${ti50_key}"
       rw_a="${input}/rw_A.hex"
       rw_b="${input}/rw_B.hex"
       ;;
@@ -627,7 +631,6 @@ sign_gsc_firmware_dir() {
       ;;
   esac
 
-  key_file="${key_dir}/${base_name}.pem"
   if [[ ! -e "${key_file}" ]]; then
     die "Missing key file: ${key_file}"
   fi
@@ -650,14 +653,15 @@ sign_gsc_firmware_dir() {
 }
 
 main() {
-  if [[ $# -ne 3 ]]; then
+  if [[ $# -ne 4 ]]; then
     flags_help
     exit 1
   fi
 
   local input="${1%/}"
-  local key_dir="$2"
-  local output="$3"
+  local cr50_key="$2"
+  local ti50_key="$3"
+  local output="$4"
 
   local signing_instructions="${input}/signing_instructions.sh"
 
@@ -671,6 +675,6 @@ main() {
     die "Missing input directory: ${input}"
   fi
 
-  sign_gsc_firmware_dir "${input}" "${key_dir}" "${output}"
+  sign_gsc_firmware_dir "${input}" "${cr50_key}" "${ti50_key} "${output}"
 }
 main "$@"

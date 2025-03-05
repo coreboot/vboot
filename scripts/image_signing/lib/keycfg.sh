@@ -56,6 +56,9 @@ setup_default_keycfg() {
   export KEYCFG_ACCESSORY_RWSIG_VBPRIK2=""
   # update payload key
   export KEYCFG_UPDATE_KEY_PEM="${key_dir}/update_key.pem"
+  # ti50 keys
+  export KEYCFG_CR50_KEY="${key_dir}/cr50.pem"
+  export KEYCFG_TI50_KEY="${key_dir}/ti50.pem"
 }
 
 # Setup the key configuration. This setups the default configuration and source
