@@ -211,9 +211,19 @@ int vb_keyb_from_rsa(struct rsa_st *rsa_private_key, uint8_t **keyb_data, uint32
 int vb_keyb_from_private_key(struct vb2_private_key *private_key, uint8_t **keyb_data,
 			     uint32_t *keyb_size)
 {
+	int err;
 	switch (private_key->key_location) {
 	case PRIVATE_KEY_P11:
-		return vb_keyb_from_p11_key(private_key->p11_key, keyb_data, keyb_size);
+		err = vb_keyb_from_p11_key(private_key->p11_key, keyb_data, keyb_size);
+		if (!err) {
+			/* Since ID is not populated in PKCS11, copy the sha into the ID
+			 * field.
+			 */
+			struct vb2_hash hash;
+			vb2_hash_calculate(false, *keyb_data, *keyb_size, VB2_HASH_SHA1, &hash);
+			memcpy(private_key->id.raw, hash.sha1, sizeof(private_key->id.raw));
+		}
+		return err;
 	case PRIVATE_KEY_LOCAL:
 		return vb_keyb_from_rsa(private_key->rsa_private_key, keyb_data, keyb_size);
 	}
