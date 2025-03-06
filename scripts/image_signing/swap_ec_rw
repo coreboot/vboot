@@ -31,6 +31,19 @@ CBFS_ECRW_HASH_NAME="ecrw.hash"
 CBFS_ECRW_VERSION_NAME="ecrw.version"
 CBFS_ECRW_CONFIG_NAME="ecrw.config"
 
+cbfstool_try_remove() {
+  local ap_file="$1"
+  local region="$2"
+  local name="$3"
+
+  if cbfstool "${ap_file}" print -r "${region}" -k \
+      | grep -q "^${name}"$'\t'; then
+    cbfstool "${ap_file}" remove -r "${region}" -n "${name}"
+    return 0
+  fi
+  return 1
+}
+
 swap_ecrw() {
   local ap_file=$1
   local ec_file=$2
@@ -65,10 +78,10 @@ swap_ecrw() {
     ecrw_comp_type=${ecrw_comp_type:-none}
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_NAME}"
     cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_HASH_NAME}"
-    cbfstool "${ap_file}" remove -r "${region}" -n "${CBFS_ECRW_VERSION_NAME}" \
+    cbfstool_try_remove "${ap_file}" "${region}" "${CBFS_ECRW_VERSION_NAME}" \
       || warn "${CBFS_ECRW_VERSION_NAME} not found, but will be added"
-    cbfstool "${ap_file}" remove -r "${region}" \
-      -n "${CBFS_ECRW_CONFIG_NAME}" || true
+    cbfstool_try_remove "${ap_file}" "${region}" "${CBFS_ECRW_CONFIG_NAME}" \
+      || true
     cbfstool "${ap_file}" expand -r "${region}"
     cbfstool "${ap_file}" add -r "${region}" -t raw \
       -c "${ecrw_comp_type}" -f "${ecrw_file}" -n "${CBFS_ECRW_NAME}"
