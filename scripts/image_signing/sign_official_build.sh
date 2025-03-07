@@ -909,14 +909,15 @@ verify_uefi_signatures() {
 }
 
 # Sign a GSC firmware image with the given keys.
-# Args: CONTAINER KEY_DIR [OUTPUT_CONTAINER]
+# Args: CONTAINER CR50_KEY TI50_KEY [OUTPUT_CONTAINER]
 sign_gsc_firmware() {
   local image=$1
-  local key_dir=$2
-  local output=$3
+  local cr50_key=$2
+  local ti50_key=$3
+  local output=$4
 
   "${SCRIPT_DIR}/sign_gsc_firmware.sh" \
-    "${image}" "${key_dir}" "${output}"
+    "${image}" "${cr50_key}" "${ti50_key}" "${output}"
 }
 
 # Verify an image including rootfs hash using the specified keys.
@@ -1479,8 +1480,8 @@ main() {
     do_futility sign --type rwsig --prikey "${PRIV_KEY}" \
              --version "${FIRMWARE_VERSION}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "gsc_firmware" ]]; then
-    sign_gsc_firmware "${INPUT_IMAGE}" "${KEYCFG_CR50_KEY}" "${KEYCFG_TI50_KEY}"
-      "${OUTPUT_IMAGE}"
+    sign_gsc_firmware "${INPUT_IMAGE}" "${KEYCFG_CR50_KEY}" \
+      "${KEYCFG_TI50_KEY}" "${OUTPUT_IMAGE}"
   elif [[ "${TYPE}" == "hps_firmware" ]]; then
     hps-sign-rom --input "${INPUT_IMAGE}" --output "${OUTPUT_IMAGE}" \
       --private-key "${KEY_DIR}/key_hps.priv.pem"
