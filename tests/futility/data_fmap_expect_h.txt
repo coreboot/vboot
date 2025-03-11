@@ -1,4 +1,4 @@
-# name                     start       end         size
+# name                     start       end         size  // address relative to base=0x0
 SI_BIOS                    00200000    00800000    00600000
   WP_RO                      00600000    00800000    00200000
     RO_SECTION                 00610000    00800000    001f0000

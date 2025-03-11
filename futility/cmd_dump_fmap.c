@@ -345,9 +345,9 @@ static int human_fmap(const FmapHeader *fmh, bool gaps, int overlap)
 	}
 	/* Now add the root node */
 	all_nodes[numnodes].name = strdup("-entire flash-");
-	all_nodes[numnodes].start = fmh->fmap_base;
+	all_nodes[numnodes].start = 0;
 	all_nodes[numnodes].size = fmh->fmap_size;
-	all_nodes[numnodes].end = fmh->fmap_base + fmh->fmap_size;
+	all_nodes[numnodes].end = fmh->fmap_size;
 
 	/* First, coalesce any duplicates */
 	for (uint16_t i = 0; i < numnodes; i++) {
@@ -401,7 +401,8 @@ static int human_fmap(const FmapHeader *fmh, bool gaps, int overlap)
 			add_child(all_nodes[i].parent, i);
 
 	/* Ready to go */
-	printf("# name                     start       end         size\n");
+	printf("# %-25s%-12s%-12s%s  // address relative to base=0x%" PRIx64 "\n",
+	       "name", "start", "end", "size", fmh->fmap_base);
 	int gapcount = 0;
 	show(all_nodes + numnodes, 0, gaps, gaps, &gapcount);
 

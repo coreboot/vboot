@@ -1,7 +1,7 @@
 ERROR: RO_VPD and RO_UNUSED overlap
   RO_VPD: 0x1a0000 - 0x1b0000
   RO_UNUSED: 0x1af000 - 0x200000
-# name                     start       end         size
+# name                     start       end         size  // address relative to base=0x0
 RW_PRIVATE                 003fc000    00400000    00004000
 RW_ENVIRONMENT             003fc000    00400000    00004000  // DUPLICATE
 RW_SHARED                  003f8000    003fc000    00004000
