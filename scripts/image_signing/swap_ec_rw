@@ -96,7 +96,10 @@ extract_ecrw_files_from_ec() {
   local ecrw_ver_file=$3
   local ec_file=$4
 
-  futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null
+  if ! futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null ; then
+    info "Falling back to EC_RW section"
+    futility dump_fmap -x "${ec_file}" "EC_RW:${ecrw_file}" >/dev/null
+  fi
   info "EC RW extracted to ${ecrw_file}"
 
   openssl dgst -sha256 -binary "${ecrw_file}" > "${ecrw_hash_file}"
