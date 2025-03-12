@@ -46,6 +46,9 @@ cbfstool_try_extract() {
   local output="$4"
 
   if cbfstool_check_exist "${ap_file}" "${region}" "${name}"; then
+    if [[ -e "${output}" ]]; then
+      die "Extracting should not override file. ${output} already exists."
+    fi
     cbfstool "${ap_file}" extract -r "${region}" -n "${name}" -f "${output}"
     return 0
   fi
@@ -86,7 +89,7 @@ extract_ecrw_files_from_ap() {
     || warn "${CBFS_ECRW_VERSION_NAME} not found in source AP file."
 
   cbfstool_try_extract "${ap_for_ec_file}" "${region}" \
-    "${CBFS_ECRW_CONFIG_NAME}" "${ecrw_ver_file}" \
+    "${CBFS_ECRW_CONFIG_NAME}" "${ecrw_config_file}" \
     || warn "${CBFS_ECRW_CONFIG_NAME} not found in source AP file."
 }
 

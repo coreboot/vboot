@@ -43,9 +43,11 @@ cmp -s "${TMPD}/v.old" "${TMPD}/v.new" && error "ecrw.version was not modified"
 
 # Good case: swap from AP source (--ap_for_ec)
 # For testing purposes, AP_IMAGE has different contents between FW_MAIN_A and
-# FW_MAIN_B.  Swap the EC into the source image to create a normal AP image.
+# FW_MAIN_B.  Swap the EC and EC config into the source image to create
+# a normal AP image.
 cp -f "${AP_IMAGE}" "${TMP}.source"
-"${SWAP}" -i "${TMP}.source" -e "${EC_IMAGE}"
+echo "testing config content" > "${TMPD}/ecrw.config"
+"${SWAP}" -i "${TMP}.source" -e "${EC_IMAGE}" --ec_config "${TMPD}/ecrw.config"
 # Swap the ecrw from source image to target image.
 cp -f "${AP_IMAGE}" "${TMP}.target"
 "${SWAP}" -i "${TMP}.target" -a "${TMP}.source"
