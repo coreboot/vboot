@@ -45,7 +45,7 @@ int CgptLegacy(CgptLegacyParams *params);
  * At least GUID_STRLEN bytes should be reserved in 'str' (included the tailing
  * '\0').
  */
-int StrToGuid(const char *str, Guid *guid);
+int GptStrToGuid(const char *str, Guid *guid);
 int GuidEqual(const Guid *guid1, const Guid *guid2);
 int GuidIsZero(const Guid *guid);
 
