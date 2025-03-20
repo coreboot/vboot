@@ -761,9 +761,9 @@ sign_gsc_firmware_dir() {
 
    # shellcheck disable=SC2012
   if [[  -n $(ls "${input}"/pao* 2>/dev/null) ]]; then
-    # This is an Opentitan tarball, sign it with Cloud KMS
+    # This is an Opentitan tarball, sign it for ECDSA with Cloud KMS.
     openssl_sign_firmware "${input}/rom_ext.A" "${input}/rom_ext.B" \
-                          "${input}/rw.bin" "${ti50_key}" "${output}"
+                          "${input}/rw.bin.ecdsa" "${ti50_key}" "${output}"
     return
   fi
   manifest_source="${input}/prod.json"
