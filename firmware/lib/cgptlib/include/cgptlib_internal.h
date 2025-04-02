@@ -162,12 +162,6 @@ int GptValidityCheck(GptData *gpt);
 void GptRepair(GptData *gpt);
 
 /**
- * Called when the primary entries are modified and the CRCs need to be
- * recalculated and propagated to the secondary entries
- */
-void GptModified(GptData *gpt);
-
-/**
  * Copy the current kernel partition's UniquePartitionGuid to the dest.
  */
 void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest);
