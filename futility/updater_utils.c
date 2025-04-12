@@ -226,7 +226,7 @@ static int parse_firmware_image(struct firmware_image *image)
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct u_archive *archive)
 {
-	if (!file_name) {
+	if (!file_name || !file_name[0]) {
 		ERROR("No file name given\n");
 		return IMAGE_READ_FAILURE;
 	}
