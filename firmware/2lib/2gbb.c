@@ -177,9 +177,9 @@ vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
 		*name = "VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN";
 		*description = "Disable shutdown on lid closed.";
 		break;
-	case VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP:
-		*name = "VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP";
-		*description = "Allow full fastboot capability in firmware even if dev_boot_fastboot_full_cap=0.";
+	case VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT:
+		*name = "VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT";
+		*description = "Allow full fastboot capability in firmware in normal mode.";
 		break;
 	case VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY:
 		*name = "VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY";

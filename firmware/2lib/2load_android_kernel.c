@@ -468,12 +468,21 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 		goto out;
 
 	/*
+	 * Use orange verifiedbootstate if OS wasn't verified (e.g. in developer mode) or
+	 * when booting to recovery with GBB enabled fastboot to unlock all commands of
+	 * fastbootd (normally when we boot to recovery with green flag, fastbootd would be
+	 * locked).
+	 */
+	bool orange = !need_verification ||
+		      (recovery_boot && ctx->flags & VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT);
+
+	/*
 	 * TODO(b/335901799): Add support for marking verifiedbootstate yellow
 	 */
 	int chars = snprintf(params->vboot_cmdline_buffer, params->vboot_cmdline_size,
 			     "%s %s=%s %s=%s %s=%s", verify_data->cmdline,
 			     VERIFIED_BOOT_PROPERTY_NAME,
-			     need_verification ? "green" : "orange",
+			     orange ? "orange" : "green",
 			     SLOT_SUFFIX_BOOT_PROPERTY_NAME, slot_suffix,
 			     ANDROID_FORCE_NORMAL_BOOT_PROPERTY_NAME, recovery_boot ? "0" : "1"
 			     );

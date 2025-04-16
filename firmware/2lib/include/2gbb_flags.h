@@ -81,10 +81,11 @@ enum vb2_gbb_flag {
 	VB2_GBB_FLAG_DISABLE_LID_SHUTDOWN = 1 << 12,
 
 	/*
-	 * Allow full fastboot capability in firmware even if
-	 * dev_boot_fastboot_full_cap=0.  Deprecated; see chromium:995172.
+	 * Allow full fastboot capability in firmware even in normal mode.
+	 * This flag was previously deprecated in b:172208478 but it is now
+	 * repurposed because of b:411075574.
 	 */
-	VB2_GBB_FLAG_DEPRECATED_FORCE_DEV_BOOT_FASTBOOT_FULL_CAP = 1 << 13,
+	VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT = 1 << 13,
 
 	/* Recovery mode always assumes manual recovery, even if EC_IN_RW=1 */
 	VB2_GBB_FLAG_FORCE_MANUAL_RECOVERY = 1 << 14,
