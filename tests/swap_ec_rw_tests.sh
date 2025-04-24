@@ -53,6 +53,13 @@ cp -f "${AP_IMAGE}" "${TMP}.target"
 "${SWAP}" -i "${TMP}.target" -a "${TMP}.source"
 cmp "${TMP}.target" "${TMP}.source"
 
+# Good case: swap from raw EC RW (--raw_ecrw)
+cp -f "${AP_IMAGE}" "${TMP}"
+futility dump_fmap -x "${EC_IMAGE}" "EC_RW:${TMPD}/ecrw.bin"
+futility dump_fmap -x "${EC_IMAGE}" "RW_FWID:${TMPD}/ecrw.version"
+"${SWAP}" -i "${TMP}" -r "${TMPD}/ecrw.bin" -v "${TMPD}/ecrw.version"
+cmp "${TMP}" "${DATA}/bios.expect.bin"
+
 # Cleanup
 rm -rf "${TMPD}"
 exit 0
