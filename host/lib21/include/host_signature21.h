@@ -37,7 +37,7 @@ vb2_error_t vb2_digest_info(enum vb2_hash_algorithm hash_alg,
  * @return VB2_SUCCESS, or non-zero error code on failure.
  */
 vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
-			   uint32_t size, const struct vb2_private_key *key,
+			   uint32_t size, struct vb2_private_key *key,
 			   const char *desc);
 
 /**
@@ -76,7 +76,7 @@ vb2_error_t vb21_sig_size_for_keys(uint32_t *size_ptr,
  * @param desc		If non-null, description to use for signature
  */
 vb2_error_t vb21_sign_object(uint8_t *buf, uint32_t sig_offset,
-			     const struct vb2_private_key *key,
+			     struct vb2_private_key *key,
 			     const char *desc);
 
 /**
@@ -90,7 +90,7 @@ vb2_error_t vb21_sign_object(uint8_t *buf, uint32_t sig_offset,
  * @param key_count	Number of keys in list
  */
 vb2_error_t vb21_sign_object_multiple(uint8_t *buf, uint32_t sig_offset,
-				      const struct vb2_private_key **key_list,
+				      struct vb2_private_key **key_list,
 				      uint32_t key_count);
 
 #endif  /* VBOOT_REFERENCE_HOST_SIGNATURE2_H_ */

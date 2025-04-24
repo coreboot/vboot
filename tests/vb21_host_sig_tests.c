@@ -40,8 +40,7 @@ static void sig_tests(const struct alg_combo *combo,
 		      const char *pemfile,
 		      const char *keybfile)
 {
-	struct vb2_private_key *prik, prik2;
-	const struct vb2_private_key *prihash, *priks[2];
+	struct vb2_private_key *prik, prik2, *prihash, *priks[2];
 	struct vb2_public_key *pubk, pubhash;
 	struct vb21_signature *sig, *sig2;
 	uint32_t size;
@@ -70,7 +69,8 @@ static void sig_tests(const struct alg_combo *combo,
 	pubk->hash_alg = combo->hash_alg;
 	vb2_public_key_set_desc(pubk, test_desc);
 
-	TEST_SUCC(vb2_private_key_hash(&prihash, combo->hash_alg),
+	TEST_SUCC(vb2_private_key_hash((const struct vb2_private_key **)&prihash,
+				       combo->hash_alg),
 		  "Private hash key");
 	TEST_SUCC(vb2_public_key_hash(&pubhash, combo->hash_alg),
 		  "Public hash key");
@@ -134,7 +134,8 @@ static void sig_tests(const struct alg_combo *combo,
 	free(buf);
 
 	/* Multiply sign an object */
-	TEST_SUCC(vb21_sig_size_for_keys(&size, priks, 2), "Sigs size");
+	TEST_SUCC(vb21_sig_size_for_keys(&size, (const struct vb2_private_key **)priks, 2),
+		  "Sigs size");
 	bufsize = c_sig_offs + size;
 	buf = calloc(1, bufsize);
 	memset(buf + sizeof(*c), 0x12, 24);

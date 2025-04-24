@@ -207,7 +207,7 @@ static void test_sig_size(void)
 static void test_verify_hash(void)
 {
 	struct vb21_signature *sig;
-	const struct vb2_private_key *prik;
+	struct vb2_private_key *prik;
 	struct vb2_public_key pubk;
 	uint8_t workbuf[VB2_VERIFY_DATA_WORKBUF_BYTES]
 		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -215,7 +215,7 @@ static void test_verify_hash(void)
 
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
-	TEST_SUCC(vb2_private_key_hash(&prik, VB2_HASH_SHA256),
+	TEST_SUCC(vb2_private_key_hash((const struct vb2_private_key **)&prik, VB2_HASH_SHA256),
 		  "create private hash key");
 	TEST_SUCC(vb2_public_key_hash(&pubk, VB2_HASH_SHA256),
 		  "create hash key");
