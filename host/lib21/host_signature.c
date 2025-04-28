@@ -77,7 +77,7 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 	/* Preinitialize these fields used in the error handling. */
 	vb2_error_t rv;
 	*sig_ptr = NULL;
-	uint8_t *sig_digest = NULL;
+	uint8_t *sig_digest = NULL, *buf = NULL;
 
 	if (key->key_location == PRIVATE_KEY_P11) {
 		/* Load keyb from the key to force PKCS11 fields to initialize. */
@@ -107,7 +107,6 @@ vb2_error_t vb21_sign_data(struct vb21_signature **sig_ptr, const uint8_t *data,
 	const uint8_t *info = NULL;
 	uint32_t info_size = 0;
 	uint32_t sig_digest_size;
-	uint8_t *buf = NULL;
 
 	/* Use key description if no description supplied */
 	if (!desc)
