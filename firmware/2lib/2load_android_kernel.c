@@ -23,28 +23,6 @@
 #define SLOT_SUFFIX_BOOT_PROPERTY_NAME "androidboot.slot_suffix"
 #define ANDROID_FORCE_NORMAL_BOOT_PROPERTY_NAME "androidboot.force_normal_boot"
 
-/* Android BCB (boot control block) commands */
-enum vb2_boot_command {
-	VB2_BOOT_CMD_NORMAL_BOOT,
-	VB2_BOOT_CMD_RECOVERY_BOOT,
-	VB2_BOOT_CMD_BOOTLOADER_BOOT,
-};
-
-/* BCB structure from Android recovery bootloader_message.h */
-struct bootloader_message {
-	char command[32];
-	char status[32];
-	char recovery[768];
-	char stage[32];
-	char reserved[1184];
-};
-_Static_assert(sizeof(struct bootloader_message) == 2048,
-	       "bootloader_message size is incorrect");
-
-/* Possible values of BCB command */
-#define BCB_CMD_BOOTONCE_BOOTLOADER "bootonce-bootloader"
-#define BCB_CMD_BOOT_RECOVERY "boot-recovery"
-
 static vb2_error_t vb2_map_libavb_errors(AvbSlotVerifyResult avb_error)
 {
 	/* Map AVB error into VB2 */
@@ -70,44 +48,6 @@ static vb2_error_t vb2_map_libavb_errors(AvbSlotVerifyResult avb_error)
 	default:
 		return VB2_ERROR_AVB_ERROR_VERIFICATION;
 	}
-}
-
-static enum vb2_boot_command bcb_command(AvbOps *ops)
-{
-	struct bootloader_message bcb;
-	AvbIOResult io_ret;
-	size_t num_bytes_read;
-	enum vb2_boot_command cmd;
-
-	io_ret = ops->read_from_partition(ops,
-					  GptPartitionNames[GPT_ANDROID_MISC],
-					  0,
-					  sizeof(bcb),
-					  &bcb,
-					  &num_bytes_read);
-	if (io_ret != AVB_IO_RESULT_OK || num_bytes_read != sizeof(bcb)) {
-		/*
-		 * TODO(b/349304841): Handle IO errors, for now just try to boot
-		 *                    normally
-		 */
-		VB2_DEBUG("Cannot read misc partition, err: %d\n", io_ret);
-		return VB2_BOOT_CMD_NORMAL_BOOT;
-	}
-
-	/* BCB command field is for the bootloader */
-	if (!strcmp(bcb.command, BCB_CMD_BOOT_RECOVERY)) {
-		cmd = VB2_BOOT_CMD_RECOVERY_BOOT;
-	} else if (!strcmp(bcb.command, BCB_CMD_BOOTONCE_BOOTLOADER)) {
-		cmd = VB2_BOOT_CMD_BOOTLOADER_BOOT;
-	} else {
-		/* If empty or unknown command, just boot normally */
-		if (bcb.command[0] != '\0')
-			VB2_DEBUG("Unknown boot command \"%.*s\". Use normal boot.\n",
-				  (int)sizeof(bcb.command), bcb.command);
-		cmd = VB2_BOOT_CMD_NORMAL_BOOT;
-	}
-
-	return cmd;
 }
 
 /*
@@ -145,27 +85,6 @@ static vb2_error_t save_bootconfig(struct vendor_boot_img_hdr_v4 *vendor_hdr,
 	memcpy(params->bootconfig, bootconfig, vendor_hdr->bootconfig_size);
 	params->bootconfig_size = vendor_hdr->bootconfig_size;
 	return VB2_SUCCESS;
-}
-
-static bool gki_is_recovery_boot(enum vb2_boot_command boot_command)
-{
-	switch (boot_command) {
-	case VB2_BOOT_CMD_NORMAL_BOOT:
-		return false;
-
-	case VB2_BOOT_CMD_BOOTLOADER_BOOT:
-		/*
-		 * TODO(b/358088653): We should enter fastboot mode and clear
-		 * BCB command in misc partition. For now ignore that and boot
-		 * to recovery where fastbootd should be available.
-		 */
-		return true;
-
-	case VB2_BOOT_CMD_RECOVERY_BOOT:
-		return true;
-	}
-
-	return false;
 }
 
 static bool gki_ramdisk_fragment_needed(struct vendor_ramdisk_table_entry_v4 *fragment,
@@ -382,6 +301,7 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *entry,
 			     struct vb2_kernel_params *params, vb2ex_disk_handle_t disk_handle)
 {
+	enum vb2_android_bootmode bootmode = VB2_ANDROID_NORMAL_BOOT;
 	AvbSlotVerifyData *verify_data = NULL;
 	AvbOps *avb_ops;
 	AvbSlotVerifyFlags avb_flags;
@@ -453,9 +373,12 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	if (rv != VB2_SUCCESS)
 		goto out;
 
-	/* Check "misc" partition for boot type */
-	enum vb2_boot_command boot_command = bcb_command(avb_ops);
-	bool recovery_boot = gki_is_recovery_boot(boot_command);
+	rv = vb2ex_get_android_bootmode(ctx, disk_handle, gpt, &bootmode);
+	if (rv != VB2_SUCCESS) {
+		VB2_DEBUG("Unable to get android bootmode\n");
+		goto out;
+	}
+	bool recovery_boot = bootmode == VB2_ANDROID_RECOVERY_BOOT;
 
 	/*
 	 * Before booting we need to rearrange buffers with partition data, which includes:
