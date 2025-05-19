@@ -95,10 +95,7 @@ extract_ecrw_files_from_ec() {
   local ecrw_ver_file=$2
   local ec_file=$3
 
-  if ! futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null ; then
-    info "Falling back to EC_RW section"
-    futility dump_fmap -x "${ec_file}" "EC_RW:${ecrw_file}" >/dev/null
-  fi
+  futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null
   info "EC RW extracted to ${ecrw_file}"
 
   futility dump_fmap -x "${ec_file}" "RW_FWID:${ecrw_ver_file}" >/dev/null
