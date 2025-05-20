@@ -23,6 +23,9 @@ DATA="${SRCDIR:?}/tests/swap_ec_rw_data"
 AP_IMAGE="${DATA}/bios_geralt.bin"
 EC_IMAGE="${DATA}/ec_krabby.bin"
 
+LEGACY_EC_IMAGE="${DATA}/ec_boten.bin"
+LEGACY_ECRW_IMAGE="${DATA}/ecrw_boten.bin"
+
 echo "Testing swap_ec_rw..."
 
 # Missing -e or --ec
@@ -59,6 +62,14 @@ futility dump_fmap -x "${EC_IMAGE}" "EC_RW:${TMPD}/ecrw.bin"
 futility dump_fmap -x "${EC_IMAGE}" "RW_FWID:${TMPD}/ecrw.version"
 "${SWAP}" -i "${TMP}" -r "${TMPD}/ecrw.bin" -v "${TMPD}/ecrw.version"
 cmp "${TMP}" "${DATA}/bios.expect.bin"
+
+# Legacy EC which needs to be truncated.
+cp -f "${AP_IMAGE}" "${TMP}.1"
+cp -f "${AP_IMAGE}" "${TMP}.2"
+futility dump_fmap -x "${LEGACY_EC_IMAGE}" "RW_FWID:${TMPD}/legacy_ecrw.version"
+"${SWAP}" -i "${TMP}.1" -e "${LEGACY_EC_IMAGE}"
+"${SWAP}" -i "${TMP}.2" -r "${LEGACY_ECRW_IMAGE}" -v "${TMPD}/legacy_ecrw.version"
+cmp "${TMP}.1" "${TMP}.2"
 
 # Cleanup
 rm -rf "${TMPD}"

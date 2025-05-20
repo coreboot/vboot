@@ -90,12 +90,74 @@ extract_ecrw_files_from_ap() {
     || warn "${CBFS_ECRW_CONFIG_NAME} not found in source AP file."
 }
 
+# Dump the 32-bit hex string from the given offset in the given EC-RW file.
+read_hex32() {
+  local ecrw_file=$1
+  local offset=$2
+
+  hexdump -n 4 -s "${offset}" -e '1/4 "%08x"' "${ecrw_file}" 2>/dev/null
+}
+
+truncate_ec_rw() {
+  local ecrw_file=$1
+  local offset=0
+  local max_offset=4096
+
+  # The image_data is defined in src/platform/ec/include/cros_version.h:
+  #   struct image_data {
+  #     uint32_t cookie1;
+  #     char version[32];
+  #     uint32_t size;
+  #     int32_t rollback_version;
+  #     uint32_t cookie2;
+  #     ...
+  #   } __packed;
+  readonly COOKIE1_SIGNATURE="ce778899"
+  readonly COOKIE2_SIGNATURE="ceaabbdd"
+  readonly COOKIE2_OFFSET=44
+  readonly SIZE_OFFSET=36
+
+  # Search for the cookies of the image_data header
+  while true; do
+    if [[ "${offset}" -gt "${max_offset}" ]]; then
+      die "No image_data's cookies found within ${max_offset} bytes."
+    fi
+
+    cookie1="$(read_hex32 "${ecrw_file}" "${offset}")"
+    if [[ "${cookie1}" == "${COOKIE1_SIGNATURE}" ]]; then
+      local cookie2_offset=$((offset + COOKIE2_OFFSET))
+      cookie2="$(read_hex32 "${ecrw_file}" "${cookie2_offset}")"
+      if [[ "${cookie2}" == "${COOKIE2_SIGNATURE}" ]]; then
+        break
+      fi
+    fi
+    offset=$((offset + 4))
+  done
+
+  # Retrieve image_data.size
+  local size_hex
+  size_hex="$(read_hex32 "${ecrw_file}" $((offset + SIZE_OFFSET)))"
+  local size_dec
+  size_dec=$((0x${size_hex}))
+  if [[ "$size_dec" -eq 0 ]]; then
+    die "Invalid image size: 0x${size_hex} (${size_dec})."
+  fi
+
+  info "Found cookies at ${offset}. Image size: 0x${size_hex} (${size_dec})."
+  truncate -s "${size_dec}" "${ecrw_file}"
+  info "File ${ecrw_file} truncated to ${size_dec} bytes."
+}
+
 extract_ecrw_files_from_ec() {
   local ecrw_file=$1
   local ecrw_ver_file=$2
   local ec_file=$3
 
-  futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null
+  if ! futility dump_fmap -x "${ec_file}" "RW_FW:${ecrw_file}" >/dev/null 2>&1 ; then
+    info "Falling back to EC_RW section for legacy EC."
+    futility dump_fmap -x "${ec_file}" "EC_RW:${ecrw_file}" >/dev/null
+    truncate_ec_rw "${ecrw_file}"
+  fi
   info "EC RW extracted to ${ecrw_file}"
 
   futility dump_fmap -x "${ec_file}" "RW_FWID:${ecrw_ver_file}" >/dev/null
