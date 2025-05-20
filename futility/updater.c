@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "2rsa.h"
 #include "cbfstool.h"
@@ -913,7 +914,15 @@ static int update_ec_firmware(struct updater_config *cfg)
 
 const char * const updater_error_messages[] = {
 	[UPDATE_ERR_DONE] = "Done (no error)",
-	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.",
+	[UPDATE_ERR_NEED_RO_UPDATE] = "RO changed and no WP. Need full update.\n"
+				      "Write protection is OFF. "
+				      "Proceeding with FULL firmware update.\n"
+				      "  This operation WILL OVERWRITE the entire SPI flash, "
+				      "including RO sections.\n"
+				      "  If you want to prevent RO sections from being modified, "
+				      "ensure hardware write\n"
+				      "  protection is enabled or use the '--wp=1' "
+				      "option to simulate it.\n",
 	[UPDATE_ERR_NO_IMAGE] = "No image to update; try specify with -i.",
 	[UPDATE_ERR_SYSTEM_IMAGE] = "Cannot load system active firmware.",
 	[UPDATE_ERR_INVALID_IMAGE] = "The given firmware image is not valid.",
@@ -1223,10 +1232,13 @@ enum updater_error_codes update_firmware(struct updater_config *cfg)
 	if (cfg->try_update) {
 		r = update_try_rw_firmware(cfg, image_from, image_to,
 					   wp_enabled);
-		if (r == UPDATE_ERR_NEED_RO_UPDATE)
+		if (r == UPDATE_ERR_NEED_RO_UPDATE) {
 			WARN("%s\n", updater_error_messages[r]);
-		else
+			STATUS("  Pausing for 5 seconds to allow cancellation (Ctrl+C)...\n");
+			sleep(5);
+		} else {
 			done = true;
+		}
 	}
 
 	if (!done) {
@@ -1838,13 +1850,13 @@ int updater_setup_config(struct updater_config *cfg,
 static char ccd_programmer[128];
 
 int handle_flash_argument(struct updater_config_arguments *args, int opt,
-			  char *optarg)
+			  char *optval)
 {
 	int ret;
 	switch (opt) {
 	case 'p':
 		args->use_flash = 1;
-		args->programmer = optarg;
+		args->programmer = optval;
 		break;
 	case OPT_CCD:
 		args->use_flash = 1;
@@ -1853,7 +1865,7 @@ int handle_flash_argument(struct updater_config_arguments *args, int opt,
 		args->write_protection = "0";
 		ret = snprintf(ccd_programmer, sizeof(ccd_programmer),
 			       "raiden_debug_spi:target=AP%s%s",
-			       optarg ? ",serial=" : "", optarg ?: "");
+			       optval ? ",serial=" : "", optval ?: "");
 		if (ret >= sizeof(ccd_programmer)) {
 			ERROR("%s: CCD serial number was too long\n", __func__);
 			return 0;
@@ -1862,7 +1874,7 @@ int handle_flash_argument(struct updater_config_arguments *args, int opt,
 		break;
 	case OPT_EMULATE:
 		args->use_flash = 1;
-		args->emulation = optarg;
+		args->emulation = optval;
 		break;
 	case OPT_SERVO:
 		args->use_flash = 1;
@@ -1873,7 +1885,7 @@ int handle_flash_argument(struct updater_config_arguments *args, int opt,
 		args->host_only = 1;
 		break;
 	case OPT_SERVO_PORT:
-		setenv(ENV_SERVOD_PORT, optarg, 1);
+		setenv(ENV_SERVOD_PORT, optval, 1);
 		args->use_flash = 1;
 		args->detect_servo = 1;
 		args->fast_update = 1;
