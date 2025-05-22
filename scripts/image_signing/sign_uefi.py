@@ -153,7 +153,7 @@ class Signer:
             temp_sig_path,
         ]
         if is_pkcs11_key_path(self.keys.private_key):
-            cmd += ["--engine", "pkcs11"]
+            cmd += ["--engine", "pkcs11", "--keyform", "engine"]
 
         logging.info("creating signature: %r", cmd)
         subprocess.run(cmd, check=True)
