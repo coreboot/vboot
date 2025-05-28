@@ -368,6 +368,11 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 				 AVB_HASHTREE_ERROR_MODE_RESTART_AND_INVALIDATE,
 				 &verify_data);
 
+	if (result == AVB_SLOT_VERIFY_RESULT_OK) {
+		struct vb2_shared_data *sd = vb2_get_sd(ctx);
+		sd->flags |= VB2_SD_FLAG_KERNEL_SIGNED;
+	}
+
 	/* Ignore verification errors in developer mode */
 	if (!need_verification) {
 		switch (result) {
