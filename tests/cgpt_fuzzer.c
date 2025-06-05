@@ -7,6 +7,7 @@
 
 #include "cgptlib.h"
 #include "gpt.h"
+#include "vboot_api.h"
 
 struct MockDisk {
 	size_t sector_shift;

@@ -7,7 +7,8 @@
 #define VBOOT_REFERENCE_GPT_MISC_H_
 
 #include "gpt.h"
-#include "vboot_api.h"
+#include "../2lib/include/2sysincludes.h"
+#include "../2lib/include/2constants.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,40 +117,6 @@ typedef struct {
 } GptData;
 
 /**
- * Initializes the GPT data structure's internal state.
- *
- * The following fields must be filled before calling this function:
- *
- *   primary_header
- *   secondary_header
- *   primary_entries
- *   secondary_entries
- *   sector_bytes
- *   drive_sectors
- *   stored_on_device
- *   gpt_device_sectors
- *
- * On return the modified field may be set, if the GPT data has been modified
- * and should be written to disk.
- *
- * Returns GPT_SUCCESS if successful, non-zero if error:
- *   GPT_ERROR_INVALID_HEADERS, both partition table headers are invalid, enters
- *                              recovery mode,
- *   GPT_ERROR_INVALID_ENTRIES, both partition table entries are invalid, enters
- *                              recovery mode,
- *   GPT_ERROR_INVALID_SECTOR_SIZE, size of a sector is not supported,
- *   GPT_ERROR_INVALID_SECTOR_NUMBER, number of sectors in drive is invalid (too
- *                                    small) */
-int GptInit(GptData *gpt);
-
-/**
- * Return the nth instance of parition entry matching the partition type guid
- * from the gpt table. Instance value starts from 0. If the entry is not found,
- * it returns NULL.
- */
-GptEntry *GptFindNthEntry(GptData *gpt, const Guid *guid, unsigned int n);
-
-/**
  * Allocate and read GPT data from the drive.  The sector_bytes and
  * drive_sectors fields should be filled on input.  The primary and secondary
  * header and entries are filled on output.
@@ -177,27 +144,6 @@ uint64_t GptGetEntrySizeLba(const GptEntry *e);
  * Return size(in bytes) of a partition represented by given GPT entry.
  */
 uint64_t GptGetEntrySizeBytes(const GptData *gpt, const GptEntry *e);
-
-/**
- * Updates the kernel entry with the specified index, using the specified type
- * of update (GPT_UPDATE_ENTRY_*).
- *
- * On return the modified field may be set, if the GPT data has been modified
- * and should be written to disk.
- *
- * Returns GPT_SUCCESS if successful, else
- *   GPT_ERROR_INVALID_UPDATE_TYPE, invalid 'update_type' is given.
- */
-int GptUpdateKernelWithEntry(GptData *gpt, GptEntry *e, uint32_t update_type);
-
-/**
- * Updates the kernel entry identified by current_kernel field. If
- * current_kernel is not set it returns an error.
- *
- * Returns GPT_SUCCESS if successful, else
- *   GPT_ERROR_INVALID_UPDATE_TYPE, invalid 'update_type' is given.
- */
-int GptUpdateKernelEntry(GptData *gpt, uint32_t update_type);
 
 /* Getters and setters for partition attribute fields. */
 
