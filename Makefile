@@ -747,12 +747,22 @@ FUTIL_SRCS = \
 
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
 FUTIL_SRCS += host/lib/flashrom_drv.c \
+	futility/archive/updater_archive_fallback.c \
 	futility/updater_archive.c \
 	futility/updater_dut.c \
 	futility/updater_manifest.c \
 	futility/updater_quirks.c \
 	futility/updater_utils.c \
 	futility/updater.c
+
+ifneq ($(filter-out 0,${HAVE_LIBARCHIVE}),)
+FUTIL_SRCS += futility/archive/updater_archive_libarchive.c
+endif
+
+ifneq ($(filter-out 0,${HAVE_LIBZIP}),)
+FUTIL_SRCS += futility/archive/updater_archive_libzip.c
+endif
+
 endif
 
 # List of commands built in futility.
@@ -761,6 +771,7 @@ FUTIL_CMD_LIST = ${BUILD}/gen/futility_cmds.c
 FUTIL_OBJS = ${FUTIL_SRCS:%.c=${BUILD}/%.o} ${FUTIL_CMD_LIST:%.c=%.o}
 
 ${FUTIL_OBJS}: INCLUDES += -Ihost/lib21/include
+${FUTIL_OBJS}: INCLUDES += -Ifutility
 
 # Avoid build failures outside the chroot on Ubuntu 2022.04
 # e.g.:

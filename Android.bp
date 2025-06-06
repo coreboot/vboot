@@ -356,6 +356,7 @@ filegroup {
 
         // USE_FLASHROM
         "host/lib/flashrom_drv.c",
+        "futility/archive/updater_archive_fallback.c",
         "futility/updater_archive.c",
         "futility/updater_dut.c",
         "futility/updater_manifest.c",
