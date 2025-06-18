@@ -1733,6 +1733,10 @@ int updater_setup_config(struct updater_config *cfg,
 		int r = strtol(arg->write_protection, NULL, 0);
 		override_dut_property(DUT_PROP_WP_HW, cfg, r);
 		override_dut_property(DUT_PROP_WP_SW_AP, cfg, r);
+	} else if (cfg->dut_is_remote) {
+		INFO("Configured to update a remote DUT, assuming write protection is off.\n");
+		override_dut_property(DUT_PROP_WP_HW, cfg, 0);
+		override_dut_property(DUT_PROP_WP_SW_AP, cfg, 0);
 	}
 
 	/* Process the manifest. */
