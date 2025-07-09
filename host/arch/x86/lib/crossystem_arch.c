@@ -7,7 +7,9 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#if !defined(__FreeBSD__) && !defined(__OpenBSD__)
+#if !defined(HAVE_MACOS) && !defined (__FreeBSD__) && !defined(__OpenBSD__)
+#include <linux/fs.h>
+#include <linux/gpio.h>
 #include <linux/nvram.h>
 #include <linux/version.h>
 #endif
@@ -24,6 +26,7 @@
 #include "crossystem_arch.h"
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
+#include "gpio_uapi.h"
 #include "host_common.h"
 #include "vboot_struct.h"
 
@@ -839,6 +842,41 @@ static const struct GpioChipset *FindChipset(const char *name)
 	return NULL;
 }
 
+static int ReadGpioSysfs(unsigned int controller_num, const char *controller_name)
+{
+	unsigned int controller_offset = 0;
+	const struct GpioChipset *chipset;
+	char name[256];
+	unsigned int value = -1;
+
+	chipset = FindChipset(controller_name);
+	if (chipset == NULL)
+		return -1;
+
+	/* Modify GPIO number by driver's offset */
+	if (!chipset->ChipOffsetAndGpioNumber(&controller_num, &controller_offset,
+					      chipset->name))
+		return -1;
+	controller_offset += controller_num;
+
+	/* Try reading the GPIO value */
+	snprintf(name, sizeof(name), "%s/gpio%d/value", GPIO_BASE_PATH, controller_offset);
+	if (ReadFileInt(name, &value) < 0) {
+		/* Try exporting the GPIO */
+		FILE *f = fopen(GPIO_EXPORT_PATH, "wt");
+		if (!f)
+			return -1;
+		fprintf(f, "%u", controller_offset);
+		fclose(f);
+
+		/* Try re-reading the GPIO value */
+		if (ReadFileInt(name, &value) < 0)
+			return -1;
+	}
+
+	return value;
+}
+
 /* Read a GPIO of the specified signal type (see ACPI GPIO SignalType).
  *
  * Returns 1 if the signal is asserted, 0 if not asserted, or -1 if error. */
@@ -849,10 +887,8 @@ static int ReadGpio(unsigned signal_type)
 	unsigned gpio_type;
 	unsigned active_high;
 	unsigned controller_num;
-	unsigned controller_offset = 0;
 	char controller_name[128];
-	unsigned value;
-	const struct GpioChipset *chipset;
+	int value;
 	char base_path[128];
 	char* path;
 
@@ -887,32 +923,14 @@ static int ReadGpio(unsigned signal_type)
 	snprintf(name, sizeof(name), "%s.%d/GPIO.3", base_path, index);
 	if (!ReadFileFirstLine(controller_name, sizeof(controller_name), name))
 		return -1;
-	chipset = FindChipset(controller_name);
-	if (chipset == NULL)
-		return -1;
 
-	/* Modify GPIO number by driver's offset */
-	if (!chipset->ChipOffsetAndGpioNumber(&controller_num,
-					      &controller_offset,
-					      chipset->name))
-		return -1;
-	controller_offset += controller_num;
+	value = gpio_read_value_by_idx(controller_num, !active_high);
+	/* GPIO UAPI already returns correct value for the active state,
+	   so there is no need to do it manually like in the case of SYSFS. */
+	if (value >= 0)
+		return value;
 
-	/* Try reading the GPIO value */
-	snprintf(name, sizeof(name), "%s/gpio%d/value",
-		 GPIO_BASE_PATH, controller_offset);
-	if (ReadFileInt(name, &value) < 0) {
-		/* Try exporting the GPIO */
-		FILE* f = fopen(GPIO_EXPORT_PATH, "wt");
-		if (!f)
-			return -1;
-		fprintf(f, "%u", controller_offset);
-		fclose(f);
-
-		/* Try re-reading the GPIO value */
-		if (ReadFileInt(name, &value) < 0)
-			return -1;
-	}
+	value = ReadGpioSysfs(controller_num, controller_name);
 
 	/* Normalize the value read from the kernel in case it is not always
 	 * 1. */

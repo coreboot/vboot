@@ -521,6 +521,7 @@ UTILLIB_SRCS = \
 	host/lib/file_keys.c \
 	$(COMMONLIB_SRCS) \
 	host/lib/fmap.c \
+	host/lib/gpio_uapi.c \
 	host/lib/host_common.c \
 	host/lib/host_key2.c \
 	host/lib/host_keyblock.c \
@@ -592,6 +593,7 @@ HOSTLIB_SRCS = \
 	host/lib/extract_vmlinuz.c \
 	$(COMMONLIB_SRCS) \
 	host/lib/fmap.c \
+	host/lib/gpio_uapi.c \
 	host/lib/host_misc.c \
 	host/lib21/host_misc.c \
 	${TLCL_SRCS}

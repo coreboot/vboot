@@ -8,9 +8,8 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdlib.h>
-#ifndef HAVE_MACOS
+#if !defined(HAVE_MACOS) && !defined (__FreeBSD__) && !defined(__OpenBSD__)
 #include <linux/fs.h>
-#include <linux/gpio.h>
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,7 +17,6 @@
 #include <sys/ioctl.h>
 #include <sys/wait.h>
 #include <dirent.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <netinet/in.h>
@@ -26,6 +24,7 @@
 #include "crossystem_arch.h"
 #include "crossystem.h"
 #include "crossystem_vbnv.h"
+#include "gpio_uapi.h"
 #include "host_common.h"
 
 /* Base name for firmware FDT files */
@@ -43,9 +42,6 @@
 #define GPIO_NAME_WP "AP_FLASH_WP"
 /* Device for NVCTX write */
 #define NVCTX_PATH "/dev/mmcblk%d"
-/* Base name for GPIO files */
-#define GPIO_BASE_PATH "/sys/class/gpio"
-#define GPIO_EXPORT_PATH GPIO_BASE_PATH "/export"
 /* Name of NvStorage type property */
 #define FDT_NVSTORAGE_TYPE_PROP FDT_CHROMEOS "nonvolatile-context-storage"
 /* Errors */
@@ -191,157 +187,6 @@ static int VbGetPlatformGpioStatus(const char* name)
 
 	return (int)value;
 }
-
-#ifndef HAVE_MACOS
-static int gpioline_read_value(int chip_fd, int idx, bool active_low)
-{
-	struct gpiohandle_request request = {
-		.lineoffsets = { idx },
-		.flags = GPIOHANDLE_REQUEST_INPUT | \
-			 (active_low ? GPIOHANDLE_REQUEST_ACTIVE_LOW : 0),
-		.lines = 1,
-	};
-	struct gpiohandle_data data;
-	int trynum;
-	int ret;
-
-	/*
-	 * If two callers try to read the same GPIO at the same time then
-	 * one of the two will get back EBUSY. There's no great way to
-	 * solve this, so we'll just retry a bunch with a small sleep in
-	 * between.
-	 */
-	for (trynum = 0; true; trynum++) {
-		ret = ioctl(chip_fd, GPIO_GET_LINEHANDLE_IOCTL, &request);
-
-		/*
-		 * Not part of the loop condition so usleep doesn't clobber
-		 * errno (implicitly used by perror).
-		 */
-		if (ret >= 0 || errno != EBUSY || trynum >= 50)
-			break;
-
-		usleep(trynum * 1000);
-	}
-
-	if (ret < 0) {
-		perror("GPIO_GET_LINEHANDLE_IOCTL");
-		return -1;
-	}
-
-	if (request.fd < 0) {
-		fprintf(stderr, "bad LINEHANDLE fd %d\n", request.fd);
-		return -1;
-	}
-
-	ret = ioctl(request.fd, GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data);
-	if (ret < 0) {
-		perror("GPIOHANDLE_GET_LINE_VALUES_IOCTL");
-		close(request.fd);
-		return -1;
-	}
-	close(request.fd);
-	return data.values[0];
-}
-
-/* Return 1 if @idx line matches name; 0 if no match; negative if error. */
-static int gpioline_name_match(int chip_fd, int idx, const char *name)
-{
-	struct gpioline_info info = {
-		.line_offset = idx,
-	};
-	int ret;
-
-	ret = ioctl(chip_fd, GPIO_GET_LINEINFO_IOCTL, &info);
-	if (ret < 0) {
-		perror("GPIO_GET_LINEINFO_IOCTL");
-		return -1;
-	}
-
-	return strncmp(info.name, name, sizeof(info.name)) == 0;
-}
-
-/* Return value of gpio, if found. Negative for error codes. */
-static int gpiochip_read_value(int chip_fd, const char *name, bool active_low)
-{
-	struct gpiochip_info info;
-	int i, ret;
-
-	ret = ioctl(chip_fd, GPIO_GET_CHIPINFO_IOCTL, &info);
-	if (ret < 0) {
-		perror("GPIO_GET_CHIPINFO_IOCTL");
-		return -1;
-	}
-
-	for (i = 0; i < info.lines; i++) {
-		if (gpioline_name_match(chip_fd, i, name) != 1)
-			continue;
-		return gpioline_read_value(chip_fd, i, active_low);
-	}
-
-	return -1;
-}
-
-/* Return nonzero for entries with a 'gpiochip'-prefixed name. */
-static int gpiochip_scan_filter(const struct dirent *d)
-{
-	const char prefix[] = "gpiochip";
-	return !strncmp(prefix, d->d_name, strlen(prefix));
-}
-
-/*
- * Read a named GPIO via the Linux /dev/gpiochip* API, supported in recent
- * kernels (e.g., ChromeOS kernel 4.14+). This method is preferred over the
- * downstream chromeos_arm driver.
- *
- * Returns -1 for errors (e.g., API not supported, or @name not found); 1 for
- * active; 0 for inactive.
- */
-static int gpiod_read(const char *name, bool active_low)
-{
-	struct dirent **list;
-	int i, max, ret;
-
-	ret = scandir("/dev", &list, gpiochip_scan_filter, alphasort);
-	if (ret < 0) {
-		perror("scandir");
-		return -1;
-	}
-	max = ret;
-	/* No /dev/gpiochip* -- API not supported. */
-	if (!max)
-		return -1;
-
-	for (i = 0; i < max; i++) {
-		char buf[5 + NAME_MAX + 1];
-		int fd;
-
-		snprintf(buf, sizeof(buf), "/dev/%s", list[i]->d_name);
-		ret = open(buf, O_RDWR);
-		if (ret < 0) {
-			perror("open");
-			break;
-		}
-		fd = ret;
-
-		ret = gpiochip_read_value(fd, name, active_low);
-		close(fd);
-		if (ret >= 0)
-			break;
-	}
-
-	for (i = 0; i < max; i++)
-		free(list[i]);
-	free(list);
-
-	return ret >= 0 ? ret : -1;
-}
-#else
-static int gpiod_read(const char *name, bool active_low)
-{
-	return -1;
-}
-#endif /* HAVE_MACOS */
 
 static int vb2_read_nv_storage_disk(struct vb2_context *ctx)
 {
@@ -503,10 +348,10 @@ int VbGetArchPropertyInt(const char* name)
 	} else if (!strcasecmp(name, "recoverysw_cur")) {
 		int value;
 		/* Try GPIO chardev API first. */
-		value = gpiod_read(GPIO_NAME_RECOVERY_SW_L, true);
+		value = gpio_read_value_by_name(GPIO_NAME_RECOVERY_SW_L, true);
 		if (value != -1)
 			return value;
-		value = gpiod_read(GPIO_NAME_RECOVERY_SW, false);
+		value = gpio_read_value_by_name(GPIO_NAME_RECOVERY_SW, false);
 		if (value != -1)
 			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
@@ -514,10 +359,10 @@ int VbGetArchPropertyInt(const char* name)
 	} else if (!strcasecmp(name, "wpsw_cur")) {
 		int value;
 		/* Try GPIO chardev API first. */
-		value = gpiod_read(GPIO_NAME_WP_L, true);
+		value = gpio_read_value_by_name(GPIO_NAME_WP_L, true);
 		if (value != -1)
 			return value;
-		value = gpiod_read(GPIO_NAME_WP, false);
+		value = gpio_read_value_by_name(GPIO_NAME_WP, false);
 		if (value != -1)
 			return value;
 		/* Try the deprecated chromeos_arm platform device next. */
