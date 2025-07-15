@@ -439,3 +439,34 @@ filegroup {
         "tests/devkeys/root_key.vbpubk",
     ],
 }
+
+cc_test {
+    name: "vb2_sha256_x86_tests",
+    srcs: [
+        "tests/vb2_sha256_x86_tests.c",
+        "tests/common/tests.c",
+        "firmware/2lib/2sha256_x86.c",
+        "firmware/2lib/2hwcrypto.c",
+    ],
+    defaults: ["vboot_defaults"],
+    static_libs: ["libvboot_util"],
+    local_include_dirs: [
+        "firmware",
+        "tests",
+        "tests/common/",
+        "firmware/2lib/",
+    ],
+    compile_multilib: "64",
+    strip: {
+        all: true
+    },
+    device_supported: true,
+    host_supported: false,
+    arch: {
+        x86_64: {
+            enabled: true
+        }
+    },
+    test_suites: ["dts"],
+    gtest: false,
+}
