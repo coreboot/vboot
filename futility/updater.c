@@ -86,6 +86,8 @@ static void override_properties_with_default(struct updater_config *cfg)
 	override_dut_property(DUT_PROP_WP_HW, cfg, 0);
 	override_dut_property(DUT_PROP_WP_SW_AP, cfg, 0);
 	override_dut_property(DUT_PROP_WP_SW_EC, cfg, 0);
+	/* 0xFFFFFFFF is the unknown SKU ID. */
+	override_dut_property(DUT_PROP_SKU_ID, cfg, 0xFFFFFFFF);
 }
 
 /*

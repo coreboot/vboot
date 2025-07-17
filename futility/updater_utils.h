@@ -226,7 +226,8 @@ enum dut_property_type {
 	DUT_PROP_WP_HW,
 	DUT_PROP_WP_SW_AP,
 	DUT_PROP_WP_SW_EC,
-	DUT_PROP_MAX
+	DUT_PROP_SKU_ID,
+	DUT_PROP_MAX,
 };
 
 /* Helper function to initialize DUT properties. */

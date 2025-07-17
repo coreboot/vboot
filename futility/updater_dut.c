@@ -136,6 +136,21 @@ static inline dut_property_t dut_get_wp_sw_ec(struct updater_config *cfg)
 	return dut_get_wp_sw(cfg->ec_image.programmer);
 }
 
+static dut_property_t dut_get_sku_id(struct updater_config *cfg)
+{
+	uint32_t sku_id;
+
+	if (cfg->dut_is_remote) {
+		WARN("Ignored getting SKU ID a remote DUT.\n");
+		return -1;
+	}
+
+	if (VbGetSystemSkuId(&sku_id))
+		return -1;
+
+	return (dut_property_t)sku_id;
+}
+
 /* Helper functions to use or configure the DUT properties. */
 
 dut_property_t dut_get_property(enum dut_property_type property_type,
@@ -162,4 +177,5 @@ void dut_init_properties(struct dut_property *props, int num)
 	props[DUT_PROP_WP_HW].getter = dut_get_wp_hw;
 	props[DUT_PROP_WP_SW_AP].getter = dut_get_wp_sw_ap;
 	props[DUT_PROP_WP_SW_EC].getter = dut_get_wp_sw_ec;
+	props[DUT_PROP_SKU_ID].getter = dut_get_sku_id;
 }
