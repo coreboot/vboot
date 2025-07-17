@@ -591,7 +591,7 @@ test_update "Full update (--archive, detect-model)" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
   --programmer raiden_debug_spi:target=AP
 test_update "Full update (--archive, detect-model, unsupported FRID)" \
-  "${FROM_IMAGE}.av" "!Unsupported FRID: 'Google_Voxel'" \
+  "${FROM_IMAGE}.av" "!Unsupported model: 'Google_Voxel'" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
   --programmer raiden_debug_spi:target=AP
 

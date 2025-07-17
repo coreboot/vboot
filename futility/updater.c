@@ -577,25 +577,28 @@ static bool is_unlock_csme_requested(struct updater_config *cfg)
 
 /*
  * Checks if the given firmware images are compatible with current platform.
- * In current implementation (following Chrome OS style), we assume the platform
- * is identical to the name before a dot (.) in firmware version.
+ * In current implementation, we check the model name extracted from FRID.
+ *
  * Returns 0 for success, otherwise failure.
  */
 static int check_compatible_platform(struct updater_config *cfg)
 {
-	int len;
+	int res = -1;
 	struct firmware_image *image_from = &cfg->image_current,
 			      *image_to = &cfg->image;
-	const char *from_dot = strchr(image_from->ro_version, '.'),
-	           *to_dot = strchr(image_to->ro_version, '.');
+	char *name_from = get_model_from_frid(image_from->ro_version);
+	char *name_to = get_model_from_frid(image_to->ro_version);
 
-	if (!from_dot || !to_dot) {
-		VB2_DEBUG("Missing dot (from=%p, to=%p)\n", from_dot, to_dot);
-		return -1;
-	}
-	len = from_dot - image_from->ro_version + 1;
-	VB2_DEBUG("Platform: %*.*s\n", len, len, image_from->ro_version);
-	return strncasecmp(image_from->ro_version, image_to->ro_version, len);
+	if (!name_from || !name_to)
+		goto exit;
+
+	VB2_DEBUG("Platform: %s\n", name_from);
+	res = strcasecmp(name_from, name_to);
+
+exit:
+	free(name_from);
+	free(name_to);
+	return res;
 }
 
 const struct vb2_packed_key *get_rootkey(

@@ -174,6 +174,19 @@ void strip_string(char *s, const char *pattern);
 int save_file_from_stdin(const char *output);
 
 /*
+ * Loads FRID from system firmware.
+ * The caller is responsible for freeing the returned string.
+ */
+char *load_system_frid(struct updater_config *cfg);
+
+/*
+ * Extracts the model name from FRID. For example, if FRID is
+ * "Google_Geralt.15635.0.0", then "Google_Geralt" will be returned.
+ * The caller is responsible for freeing the returned string.
+ */
+char *get_model_from_frid(const char *frid);
+
+/*
  * Returns true if the AP write protection is enabled on current system.
  */
 bool is_ap_write_protection_enabled(struct updater_config *cfg);
