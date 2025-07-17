@@ -337,6 +337,11 @@ VbSharedDataHeader *VbSharedDataRead(void)
 	return (VbSharedDataHeader *)block;
 }
 
+int VbGetSystemSkuId(uint32_t *sku_id)
+{
+	return ReadFdtUint32("firmware/coreboot/sku-id", sku_id);
+}
+
 int VbGetArchPropertyInt(const char* name)
 {
 	if (!strcasecmp(name, "devsw_cur")) {

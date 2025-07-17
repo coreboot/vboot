@@ -11,10 +11,16 @@ extern "C" {
 #endif
 
 #include <stddef.h>
+#include <stdint.h>
 
 /* Recommended size for string property buffers used with
  * VbGetSystemPropertyString(). */
 #define VB_MAX_STRING_PROPERTY     ((size_t) 8192)
+
+/* Reads the system SKU ID.
+ *
+ * Returns 0 if success, -1 if error. */
+int VbGetSystemSkuId(uint32_t *sku_id);
 
 /* Reads a system property integer.
  *
