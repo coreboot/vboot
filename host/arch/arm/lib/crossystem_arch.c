@@ -71,11 +71,11 @@ static int FindEmmcDev(void)
 	return E_FAIL;
 }
 
-static int ReadFdtValue(const char *property, int *value)
+static int ReadFdtUint32(const char *property, uint32_t *value)
 {
 	char filename[FNAME_SIZE];
 	FILE *file;
-	int data = 0;
+	uint32_t data = 0;
 
 	snprintf(filename, sizeof(filename), FDT_BASE_PATH "/%s", property);
 	file = fopen(filename, "rb");
@@ -94,14 +94,6 @@ static int ReadFdtValue(const char *property, int *value)
 		*value = ntohl(data); /* FDT is network byte order */
 
 	return 0;
-}
-
-static int ReadFdtInt(const char *property)
-{
-	int value = 0;
-	if (ReadFdtValue(property, &value))
-		return E_FAIL;
-	return value;
 }
 
 static void GetFdtPropertyPath(const char *property, char *path, size_t size)
@@ -195,9 +187,12 @@ static int vb2_read_nv_storage_disk(struct vb2_context *ctx)
 	int rv = -1;
 	char nvctx_path[FNAME_SIZE];
 	int emmc_dev;
-	int lba = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-lba");
-	int offset = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-offset");
-	int size = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-size");
+	uint32_t lba, offset, size;
+
+	if (ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-lba", &lba) ||
+	    ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-offset", &offset) ||
+	    ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-size", &size))
+		return E_FAIL;
 
 	emmc_dev = FindEmmcDev();
 	if (emmc_dev < 0)
@@ -238,9 +233,12 @@ static int vb2_write_nv_storage_disk(struct vb2_context *ctx)
 	int rv = -1;
 	char nvctx_path[FNAME_SIZE];
 	int emmc_dev;
-	int lba = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-lba");
-	int offset = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-offset");
-	int size = ReadFdtInt(FDT_CHROMEOS "nonvolatile-context-size");
+	uint32_t lba, offset, size;
+
+	if (ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-lba", &lba) ||
+	    ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-offset", &offset) ||
+	    ReadFdtUint32(FDT_CHROMEOS "nonvolatile-context-size", &size))
+		return E_FAIL;
 
 	emmc_dev = FindEmmcDev();
 	if (emmc_dev < 0)
@@ -371,7 +369,10 @@ int VbGetArchPropertyInt(const char* name)
 		/* TODO: read correct value using ectool */
 		return 0;
 	} else if (!strcasecmp(name, "board_id")) {
-		return ReadFdtInt("firmware/coreboot/board-id");
+		uint32_t board_id;
+		if (ReadFdtUint32("firmware/coreboot/board-id", &board_id))
+			return -1;
+		return board_id;
 	} else {
 		return -1;
 	}
