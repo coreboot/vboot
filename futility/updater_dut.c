@@ -23,11 +23,8 @@ int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
 #ifdef HAVE_CROSID
 	return crosid_get_firmware_manifest_key(manifest_key_out);
 #else
-	ERROR("This version of futility was compiled without libcrosid "
-	      "(perhaps compiled outside of the Chrome OS build system?) and "
-	      "the update command is not fully supported.  Either compile "
-	      "from the Chrome OS build, or pass --model to manually specify "
-	      "the machine model.\n");
+	ERROR("This version of futility was compiled without libcrosid. "
+	      "Getting manifest key by crosid is not supported.\n");
 	return -1;
 #endif
 }

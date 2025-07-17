@@ -38,6 +38,7 @@ PEPPY_BIOS="${DATA_DIR}/bios_peppy_mp.bin"
 VOXEL_BIOS="${DATA_DIR}/bios_voxel_dev.bin"
 RO_VPD_BLOB="${DATA_DIR}/ro_vpd.bin"
 SIGNER_CONFIG="${DATA_DIR}/signer_config.csv"
+IDENTITY_CSV="${DATA_DIR}/identity.csv"
 
 # Work in scratch directory
 cd "${OUTDIR}"
@@ -585,6 +586,16 @@ test_update "Full update (--archive, model=peppy)" \
 test_update "Full update (--archive, model=unknown)" \
   "${FROM_IMAGE}.ap" "!Unsupported model: 'unknown'" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=unknown
+
+# Test archives with identity.csv
+cp -f "${IDENTITY_CSV}" "${A}/"
+LINK_SKU_ID=0x1000
+test_update "Full update (--archive, identity.csv with SKU ${LINK_SKU_ID})" \
+  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
+test_update "Full update (--archive, identity.csv with wrong SKU)" \
+  "${FROM_IMAGE}.ap" "!Failed to get device identity from identity.csv" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
 
 test_update "Full update (--archive, detect-model)" \
   "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
