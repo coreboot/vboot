@@ -426,34 +426,6 @@ static void phase2_tests(void)
 
 static void finalize_tests(void)
 {
-	/* Kernel version roll forward */
-	reset_common_data(FOR_FINALIZE);
-	sd->kernel_version_secdata = 0x20003;
-	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
-		"Kernel version roll forward");
-	TEST_EQ(mock_kernel_version_secdata, 0x20003, "  kernel version");
-
-	reset_common_data(FOR_FINALIZE);
-	vb2_nv_set(ctx, VB2_NV_FW_RESULT, VB2_FW_RESULT_TRYING);
-	sd->kernel_version_secdata = 0x20003;
-	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
-		"Don't roll forward kernel when trying new FW");
-	TEST_EQ(mock_kernel_version_secdata, 0x10002, "  kernel version");
-
-	reset_common_data(FOR_FINALIZE);
-	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x30005);
-	sd->kernel_version_secdata = 0x40006;
-	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
-		"Limit max roll forward");
-	TEST_EQ(mock_kernel_version_secdata, 0x30005, "  kernel version");
-
-	reset_common_data(FOR_FINALIZE);
-	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0x10001);
-	sd->kernel_version_secdata = 0x40006;
-	TEST_EQ(vb2api_kernel_finalize(ctx), VB2_SUCCESS,
-		"Max roll forward can't rollback");
-	TEST_EQ(mock_kernel_version_secdata, 0x10002, "  kernel version");
-
 	/* NO_BOOT with EC sync support */
 	reset_common_data(FOR_FINALIZE);
 	ctx->flags |= VB2_CONTEXT_NO_BOOT;

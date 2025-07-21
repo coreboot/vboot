@@ -209,56 +209,6 @@ vb2_error_t vb2api_kernel_phase2(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-static void update_kernel_version(struct vb2_context *ctx)
-{
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	uint32_t max_rollforward =
-		vb2_nv_get(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD);
-
-	VB2_DEBUG("Checking if TPM kernel version needs advancing\n");
-
-	/*
-	 * Special case for when we're trying a slot with new firmware.
-	 * Firmware updates also usually change the kernel key, which means
-	 * that the new firmware can only boot a new kernel, and the old
-	 * firmware in the previous slot can only boot the previous kernel.
-	 *
-	 * Don't roll-forward the kernel version, because we don't yet know if
-	 * the new kernel will successfully boot.
-	 */
-	if (vb2_nv_get(ctx, VB2_NV_FW_RESULT) == VB2_FW_RESULT_TRYING) {
-		VB2_DEBUG("Trying new FW; "
-			  "skip kernel version roll-forward.\n");
-		return;
-	}
-
-	/*
-	 * Limit kernel version rollforward if needed.  Can't limit kernel
-	 * version to less than the version currently in the TPM.  That is,
-	 * we're limiting rollforward, not allowing rollback.
-	 */
-	uint32_t original_kernel_version =
-		vb2_secdata_kernel_get(ctx, VB2_SECDATA_KERNEL_VERSIONS);
-
-	if (max_rollforward < original_kernel_version)
-		max_rollforward = original_kernel_version;
-
-	if (sd->kernel_version_secdata > max_rollforward) {
-		VB2_DEBUG("Limiting TPM kernel version roll-forward "
-			  "to %#x < %#x\n",
-			  max_rollforward, sd->kernel_version_secdata);
-
-		sd->kernel_version_secdata = max_rollforward;
-	}
-
-	if (sd->kernel_version_secdata > original_kernel_version) {
-		vb2_secdata_kernel_set(ctx, VB2_SECDATA_KERNEL_VERSIONS,
-				       sd->kernel_version_secdata);
-	} else {
-		sd->kernel_version_secdata = original_kernel_version;
-	}
-}
-
 vb2_error_t vb2api_kernel_finalize(struct vb2_context *ctx)
 {
 	vb2_gbb_flags_t gbb_flags = vb2api_gbb_get_flags(ctx);
@@ -274,9 +224,6 @@ vb2_error_t vb2api_kernel_finalize(struct vb2_context *ctx)
 		vb2api_fail(ctx, VB2_RECOVERY_ESCAPE_NO_BOOT, 0);
 		return VB2_ERROR_ESCAPE_NO_BOOT;
 	}
-
-	if (ctx->boot_mode == VB2_BOOT_MODE_NORMAL)
-		update_kernel_version(ctx);
 
 	return VB2_SUCCESS;
 }
