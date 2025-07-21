@@ -460,14 +460,15 @@ cc_test {
     ],
     compile_multilib: "64",
     strip: {
-        all: true
+        all: true,
     },
     device_supported: true,
     host_supported: false,
-    arch: {
-        x86_64: {
-            enabled: true
-        }
+    enabled: false,
+    target: {
+        android_x86_64: {
+            enabled: true,
+        },
     },
     test_suites: ["dts"],
     gtest: false,
