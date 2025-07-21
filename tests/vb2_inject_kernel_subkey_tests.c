@@ -108,11 +108,6 @@ vb2_error_t VbExDiskRead(vb2ex_disk_handle_t h, uint64_t lba_start,
 	return VB2_SUCCESS;
 }
 
-uint64_t GptGetEntrySizeLba(const GptEntry *e)
-{
-	return (e->ending_lba - e->starting_lba + 1);
-}
-
 int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	return GPT_SUCCESS;
@@ -158,11 +153,6 @@ void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
 bool IsChromeOS(const GptEntry *e)
 {
 	return true;
-}
-
-bool IsAndroid(const GptEntry *e)
-{
-	return false;
 }
 
 vb2_error_t vb2_unpack_key_buffer(struct vb2_public_key *key,
@@ -321,8 +311,17 @@ static void load_kernel_tests(void)
 	kbh.data_key.key_version = 3;
 	mock_parts[1].starting_lba = 300;
 	mock_parts[1].ending_lba = 449;
+	test_load_kernel(VB2_SUCCESS, "Kernels roll forward");
+	TEST_EQ(mock_part_next, 1, "  read one");
+	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
+
+	ResetMocks();
+	SetEntrySuccessful(&mock_parts[0], 1);
+	kbh.data_key.key_version = 3;
+	mock_parts[1].starting_lba = 300;
+	mock_parts[1].ending_lba = 449;
 	test_load_kernel(VB2_SUCCESS, "Two kernels roll forward");
-	TEST_EQ(mock_part_next, 2, "  read both");
+	TEST_EQ(mock_part_next, 1, "  read one");
 	TEST_EQ(sd->kernel_version, 0x30001, "  SD version");
 
 	ResetMocks();
