@@ -35,16 +35,16 @@ int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	gptdata->primary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
 	gptdata->secondary_entries = (uint8_t *)malloc(GPT_ENTRIES_ALLOC_SIZE);
 
-	/* In some cases we try to validate header1 with entries2 or vice versa,
-	   so make sure the entries buffers always got fully initialized. */
-	memset(gptdata->primary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
-	memset(gptdata->secondary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
-
 	if (gptdata->primary_header == NULL ||
 	    gptdata->secondary_header == NULL ||
 	    gptdata->primary_entries == NULL ||
 	    gptdata->secondary_entries == NULL)
-		return 1;
+		goto fail;
+
+	/* In some cases we try to validate header1 with entries2 or vice versa,
+	   so make sure the entries buffers always got fully initialized. */
+	memset(gptdata->primary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
+	memset(gptdata->secondary_entries, 0, GPT_ENTRIES_ALLOC_SIZE);
 
 	/* Read primary header from the drive, skipping the protective MBR */
 	if (0 != VbExDiskRead(disk_handle, 1, 1, gptdata->primary_header)) {
@@ -118,7 +118,26 @@ int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	}
 
 	/* Return 0 if least one GPT header was valid */
-	return (primary_valid || secondary_valid) ? 0 : 1;
+	if (primary_valid || secondary_valid)
+		return 0;
+fail:
+	if (gptdata->primary_header) {
+		free(gptdata->primary_header);
+		gptdata->primary_header = NULL;
+	}
+	if (gptdata->primary_entries) {
+		free(gptdata->primary_entries);
+		gptdata->primary_entries = NULL;
+	}
+	if (gptdata->secondary_entries) {
+		free(gptdata->secondary_entries);
+		gptdata->secondary_entries = NULL;
+	}
+	if (gptdata->secondary_header) {
+		free(gptdata->secondary_header);
+		gptdata->secondary_header = NULL;
+	}
+	return 1;
 }
 
 /**
