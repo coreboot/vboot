@@ -86,7 +86,6 @@ static int gpio_uapi_v2_read_value(int chip_fd, int idx, bool active_low)
 static int gpio_uapi_v2_name_match(int chip_fd, int idx, const char *name)
 {
 	struct gpio_v2_line_info info;
-	int ret;
 
 	memset(&info, 0, sizeof(info));
 	info.offset = idx;
