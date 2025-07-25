@@ -25,7 +25,7 @@ VbSharedDataHeader* VbSharedDataRead(void)
 	return NULL;
 }
 
-int VbGetArchPropertyInt(const char* name)
+int VbGetArchPropertyInt(const char *name)
 {
 	return -1;
 }
