@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
@@ -557,6 +558,24 @@ static vb2_error_t VbGetRecoveryReason(void)
 	}
 }
 
+static int get_controller_number_from_name(const char *name)
+{
+	int num;
+	const char *p = strrchr(name, ':');
+	char *end;
+
+	/* No controller offset in the name. Default to zero. */
+	if (!p)
+		return 0;
+
+	/* Controller number is a hex number.
+	   Skip the colon at index zero. */
+	num = strtol(&p[1], &end, 16);
+	if (end == &p[1])
+		return -1;
+
+	return num;
+}
 
 /* Read a GPIO of the specified signal type (see ACPI GPIO SignalType).
  *
@@ -567,7 +586,9 @@ static int ReadGpio(unsigned signal_type)
 	int index = 0;
 	unsigned gpio_type;
 	unsigned active_high;
-	unsigned controller_num;
+	unsigned pin_num;
+	char controller_name[128];
+	int controller_num = 0;
 	char base_path[128];
 	char* path;
 
@@ -592,13 +613,21 @@ static int ReadGpio(unsigned signal_type)
 	if (ReadFileInt(name, &active_high) < 0)
 		return -1;
 	snprintf(name, sizeof(name), "%s.%d/GPIO.2", base_path, index);
-	if (ReadFileInt(name, &controller_num) < 0)
+	if (ReadFileInt(name, &pin_num) < 0)
 		return -1;
 	/* Do not attempt to read GPIO that is set to -1 in ACPI */
-	if (controller_num == 0xFFFFFFFF)
+	if (pin_num == 0xFFFFFFFF)
 		return -1;
+	snprintf(name, sizeof(name), "%s.%d/GPIO.3", base_path, index);
+	if (!ReadFileFirstLine(controller_name, sizeof(controller_name), name))
+		return -1;
+	controller_num = get_controller_number_from_name(controller_name);
+	if (controller_num == -1) {
+		fprintf(stderr, "Unable to parse controller name: %s\n", controller_name);
+		return -1;
+	}
 
-	return gpio_read_value_by_idx(controller_num, !active_high);
+	return gpio_read_value_by_idx(controller_num, pin_num, !active_high);
 }
 
 static int GetBoardId(void)

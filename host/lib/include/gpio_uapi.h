@@ -20,10 +20,11 @@
 int gpio_read_value_by_name(const char *name, bool active_low);
 
 /**
- * Get the value of a GPIO pin on a specified index.
+ * Get the value of a GPIO pin on a specified index from a specified controller.
+ * Controller number is equivalent to the number of /dev/gpiochipX.
  *
  * Returns negative value on error, 1 for active state, 0 for inactive.
  */
-int gpio_read_value_by_idx(int idx, bool active_low);
+int gpio_read_value_by_idx(int controller_num, int idx, bool active_low);
 
 #endif  /* VBOOT_REFERENCE_GPIO_UAPI_H */
