@@ -60,6 +60,7 @@ cc_defaults {
     shared_libs: [
         "libcrypto",
         "libflashrom",
+        "libziparchive",
         "libssl",
     ],
 
@@ -324,6 +325,27 @@ cc_binary {
     ],
 }
 
+cc_library_static {
+    name: "libziparchive_wrapper",
+    vendor: true,
+    enabled: false,
+
+    target: {
+        android: {
+            enabled: true,
+            srcs: [
+                "futility/archive/libziparchive_wrapper/libziparchive_wrapper.cpp",
+            ],
+            export_include_dirs: [
+                "futility/archive/libziparchive_wrapper/include",
+            ],
+            shared_libs: [
+                "libziparchive",
+            ],
+        },
+    },
+}
+
 filegroup {
     name: "futility_srcs",
     srcs: [
@@ -357,6 +379,7 @@ filegroup {
         // USE_FLASHROM
         "host/lib/flashrom_drv.c",
         "futility/archive/updater_archive_fallback.c",
+        "futility/archive/updater_archive_libziparchive.c",
         "futility/updater_archive.c",
         "futility/updater_dut.c",
         "futility/updater_manifest.c",
@@ -395,6 +418,13 @@ cc_binary {
     generated_sources: ["futility_cmds"],
 
     local_include_dirs: ["futility"],
+
+    target: {
+        android: {
+            cflags: ["-DHAVE_LIBZIPARCHIVE"],
+            static_libs: ["libziparchive_wrapper"],
+        },
+    },
 
     static_libs: ["libvboot_util"],
 }

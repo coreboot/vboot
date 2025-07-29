@@ -55,6 +55,17 @@ struct u_archive *archive_open(const char *path)
 	}
 #endif
 
+#ifdef HAVE_LIBZIPARCHIVE
+	if (!ar->open) {
+		handle = archive_libziparchive.open(path);
+		if (handle) {
+			VB2_DEBUG("Found a file, use libziparchive: %s\n", path);
+			*ar = archive_libziparchive;
+			ar->handle = handle;
+		}
+	}
+#endif
+
 	/* LIBARCHIVE must be the last driver. */
 #ifdef HAVE_LIBARCHIVE
 	if (!ar->open) {

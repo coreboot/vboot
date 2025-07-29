@@ -34,6 +34,9 @@ extern struct u_archive archive_zip;
 #if defined(HAVE_LIBARCHIVE)
 extern struct u_archive archive_libarchive;
 #endif
+#if defined(HAVE_LIBZIPARCHIVE)
+extern struct u_archive archive_libziparchive;
+#endif
 extern struct u_archive archive_fallback;
 
 #endif /* VBOOT_REFERENCE_FUTILITY_ARCHIVE_UPDATER_ARCHIVE_H_ */
