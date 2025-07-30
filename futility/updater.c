@@ -47,7 +47,7 @@ static void print_dut_properties(struct updater_config *cfg)
 
 	printf("System properties: [");
 	for (i = 0; i < DUT_PROP_MAX; i++) {
-		printf("%d,",
+		printf("%" PRId64 ",",
 		       dut_get_property((enum dut_property_type)i, cfg));
 	}
 	printf("]\n");
@@ -59,7 +59,8 @@ static void print_dut_properties(struct updater_config *cfg)
  * the given value.
  */
 static void override_dut_property(enum dut_property_type property_type,
-				  struct updater_config *cfg, int value)
+				  struct updater_config *cfg,
+				  dut_property_t value)
 {
 	struct dut_property *prop;
 
@@ -243,7 +244,7 @@ static const char *decide_rw_target(struct updater_config *cfg,
 				    enum target_type target)
 {
 	const char *a = FMAP_RW_SECTION_A, *b = FMAP_RW_SECTION_B;
-	int slot = dut_get_property(DUT_PROP_MAINFW_ACT, cfg);
+	dut_property_t slot = dut_get_property(DUT_PROP_MAINFW_ACT, cfg);
 
 	switch (slot) {
 	case SLOT_A:
@@ -815,7 +816,7 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 {
 	unsigned int data_key_version = 0, firmware_version = 0,
 		     tpm_data_key_version = 0, tpm_firmware_version = 0;
-	int tpm_fwver = 0;
+	dut_property_t tpm_fwver;
 
 	/* Fail if the given image does not look good. */
 	if (get_key_versions(rw_image, FMAP_RW_VBLOCK_A, &data_key_version,
@@ -824,18 +825,18 @@ static int do_check_compatible_tpm_keys(struct updater_config *cfg,
 
 	/* The stored tpm_fwver can be 0 (b/116298359#comment3). */
 	tpm_fwver = dut_get_property(DUT_PROP_TPM_FWVER, cfg);
-	if (tpm_fwver < 0) {
+	if (tpm_fwver < 0 || (uint64_t)tpm_fwver > UINT32_MAX) {
 		/*
 		 * tpm_fwver is commonly misreported in --ccd mode, so allow
 		 * force_update to ignore the reported value.
 		 */
 		if (!cfg->force_update)
-			ERROR("Invalid tpm_fwver: %d.\n", tpm_fwver);
+			ERROR("Invalid tpm_fwver: %" PRId64 ".\n", tpm_fwver);
 		return -1;
 	}
 
-	tpm_data_key_version = tpm_fwver >> 16;
-	tpm_firmware_version = tpm_fwver & 0xffff;
+	tpm_data_key_version = (uint32_t)tpm_fwver >> 16;
+	tpm_firmware_version = (uint32_t)tpm_fwver & 0xffff;
 	VB2_DEBUG("TPM: data_key_version = %d, firmware_version = %d\n",
 		  tpm_data_key_version, tpm_firmware_version);
 

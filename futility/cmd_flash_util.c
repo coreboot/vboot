@@ -112,8 +112,8 @@ static int print_wp_status(struct updater_config *cfg, bool ignore_hw)
 		return -1;
 	}
 
-	/* A 1 implies HWWP is enabled. */
-	int hwwp = ignore_hw ? 1 : dut_get_property(DUT_PROP_WP_HW, cfg);
+	/* Assume HWWP is enabled if dut_get_property() returns -1. */
+	bool hwwp = ignore_hw ? true : dut_get_property(DUT_PROP_WP_HW, cfg);
 
 	/* SWWP could be disabled, enabled, or misconfigured. */
 	bool is_swwp_disabled = !wp_mode && wp_start == 0 && wp_len == 0;

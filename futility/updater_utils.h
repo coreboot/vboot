@@ -211,9 +211,11 @@ void prepare_servo_control(const char *control_name, bool on);
 
 /* DUT related functions (implementations in updater_dut.c) */
 
+typedef int64_t dut_property_t;
+
 struct dut_property {
-	int (*getter)(struct updater_config *cfg);
-	int value;
+	dut_property_t (*getter)(struct updater_config *cfg);
+	dut_property_t value;
 	int initialized;
 };
 
@@ -231,8 +233,8 @@ enum dut_property_type {
 void dut_init_properties(struct dut_property *props, int num);
 
 /* Gets the DUT system property by given type. Returns the property value. */
-int dut_get_property(enum dut_property_type property_type,
-		     struct updater_config *cfg);
+dut_property_t dut_get_property(enum dut_property_type property_type,
+				struct updater_config *cfg);
 
 int dut_set_property_string(const char *key, const char *value,
 			    struct updater_config *cfg);

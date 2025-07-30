@@ -202,14 +202,15 @@ static int quirk_unlock_csme(struct updater_config *cfg)
 static int quirk_min_platform_version(struct updater_config *cfg)
 {
 	int min_version = get_config_quirk(QUIRK_MIN_PLATFORM_VERSION, cfg);
-	int platform_version = dut_get_property(DUT_PROP_PLATFORM_VER, cfg);
+	dut_property_t platform_version = dut_get_property(DUT_PROP_PLATFORM_VER, cfg);
 
-	VB2_DEBUG("Minimum required version=%d, current platform version=%d\n",
+	VB2_DEBUG("Minimum required version=%d, "
+		  "current platform version=%" PRId64 "\n",
 		  min_version, platform_version);
 
 	if (platform_version >= min_version)
 		return 0;
-	ERROR("Need platform version >= %d (current is %d). "
+	ERROR("Need platform version >= %d (current is %" PRId64 "). "
 	      "This firmware will only run on newer systems.\n",
 	      min_version, platform_version);
 	return -1;
