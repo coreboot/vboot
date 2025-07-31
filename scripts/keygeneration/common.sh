@@ -157,7 +157,7 @@ make_keyblock() {
   local signkey_path=$4
   # Remote URI to the key we're using to sign the keyblock.
   # Optional, if not set we'll look for the private key in signkey_path.
-  local signkey_uri=$5
+  local signkey_uri=${5-}
 
   local signkey_priv="${signkey_path}.vbprivk"
   # If the URI is set, the private key is remote.
