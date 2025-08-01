@@ -34,6 +34,7 @@ struct firmware_image {
 
 /**
  * Read using flashrom into an allocated buffer.
+ * The caller is responsible for freeing image-data and image->file_name.
  *
  * flashrom_read subprocesses the flashrom binary and returns a buffer truncated
  * to the region.
