@@ -24,6 +24,7 @@
 
 #define COMMAND_BUFFER_SIZE 256
 
+test_mockable
 void strip_string(char *s, const char *pattern)
 {
 	int len;
@@ -42,6 +43,7 @@ void strip_string(char *s, const char *pattern)
 	}
 }
 
+test_mockable
 int save_file_from_stdin(const char *output)
 {
 	FILE *in = stdin, *out = fopen(output, "wb");
@@ -223,6 +225,7 @@ static int parse_firmware_image(struct firmware_image *image)
 	return ret;
 }
 
+test_mockable
 int load_firmware_image(struct firmware_image *image, const char *file_name,
 			struct u_archive *archive)
 {
@@ -248,6 +251,7 @@ int load_firmware_image(struct firmware_image *image, const char *file_name,
 	return parse_firmware_image(image);
 }
 
+test_mockable
 void check_firmware_versions(const struct firmware_image *image)
 {
 	if (strcmp(image->rw_version_a, image->rw_version_b))
@@ -261,6 +265,7 @@ void check_firmware_versions(const struct firmware_image *image)
 		     FMAP_RW_FW_MAIN_B, image->ecrw_version_b);
 }
 
+test_mockable
 const char *get_firmware_image_temp_file(const struct firmware_image *image,
 					 struct tempfile *tempfiles)
 {
@@ -277,6 +282,7 @@ const char *get_firmware_image_temp_file(const struct firmware_image *image,
 	return tmp_path;
 }
 
+test_mockable
 void free_firmware_image(struct firmware_image *image)
 {
 	/*
@@ -296,12 +302,14 @@ void free_firmware_image(struct firmware_image *image)
 	image->programmer = programmer;
 }
 
+test_mockable
 int reload_firmware_image(const char *file_path, struct firmware_image *image)
 {
 	free_firmware_image(image);
 	return load_firmware_image(image, file_path, NULL);
 }
 
+test_mockable
 int find_firmware_section(struct firmware_section *section,
 			  const struct firmware_image *image,
 			  const char *section_name)
@@ -321,6 +329,7 @@ int find_firmware_section(struct firmware_section *section,
 	return 0;
 }
 
+test_mockable
 int firmware_section_exists(const struct firmware_image *image,
 			    const char *section_name)
 {
@@ -329,6 +338,7 @@ int firmware_section_exists(const struct firmware_image *image,
 	return section.data != NULL;
 }
 
+test_mockable
 int preserve_firmware_section(const struct firmware_image *image_from,
 			      struct firmware_image *image_to,
 			      const char *section_name)
@@ -351,6 +361,7 @@ int preserve_firmware_section(const struct firmware_image *image_from,
 	return 0;
 }
 
+test_mockable
 const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 {
 	struct firmware_section section;
@@ -365,6 +376,7 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 	return gbb_header;
 }
 
+test_mockable
 char *load_system_frid(struct updater_config *cfg)
 {
 	struct firmware_image image = {
@@ -382,6 +394,7 @@ char *load_system_frid(struct updater_config *cfg)
 	return frid;
 }
 
+test_mockable
 char *get_model_from_frid(const char *frid)
 {
 	char *model;
@@ -415,16 +428,19 @@ static bool is_write_protection_enabled(struct updater_config *cfg,
 	return wp_enabled;
 }
 
-inline bool is_ap_write_protection_enabled(struct updater_config *cfg)
+test_mockable
+bool is_ap_write_protection_enabled(struct updater_config *cfg)
 {
 	return is_write_protection_enabled(cfg, cfg->image.programmer, DUT_PROP_WP_SW_AP);
 }
 
-inline bool is_ec_write_protection_enabled(struct updater_config *cfg)
+test_mockable
+bool is_ec_write_protection_enabled(struct updater_config *cfg)
 {
 	return is_write_protection_enabled(cfg, cfg->ec_image.programmer, DUT_PROP_WP_SW_EC);
 }
 
+test_mockable
 char *host_shell(const char *command)
 {
 	/* Currently all commands we use do not have large output. */
@@ -455,6 +471,7 @@ char *host_shell(const char *command)
 	return strdup(buf);
 }
 
+test_mockable
 void prepare_servo_control(const char *control_name, bool on)
 {
 	char *cmd;
@@ -466,6 +483,7 @@ void prepare_servo_control(const char *control_name, bool on)
 	free(cmd);
 }
 
+test_mockable
 char *host_detect_servo(const char **prepare_ctrl_name)
 {
 	const char *servo_port = getenv(ENV_SERVOD_PORT);
@@ -578,6 +596,7 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 	return strcmp(image1->programmer, image2->programmer) == 0;
 }
 
+test_mockable
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
 {
@@ -610,6 +629,7 @@ int load_system_firmware(struct updater_config *cfg,
 	return r;
 }
 
+test_mockable
 int write_system_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char * const regions[],
@@ -646,6 +666,7 @@ int write_system_firmware(struct updater_config *cfg,
 	return r;
 }
 
+test_mockable
 const char *create_temp_file(struct tempfile *head)
 {
 	struct tempfile *new_temp;
@@ -680,6 +701,7 @@ const char *create_temp_file(struct tempfile *head)
 	return new_temp->filepath;
 }
 
+test_mockable
 void remove_all_temp_files(struct tempfile *head)
 {
 	/* head itself is dummy and should not be removed. */
@@ -697,6 +719,7 @@ void remove_all_temp_files(struct tempfile *head)
 	}
 }
 
+test_mockable
 const char *get_firmware_rootkey_hash(const struct firmware_image *image)
 {
 	const struct vb2_gbb_header *gbb = NULL;
@@ -719,6 +742,7 @@ const char *get_firmware_rootkey_hash(const struct firmware_image *image)
 	return packed_key_sha1_string(rootkey);
 }
 
+test_mockable
 int overwrite_section(struct firmware_image *image,
 			     const char *fmap_section, size_t offset,
 			     size_t size, const uint8_t *new_values)
