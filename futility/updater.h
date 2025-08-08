@@ -99,7 +99,6 @@ struct updater_config {
 	const char *prepare_ctrl_name;
 	int override_gbb_flags;
 	uint32_t gbb_flags;
-	bool detect_model;
 	bool dut_is_remote;
 	bool output_only;
 };

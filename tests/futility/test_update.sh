@@ -608,7 +608,8 @@ test_update "Full update (--archive, detect-model, unsupported FRID)" \
 
 echo "*** Test Item: Detect model (--archive, --detect-model-only)"
 "${FUTILITY}" update -a "${A}" \
-  --emulate "${FROM_IMAGE}.ap" --detect-model-only >"${TMP}/model.out"
+  --emulate "${FROM_IMAGE}.ap" --programmer raiden_debug_spi:target=AP \
+  --detect-model-only >"${TMP}/model.out"
 cmp "${TMP}/model.out" <(echo peppy)
 
 test_update "Full update (--archive, custom label with tag specified)" \

@@ -1390,7 +1390,7 @@ static int updater_setup_archive(
 	struct u_archive *ar = cfg->archive;
 	const struct model_config *model;
 
-	if (cfg->detect_model)
+	if (cfg->dut_is_remote)
 		model = manifest_detect_model_from_frid(cfg, manifest);
 	else
 		model = manifest_find_model(cfg, manifest, arg->model);
@@ -1573,9 +1573,6 @@ static void prog_arg_setup(struct updater_config *cfg,
 	cfg->original_programmer = arg->programmer;
 	VB2_DEBUG("AP (host) programmer changed to %s.\n",
 		  arg->programmer);
-
-	if (arg->archive && !arg->model)
-		cfg->detect_model = true;
 }
 
 static int prog_arg_emulation(struct updater_config *cfg,
@@ -1717,10 +1714,6 @@ int updater_setup_config(struct updater_config *cfg,
 	/* Check incompatible options and return early. */
 	if (check_arg_compatibility(arg) < 0)
 		return 1;
-
-	if (arg->detect_model_only) {
-		cfg->detect_model = true;
-	}
 
 	/* Setup update mode. */
 	if (arg->try_update)
