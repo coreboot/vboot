@@ -1272,15 +1272,6 @@ sign_image_file() {
     "${kernB_keyblock}" "${kernB_privkey}" "${should_sign_kernB}" \
     "${kernC_keyblock}" "${kernC_privkey}" "${should_sign_kernC}"
   update_stateful_partition_vblock "${loopdev}"
-  if [[ "${image_type}" == "recovery" &&
-        "${sign_recovery_like_base}" == "false" ]]; then
-    update_recovery_kernel_hash "${loopdev}" 2 "${kernA_keyblock}" \
-      "${kernA_privkey}"
-    if [[ "${should_sign_kernC}" == "true" ]]; then
-      update_recovery_kernel_hash "${loopdev}" 6 "${kernC_keyblock}" \
-        "${kernC_privkey}"
-    fi
-  fi
 
   if [[ -n "${minios_keyblock}" ]]; then
     # b/266502803: If it's a recovery image and minios_kernel.v1.keyblock
@@ -1295,6 +1286,16 @@ sign_image_file() {
     if ! resign_minios_kernels "${loopdev}" "${miniosA_keyblock}" \
         "${miniosB_keyblock}" "${minios_privkey}"; then
       return 1
+    fi
+  fi
+
+  if [[ "${image_type}" == "recovery" &&
+        "${sign_recovery_like_base}" == "false" ]]; then
+    update_recovery_kernel_hash "${loopdev}" 2 "${kernA_keyblock}" \
+      "${kernA_privkey}"
+    if [[ "${should_sign_kernC}" == "true" ]]; then
+      update_recovery_kernel_hash "${loopdev}" 6 "${kernC_keyblock}" \
+        "${kernC_privkey}"
     fi
   fi
 
