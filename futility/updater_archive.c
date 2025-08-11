@@ -23,7 +23,6 @@ struct u_archive *archive_open(const char *path)
 {
 	struct stat path_stat;
 	struct u_archive *ar;
-	void *handle;
 
 	if (stat(path, &path_stat) != 0) {
 		ERROR("Cannot identify type of path: %s\n", path);
@@ -46,7 +45,7 @@ struct u_archive *archive_open(const char *path)
 	/* Format detection must try ZIP (the official format) first. */
 #ifdef HAVE_LIBZIP
 	if (!ar->open) {
-		handle = archive_zip.open(path);
+		void *handle = archive_zip.open(path);
 		if (handle) {
 			VB2_DEBUG("Found a ZIP file: %s\n", path);
 			*ar = archive_zip;
@@ -57,7 +56,7 @@ struct u_archive *archive_open(const char *path)
 
 #ifdef HAVE_LIBZIPARCHIVE
 	if (!ar->open) {
-		handle = archive_libziparchive.open(path);
+		void *handle = archive_libziparchive.open(path);
 		if (handle) {
 			VB2_DEBUG("Found a file, use libziparchive: %s\n", path);
 			*ar = archive_libziparchive;
@@ -69,7 +68,7 @@ struct u_archive *archive_open(const char *path)
 	/* LIBARCHIVE must be the last driver. */
 #ifdef HAVE_LIBARCHIVE
 	if (!ar->open) {
-		handle = archive_libarchive.open(path);
+		void *handle = archive_libarchive.open(path);
 		if (handle) {
 			VB2_DEBUG("Found a file, use libarchive: %s\n", path);
 			*ar = archive_libarchive;
