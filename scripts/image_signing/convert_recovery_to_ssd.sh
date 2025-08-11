@@ -53,16 +53,6 @@ loop_kernb="${loopdev}p4"
 info "Replacing Kernel partition A with Kernel partition B"
 sudo cp "${loop_kernb}" "${loop_kerna}"
 
-# Overwrite the vblock.
-info "Overwriting kernel partition A vblock with SSD vblock"
-stateful_dir=$(make_temp_dir)
-tmp_vblock=$(make_temp_file)
-sudo mount -o ro "${loopdev}p1" "${stateful_dir}"
-sudo cp "${stateful_dir}/vmlinuz_hd.vblock" "${tmp_vblock}"
-# Unmount before overwriting image to avoid sync issues.
-sudo umount "${stateful_dir}"
-sudo dd if="${tmp_vblock}" of="${loop_kerna}" bs=512 conv=notrunc
-
 # Zero out Kernel B partition.
 info "Zeroing out Kernel partition B"
 # This will throw a "disk is full" error, so ignore it.

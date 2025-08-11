@@ -58,16 +58,6 @@ echo "Replacing KernelA on the SSD with that of the RECOVERY image"
 extract_image_partition ${RECOVERY_IMAGE} 4 ${kerna}
 replace_image_partition ${SSD_IMAGE} 2 ${kerna}
 
-# Overwrite the kernel vblock on the created SSD image.
-stateful_dir=$(make_temp_dir)
-tmp_vblock=$(make_temp_file)
-mount_image_partition_ro ${RECOVERY_IMAGE} 1 ${stateful_dir}
-sudo cp ${stateful_dir}/vmlinuz_hd.vblock ${tmp_vblock}
-echo "Overwriting kernel vblock with SSD kernel vblock"
-sudo dd if=${tmp_vblock} of=${SSD_IMAGE} seek=${kerna_offset} bs=512 \
-  conv=notrunc
-sudo umount ${stateful_dir}
-
 # Zero out Kernel B partition.
 echo "Zeroing out Kernel partition B"
 sudo dd if=/dev/zero of=${SSD_IMAGE} seek=${kernb_offset} bs=512 \

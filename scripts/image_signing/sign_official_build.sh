@@ -322,38 +322,6 @@ update_rootfs_hash() {
   done
 }
 
-# Update the SSD install-able vblock file on stateful partition.
-# ARGS: Loopdev
-# This is deprecated because all new images should have a SSD boot-able kernel
-# in partition 4. However, the signer needs to be able to sign new & old images
-# (crbug.com/449450#c13) so we will probably never remove this.
-update_stateful_partition_vblock() {
-  local loopdev="$1"
-  local temp_out_vb
-  temp_out_vb="$(make_temp_file)"
-
-  local loop_kern="${loopdev}p4"
-  if [[ -z "$(sudo_futility dump_kernel_config "${loop_kern}" \
-        2>/dev/null)" ]]; then
-    info "Building vmlinuz_hd.vblock from legacy image partition 2."
-    loop_kern="${loopdev}p2"
-  fi
-
-  # vblock should always use kernel keyblock.
-  sudo_futility vbutil_kernel --repack "${temp_out_vb}" \
-    --keyblock "${KEYCFG_KERNEL_KEYBLOCK}" \
-    --signprivate "${KEYCFG_KERNEL_VBPRIVK}" \
-    --oldblob "${loop_kern}" \
-    --vblockonly
-
-  # Copy the installer vblock to the stateful partition.
-  local stateful_dir
-  stateful_dir=$(make_temp_dir)
-  sudo mount "${loopdev}p1" "${stateful_dir}"
-  sudo cp "${temp_out_vb}" "${stateful_dir}"/vmlinuz_hd.vblock
-  sudo umount "${stateful_dir}"
-}
-
 # Do a validity check on the image's rootfs
 # ARGS: Image
 verify_image_rootfs() {
@@ -1271,7 +1239,6 @@ sign_image_file() {
     "${kernA_keyblock}" "${kernA_privkey}" \
     "${kernB_keyblock}" "${kernB_privkey}" "${should_sign_kernB}" \
     "${kernC_keyblock}" "${kernC_privkey}" "${should_sign_kernC}"
-  update_stateful_partition_vblock "${loopdev}"
 
   if [[ -n "${minios_keyblock}" ]]; then
     # b/266502803: If it's a recovery image and minios_kernel.v1.keyblock
