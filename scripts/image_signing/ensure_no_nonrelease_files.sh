@@ -49,7 +49,7 @@ main() {
     local brdvar=$(get_boardvar_from_lsb_release "${rootfs}")
     eval "release_file_blocklist=(\"\${RELEASE_FILE_BLOCKLIST_${brdvar}[@]}\")"
 
-    for file in ${release_file_blocklist}; do
+    for file in "${release_file_blocklist[@]}"; do
         if [ -e "${rootfs}/${file}" ]; then
             error "${file} exists in this image!"
             ls -al "${rootfs}/${file}"
