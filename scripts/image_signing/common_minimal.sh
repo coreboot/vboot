@@ -327,7 +327,7 @@ mount_image_esp() {
   fi
 
   local esp_dir="$(make_temp_dir)"
-  if ! sudo mount -o "${ro}" "${loop_esp}" "${esp_dir}"; then
+  if ! sudo mount "${loop_esp}" "${esp_dir}"; then
     return 1
   fi
 
