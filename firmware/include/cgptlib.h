@@ -14,6 +14,8 @@ enum GptPartition {
 	GPT_ANDROID_VENDOR_BOOT,
 	GPT_ANDROID_INIT_BOOT,
 	GPT_ANDROID_PVMFW,
+	GPT_ANDROID_DTB,
+	GPT_ANDROID_DTBO,
 	GPT_ANDROID_PRELOADED_NUM,
 
 	/* Partitions below this point do not get preloaded */
