@@ -298,6 +298,34 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	return VB2_SUCCESS;
 }
 
+static vb2_error_t prepare_dtb(AvbSlotVerifyData *verify_data,
+			       struct vb2_kernel_params *params)
+{
+	AvbPartitionData *part;
+
+	part = avb_find_part(verify_data, GPT_ANDROID_DTB);
+	if (!part) {
+		VB2_DEBUG("Continuing without a DTB partition\n");
+		params->dtb = NULL;
+		params->dtb_size = 0;
+	} else {
+		params->dtb = part->data;
+		params->dtb_size = part->data_size;
+	}
+
+	part = avb_find_part(verify_data, GPT_ANDROID_DTBO);
+	if (!part) {
+		VB2_DEBUG("Continuing without a DTBO partition\n");
+		params->dtbo = NULL;
+		params->dtbo_size = 0;
+	} else {
+		params->dtbo = part->data;
+		params->dtbo_size = part->data_size;
+	}
+
+	return VB2_SUCCESS;
+}
+
 vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *entry,
 			     struct vb2_kernel_params *params, vb2ex_disk_handle_t disk_handle)
 {
@@ -311,6 +339,8 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 		GptPartitionNames[GPT_ANDROID_BOOT],
 		GptPartitionNames[GPT_ANDROID_INIT_BOOT],
 		GptPartitionNames[GPT_ANDROID_VENDOR_BOOT],
+		GptPartitionNames[GPT_ANDROID_DTB],
+		GptPartitionNames[GPT_ANDROID_DTBO],
 		GptPartitionNames[GPT_ANDROID_PVMFW],
 		NULL,
 	};
@@ -323,7 +353,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	 */
 	if (params->pvmfw_buffer_size == 0) {
 		VB2_DEBUG("Not loading pvmfw: not requested.\n");
-		boot_partitions[3] = NULL;
+		boot_partitions[5] = NULL;
 		params->pvmfw_out_size = 0;
 	}
 
@@ -417,6 +447,10 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	}
 
 	rv = prepare_pvmfw(verify_data, params);
+	if (rv)
+		goto out;
+
+	rv = prepare_dtb(verify_data, params);
 
 out:
 	/* No need for slot data */
