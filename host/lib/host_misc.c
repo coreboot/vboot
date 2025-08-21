@@ -7,6 +7,7 @@
 
 /* TODO: change all 'return 0', 'return 1' into meaningful return codes */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -66,8 +67,15 @@ char* ReadFileFirstLine(char* dest, int size, const char* filename)
 	FILE* f;
 
 	f = fopen(filename, "rt");
-	if (!f)
+	if (!f) {
+		/* Crossystem uses file reading calls to also check for the file existence.
+		 * Missing file means falling back to the generic non-arch dependent
+		 * implementation. */
+		if (errno != ENOENT)
+			fprintf(stderr, "ERROR: %s: Failed to open %s: %s\n", __func__,
+				filename, strerror(errno));
 		return NULL;
+	}
 
 	got = fgets(dest, size, f);
 	fclose(f);
