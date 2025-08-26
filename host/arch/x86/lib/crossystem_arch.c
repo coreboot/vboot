@@ -119,13 +119,13 @@ static char* GetAcpiSysfsPath(const char* name)
 	static const char* current_path = "/sys/devices/platform/GOOG0016:00";
 	char* path;
 	struct stat fs;
-	int ret;
+	int ret = -1;
 
 	if (stat(legacy_driver_path, &fs) == 0 && S_ISDIR(fs.st_mode))
 		ret = asprintf(&path, "%s/%s", legacy_driver_path, name);
 	else if (stat(legacy_fw_path, &fs) == 0 && S_ISDIR(fs.st_mode))
 		ret = asprintf(&path, "%s/%s", legacy_fw_path, name);
-	else
+	else if (stat(current_path, &fs) == 0 && S_ISDIR(fs.st_mode))
 		ret = asprintf(&path, "%s/%s", current_path, name);
 
 	return ret == -1 ? NULL : path;
