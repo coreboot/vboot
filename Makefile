@@ -1468,7 +1468,6 @@ runfutiltests: install_for_test
 	${RUNTEST} ${SRC_RUN}/tests/futility/run_test_scripts.sh
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_file_types
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_not_really
-	${RUNTEST} ${SRC_RUN}/tests/futility/prepare_data_for_unit_tests.sh ${SRC_RUN}
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_updater_utils
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_updater_utils_servo
 	rm -rf ${SRC_RUN}/tests/futility/data_copy

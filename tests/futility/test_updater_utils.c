@@ -3,51 +3,35 @@
  * found in the LICENSE file.
  */
 
-#define __USE_GNU
-
-#include <stdlib.h>
-#include "futility.h"
-#include "updater.h"
-#include "2struct.h"
-#include "common/tests.h"
-
+#include "unit_tests.h"
 #include "updater_utils.c"
 
-#define DATA_PATH "tests/futility/data_copy/"
-#define IMAGE_MAIN DATA_PATH "image.bin"
-#define ARCHIVE DATA_PATH "images.zip"
-#define FILE_NONEXISTENT DATA_PATH "nonexistent"
-#define FILE_READONLY DATA_PATH "read-only"
-
+#define IMAGE_MAIN	 GET_WORK_COPY_TEST_DATA_FILE_PATH("image.bin")
+#define ARCHIVE		 GET_WORK_COPY_TEST_DATA_FILE_PATH("images.zip")
+#define FILE_NONEXISTENT GET_WORK_COPY_TEST_DATA_FILE_PATH("nonexistent")
+#define FILE_READONLY	 GET_WORK_COPY_TEST_DATA_FILE_PATH("read-only")
 /* When a custom image needs to be created, it will be written to this file. It also acts as a
    temporary file. */
-#define TARGET DATA_PATH "target"
+#define TARGET		 GET_WORK_COPY_TEST_DATA_FILE_PATH("target-file-temp.bin")
 
-enum unit_result {
-	UNIT_FAIL = 0,
-	UNIT_SUCCESS = 1
-};
+static int prepare_test_data(void)
+{
+	UNIT_TEST_BEGIN;
 
-/* IMPORTANT! Every function that uses `ASSERT` has to implement `unit_cleanup` label. The
-   function must also start with `UNIT_TEST_BEGIN` and end with `UNIT_TEST_RETURN` */
+	UNIT_ASSERT(system("rm -rf " WORK_COPY_TEST_DATA_DIR) == 0);
+	UNIT_ASSERT(system("mkdir -p " WORK_COPY_TEST_DATA_DIR) == 0);
 
-/* This should be called once at the beginning of any function that uses ASSERT. */
-#define UNIT_TEST_BEGIN int __unit_test_return_value = UNIT_SUCCESS
+	UNIT_ASSERT(futil_copy_file(GET_SOURCE_TEST_DATA_FILE_PATH("image-steelix.bin"),
+				    IMAGE_MAIN) != -1);
+	UNIT_ASSERT(futil_copy_file(GET_SOURCE_TEST_DATA_FILE_PATH("images.zip"), ARCHIVE) !=
+		    -1);
+	remove(FILE_NONEXISTENT);
+	UNIT_ASSERT(system("touch " FILE_READONLY) == 0);
+	UNIT_ASSERT(system("chmod 444 " FILE_READONLY) == 0);
 
-/* This should be called once at the end of any function that uses ASSERT. */
-#define UNIT_TEST_RETURN return __unit_test_return_value
-
-/* If assertion fails, will set the resulf of the current unit test to UNIT_FAIL and go to
-   `unit_cleanup`. To use this, `UNIT_TEST_BEGIN` has to be called at the beginning of the
-   function. */
-#define ASSERT(value)                                                                          \
-	do {                                                                                   \
-		if ((value) != UNIT_SUCCESS) {                                                 \
-			TEST_EQ(0, 1, "Assertion failed: " #value);                            \
-			__unit_test_return_value = UNIT_FAIL;                                  \
-			goto unit_cleanup;                                                     \
-		}                                                                              \
-	} while (0)
+unit_cleanup:
+	UNIT_TEST_RETURN;
+}
 
 static enum unit_result create_image_missing_fmap(void)
 {
@@ -55,13 +39,13 @@ static enum unit_result create_image_missing_fmap(void)
 	struct firmware_image image = {0};
 	FmapAreaHeader *ah = NULL; /* Do not free. */
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
-	ASSERT(image.fmap_header != NULL);
-	ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RO_FMAP,
-				 &ah) != NULL);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(image.fmap_header != NULL);
+	UNIT_ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RO_FMAP,
+				      &ah) != NULL);
 	memset(image.data + ah->area_offset, 0, ah->area_size);
 
-	ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
 
 unit_cleanup:
 	free_firmware_image(&image);
@@ -74,13 +58,13 @@ static enum unit_result create_image_missing_ro_frid_in_fmap(void)
 	struct firmware_image image = {0};
 	FmapAreaHeader *ah = NULL; /* Do not free. */
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
-	ASSERT(image.fmap_header != NULL);
-	ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RO_FRID,
-				 &ah) != NULL);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(image.fmap_header != NULL);
+	UNIT_ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RO_FRID,
+				      &ah) != NULL);
 	ah->area_name[0] = '\0';
 
-	ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
 
 unit_cleanup:
 	free_firmware_image(&image);
@@ -93,8 +77,8 @@ static enum unit_result create_image_missing_rw_fwid_in_fmap(void)
 	struct firmware_image image = {0};
 	FmapAreaHeader *ah = NULL; /* Do not free. */
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
-	ASSERT(image.fmap_header != NULL);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(image.fmap_header != NULL);
 	if (fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RW_FWID_A, &ah) !=
 	    NULL)
 		ah->area_name[0] = '\0';
@@ -105,7 +89,7 @@ static enum unit_result create_image_missing_rw_fwid_in_fmap(void)
 	    NULL)
 		ah->area_name[0] = '\0';
 
-	ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_write_file(TARGET, image.data, image.size) == VB2_SUCCESS);
 
 unit_cleanup:
 	free_firmware_image(&image);
@@ -118,9 +102,9 @@ static enum unit_result copy_image(const char *path)
 	uint8_t *ptr = NULL;
 	uint32_t size;
 
-	ASSERT(path != NULL);
-	ASSERT(vb2_read_file(path, &ptr, &size) == VB2_SUCCESS);
-	ASSERT(vb2_write_file(TARGET, ptr, size) == VB2_SUCCESS);
+	UNIT_ASSERT(path != NULL);
+	UNIT_ASSERT(vb2_read_file(path, &ptr, &size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_write_file(TARGET, ptr, size) == VB2_SUCCESS);
 
 unit_cleanup:
 	free(ptr);
@@ -136,7 +120,7 @@ static enum unit_result test_temp_file(void)
 
 	TEST_PTR_NEQ(file, NULL, "Create temp file");
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
 	TEST_PTR_NEQ(get_firmware_image_temp_file(&image, &head), NULL,
 		     "Get temp file for image");
 
@@ -155,7 +139,7 @@ static enum unit_result test_load_firmware_image(void)
 	uint8_t *ref_ptr = NULL;
 	uint32_t ref_size;
 
-	ASSERT(vb2_read_file(IMAGE_MAIN, &ref_ptr, &ref_size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_read_file(IMAGE_MAIN, &ref_ptr, &ref_size) == VB2_SUCCESS);
 
 	TEST_EQ(load_firmware_image(&image, IMAGE_MAIN, NULL), 0, "Load normal image");
 	TEST_EQ(ref_size == image.size, 1, "Verifying size");
@@ -178,7 +162,7 @@ static enum unit_result test_load_firmware_image(void)
 
 	image = (struct firmware_image){0};
 	archive = archive_open(ARCHIVE);
-	ASSERT(archive != NULL);
+	UNIT_ASSERT(archive != NULL);
 
 	TEST_EQ(load_firmware_image(&image, IMAGE_MAIN, archive), 0, "Load from archive");
 	TEST_EQ(ref_size == image.size, 1, "Verifying size");
@@ -204,7 +188,7 @@ static enum unit_result test_parse_firmware_image(void)
 	struct firmware_image image = {0};
 
 	memset(&image, 0, sizeof(image));
-	ASSERT(vb2_read_file(IMAGE_MAIN, &image.data, &image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(vb2_read_file(IMAGE_MAIN, &image.data, &image.size) == VB2_SUCCESS);
 	TEST_EQ(parse_firmware_image(&image), IMAGE_LOAD_SUCCESS,
 		"Parse firmware image: valid");
 	TEST_PTR_EQ(fmap_find(image.data, image.size), image.fmap_header, "Verifying FMAP");
@@ -212,24 +196,24 @@ static enum unit_result test_parse_firmware_image(void)
 	image = (struct firmware_image){0};
 
 	memset(&image, 0, sizeof(image));
-	ASSERT(create_image_missing_fmap());
-	ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(create_image_missing_fmap());
+	UNIT_ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
 	TEST_EQ(parse_firmware_image(&image), IMAGE_PARSE_FAILURE,
 		"Parse firmware image: missing FMAP");
 	free_firmware_image(&image);
 	image = (struct firmware_image){0};
 
 	memset(&image, 0, sizeof(image));
-	ASSERT(create_image_missing_ro_frid_in_fmap());
-	ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(create_image_missing_ro_frid_in_fmap());
+	UNIT_ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
 	TEST_EQ(parse_firmware_image(&image), IMAGE_PARSE_FAILURE,
 		"Parse firmware image: missing RO_FRID");
 	free_firmware_image(&image);
 	image = (struct firmware_image){0};
 
 	memset(&image, 0, sizeof(image));
-	ASSERT(create_image_missing_rw_fwid_in_fmap());
-	ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
+	UNIT_ASSERT(create_image_missing_rw_fwid_in_fmap());
+	UNIT_ASSERT(vb2_read_file(TARGET, &image.data, &image.size) == VB2_SUCCESS);
 	TEST_EQ(parse_firmware_image(&image), IMAGE_PARSE_FAILURE,
 		"Parse firmware image: missing RW_FWID");
 
@@ -245,7 +229,7 @@ static enum unit_result test_firmware_version(void)
 	FmapAreaHeader *ah = NULL; /* Do not free. */
 	char *version = NULL;
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
 
 	TEST_NEQ(load_firmware_version(&image, NULL, &version), 0,
 		 "Load firmware version: NULL section");
@@ -267,8 +251,8 @@ static enum unit_result test_firmware_version(void)
 
 	/* It would be difficult to overwrite the cbfs file without cbfstool (which is not
 	   available on some boards...), so we just set the entire section to zero. */
-	ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header, FMAP_RW_FW_MAIN_A,
-				 &ah) != NULL);
+	UNIT_ASSERT(fmap_find_by_name(image.data, image.size, image.fmap_header,
+				      FMAP_RW_FW_MAIN_A, &ah) != NULL);
 	memset(image.data + ah->area_offset, 0, ah->area_size);
 	version = load_ecrw_version(&image, TARGET, FMAP_RW_FW_MAIN_A);
 	TEST_STR_EQ(version, "", "Load ECRW version: invalid");
@@ -284,7 +268,7 @@ static enum unit_result test_reload_firmware_image(void)
 	UNIT_TEST_BEGIN;
 	struct firmware_image image = {0};
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
 	TEST_EQ(reload_firmware_image(IMAGE_MAIN, &image), 0, "Reload image");
 	free_firmware_image(&image);
 
@@ -336,7 +320,7 @@ static enum unit_result test_system_firmware(void)
 	offset = ptr - cfg->image.data;
 	TEST_EQ(write_system_firmware(cfg, &cfg->image, regions, ARRAY_SIZE(regions)), 0,
 		"Write system firmware (partial)");
-	ASSERT(load_system_firmware(cfg, &cfg->image_current) == 0);
+	UNIT_ASSERT(load_system_firmware(cfg, &cfg->image_current) == 0);
 	TEST_EQ(cfg->image_current.data[offset], value, "Verifying written region");
 
 	regions[0] = "<invalid region>";
@@ -352,8 +336,8 @@ static enum unit_result test_programmer(void)
 {
 	UNIT_TEST_BEGIN;
 	struct firmware_image image1 = {0}, image2 = {0};
-	ASSERT(load_firmware_image(&image1, IMAGE_MAIN, NULL) == 0);
-	ASSERT(load_firmware_image(&image2, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image1, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image2, IMAGE_MAIN, NULL) == 0);
 
 	image1.programmer = image2.programmer = "<same programmer>";
 	TEST_EQ(is_the_same_programmer(&image1, &image2), 1, "Test programmer: same address");
@@ -384,7 +368,7 @@ static enum unit_result test_firmware_sections(void)
 	struct firmware_image image = {0};
 	struct firmware_section section = {0};
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
 
 	TEST_EQ(find_firmware_section(&section, &image, "RO_FRID"), 0, "Find firmware section");
 	TEST_EQ(firmware_section_exists(&image, "RO_FRID"), 1, "Firmware section exists");
@@ -409,8 +393,8 @@ static enum unit_result test_preserve_firmware_section(void)
 	uint8_t *ptr = NULL;	   /* Do not free. */
 	uint8_t *data = NULL, byte;
 
-	ASSERT(load_firmware_image(&image_from, IMAGE_MAIN, NULL) == 0);
-	ASSERT(load_firmware_image(&image_to, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image_from, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image_to, IMAGE_MAIN, NULL) == 0);
 
 	TEST_EQ(preserve_firmware_section(&image_from, &image_to, FMAP_RW_LEGACY), 0,
 		"Preserve section");
@@ -436,7 +420,7 @@ static enum unit_result test_preserve_firmware_section(void)
 	TEST_EQ(*(ptr + ah->area_size), byte, "Verifying truncated section");
 	ah->area_size++;
 
-	ASSERT(reload_firmware_image(IMAGE_MAIN, &image_to) == 0);
+	UNIT_ASSERT(reload_firmware_image(IMAGE_MAIN, &image_to) == 0);
 	ptr = fmap_find_by_name(image_to.data, image_to.size, image_to.fmap_header,
 				FMAP_RW_LEGACY, &ah);
 	data = (uint8_t *)malloc(ah->area_size);
@@ -471,7 +455,7 @@ static enum unit_result test_gbb(void)
 	FmapAreaHeader *ah = NULL; /* Do not free */
 	uint8_t *ptr = NULL;	   /* Do not free */
 
-	ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&image, IMAGE_MAIN, NULL) == 0);
 
 	TEST_PTR_NEQ(get_firmware_rootkey_hash(&image), NULL, "Get firmware rootkey hash");
 	TEST_PTR_NEQ(find_gbb(&image), NULL, "Find GBB");
@@ -537,9 +521,9 @@ static enum unit_result test_misc(void)
 
 	cfg = updater_new_config();
 	s = NULL;
-	ASSERT(cfg != NULL);
-	ASSERT(updater_setup_config(cfg, &args) == 0);
-	ASSERT(load_firmware_image(&cfg->image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(cfg != NULL);
+	UNIT_ASSERT(updater_setup_config(cfg, &args) == 0);
+	UNIT_ASSERT(load_firmware_image(&cfg->image, IMAGE_MAIN, NULL) == 0);
 
 	/* Test uninitialized and initialized. */
 	prop = &cfg->dut_properties[DUT_PROP_WP_HW];
@@ -616,7 +600,10 @@ unit_cleanup:
 
 int main(int argc, char *argv[])
 {
-	remove(FILE_NONEXISTENT);
+	if (prepare_test_data() == UNIT_FAIL) {
+		ERROR("Failed to prepare data.\n");
+		return 1;
+	}
 
 	test_temp_file();
 	test_load_firmware_image();

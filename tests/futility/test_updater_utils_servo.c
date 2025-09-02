@@ -3,9 +3,8 @@
  * found in the LICENSE file.
  */
 
-#include "futility.h"
+#include "unit_tests.h"
 #include "updater_utils.h"
-#include "common/tests.h"
 
 enum {
 	SHELL_SHOW_DEFAULT = 0,
