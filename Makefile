@@ -817,6 +817,7 @@ TEST_FUTIL_NAMES = \
 	tests/futility/binary_editor \
 	tests/futility/test_file_types \
 	tests/futility/test_not_really \
+	tests/futility/test_misc \
 	tests/futility/test_updater_utils \
 	tests/futility/test_updater_utils_servo
 
@@ -1468,6 +1469,7 @@ runfutiltests: install_for_test
 	${RUNTEST} ${SRC_RUN}/tests/futility/run_test_scripts.sh
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_file_types
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_not_really
+	${RUNTEST} ${BUILD_RUN}/tests/futility/test_misc
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_updater_utils
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_updater_utils_servo
 	rm -rf ${SRC_RUN}/tests/futility/data_copy
