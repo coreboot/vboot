@@ -108,6 +108,8 @@ typedef struct {
 
 #define GPTHEADER_EXPECTED_SIZE 92
 
+#define GPTENTRY_NAME_LEN 36
+
 /*
  * GPT partition entry defines the starting and ending LBAs of a partition.  It
  * also contains the unique GUID, type, and attribute bits.
@@ -131,13 +133,11 @@ typedef struct {
 		} __attribute__((packed)) fields;
 		uint64_t whole;
 	} attrs;
-	uint16_t name[36];  /* UTF-16 encoded partition name */
+	uint16_t name[GPTENTRY_NAME_LEN];  /* UTF-16 encoded partition name */
 	/* Remainder of entry is reserved and should be 0 */
 } __attribute__((packed)) GptEntry;
 
 #define GPTENTRY_EXPECTED_SIZE 128
-
-#define GUID_STRLEN 37
 
 typedef enum {
 	GPT_GUID_LOWERCASE,
