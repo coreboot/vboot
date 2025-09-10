@@ -151,7 +151,7 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 		partition_name = GptPartitionNames[part];
 		err = get_partition_size(gpt, partition_name, slot_suffix, &size);
 		if (err)
-			return err;
+			continue;
 
 		available = kernel_buffer_end - buffer;
 		if (size > available)
@@ -172,7 +172,7 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	partition_name = GptPartitionNames[GPT_ANDROID_PVMFW];
 	err = get_partition_size(gpt, partition_name, slot_suffix, &size);
 	if (err)
-		return err;
+		return AVB_IO_RESULT_OK;
 
 	/* Make sure the buffer is big enough */
 	available = params->pvmfw_buffer_size;
