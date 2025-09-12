@@ -397,7 +397,8 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	 * locked).
 	 */
 	bool orange = !need_verification ||
-		      (recovery_boot && ctx->flags & VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT);
+		(recovery_boot &&
+		 vb2api_gbb_get_flags(ctx) & VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT);
 
 	/*
 	 * TODO(b/335901799): Add support for marking verifiedbootstate yellow
