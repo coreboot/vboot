@@ -128,15 +128,45 @@ static AvbIOResult get_partition_size(GptData *gpt, const char *name,
 	return AVB_IO_RESULT_OK;
 }
 
-static AvbIOResult reserve_buffers(AvbOps *ops)
+static AvbIOResult reserve_buffer_for_partition(AvbOps *ops, enum GptPartition part, void *buf,
+						uint64_t available, uint64_t *alloced_size)
 {
 	struct vboot_avb_ctx *avbctx = user_data(ops);
 	GptData *gpt = avbctx->gpt;
-	struct vb2_kernel_params *params = avbctx->params;
 	struct avb_preload_buffer *parts = avbctx->preloaded;
 	const char *slot_suffix = avbctx->slot_suffix;
-	uint64_t size, available;
+	uint64_t size;
 	const char *partition_name;
+	AvbIOResult err;
+
+	/* If the partition is not present then skip any preparations */
+	partition_name = GptPartitionNames[part];
+	err = get_partition_size(gpt, partition_name, slot_suffix, &size);
+	if (err)
+		return AVB_IO_RESULT_OK;
+
+	/* Make sure the buffer is big enough */
+	if (size > available) {
+		VB2_DEBUG("Buffer too small for '%s': has %" PRIu64 " requested %" PRIu64 "\n",
+			  partition_name, available, size);
+		return AVB_IO_RESULT_ERROR_INSUFFICIENT_SPACE;
+	}
+
+	parts[part].buffer = buf;
+	parts[part].alloced_size = size;
+	parts[part].loaded_size = 0;
+	VB2_DEBUG("Reserved buffer for '%s' %p[%zx]\n", partition_name,
+		  parts[part].buffer, parts[part].alloced_size);
+	*alloced_size = parts[part].alloced_size;
+
+	return AVB_IO_RESULT_OK;
+}
+
+static AvbIOResult reserve_buffers(AvbOps *ops)
+{
+	struct vboot_avb_ctx *avbctx = user_data(ops);
+	struct vb2_kernel_params *params = avbctx->params;
+	uint64_t size;
 	AvbIOResult err;
 
 	uint8_t *buffer = params->kernel_buffer;
@@ -144,52 +174,23 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	enum GptPartition part;
 
 	for (part = GPT_ANDROID_BOOT; part < GPT_ANDROID_PRELOADED_NUM; part++) {
-		/* Skip pvmfw for now and set up it later */
-		if (part == GPT_ANDROID_PVMFW)
-			continue;
+		if (part == GPT_ANDROID_PVMFW) {
+			if (params->pvmfw_buffer_size == 0)
+				continue;
 
-		partition_name = GptPartitionNames[part];
-		err = get_partition_size(gpt, partition_name, slot_suffix, &size);
-		if (err)
-			continue;
-
-		available = kernel_buffer_end - buffer;
-		if (size > available)
-			goto overflow;
-
-		parts[part].buffer = buffer;
-		parts[part].alloced_size = size;
-		parts[part].loaded_size = 0;
-		VB2_DEBUG("Reserved buffer for '%s' %p[%zx]\n", partition_name,
-			  parts[part].buffer, parts[part].alloced_size);
-		buffer += size;
+			err = reserve_buffer_for_partition(ops, part, params->pvmfw_buffer,
+							   params->pvmfw_buffer_size, &size);
+			if (err)
+				return err;
+		} else {
+			err = reserve_buffer_for_partition(ops, part, buffer,
+							   kernel_buffer_end - buffer, &size);
+			if (err)
+				return err;
+			buffer += size;
+		}
 	}
-
-	/* If pvmfw is not requested to load then skip any preparions */
-	if (params->pvmfw_buffer_size == 0)
-		return AVB_IO_RESULT_OK;
-
-	partition_name = GptPartitionNames[GPT_ANDROID_PVMFW];
-	err = get_partition_size(gpt, partition_name, slot_suffix, &size);
-	if (err)
-		return AVB_IO_RESULT_OK;
-
-	/* Make sure the buffer is big enough */
-	available = params->pvmfw_buffer_size;
-	if (size > available)
-		goto overflow;
-
-	parts[GPT_ANDROID_PVMFW].buffer = params->pvmfw_buffer;
-	parts[GPT_ANDROID_PVMFW].alloced_size = params->pvmfw_buffer_size;
-	parts[GPT_ANDROID_PVMFW].loaded_size = 0;
-
 	return AVB_IO_RESULT_OK;
-overflow:
-	VB2_DEBUG("Buffer too small for '%s': has %lu requested %" PRIu64 "\n",
-			partition_name, kernel_buffer_end - buffer, size);
-
-	return AVB_IO_RESULT_ERROR_INSUFFICIENT_SPACE;
-
 }
 
 AvbIOResult vb2_android_get_buffer(AvbOps *ops,
