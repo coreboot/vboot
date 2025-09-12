@@ -27,7 +27,7 @@ cc_defaults {
         "-Wno-error=deprecated-declarations",
         "-D_GNU_SOURCE",
         "-DCHROMEOS_ENVIRONMENT", // FIRMWARE_ARCH=""
-        "-DUSE_FLASHROM",
+        "-DUSE_FLASHROM=1",
         "-DEXTERNAL_TPM_CLEAR_REQUEST=0",
         "-Wno-gnu-pointer-arith",
         "-Wno-ignored-qualifiers",
@@ -148,8 +148,7 @@ cc_defaults {
     name: "libvboot_defaults",
     defaults: ["vboot_defaults"],
     srcs: [
-        // USE_FLASHROM
-        "host/lib/flashrom.c",
+        // USE_FLASHROM=1
         "host/lib/flashrom_drv.c",
 
         "host/lib/subprocess.c",
@@ -375,7 +374,7 @@ filegroup {
         "futility/vb1_helper.c",
         "futility/vb2_helper.c",
 
-        // USE_FLASHROM
+        // USE_FLASHROM=1
         "host/lib/flashrom_drv.c",
         "futility/archive/updater_archive_fallback.c",
         "futility/archive/updater_archive_libziparchive.c",

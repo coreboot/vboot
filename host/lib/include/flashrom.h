@@ -33,51 +33,88 @@ struct firmware_image {
 };
 
 /**
- * Read using flashrom into an allocated buffer.
- * The caller is responsible for freeing image-data and image->file_name.
+ * Reads one or more FMAP regions, or the entire flash chip, into a newly allocated buffer.
  *
- * flashrom_read subprocesses the flashrom binary and returns a buffer truncated
- * to the region.
+ * This function allocates a buffer equal to the size of the ENTIRE flash chip. It then reads
+ * the specified FMAP region(s) into the corresponding offsets within that buffer. The contents
+ * of the buffer outside of the specified regions are undefined.
  *
- * flashrom_read_image reads the returns a full sized buffer with only the
- * regions filled with data.
+ * The caller is responsible for freeing image->data and image->file_name.
  *
- * flashrom_read_region returns the buffer truncated to the region.
+ * @param image		Firmware image struct. The `programmer` field must be set by the caller.
+ *			The `data`, `size`, and `file_name` fields will be populated by this
+ *			function upon success.
+ * @param regions	An array of FMAP region names to read.
+ * @param regions_len	The number of strings in the `regions` array. If 0, the entire flash
+ *			chip is read.
+ * @param verbosity	Controls the verbosity level of the flashrom command.
  *
- * @param image		The parameter that contains the programmer, buffer and
- *			size to use in the read operation.
- * @param regions	A list of the names of the fmap regions to read. Must
- *			be non-null if regions_len is non-zero. Otherwise, must
- *			be at least regions_len items long.
- * @param regions_len	The size of regions, or 0 to read the entire flash
- *			chip.
- *
- * @return VB2_SUCCESS on success, or a relevant error.
+ * @return VB2_SUCCESS on success, or a relevant error code on failure.
  */
-vb2_error_t flashrom_read(struct firmware_image *image, const char *region);
-vb2_error_t flashrom_read_image(struct firmware_image *image,
-				const char *const regions[], size_t regions_len, int verbosity);
+vb2_error_t flashrom_read_image(struct firmware_image *image, const char *const regions[],
+				size_t regions_len, int verbosity);
+
+/**
+ * Reads a single FMAP region from flash into a newly allocated, fitted buffer.
+ *
+ * This function allocates a buffer that is sized to be exactly the size of the requested
+ * region, and the buffer contains only the data from that region.
+ *
+ * The caller is responsible for freeing image->data and image->file_name.
+ *
+ * @param image		Firmware image struct. The `programmer` field must be set by the caller.
+ *			The `data`, `size`, and `file_name` fields will be populated by this
+ *			function upon success.
+ * @param region	The name of the single FMAP region to read. Must not be NULL.
+ * @param verbosity	Controls the verbosity level of the flashrom command.
+ *
+ * @return VB2_SUCCESS on success, or a relevant error code on failure.
+ */
 vb2_error_t flashrom_read_region(struct firmware_image *image, const char *region,
 				 int verbosity);
 
 /**
- * Write using flashrom from a buffer.
+ * Write one or more FMAP regions, or the entire flash chip, from a buffer.
  *
- * @param image		The parameter that contains the programmer, buffer and
- *			size to use in the write operation.
- * @param regions	A list of the names of the fmap regions to write. Must
- *			be non-null if regions_len is non-zero. Otherwise, must
- *			be at least regions_len items long.
- * @param regions_len	The size of regions, or 0 to write the entire flash
- *			chip.
+ * The `image` buffer is expected to be the size of the entire flash chip, with the data for
+ * each specified region at the correct offset.
+ *
+ * @param image		Firmware image struct containing the data to write. The `programmer`,
+ *			`data`, and `size` fields must be set.
+ * @param regions	An array of FMAP region names to write.
+ * @param regions_len	The number of strings in the `regions` array. If 0, the entire flash
+ *			chip is written.
+ * @param diff_image	Optional. If not NULL, flashrom will only write the blocks that are
+ *			different between `image` and `diff_image`, potentially speeding up the
+ *			write operation.
+ * @param do_verify	If true, flashrom will read back the data after writing to verify
+ *			its integrity.
+ * @param verbosity	Controls the verbosity level of the flashrom command.
  *
  * @return VB2_SUCCESS on success, or a relevant error.
  */
-vb2_error_t flashrom_write(struct firmware_image *image, const char *region);
 vb2_error_t flashrom_write_image(const struct firmware_image *image,
 				 const char *const regions[], size_t regions_len,
-				 const struct firmware_image *diff_image, int do_verify,
+				 const struct firmware_image *diff_image, bool do_verify,
 				 int verbosity);
+
+/**
+ * Write a single FMAP region to flash from a fitted buffer.
+ *
+ * The `image` buffer is expected to contain only the data for the specified region and its size
+ * should match that region's size in the FMAP.
+ *
+ * @param image		Firmware image struct containing the data to write. The `programmer`,
+ *			`data`, and `size` fields must be set.
+ * @param region	The name of a single FMAP region to write. Must not be NULL.
+ * @param do_verify	If true, flashrom will read back the data after writing to verify
+ *			its integrity.
+ * @param verbosity	Controls the verbosity level of the flashrom command.
+ *
+ * @return VB2_SUCCESS on success, or a relevant error.
+ */
+vb2_error_t flashrom_write_region(const struct firmware_image *image, const char *region,
+				  bool do_verify, int verbosity);
 
 /**
  * Get wp state using flashrom.

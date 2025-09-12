@@ -11,11 +11,10 @@
 #include "crossystem.h"
 #include "host_misc.h"
 #include "util_misc.h"
-//#include "updater.h"
 #include "../../futility/futility.h"
 #include "flashrom.h"
 
-// global to allow verbosity level to be injected into callback.
+/* global to allow verbosity level to be injected into callback. */
 static enum flashrom_log_level g_verbose_screen = FLASHROM_MSG_INFO;
 
 static int flashrom_print_cb(enum flashrom_log_level level, const char *fmt,
@@ -108,7 +107,7 @@ err_init:
  * `region_len` will be filled with the data of the first region.
  */
 static vb2_error_t flashrom_read_image_impl(struct firmware_image *image,
-					    const char * const regions[],
+					    const char *const regions[],
 					    const size_t regions_len,
 					    unsigned int *region_start,
 					    unsigned int *region_len, int verbosity)
@@ -130,13 +129,13 @@ static vb2_error_t flashrom_read_image_impl(struct firmware_image *image,
 	if (regions_len) {
 		int i;
 		if (flashrom_layout_read_fmap_from_rom(&layout, flashctx, 0, len)) {
-			ERROR("could not read fmap from rom.\n");
+			ERROR("Could not read FMAP from ROM.\n");
 			goto err_cleanup;
 		}
 		for (i = 0; i < regions_len; i++) {
 			// empty region causes seg fault in API.
 			if (flashrom_layout_include_region(layout, regions[i])) {
-				ERROR("could not include region = '%s'\n",
+				ERROR("Could not include region = '%s'\n",
 				      regions[i]);
 				goto err_cleanup;
 			}
@@ -146,7 +145,7 @@ static vb2_error_t flashrom_read_image_impl(struct firmware_image *image,
 
 	image->data = calloc(1, len);
 	if (!image->data) {
-		ERROR("could not allocate image data (%zu bytes)\n", len);
+		ERROR("Could not allocate image data (%zu bytes)\n", len);
 		goto err_cleanup;
 	}
 	image->size = len;
@@ -176,7 +175,7 @@ err_cleanup:
 	return r;
 }
 
-vb2_error_t flashrom_read_image(struct firmware_image *image, const char * const regions[],
+vb2_error_t flashrom_read_image(struct firmware_image *image, const char *const regions[],
 				const size_t regions_len, int verbosity)
 {
 	unsigned int start, len;
@@ -186,8 +185,12 @@ vb2_error_t flashrom_read_image(struct firmware_image *image, const char * const
 vb2_error_t flashrom_read_region(struct firmware_image *image, const char *region,
 				 int verbosity)
 {
-	const char * const regions[] = {region};
+	const char *const regions[] = {region};
 	unsigned int start, len;
+	if (region == NULL) {
+		ERROR("Region name must be specified\n");
+		return VB2_ERROR_FLASHROM;
+	}
 	vb2_error_t r = flashrom_read_image_impl(image, regions, ARRAY_SIZE(regions),
 						 &start, &len, verbosity);
 	if (r != VB2_SUCCESS)
@@ -199,9 +202,9 @@ vb2_error_t flashrom_read_region(struct firmware_image *image, const char *regio
 }
 
 vb2_error_t flashrom_write_image(const struct firmware_image *image,
-				 const char * const regions[], const size_t regions_len,
+				 const char *const regions[], const size_t regions_len,
 				 const struct firmware_image *diff_image,
-				 int do_verify, int verbosity)
+				 bool do_verify, int verbosity)
 {
 	vb2_error_t r = VB2_ERROR_FLASHROM;
 	size_t len = 0;
@@ -222,37 +225,38 @@ vb2_error_t flashrom_write_image(const struct firmware_image *image,
 		}
 	}
 
+	if (image->size != len) {
+		ERROR("Image size (%u) does not match the flash size (%zu)\n",
+		      image->size, len);
+		goto err_cleanup;
+	}
+
 	if (regions_len) {
-		int i;
-		if (flashrom_layout_read_fmap_from_buffer(
-			&layout, flashctx, (const uint8_t *)image->data, image->size)) {
-			WARN("could not read fmap from image, r=%d, "
-				"falling back to read from rom\n", r);
+		if (flashrom_layout_read_fmap_from_buffer(&layout, flashctx,
+							  (const uint8_t *)image->data,
+							  image->size)) {
+			WARN("Could not read FMAP from image, falling back to read from ROM\n");
 			if (flashrom_layout_read_fmap_from_rom(&layout, flashctx, 0, len)) {
-				ERROR("could not read fmap from rom, r=%d\n", r);
+				ERROR("Could not read FMAP from ROM\n");
 				goto err_cleanup;
 			}
 		}
-		for (i = 0; i < regions_len; i++) {
+		for (int i = 0; i < regions_len; i++) {
 			INFO(" including region '%s'\n", regions[i]);
 			// empty region causes seg fault in API.
 			if (flashrom_layout_include_region(layout, regions[i])) {
-				ERROR("could not include region = '%s'\n",
-				      regions[i]);
+				ERROR("Could not include region = '%s'\n", regions[i]);
 				goto err_cleanup;
 			}
 		}
 		flashrom_layout_set(flashctx, layout);
-	} else if (image->size != len) {
-		goto err_cleanup;
 	}
 
 	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, false);
-	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE,
-			  do_verify);
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, do_verify);
 
 	if (flashrom_image_write(flashctx, image->data, image->size,
-		diff_image ? diff_image->data : NULL) == 0)
+				 diff_image ? diff_image->data : NULL) == 0)
 		r = VB2_SUCCESS;
 
 err_cleanup:
@@ -260,6 +264,80 @@ err_cleanup:
 	flashrom_flash_release(flashctx);
 	if (flashrom_programmer_shutdown(prog))
 		r = VB2_ERROR_FLASHROM;
+
+	return r;
+}
+
+vb2_error_t flashrom_write_region(const struct firmware_image *image, const char *region,
+				  bool do_verify, int verbosity)
+{
+	vb2_error_t r = VB2_ERROR_FLASHROM;
+	size_t len = 0;
+
+	if (region == NULL) {
+		ERROR("Region name must be specified\n");
+		return VB2_ERROR_FLASHROM;
+	}
+
+	g_verbose_screen = (verbosity == -1) ? FLASHROM_MSG_INFO : verbosity;
+
+	struct flashrom_programmer *prog = NULL;
+	struct flashrom_flashctx *flashctx = NULL;
+	struct flashrom_layout *layout = NULL;
+
+	/* `full_image_data` is allocated here as the full-size buffer passed to
+	   libflashrom, and `full_image_size` is set to the total flash size. */
+	uint8_t *full_image_data = NULL;
+	size_t full_image_size = 0;
+
+	if (flashrom_setup(&flashctx, &prog, &len, image->programmer) != VB2_SUCCESS)
+		return r;
+
+	if (flashrom_layout_read_fmap_from_rom(&layout, flashctx, 0, len)) {
+		ERROR("Could not read FMAP from ROM.\n");
+		goto err_cleanup;
+	}
+	/* Get the region_start and region_len. */
+	if (flashrom_layout_include_region(layout, region)) {
+		ERROR("Region '%s' not found in FMAP\n", region);
+		goto err_cleanup;
+	}
+	unsigned int region_start, region_len;
+	if (flashrom_layout_get_region_range(layout, region, &region_start, &region_len)) {
+		ERROR("Could not get range for region '%s'\n", region);
+		goto err_cleanup;
+	}
+	if (image->size != region_len) {
+		ERROR("Image size (%u) does not match region '%s' size (%u)\n",
+		      image->size, region, region_len);
+		goto err_cleanup;
+	}
+	/* Prepare the full-layout image buffer. */
+	full_image_size = len;
+	full_image_data = malloc(full_image_size);
+	if (!full_image_data) {
+		ERROR("Could not allocate memory for full image (%zu bytes)\n", len);
+		goto err_cleanup;
+	}
+	memset(full_image_data, 0xff, full_image_size);
+	memcpy(full_image_data + region_start, image->data, image->size);
+
+	flashrom_layout_set(flashctx, layout);
+
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_WHOLE_CHIP, false);
+	flashrom_flag_set(flashctx, FLASHROM_FLAG_VERIFY_AFTER_WRITE, do_verify);
+
+	if (flashrom_image_write(flashctx, full_image_data, full_image_size, NULL) == 0)
+		r = VB2_SUCCESS;
+
+err_cleanup:
+	flashrom_layout_release(layout);
+	flashrom_flash_release(flashctx);
+	if (flashrom_programmer_shutdown(prog))
+		r = VB2_ERROR_FLASHROM;
+
+	if (full_image_data)
+		free(full_image_data);
 
 	return r;
 }

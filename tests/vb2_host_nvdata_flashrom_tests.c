@@ -86,7 +86,8 @@ static void reset_test_data(struct vb2_context *ctx, int nvdata_size)
 }
 
 /* Mocked flashrom_read for tests. */
-vb2_error_t flashrom_read(struct firmware_image *image, const char *region)
+vb2_error_t flashrom_read_region(struct firmware_image *image, const char *region,
+				 int verbosity)
 {
 	if (mock_flashrom_fail) {
 		image->data = NULL;
@@ -102,8 +103,9 @@ vb2_error_t flashrom_read(struct firmware_image *image, const char *region)
 	return VB2_SUCCESS;
 }
 
-/* Mocked flashrom_write for tests. */
-vb2_error_t flashrom_write(struct firmware_image *image, const char *region)
+/* Mocked flashrom_write_region for tests. */
+vb2_error_t flashrom_write_region(const struct firmware_image *image, const char *region,
+				  bool do_verify, int verbosity)
 {
 	if (mock_flashrom_fail)
 		return VB2_ERROR_FLASHROM;
