@@ -76,7 +76,7 @@ vb2_error_t chromeos_config_get_boolean(const char *path, const char *property,
 	VB2_DEBUG("Config entry is not a boolean: %s:%s", path, property);
 	rv = VB2_ERROR_INVALID_PARAMETER;
 
- exit:
+exit:
 	free(val_string);
 	return rv;
 }
@@ -102,7 +102,7 @@ vb2_error_t chromeos_config_get_integer(const char *path, const char *property,
 		goto exit;
 	}
 
- exit:
+exit:
 	free(val_string);
 	return rv;
 }

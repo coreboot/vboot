@@ -28,7 +28,7 @@ static int lookup_helper(const char *str, const char *table[], size_t size,
 		/* that's not a valid algorithm */
 		return false;
 
- found:
+found:
 	*out = algo;
 	return true;
 }

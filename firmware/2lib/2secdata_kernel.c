@@ -209,7 +209,7 @@ uint32_t vb2_secdata_kernel_get(struct vb2_context *ctx,
 		msg = "invalid param";
 	}
 
- fail:
+fail:
 	VB2_REC_OR_DIE(ctx, "%s\n", msg);
 	return 0;
 }
@@ -271,7 +271,7 @@ void vb2_secdata_kernel_set(struct vb2_context *ctx,
 	ctx->flags |= VB2_CONTEXT_SECDATA_KERNEL_CHANGED;
 	return;
 
- fail:
+fail:
 	VB2_REC_OR_DIE(ctx, "%s\n", msg);
 }
 

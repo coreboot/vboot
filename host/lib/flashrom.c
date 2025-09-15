@@ -77,7 +77,7 @@ static vb2_error_t write_temp_file(const uint8_t *data, uint32_t data_size,
 	*path_out = path;
 	return VB2_SUCCESS;
 
- fail:
+fail:
 	free(path);
 	return rv;
 }

@@ -983,7 +983,7 @@ int vb2_write_nv_storage_flashrom(struct vb2_context *ctx)
 		goto exit;
 	}
 
- exit:
+exit:
 	free(image.data);
 	return rv;
 }

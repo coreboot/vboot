@@ -228,7 +228,7 @@ int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 
 	ret = 0;
 
- fail:
+fail:
 	/* Avoid leaking memory on disk write failure */
 	if (gptdata->primary_header)
 		free(gptdata->primary_header);

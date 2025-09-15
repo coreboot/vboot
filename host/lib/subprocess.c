@@ -343,7 +343,7 @@ int subprocess_run(const char *const argv[],
 	if (WIFEXITED(status))
 		return WEXITSTATUS(status);
 
- fail:
+fail:
 	VB2_DEBUG("Failed to execute external command: %s\n", strerror(errno));
 	if (pid == 0)
 		exit(127);
