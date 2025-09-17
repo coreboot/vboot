@@ -114,7 +114,7 @@ static int dut_get_wp_sw(const char *programmer)
 	assert(programmer);
 	bool mode;
 
-	if (flashrom_get_wp(programmer, &mode, NULL, NULL, -1)) {
+	if (flashrom_get_wp(programmer, &mode, NULL, NULL, -1) != VB2_SUCCESS) {
 		/* Read WP status error */
 		return -1;
 	}

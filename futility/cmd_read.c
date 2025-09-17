@@ -99,7 +99,7 @@ static int read_flash_regions_to_file(struct updater_config *cfg,
 
 	/* Read only the specified regions */
 	if (flashrom_read_image(&cfg->image_current, regions,
-				rlen, cfg->verbosity + 1)) {
+				rlen, cfg->verbosity + 1) != VB2_SUCCESS) {
 		ret = -1;
 		goto out_free;
 	}

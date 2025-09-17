@@ -24,7 +24,7 @@ static int get_ro_range(struct updater_config *cfg,
 	/* Read fmap */
 	const char *const regions[] = {FMAP_RO_FMAP};
 	if (flashrom_read_image(&cfg->image_current, regions,
-				ARRAY_SIZE(regions), cfg->verbosity + 1))
+				ARRAY_SIZE(regions), cfg->verbosity + 1) != VB2_SUCCESS)
 		return -1;
 
 	FmapAreaHeader *wp_ro = NULL;
@@ -53,7 +53,7 @@ static int print_flash_size(struct updater_config *cfg)
 {
 	uint32_t flash_size;
 	if (flashrom_get_size(cfg->image.programmer, &flash_size,
-			      cfg->verbosity + 1)) {
+			      cfg->verbosity + 1) != VB2_SUCCESS) {
 		ERROR("%s failed.\n", __func__);
 		return -1;
 	}
@@ -69,11 +69,8 @@ static int print_flash_info(struct updater_config *cfg)
 	uint32_t vid;
 	uint32_t pid;
 	uint32_t flash_size;
-	if (flashrom_get_info(cfg->image.programmer,
-				&vendor, &name,
-				&vid, &pid,
-				&flash_size,
-			      cfg->verbosity + 1)) {
+	if (flashrom_get_info(cfg->image.programmer, &vendor, &name, &vid, &pid, &flash_size,
+			      cfg->verbosity + 1) != VB2_SUCCESS) {
 		ERROR("%s failed.\n", __func__);
 		return -1;
 	}
@@ -107,7 +104,7 @@ static int print_wp_status(struct updater_config *cfg, bool ignore_hw)
 	bool wp_mode;
 	uint32_t wp_start, wp_len;
 	if (flashrom_get_wp(cfg->image.programmer, &wp_mode,
-			    &wp_start, &wp_len, cfg->verbosity + 1)) {
+			    &wp_start, &wp_len, cfg->verbosity + 1) != VB2_SUCCESS) {
 		ERROR("Failed to get WP status\n");
 		return -1;
 	}
@@ -152,7 +149,7 @@ static int set_flash_wp(struct updater_config *cfg, bool enable)
 	}
 
 	if (flashrom_set_wp(cfg->image.programmer, enable,
-			    wp_start, wp_len, cfg->verbosity + 1)) {
+			    wp_start, wp_len, cfg->verbosity + 1) != VB2_SUCCESS) {
 		ERROR("Failed to modify WP configuration.\n");
 		return -1;
 	}

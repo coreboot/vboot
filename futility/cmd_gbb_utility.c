@@ -339,7 +339,7 @@ static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
 	 */
 	const char * const regions[] = {FMAP_RO_FMAP, FMAP_RO_GBB};
 	if (flashrom_read_image(&cfg->image_current, regions,
-				ARRAY_SIZE(regions), cfg->verbosity + 1))
+				ARRAY_SIZE(regions), cfg->verbosity + 1) != VB2_SUCCESS)
 		return NULL;
 	uint8_t *ret = cfg->image_current.data;
 	cfg->image_current.data = NULL;

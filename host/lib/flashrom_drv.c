@@ -50,11 +50,11 @@ static char *flashrom_extract_params(const char *str, char **prog, char **params
  * NOTE: When `regions` contains multiple regions, `region_start` and
  * `region_len` will be filled with the data of the first region.
  */
-static int flashrom_read_image_impl(struct firmware_image *image,
-				    const char * const regions[],
-						const size_t regions_len,
-				    unsigned int *region_start,
-				    unsigned int *region_len, int verbosity)
+static vb2_error_t flashrom_read_image_impl(struct firmware_image *image,
+					    const char * const regions[],
+					    const size_t regions_len,
+					    unsigned int *region_start,
+					    unsigned int *region_len, int verbosity)
 {
 	int r = 0;
 	size_t len = 0;
@@ -141,39 +141,35 @@ err_init:
 		free(image->data);
 		free(image->file_name);
 	}
-	return r;
+	return r ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
 
-int flashrom_read_image(struct firmware_image *image,
-			const char * const regions[],
-			const size_t regions_len,
-			int verbosity)
+vb2_error_t flashrom_read_image(struct firmware_image *image, const char * const regions[],
+				const size_t regions_len, int verbosity)
 {
 	unsigned int start, len;
-	return flashrom_read_image_impl(image, regions, regions_len, &start,
-					&len, verbosity);
+	return flashrom_read_image_impl(image, regions, regions_len, &start, &len, verbosity);
 }
 
-int flashrom_read_region(struct firmware_image *image, const char *region,
-			 int verbosity)
+vb2_error_t flashrom_read_region(struct firmware_image *image, const char *region,
+				 int verbosity)
 {
 	const char * const regions[] = {region};
 	unsigned int start, len;
-	int r = flashrom_read_image_impl(image, regions, ARRAY_SIZE(regions),
-					 &start, &len, verbosity);
-	if (r != 0)
+	vb2_error_t r = flashrom_read_image_impl(image, regions, ARRAY_SIZE(regions),
+						 &start, &len, verbosity);
+	if (r != VB2_SUCCESS)
 		return r;
 
 	memmove(image->data, image->data + start, len);
 	image->size = len;
-	return 0;
+	return VB2_SUCCESS;
 }
 
-int flashrom_write_image(const struct firmware_image *image,
-			const char * const regions[],
-			const size_t regions_len,
-			const struct firmware_image *diff_image,
-			int do_verify, int verbosity)
+vb2_error_t flashrom_write_image(const struct firmware_image *image,
+				 const char * const regions[], const size_t regions_len,
+				 const struct firmware_image *diff_image,
+				 int do_verify, int verbosity)
 {
 	int r = 0;
 	size_t len = 0;
@@ -267,11 +263,11 @@ err_probe:
 
 err_init:
 	free(tmp);
-	return r;
+	return r ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
 
-int flashrom_get_wp(const char *prog_with_params, bool *wp_mode,
-		    uint32_t *wp_start, uint32_t *wp_len, int verbosity)
+vb2_error_t flashrom_get_wp(const char *prog_with_params, bool *wp_mode,
+			    uint32_t *wp_start, uint32_t *wp_len, int verbosity)
 {
 	int ret = -1;
 
@@ -327,11 +323,11 @@ err_probe:
 err_init:
 	free(tmp);
 
-	return ret;
+	return ret ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
 
-int flashrom_set_wp(const char *prog_with_params, bool wp_mode,
-		    uint32_t wp_start, uint32_t wp_len, int verbosity)
+vb2_error_t flashrom_set_wp(const char *prog_with_params, bool wp_mode,
+			    uint32_t wp_start, uint32_t wp_len, int verbosity)
 {
 	int ret = 1;
 
@@ -380,14 +376,11 @@ err_probe:
 
 err_init:
 	free(tmp);
-
-	return ret;
+	return ret ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
 
-int flashrom_get_info(const char *prog_with_params,
-		      char **vendor, char **name,
-		      uint32_t *vid, uint32_t *pid,
-		      uint32_t *flash_len, int verbosity)
+vb2_error_t flashrom_get_info(const char *prog_with_params, char **vendor, char **name,
+			      uint32_t *vid, uint32_t *pid, uint32_t *flash_len, int verbosity)
 {
 	int r = 0;
 
@@ -428,11 +421,10 @@ err_probe:
 
 err_init:
 	free(tmp);
-	return r;
+	return r ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
 
-int flashrom_get_size(const char *prog_with_params,
-		      uint32_t *flash_len, int verbosity)
+vb2_error_t flashrom_get_size(const char *prog_with_params, uint32_t *flash_len, int verbosity)
 {
 	int r = 0;
 
@@ -466,5 +458,5 @@ err_probe:
 
 err_init:
 	free(tmp);
-	return r;
+	return r ? VB2_ERROR_FLASHROM : VB2_SUCCESS;
 }
