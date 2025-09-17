@@ -1441,6 +1441,7 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_firmware_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_init_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_gbb_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_host_flashrom_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_host_key_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_inject_kernel_subkey_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_load_kernel_tests
