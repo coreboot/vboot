@@ -1449,6 +1449,7 @@ run2tests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_recovery_reasons_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_rsa_utility_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_firmware_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_fwmp_tests
