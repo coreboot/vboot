@@ -55,9 +55,11 @@ DEFINE_boolean edit_config "${FLAGS_FALSE}" \
   "Edit kernel config in-place." ""
 DEFINE_string partitions "" \
   "List of partitions to examine (default: $DEFAULT_PARTITIONS)" ""
-DEFINE_boolean recovery_key "$FLAGS_FALSE" \
+DEFINE_boolean recovery_key "${FLAGS_FALSE}" \
   "Use recovery key to sign image (to boot from USB)" ""
-DEFINE_boolean force "$FLAGS_FALSE" \
+DEFINE_boolean minios_key "${FLAGS_FALSE}" \
+  "Use minios key to sign image (for MiniOS partitions)" ""
+DEFINE_boolean force "${FLAGS_FALSE}" \
   "Skip validity checks and make the change" "f"
 DEFINE_boolean default_rw_root "${FLAGS_TRUE}" \
   "When --remove_rootfs_verification is set, change root mount option to RW." ""
@@ -543,14 +545,18 @@ main() {
   local num_signed=0
   local num_given=$(echo "$FLAGS_partitions" | wc -w)
   # Check parameters
-  if [ "$FLAGS_recovery_key" = "$FLAGS_TRUE" ]; then
-    KERNEL_KEYBLOCK="$FLAGS_keys/recovery_kernel.keyblock"
-    KERNEL_DATAKEY="$FLAGS_keys/recovery_kernel_data_key.vbprivk"
-    KERNEL_PUBKEY="$FLAGS_keys/recovery_key.vbpubk"
+  if [ "${FLAGS_minios_key}" = "${FLAGS_TRUE}" ]; then
+    KERNEL_KEYBLOCK="${FLAGS_keys}/minios_kernel.keyblock"
+    KERNEL_DATAKEY="${FLAGS_keys}/minios_kernel_data_key.vbprivk"
+    KERNEL_PUBKEY="${FLAGS_keys}/recovery_key.vbpubk"
+  elif [ "${FLAGS_recovery_key}" = "${FLAGS_TRUE}" ]; then
+    KERNEL_KEYBLOCK="${FLAGS_keys}/recovery_kernel.keyblock"
+    KERNEL_DATAKEY="${FLAGS_keys}/recovery_kernel_data_key.vbprivk"
+    KERNEL_PUBKEY="${FLAGS_keys}/recovery_key.vbpubk"
   else
-    KERNEL_KEYBLOCK="$FLAGS_keys/kernel.keyblock"
-    KERNEL_DATAKEY="$FLAGS_keys/kernel_data_key.vbprivk"
-    KERNEL_PUBKEY="$FLAGS_keys/kernel_subkey.vbpubk"
+    KERNEL_KEYBLOCK="${FLAGS_keys}/kernel.keyblock"
+    KERNEL_DATAKEY="${FLAGS_keys}/kernel_data_key.vbprivk"
+    KERNEL_PUBKEY="${FLAGS_keys}/kernel_subkey.vbpubk"
   fi
 
   debug_msg "Prerequisite check"
