@@ -411,7 +411,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	if (rv != VB2_SUCCESS)
 		goto out;
 
-	rv = vb2ex_get_android_bootmode(ctx, disk_handle, gpt, &bootmode);
+	rv = vb2ex_handle_android_misc_partition(ctx, disk_handle, gpt, &bootmode);
 	if (rv != VB2_SUCCESS) {
 		VB2_DEBUG("Unable to get android bootmode\n");
 		goto out;
