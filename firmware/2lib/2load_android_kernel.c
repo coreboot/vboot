@@ -293,7 +293,7 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 
 	/* Save vendor cmdline for booting */
 	vendor_hdr->cmdline[sizeof(vendor_hdr->cmdline) - 1] = '\0';
-	params->vendor_cmdline_buffer = (char *)vendor_hdr->cmdline;
+	params->real_cmdline_ptr = (char *)vendor_hdr->cmdline;
 
 	return VB2_SUCCESS;
 }
@@ -441,14 +441,14 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	/*
 	 * TODO(b/335901799): Add support for marking verifiedbootstate yellow
 	 */
-	int chars = snprintf(params->vboot_cmdline_buffer, params->vboot_cmdline_size,
+	int chars = snprintf(params->bootconfig_cmdline_buffer, params->bootconfig_cmdline_size,
 			     "%s %s=%s %s=%s %s=%s", verify_data->cmdline,
 			     VERIFIED_BOOT_PROPERTY_NAME,
 			     orange ? "orange" : "green",
 			     SLOT_SUFFIX_BOOT_PROPERTY_NAME, slot_suffix,
 			     ANDROID_FORCE_NORMAL_BOOT_PROPERTY_NAME, recovery_boot ? "0" : "1"
 			     );
-	if (chars < 0 || chars >= params->vboot_cmdline_size) {
+	if (chars < 0 || chars >= params->bootconfig_cmdline_size) {
 		VB2_DEBUG("ERROR: Command line doesn't fit provided buffer: %s\n",
 			  verify_data->cmdline);
 		rv = VB2_ERROR_ANDROID_CMDLINE_BUF_TOO_SMALL;
