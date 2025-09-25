@@ -20,7 +20,6 @@ export OUTDIR
 TESTS="
 ${SCRIPT_DIR}/futility/test_create.sh
 ${SCRIPT_DIR}/futility/test_dump_fmap.sh
-${SCRIPT_DIR}/futility/test_flash_util.sh
 ${SCRIPT_DIR}/futility/test_gbb_utility.sh
 ${SCRIPT_DIR}/futility/test_load_fmap.sh
 ${SCRIPT_DIR}/futility/test_main.sh
@@ -32,12 +31,22 @@ ${SCRIPT_DIR}/futility/test_sign_fw_main.sh
 ${SCRIPT_DIR}/futility/test_sign_kernel.sh
 ${SCRIPT_DIR}/futility/test_sign_keyblocks.sh
 ${SCRIPT_DIR}/futility/test_sign_usbpd1.sh
-${SCRIPT_DIR}/futility/test_update.sh
 ${SCRIPT_DIR}/futility/test_file_types.sh
 ${SCRIPT_DIR}/futility/test_gscvd.sh
-${SCRIPT_DIR}/futility/test_read.sh
 ${SCRIPT_DIR}/futility/test_vbutil_output.sh
 "
+
+# If USE_FLASHROM is enabled in the build, add related tests.
+if [ -n "${VBOOT_TEST_USE_FLASHROM:-}" ]; then
+  echo "NOTE: Including flashrom-dependent tests (USE_FLASHROM=1)"
+  TESTS+="
+${SCRIPT_DIR}/futility/test_flash_util.sh
+${SCRIPT_DIR}/futility/test_update.sh
+${SCRIPT_DIR}/futility/test_read.sh
+"
+else
+  echo "NOTE: Skipping flashrom-dependent tests (USE_FLASHROM=0)"
+fi
 
 # Get ready...
 pass=0
