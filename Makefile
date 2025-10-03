@@ -737,6 +737,7 @@ FUTIL_SRCS = \
 	futility/cmd_vbutil_keyblock.c \
 	futility/file_type_bios.c \
 	futility/file_type.c \
+	futility/file_type_ro_chksum.c \
 	futility/file_type_rwsig.c \
 	futility/file_type_usbpd1.c \
 	futility/flash_helpers.c \

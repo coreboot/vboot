@@ -80,3 +80,7 @@ FILE_TYPE(USBPD1,           "usbpd1",        "USB-PD charger image (v1.0)",
 	  R_(ft_recognize_usbpd1),
 	  S_(ft_show_usbpd1),
 	  S_(ft_sign_usbpd1))
+FILE_TYPE(RO_CHKSUM,         "ro_chksum",    "RO device image",
+	  R_(ft_recognize_ro_chksum),
+	  S_(ft_show_ro_chksum),
+	  S_(ft_sign_ro_chksum))

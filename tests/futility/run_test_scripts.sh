@@ -23,6 +23,7 @@ ${SCRIPT_DIR}/futility/test_dump_fmap.sh
 ${SCRIPT_DIR}/futility/test_gbb_utility.sh
 ${SCRIPT_DIR}/futility/test_load_fmap.sh
 ${SCRIPT_DIR}/futility/test_main.sh
+${SCRIPT_DIR}/futility/test_ro_chksum.sh
 ${SCRIPT_DIR}/futility/test_rwsig.sh
 ${SCRIPT_DIR}/futility/test_show_and_verify.sh
 ${SCRIPT_DIR}/futility/test_show_usbpd1.sh
