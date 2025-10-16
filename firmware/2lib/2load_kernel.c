@@ -741,12 +741,8 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 	params->partition_number = gpt.current_kernel + 1;
 	params->disk_handle = disk_info->handle;
 
-	/*
-	 * TODO: GetCurrentKernelUniqueGuid() should take a destination
-	 * size, or the dest should be a struct, so we know it's big
-	 * enough.
-	 */
-	GetCurrentKernelUniqueGuid(&gpt, &params->partition_guid);
+	memcpy(&params->partition_guid, &entry->unique,
+	       sizeof(params->partition_guid));
 
 	VB2_DEBUG("Good partition %d\n", params->partition_number);
 

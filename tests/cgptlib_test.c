@@ -1590,24 +1590,6 @@ static int DuplicateUniqueGuidTest(void)
 	return TEST_OK;
 }
 
-/* Test getting the current kernel GUID */
-static int GetKernelGuidTest(void)
-{
-	GptData *gpt = GetEmptyGptData();
-	GptEntry *e = (GptEntry *)gpt->primary_entries;
-	Guid g;
-
-	BuildTestGptData(gpt);
-	gpt->current_kernel = 0;
-	GetCurrentKernelUniqueGuid(gpt, &g);
-	EXPECT(!memcmp(&g, &e[0].unique, sizeof(Guid)));
-	gpt->current_kernel = 1;
-	GetCurrentKernelUniqueGuid(gpt, &g);
-	EXPECT(!memcmp(&g, &e[1].unique, sizeof(Guid)));
-
-	return TEST_OK;
-}
-
 /* Test getting GPT error text strings */
 static int ErrorTextTest(void)
 {
@@ -1783,7 +1765,6 @@ int main(int argc, char *argv[])
 		{ TEST_CASE(UpdateInvalidKernelTypeTest), },
 		{ TEST_CASE(DuplicateUniqueGuidTest), },
 		{ TEST_CASE(TestCrc32TestVectors), },
-		{ TEST_CASE(GetKernelGuidTest), },
 		{ TEST_CASE(ErrorTextTest), },
 		{ TEST_CASE(CheckHeaderOffDevice), },
 		{ TEST_CASE(GptFindEntryByNameTest), },

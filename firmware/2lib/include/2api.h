@@ -613,7 +613,7 @@ struct vb2_kernel_params {
 	/* Size of bootloader image in bytes. */
 	uint32_t bootloader_size;
 	/* UniquePartitionGuid for boot partition. */
-	uint8_t partition_guid[16];
+	Guid partition_guid;
 	/* Flags with kernel type. */
 	uint32_t flags;
 	/* Ramdisk address */

@@ -22,6 +22,8 @@
 static GptEntry mock_parts[MOCK_PART_COUNT];
 static int mock_part_next;
 
+static const char fake_guid[] = "FakeGuid";
+
 /* Mock data */
 static uint8_t kernel_buffer[80000];
 static int disk_read_to_fail;
@@ -82,6 +84,7 @@ static void ResetMocks(void)
 	memset(mock_parts, 0, sizeof(mock_parts));
 	mock_parts[0].starting_lba = 100;
 	mock_parts[0].ending_lba = 249;  /* 75 KB */
+	memcpy(&mock_parts[0].unique, fake_guid, sizeof(fake_guid));
 	mock_part_next = 0;
 
 	memset(&kernel_packed_key_data, 0, sizeof(kernel_packed_key_data));
@@ -141,13 +144,6 @@ int GptUpdateKernelEntry(GptData *gpt, uint32_t update_type)
 int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 {
 	return GPT_SUCCESS;
-}
-
-void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
-{
-	static const char fake_guid[] = "FakeGuid";
-
-	memcpy(dest, fake_guid, sizeof(fake_guid));
 }
 
 bool IsChromeOS(const GptEntry *e)
@@ -240,7 +236,7 @@ static void load_kernel_tests(void)
 	TEST_EQ(lkp.partition_number, 1, "  part num");
 	TEST_EQ(lkp.bootloader_offset, 0xbeadd008, "  bootloader offset");
 	TEST_EQ(lkp.bootloader_size, 0x1234, "  bootloader size");
-	TEST_STR_EQ((char *)lkp.partition_guid, "FakeGuid", "  guid");
+	TEST_STR_EQ((char *)lkp.partition_guid.u.raw, fake_guid, "  guid");
 	TEST_EQ(gpt_flag_external, 0, "GPT was internal");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  use signature");
 

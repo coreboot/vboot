@@ -251,25 +251,15 @@ int main(int argc, char* argv[])
 		printf("Bootloader offset: %" PRIu64 "\n",
 		       lkp.bootloader_offset);
 		printf("Bootloader size:    %u\n", lkp.bootloader_size);
+		Guid *guid = &lkp.partition_guid;
 		printf("Partition guid:	    "
-		       "%02x%02x%02x%02x-%02x%02x-%02x%02x"
-		       "-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
-		       lkp.partition_guid[3],
-		       lkp.partition_guid[2],
-		       lkp.partition_guid[1],
-		       lkp.partition_guid[0],
-		       lkp.partition_guid[5],
-		       lkp.partition_guid[4],
-		       lkp.partition_guid[7],
-		       lkp.partition_guid[6],
-		       lkp.partition_guid[8],
-		       lkp.partition_guid[9],
-		       lkp.partition_guid[10],
-		       lkp.partition_guid[11],
-		       lkp.partition_guid[12],
-		       lkp.partition_guid[13],
-		       lkp.partition_guid[14],
-		       lkp.partition_guid[15]);
+		       "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x\n",
+		       le32toh(guid->u.Uuid.time_low), le16toh(guid->u.Uuid.time_mid),
+		       le16toh(guid->u.Uuid.time_high_and_version),
+		       guid->u.Uuid.clock_seq_high_and_reserved, guid->u.Uuid.clock_seq_low,
+		       guid->u.Uuid.node[0], guid->u.Uuid.node[1], guid->u.Uuid.node[2],
+		       guid->u.Uuid.node[3], guid->u.Uuid.node[4],
+		       guid->u.Uuid.node[5]);
 	}
 
 	fclose(image_file);

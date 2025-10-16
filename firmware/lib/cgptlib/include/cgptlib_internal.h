@@ -162,11 +162,6 @@ int GptValidityCheck(GptData *gpt);
 void GptRepair(GptData *gpt);
 
 /**
- * Copy the current kernel partition's UniquePartitionGuid to the dest.
- */
-void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest);
-
-/**
  * Return a pointer to text describing the passed in error.
  */
 const char *GptErrorText(int error_code);

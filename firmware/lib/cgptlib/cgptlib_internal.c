@@ -476,14 +476,6 @@ void SetEntryErrorCounter(GptEntry *e, int error_counter)
             CGPT_ATTRIBUTE_ERROR_COUNTER_MASK;
 }
 
-test_mockable
-void GetCurrentKernelUniqueGuid(GptData *gpt, void *dest)
-{
-	GptEntry *entries = (GptEntry *)gpt->primary_entries;
-	GptEntry *e = entries + gpt->current_kernel;
-	memcpy(dest, &e->unique, sizeof(Guid));
-}
-
 void GptModified(GptData *gpt) {
 	GptHeader *header = (GptHeader *)gpt->primary_header;
 
