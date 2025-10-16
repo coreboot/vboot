@@ -316,10 +316,12 @@ resign_ssd_kernel() {
     if [ "${FLAGS_enable_kdump}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Enabling kdump"
       kernel_config="$(insert_parameter "${kernel_config}" "crashkernel=256M")"
+      kernel_config="$(insert_parameter "${kernel_config}" "crash_kexec_post_notifiers")"
       debug_msg "New kernel config: ${kernel_config}"
     elif [ "${FLAGS_disable_kdump}" = "${FLAGS_TRUE}" ]; then
       debug_msg "Disabling kdump"
       kernel_config="$(remove_parameter "${kernel_config}" "crashkernel")"
+      kernel_config="$(remove_parameter "${kernel_config}" "crash_kexec_post_notifiers")"
       debug_msg "New kernel config: ${kernel_config}"
     fi
 
