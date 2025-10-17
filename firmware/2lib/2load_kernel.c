@@ -654,9 +654,6 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 	uint32_t kernel_version;
 	vb2_error_t rv = VB2_ERROR_LK_NO_KERNEL_FOUND;
 
-	/* Clear output params */
-	params->partition_number = 0;
-
 	/* Read GPT data */
 	GptData gpt;
 	gpt.sector_bytes = (uint32_t)disk_info->bytes_per_lba;
@@ -734,17 +731,12 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 	sd->kernel_version = kernel_version;
 	VB2_DEBUG("Combined version: 0x%x\n", sd->kernel_version);
 
-	/*
-	 * TODO: GPT partitions start at 1, but cgptlib starts them at
-	 * 0.  Adjust here, until cgptlib is fixed.
-	 */
-	params->partition_number = gpt.current_kernel + 1;
 	params->disk_handle = disk_info->handle;
 
 	memcpy(&params->partition_guid, &entry->unique,
 	       sizeof(params->partition_guid));
 
-	VB2_DEBUG("Good partition %d\n", params->partition_number);
+	VB2_DEBUG("Good partition %d\n", gpt.current_kernel + 1);
 
 	VB2_ASSERT(entry);
 

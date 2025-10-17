@@ -606,8 +606,6 @@ struct vb2_kernel_params {
 	 */
 	/* Handle of disk containing loaded kernel. */
 	vb2ex_disk_handle_t disk_handle;
-	/* Partition number on disk to boot (1...M). */
-	uint32_t partition_number;
 	/* Offset of bootloader image from `kernel_buffer` address. */
 	uint64_t bootloader_offset;
 	/* Size of bootloader image in bytes. */

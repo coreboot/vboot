@@ -247,7 +247,6 @@ int main(int argc, char* argv[])
 	printf("vb2api_load_kernel() returned %d\n", rv);
 
 	if (VB2_SUCCESS == rv) {
-		printf("Partition number:   %u\n", lkp.partition_number);
 		printf("Bootloader offset: %" PRIu64 "\n",
 		       lkp.bootloader_offset);
 		printf("Bootloader size:    %u\n", lkp.bootloader_size);
