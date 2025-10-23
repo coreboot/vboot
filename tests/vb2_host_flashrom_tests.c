@@ -41,7 +41,7 @@ static uint32_t captured_rom_size;
 /* Mocked mkstemp for tests. */
 int mkstemp(char *template_name)
 {
-	strncpy(template_name, MOCK_TMPFILE_NAME, strlen(template_name));
+	snprintf(template_name, strlen(template_name), "%s", MOCK_TMPFILE_NAME);
 	return open(template_name, O_RDWR | O_CREAT | O_TRUNC, 0666);
 }
 
