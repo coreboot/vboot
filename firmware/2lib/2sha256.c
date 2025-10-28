@@ -281,7 +281,7 @@ void vb2_sha256_finalize(struct vb2_sha256_context *ctx, uint8_t *digest,
 {
 	unsigned int block_nb;
 	unsigned int pm_size;
-	unsigned int size_b;
+	uint64_t size_b;
 #ifndef UNROLL_LOOPS
 	int i;
 #endif
@@ -294,7 +294,7 @@ void vb2_sha256_finalize(struct vb2_sha256_context *ctx, uint8_t *digest,
 
 	memset(ctx->block + ctx->size, 0, pm_size - ctx->size);
 	ctx->block[ctx->size] = 0x80;
-	UNPACK32(size_b, ctx->block + pm_size - 4);
+	UNPACK64(size_b, ctx->block + pm_size - 8);
 
 	vb2_sha256_transform(ctx, ctx->block, block_nb);
 

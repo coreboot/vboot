@@ -33,9 +33,33 @@ extern struct vb2_sha256_context vb2_sha_ctx;
 #define PACK32(str, x)						\
 	{							\
 		*(x) =   ((uint32_t) *((str) + 3)      )	\
-			| ((uint32_t) *((str) + 2) <<  8)       \
-			| ((uint32_t) *((str) + 1) << 16)       \
-			| ((uint32_t) *((str) + 0) << 24);      \
+			| ((uint32_t) *((str) + 2) <<  8)	\
+			| ((uint32_t) *((str) + 1) << 16)	\
+			| ((uint32_t) *((str) + 0) << 24);	\
+	}
+
+#define UNPACK64(x, str)					\
+	{							\
+		*((str) + 7) = (uint8_t) x;			\
+		*((str) + 6) = (uint8_t) ((uint64_t)x >> 8);	\
+		*((str) + 5) = (uint8_t) ((uint64_t)x >> 16);	\
+		*((str) + 4) = (uint8_t) ((uint64_t)x >> 24);	\
+		*((str) + 3) = (uint8_t) ((uint64_t)x >> 32);	\
+		*((str) + 2) = (uint8_t) ((uint64_t)x >> 40);	\
+		*((str) + 1) = (uint8_t) ((uint64_t)x >> 48);	\
+		*((str) + 0) = (uint8_t) ((uint64_t)x >> 56);	\
+	}
+
+#define PACK64(str, x)						\
+	{							\
+		*(x) =   ((uint64_t) *((str) + 7)      )	\
+			| ((uint64_t) *((str) + 6) <<  8)	\
+			| ((uint64_t) *((str) + 5) << 16)	\
+			| ((uint64_t) *((str) + 4) << 24)	\
+			| ((uint64_t) *((str) + 3) << 32)	\
+			| ((uint64_t) *((str) + 2) << 40)	\
+			| ((uint64_t) *((str) + 1) << 48)	\
+			| ((uint64_t) *((str) + 0) << 56);	\
 	}
 
 void vb2_sha256_transform_hwcrypto(const uint8_t *message,

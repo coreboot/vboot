@@ -59,7 +59,7 @@ struct vb2_sha1_context {
 
 struct vb2_sha256_context {
 	uint32_t h[8];
-	uint32_t total_size;
+	uint64_t total_size;
 	uint32_t size;
 	uint8_t block[2 * VB2_SHA256_BLOCK_SIZE];
 };
@@ -70,7 +70,7 @@ struct vb2_sha256_context {
 
 struct vb2_sha512_context {
 	uint64_t h[8];
-	uint32_t total_size;
+	uint64_t total_size;
 	uint32_t size;
 	uint8_t block[2 * VB2_SHA512_BLOCK_SIZE];
 };

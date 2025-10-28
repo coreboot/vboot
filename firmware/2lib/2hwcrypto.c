@@ -73,7 +73,7 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 {
 	unsigned int block_nb;
 	unsigned int pm_size;
-	unsigned int size_b;
+	uint64_t size_b;
 	int i;
 
 	if (digest_size != VB2_SHA256_DIGEST_SIZE) {
@@ -90,7 +90,7 @@ vb2_error_t vb2ex_hwcrypto_digest_finalize(uint8_t *digest,
 	memset(vb2_sha_ctx.block + vb2_sha_ctx.size, 0,
 	       pm_size - vb2_sha_ctx.size);
 	vb2_sha_ctx.block[vb2_sha_ctx.size] = SHA256_PAD_BEGIN;
-	UNPACK32(size_b, vb2_sha_ctx.block + pm_size - 4);
+	UNPACK64(size_b, vb2_sha_ctx.block + pm_size - 8);
 
 	vb2_sha256_transform_hwcrypto(vb2_sha_ctx.block, block_nb);
 

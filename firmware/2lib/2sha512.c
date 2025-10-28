@@ -1,3 +1,8 @@
+/* Copyright 2025 The ChromiumOS Authors
+ * Use of this source code is governed by a BSD-style license that can be
+ * found in the LICENSE file.
+ */
+
 /* SHA-256 and SHA-512 implementation based on code by Oliver Gay
  * <olivier.gay@a3.epfl.ch> under a BSD-style license. See below.
  */
@@ -37,6 +42,7 @@
 
 #include "2common.h"
 #include "2sha.h"
+#include "2sha_private.h"
 #include "2sysincludes.h"
 
 #define SHFR(x, n)    (x >> n)
@@ -49,38 +55,6 @@
 #define SHA512_F2(x) (ROTR(x, 14) ^ ROTR(x, 18) ^ ROTR(x, 41))
 #define SHA512_F3(x) (ROTR(x,  1) ^ ROTR(x,  8) ^ SHFR(x,  7))
 #define SHA512_F4(x) (ROTR(x, 19) ^ ROTR(x, 61) ^ SHFR(x,  6))
-
-#define UNPACK32(x, str)				\
-	{						\
-		*((str) + 3) = (uint8_t) ((x)      );	\
-		*((str) + 2) = (uint8_t) ((x) >>  8);	\
-		*((str) + 1) = (uint8_t) ((x) >> 16);	\
-		*((str) + 0) = (uint8_t) ((x) >> 24);	\
-	}
-
-#define UNPACK64(x, str)					\
-	{							\
-		*((str) + 7) = (uint8_t) x;			\
-		*((str) + 6) = (uint8_t) ((uint64_t)x >> 8);	\
-		*((str) + 5) = (uint8_t) ((uint64_t)x >> 16);	\
-		*((str) + 4) = (uint8_t) ((uint64_t)x >> 24);	\
-		*((str) + 3) = (uint8_t) ((uint64_t)x >> 32);	\
-		*((str) + 2) = (uint8_t) ((uint64_t)x >> 40);	\
-		*((str) + 1) = (uint8_t) ((uint64_t)x >> 48);	\
-		*((str) + 0) = (uint8_t) ((uint64_t)x >> 56);	\
-	}
-
-#define PACK64(str, x)						\
-	{							\
-		*(x) =   ((uint64_t) *((str) + 7)      )	\
-			| ((uint64_t) *((str) + 6) <<  8)       \
-			| ((uint64_t) *((str) + 5) << 16)       \
-			| ((uint64_t) *((str) + 4) << 24)       \
-			| ((uint64_t) *((str) + 3) << 32)       \
-			| ((uint64_t) *((str) + 2) << 40)       \
-			| ((uint64_t) *((str) + 1) << 48)       \
-			| ((uint64_t) *((str) + 0) << 56);      \
-	}
 
 /* Macros used for loops unrolling */
 
@@ -323,7 +297,7 @@ void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest,
 {
 	unsigned int block_nb;
 	unsigned int pm_size;
-	unsigned int size_b;
+	uint64_t size_b;
 
 #ifndef UNROLL_LOOPS_SHA512
 	int i;
@@ -337,7 +311,7 @@ void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest,
 
 	memset(ctx->block + ctx->size, 0, pm_size - ctx->size);
 	ctx->block[ctx->size] = 0x80;
-	UNPACK32(size_b, ctx->block + pm_size - 4);
+	UNPACK64(size_b, ctx->block + pm_size - 8);
 
 	vb2_sha512_transform(ctx, ctx->block, block_nb);
 
