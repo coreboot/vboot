@@ -96,12 +96,12 @@ run_test()
     "(root=${root_algo}, fw=${fw_algo}, kernel=${kern_algo})"
 
   # Verify the firmware using vboot2 checks
-  "${TEST_DIR}/vb20_verify_fw" gbb.test vblock.test body.test
-  if [ -e "${TEST_DIR}/vb20_hwcrypto_verify_fw" ]
+  "${TEST_DIR}/vb2_verify_fw" gbb.test vblock.test body.test
+  if [ -e "${TEST_DIR}/vb2_hwcrypto_verify_fw" ]
   then
-    echo "Verifying test firmware using vb20_hwcrypto_verify_fw" \
+    echo "Verifying test firmware using vb2_hwcrypto_verify_fw" \
       "(root=${root_algo}, fw=${fw_algo}, kernel=${kern_algo})"
-    "${TEST_DIR}/vb20_hwcrypto_verify_fw" gbb.test vblock.test body.test
+    "${TEST_DIR}/vb2_hwcrypto_verify_fw" gbb.test vblock.test body.test
   fi
 
   happy 'vb2_verify_fw succeeded'

@@ -142,26 +142,6 @@ vb2_error_t vb2_load_fw_keyblock(struct vb2_context *ctx);
 vb2_error_t vb2_load_fw_preamble(struct vb2_context *ctx);
 
 /**
- * Verify the kernel keyblock using the previously-loaded kernel key.
- *
- * After this call, the data key is stored in the work buffer.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2_load_kernel_keyblock(struct vb2_context *ctx);
-
-/**
- * Verify the kernel preamble using the data subkey from the keyblock.
- *
- * After this call, the preamble is stored in the work buffer.
- *
- * @param ctx		Vboot context
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2_load_kernel_preamble(struct vb2_context *ctx);
-
-/**
  * Fill VB2_CONTEXT_DEV_BOOT_ALLOWED, VB2_CONTEXT_DEV_BOOT_EXTERNAL_ALLOWED and
  * VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED flags in ctx->flags.
  *

@@ -135,8 +135,6 @@ filegroup {
         "firmware/lib/cgptlib/cgptlib_internal.c",
         "firmware/lib/cgptlib/crc32.c",
         "firmware/lib/gpt_misc.c",
-        "firmware/lib20/api_kernel.c",
-        "firmware/lib20/kernel.c",
 
         // FIRMWARE_STUB
         "firmware/stub/tpm_lite_stub.c",

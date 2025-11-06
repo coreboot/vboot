@@ -748,47 +748,6 @@ vb2_error_t vb2api_load_minios_kernel(struct vb2_context *ctx,
 				      uint32_t minios_flags);
 
 /**
- * Load the verified boot block (vblock) for a kernel.
- *
- * This function may be called multiple times, to load and verify the
- * vblocks from multiple kernel partitions.
- *
- * @param ctx		Vboot context
- * @param stream	Kernel stream
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2api_load_kernel_vblock(struct vb2_context *ctx);
-
-/**
- * Get the size and offset of the kernel data for the most recent vblock.
- *
- * Valid after a successful call to vb2api_load_kernel_vblock().
- *
- * @param ctx		Vboot context
- * @param offset_ptr	Destination for offset in bytes of kernel data as
- *			reported by vblock.
- * @param size_ptr      Destination for size of kernel data in bytes.
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2api_get_kernel_size(struct vb2_context *ctx,
-				   uint32_t *offset_ptr, uint32_t *size_ptr);
-
-/**
- * Verify kernel data using the previously loaded kernel vblock.
- *
- * Valid after a successful call to vb2api_load_kernel_vblock().  This allows
- * the caller to load or map the kernel data, as appropriate, and pass the
- * pointer to the kernel data into vboot.
- *
- * @param ctx		Vboot context
- * @param buf		Pointer to kernel data
- * @param size		Size of kernel data in bytes
- * @return VB2_SUCCESS, or error code on error.
- */
-vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
-				      uint32_t size);
-
-/**
  * Clean up after kernel verification.
  *
  * Call this after successfully loading a vblock and verifying kernel data,

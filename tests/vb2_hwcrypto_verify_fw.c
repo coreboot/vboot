@@ -1,0 +1,1 @@
+vb2_verify_fw.c

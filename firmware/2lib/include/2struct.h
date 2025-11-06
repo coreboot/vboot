@@ -380,8 +380,8 @@ struct vb2_signature {
  *
  * This should be followed by:
  *   1) The data_key key data, pointed to by data_key.key_offset.
- *   2) The checksum data for (vb2_keyblock + data_key data), pointed to
- *      by keyblock_checksum.sig_offset.
+ *   2) The SHA-512 hash for (vb2_keyblock + data_key data), pointed to
+ *      by keyblock_hash.sig_offset.
  *   3) The signature data for (vb2_keyblock + data_key data), pointed to
  *      by keyblock_signature.sig_offset.
  */

@@ -397,9 +397,7 @@ FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/gpt_misc.c \
-	firmware/lib20/api_kernel.c \
-	firmware/lib20/kernel.c
+	firmware/lib/gpt_misc.c
 
 # TPM lightweight command library
 ifeq ($(filter-out 0,${TPM2_MODE}),)
@@ -844,11 +842,13 @@ TEST2X_NAMES = \
 	tests/vb2_host_nvdata_flashrom_tests \
 	tests/vb2_inject_kernel_subkey_tests \
 	tests/vb2_kernel_tests \
+	tests/vb2_keyblock_hash_tests \
 	tests/vb2_load_kernel_tests \
 	tests/vb2_load_kernel2_tests \
 	tests/vb2_misc_tests \
 	tests/vb2_misc2_tests \
 	tests/vb2_nvstorage_tests \
+	tests/vb2_rsa_padding_tests \
 	tests/vb2_rsa_utility_tests \
 	tests/vb2_recovery_reasons_tests \
 	tests/vb2_secdata_firmware_tests \
@@ -856,18 +856,13 @@ TEST2X_NAMES = \
 	tests/vb2_secdata_kernel_tests \
 	tests/vb2_sha_api_tests \
 	tests/vb2_sha_tests \
+	tests/vb2_verify_fw \
 	tests/hmac_test
 
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
 TEST2X_NAMES += \
 	tests/vb2_host_flashrom_tests
 endif
-
-TEST20_NAMES = \
-	tests/vb20_api_kernel_tests \
-	tests/vb20_kernel_tests \
-	tests/vb20_rsa_padding_tests \
-	tests/vb20_verify_fw
 
 TEST21_NAMES = \
 	tests/vb21_host_common2_tests \
@@ -876,7 +871,7 @@ TEST21_NAMES = \
 	tests/vb21_host_misc_tests \
 	tests/vb21_host_sig_tests
 
-TEST_NAMES += ${TEST2X_NAMES} ${TEST20_NAMES} ${TEST21_NAMES}
+TEST_NAMES += ${TEST2X_NAMES} ${TEST21_NAMES}
 
 # Tests which should be run on dut
 ifeq (${ARCH}, x86_64)
@@ -884,13 +879,13 @@ DUT_TEST_NAMES += tests/vb2_sha256_x86_tests
 endif
 
 HWCRYPTO_RSA_TESTS = \
-	tests/vb20_hwcrypto_rsa_padding_tests \
-	tests/vb20_hwcrypto_verify_fw
+	tests/vb2_hwcrypto_rsa_padding_tests \
+	tests/vb2_hwcrypto_verify_fw
 
 TEST_NAMES += ${DUT_TEST_NAMES}
 
 ifeq (${ENABLE_HWCRYPTO_RSA_TESTS},1)
-TEST20_NAMES += ${HWCRYPTO_RSA_TESTS}
+TEST2X_NAMES += ${HWCRYPTO_RSA_TESTS}
 endif
 
 # And a few more...
@@ -920,7 +915,6 @@ TEST_OBJS += $(addsuffix .o,${TEST_BINS})
 
 TEST_FUTIL_BINS = $(addprefix ${BUILD}/,${TEST_FUTIL_NAMES})
 TEST2X_BINS = $(addprefix ${BUILD}/,${TEST2X_NAMES})
-TEST20_BINS = $(addprefix ${BUILD}/,${TEST20_NAMES})
 TEST21_BINS = $(addprefix ${BUILD}/,${TEST21_NAMES})
 
 # Directory containing test keys
@@ -1239,10 +1233,6 @@ ${TEST_FUTIL_BINS}: LDLIBS += ${FUTIL_LIBS}
 ${TEST2X_BINS}: ${FWLIB}
 ${TEST2X_BINS}: LIBS += ${FWLIB}
 
-${TEST20_BINS}: ${FWLIB}
-${TEST20_BINS}: LIBS += ${FWLIB}
-${TEST20_BINS}: LDLIBS += ${CRYPTO_LIBS}
-
 ${TESTLIB}: ${TESTLIB_OBJS}
 	@${PRINTF} "    RM            $(subst ${BUILD}/,,$@)\n"
 	${Q}rm -f $@
@@ -1456,6 +1446,7 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_load_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_load_kernel2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_kernel_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb2_keyblock_hash_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_misc2_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_nvstorage_tests
@@ -1466,8 +1457,6 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
-	${RUNTEST} ${BUILD_RUN}/tests/vb20_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_key_tests ${TEST_KEYS} ${BUILD_RUN}
@@ -1543,11 +1532,9 @@ TEST_DEPS += ${TEST_OBJS:%.o=%.o.d}
 # paths inside and outside the chroot are different.
 SRCDIRPAT=$(subst /,\/,${SRCDIR}/)
 
-# Note: vboot 2.0 is deprecated, so don't index those files
 ${BUILD}/cscope.files: all install_for_test
 	${Q}rm -f $@
 	${Q}cat ${ALL_DEPS} | tr -d ':\\' | tr ' ' '\012' | \
-		grep -v /lib20/ | \
 		sed -e "s/${SRCDIRPAT}//" | \
 		egrep '\.[chS]$$' | sort | uniq > $@
 
