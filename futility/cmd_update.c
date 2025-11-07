@@ -26,6 +26,8 @@ enum {
 	OPT_MANIFEST,
 	OPT_PARSEABLE_MANIFEST,
 	OPT_MODEL,
+	OPT_FRID,
+	OPT_SKU_ID,
 	OPT_OUTPUT_DIR,
 	OPT_QUIRKS,
 	OPT_QUIRKS_LIST,
@@ -63,6 +65,8 @@ static struct option const long_opts[] = {
 	{"manifest", 0, NULL, OPT_MANIFEST},
 	{"parseable-manifest", 0, NULL, OPT_PARSEABLE_MANIFEST},
 	{"model", 1, NULL, OPT_MODEL},
+	{"frid", 1, NULL, OPT_FRID},
+	{"sku-id", 1, NULL, OPT_SKU_ID},
 	{"output_dir", 1, NULL, OPT_OUTPUT_DIR},
 	{"repack", 1, NULL, OPT_REPACK},
 	{"signature_id", 1, NULL, OPT_SIGNATURE},
@@ -107,6 +111,11 @@ static void print_help(int argc, char *argv[])
 		"    --model=MODEL   \tSpecify or override the model name in the\n"
 		"                    \tarchive. This is useful for flashing over\n"
 		"                    \tservo, where crosid is not available.\n"
+		"    --frid=FRID     \tSpecify FRID to match in identity.csv\n"
+		"    --sku-id=SKU_ID \tSpecify SKU ID to match in identity.csv\n"
+		"                    \tSpecifying both --frid and --sku-id is\n"
+		"                    \tsufficient to decide the model name\n"
+		"                    \tfrom identity.csv\n"
 		"    --unpack=DIR    \tExtracts archive to DIR\n"
 		"    --fast          \tReduce read cycles and do not verify\n"
 		"    --quirks=LIST   \tSpecify the quirks to apply\n"
@@ -236,6 +245,18 @@ static int do_update(int argc, char *argv[])
 			      optarg);
 			sig = optarg;
 			args.model = optarg;
+			break;
+		case OPT_FRID:
+			args.frid = optarg;
+			break;
+		case OPT_SKU_ID:
+			args.sku_id = strtoul(optarg, &endptr, 0);
+			if (*endptr) {
+				ERROR("Invalid --sku-id: %s\n", optarg);
+				errorcnt++;
+			} else {
+				args.override_sku_id = true;
+			}
 			break;
 		case OPT_DETECT_MODEL_ONLY:
 			args.detect_model_only = true;

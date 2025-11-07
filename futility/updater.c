@@ -1393,7 +1393,7 @@ static int updater_setup_archive(
 	if (cfg->dut_is_remote)
 		model = manifest_detect_model_from_frid(cfg, manifest);
 	else
-		model = manifest_find_model(cfg, manifest, arg->model);
+		model = manifest_find_model(cfg, manifest, arg->model, arg->frid);
 
 	if (!model)
 		return ++errorcnt;
@@ -1749,6 +1749,8 @@ int updater_setup_config(struct updater_config *cfg,
 		override_dut_property(DUT_PROP_WP_HW, cfg, 0);
 		override_dut_property(DUT_PROP_WP_SW_AP, cfg, 0);
 	}
+	if (arg->override_sku_id)
+		override_dut_property(DUT_PROP_SKU_ID, cfg, arg->sku_id);
 
 	/* Process the manifest. */
 	if (arg->do_manifest) {

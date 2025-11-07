@@ -593,7 +593,7 @@ const struct model_config *quirk_override_custom_label(
 			const char * const dopefish = "phaser360-dopefish";
 			WARN("A Phaser360 with Dopefish rootkey - "
 			     "override custom label to '%s'.\n", dopefish);
-			model = manifest_find_model(cfg, manifest, dopefish);
+			model = manifest_find_model(cfg, manifest, dopefish, NULL);
 			if (model)
 				INFO("Model changed to '%s'.\n", model->name);
 			else

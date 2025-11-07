@@ -81,6 +81,14 @@ patch_file() {
     conv=notrunc
 }
 
+erase_file() {
+  local file="$1"
+  local size
+  size="$(stat -c %s "${file}")"
+  # Write 0xff (\377) bytes.
+  head -c "${size}" /dev/zero | LC_ALL=C tr '\000' '\377' > "${file}"
+}
+
 # PEPPY and LINK have different platform element ("Google_Link" and
 # "Google_Peppy") in firmware ID so we want to hack them by changing
 # "Google_" to "Google.".
@@ -574,9 +582,11 @@ cp -f "${TMP_TO}/VBLOCK_B" "${A}/keyset/vblock_B.customtip-cl"
 cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
 cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
 cp -f "${VOXEL_BIOS}" "${FROM_IMAGE}.av"
+cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap.erased"
 patch_file "${FROM_IMAGE}.ap" FW_MAIN_A 0 "corrupted"
 patch_file "${FROM_IMAGE}.al" FW_MAIN_A 0 "corrupted"
 patch_file "${FROM_IMAGE}.av" FW_MAIN_A 0 "corrupted"
+erase_file "${FROM_IMAGE}.ap.erased"
 test_update "Full update (--archive, model=link)" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=link
@@ -590,12 +600,25 @@ test_update "Full update (--archive, model=unknown)" \
 # Test archives with identity.csv
 cp -f "${IDENTITY_CSV}" "${A}/"
 LINK_SKU_ID=0x1000
+PEPPY_SKU_ID=0x1001
 test_update "Full update (--archive, identity.csv with SKU ${LINK_SKU_ID})" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
   -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
 test_update "Full update (--archive, identity.csv with wrong SKU)" \
   "${FROM_IMAGE}.ap" "!Failed to get device identity from identity.csv" \
   -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
+test_update "Full update (--archive, identity.csv with --sku-id=PEPPY_SKU_ID)" \
+  "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}" \
+  --sku-id "${PEPPY_SKU_ID}"
+
+# Flash over a completely erased system flash.
+# The FRID matching is case-insensitive, so passing "google_peppy" is fine.
+# `--force` is required to ignore the system firmware parsing error.
+test_update "Full update (--archive, identity.csv with --frid/--sku-id)" \
+  "${FROM_IMAGE}.ap.erased" "${PEPPY_BIOS}" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}" \
+  --frid "google_peppy" --sku-id "${PEPPY_SKU_ID}" --force
 
 test_update "Full update (--archive, detect-model)" \
   "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \

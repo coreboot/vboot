@@ -113,6 +113,9 @@ struct updater_config_arguments {
 	char *archive, *quirks, *mode;
 	const char *programmer, *write_protection;
 	char *model;
+	char *frid; /* FRID without version, e.g. "Google_Hylia". */
+	bool override_sku_id;
+	uint32_t sku_id;
 	char *emulation, *sys_props;
 	char *output_dir;
 	char *repack, *unpack;
@@ -364,7 +367,8 @@ int patch_image_by_model(
  */
 const struct model_config *manifest_find_model(struct updater_config *cfg,
 					       const struct manifest *manifest,
-					       const char *model_name);
+					       const char *model_name,
+					       const char *frid);
 
 /*
  * Finds the first existing model_config from manifest that matches current

@@ -455,8 +455,15 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	return 0;
 }
 
+/*
+ * Gets manifest key from identity file.
+ * The `model_to_match` argument, if specified, is used to match the FRID model
+ * name in identity.csv. If not specified, the FRID model name will be read from
+ * the system flash.
+ */
 static char *get_manifest_key_from_identity(struct updater_config *cfg,
-					    const struct manifest *manifest)
+					    const struct manifest *manifest,
+					    const char *model_to_match)
 {
 	char *system_frid = NULL;
 	char *system_model = NULL;
@@ -474,15 +481,18 @@ static char *get_manifest_key_from_identity(struct updater_config *cfg,
 		return NULL;
 
 	/* Load system identities. */
-	system_frid = load_system_frid(cfg);
-	if (!system_frid) {
-		ERROR("Failed loading system FRID\n");
-		goto exit;
-	}
-	system_model = get_model_from_frid(system_frid);
-	if (!system_model) {
-		ERROR("Failed getting model name from FRID: %s\n", system_frid);
-		goto exit;
+	if (!model_to_match) {
+		system_frid = load_system_frid(cfg);
+		if (!system_frid) {
+			ERROR("Failed loading system FRID\n");
+			goto exit;
+		}
+		system_model = get_model_from_frid(system_frid);
+		if (!system_model) {
+			ERROR("Failed getting model name from FRID: %s\n", system_frid);
+			goto exit;
+		}
+		model_to_match = system_model;
 	}
 	prop = dut_get_property(DUT_PROP_SKU_ID, cfg);
 	if (prop < 0) {
@@ -532,8 +542,8 @@ static char *get_manifest_key_from_identity(struct updater_config *cfg,
 		}
 
 		VB2_DEBUG("Comparing model '%s' vs '%s'; SKU ID %#x vs %#x\n",
-			  system_model, model, system_sku_id, sku_id);
-		if (strcasecmp(system_model, model) == 0 &&
+			  model_to_match, model, system_sku_id, sku_id);
+		if (strcasecmp(model_to_match, model) == 0 &&
 		    system_sku_id == sku_id)
 			result_manifest_key = strdup(manifest_key);
 
@@ -588,7 +598,8 @@ static char *get_manifest_key_from_crosid(struct updater_config *cfg,
  */
 const struct model_config *manifest_find_model(struct updater_config *cfg,
 					       const struct manifest *manifest,
-					       const char *model_name)
+					       const char *model_name,
+					       const char *frid)
 {
 	char *manifest_key = NULL;
 	const struct model_config *model = NULL;
@@ -603,7 +614,7 @@ const struct model_config *manifest_find_model(struct updater_config *cfg,
 		return &manifest->models[0];
 
 	if (!model_name) {
-		manifest_key = get_manifest_key_from_identity(cfg, manifest);
+		manifest_key = get_manifest_key_from_identity(cfg, manifest, frid);
 		if (!manifest_key)
 			manifest_key = get_manifest_key_from_crosid(cfg, manifest);
 		if (!manifest_key) {
@@ -764,7 +775,7 @@ const struct model_config *manifest_find_custom_label_model(
 	free(tag);
 
 	INFO("Find custom label model info using '%s'...\n", name);
-	model = manifest_find_model(cfg, manifest, name);
+	model = manifest_find_model(cfg, manifest, name, NULL);
 
 	if (model) {
 		INFO("Applied custom label model: %s\n", name);
