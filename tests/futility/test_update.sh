@@ -612,28 +612,28 @@ test_update "Full update (--archive, identity.csv with --sku-id=PEPPY_SKU_ID)" \
   -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}" \
   --sku-id "${PEPPY_SKU_ID}"
 
-# Flash over a completely erased system flash.
+# Remotely flash over a completely erased system flash.
 # The FRID matching is case-insensitive, so passing "google_peppy" is fine.
+# `--programmer` is for simulating remote flashing (via servo).
 # `--force` is required to ignore the system firmware parsing error.
-test_update "Full update (--archive, identity.csv with --frid/--sku-id)" \
+test_update "Full update (--archive, remote, identity.csv with --frid/--sku-id)" \
   "${FROM_IMAGE}.ap.erased" "${PEPPY_BIOS}" \
-  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
+  --programmer raiden_debug_spi:target=AP \
   --frid "google_peppy" --sku-id "${PEPPY_SKU_ID}" --force
 
-test_update "Full update (--archive, detect-model)" \
-  "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
-  --programmer raiden_debug_spi:target=AP
-test_update "Full update (--archive, detect-model, unsupported FRID)" \
-  "${FROM_IMAGE}.av" "!Unsupported model: 'Google_Voxel'" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
-  --programmer raiden_debug_spi:target=AP
-
-echo "*** Test Item: Detect model (--archive, --detect-model-only)"
+# Test --detect-model-only on a remote DUT.
+echo "*** Test Item: Detect model (--archive, remote, --detect-model-only)"
 "${FUTILITY}" update -a "${A}" \
   --emulate "${FROM_IMAGE}.ap" --programmer raiden_debug_spi:target=AP \
   --detect-model-only >"${TMP}/model.out"
 cmp "${TMP}/model.out" <(echo peppy)
+
+test_update "Detect model (--archive, remote, --detect-model-only, unsupported FRID)" \
+  "${FROM_IMAGE}.av" "!Unsupported model: 'Google_Voxel'" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
+  --programmer raiden_debug_spi:target=AP \
+  --detect-model-only
 
 test_update "Full update (--archive, custom label with tag specified)" \
   "${FROM_IMAGE}.al" "${LINK_BIOS}" \
