@@ -298,20 +298,10 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	return VB2_SUCCESS;
 }
 
-static vb2_error_t prepare_dtb(AvbSlotVerifyData *verify_data,
+static vb2_error_t prepare_dtbo(AvbSlotVerifyData *verify_data,
 			       struct vb2_kernel_params *params)
 {
 	AvbPartitionData *part;
-
-	part = avb_find_part(verify_data, GPT_ANDROID_DTB);
-	if (!part) {
-		VB2_DEBUG("Continuing without a DTB partition\n");
-		params->dtb = NULL;
-		params->dtb_size = 0;
-	} else {
-		params->dtb = part->data;
-		params->dtb_size = part->data_size;
-	}
 
 	part = avb_find_part(verify_data, GPT_ANDROID_DTBO);
 	if (!part) {
@@ -367,11 +357,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 		params->pvmfw_out_size = 0;
 	}
 
-	/* If DTB/DTBO partitions exist, include them in the list of partitions to
-	   be pre-loaded. */
-	if (GptFindEntryByName(gpt, GptPartitionNames[GPT_ANDROID_DTB], slot_suffix))
-		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_DTB];
-
+	/* If DTBO partition exists, include it in the list of partitions to be pre-loaded. */
 	if (GptFindEntryByName(gpt, GptPartitionNames[GPT_ANDROID_DTBO], slot_suffix))
 		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_DTBO];
 
@@ -459,7 +445,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	if (rv)
 		goto out;
 
-	rv = prepare_dtb(verify_data, params);
+	rv = prepare_dtbo(verify_data, params);
 
 out:
 	/* No need for slot data */
