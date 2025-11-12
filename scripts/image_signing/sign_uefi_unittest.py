@@ -118,6 +118,25 @@ class TestSign(unittest.TestCase):
     @mock.patch("sign_uefi.inject_vbpubk")
     @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
     @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
+    def test_presigned_crdyboot(
+        self, mock_sign, mock_detached_sig, mock_inject_vbpubk
+    ):
+        (self.efi_boot_dir / "crdybootia32.sig").touch()
+        (self.efi_boot_dir / "crdybootx64.sig").touch()
+
+        # Matches the glob in sign_official_build.sh.
+        efi_glob = "grub*.efi"
+
+        sign_uefi.sign_target_dir(self.target_dir, self.keys, efi_glob)
+
+        # Check that `inject_vbpubk` and `create_detached_signature`
+        # were both skipped.
+        self.assertEqual(mock_inject_vbpubk.call_args_list, [])
+        self.assertEqual(mock_detached_sig.call_args_list, [])
+
+    @mock.patch("sign_uefi.inject_vbpubk")
+    @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
+    @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
     def test_no_crdyshim_key(
         self, _mock_sign, _mock_detached_sig, _mock_inject_vbpubk
     ):

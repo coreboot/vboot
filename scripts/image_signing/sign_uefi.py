@@ -234,6 +234,13 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
                 signer.sign_efi_file(efi_file)
 
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
+            # Skip crdyboot signing if the signature file already
+            # exists. This allows a prebuilt version of crdyboot to be
+            # used.
+            if efi_file.with_suffix(".sig").exists():
+                logging.info("skipping already-signed file %s", efi_file)
+                continue
+
             # This key is required to create the detached signature.
             # Only check the private keys if they are local paths rather than a
             # PKCS#11 URI.
