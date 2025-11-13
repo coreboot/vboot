@@ -21,6 +21,7 @@ const char *GptPartitionNames[] = {
 	[GPT_ANDROID_VBMETA] = "vbmeta",
 };
 
+test_mockable
 int GptInit(GptData *gpt)
 {
 	int retval;
@@ -39,6 +40,7 @@ int GptInit(GptData *gpt)
 	return GPT_SUCCESS;
 }
 
+test_mockable
 GptEntry *GptNextKernelEntry(GptData *gpt)
 {
 	GptHeader *header = (GptHeader *)gpt->primary_header;
@@ -201,6 +203,7 @@ int GptUpdateKernelWithEntry(GptData *gpt, GptEntry *e, uint32_t update_type)
  * Desc: This function updates current_kernel entry with provided
  * update_type. If current_kernel is not set, then it returns error.
  */
+test_mockable
 int GptUpdateKernelEntry(GptData *gpt, uint32_t update_type)
 {
 	GptEntry *entries = (GptEntry *)gpt->primary_entries;

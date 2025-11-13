@@ -49,6 +49,12 @@ vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start,
 }
 
 __attribute__((weak))
+vb2_error_t VbExStreamSkip(VbExStream_t stream, uint32_t bytes)
+{
+	return VbExStreamRead(stream, bytes, NULL);
+}
+
+__attribute__((weak))
 vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 {
 	struct disk_stream *s = (struct disk_stream *)stream;
@@ -67,10 +73,11 @@ vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 	if (sectors > s->sectors_left)
 		return VB2_ERROR_UNKNOWN;
 
-	rv = VbExDiskRead(s->handle, s->sector, sectors, buffer);
-	if (rv != VB2_SUCCESS)
-		return rv;
-
+	if (buffer != NULL) {
+		rv = VbExDiskRead(s->handle, s->sector, sectors, buffer);
+		if (rv != VB2_SUCCESS)
+			return rv;
+	}
 	s->sector += sectors;
 	s->sectors_left -= sectors;
 
