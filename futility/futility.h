@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "2common.h"
+#include "gsc_ro.h"
 #include "host_key.h"
 
 /* This program */
@@ -204,6 +205,13 @@ extern const char *ft_print_header2;
 
 /* Debug output (off by default) */
 extern int debugging_enabled;
+
+/*
+ * Returns true if the gscvd header is valid.
+ * This doesn't verify the contents, though.
+ */
+bool futil_valid_gscvd_header(const struct gsc_verification_data *gscvd,
+			      uint32_t len);
 
 /* Returns true if this looks enough like a GBB header to proceed. */
 int futil_looks_like_gbb(struct vb2_gbb_header *gbb, uint32_t len);

@@ -11,6 +11,14 @@
 
 #include "2sha.h"
 
+/*
+ * Max number of RO ranges to cover. 32 is more than enough, this must be kept
+ * in sync with
+ * - AP_RO_MAX_NUM_RANGES in cr50/common/ap_ro_integrity_check.c
+ * - MAX_RO_RANGES in ti50/common/capsules/src/ap_ro_verification/gscvd.rs
+ */
+#define MAX_RANGES 32
+
 struct gscvd_ro_range {
 	uint32_t offset;
 	uint32_t size; /* Use uint32_t as opposed to size_to be portable. */
