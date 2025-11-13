@@ -15,6 +15,7 @@
  * at in a certain order.
  */
 enum bios_component {
+	BIOS_FMAP_GSCVD,
 	BIOS_FMAP_GBB,
 	BIOS_FMAP_FW_MAIN_A,
 	BIOS_FMAP_FW_MAIN_B,
@@ -25,6 +26,7 @@ enum bios_component {
 };
 
 static const char *const fmap_name[] = {
+	"RO_GSCVD",  /* BIOS_FMAP_GSCVD */
 	"GBB",	     /* BIOS_FMAP_GBB */
 	"FW_MAIN_A", /* BIOS_FMAP_FW_MAIN_A */
 	"FW_MAIN_B", /* BIOS_FMAP_FW_MAIN_B */

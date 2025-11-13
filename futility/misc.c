@@ -31,6 +31,7 @@
 #include "file_type.h"
 #include "futility.h"
 #include "futility_options.h"
+#include "gsc_ro.h"
 #include "host_misc.h"
 
 /* Default is to support everything we can */
@@ -63,6 +64,18 @@ static int is_null_terminated(const char *s, int len)
 static inline uint32_t max(uint32_t a, uint32_t b)
 {
 	return a > b ? a : b;
+}
+
+enum futil_file_type ft_recognize_gscvd(uint8_t *buf, uint32_t len)
+{
+	const struct gsc_verification_data *gscvd = (const void *)buf;
+	if (len < sizeof(*gscvd))
+		return FILE_TYPE_UNKNOWN;
+	if (gscvd->gv_magic != GSC_VD_MAGIC)
+		return FILE_TYPE_UNKNOWN;
+	if (gscvd->size > len)
+		return FILE_TYPE_UNKNOWN;
+	return FILE_TYPE_GSCVD;
 }
 
 enum futil_file_type ft_recognize_gbb(uint8_t *buf, uint32_t len)

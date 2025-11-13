@@ -25,6 +25,7 @@ static struct {
 	{FILE_TYPE_PUBKEY,          "tests/devkeys/root_key.vbpubk"},
 	{FILE_TYPE_KEYBLOCK,        "tests/devkeys/kernel.keyblock"},
 	{FILE_TYPE_FW_PREAMBLE,     "tests/futility/data/fw_vblock.bin"},
+	{FILE_TYPE_GSCVD,           "tests/futility/data/fw_gscvd.bin"},
 	{FILE_TYPE_GBB,	            "tests/futility/data/fw_gbb.bin"},
 	{FILE_TYPE_BIOS_IMAGE,      "tests/futility/data/bios_peppy_mp.bin"},
 	{FILE_TYPE_KERN_PREAMBLE,   "tests/futility/data/kernel_part.bin"},

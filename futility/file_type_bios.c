@@ -3,6 +3,7 @@
  * found in the LICENSE file.
  */
 
+#include <endian.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -16,6 +17,7 @@
 #include "fmap.h"
 #include "futility.h"
 #include "futility_options.h"
+#include "gsc_ro.h"
 #include "host_common.h"
 #include "vb1_helper.h"
 
@@ -31,6 +33,64 @@ static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
 }
 
 /** Show functions **/
+
+static int show_gscvd_buf(const char *fname, uint8_t *buf, uint32_t len,
+			  struct bios_state_s *state)
+{
+	const char *print_name = state ? fmap_name[state->c] : fname;
+	const struct gsc_verification_data *gscvd = (const void *)buf;
+	int retval = 0;
+
+	if (len < sizeof(*gscvd)) {
+		ERROR("GSCVD header:            %s <invalid>\n", print_name);
+		return 1;
+	}
+
+	if (!futil_valid_gscvd_header(gscvd, len))
+		retval = 1;
+
+	FT_READABLE_PRINT("GCSVD header:            %s\n", print_name);
+	FT_PRINT("  Version:               %d.%d\n", "version::%d.%d\n",
+		 gscvd->major_version, gscvd->minor_version);
+	FT_PRINT("  Board ID:              0x%08x\n", "board_id::%u\n",
+		 gscvd->gsc_board_id);
+
+	/* board_id is a 4-char string. 1st char is in the highest byte. */
+	uint32_t board_id_str = htobe32(gscvd->gsc_board_id);
+	FT_PRINT("  Board ID String:       %.4s\n", "board_id_string::%.4s\n",
+		 (const char *)&board_id_str);
+
+	struct vb2_public_key pubkey;
+
+	ft_print_header2 = "root_key";
+	if (vb2_unpack_key(&pubkey, &gscvd->root_key_header) == VB2_SUCCESS) {
+		FT_PRINT("  Root Key:\n", "valid\n");
+		show_pubkey(&gscvd->root_key_header, "    ");
+	} else {
+		retval = 1;
+		FT_PRINT("  Root Key:              <invalid>\n",
+			 "invalid\n");
+	}
+
+	ft_print_header2 = NULL;
+
+	return retval;
+}
+
+int ft_show_gscvd(const char *fname)
+{
+	int fd = -1;
+	uint8_t *buf;
+	uint32_t len;
+
+	if (futil_open_and_map_file(fname, &fd, FILE_RO, &buf, &len))
+		return 1;
+	ft_print_header = "gscvd";
+	int retval = show_gscvd_buf(fname, buf, len, NULL);
+
+	futil_unmap_and_close_file(fd, FILE_RO, buf, len);
+	return retval;
+}
 
 static int show_gbb_buf(const char *fname, uint8_t *buf, uint32_t len,
 			struct bios_state_s *state)
@@ -179,6 +239,7 @@ static int fmap_show_fw_main(const char *fname, uint8_t *buf, uint32_t len,
 /* Functions to call to show the bios components */
 static int (*fmap_show_fn[])(const char *name, uint8_t *buf, uint32_t len,
 			     struct bios_state_s *state) = {
+	show_gscvd_buf,
 	show_gbb_buf,
 	fmap_show_fw_main,
 	fmap_show_fw_main,

@@ -1,0 +1,8 @@
+gscvd::version::0.0
+gscvd::board_id::1515864914
+gscvd::board_id_string::ZZCR
+gscvd::root_key::valid
+gscvd::root_key::api::1.0
+gscvd::root_key::algorithm::7::RSA4096 SHA256
+gscvd::root_key::version::1
+gscvd::root_key::sha1_sum::dfb042b34a9b3aac4fa9734fac7596a34b1e98a2

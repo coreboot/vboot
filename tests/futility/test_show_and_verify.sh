@@ -65,6 +65,9 @@ TEST_CASES=(
     tests/futility/data/fw_vblock_invalid_data_key.bin 2 --type fw_pre"
   "parseable.fw_vblock_invalid_data_key \
     tests/futility/data/fw_vblock_invalid_data_key.bin 2 --type fw_pre -P"
+  ## [type] gscvd
+  "gscvd tests/futility/data/fw_gscvd.bin 0"
+  "parseable.gscvd tests/futility/data/fw_gscvd.bin 0 -P"
   ## [type] gbb
   "gbb tests/futility/data/fw_gbb.bin 0"
   "parseable.gbb tests/futility/data/fw_gbb.bin 0 -P"

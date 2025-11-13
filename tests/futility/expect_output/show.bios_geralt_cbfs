@@ -1,4 +1,13 @@
 BIOS:                    tests/futility/data/bios_geralt_cbfs.bin
+GCSVD header:            RO_GSCVD
+  Version:               0.0
+  Board ID:              0x5a5a4352
+  Board ID String:       ZZCR
+  Root Key:
+    Vboot API:           1.0
+    Algorithm:           7 RSA4096 SHA256
+    Key Version:         1
+    Key sha1sum:         dfb042b34a9b3aac4fa9734fac7596a34b1e98a2
 GBB header:              GBB
   Version:               1.2
   Flags:                 0x00000039

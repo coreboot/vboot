@@ -1,3 +1,11 @@
+bios::RO_GSCVD::version::0.0
+bios::RO_GSCVD::board_id::1515864914
+bios::RO_GSCVD::board_id_string::ZZCR
+bios::RO_GSCVD::root_key::valid
+bios::RO_GSCVD::root_key::api::1.0
+bios::RO_GSCVD::root_key::algorithm::7::RSA4096 SHA256
+bios::RO_GSCVD::root_key::version::1
+bios::RO_GSCVD::root_key::sha1_sum::dfb042b34a9b3aac4fa9734fac7596a34b1e98a2
 bios::GBB::version::1.2
 bios::GBB::flags::57
 bios::GBB::hwid::offset::128

@@ -19,6 +19,10 @@ FILE_TYPE(BIOS_IMAGE,       "bios",          "Chrome OS BIOS image",
 	  R_(ft_recognize_bios_image),
 	  S_(ft_show_bios),
 	  S_(ft_sign_bios))
+FILE_TYPE(GSCVD,            "gscvd",         "GSC verification data (RO_GSCVD)",
+	  R_(ft_recognize_gscvd),
+	  S_(ft_show_gscvd),
+	  NONE)
 FILE_TYPE(GBB,              "gbb",           "GBB",
 	  R_(ft_recognize_gbb),
 	  S_(ft_show_gbb),
