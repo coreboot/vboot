@@ -27,24 +27,21 @@ LIBAVB_SRCS += \
 	${LIBAVB_SRCDIR}/libavb/avb_util.c \
 	${LIBAVB_SRCDIR}/libavb/avb_vbmeta_image.c \
 	${LIBAVB_SRCDIR}/libavb/avb_version.c \
-	${LIBAVB_SRCDIR}/libavb/sha/sha512_impl.c
+	${LIBAVB_SRCDIR}/libavb/crypto/sha512_impl.c
 
 ifneq ($(strip $(filter-out 0,${X86_SHA_EXT} ${ARMV8_CRYPTO_EXT})),)
 # Use the hardware-accelerated wrapper
 LIBAVB_SRCS += firmware/avb/wrapper/vboot_avb_sha256.c
 else
 # Use the software implementation as a fallback
-LIBAVB_SRCS += ${LIBAVB_SRCDIR}/libavb/sha/sha256_impl.c
+LIBAVB_SRCS += ${LIBAVB_SRCDIR}/libavb/crypto/sha256_impl.c
 endif
 
 CFLAGS += -DUSE_LIBAVB -Ifirmware/avb -I${LIBAVB_SRCDIR} -I${LIBAVB_SRCDIR}/libavb
-AVB_CFLAGS += -DAVB_COMPILATION -I${LIBAVB_SRCDIR}/libavb/sha
+AVB_CFLAGS += -DAVB_COMPILATION -I${LIBAVB_SRCDIR}/libavb/crypto
 
 # TODO(b/329135129): Fix maybe uninitialized variables in upstream libavb
 AVB_CFLAGS += $(call test_ccflag,-Wno-maybe-uninitialized)
-
-# TODO(b/329411445): Fix func declaration without a prototype in upstream libavb
-AVB_CFLAGS += -Wno-strict-prototypes
 
 # Add avb-related objects to the fwlib library
 LIBAVB_OBJS = ${LIBAVB_SRCS:${LIBAVB_SRCDIR}/libavb/%.c=${BUILD}/libavb/%.o}
