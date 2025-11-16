@@ -101,6 +101,7 @@ struct updater_config {
 	uint32_t gbb_flags;
 	bool dut_is_remote;
 	bool output_only;
+	bool check_fwid;
 };
 
 enum manifest_print_format {
@@ -129,6 +130,7 @@ struct updater_config_arguments {
 	uint32_t gbb_flags;
 	bool detect_model_only;
 	bool unlock_me;
+	bool check_fwid;
 };
 
 /*
@@ -198,6 +200,7 @@ enum updater_error_codes {
 	UPDATE_ERR_ROOT_KEY,
 	UPDATE_ERR_TPM_ROLLBACK,
 	UPDATE_ERR_UNLOCK_CSME,
+	UPDATE_ERR_FWID_CHECK,
 	UPDATE_ERR_UNKNOWN,
 };
 

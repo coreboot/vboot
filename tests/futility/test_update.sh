@@ -89,6 +89,23 @@ erase_file() {
   head -c "${size}" /dev/zero | LC_ALL=C tr '\000' '\377' > "${file}"
 }
 
+get_section() {
+  local file="$1"
+  local section="$2"
+  local section_offset="$3"
+
+  local fmap_info
+  local base
+  local offset
+  local size
+
+  fmap_info="$("${FUTILITY}" dump_fmap -p "${file}" "${section}")"
+  base="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/ [^ ]*$//')"
+  size="$(echo "${fmap_info}" | sed 's/^[^ ]* //; s/^[^ ]* //')"
+  offset=$((base + section_offset))
+  dd if="${file}" bs=1 skip="${offset}" count="${size}"
+}
+
 # PEPPY and LINK have different platform element ("Google_Link" and
 # "Google_Peppy") in firmware ID so we want to hack them by changing
 # "Google_" to "Google.".
@@ -256,6 +273,16 @@ cp -f "${EXPECTED}/ifd_path" "${EXPECTED}/me_unlocked.ifd_path"
 unlock_me "${EXPECTED}/me_unlocked.ifd_chipset"
 unlock_me "${EXPECTED}/me_unlocked.ifd_path"
 
+# Special "to" image with changed fwid to match "from" image
+FROM_IMAGE_FWID_RW_A="$( get_section "${FROM_IMAGE}" RW_FWID_A 0 | sed 's/\x00/\\0/g' )"
+FROM_IMAGE_FWID_RO="$( get_section "${FROM_IMAGE}" RO_FRID 0 | sed 's/\x00/\\0/g' )"
+
+TO_IMAGE_SAME_FWID="${TO_IMAGE}.diff_rw_fwid"
+cp -f "${TO_IMAGE}" "${TO_IMAGE_SAME_FWID}"
+patch_file "${TO_IMAGE_SAME_FWID}" RW_FWID_A 0 "${FROM_IMAGE_FWID_RW_A}"
+patch_file "${TO_IMAGE_SAME_FWID}" RW_FWID_B 0 "${FROM_IMAGE_FWID_RW_A}"
+patch_file "${TO_IMAGE_SAME_FWID}" RO_FRID 0 "${FROM_IMAGE_FWID_RO}"
+
 # Has 3 modes:
 # 1. $3 = "!something", run command, expect failure,
 #    grep for something in log, fail if it is not present
@@ -290,6 +317,14 @@ test_update() {
 test_update "Full update" \
   "${FROM_IMAGE}" "${EXPECTED}/full" \
   -i "${TO_IMAGE}" --wp=0
+
+test_update "Full update (check fwid)" \
+  "${FROM_IMAGE}" "${EXPECTED}/full" \
+  -i "${TO_IMAGE}" --wp=0 --check-fwid
+
+test_update "Full update (check fwid, same fwid)" \
+  "${FROM_IMAGE}" "${FROM_IMAGE}" \
+  -i "${TO_IMAGE_SAME_FWID}" --wp=0 --check-fwid
 
 test_update "Full update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \
@@ -344,6 +379,14 @@ test_update "Full update (Preserve VPD using FMAP_AREA_PRESERVE)" \
 test_update "RW update" \
   "${FROM_IMAGE}" "${EXPECTED}/rw" \
   -i "${TO_IMAGE}" --wp=1
+
+test_update "RW update (check fwid)" \
+  "${FROM_IMAGE}" "${EXPECTED}/rw" \
+  -i "${TO_IMAGE}" --wp=1 --check-fwid
+
+test_update "RW update (check fwid, same fwid)" \
+  "${FROM_IMAGE}" "${FROM_IMAGE}" \
+  -i "${TO_IMAGE_SAME_FWID}" --wp=1 --check-fwid
 
 test_update "RW update (incompatible platform)" \
   "${FROM_IMAGE}" "!platform is not compatible" \

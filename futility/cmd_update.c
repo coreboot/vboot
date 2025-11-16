@@ -17,6 +17,7 @@
 
 enum {
 	OPT_DUMMY = 0x1000,
+	OPT_CHECK_FWID,
 	OPT_DETECT_MODEL_ONLY,
 	OPT_FACTORY,
 	OPT_FAST,
@@ -54,6 +55,7 @@ static struct option const long_opts[] = {
 	{"archive", 1, NULL, 'a'},
 	{"mode", 1, NULL, 'm'},
 
+	{"check-fwid", 0, NULL, OPT_CHECK_FWID},
 	{"detect-model-only", 0, NULL, OPT_DETECT_MODEL_ONLY},
 	{"factory", 0, NULL, OPT_FACTORY},
 	{"fast", 0, NULL, OPT_FAST},
@@ -125,6 +127,9 @@ static void print_help(int argc, char *argv[])
 		"    --parseable-manifest\n"
 		"                    \tScan the archive to print a manifest\n"
 		"                    \tin shell-parseable format\n"
+		"    --check-fwid    \tCompare firmware id before performing\n"
+		"                    \tan update. Skip the update if the versions are\n"
+		"                    \tthe same.\n"
 		SHARED_FLASH_ARGS_HELP
 		"\n"
 		" * Option --manifest requires either -a,--archive or -i,--image\n"
@@ -295,6 +300,9 @@ static int do_update(int argc, char *argv[])
 			} else {
 				args.override_gbb_flags = 1;
 			}
+			break;
+		case OPT_CHECK_FWID:
+			args.check_fwid = true;
 			break;
 		case OPT_DUMMY:
 			break;

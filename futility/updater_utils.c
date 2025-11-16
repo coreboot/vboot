@@ -376,22 +376,54 @@ const struct vb2_gbb_header *find_gbb(const struct firmware_image *image)
 	return gbb_header;
 }
 
-test_mockable
-char *load_system_frid(struct updater_config *cfg)
+static char *load_system_fwid(struct updater_config *cfg, const char *region)
 {
 	struct firmware_image image = {
 		.programmer = cfg->image_current.programmer,
 	};
-	char *frid;
 
-	if (flashrom_read_region(&image, FMAP_RO_FRID, cfg->verbosity + 1) != VB2_SUCCESS) {
-		ERROR("Failed to load %s\n", FMAP_RO_FRID);
+	if (flashrom_read_region(&image, region, cfg->verbosity + 1) != VB2_SUCCESS) {
+		ERROR("Failed to load %s\n", region);
 		return NULL;
 	}
 
-	frid = strndup((const char *)image.data, image.size);
+	char *fwid = strndup((const char *)image.data, image.size);
 	free_firmware_image(&image);
-	return frid;
+
+	return fwid;
+}
+
+test_mockable
+char *load_system_frid(struct updater_config *cfg)
+{
+	return load_system_fwid(cfg, FMAP_RO_FRID);
+}
+
+static char *load_system_rw_fwid(struct updater_config *cfg)
+{
+	dut_property_t slot = dut_get_property(DUT_PROP_MAINFW_ACT, cfg);
+
+	const char *slot_section = NULL;
+
+	switch (slot) {
+	case SLOT_A:
+		slot_section = FMAP_RW_FWID_A;
+		break;
+	case SLOT_B:
+		slot_section = FMAP_RW_FWID_B;
+		break;
+	default:
+		ERROR("Failed to get slot\n");
+		return NULL;
+	}
+
+	VB2_DEBUG("Using slot region: %s\n", slot_section);
+
+	char *fwid = load_system_fwid(cfg, slot_section);
+
+	VB2_DEBUG("Current RW FWID: %s\n", fwid);
+
+	return fwid;
 }
 
 test_mockable
@@ -763,4 +795,62 @@ int overwrite_section(struct firmware_image *image,
 
 	memcpy(section.data + offset, new_values, size);
 	return 0;
+}
+
+test_mockable
+enum check_fwid_return_value check_if_update_needed_with_fwid(struct updater_config *cfg,
+		bool wp_enabled)
+{
+	if (cfg->dut_is_remote) {
+		/*
+		 * Necessary informaions including mainfw_act are not available for remote dut.
+		 * Interrupt the check.
+		 */
+		ERROR("--check-fwid is not supported for remote dut.\n");
+		return FWID_CHECK_ERR;
+	}
+
+	if (!wp_enabled) {
+		VB2_DEBUG("WP disabled, checking RO FWID compatibility\n");
+
+		if (!cfg->image.ro_version) {
+			ERROR("Failed to get RO FWID from new image.\n");
+			return FWID_CHECK_ERR;
+		}
+
+		char *current_frid = load_system_frid(cfg);
+
+		if (!current_frid) {
+			ERROR("Failed to get current RO FWID.\n");
+			return FWID_CHECK_ERR;
+		}
+
+		int res = strcmp(current_frid, cfg->image.ro_version);
+
+		free(current_frid);
+
+		if (res != 0)
+			return FWID_CHECK_UPDATE_NEEDED;
+	}
+
+	if (!cfg->image.rw_version_a) {
+		ERROR("Failed to get RW FWID from new image.\n");
+		return FWID_CHECK_ERR;
+	}
+
+	char *current_fwid = load_system_rw_fwid(cfg);
+
+	if (!current_fwid) {
+		ERROR("Failed to get current RW FWID.\n");
+		return FWID_CHECK_ERR;
+	}
+
+	int res = strcmp(current_fwid, cfg->image.rw_version_a);
+
+	free(current_fwid);
+
+	if (res == 0)
+		return FWID_CHECK_UPDATE_SKIPPED;
+
+	return FWID_CHECK_UPDATE_NEEDED;
 }

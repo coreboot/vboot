@@ -261,4 +261,14 @@ int dut_get_property_int(const char *key, struct updater_config *cfg);
 /* Gets the 'firmware manifest key' on the DUT. */
 int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg);
 
+enum check_fwid_return_value {
+	FWID_CHECK_UPDATE_NEEDED = 0,
+	FWID_CHECK_UPDATE_SKIPPED,
+	FWID_CHECK_ERR,
+};
+
+/* Verify if update is needed based on fwid. */
+enum check_fwid_return_value check_if_update_needed_with_fwid(struct updater_config *cfg,
+		bool wp_enabled);
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_UPDATER_UTILS_H_ */
