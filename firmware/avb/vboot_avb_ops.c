@@ -261,7 +261,7 @@ static AvbIOResult get_preloaded_partition(AvbOps *ops,
 	}
 
 	if (num_bytes > part->alloced_size) {
-		VB2_DEBUG("Try to load too many bytes (%ld) into buffer of size (%ld) for %s\n",
+		VB2_DEBUG("Try to load too many bytes (%zu) into buffer of size (%zu) for %s\n",
 			  num_bytes, part->alloced_size, partition);
 		num_bytes = part->alloced_size;
 	}
@@ -275,7 +275,7 @@ static AvbIOResult get_preloaded_partition(AvbOps *ops,
 	*out_pointer = part->buffer;
 	*out_num_bytes_preloaded = VB2_MIN(num_bytes, data_size);
 	part->loaded_size = data_size;
-	VB2_DEBUG("Load %s into %p bytes:%lx\n", partition, *out_pointer, num_bytes);
+	VB2_DEBUG("Load %s into %p bytes:%zx\n", partition, *out_pointer, num_bytes);
 
 	return AVB_IO_RESULT_OK;
 }
