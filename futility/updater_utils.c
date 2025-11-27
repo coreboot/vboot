@@ -317,14 +317,14 @@ int find_firmware_section(struct firmware_section *section,
 	FmapAreaHeader *fah = NULL;
 	uint8_t *ptr;
 
-	section->data = NULL;
-	section->size = 0;
+	memset(section, 0, sizeof(*section));
 	ptr = fmap_find_by_name(
 			image->data, image->size, image->fmap_header,
 			section_name, &fah);
 	if (!ptr)
 		return -1;
 	section->data = (uint8_t *)ptr;
+	section->offset = fah->area_offset;
 	section->size = fah->area_size;
 	return 0;
 }

@@ -601,6 +601,44 @@ exit:
 	return res;
 }
 
+static int check_compatible_fmap(struct updater_config *cfg)
+{
+	int i;
+	const struct firmware_image *image_from = &cfg->image_current;
+	const struct firmware_image *image_to = &cfg->image;
+	static const char * const rw_sections[] = {
+		FMAP_RW_SECTION_A,
+		FMAP_RW_SECTION_B,
+		FMAP_RW_VBLOCK_A,
+		FMAP_RW_VBLOCK_B,
+		FMAP_RW_FW_MAIN_A,
+		FMAP_RW_FW_MAIN_B,
+		FMAP_RW_FWID_A,
+		FMAP_RW_FWID_B,
+		FMAP_RW_LEGACY,
+		FMAP_RW_SHARED,
+	};
+	for (i = 0; i < ARRAY_SIZE(rw_sections); i++) {
+		struct firmware_section section_from;
+		struct firmware_section section_to;
+		const char *name = rw_sections[i];
+		/* Skip non-existing sections. */
+		if (find_firmware_section(&section_from, image_from, name) ||
+		    find_firmware_section(&section_to, image_to, name))
+			continue;
+		if (section_from.offset != section_to.offset ||
+		    section_from.size != section_to.size) {
+			ERROR("Incompatible FMAP section %s: "
+			      "current (offset=%#zx, size=%#zx), "
+			      "target (offset=%#zx, size=%#zx).\n",
+			      name, section_from.offset, section_from.size,
+			      section_to.offset, section_to.size);
+			return -1;
+		}
+	}
+	return 0;
+}
+
 const struct vb2_packed_key *get_rootkey(
 		const struct vb2_gbb_header *gbb)
 {
@@ -936,6 +974,7 @@ const char * const updater_error_messages[] = {
 	[UPDATE_ERR_WRITE_FIRMWARE] = "Failed writing firmware.",
 	[UPDATE_ERR_PLATFORM] = "Your system platform is not compatible.",
 	[UPDATE_ERR_TARGET] = "No valid RW target to update. Abort.",
+	[UPDATE_ERR_FMAP] = "New image's FMAP is incompatible with system image.",
 	[UPDATE_ERR_ROOT_KEY] = "RW signed by incompatible root key "
 			        "(different from RO).",
 	[UPDATE_ERR_TPM_ROLLBACK] = "RW not usable due to TPM anti-rollback.",
@@ -984,6 +1023,8 @@ static enum updater_error_codes update_try_rw_firmware(
 		return UPDATE_ERR_NEED_RO_UPDATE;
 
 	INFO("Checking compatibility...\n");
+	if (check_compatible_fmap(cfg))
+		return UPDATE_ERR_FMAP;
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))
@@ -1074,6 +1115,8 @@ static enum updater_error_codes update_rw_firmware(
 	       FMAP_RW_LEGACY);
 
 	INFO("Checking compatibility...\n");
+	if (check_compatible_fmap(cfg))
+		return UPDATE_ERR_FMAP;
 	if (check_compatible_root_key(image_from, image_to))
 		return UPDATE_ERR_ROOT_KEY;
 	if (check_compatible_tpm_keys(cfg, image_to))

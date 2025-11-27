@@ -109,6 +109,7 @@ int write_system_firmware(struct updater_config *cfg,
 
 struct firmware_section {
 	uint8_t *data;
+	size_t offset;
 	size_t size;
 };
 

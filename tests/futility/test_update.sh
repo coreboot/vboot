@@ -152,6 +152,12 @@ INCOMPAT_FWID="Google_Incompatible.11111.222.0"
 patch_file "${FROM_INCOMPAT_PLATFORM_IMAGE}" RO_FRID 0x0 \
   "${INCOMPAT_FWID}"
 
+# Create TO_INCOMPAT_FMAP_IMAGE.
+TO_INCOMPAT_FMAP_IMAGE="${TO_IMAGE}.incompat_fmap"
+cp -f "${GERALT_BIOS}" "${TO_INCOMPAT_FMAP_IMAGE}"
+"${FUTILITY}" load_fmap "${TO_INCOMPAT_FMAP_IMAGE}" \
+  "RO_FRID:${TMP_FROM}/RO_FRID"
+
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${EXPECTED}/full"
 cp -f "${FROM_IMAGE}" "${EXPECTED}/rw"
@@ -324,6 +330,10 @@ test_update "RW update (incompatible platform)" \
   "${FROM_INCOMPAT_PLATFORM_IMAGE}" "!platform is not compatible" \
   -i "${TO_IMAGE}" --wp=1
 
+test_update "RW update (incompatible FMAP)" \
+  "${FROM_IMAGE}" "!New image's FMAP is incompatible with system image" \
+  -i "${TO_INCOMPAT_FMAP_IMAGE}" --wp=1
+
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
   -i "${TO_IMAGE}" --wp=1
@@ -356,9 +366,14 @@ test_update "RW update, same RO, wp=1 (A->B)" \
 test_update "RW update -> fallback to RO+RW Full update" \
   "${FROM_IMAGE}" "${EXPECTED}/full" \
   -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10001
+
 test_update "RW update (incompatible platform)" \
   "${FROM_INCOMPAT_PLATFORM_IMAGE}" "!platform is not compatible" \
   -i "${TO_IMAGE}" -t --wp=1
+
+test_update "RW update (incompatible FMAP)" \
+  "${FROM_IMAGE}" "!New image's FMAP is incompatible with system image" \
+  -i "${TO_INCOMPAT_FMAP_IMAGE}" -t --wp=1
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
