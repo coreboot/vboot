@@ -1473,9 +1473,12 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_sig_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/hmac_test
 
-.PHONY: runfutiltests
-runfutiltests: install_for_test
+.PHONY: runfutiltestscripts
+runfutiltestscripts: install_for_test
 	${RUNTEST} ${SRC_RUN}/tests/futility/run_test_scripts.sh
+
+.PHONY: runfutiltests
+runfutiltests: install_for_test runfutiltestscripts
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_file_types
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_not_really
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
