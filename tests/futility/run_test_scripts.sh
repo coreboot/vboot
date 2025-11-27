@@ -62,6 +62,13 @@ echo "-- builtin --"
 for i in $TESTS; do
   j=${i##*/}
 
+  if [ -n "${FUTIL_TEST_SCRIPT:-}" ]; then
+    if echo "${j}" | grep -qv "${FUTIL_TEST_SCRIPT}"; then
+      echo -e "${COL_YELLOW}Skipping ${j} (FUTIL_TEST_SCRIPT='${FUTIL_TEST_SCRIPT}')${COL_STOP}"
+      continue
+    fi
+  fi
+
   : $(( progs++ ))
 
   echo -n "$j ... "
