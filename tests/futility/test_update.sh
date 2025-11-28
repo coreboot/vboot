@@ -134,8 +134,9 @@ cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
 "${FUTILITY}" gbb -s --rootkey="${TMP_TO}/rootkey" "${FROM_IMAGE}"
 
 # Hack for quirks
+FROM_IMAGE_SIZE="$(stat -c %s "${FROM_IMAGE}")"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.large"
-truncate -s $((8388608 * 2)) "${FROM_IMAGE}.large"
+truncate -s "$(("${FROM_IMAGE_SIZE}" * 2))" "${FROM_IMAGE}.large"
 
 # Create the FROM_SAME_RO_IMAGE using the RO from TO_IMAGE."
 FROM_SAME_RO_IMAGE="${FROM_IMAGE}.same_ro"
@@ -199,7 +200,7 @@ cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
 cp -f "${EXPECTED}/full" "${EXPECTED}/full.gbb0x27"
 "${FUTILITY}" gbb -s --flags=0x27 "${EXPECTED}/full.gbb0x27"
 cp -f "${EXPECTED}/full" "${EXPECTED}/large"
-dd if=/dev/zero bs=8388608 count=1 | tr '\000' '\377' >>"${EXPECTED}/large"
+dd if=/dev/zero bs="${FROM_IMAGE_SIZE}" count=1 | tr '\000' '\377' >>"${EXPECTED}/large"
 cp -f "${EXPECTED}/full" "${EXPECTED}/me_unlocked_eve"
 patch_file "${EXPECTED}/me_unlocked_eve" SI_DESC 0x60 \
   "\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
@@ -712,7 +713,7 @@ test_flashrom() {
   local emu="${TMP}/emu"
   cp -f "${FROM_IMAGE}" "${emu}"
   "${FUTILITY}" update --programmer \
-    dummy:emulate=VARIABLE_SIZE,image="${emu}",size=8388608 \
+    dummy:emulate=VARIABLE_SIZE,image="${emu}",size="${FROM_IMAGE_SIZE}" \
     -i "${TO_IMAGE}" --wp=0 --sys_props 0,0x10001,3 >&2
   cmp "${emu}" "${EXPECTED}/full"
 }
