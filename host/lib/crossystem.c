@@ -111,7 +111,7 @@ static int AcquireCrossystemLock(void)
 /* Release the lock for crossystem SetSystemProperty call. */
 static int ReleaseCrossystemLock(int lock_fd)
 {
-	if (flock(lock_fd, F_UNLCK) < 0)
+	if (flock(lock_fd, LOCK_UN) < 0)
 		return -1;
 
 	close(lock_fd);
