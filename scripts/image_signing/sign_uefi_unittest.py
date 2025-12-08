@@ -115,14 +115,23 @@ class TestSign(unittest.TestCase):
             ],
         )
 
+    @mock.patch("sign_uefi.move_file")
     @mock.patch("sign_uefi.inject_vbpubk")
     @mock.patch.object(sign_uefi.Signer, "create_detached_signature")
     @mock.patch.object(sign_uefi.Signer, "sign_efi_file")
     def test_presigned_crdyboot(
-        self, mock_sign, mock_detached_sig, mock_inject_vbpubk
+        self,
+        mock_sign,
+        mock_detached_sig,
+        mock_inject_vbpubk,
+        mock_move,
     ):
-        (self.efi_boot_dir / "crdybootia32.sig").touch()
-        (self.efi_boot_dir / "crdybootx64.sig").touch()
+        presigned_dir = self.efi_boot_dir / "presigned"
+        presigned_dir.mkdir()
+        (presigned_dir / "crdybootx64.efi").write_text("crdy64")
+        (presigned_dir / "crdybootx64.sig").write_text("crdysig64")
+        (presigned_dir / "crdybootia32.efi").write_text("crdy32")
+        (presigned_dir / "crdybootia32.sig").write_text("crdysig32")
 
         # Matches the glob in sign_official_build.sh.
         efi_glob = "grub*.efi"
@@ -133,6 +142,21 @@ class TestSign(unittest.TestCase):
         # were both skipped.
         self.assertEqual(mock_inject_vbpubk.call_args_list, [])
         self.assertEqual(mock_detached_sig.call_args_list, [])
+
+        # Check that the presigned files were moved to the right place.
+        self.assertEqual(
+            mock_move.call_args_list,
+            [
+                mock.call(
+                    presigned_dir / "crdybootia32.efi", self.efi_boot_dir
+                ),
+                mock.call(
+                    presigned_dir / "crdybootia32.sig", self.efi_boot_dir
+                ),
+                mock.call(presigned_dir / "crdybootx64.efi", self.efi_boot_dir),
+                mock.call(presigned_dir / "crdybootx64.sig", self.efi_boot_dir),
+            ],
+        )
 
     @mock.patch("sign_uefi.inject_vbpubk")
     @mock.patch.object(sign_uefi.Signer, "create_detached_signature")

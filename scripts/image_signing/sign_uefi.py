@@ -219,6 +219,7 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
         efi_glob: Glob pattern of EFI files to sign, e.g. "*.efi".
     """
     bootloader_dir = target_dir / "efi/boot"
+    presigned_dir = bootloader_dir / "presigned"
     syslinux_dir = target_dir / "syslinux"
     kernel_dir = target_dir
 
@@ -234,11 +235,19 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
                 signer.sign_efi_file(efi_file)
 
         for efi_file in sorted(bootloader_dir.glob("crdyboot*.efi")):
-            # Skip crdyboot signing if the signature file already
-            # exists. This allows a prebuilt version of crdyboot to be
-            # used.
-            if efi_file.with_suffix(".sig").exists():
-                logging.info("skipping already-signed file %s", efi_file)
+            # If presigned crdyboot files are present, use them instead
+            # of signing crdyboot.
+            if presigned_dir.exists():
+                logging.info("using presigned file for %s", efi_file)
+
+                # Replace crdyboot executable with presigned version.
+                presigned_efi = presigned_dir / efi_file.name
+                move_file(presigned_efi, bootloader_dir)
+
+                # Replace crdyboot signature with presigned version.
+                presigned_sig = presigned_efi.with_suffix(".sig")
+                move_file(presigned_sig, bootloader_dir)
+
                 continue
 
             # This key is required to create the detached signature.
@@ -260,6 +269,21 @@ def sign_target_dir(target_dir: os.PathLike, keys: Keys, efi_glob: str):
         kernel_file = (kernel_dir / "vmlinuz").resolve()
         if kernel_file.is_file():
             signer.sign_efi_file(kernel_file)
+
+
+def move_file(src: os.PathLike, dst: os.PathLike):
+    """Move a file from |src| to |dst|.
+
+    This is done using "sudo mv" because the script would otherwise not
+    have the necessary permissions. The |src| and |dst| have the same
+    semantics as the |mv| command (e.g. |dst| can be a directory).
+
+    Args:
+        src: Path of the file to move.
+        dst: Path to move the file to.
+    """
+    logging.info("moving %s to %s", src, dst)
+    subprocess.run(["sudo", "mv", src, dst], check=True)
 
 
 def sign_target_file(target_file: os.PathLike, keys: Keys):
