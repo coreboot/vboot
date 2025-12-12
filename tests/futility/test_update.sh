@@ -33,9 +33,10 @@ test "$(test_quirks " enlarge_image, enlarge_image=2")" = \
 # Test data files
 DATA_DIR="${SCRIPT_DIR}/futility/data"
 GERALT_BIOS="${DATA_DIR}/bios_geralt_cbfs.bin"
+EVE_BIOS="${DATA_DIR}/bios_eve.bin"
 LINK_BIOS="${DATA_DIR}/bios_link_mp.bin"
-PEPPY_BIOS="${DATA_DIR}/bios_peppy_mp.bin"
-VOXEL_BIOS="${DATA_DIR}/bios_voxel_dev.bin"
+TRULO_800_BIOS="${DATA_DIR}/bios_trulo.15217.800.bin"
+TRULO_900_BIOS="${DATA_DIR}/bios_trulo.15217.900.bin"
 RO_VPD_BLOB="${DATA_DIR}/ro_vpd.bin"
 SIGNER_CONFIG="${DATA_DIR}/signer_config.csv"
 IDENTITY_CSV="${DATA_DIR}/identity.csv"
@@ -51,16 +52,15 @@ EXPECTED="${TMP}/expected"
 rm -rf "${TMP}"
 mkdir -p "${TMP_FROM}" "${TMP_TO}" "${EXPECTED}"
 
-# In all the test scenario, we want to test "updating from PEPPY to LINK".
-TO_IMAGE="${TMP}/src.link"
-FROM_IMAGE="${TMP}/src.peppy"
-TO_HWID="X86 LINK TEST 6638"
-FROM_HWID="X86 PEPPY TEST 4211"
-cp -f "${LINK_BIOS}" "${TO_IMAGE}"
-cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}"
+FROM_IMAGE="${TMP}/src.trulo.800"
+TO_IMAGE="${TMP}/src.trulo.900"
+cp -f "${TRULO_800_BIOS}" "${FROM_IMAGE}"
+cp -f "${TRULO_900_BIOS}" "${TO_IMAGE}"
 "${FUTILITY}" load_fmap "${FROM_IMAGE}" \
   RO_VPD:"${RO_VPD_BLOB}" RW_VPD:"${RO_VPD_BLOB}"
-cp -f "${FROM_IMAGE}" "${FROM_IMAGE}".unpatched
+
+LINK_MP_IMAGE="${TMP}/src.link"
+cp -f "${LINK_BIOS}" "${LINK_MP_IMAGE}"
 
 patch_file() {
   local file="$1"
@@ -106,16 +106,6 @@ get_section() {
   dd if="${file}" bs=1 skip="${offset}" count="${size}"
 }
 
-# PEPPY and LINK have different platform element ("Google_Link" and
-# "Google_Peppy") in firmware ID so we want to hack them by changing
-# "Google_" to "Google.".
-patch_file "${TO_IMAGE}" RW_FWID_A 0 Google.
-patch_file "${TO_IMAGE}" RW_FWID_B 0 Google.
-patch_file "${TO_IMAGE}" RO_FRID 0 Google.
-patch_file "${FROM_IMAGE}" RW_FWID_A 0 Google.
-patch_file "${FROM_IMAGE}" RW_FWID_B 0 Google.
-patch_file "${FROM_IMAGE}" RO_FRID 0 Google.
-
 unpack_image() {
   local folder="${TMP}/$1"
   local image="$2"
@@ -124,14 +114,25 @@ unpack_image() {
   "${FUTILITY}" gbb -g --rootkey="${folder}/rootkey" "${image}"
 }
 
+change_key() {
+  local image="$1"
+  local unpack_dir="$2"
+
+  "${FUTILITY}" gbb -s --rootkey="${unpack_dir}/rootkey" "${image}"
+  "${FUTILITY}" load_fmap "${image}" \
+    "VBLOCK_A:${unpack_dir}/VBLOCK_A" \
+    "VBLOCK_B:${unpack_dir}/VBLOCK_B"
+}
+
 # Unpack images so we can prepare expected results by individual sections.
-unpack_image "to" "${TO_IMAGE}"
 unpack_image "from" "${FROM_IMAGE}"
+unpack_image "to" "${TO_IMAGE}"
+unpack_image "link_mp" "${LINK_MP_IMAGE}"
 
 # Hack FROM_IMAGE so it has same root key as TO_IMAGE (for RW update).
-FROM_DIFFERENT_ROOTKEY_IMAGE="${FROM_IMAGE}2"
+FROM_DIFFERENT_ROOTKEY_IMAGE="${FROM_IMAGE}.diff_rootkey"
 cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
-"${FUTILITY}" gbb -s --rootkey="${TMP_TO}/rootkey" "${FROM_IMAGE}"
+"${FUTILITY}" gbb -s --rootkey="${TMP}/link_mp/rootkey" "${FROM_DIFFERENT_ROOTKEY_IMAGE}"
 
 # Hack for quirks
 FROM_IMAGE_SIZE="$(stat -c %s "${FROM_IMAGE}")"
@@ -144,27 +145,12 @@ cp -f "${FROM_IMAGE}" "${FROM_SAME_RO_IMAGE}"
 "${FUTILITY}" load_fmap "${FROM_SAME_RO_IMAGE}" \
   "RO_SECTION:${TMP_TO}/RO_SECTION"
 
-# Create GBB v1.2 images (for checking digest)
-GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE}")"
-[ "${GBB_OUTPUT}" = "digest: <none>" ]
-TO_IMAGE_GBB12="${TO_IMAGE}.gbb12"
-HWID_DIGEST="adf64d2a434b610506153da42440b0b498d7369c0e98b629ede65eb59f4784fa"
-cp -f "${TO_IMAGE}" "${TO_IMAGE_GBB12}"
-patch_file "${TO_IMAGE_GBB12}" GBB 6 "\x02"
-"${FUTILITY}" gbb -s --hwid="${TO_HWID}" "${TO_IMAGE_GBB12}"
-GBB_OUTPUT="$("${FUTILITY}" gbb --digest "${TO_IMAGE_GBB12}")"
-[ "${GBB_OUTPUT}" = "digest: ${HWID_DIGEST}   valid" ]
-
-# Create images with (empty) AP RO verification
-# (Patch FMAP to rename 'RO_UNUSED' to 'RO_GSCVD')
-cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.locked"
-patch_file "${FROM_IMAGE}.locked" FMAP 0x0430 "RO_GSCVD\x00"
-cp -f "${FROM_IMAGE}.locked" "${FROM_IMAGE}.locked_same_desc"
-cp -f "${FROM_IMAGE}.locked" "${FROM_IMAGE}.unlocked"
-patch_file "${FROM_IMAGE}.unlocked" SI_DESC 0x60 \
-  "\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
-"${FUTILITY}" load_fmap "${FROM_IMAGE}.locked_same_desc" \
-  "SI_DESC:${TMP_TO}/SI_DESC"
+# Create FROM_INCOMPAT_PLATFORM_IMAGE.
+FROM_INCOMPAT_PLATFORM_IMAGE="${FROM_IMAGE}.incompat_plat"
+cp -f "${FROM_IMAGE}" "${FROM_INCOMPAT_PLATFORM_IMAGE}"
+INCOMPAT_FWID="Google_Incompatible.11111.222.0"
+patch_file "${FROM_INCOMPAT_PLATFORM_IMAGE}" RO_FRID 0x0 \
+  "${INCOMPAT_FWID}"
 
 # Generate expected results.
 cp -f "${TO_IMAGE}" "${EXPECTED}/full"
@@ -173,7 +159,6 @@ cp -f "${FROM_IMAGE}" "${EXPECTED}/a"
 cp -f "${FROM_IMAGE}" "${EXPECTED}/b"
 cp -f "${FROM_SAME_RO_IMAGE}" "${EXPECTED}/FROM_SAME_RO_IMAGE.b"
 cp -f "${FROM_IMAGE}" "${EXPECTED}/legacy"
-"${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${EXPECTED}/full"
 "${FUTILITY}" load_fmap "${EXPECTED}/full" \
   "RW_VPD:${TMP_FROM}/RW_VPD" \
   "RO_VPD:${TMP_FROM}/RO_VPD"
@@ -183,16 +168,16 @@ cp -f "${FROM_IMAGE}" "${EXPECTED}/legacy"
   "RW_SHARED:${TMP_TO}/RW_SHARED" \
   "RW_LEGACY:${TMP_TO}/RW_LEGACY"
 "${FUTILITY}" load_fmap "${EXPECTED}/a" \
-  "RW_SECTION_A:${TMP_TO}/RW_SECTION_A"
+  "RW_SECTION_A:${TMP_TO}/RW_SECTION_A" \
+  "RW_LEGACY:${TMP_TO}/RW_LEGACY"
 "${FUTILITY}" load_fmap "${EXPECTED}/b" \
-  "RW_SECTION_B:${TMP_TO}/RW_SECTION_B"
+  "RW_SECTION_B:${TMP_TO}/RW_SECTION_B" \
+  "RW_LEGACY:${TMP_TO}/RW_LEGACY"
 "${FUTILITY}" load_fmap "${EXPECTED}/FROM_SAME_RO_IMAGE.b" \
-  "RW_SECTION_B:${TMP_TO}/RW_SECTION_B"
+  "RW_SECTION_B:${TMP_TO}/RW_SECTION_B" \
+  "RW_LEGACY:${TMP_TO}/RW_LEGACY"
 "${FUTILITY}" load_fmap "${EXPECTED}/legacy" \
   "RW_LEGACY:${TMP_TO}/RW_LEGACY"
-cp -f "${EXPECTED}/full" "${EXPECTED}/full.gbb12"
-patch_file "${EXPECTED}/full.gbb12" GBB 6 "\x02"
-"${FUTILITY}" gbb -s --hwid="${FROM_HWID}" "${EXPECTED}/full.gbb12"
 cp -f "${EXPECTED}/full" "${EXPECTED}/full.gbb0"
 "${FUTILITY}" gbb -s --flags=0 "${EXPECTED}/full.gbb0"
 cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.gbb0"
@@ -201,78 +186,23 @@ cp -f "${EXPECTED}/full" "${EXPECTED}/full.gbb0x27"
 "${FUTILITY}" gbb -s --flags=0x27 "${EXPECTED}/full.gbb0x27"
 cp -f "${EXPECTED}/full" "${EXPECTED}/large"
 dd if=/dev/zero bs="${FROM_IMAGE_SIZE}" count=1 | tr '\000' '\377' >>"${EXPECTED}/large"
-cp -f "${EXPECTED}/full" "${EXPECTED}/me_unlocked_eve"
-patch_file "${EXPECTED}/me_unlocked_eve" SI_DESC 0x60 \
-  "\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
-cp -f "${EXPECTED}/full" "${EXPECTED}/me_preserved"
-"${FUTILITY}" load_fmap "${EXPECTED}/me_preserved" \
-  "SI_ME:${TMP_FROM}/SI_ME"
-cp -f "${EXPECTED}/rw" "${EXPECTED}/rw.locked"
-patch_file "${EXPECTED}/rw.locked" FMAP 0x0430 "RO_GSCVD\x00"
 
-# A special set of images that only RO_VPD is preserved (RW_VPD is wiped) using
-# FMAP_AREA_PRESERVE (\010=0x08).
+# A special image that doesn't preserve RW_VPD (FMAP_AREA_PRESERVE=0x08).
+# RW_VPD FmapAreaHeader is at FMAP offset 0x302, so area_flags is at 0x32a.
 TO_IMAGE_WIPE_RW_VPD="${TO_IMAGE}.wipe_rw_vpd"
 cp -f "${TO_IMAGE}" "${TO_IMAGE_WIPE_RW_VPD}"
-patch_file "${TO_IMAGE_WIPE_RW_VPD}" FMAP 0x3fc "$(printf '\010')"
+patch_file "${TO_IMAGE_WIPE_RW_VPD}" FMAP 0x32a "\x00"
 cp -f "${EXPECTED}/full" "${EXPECTED}/full.empty_rw_vpd"
 "${FUTILITY}" load_fmap "${EXPECTED}/full.empty_rw_vpd" \
   RW_VPD:"${TMP_TO}/RW_VPD"
-patch_file "${EXPECTED}/full.empty_rw_vpd" FMAP 0x3fc "$(printf '\010')"
+patch_file "${EXPECTED}/full.empty_rw_vpd" FMAP 0x32a "\x00"
 
-# Generate images for testing --unlock_me.
-# There are two ways to detect the platform:
-#  - Read CONFIG_IFD_CHIPSET from config file in CBFS
-#  - Fallback for nissa: check if CONFIG_IFD_BIN_PATH contains 'nissa'
-
-# Rename BOOT_STUB to COREBOOT, which is the default region used by cbfstool.
-rename_boot_stub() {
-  local image="$1"
-  local fmap_file="${TMP}/fmap"
-
-  "${FUTILITY}" dump_fmap "${image}" -x "FMAP:${fmap_file}"
-  sed -i 's/BOOT_STUB/COREBOOT\x00/g' "${fmap_file}"
-  "${FUTILITY}" load_fmap "${image}" "FMAP:${fmap_file}"
-}
-
-# Add the given line to the config file in CBFS.
-add_config() {
-  local image="$1"
-  local config_line="$2"
-  local config_file="${TMP}/config"
-
-  rename_boot_stub "${image}"
-
-  cbfstool "${image}" extract -n config -f "${config_file}"
-  echo "${config_line}" >>"${config_file}"
-  cbfstool "${image}" remove -n config
-  cbfstool "${image}" add -n config -f "${config_file}" -t raw
-}
-
-unlock_me() {
-  local image="$1"
-
-  patch_file "${image}" SI_DESC 0x60 \
-    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-  patch_file "${image}" SI_DESC 0x154 \
-    "\x00\x00\x00\x00"
-}
-
-IFD_CHIPSET='CONFIG_IFD_CHIPSET="adl"'
-IFD_PATH='CONFIG_IFD_BIN_PATH="3rdparty/blobs/mainboard/google/nissa/descriptor-craask.bin"'
-cp -f "${TO_IMAGE}" "${TO_IMAGE}.ifd_chipset"
-cp -f "${TO_IMAGE}" "${TO_IMAGE}.ifd_path"
-cp -f "${EXPECTED}/full" "${EXPECTED}/ifd_chipset"
-cp -f "${EXPECTED}/full" "${EXPECTED}/ifd_path"
-add_config "${TO_IMAGE}.ifd_chipset" "${IFD_CHIPSET}"
-add_config "${TO_IMAGE}.ifd_path" "${IFD_PATH}"
-add_config "${EXPECTED}/ifd_chipset" "${IFD_CHIPSET}"
-add_config "${EXPECTED}/ifd_path" "${IFD_PATH}"
-
-cp -f "${EXPECTED}/ifd_chipset" "${EXPECTED}/me_unlocked.ifd_chipset"
-cp -f "${EXPECTED}/ifd_path" "${EXPECTED}/me_unlocked.ifd_path"
-unlock_me "${EXPECTED}/me_unlocked.ifd_chipset"
-unlock_me "${EXPECTED}/me_unlocked.ifd_path"
+# Special "from" image with different ME.
+FROM_DIFFERENT_ME_IMAGE="${FROM_IMAGE}.diff_me"
+cp -f "${FROM_IMAGE}" "${FROM_DIFFERENT_ME_IMAGE}"
+patch_file "${FROM_DIFFERENT_ME_IMAGE}" SI_ME 0 "corrupted"
+cp -f "${EXPECTED}/full" "${EXPECTED}/me_preserved"
+patch_file "${EXPECTED}/me_preserved" SI_ME 0 "corrupted"
 
 # Special "to" image with changed fwid to match "from" image
 FROM_IMAGE_FWID_RW_A="$( get_section "${FROM_IMAGE}" RW_FWID_A 0 | sed 's/\x00/\\0/g' )"
@@ -328,15 +258,20 @@ test_update "Full update (check fwid, same fwid)" \
   -i "${TO_IMAGE_SAME_FWID}" --wp=0 --check-fwid
 
 test_update "Full update (incompatible platform)" \
-  "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" --wp=0
+  "${FROM_INCOMPAT_PLATFORM_IMAGE}" "!platform is not compatible" \
+  -i "${TO_IMAGE}" --wp=0
+
+test_update "Full update (--quirks no_check_platform)" \
+  "${FROM_INCOMPAT_PLATFORM_IMAGE}" "${EXPECTED}/full" \
+  -i "${TO_IMAGE}" --wp=0 \
+  --quirks no_check_platform
 
 test_update "Full update (TPM Anti-rollback: data key)" \
-  "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+  "${FROM_IMAGE}" "!Data key version rollback detected" \
   -i "${TO_IMAGE}" --wp=0 --sys_props 1,0x20001
 
 test_update "Full update (TPM Anti-rollback: kernel key)" \
-  "${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+  "${FROM_IMAGE}" "!Firmware version rollback detected" \
   -i "${TO_IMAGE}" --wp=0 --sys_props 1,0x10005
 
 test_update "Full update (TPM Anti-rollback: 0 as tpm_fwver)" \
@@ -367,10 +302,6 @@ test_update "Full update (--host_only)" \
   "${FROM_IMAGE}" "${EXPECTED}/full" \
   -i "${TO_IMAGE}" --wp=0 --host_only --ec_image non-exist.bin
 
-test_update "Full update (GBB1.2 hwid digest)" \
-  "${FROM_IMAGE}" "${EXPECTED}/full.gbb12" \
-  -i "${TO_IMAGE_GBB12}" --wp=0
-
 test_update "Full update (Preserve VPD using FMAP_AREA_PRESERVE)" \
   "${FROM_IMAGE}" "${EXPECTED}/full.empty_rw_vpd" \
   -i "${TO_IMAGE_WIPE_RW_VPD}" --wp=0
@@ -390,19 +321,19 @@ test_update "RW update (check fwid, same fwid)" \
   -i "${TO_IMAGE_SAME_FWID}" --wp=1 --check-fwid
 
 test_update "RW update (incompatible platform)" \
-  "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" --wp=1
+  "${FROM_INCOMPAT_PLATFORM_IMAGE}" "!platform is not compatible" \
+  -i "${TO_IMAGE}" --wp=1
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
   -i "${TO_IMAGE}" --wp=1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
-  "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+  "${FROM_IMAGE}" "!Data key version rollback detected" \
   -i "${TO_IMAGE}" --wp=1 --sys_props 1,0x20001
 
 test_update "RW update (TPM Anti-rollback: kernel key)" \
-  "${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+  "${FROM_IMAGE}" "!Firmware version rollback detected" \
   -i "${TO_IMAGE}" --wp=1 --sys_props 1,0x10005
 
 # Test Try-RW update (vboot2).
@@ -424,26 +355,26 @@ test_update "RW update, same RO, wp=1 (A->B)" \
 
 test_update "RW update -> fallback to RO+RW Full update" \
   "${FROM_IMAGE}" "${EXPECTED}/full" \
-  -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10002
+  -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10001
 test_update "RW update (incompatible platform)" \
-  "${FROM_IMAGE}" "!platform is not compatible" \
-  -i "${LINK_BIOS}" -t --wp=1
+  "${FROM_INCOMPAT_PLATFORM_IMAGE}" "!platform is not compatible" \
+  -i "${TO_IMAGE}" -t --wp=1
 
 test_update "RW update (incompatible rootkey)" \
   "${FROM_DIFFERENT_ROOTKEY_IMAGE}" "!RW signed by incompatible root key" \
   -i "${TO_IMAGE}" -t --wp=1
 
 test_update "RW update (TPM Anti-rollback: data key)" \
-  "${FROM_IMAGE}" "!Data key version rollback detected (2->1)" \
+  "${FROM_IMAGE}" "!Data key version rollback detected" \
   -i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x20001
 
 test_update "RW update (TPM Anti-rollback: kernel key)" \
-  "${FROM_IMAGE}" "!Firmware version rollback detected (5->4)" \
+  "${FROM_IMAGE}" "!Firmware version rollback detected" \
   -i "${TO_IMAGE}" -t --wp=1 --sys_props 1,0x10005
 
 test_update "RW update -> fallback to RO+RW Full update (TPM Anti-rollback)" \
-  "${FROM_IMAGE}" "!Firmware version rollback detected (6->4)" \
-  -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10006
+  "${FROM_IMAGE}" "!Firmware version rollback detected" \
+  -i "${TO_IMAGE}" -t --wp=0 --sys_props 1,0x10005
 
 # Test 'factory mode'
 test_update "Factory mode update (WP=0)" \
@@ -466,30 +397,12 @@ test_update "Factory mode update (GBB=0 -> 0x39)" \
   "${FROM_IMAGE}.gbb0" "${EXPECTED}/full" \
   --factory -i "${TO_IMAGE}" --wp=0
 
-# Test 'AP RO locked with verification turned on'
-test_update "AP RO locked update (locked, SI_DESC is different)" \
-  "${FROM_IMAGE}.locked" "${EXPECTED}/rw.locked" \
-  -i "${TO_IMAGE}" --wp=0 --debug
-
-test_update "AP RO locked update (locked, SI_DESC is the same)" \
-  "${FROM_IMAGE}.locked_same_desc" "${EXPECTED}/full" \
-  -i "${TO_IMAGE}" --wp=0 --debug
-
-test_update "AP RO locked update (unlocked)" \
-  "${FROM_IMAGE}.unlocked" "${EXPECTED}/full" \
-  -i "${TO_IMAGE}" --wp=0 --debug
-
 # Test legacy update
 test_update "Legacy update" \
   "${FROM_IMAGE}" "${EXPECTED}/legacy" \
   -i "${TO_IMAGE}" --mode=legacy
 
 # Test quirks
-test_update "Full update (wrong size)" \
-  "${FROM_IMAGE}.large" "!Failed writing firmware" \
-  -i "${TO_IMAGE}" --wp=0 \
-  --quirks unlock_csme_eve,eve_smm_store
-
 test_update "Full update (--quirks enlarge_image)" \
   "${FROM_IMAGE}.large" "${EXPECTED}/large" --quirks enlarge_image \
   -i "${TO_IMAGE}" --wp=0
@@ -498,11 +411,6 @@ test_update "Full update (multi-line --quirks enlarge_image)" \
   "${FROM_IMAGE}.large" "${EXPECTED}/large" --quirks '
   enlarge_image
   ' -i "${TO_IMAGE}" --wp=0
-
-test_update "Full update (--quirks unlock_csme_eve)" \
-  "${FROM_IMAGE}" "${EXPECTED}/me_unlocked_eve" \
-  --quirks unlock_csme_eve \
-  -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (failure by --quirks min_platform_version)" \
   "${FROM_IMAGE}" "!Need platform version >= 3 (current is 2)" \
@@ -514,38 +422,29 @@ test_update "Full update (--quirks min_platform_version)" \
   --quirks min_platform_version=3 \
   -i "${TO_IMAGE}" --wp=0 --sys_props ,,3
 
-test_update "Full update (incompatible platform)" \
-  "${FROM_IMAGE}".unpatched "!platform is not compatible" \
-  -i "${TO_IMAGE}" --wp=0
-
-test_update "Full update (--quirks no_check_platform)" \
-  "${FROM_IMAGE}".unpatched "${EXPECTED}/full" \
-  --quirks no_check_platform \
-  -i "${TO_IMAGE}" --wp=0
-
 test_update "Full update (--quirks preserve_me with non-host programmer)" \
-  "${FROM_IMAGE}" "${EXPECTED}/full" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/full" \
   --quirks preserve_me \
   -i "${TO_IMAGE}" --wp=0 \
   -p raiden_debug_spi:target=AP
 
 test_update "Full update (--quirks preserve_me)" \
-  "${FROM_IMAGE}" "${EXPECTED}/full" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/full" \
   --quirks preserve_me \
   -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, autoupdate)" \
-  "${FROM_IMAGE}" "${EXPECTED}/me_preserved" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/me_preserved" \
   --quirks preserve_me -m autoupdate \
   -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, deferupdate_hold)" \
-  "${FROM_IMAGE}" "${EXPECTED}/me_preserved" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/me_preserved" \
   --quirks preserve_me -m deferupdate_hold \
   -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, factory)" \
-  "${FROM_IMAGE}" "${EXPECTED}/full" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/full" \
   --quirks preserve_me -m factory \
   -i "${TO_IMAGE}" --wp=0
 
@@ -611,100 +510,106 @@ TMP_OUTPUT="${TMP}/out_archive" && mkdir -p "${TMP_OUTPUT}"
 cmp "${TMP_OUTPUT}/image.bin" "${TO_IMAGE}"
 
 # Test Unified Build archives.
+FROM_MP_IMAGE="${FROM_IMAGE}.mp"
+cp -f "${FROM_IMAGE}" "${FROM_MP_IMAGE}"
+change_key "${FROM_MP_IMAGE}" "${TMP}/link_mp"
+TO_MP_IMAGE="${TO_IMAGE}.mp"
+cp -f "${TO_IMAGE}" "${TO_MP_IMAGE}"
+change_key "${TO_MP_IMAGE}" "${TMP}/link_mp"
+cp -f "${EXPECTED}/full" "${EXPECTED}/full_mp"
+change_key "${EXPECTED}/full_mp" "${TMP}/link_mp"
+
 mkdir -p "${A}/keyset" "${A}/images"
 cp -f "${SIGNER_CONFIG}" "${A}/"
-cp -f "${LINK_BIOS}" "${A}/image.bin"
-"${FUTILITY}" gbb -s --rootkey="${TMP_FROM}/rootkey" "${A}/image.bin"
-"${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_A:"${TMP_FROM}/VBLOCK_A"
-"${FUTILITY}" load_fmap "${A}/image.bin" VBLOCK_B:"${TMP_FROM}/VBLOCK_B"
-mv -f "${A}/image.bin" "${A}/images/bios_coral.bin"
-cp -f "${PEPPY_BIOS}" "${A}/images/bios_peppy.bin"
+rm -f "${A}/*.bin"
 cp -f "${LINK_BIOS}" "${A}/images/bios_link.bin"
-cp -f "${TMP_TO}/rootkey" "${A}/keyset/rootkey.customtip-cl"
-cp -f "${TMP_TO}/VBLOCK_A" "${A}/keyset/vblock_A.customtip-cl"
-cp -f "${TMP_TO}/VBLOCK_B" "${A}/keyset/vblock_B.customtip-cl"
-cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap"
-cp -f "${LINK_BIOS}" "${FROM_IMAGE}.al"
-cp -f "${VOXEL_BIOS}" "${FROM_IMAGE}.av"
-cp -f "${PEPPY_BIOS}" "${FROM_IMAGE}.ap.erased"
-patch_file "${FROM_IMAGE}.ap" FW_MAIN_A 0 "corrupted"
-patch_file "${FROM_IMAGE}.al" FW_MAIN_A 0 "corrupted"
-patch_file "${FROM_IMAGE}.av" FW_MAIN_A 0 "corrupted"
-erase_file "${FROM_IMAGE}.ap.erased"
+cp -f "${TRULO_900_BIOS}" "${A}/images/bios_trulo_900.bin"
+cp -f "${GERALT_BIOS}" "${A}/images/bios_geralt.bin"
+# TRULO_900_BIOS is dev-signed. Generate rootkey/VBLOCK patches with MP key
+# to simulate a different custom label key.
+unpack_image "to_mp" "${TO_MP_IMAGE}"
+cp -f "${TMP}/to_mp/rootkey" "${A}/keyset/rootkey.customtip-mp"
+cp -f "${TMP}/to_mp/VBLOCK_A" "${A}/keyset/vblock_A.customtip-mp"
+cp -f "${TMP}/to_mp/VBLOCK_B" "${A}/keyset/vblock_B.customtip-mp"
+cp -f "${LINK_MP_IMAGE}" "${LINK_MP_IMAGE}.corrupted"
+cp -f "${LINK_MP_IMAGE}" "${LINK_MP_IMAGE}.erased"
+patch_file "${LINK_MP_IMAGE}.corrupted" FW_MAIN_A 0 "corrupted"
+erase_file "${LINK_MP_IMAGE}.erased"
+
 test_update "Full update (--archive, model=link)" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
+  "${LINK_MP_IMAGE}.corrupted" "${LINK_MP_IMAGE}" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=link
-test_update "Full update (--archive, model=peppy)" \
-  "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=peppy
 test_update "Full update (--archive, model=unknown)" \
-  "${FROM_IMAGE}.ap" "!Unsupported model: 'unknown'" \
+  "${LINK_MP_IMAGE}.corrupted" "!Unsupported model: 'unknown'" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=unknown
 
 # Test archives with identity.csv
 cp -f "${IDENTITY_CSV}" "${A}/"
 LINK_SKU_ID=0x1000
-PEPPY_SKU_ID=0x1001
 test_update "Full update (--archive, identity.csv with SKU ${LINK_SKU_ID})" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
+  "${LINK_MP_IMAGE}.corrupted" "${LINK_MP_IMAGE}" \
   -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
+WRONG_SKU_ID="0x999"
 test_update "Full update (--archive, identity.csv with wrong SKU)" \
-  "${FROM_IMAGE}.ap" "!Failed to get device identity from identity.csv" \
-  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}"
-test_update "Full update (--archive, identity.csv with --sku-id=PEPPY_SKU_ID)" \
-  "${FROM_IMAGE}.ap" "${PEPPY_BIOS}" \
-  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${LINK_SKU_ID}" \
-  --sku-id "${PEPPY_SKU_ID}"
+  "${LINK_MP_IMAGE}.corrupted" "!Failed to get device identity from identity.csv" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${WRONG_SKU_ID}"
+test_update "Full update (--archive, identity.csv with --sku-id)" \
+  "${LINK_MP_IMAGE}.corrupted" "${LINK_MP_IMAGE}" \
+  -a "${A}" --wp=0 --sys_props "0,0x10001,3,,,,${WRONG_SKU_ID}" \
+  --sku-id "${LINK_SKU_ID}"
 
 # Remotely flash over a completely erased system flash.
-# The FRID matching is case-insensitive, so passing "google_peppy" is fine.
+# The FRID matching is case-insensitive, so passing "google_link" is fine.
 # `--programmer` is for simulating remote flashing (via servo).
 # `--force` is required to ignore the system firmware parsing error.
 test_update "Full update (--archive, remote, identity.csv with --frid/--sku-id)" \
-  "${FROM_IMAGE}.ap.erased" "${PEPPY_BIOS}" \
+  "${LINK_MP_IMAGE}.erased" "${LINK_MP_IMAGE}" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
   --programmer raiden_debug_spi:target=AP \
-  --frid "google_peppy" --sku-id "${PEPPY_SKU_ID}" --force
+  --frid "google_link" --sku-id "${LINK_SKU_ID}" --force
 
 # Test --detect-model-only on a remote DUT.
 echo "*** Test Item: Detect model (--archive, remote, --detect-model-only)"
 "${FUTILITY}" update -a "${A}" \
-  --emulate "${FROM_IMAGE}.ap" --programmer raiden_debug_spi:target=AP \
+  --emulate "${LINK_MP_IMAGE}.corrupted" --programmer raiden_debug_spi:target=AP \
   --detect-model-only >"${TMP}/model.out"
-cmp "${TMP}/model.out" <(echo peppy)
+cmp "${TMP}/model.out" <(echo link)
 
+cp -f "${LINK_MP_IMAGE}" "${LINK_MP_IMAGE}.incompat"
+patch_file "${LINK_MP_IMAGE}.incompat" RO_FRID 0x0 \
+  "Google_Incompatible.11111.222.0"
 test_update "Detect model (--archive, remote, --detect-model-only, unsupported FRID)" \
-  "${FROM_IMAGE}.av" "!Unsupported model: 'Google_Voxel'" \
+  "${LINK_MP_IMAGE}.incompat" "!Unsupported model: 'Google_Incompatible'" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 \
   --programmer raiden_debug_spi:target=AP \
   --detect-model-only
 
 test_update "Full update (--archive, custom label with tag specified)" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip-cl
+  "${FROM_MP_IMAGE}" "${EXPECTED}/full_mp" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip-mp
+CL_TAG="mp" PATH="${A}/bin:${PATH}" \
+  test_update "Full update (--archive, custom label, fake VPD)" \
+  "${FROM_MP_IMAGE}" "${EXPECTED}/full_mp" \
+  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
 CL_TAG="bad" PATH="${A}/bin:${PATH}" \
   test_update "Full update (--archive, custom label, wrong image)" \
-  "${FROM_IMAGE}.al" "!The firmware image for custom label" \
+  "${FROM_MP_IMAGE}" "!The firmware image for custom label" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --debug --model=customtip
-CL_TAG="cl" PATH="${A}/bin:${PATH}" \
-  test_update "Full update (--archive, custom label, fake VPD)" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
-  -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
 
 # The output mode (without specifying signature id) for custom label would still
 # need a source (emulate) image to decide the VPD, which is not a real use case.
 echo "TEST: Output (--archive, --mode=output, custom label with tag specified)"
 TMP_OUTPUT="${TMP}/out_custom_label" && mkdir -p "${TMP_OUTPUT}"
 "${FUTILITY}" update -a "${A}" --mode=output \
-  --output_dir="${TMP_OUTPUT}" --model=customtip-cl
-cmp "${TMP_OUTPUT}/image.bin" "${LINK_BIOS}"
+  --output_dir="${TMP_OUTPUT}" --model=customtip-mp
+cmp "${TMP_OUTPUT}/image.bin" "${TO_MP_IMAGE}"
 
 # Custom label + Unibuild with default keys as model name
 cp -f "${TMP_TO}/rootkey" "${A}/keyset/rootkey.customtip"
 cp -f "${TMP_TO}/VBLOCK_A" "${A}/keyset/vblock_A.customtip"
 cp -f "${TMP_TO}/VBLOCK_B" "${A}/keyset/vblock_B.customtip"
 test_update "Full update (--archive, custom label, no VPD, default keys)" \
-  "${FROM_IMAGE}.al" "${LINK_BIOS}" \
+  "${FROM_IMAGE}" "${EXPECTED}/full" \
   -a "${A}" --wp=0 --sys_props 0,0x10001,3 --model=customtip
 
 # Test special programmer
@@ -724,26 +629,43 @@ test_cbfstool() {
   local smm="${TMP}/smm"
   local cbfs="${TMP}/cbfs"
   local quirk="${TMP}/quirk"
+  local size
+
+  cp -f "${EVE_BIOS}" "${TMP_FROM}.eve.locked"
+  patch_file "${TMP_FROM}.eve.locked" SI_DESC 0x80 \
+    "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+  cp -f "${EVE_BIOS}" "${EXPECTED}/eve.unlocked"
+  patch_file "${EXPECTED}/eve.unlocked" SI_DESC 0x80 \
+    "\x00\xff\xff\xff\x00\xff\xff\xff\x00\xff\xff\xff"
 
   echo "SMM STORE" >"${smm}"
   truncate -s 262144 "${smm}"
-  cp -f "${FROM_IMAGE}" "${TMP_FROM}.smm"
-  cp -f "${EXPECTED}/full" "${EXPECTED}/full_smm"
-  cbfstool "${TMP_FROM}.smm" add -r RW_LEGACY -n "smm_store" \
+  cbfstool "${TMP_FROM}.eve.locked" add -r RW_LEGACY -n "smm_store" \
     -f "${smm}" -t raw
-  cbfstool "${EXPECTED}/full_smm" add -r RW_LEGACY -n "smm_store" \
+  cbfstool "${EXPECTED}/eve.unlocked" add -r RW_LEGACY -n "smm_store" \
     -f "${smm}" -t raw -b 0x1bf000
+  # Both unlock_csme_eve and eve_smm_store are implicitly enabled.
+  test_update "Full update (--quirks unlock_csme_eve)" \
+    "${TMP_FROM}.eve.locked" "${EXPECTED}/eve.unlocked" \
+    -i "${EVE_BIOS}" --wp=0 \
+    --quirks unlock_csme_eve
   test_update "Legacy update (--quirks eve_smm_store)" \
-    "${TMP_FROM}.smm" "${EXPECTED}/full_smm" \
-    -i "${TO_IMAGE}" --wp=0 \
+    "${TMP_FROM}.eve.locked" "${EXPECTED}/eve.unlocked" \
+    -i "${EVE_BIOS}" --wp=0 \
     --quirks eve_smm_store
+
+  cp "${TMP_FROM}.eve.locked" "${TMP_FROM}.eve.large"
+  size="$(stat -c %s "${TMP_FROM}.eve.large")"
+  truncate -s "$(("${size}" * 2))" "${TMP_FROM}.eve.large"
+  test_update "Full update (wrong size)" \
+    "${TMP_FROM}.eve.large" "!Failed writing firmware" \
+    -i "${EVE_BIOS}" --wp=0 \
+    --quirks unlock_csme_eve,eve_smm_store
 
   echo "min_platform_version=3" >"${quirk}"
   cp -f "${TO_IMAGE}" "${TO_IMAGE}.quirk"
-  "${FUTILITY}" dump_fmap -x "${TO_IMAGE}" "BOOT_STUB:${cbfs}"
-  # Create a fake CBFS using FW_MAIN_A size.
-  truncate -s $((0x000dffc0)) "${cbfs}"
-  "${FUTILITY}" load_fmap "${TO_IMAGE}.quirk" "FW_MAIN_A:${cbfs}"
+  # Remove existing 'updater_quirks' if any.
+  cbfstool "${TO_IMAGE}.quirk" remove -r FW_MAIN_A -n updater_quirks || true
   cbfstool "${TO_IMAGE}.quirk" add -r FW_MAIN_A -n updater_quirks \
     -f "${quirk}" -t raw
   test_update "Full update (failure by CBFS quirks)" \
@@ -752,7 +674,100 @@ test_cbfstool() {
 }
 type cbfstool >/dev/null 2>&1 && test_cbfstool
 
+# Add the given line to the config file in CBFS.
+add_config() {
+  local image="$1"
+  local config_line="$2"
+  local config_file="${TMP}/config"
+
+  cbfstool "${image}" extract -n config -f "${config_file}"
+  echo "${config_line}" >>"${config_file}"
+  cbfstool "${image}" remove -n config
+  cbfstool "${image}" add -n config -f "${config_file}" -t raw
+}
+
+# Remove lines of the given pattern from the config file in CBFS.
+remove_config() {
+  local image="$1"
+  local config_pattern="$2"
+  local config_file="${TMP}/config"
+
+  cbfstool "${image}" extract -n config -f "${config_file}"
+  sed -i "/${config_pattern}/d" "${config_file}"
+  cbfstool "${image}" remove -n config
+  cbfstool "${image}" add -n config -f "${config_file}" -t raw
+}
+
+lock_me() {
+  local image="$1"
+
+  ifdtool -p adl --lock "${image}" -O "${image}.tmp"
+  ifdtool -p adl --gpr0-enable "${image}.tmp" -O "${image}"
+}
+
+unlock_me() {
+  local image="$1"
+
+  ifdtool -p adl --unlock "${image}" -O "${image}.tmp"
+  ifdtool -p adl --gpr0-disable "${image}.tmp" -O "${image}"
+}
+
 test_ifdtool() {
+  cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.locked"
+  lock_me "${FROM_IMAGE}.locked"
+  cp -f "${FROM_IMAGE}" "${FROM_IMAGE}.unlocked"
+  unlock_me "${FROM_IMAGE}.unlocked"
+  cp -f "${TO_IMAGE}" "${TO_IMAGE}.locked"
+  lock_me "${TO_IMAGE}.locked"
+  cp -f "${TO_IMAGE}" "${TO_IMAGE}.unlocked"
+  unlock_me "${TO_IMAGE}.unlocked"
+
+  cp -f "${EXPECTED}/full" "${EXPECTED}/full.locked"
+  lock_me "${EXPECTED}/full.locked"
+  cp -f "${EXPECTED}/rw" "${EXPECTED}/rw.locked"
+  lock_me "${EXPECTED}/rw.locked"
+
+  # Test 'AP RO locked with verification turned on'.
+  test_update "AP RO locked update (locked, SI_DESC is different)" \
+    "${FROM_IMAGE}.locked" "${EXPECTED}/rw.locked" \
+    -i "${TO_IMAGE}.unlocked" --wp=0 --debug
+
+  test_update "AP RO locked update (locked, SI_DESC is the same)" \
+    "${FROM_IMAGE}.locked" "${EXPECTED}/full.locked" \
+    -i "${TO_IMAGE}.locked" --wp=0 --debug
+
+  test_update "AP RO locked update (unlocked)" \
+    "${FROM_IMAGE}.unlocked" "${EXPECTED}/full" \
+    -i "${TO_IMAGE}" --wp=0 --debug
+
+  # Generate images for testing --unlock_me.
+  # There are two ways to detect the platform:
+  #  1. Read CONFIG_IFD_CHIPSET from config file in CBFS
+  #  2. Fallback for nissa: check if CONFIG_IFD_BIN_PATH contains 'nissa'
+  local config_ifd_chipset='CONFIG_IFD_CHIPSET="adl"'
+  local config_ifd_path=\
+'CONFIG_IFD_BIN_PATH="3rdparty/blobs/mainboard/google/nissa/descriptor-craask.bin"'
+
+  cp -f "${TO_IMAGE}" "${TO_IMAGE}.ifd"
+  cp -f "${EXPECTED}/full" "${EXPECTED}/full.ifd"
+  remove_config "${TO_IMAGE}.ifd" "CONFIG_IFD_CHIPSET="
+  remove_config "${TO_IMAGE}.ifd" "CONFIG_IFD_BIN_PATH="
+  remove_config "${EXPECTED}/full.ifd" "CONFIG_IFD_CHIPSET="
+  remove_config "${EXPECTED}/full.ifd" "CONFIG_IFD_BIN_PATH="
+  cp -f "${TO_IMAGE}.ifd" "${TO_IMAGE}.ifd_chipset"
+  cp -f "${TO_IMAGE}.ifd" "${TO_IMAGE}.ifd_path"
+  cp -f "${EXPECTED}/full.ifd" "${EXPECTED}/ifd_chipset"
+  cp -f "${EXPECTED}/full.ifd" "${EXPECTED}/ifd_path"
+  add_config "${TO_IMAGE}.ifd_chipset" "${config_ifd_chipset}"
+  add_config "${TO_IMAGE}.ifd_path" "${config_ifd_path}"
+  add_config "${EXPECTED}/ifd_chipset" "${config_ifd_chipset}"
+  add_config "${EXPECTED}/ifd_path" "${config_ifd_path}"
+
+  cp -f "${EXPECTED}/ifd_chipset" "${EXPECTED}/me_unlocked.ifd_chipset"
+  cp -f "${EXPECTED}/ifd_path" "${EXPECTED}/me_unlocked.ifd_path"
+  unlock_me "${EXPECTED}/me_unlocked.ifd_chipset"
+  unlock_me "${EXPECTED}/me_unlocked.ifd_path"
+
   test_update "Full update (--quirks unlock_csme, IFD chipset)" \
     "${FROM_IMAGE}" "${EXPECTED}/me_unlocked.ifd_chipset" \
     --quirks unlock_csme -i "${TO_IMAGE}.ifd_chipset" --wp=0
