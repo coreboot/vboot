@@ -159,16 +159,21 @@ static int vb_keyb_from_modulus(const BIGNUM *rsa_private_key_n, uint32_t modulu
 done:
 	free(outbuf);
 	/* Free BIGNUMs. */
+	BN_free(N);
 	BN_free(Big1);
 	BN_free(Big2);
 	BN_free(Big32);
 	BN_free(BigMinus1);
 	BN_free(N0inv);
 	BN_free(R);
+	BN_free(RR);
 	BN_free(RRTemp);
 	BN_free(NnumBits);
 	BN_free(n);
 	BN_free(rr);
+	BN_free(B);
+
+	BN_CTX_free(bn_ctx);
 
 	return retval;
 }

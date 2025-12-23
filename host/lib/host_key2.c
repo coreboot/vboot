@@ -5,6 +5,7 @@
  * Host functions for keys.
  */
 
+#include <openssl/crypto.h>
 #include <openssl/pem.h>
 
 #include <errno.h>
@@ -133,6 +134,7 @@ struct vb2_private_key *vb2_read_private_key(const char *key_info)
 	uint32_t bufsize = 0;
 	if (vb2_read_file(key_info, &buf, &bufsize) != VB2_SUCCESS) {
 		VB2_DEBUG("unable to read from file %s\n", key_info);
+		free(key);
 		return NULL;
 	}
 
@@ -228,7 +230,7 @@ vb2_error_t vb2_write_private_key(const char *filename,
 	FILE *f = fopen(filename, "wb");
 	if (!f) {
 		fprintf(stderr, "Unable to open file %s\n", filename);
-		free(outbuf);
+		OPENSSL_free(outbuf);
 		return VB2_ERROR_PRIVATE_KEY_WRITE_FILE;
 	}
 
@@ -237,12 +239,12 @@ vb2_error_t vb2_write_private_key(const char *filename,
 		fprintf(stderr, "Unable to write to file %s\n", filename);
 		fclose(f);
 		unlink(filename);  /* Delete any partial file */
-		free(outbuf);
+		OPENSSL_free(outbuf);
 		return VB2_ERROR_PRIVATE_KEY_WRITE_FILE;
 	}
 
 	fclose(f);
-	free(outbuf);
+	OPENSSL_free(outbuf);
 	return VB2_SUCCESS;
 }
 

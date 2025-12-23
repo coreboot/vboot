@@ -162,6 +162,7 @@ int ft_show_privkey(const char *fname)
 	FT_PRINT("  Key sha1sum:         %s\n", "sha1_sum::%s\n",
 		 private_key_sha1_string(&key));
 
+	RSA_free(key.rsa_private_key);
 done:
 	futil_unmap_and_close_file(fd, FILE_RO, (uint8_t *)pkey, len);
 	return rv;

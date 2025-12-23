@@ -136,11 +136,14 @@ failure:
   BN_free(BigMinus1);
   BN_free(N0inv);
   BN_free(R);
+  BN_free(RR);
   BN_free(RRTemp);
   BN_free(NnumBits);
   BN_free(n);
   BN_free(rr);
+  BN_free(B);
 
+  BN_CTX_free(bn_ctx);
 }
 
 int main(int argc, char* argv[]) {

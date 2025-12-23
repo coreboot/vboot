@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 
+#include <openssl/crypto.h>
 #include <openssl/pem.h>
 
 #include "2common.h"
@@ -182,7 +183,7 @@ vb2_error_t vb21_private_key_write(const struct vb2_private_key *key,
 	/* Pack private key */
 	buf = calloc(1, pkey.c.total_size);
 	if (!buf) {
-		free(rsabuf);
+		OPENSSL_free(rsabuf);
 		return VB2_ERROR_PRIVATE_KEY_WRITE_ALLOC;
 	}
 
@@ -194,7 +195,7 @@ vb2_error_t vb21_private_key_write(const struct vb2_private_key *key,
 
 	if (rsabuf) {
 		memcpy(buf + pkey.key_offset, rsabuf, rsalen);
-		free(rsabuf);
+		OPENSSL_free(rsabuf);
 	}
 
 	rv = vb21_write_object(filename, buf);
