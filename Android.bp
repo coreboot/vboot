@@ -226,7 +226,7 @@ cc_library_static {
     },
 }
 
-cc_library_static {
+cc_library {
     name: "libvboot_host",
     defaults: ["libvboot_defaults"],
     host_supported: true,
