@@ -106,6 +106,7 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 
 	verify_data = malloc(sizeof(*verify_data));
 	verify_data->rollback_indexes[0] = rollback_value;
+	verify_data->cmdline = (char *)"";
 	*out_data = verify_data;
 
 	if (avb_verification_fails)
