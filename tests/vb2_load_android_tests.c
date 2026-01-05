@@ -10,6 +10,7 @@
 #include "2common.h"
 #include "2misc.h"
 #include "2nvstorage.h"
+#include "2secdata.h"
 #include "cgptlib.h"
 #include "cgptlib_internal.h"
 #include "common/boot_mode.h"
@@ -105,6 +106,7 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 					&num_bytes);
 
 	verify_data = malloc(sizeof(*verify_data));
+	memset(verify_data, 0, sizeof(*verify_data));
 	verify_data->rollback_indexes[0] = rollback_value;
 	verify_data->cmdline = (char *)"";
 	*out_data = verify_data;
@@ -198,8 +200,11 @@ static void reset_mocks(void)
 	vb2api_init(workbuf, sizeof(workbuf), &ctx);
 	vb2_nv_init(ctx);
 	vb2_nv_set(ctx, VB2_NV_KERNEL_MAX_ROLLFORWARD, 0xfffffffe);
+	vb2api_secdata_kernel_create(ctx);
+	vb2_secdata_kernel_init(ctx);
 
 	sd = vb2_get_sd(ctx);
+	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
 
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 }
