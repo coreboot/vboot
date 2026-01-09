@@ -614,15 +614,21 @@ const struct model_config *manifest_find_model(struct updater_config *cfg,
 		return &manifest->models[0];
 
 	if (!model_name) {
-		manifest_key = get_manifest_key_from_identity(cfg, manifest, frid);
+#ifdef __ANDROID__
+		/* On Android, the manifest key is the product name. */
+		manifest_key = dut_get_android_product(cfg);
+#endif
+		if (!manifest_key)
+			manifest_key = get_manifest_key_from_identity(cfg, manifest, frid);
 		if (!manifest_key)
 			manifest_key = get_manifest_key_from_crosid(cfg, manifest);
 		if (!manifest_key) {
 			ERROR("Failed to get manifest key.\n"
 			      "The following model identifications are supported:\n"
-			      "  1. Compile futility with ChromeOS libcrosid\n"
-			      "  2. Include %s in the archive\n"
-			      "  3. Pass --model to manually specify the model\n",
+			      "  1. Build futility with ChromeOS libcrosid\n"
+			      "  2. Build futility with -D__ANDROID__\n"
+			      "  3. Include %s in the archive\n"
+			      "  4. Pass --model to manually specify the model\n",
 			      PATH_IDENTITY);
 			return NULL;
 		}

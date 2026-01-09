@@ -10,7 +10,10 @@
 #include <crosid.h>
 #endif
 #include <limits.h>
+#include <string.h>
+
 #include "crossystem.h"
+#include "subprocess.h"
 #include "updater.h"
 
 int dut_get_manifest_key(char **manifest_key_out, struct updater_config *cfg)
@@ -146,6 +149,52 @@ static dut_property_t dut_get_sku_id(struct updater_config *cfg)
 		return -1;
 
 	return (dut_property_t)sku_id;
+}
+
+#define MAX_PRODUCT_LEN 128
+
+char *dut_get_android_product(struct updater_config *cfg)
+{
+	if (cfg->dut_is_remote) {
+		WARN("Ignored getting Android product on a remote DUT.\n");
+		return NULL;
+	}
+
+	const size_t buffer_size = MAX_PRODUCT_LEN + 1;
+	char *buffer = malloc(buffer_size);
+
+	if (!buffer) {
+		ERROR("Failed to allocate buffer for product.\n");
+		return NULL;
+	}
+
+	struct subprocess_target output = {
+		.type = TARGET_BUFFER_NULL_TERMINATED,
+		.buffer = {
+			.buf = buffer,
+			.size = buffer_size,
+		},
+	};
+	const char *const argv[] = {"getprop", "ro.product.name", NULL};
+
+	int status = subprocess_run(argv, &subprocess_null, &output,
+				    &subprocess_null);
+	if (status < 0) {
+		ERROR("getprop invocation failed: %m.\n");
+		goto error;
+	} else if (status > 0) {
+		ERROR("getprop ro.product.name exited with %d.\n", status);
+		goto error;
+	}
+
+	/* Remove trailing newline. */
+	buffer[strcspn(buffer, "\n")] = 0;
+	VB2_DEBUG("Got product name: %s\n", buffer);
+	return buffer;
+
+error:
+	free(buffer);
+	return NULL;
 }
 
 /* Helper functions to use or configure the DUT properties. */
