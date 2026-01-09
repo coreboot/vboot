@@ -48,7 +48,7 @@ setup_default_keycfg() {
   export KEYCFG_UEFI_PRIVATE_KEY="${key_dir}/uefi/db/db.children/db_child.rsa"
   export KEYCFG_UEFI_SIGN_CERT="${key_dir}/uefi/db/db.children/db_child.pem"
   export KEYCFG_UEFI_VERIFY_CERT="${key_dir}/uefi/db/db.pem"
-  export KEYCFG_UEFI_CRDYSHIM_PRIVATE_KEY="${key_dir}/uefi/crdyshim.priv.pem"
+  export KEYCFG_UEFI_CRDYSHIM_PRIVATE_KEY="${key_dir}/uefi/crdyshim-v2.priv.pem"
   # EC EFS key
   export KEYCFG_KEY_EC_EFS_VBPRIK2="${key_dir}/key_ec_efs.vbprik2"
   # This is for `sign_official_build.sh accessory_rwsig`, which uses arbitrary

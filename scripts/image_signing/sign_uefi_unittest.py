@@ -224,7 +224,15 @@ class TestSign(unittest.TestCase):
             signer = sign_uefi.Signer(tempdir, self.keys)
 
             efi_file = self.efi_boot_dir / "crdybootx64.efi"
+            sha256_file = tempdir / "crdybootx64.sha256"
             signer.create_detached_signature(efi_file)
+
+            # Check that the SHA-256 file contains the expected digest.
+            with open(sha256_file, "rb") as rfile:
+                self.assertEqual(
+                    rfile.read().hex(),
+                    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                )
 
             # Check that the expected commands run.
             self.assertEqual(
@@ -235,9 +243,8 @@ class TestSign(unittest.TestCase):
                             "openssl",
                             "pkeyutl",
                             "-sign",
-                            "-rawin",
                             "-in",
-                            efi_file,
+                            sha256_file,
                             "-inkey",
                             self.keys.crdyshim_private_key,
                             "-out",

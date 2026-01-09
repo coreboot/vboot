@@ -10,6 +10,7 @@ The target directory can be either the root of ESP or /boot of root filesystem.
 
 import argparse
 import dataclasses
+import hashlib
 import logging
 import os
 from pathlib import Path
@@ -135,6 +136,14 @@ class Signer:
         Args:
             input_path: Path of the file to sign.
         """
+        # Calculate the SHA-256 digest of the input file and write it to
+        # a temporary file.
+        with open(input_path, "rb") as rfile:
+            sha256 = hashlib.sha256(rfile.read()).digest()
+        temp_sha256_path = self.temp_dir / (input_path.stem + ".sha256")
+        with open(temp_sha256_path, "wb") as wfile:
+            wfile.write(sha256)
+
         sig_name = input_path.stem + ".sig"
 
         # Create the signature in the temporary dir so that openssl
@@ -144,9 +153,8 @@ class Signer:
             "openssl",
             "pkeyutl",
             "-sign",
-            "-rawin",
             "-in",
-            input_path,
+            temp_sha256_path,
             "-inkey",
             self.keys.crdyshim_private_key,
             "-out",
