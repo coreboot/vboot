@@ -239,9 +239,16 @@ swap_ecrw() {
     fi
     # Add ecrw.config if provided.
     if [[ -e "${ecrw_config_file}" ]]; then
-      cbfstool "${ap_file}" add -r "${region}" -t raw \
+      local output
+      if ! output="$(cbfstool "${ap_file}" add -r "${region}" -t raw \
         -c "${ecrw_comp_type}" -f "${ecrw_config_file}" \
-        -n "${CBFS_ECRW_CONFIG_NAME}"
+        -n "${CBFS_ECRW_CONFIG_NAME}" 2>&1)" ; then
+        if [[ "${output}" == *"Largest empty slot"* ]]; then
+          warn "Skipping ${CBFS_ECRW_CONFIG_NAME} due to insufficient space:"$'\n'"${output}"
+        else
+          die "Failed to add ${CBFS_ECRW_CONFIG_NAME} to CBFS:"$'\n'"${output}"
+        fi
+      fi
     else
       warn "${CBFS_ECRW_CONFIG_NAME} is missing from source file."
     fi
