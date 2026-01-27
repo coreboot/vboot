@@ -614,12 +614,12 @@ const struct model_config *manifest_find_model(struct updater_config *cfg,
 		return &manifest->models[0];
 
 	if (!model_name) {
+		manifest_key = get_manifest_key_from_identity(cfg, manifest, frid);
 #ifdef __ANDROID__
 		/* On Android, the manifest key is the product name. */
-		manifest_key = dut_get_android_product(cfg);
-#endif
 		if (!manifest_key)
-			manifest_key = get_manifest_key_from_identity(cfg, manifest, frid);
+			manifest_key = dut_get_android_product(cfg);
+#endif
 		if (!manifest_key)
 			manifest_key = get_manifest_key_from_crosid(cfg, manifest);
 		if (!manifest_key) {
