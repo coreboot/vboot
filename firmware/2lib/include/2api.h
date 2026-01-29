@@ -1057,6 +1057,18 @@ enum vb2_android_bootmode {
 };
 
 /**
+ * Create a sub-disk (slice) handle from an existing disk.
+ *
+ * @param parent	Parent disk information
+ * @param offset	Offset in sectors from the start of the parent disk
+ * @param size		Size in sectors of the slice
+ * @param child_out	Returns pointer to newly allocated child disk info
+ * @return VB2_SUCCESS, or non-zero error code.
+ */
+vb2_error_t vb2ex_slice_disk(vb2ex_disk_handle_t parent, uint64_t offset, uint64_t size,
+			     struct vb2_disk_info **child_out);
+
+/**
  * Get Android boot mode.
  *
  * Android boot mode is saved on the misc partition where FW can obtain
