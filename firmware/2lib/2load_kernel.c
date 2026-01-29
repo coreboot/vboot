@@ -479,6 +479,7 @@ static vb2_error_t try_minios_kernel(struct vb2_context *ctx,
 	if (rv)
 		return VB2_ERROR_LK_NO_KERNEL_FOUND;
 
+	params->disk_handle = disk_info->handle;
 	sd->kernel_version = kernel_version;
 
 	return rv;
@@ -515,15 +516,42 @@ static vb2_error_t try_nbr_sectors(struct vb2_context *ctx,
 	VbExStreamClose(stream);
 
 	for (isector = 0; isector < count; isector++) {
-		if (memcmp(buf + isector * disk_info->bytes_per_lba,
-			   VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE))
-			continue;
-		VB2_DEBUG("Match on sector %" PRIu64 " / %" PRIu64 "\n",
-			  start + isector,
-			  disk_info->lba_count - 1);
-		rv = try_minios_kernel(ctx, params, disk_info, start + isector);
-		if (rv == VB2_SUCCESS)
-			break;
+		void *sector = buf + isector * disk_info->bytes_per_lba;
+		/* Try legacy MiniOS recovery kernel */
+		if (!memcmp(sector, VB2_KEYBLOCK_MAGIC, VB2_KEYBLOCK_MAGIC_SIZE)) {
+			VB2_DEBUG("Match MiniOS on sector %" PRIu64 " / %" PRIu64 "\n",
+				  start + isector,
+				  disk_info->lba_count - 1);
+			rv = try_minios_kernel(ctx, params, disk_info, start + isector);
+			if (rv == VB2_SUCCESS)
+				break;
+		}
+
+#ifdef USE_LIBAVB
+		/* Try OTA recovery partition */
+		static const Guid recovery_disk_uuid = GPT_DISK_UUID_RECOVERY;
+		GptHeader *recovery_header = (GptHeader *)sector;
+		if (!memcmp(&recovery_header->disk_uuid, &recovery_disk_uuid, sizeof(Guid)) &&
+		    recovery_header->my_lba == GPT_PMBR_SECTORS &&
+		    start + isector > 0) {
+			struct vb2_disk_info *child_disk;
+			uint64_t lba_start = start + isector - 1; /* disk UUID is in sector 1 */
+			uint64_t size = recovery_header->alternate_lba + 1;
+
+			VB2_DEBUG("Match OTA recovery on sector %" PRIu64 " / %" PRIu64 "\n",
+				  start + isector,
+				  disk_info->lba_count - 1);
+
+			if (lba_start + size > disk_info->lba_count)
+				continue;
+			if (vb2ex_slice_disk(disk_info->handle, lba_start, size, &child_disk))
+				continue;
+
+			rv = vb2api_load_kernel(ctx, params, child_disk);
+			if (rv == VB2_SUCCESS)
+				break;
+		}
+#endif
 	}
 
 	free(buf);
@@ -570,8 +598,7 @@ static vb2_error_t try_nbr_region(struct vb2_context *ctx,
 
 /*
  * Search for kernels by sector, rather than by partition.  Only sectors near
- * the start and end of disks are considered, and the kernel must start exactly
- * at the first byte of the sector.
+ * the start and end of disks are considered.
  */
 vb2_error_t vb2api_load_nbr_kernel(struct vb2_context *ctx,
 				   struct vb2_kernel_params *params,
@@ -588,9 +615,6 @@ vb2_error_t vb2api_load_nbr_kernel(struct vb2_context *ctx,
 
 	if (rv)
 		rv = try_nbr_region(ctx, params, disk_info, !end_region_first);
-
-	if (rv == VB2_SUCCESS)
-		params->disk_handle = disk_info->handle;
 
 	return rv;
 }

@@ -128,6 +128,12 @@ struct vb2_gbb_header *vb2_get_gbb(struct vb2_context *c)
 	return &gbb;
 }
 
+vb2_error_t vb2ex_slice_disk(vb2ex_disk_handle_t parent, uint64_t offset, uint64_t size,
+			     struct vb2_disk_info **child_out)
+{
+	return VB2_ERROR_UNKNOWN;
+}
+
 vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			   uint64_t lba_count, VbExStream_t *stream)
 {
@@ -265,7 +271,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 1;
 	add_mock_kernel(0, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "{valid kernel}");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -273,14 +279,14 @@ static void load_minios_kernel_tests(void)
 	reset_common_data();
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 1;
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND, "{no kernel}");
 
 	reset_common_data();
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 2;
 	add_mock_kernel(1, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "{no kernel, valid kernel}");
 	TEST_EQ(cur_kernel->sector, 1, "  select kernel");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
@@ -291,7 +297,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_ERROR_MOCK);
 	add_mock_kernel(1, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "{invalid kernel, valid kernel}");
 	TEST_EQ(cur_kernel->sector, 1, "  select second kernel");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
@@ -302,7 +308,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_ERROR_MOCK);
 	add_mock_kernel(1, VB2_ERROR_MOCK);
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"{invalid kernel, invalid kernel}");
 
@@ -311,7 +317,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_SUCCESS);
 	add_mock_kernel(1, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "{valid kernel, valid kernel} minios_priority=0");
 	TEST_EQ(cur_kernel->sector, 0, "  select first kernel");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
@@ -323,7 +329,7 @@ static void load_minios_kernel_tests(void)
 	add_mock_kernel(0, VB2_SUCCESS);
 	add_mock_kernel(1, VB2_SUCCESS);
 	vb2_nv_set(ctx, VB2_NV_MINIOS_PRIORITY, 1);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "{valid kernel, valid kernel} minios_priority=1");
 	TEST_EQ(cur_kernel->sector, 1, "  select second kernel");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
@@ -334,8 +340,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_SUCCESS);
 	add_mock_kernel(1, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info,
-					    VB2_MINIOS_FLAG_NON_ACTIVE),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, VB2_NBR_FLAG_NON_ACTIVE),
 		  "{valid kernel, valid kernel} minios_priority=0 non-active");
 	TEST_EQ(cur_kernel->sector, 1, "  select second kernel");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
@@ -347,24 +352,23 @@ static void load_minios_kernel_tests(void)
 	add_mock_kernel(0, VB2_ERROR_MOCK);
 	add_mock_kernel(1, VB2_SUCCESS);
 	vb2_nv_set(ctx, VB2_NV_MINIOS_PRIORITY, 1);
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info,
-					  VB2_MINIOS_FLAG_NON_ACTIVE),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, VB2_NBR_FLAG_NON_ACTIVE),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"{invalid kernel, valid kernel} minios_priority=1 non-active");
 
 	reset_common_data();
-	disk_info.bytes_per_lba = VB2_KEYBLOCK_MAGIC_SIZE;
+	disk_info.bytes_per_lba = sizeof(GptHeader);
 	disk_info.lba_count = 4;
 	add_mock_kernel(1, VB2_SUCCESS);
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"valid kernel header near start of disk (disk too small)");
 
 	reset_common_data();
-	disk_info.bytes_per_lba = VB2_KEYBLOCK_MAGIC_SIZE;
+	disk_info.bytes_per_lba = sizeof(GptHeader);
 	disk_info.lba_count = 1000;
 	add_mock_kernel(999, VB2_SUCCESS);
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"valid kernel header near end of disk");
 
@@ -372,7 +376,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = 1024;
 	disk_info.lba_count = 128;
 	add_mock_kernel(63, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "start/end overlap assuming >128 MB search range (start)");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -381,7 +385,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = 1024;
 	disk_info.lba_count = 128;
 	add_mock_kernel(64, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "start/end overlap assuming >128 MB search range (end)");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -390,7 +394,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = 128;
 	disk_info.lba_count = 1024;
 	add_mock_kernel(3, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "kernel at last sector in batch assuming 512 KB batches");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -399,7 +403,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = 256;
 	disk_info.lba_count = 1024;
 	add_mock_kernel(3, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "kernel at last sector in batch assuming 1 MB batches");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -408,7 +412,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = 512;
 	disk_info.lba_count = 1024;
 	add_mock_kernel(3, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "kernel at last sector in batch assuming 2 MB batches");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -420,7 +424,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_SUCCESS);
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "kernel with minios keyblock flag");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
 		    "  fill disk_handle when success");
@@ -432,7 +436,7 @@ static void load_minios_kernel_tests(void)
 	disk_info.bytes_per_lba = KBUF_SIZE;
 	disk_info.lba_count = 2;
 	add_mock_kernel(0, VB2_SUCCESS);
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"kernel with !minios keyblock flag");
 
@@ -442,7 +446,7 @@ static void load_minios_kernel_tests(void)
 	add_mock_kernel(0, VB2_SUCCESS);
 	sd->kernel_version_secdata = 5 << 24;
 	kph.kernel_version = 4;
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"kernel version too old");
 
@@ -452,7 +456,7 @@ static void load_minios_kernel_tests(void)
 	add_mock_kernel(0, VB2_SUCCESS);
 	sd->kernel_version_secdata = 5 << 24;
 	kph.kernel_version = 0x100;
-	TEST_EQ(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		VB2_ERROR_LK_NO_KERNEL_FOUND,
 		"kernel version greater than 0xff");
 
@@ -463,7 +467,7 @@ static void load_minios_kernel_tests(void)
 	sd->kernel_version_secdata = 5 << 24;
 	kbh.data_key.key_version = 5;
 	kph.kernel_version = 6;
-	TEST_SUCC(vb2api_load_minios_kernel(ctx, &lkp, &disk_info, 0),
+	TEST_SUCC(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
 		  "newer kernel version");
 	TEST_EQ(sd->kernel_version, 0x50006, "  SD kernel version");
 	TEST_PTR_EQ(lkp.disk_handle, disk_info.handle,
