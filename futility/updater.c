@@ -952,6 +952,7 @@ static int update_ec_firmware(struct updater_config *cfg)
 		return 0;
 	}
 
+	STATUS("EC UPDATE: Updating EC firmware.\n");
 	/* TODO(quasisec): Uses cros_ec to program the EC. */
 	return write_system_firmware(cfg, ec_image, sections, num_sections);
 }

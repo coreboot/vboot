@@ -119,6 +119,7 @@ static int dut_get_wp_sw(const char *programmer)
 
 	if (flashrom_get_wp(programmer, &mode, NULL, NULL, -1) != VB2_SUCCESS) {
 		/* Read WP status error */
+		WARN("Failed to get wp status for programmer %s\n", programmer);
 		return -1;
 	}
 	return mode;

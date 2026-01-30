@@ -643,7 +643,8 @@ int load_system_firmware(struct updater_config *cfg,
 	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
 			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
-		INFO("Reading SPI Flash..\n");
+		INFO("Reading SPI Flash (programmer %s)...\n",
+		     image->programmer);
 		if (flashrom_read_image(image, NULL, 0, verbose) == VB2_SUCCESS)
 			r = 0;
 	}
@@ -666,7 +667,7 @@ test_mockable
 int write_system_firmware(struct updater_config *cfg,
 			  const struct firmware_image *image,
 			  const char * const regions[],
-				const size_t regions_len)
+			  const size_t regions_len)
 {
 	if (!strcmp(image->programmer, FLASHROM_PROGRAMMER_INTERNAL_EC)) {
 		WARN("%s: flashrom support for CrOS EC is EOL.\n", __func__);
@@ -685,7 +686,8 @@ int write_system_firmware(struct updater_config *cfg,
 	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
 			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
-		INFO("Writing SPI Flash..\n");
+		INFO("Writing SPI Flash (programmer %s)...\n",
+		     image->programmer);
 		if (flashrom_write_image(image, regions, regions_len, flash_contents,
 					 !!cfg->do_verify, verbose) == VB2_SUCCESS)
 			r = 0;
@@ -694,7 +696,6 @@ int write_system_firmware(struct updater_config *cfg,
 		 * flashrom_write_image left some messages in the buffer.
 		 */
 		fprintf(stdout, "\n");
-
 	}
 	return r;
 }
