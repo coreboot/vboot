@@ -21,14 +21,21 @@
 
 #define INIT_KERN_SECDATA 0x20001
 
+#define PARENT_HANDLE 1
+#define CHILD_HANDLE 2
+
+#define DISK_SIZE (1 << 20)
 #define NUM_OF_ENTRIES 8
 #define BYTES_PER_LBA 512
 
 #define PART_SIZE 16
-#define VBMETA_LBA 100
+#define VBMETA_LBA 8192
 #define BOOT_LBA (VBMETA_LBA + PART_SIZE)
 #define VENDOR_BOOT_LBA (BOOT_LBA + PART_SIZE)
 #define INIT_BOOT_LBA (VENDOR_BOOT_LBA + PART_SIZE)
+
+#define OTA_RECOVERY_A_PART 4096
+#define OTA_RECOVERY_B_PART (DISK_SIZE - 4096)
 
 GptHeader gpt_hdr;
 GptEntry entries[NUM_OF_ENTRIES];
@@ -39,6 +46,7 @@ uint64_t rollback_value;
 bool avb_verification_fails;
 bool init_boot_missing, vendor_boot_missing;
 uint64_t sector_to_read;
+uint64_t ota_recovery_sector;
 
 static const uint16_t vbmeta_a_name[] = {'v', 'b', 'm', 'e', 't', 'a', '_', 'a', 0};
 static const uint16_t boot_a_name[] = {'b', 'o', 'o', 't', '_', 'a', 0};
@@ -126,6 +134,7 @@ vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start, uint6
 			   VbExStream_t *stream_ptr)
 {
 	sector_to_read = lba_start;
+	*stream_ptr = (VbExStream_t)handle;
 	return VB2_SUCCESS;
 }
 
@@ -133,15 +142,38 @@ vb2_error_t VbExStreamSkip(VbExStream_t stream, uint32_t bytes) { return VB2_SUC
 
 vb2_error_t VbExStreamRead(VbExStream_t stream, uint32_t bytes, void *buffer)
 {
+	memset(buffer, 0, bytes);
 	if (sector_to_read == VENDOR_BOOT_LBA)
 		memcpy(buffer, &vendor_boot_hdr, sizeof(vendor_boot_hdr));
 	else if (sector_to_read == INIT_BOOT_LBA)
 		memcpy(buffer, &init_boot_hdr, sizeof(init_boot_hdr));
 
+	if ((uintptr_t)stream == PARENT_HANDLE && sector_to_read == ota_recovery_sector) {
+		const Guid recovery_disk_uuid = GPT_DISK_UUID_RECOVERY;
+		memcpy(&gpt_hdr.disk_uuid, &recovery_disk_uuid, sizeof(Guid));
+		memcpy(buffer, &gpt_hdr, sizeof(gpt_hdr));
+	}
+
 	return VB2_SUCCESS;
 }
 
 void VbExStreamClose(VbExStream_t stream) {}
+
+vb2_error_t vb2ex_slice_disk(vb2ex_disk_handle_t parent, uint64_t offset, uint64_t size,
+			     struct vb2_disk_info **child_out)
+
+{
+	TEST_EQ(offset, ota_recovery_sector - 1, "correct ota_recovery offset");
+	struct vb2_disk_info *slice = malloc(sizeof(*slice));
+	if (slice == NULL)
+		return VB2_ERROR_UNKNOWN;
+
+	memcpy(slice, &disk_info, sizeof(*slice));
+	slice->handle = (vb2ex_disk_handle_t)CHILD_HANDLE;
+	*child_out = slice;
+
+	return VB2_SUCCESS;
+}
 
 /* Reset mock data (for use before each test) */
 static void reset_mocks(void)
@@ -150,6 +182,7 @@ static void reset_mocks(void)
 	avb_verification_fails = false;
 	init_boot_missing = false;
 	vendor_boot_missing = false;
+	ota_recovery_sector = OTA_RECOVERY_A_PART;
 
 	memset(&gbb, 0, sizeof(gbb));
 	gbb.major_version = VB2_GBB_MAJOR_VER;
@@ -165,11 +198,12 @@ static void reset_mocks(void)
 	memset(&disk_info, 0, sizeof(disk_info));
 	disk_info.bytes_per_lba = BYTES_PER_LBA;
 	disk_info.streaming_lba_count = 1024;
-	disk_info.lba_count = 1024;
-	disk_info.handle = (vb2ex_disk_handle_t)1;
+	disk_info.lba_count = DISK_SIZE;
+	disk_info.handle = (vb2ex_disk_handle_t)PARENT_HANDLE;
 
 	memset(&gpt_hdr, 0, sizeof(gpt_hdr));
 	gpt_hdr.number_of_entries = NUM_OF_ENTRIES;
+	gpt_hdr.my_lba = GPT_PMBR_SECTORS;
 	memset(&entries, 0, sizeof(entries));
 	entries[0].starting_lba = VBMETA_LBA;
 	entries[0].ending_lba = VBMETA_LBA;
@@ -191,10 +225,12 @@ static void reset_mocks(void)
 	entries[3].ending_lba = (INIT_BOOT_LBA + PART_SIZE - 1);
 	memcpy(&entries[3].name, &init_boot_a_name, sizeof(init_boot_a_name));
 
+	memset(&vendor_boot_hdr, 0, sizeof(vendor_boot_hdr));
 	memcpy(vendor_boot_hdr.magic, VENDOR_BOOT_MAGIC, VENDOR_BOOT_MAGIC_SIZE);
 	vendor_boot_hdr.vendor_ramdisk_table_entry_size =
 		sizeof(struct vendor_ramdisk_table_entry_v4);
 	vendor_boot_hdr.page_size = 512;
+	memset(&init_boot_hdr, 0, sizeof(init_boot_hdr));
 	memcpy(init_boot_hdr.magic, BOOT_MAGIC, BOOT_MAGIC_SIZE);
 
 	vb2api_init(workbuf, sizeof(workbuf), &ctx);
@@ -279,9 +315,29 @@ static void load_android_tests(void)
 		"vendor_boot ramdisk table too big");
 }
 
+static void load_ota_recovery_tests(void)
+{
+	reset_mocks();
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0), VB2_SUCCESS,
+		"Boot ota_recovery_a");
+	TEST_PTR_EQ(lkp.disk_handle, (void *)CHILD_HANDLE, "  fill disk_handle when success");
+
+	reset_mocks();
+	ota_recovery_sector = OTA_RECOVERY_B_PART;
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0), VB2_SUCCESS,
+		"Boot ota_recovery_b");
+	TEST_PTR_EQ(lkp.disk_handle, (void *)CHILD_HANDLE, "  fill disk_handle when success");
+
+	reset_mocks();
+	ota_recovery_sector = disk_info.lba_count + 1;
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0),
+		VB2_ERROR_LK_NO_KERNEL_FOUND, "No recovery");
+}
+
 int main(void)
 {
 	load_android_tests();
+	load_ota_recovery_tests();
 
 	return gTestSuccess ? 0 : 255;
 }
