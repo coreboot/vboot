@@ -88,7 +88,7 @@ enum vb2_nv_offset {
 #define VB2_NV_BOOT2_PREV_TRIED			0x40
 #define VB2_NV_BOOT2_REQ_DIAG			0x80
 
-/* Fields in VB2_NV_OFFS_DEV (unused = 0x80) */
+/* Fields in VB2_NV_OFFS_DEV */
 #define VB2_NV_DEV_FLAG_EXTERNAL		0x01
 #define VB2_NV_DEV_FLAG_SIGNED_ONLY		0x02
 #define VB2_NV_DEV_FLAG_LEGACY			0x04
@@ -96,6 +96,7 @@ enum vb2_nv_offset {
 #define VB2_NV_DEV_FLAG_DEFAULT_BOOT		0x30
 #define VB2_NV_DEV_DEFAULT_BOOT_SHIFT 4  /* Number of bits to shift */
 #define VB2_NV_DEV_FLAG_UDC			0x40
+#define VB2_NV_DEV_FLAG_OEM_LOCK		0x80
 
 /* Fields in VB2_NV_OFFS_TPM (unused = 0xf8) */
 #define VB2_NV_TPM_CLEAR_OWNER_REQUEST		0x01

@@ -78,6 +78,7 @@ const Param sys_param_list[] = {
    "miniOS image to try first (A or B)"},
   {"nvram_cleared", CAN_WRITE, "Have NV settings been lost?  Write 0 to clear"},
   {"display_request", CAN_WRITE, "Should we initialize the display at boot?"},
+  {"oem_lock", CAN_WRITE, "Device OEM Lock state"},
   {"phase_enforcement", 0,
     "Board should have full security settings applied"},
   {"recovery_reason", 0, "Recovery mode reason for current boot"},

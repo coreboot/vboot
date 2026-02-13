@@ -565,6 +565,8 @@ int VbGetSystemPropertyInt(const char *name)
 		}
 	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
 		value = vb2_get_nv_storage(VB2_NV_POST_EC_SYNC_DELAY);
+	} else if (!strcasecmp(name, "oem_lock")) {
+		value = vb2_get_nv_storage(VB2_NV_OEM_LOCK);
 	}
 
 	return value;
@@ -760,6 +762,8 @@ static int VbSetSystemPropertyIntInternal(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_KERNEL_MAX_ROLLFORWARD, value);
 	} else if (!strcasecmp(name, "post_ec_sync_delay")) {
 		return vb2_set_nv_storage(VB2_NV_POST_EC_SYNC_DELAY, value);
+	} else if (!strcasecmp(name, "oem_lock")) {
+		return vb2_set_nv_storage_with_backup(VB2_NV_OEM_LOCK, value);
 	}
 
 	return -1;

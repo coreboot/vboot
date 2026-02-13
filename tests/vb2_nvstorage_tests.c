@@ -58,6 +58,7 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_KERNEL_MAX_ROLLFORWARD, 0, 0x12345678, 0xFEDCBA98,
 	 "kernel max rollforward"},
 	{VB2_NV_POST_EC_SYNC_DELAY, 0, 1, 0, "enable post-ec sync delay"},
+	{VB2_NV_OEM_LOCK, 0, 1, 0, "OEM lock"},
 	{0, 0, 0, 0, NULL}
 };
 
