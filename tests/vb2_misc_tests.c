@@ -1110,6 +1110,21 @@ static void fill_dev_boot_flags_tests(void)
 	vb2_fill_dev_boot_flags(ctx);
 	TEST_TRUE(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED,
 		  "dev boot altfw - all flags set");
+
+	/* Dev boot - disabled by OEM lock */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED,
+		   "dev boot - OEM lock disabled");
+
+	/* Dev boot - force enabled by GBB with OEM lock */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED,
+		  "dev boot - GBB force dev on with OEM lock");
 }
 
 static void use_dev_screen_short_delay_tests(void)
