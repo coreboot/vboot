@@ -181,15 +181,6 @@ void vb2_sha512_finalize(struct vb2_sha512_context *ctx, uint8_t *digest,
 			 enum vb2_hash_algorithm algo);
 
 /**
- * Hash-extend data
- *
- * @param from	Hash to be extended. It has to be the hash size.
- * @param by	Block to be extended by. It has to be the hash block size.
- * @param to	Destination for extended data
- */
-void vb2_sha256_extend(const uint8_t *from, const uint8_t *by, uint8_t *to);
-
-/**
  * Return the size of the digest for a hash algorithm.
  *
  * @param hash_alg	Hash algorithm
