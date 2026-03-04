@@ -71,11 +71,10 @@ enum vb2_context_flags {
 	VB2_CONTEXT_SECDATA_KERNEL_CHANGED = (1 << 10),
 
 	/*
-	 * Allow kernel verification to roll forward the version in
-	 * secdata_kernel[].  Caller may set this flag before calling
-	 * vb2api_kernel_phase3().
+	 * Unused. Formerly: Allow kernel verification to roll forward the
+	 * version in secdata_kernel[].
 	 */
-	VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD = (1 << 11),
+	VB2_CONTEXT_DEPRECATED_ALLOW_KERNEL_ROLL_FORWARD = (1 << 11),
 
 	/*
 	 * Boot optimistically: don't touch failure counters.  Caller may set

@@ -92,14 +92,6 @@ enum vb2_resource_index {
 	 * the vblock.
 	 */
 	VB2_RES_FW_VBLOCK,
-
-	/*
-	 * Kernel verified boot block (keyblock+preamble) for the current
-	 * kernel partition.  Used only by vb2api_kernel_load_vblock().
-	 * Contents are allowed to change between calls to that function (to
-	 * allow multiple kernels to be examined).
-	 */
-	VB2_RES_KERNEL_VBLOCK,
 };
 
 /* Digest ID for vbapi_get_pcr_digest() */
@@ -217,29 +209,13 @@ enum vb2_pcr_digest {
  *
  *	Find a boot device (you're on your own here).
  *
- *	Call vb2api_load_kernel_vblock() for each kernel partition on the
- *	boot device, until one succeeds.
- *
- *	When that succeeds, call vb2api_get_kernel_size() to determine where
- *	the kernel is located in the stream and how big it is.  Load or map
- *	the kernel.  (Again, you're on your own.  This is the responsibility of
- *	the caller so that the caller can choose whether to allocate a buffer,
- *	load the kernel data into a predefined area of RAM, or directly map a
- *	kernel file into the address space.  Note that technically it doesn't
- *	matter whether the kernel data is even in the same file or stream as
- *	the vblock, as long as the caller loads the right data.
- *
- *	Call vb2api_verify_kernel_data() on the kernel data.
+ *	Call vb2api_load_kernel() for each kernel partition on the
+ *	boot device, until one succeeds.  This function verifies the kernel's
+ *	vblock and data, and loads the kernel into the destination buffer if
+ *	successful.
  *
  *	If you ran out of kernels before finding a good one, call vb2api_fail()
  *	with an appropriate recovery reason.
- *
- *	Set the VB2_CONTEXT_ALLOW_KERNEL_ROLL_FORWARD flag if the current
- *	kernel partition has the successful flag (that is, it's already known
- *	or assumed to be a functional kernel partition).
- *
- *	Call vb2api_kernel_phase3().  This cleans up from kernel verification
- *	and updates the secure data if needed.
  *
  *	Lock down wherever you keep secdata_kernel.  It should no longer be
  *	writable this boot.
@@ -402,7 +378,7 @@ vb2_error_t vb2api_secdata_fwmp_check(struct vb2_context *ctx, uint8_t *size);
  * If the failure occurred before choosing a firmware slot, or both slots have
  * failed in successive boots, request recovery.
  *
- * This may be called before vb2api_phase1() to indicate errors in the boot
+ * This may be called before vb2api_fw_phase1() to indicate errors in the boot
  * process prior to the start of vboot.  On return, the calling firmware should
  * check for updates to secdata and/or nvdata, then reboot.
  *
@@ -741,17 +717,6 @@ vb2_error_t vb2api_load_nbr_kernel(struct vb2_context *ctx,
 				   struct vb2_kernel_params *params,
 				   struct vb2_disk_info *disk_info,
 				   uint32_t nbr_flags);
-
-/**
- * Clean up after kernel verification.
- *
- * Call this after successfully loading a vblock and verifying kernel data,
- * or if you've run out of boot devices and/or kernel partitions.
- *
- * This cleans up intermediate data structures in the vboot context, and
- * updates the version in the secure data if necessary.
- */
-vb2_error_t vb2api_kernel_phase3(struct vb2_context *ctx);
 
 /**
  * Read the hardware ID from the GBB, and store it onto the given buffer.

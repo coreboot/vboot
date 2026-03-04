@@ -541,8 +541,8 @@ enum vb2_return_code {
 	/* Kernel version rollback in vb2_load_kernel_preamble() */
 	VB2_ERROR_KERNEL_PREAMBLE_VERSION_ROLLBACK = 0x1008001d,
 
-	/* Kernel preamble not loaded before calling vb2api_get_kernel_size() */
-	VB2_ERROR_API_GET_KERNEL_SIZE_PREAMBLE = 0x1008001e,
+	/* Unused. Preamble not loaded before calling vb2api_get_kernel_size() */
+	VB2_ERROR_DEPRECATED_API_GET_KERNEL_SIZE_PREAMBLE = 0x1008001e,
 
 	/* Unable to unpack kernel subkey in vb2_verify_vblock();
 	 * deprecated and replaced with VB2_ERROR_UNPACK_KEY_* */
