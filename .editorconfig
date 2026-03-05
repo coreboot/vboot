@@ -1,0 +1,45 @@
+# top-most EditorConfig file
+root = true
+
+# General settings for all files
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# C and Header files: Tabs for indentation
+[*.{c,h}]
+indent_style = tab
+indent_size = 8
+tab_width = 8
+
+# Makefiles: Tabs for indentation
+[Makefile]
+indent_style = tab
+tab_width = 8
+
+# Shell scripts: 2 spaces for indentation
+[*.sh]
+indent_style = space
+indent_size = 2
+
+# Python files: 4 spaces for indentation (Chromium style)
+[*.py]
+indent_style = space
+indent_size = 4
+
+# Rust files: 4 spaces for indentation
+[*.rs]
+indent_style = space
+indent_size = 4
+
+# Android Blueprint files: 4 spaces for indentation
+[Android.bp]
+indent_style = space
+indent_size = 4
+
+# Markdown files: 2 spaces for indentation
+[*.md]
+indent_style = space
+indent_size = 2
