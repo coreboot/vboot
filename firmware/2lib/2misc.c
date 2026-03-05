@@ -668,19 +668,9 @@ char *vb2api_get_debug_info(struct vb2_context *ctx)
 		gbb = vb2_get_gbb(ctx);
 	}
 
-	/* Add hardware ID */
-	if (gbb) {
-		char hwid[VB2_GBB_HWID_MAX_SIZE];
-		uint32_t size = sizeof(hwid);
-		rv = vb2api_gbb_read_hwid(ctx, hwid, &size);
-		if (rv)
-			strcpy(hwid, "{INVALID}");
-		DEBUG_INFO_APPEND("HWID: %s", hwid);
-	}
-
 	/* Add recovery reason and subcode */
 	i = vb2_nv_get(ctx, VB2_NV_RECOVERY_SUBCODE);
-	DEBUG_INFO_APPEND("\nrecovery_reason: %#.2x / %#.2x  %s",
+	DEBUG_INFO_APPEND("recovery_reason: %#.2x / %#.2x  %s",
 			  sd->recovery_reason, i,
 			  vb2_get_recovery_reason_string(sd->recovery_reason));
 
