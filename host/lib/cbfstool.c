@@ -259,7 +259,7 @@ static char *extract_config_value(const char *buf, const char *config_field)
 	free(to_find);
 
 	if (start) {
-		char *end = strchr(start, '\n');
+		const char *end = strchr(start, '\n');
 		if (end)
 			return strndup(start, end - start);
 	}
