@@ -397,7 +397,8 @@ FWLIB_SRCS = \
 	firmware/lib/cgptlib/cgptlib.c \
 	firmware/lib/cgptlib/cgptlib_internal.c \
 	firmware/lib/cgptlib/crc32.c \
-	firmware/lib/gpt_misc.c
+	firmware/lib/gpt_misc.c \
+	firmware/lib20/api_kernel.c
 
 # TPM lightweight command library
 ifeq ($(filter-out 0,${TPM2_MODE}),)
@@ -858,6 +859,7 @@ TEST2X_NAMES = \
 	tests/vb2_sha_api_tests \
 	tests/vb2_sha_tests \
 	tests/vb2_verify_fw \
+	tests/vb20_api_kernel_tests \
 	tests/hmac_test
 
 ifeq ($(filter-out 0,${USE_FLASHROM}),)
@@ -1471,6 +1473,7 @@ endif
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_secdata_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_api_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb2_sha_tests
+	${RUNTEST} ${BUILD_RUN}/tests/vb20_api_kernel_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common_tests
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_common2_tests ${TEST_KEYS}
 	${RUNTEST} ${BUILD_RUN}/tests/vb21_host_key_tests ${TEST_KEYS} ${BUILD_RUN}

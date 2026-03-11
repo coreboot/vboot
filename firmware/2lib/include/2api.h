@@ -719,6 +719,21 @@ vb2_error_t vb2api_load_nbr_kernel(struct vb2_context *ctx,
 				   uint32_t nbr_flags);
 
 /**
+ * Verify kernel data using the previously loaded kernel vblock.
+ *
+ * Valid after a successful call to vb2api_load_kernel_vblock().  This allows
+ * the caller to load or map the kernel data, as appropriate, and pass the
+ * pointer to the kernel data into vboot.
+ *
+ * @param ctx		Vboot context
+ * @param buf		Pointer to kernel data
+ * @param size		Size of kernel data in bytes
+ * @return VB2_SUCCESS, or error code on error.
+ */
+vb2_error_t vb2api_verify_kernel_data(struct vb2_context *ctx, const void *buf,
+				      uint32_t size);
+
+/**
  * Read the hardware ID from the GBB, and store it onto the given buffer.
  *
  * @param ctx		Vboot context.
