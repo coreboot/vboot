@@ -283,6 +283,9 @@ enum vb2_nv_recovery {
 	/* Failed to prepare the widevine functionality */
 	VB2_RECOVERY_WIDEVINE_PREPARE = 0x65,
 
+	/* Kernel version too old */
+	VB2_RECOVERY_KERNEL_ROLLBACK = 0x66,
+
 	/* Unspecified/unknown error in rewritable firmware */
 	VB2_RECOVERY_RW_UNSPECIFIED = 0x7f,
 

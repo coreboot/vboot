@@ -785,6 +785,9 @@ enum vb2_return_code {
 	/* No working block devices were found */
 	VB2_ERROR_LK_NO_DISK_FOUND = 0x100b3000,
 
+	/* Invalid kernel version (Rollback Protection) */
+	VB2_ERROR_LK_ROLLBACK = 0x100b4000,
+
 	/**********************************************************************
 	 * UI errors
 	 */

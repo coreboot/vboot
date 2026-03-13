@@ -42,8 +42,10 @@ GptEntry entries[NUM_OF_ENTRIES];
 struct vendor_boot_img_hdr_v4 vendor_boot_hdr;
 struct boot_img_hdr_v4 init_boot_hdr;
 
+enum avb_fail {NO_FAIL, VERIFY_FAIL, ROLLBACK_FAIL};
+
 uint64_t rollback_value;
-bool avb_verification_fails;
+enum avb_fail avb_verification_fails;
 bool init_boot_missing, vendor_boot_missing;
 uint64_t sector_to_read;
 uint64_t ota_recovery_sector;
@@ -119,10 +121,15 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 	verify_data->cmdline = (char *)"";
 	*out_data = verify_data;
 
-	if (avb_verification_fails)
+	switch (avb_verification_fails) {
+	case VERIFY_FAIL:
 		return AVB_SLOT_VERIFY_RESULT_ERROR_VERIFICATION;
-	else
+	case ROLLBACK_FAIL:
+		return AVB_SLOT_VERIFY_RESULT_ERROR_ROLLBACK_INDEX;
+	case NO_FAIL:
+	default:
 		return AVB_SLOT_VERIFY_RESULT_OK;
+	}
 }
 
 void avb_slot_verify_data_free(AvbSlotVerifyData *data)
@@ -179,7 +186,7 @@ vb2_error_t vb2ex_slice_disk(vb2ex_disk_handle_t parent, uint64_t offset, uint64
 static void reset_mocks(void)
 {
 	rollback_value = 0x1;
-	avb_verification_fails = false;
+	avb_verification_fails = NO_FAIL;
 	init_boot_missing = false;
 	vendor_boot_missing = false;
 	ota_recovery_sector = OTA_RECOVERY_A_PART;
@@ -267,16 +274,30 @@ static void load_android_tests(void)
 
 	// AVB verification fails
 	reset_mocks();
-	avb_verification_fails = true;
+	avb_verification_fails = VERIFY_FAIL;
 	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		"AVB verification fails");
 
 	// AVB verification fails in developer mode
 	reset_mocks();
-	avb_verification_fails = true;
+	avb_verification_fails = VERIFY_FAIL;
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
 	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_SUCCESS,
 		"AVB verification fails in developer mode");
+
+	// Rollback protection in developer mode
+	reset_mocks();
+	avb_verification_fails = ROLLBACK_FAIL;
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_SUCCESS,
+		"Rollback protection in developer mode");
+
+	// Rollback protection in normal mode
+	reset_mocks();
+	avb_verification_fails = ROLLBACK_FAIL;
+	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_ERROR_LK_ROLLBACK,
+		"Rollback protection in normal mode");
+
 
 	// Missing init_boot partition
 	reset_mocks();
@@ -321,6 +342,11 @@ static void load_ota_recovery_tests(void)
 	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0), VB2_SUCCESS,
 		"Boot ota_recovery_a");
 	TEST_PTR_EQ(lkp.disk_handle, (void *)CHILD_HANDLE, "  fill disk_handle when success");
+
+	reset_mocks();
+	avb_verification_fails = ROLLBACK_FAIL;
+	TEST_EQ(vb2api_load_nbr_kernel(ctx, &lkp, &disk_info, 0), VB2_ERROR_LK_NO_KERNEL_FOUND,
+		"Boot ota_recovery_a");
 
 	reset_mocks();
 	ota_recovery_sector = OTA_RECOVERY_B_PART;
