@@ -816,3 +816,8 @@ bool vb2_need_kernel_verification(struct vb2_context *ctx)
 
 	return false;
 }
+
+bool vb2api_is_oem_lock_enabled(struct vb2_context *ctx)
+{
+	return vb2_nv_get(ctx, VB2_NV_OEM_LOCK) != 0;
+}
