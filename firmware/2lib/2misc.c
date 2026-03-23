@@ -608,6 +608,16 @@ void vb2_fill_dev_boot_flags(struct vb2_context *ctx)
 	    (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_BOOT_ALTFW) ||
 	    vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_ENABLE_ALTFW))
 		ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALTFW_ALLOWED;
+
+	/*
+	 * Allow fastboot in:
+	 *  - Developer mode including forced by GBB flag
+	 *  - Any mode with Fastboot GBB flag enabled
+	 */
+	if ((ctx->boot_mode == VB2_BOOT_MODE_DEVELOPER &&
+	     (ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) ||
+	    (vb2api_gbb_get_flags(ctx) & VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT))
+		ctx->flags |= VB2_CONTEXT_FASTBOOT_ALLOWED;
 }
 
 int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)

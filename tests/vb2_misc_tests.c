@@ -1125,6 +1125,81 @@ static void fill_dev_boot_flags_tests(void)
 	vb2_fill_dev_boot_flags(ctx);
 	TEST_TRUE(ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED,
 		  "dev boot - GBB force dev on with OEM lock");
+
+	/* Fastboot - allowed in dev by GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	gbb.flags |= VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT;
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		  "fastboot allowed - dev mode + GBB flag");
+
+	/* Fastboot - allowed in dev by OEM unlock */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 0);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		  "fastboot allowed - dev mode + OEM unlock");
+
+	/* Fastboot - allowed in dev by GBB flag with OEM lock */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	gbb.flags |= VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT;
+	gbb.flags |= VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON;
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		  "fastboot allowed - dev mode + GBB flag + OEM lock + force dev");
+
+	/* Fastboot - not allowed in dev with OEM lock and no GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		   "fastboot not allowed - dev mode + OEM lock + no GBB flag");
+
+	/* Fastboot - not allowed in dev when DEV_BOOT_ALLOWED is disabled */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_DEVELOPER);
+	fwmp->flags |= VB2_SECDATA_FWMP_DEV_DISABLE_BOOT;
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		   "fastboot not allowed - dev mode + FWMP disable boot");
+
+	/* Fastboot - allowed in manual recovery by GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY, VB2_RECOVERY_RO_MANUAL);
+	gbb.flags |= VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT;
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		  "fastboot allowed - manual recovery + GBB flag");
+
+	/* Fastboot - not allowed in manual recovery with OEM unlock but no GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_MANUAL_RECOVERY, VB2_RECOVERY_RO_MANUAL);
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 0);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		   "fastboot not allowed - manual recovery + OEM unlock + no GBB flag");
+
+	/* Fastboot - allowed in normal mode by GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
+	gbb.flags |= VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT;
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 0);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		   "fastboot allowed - normal mode + GBB flag");
+
+	/* Fastboot - not allowed in normal mode by OEM Lock and not GBB flag */
+	reset_common_data();
+	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
+		   "fastboot not allowed - normal mode + OEM lock + no GBB flag");
 }
 
 static void use_dev_screen_short_delay_tests(void)
