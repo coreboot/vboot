@@ -177,6 +177,7 @@ static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor
 			VB2_DEBUG("Incorrect fragment - offset:%x size:%x, ramdisk_size: %x\n",
 				  fragment_offset, fragment_size,
 				  vendor_hdr->vendor_ramdisk_size);
+			return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
 		}
 		fragment_src = *vendor_ramdisk + fragment_offset;
 		if (*vendor_ramdisk_end != fragment_src)
