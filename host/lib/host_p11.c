@@ -16,6 +16,8 @@
 #include "vboot_host.h"
 #include "util_misc.h"
 
+#define ENV_PKCS11_PIN "VBOOT_PKCS11_PIN"
+
 struct pkcs11_key {
 	CK_OBJECT_HANDLE handle;
 	CK_SESSION_HANDLE session;
@@ -139,6 +141,17 @@ struct pkcs11_key *pkcs11_get_key(int slot_id, char *label)
 		fprintf(stderr, "Failed to open session with slot id %d\n", slot_id);
 		free(p11_key);
 		return NULL;
+	}
+
+	char *session_pin = getenv(ENV_PKCS11_PIN);
+	if (session_pin != NULL) {
+		result = p11->C_Login(p11_key->session, CKU_USER, (CK_UTF8CHAR *)session_pin,
+				      strlen(session_pin));
+		if (result != CKR_OK) {
+			fprintf(stderr, "Failed to login with provided PIN\n");
+			pkcs11_free_key(p11_key);
+			return NULL;
+		}
 	}
 
 	/* Find the private key */
