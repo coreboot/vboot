@@ -20,6 +20,7 @@
 
 struct pkcs11_key {
 	CK_OBJECT_HANDLE handle;
+	CK_OBJECT_HANDLE public_handle;
 	CK_SESSION_HANDLE session;
 };
 
@@ -167,6 +168,15 @@ struct pkcs11_key *pkcs11_get_key(int slot_id, char *label)
 		return NULL;
 	}
 
+	/* Find the corresponding public key */
+	class_value = CKO_PUBLIC_KEY;
+	if (pkcs11_find(p11_key->session, attributes, ARRAY_SIZE(attributes),
+			&p11_key->public_handle) != VB2_SUCCESS) {
+		fprintf(stderr, "Failed to find the public key with label '%s'\n", label);
+		pkcs11_free_key(p11_key);
+		return NULL;
+	}
+
 	return p11_key;
 }
 
@@ -211,7 +221,7 @@ enum vb2_signature_algorithm pkcs11_get_sig_alg(struct pkcs11_key *p11_key)
 	}
 	CK_ULONG modulus_bits = 0;
 	CK_ATTRIBUTE modulus_attr = {CKA_MODULUS_BITS, &modulus_bits, sizeof(modulus_bits)};
-	if (p11->C_GetAttributeValue(p11_key->session, p11_key->handle, &modulus_attr, 1) !=
+	if (p11->C_GetAttributeValue(p11_key->session, p11_key->public_handle, &modulus_attr, 1) !=
 	    CKR_OK) {
 		fprintf(stderr, "Failed to get modulus bits\n");
 		return VB2_SIG_INVALID;
