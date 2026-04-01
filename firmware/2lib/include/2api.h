@@ -901,15 +901,6 @@ vb2_error_t vb2api_disable_developer_mode(struct vb2_context *ctx);
  */
 void vb2api_request_diagnostics(struct vb2_context *ctx);
 
-/**
- * Get OEM Lock state form nvdata
- *
- * @param ctx		Vboot context
- *
- * @return true for locked, false otherwise.
- */
-bool vb2api_is_oem_lock_enabled(struct vb2_context *ctx);
-
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */
 
