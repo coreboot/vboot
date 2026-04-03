@@ -306,5 +306,8 @@ void pkcs11_free_key(struct pkcs11_key *p11_key)
 	CK_RV result = p11->C_CloseSession(p11_key->session);
 	if (result != CKR_OK)
 		fprintf(stderr, "Failed to close session\n");
+	result = p11->C_Finalize(NULL);
+	if (result != CKR_OK)
+		fprintf(stderr, "Failed to C_Finalize\n");
 	free(p11_key);
 }
