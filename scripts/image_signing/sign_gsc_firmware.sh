@@ -202,8 +202,10 @@ verify_and_prepare_gsc_manifest() {
 
     (Nightly)
       # At this point Nightly builds must have the major version 26 and
-      # 0x20000 board id flags, so it can't run on released devices.
-      if (( (major == 26 ) && (bid_flags == NIGHTLY_BID_FLAG) )); then
+      # 0x20000 board id flags, so it can't run on released devices. Note that
+      # Ti50a images additionally set the 0x100000 bit, which can be ignored
+      # here.
+      if (( (major == 26 ) && (bid_flags & NIGHTLY_BID_FLAG) )); then
         # The Nightly target is only valid for ti50 devices.
         if [[ "${generation}" == "d" ]] ; then
           return 0
