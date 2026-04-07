@@ -436,6 +436,15 @@ cc_binary {
     static_libs: ["libvboot_util"],
 }
 
+cc_binary {
+    name: "tpmc",
+    defaults: ["vboot_defaults"],
+    vendor: true,
+
+    srcs: ["utility/tpmc.c"],
+    static_libs: ["libvboot_util"],
+}
+
 filegroup {
     name: "vboot_devkeys",
     srcs: [
