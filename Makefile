@@ -190,12 +190,6 @@ ifneq ($(filter-out 0,${TPM2_MODE}),)
 CFLAGS += -DTPM2_MODE
 endif
 
-# Support devices with GPT in SPI-NOR (for nand device)
-# TODO(b:184812319): Consider removing this code if nobody uses it.
-ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
-CFLAGS += -DGPT_SPI_NOR
-endif
-
 # Enable EC early firmware selection.
 ifneq ($(filter-out 0,${EC_EFS}),)
 CFLAGS += -DEC_EFS=1
@@ -598,10 +592,6 @@ HOSTLIB_SRCS = \
 	host/lib21/host_misc.c \
 	${TLCL_SRCS}
 
-ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
-HOSTLIB_SRCS += cgpt/cgpt_nor.c
-endif
-
 HOSTLIB_OBJS = ${HOSTLIB_SRCS:%.c=${BUILD}/%.o}
 ALL_OBJS += ${HOSTLIB_OBJS}
 
@@ -632,23 +622,9 @@ CGPT_SRCS = \
 	cgpt/cmd_repair.c \
 	cgpt/cmd_show.c
 
-ifneq ($(filter-out 0,${GPT_SPI_NOR}),)
-CGPT_SRCS += cgpt/cgpt_nor.c
-endif
-
 CGPT_OBJS = ${CGPT_SRCS:%.c=${BUILD}/%.o}
 
 ALL_OBJS += ${CGPT_OBJS}
-
-CGPT_WRAPPER = ${BUILD}/cgpt/cgpt_wrapper
-
-CGPT_WRAPPER_SRCS = \
-	cgpt/cgpt_nor.c \
-	cgpt/cgpt_wrapper.c
-
-CGPT_WRAPPER_OBJS = ${CGPT_WRAPPER_SRCS:%.c=${BUILD}/%.o}
-
-ALL_OBJS += ${CGPT_WRAPPER_OBJS}
 
 # Utility defaults
 UTIL_DEFAULTS = ${BUILD}/default/vboot_reference
@@ -963,9 +939,6 @@ install: cgpt_install signing_install futil_install pc_files_install \
 .PHONY: install_dev
 install_dev: devkeys_install headers_install
 
-.PHONY: install_mtd
-install_mtd: install cgpt_wrapper_install
-
 .PHONY: install_for_test
 install_for_test: override DESTDIR = ${TEST_INSTALL_DIR}
 install_for_test: test_setup install \
@@ -1103,15 +1076,8 @@ devkeys_install:
 # ----------------------------------------------------------------------------
 # CGPT library and utility
 
-.PHONY: cgpt_wrapper
-cgpt_wrapper: ${CGPT_WRAPPER}
-
-${CGPT_WRAPPER}: ${CGPT_WRAPPER_OBJS} ${UTILLIB}
-	@$(PRINTF) "    LD            $(subst ${BUILD}/,,$@)\n"
-	${Q}${LD} -o ${CGPT_WRAPPER} ${LDFLAGS} $^ ${LDLIBS}
-
 .PHONY: cgpt
-cgpt: ${CGPT} $(if $(filter-out 0,${GPT_SPI_NOR}),cgpt_wrapper)
+cgpt: ${CGPT}
 
 # on FreeBSD: install misc/e2fsprogs-libuuid from ports,
 # or e2fsprogs-libuuid from its binary package system.
@@ -1128,15 +1094,6 @@ cgpt_install: ${CGPT}
 	@${PRINTF} "    INSTALL       CGPT\n"
 	${Q}mkdir -p ${UB_DIR}
 	${Q}${INSTALL} -t ${UB_DIR} $^
-
-.PHONY: cgpt_wrapper_install
-cgpt_wrapper_install: cgpt_install ${CGPT_WRAPPER}
-	@$(PRINTF) "    INSTALL       cgpt_wrapper\n"
-	${Q}${INSTALL} -t ${UB_DIR} ${CGPT_WRAPPER}
-	${Q}mv ${UB_DIR}/$(notdir ${CGPT}) \
-		${UB_DIR}/$(notdir ${CGPT}).bin
-	${Q}mv ${UB_DIR}/$(notdir ${CGPT_WRAPPER}) \
-		${UB_DIR}/$(notdir ${CGPT})
 
 # ----------------------------------------------------------------------------
 # Utilities
