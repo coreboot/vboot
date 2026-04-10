@@ -71,6 +71,12 @@ cc_defaults {
                 "-DVBOOT_TMP_DIR=\"/data/vendor/vboot/tmp\"",
             ],
         },
+        recovery: {
+            cflags: [
+                "-DCROSSYSTEM_LOCK_DIR=\"/tmp\"",
+                "-DVBOOT_TMP_DIR=\"/tmp\"",
+            ],
+        },
         darwin: {
             cflags: [
                 "-DHAVE_MACOS",
