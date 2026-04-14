@@ -179,11 +179,6 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 	    !drive->gpt.primary_entries || !drive->gpt.secondary_entries)
 		return -1;
 
-	/* TODO(namnguyen): Remove this and totally trust gpt_drive_sectors. */
-	if (!(drive->gpt.flags & GPT_FLAG_EXTERNAL)) {
-		drive->gpt.gpt_drive_sectors = drive->gpt.streaming_drive_sectors;
-	} /* Else, we trust gpt.gpt_drive_sectors. */
-
 	// Read the data.
 	if (CGPT_OK != Load(drive, drive->gpt.primary_header, GPT_PMBR_SECTORS,
 			    drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
@@ -322,7 +317,7 @@ static int ObtainDriveSize(int fd, uint64_t *size, uint32_t *sector_bytes)
 	return 0;
 }
 
-int DriveOpen(const char *drive_path, struct drive *drive, int mode, uint64_t drive_size)
+int DriveOpen(const char *drive_path, struct drive *drive, int mode)
 {
 	uint32_t sector_bytes;
 
@@ -342,21 +337,16 @@ int DriveOpen(const char *drive_path, struct drive *drive, int mode, uint64_t dr
 		return CGPT_FAILED;
 	}
 
-	uint64_t gpt_drive_size;
-	if (ObtainDriveSize(drive->fd, &gpt_drive_size, &sector_bytes) != 0) {
+	uint64_t drive_size;
+	if (ObtainDriveSize(drive->fd, &drive_size, &sector_bytes) != 0) {
 		Error("Can't get drive size and bytes per sector for %s: %s\n", drive_path,
 		      strerror(errno));
 		goto error_close;
 	}
 
-	drive->gpt.gpt_drive_sectors = gpt_drive_size / sector_bytes;
-	if (drive_size == 0) {
-		drive->size = gpt_drive_size;
-		drive->gpt.flags = 0;
-	} else {
-		drive->size = drive_size;
-		drive->gpt.flags = GPT_FLAG_EXTERNAL;
-	}
+	drive->gpt.gpt_drive_sectors = drive_size / sector_bytes;
+	drive->size = drive_size;
+	drive->gpt.flags = 0;
 
 	if (GptLoad(drive, sector_bytes)) {
 		goto error_close;
@@ -403,11 +393,8 @@ uint64_t DriveLastUsableLBA(const struct drive *drive)
 {
 	GptHeader *h = (GptHeader *)drive->gpt.primary_header;
 
-	if (!(drive->gpt.flags & GPT_FLAG_EXTERNAL))
-		return (drive->gpt.streaming_drive_sectors - GPT_HEADER_SECTORS -
-			CalculateEntriesSectors(h, drive->gpt.sector_bytes) - 1);
-
-	return (drive->gpt.streaming_drive_sectors - 1);
+	return (drive->gpt.streaming_drive_sectors - GPT_HEADER_SECTORS -
+		CalculateEntriesSectors(h, drive->gpt.sector_bytes) - 1);
 }
 
 /* GUID conversion functions. Accepted format:
@@ -1059,7 +1046,7 @@ int CgptGetNumNonEmptyPartitions(CgptShowParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY))
 		return CGPT_FAILED;
 
 	if (GPT_SUCCESS != (gpt_retval = GptValidityCheck(&drive.gpt))) {

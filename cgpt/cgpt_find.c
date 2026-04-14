@@ -147,7 +147,7 @@ static int do_search(CgptFindParams *params, const char *fileName)
 	int retval;
 	struct drive drive;
 
-	if (CGPT_OK != DriveOpen(fileName, &drive, O_RDONLY, params->drive_size))
+	if (CGPT_OK != DriveOpen(fileName, &drive, O_RDONLY))
 		return 0;
 
 	retval = gpt_search(params, &drive, fileName);

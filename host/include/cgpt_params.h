@@ -21,14 +21,12 @@ enum {
 
 typedef struct CgptCreateParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	int zap;
 	uint64_t padding;
 } CgptCreateParams;
 
 typedef struct CgptAddParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	uint32_t partition;
 	uint64_t begin;
 	uint64_t size;
@@ -57,14 +55,12 @@ typedef struct CgptAddParams {
 
 typedef struct CgptEditParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	Guid unique_guid;
 	int set_unique;
 } CgptEditParams;
 
 typedef struct CgptShowParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	int numeric;
 	int verbose;
 	int quick;
@@ -76,13 +72,11 @@ typedef struct CgptShowParams {
 
 typedef struct CgptRepairParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	int verbose;
 } CgptRepairParams;
 
 typedef struct CgptBootParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	uint32_t partition;
 	const char *bootfile;
 	int create_pmbr;
@@ -90,7 +84,6 @@ typedef struct CgptBootParams {
 
 typedef struct CgptPrioritizeParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	uint32_t set_partition;
 	int set_friends;
 	int max_priority;
@@ -103,7 +96,6 @@ typedef void (*CgptFindShowFn)(struct CgptFindParams *params,
 			       GptEntry *entry);
 typedef struct CgptFindParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	int verbose;
 	int set_unique;
 	int set_type;
@@ -133,7 +125,6 @@ enum {
 
 typedef struct CgptLegacyParams {
 	const char *drive_name;
-	uint64_t drive_size;
 	int mode;
 } CgptLegacyParams;
 

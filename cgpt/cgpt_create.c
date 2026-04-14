@@ -63,46 +63,12 @@ static int GptCreate(struct drive *drive, CgptCreateParams *params)
 		/* Calculate number of entries */
 		h->size_of_entry = sizeof(GptEntry);
 		h->number_of_entries = MAX_NUMBER_OF_ENTRIES;
-		if (drive->gpt.flags & GPT_FLAG_EXTERNAL) {
-			// We might have smaller space for the GPT table. Scale accordingly.
-			//
-			// +------+------------+---------------+-----+--------------+-----------+
-			// | PMBR | Prim. Head | Prim. Entries | ... | Sec. Entries | Sec. Head
-			// |
-			// +------+------------+---------------+-----+--------------+-----------+
-			//
-			// Half the size of gpt_drive_sectors must be big enough to hold PMBR +
-			// GPT Header + Entries Table, though the secondary structures do not
-			// contain PMBR.
-			size_t required_headers_size = (GPT_PMBR_SECTORS + GPT_HEADER_SECTORS) *
-						       drive->gpt.sector_bytes;
-			size_t min_entries_size = MIN_NUMBER_OF_ENTRIES * h->size_of_entry;
-			size_t required_min_size = required_headers_size + min_entries_size;
-			size_t half_size =
-				(drive->gpt.gpt_drive_sectors / 2) * drive->gpt.sector_bytes;
-			if (half_size < required_min_size) {
-				Error("Not enough space to store GPT structures. Required %zu "
-				      "bytes.\n",
-				      required_min_size * 2);
-				return -1;
-			}
-			size_t max_entries =
-				(half_size - required_headers_size) / h->size_of_entry;
-			if (h->number_of_entries > max_entries) {
-				h->number_of_entries = max_entries;
-			}
-		}
 
 		/* Then use number of entries to calculate entries_lba. */
 		h->entries_lba = h->my_lba + GPT_HEADER_SECTORS;
-		if (!(drive->gpt.flags & GPT_FLAG_EXTERNAL)) {
-			h->entries_lba += params->padding;
-			h->first_usable_lba =
-				h->entries_lba +
-				CalculateEntriesSectors(h, drive->gpt.sector_bytes);
-		} else {
-			h->first_usable_lba = params->padding;
-		}
+		h->entries_lba += params->padding;
+		h->first_usable_lba = h->entries_lba +
+				      CalculateEntriesSectors(h, drive->gpt.sector_bytes);
 		h->last_usable_lba = DriveLastUsableLBA(drive);
 
 		size_t entries_size = h->number_of_entries * h->size_of_entry;
@@ -125,7 +91,7 @@ int CgptCreate(CgptCreateParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
 		return CGPT_FAILED;
 
 	if (GptCreate(&drive, params))

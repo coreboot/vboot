@@ -112,7 +112,7 @@ int CgptPrioritize(CgptPrioritizeParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
 		return CGPT_FAILED;
 
 	if (GPT_SUCCESS != (gpt_retval = GptValidityCheck(&drive.gpt))) {

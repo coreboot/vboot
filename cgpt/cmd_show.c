@@ -20,9 +20,6 @@ static void Usage(void)
 	       "Display the GPT table.\n\n"
 	       "Units are blocks by default.\n\n"
 	       "Options:\n"
-	       "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
-	       "                 default 0, meaning partitions and GPT structs are\n"
-	       "                 both on DRIVE\n"
 	       "  -n           Numeric output only\n"
 	       "  -v           Verbose output\n"
 	       "  -q           Quick output\n"
@@ -55,12 +52,8 @@ int cmd_show(int argc, char *argv[])
 	char *e = 0;
 
 	opterr = 0; // quiet, you
-	while ((c = getopt(argc, argv, ":hnvqi:bstulSTPRBAdD:")) != -1) {
+	while ((c = getopt(argc, argv, ":hnvqi:bstulSTPRBAd")) != -1) {
 		switch (c) {
-		case 'D':
-			params.drive_size = strtoull(optarg, &e, 0);
-			errorcnt += check_int_parse(c, e);
-			break;
 		case 'n':
 			params.numeric = 1;
 			break;

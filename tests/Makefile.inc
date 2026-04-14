@@ -204,7 +204,6 @@ runtestscripts: install_for_test ${HOSTLIB_DEF} ${HOSTLIB_UNDEF}
 	${RUNTEST} $(SRC_RUN)/scripts/image_signing/lib/generate_android_cloud_config_unittest.py
 	${RUNTEST} ${SRC_RUN}/tests/load_kernel_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt
-	${RUNTEST} ${SRC_RUN}/tests/run_cgpt_tests.sh ${BUILD_RUN}/cgpt/cgpt -D 358400
 	${RUNTEST} ${SRC_RUN}/tests/run_preamble_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_kernel_arg_tests.sh
 	${RUNTEST} ${SRC_RUN}/tests/run_vbutil_tests.sh

@@ -16,7 +16,7 @@ int CgptRepair(CgptRepairParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
 		return CGPT_FAILED;
 
 	int gpt_retval = GptValidityCheck(&drive.gpt);
@@ -56,7 +56,7 @@ int CgptRepair(CgptRepairParams *params)
 		if (CGPT_OK != DriveClose(&drive, 1))
 			return CGPT_FAILED;
 		if (CGPT_OK !=
-		    DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+		    DriveOpen(params->drive_name, &drive, O_RDWR))
 			return CGPT_FAILED;
 
 		primary = (GptHeader *)(drive.gpt.primary_header);

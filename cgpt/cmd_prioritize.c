@@ -19,9 +19,6 @@ static void Usage(void)
 	printf("\nUsage: %s prioritize [OPTIONS] DRIVE\n\n"
 	       "Reorder the priority of all active ChromeOS Kernel partitions.\n\n"
 	       "Options:\n"
-	       "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
-	       "                 default 0, meaning partitions and GPT structs are\n"
-	       "                 both on DRIVE\n"
 	       "  -P NUM       Highest priority to use in the new ordering. The\n"
 	       "                 other partitions will be ranked in decreasing\n"
 	       "                 priority while preserving their original order.\n"
@@ -49,12 +46,8 @@ int cmd_prioritize(int argc, char *argv[])
 	char *e = 0;
 
 	opterr = 0; // quiet, you
-	while ((c = getopt(argc, argv, ":hi:fP:D:")) != -1) {
+	while ((c = getopt(argc, argv, ":hi:fP:")) != -1) {
 		switch (c) {
-		case 'D':
-			params.drive_size = strtoull(optarg, &e, 0);
-			errorcnt += check_int_parse(c, e);
-			break;
 		case 'i':
 			params.set_partition = (uint32_t)strtoul(optarg, &e, 0);
 			errorcnt += check_int_parse(c, e);

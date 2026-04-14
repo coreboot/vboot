@@ -52,15 +52,10 @@ struct drive {
 
 // Opens a block device or file, loads raw GPT data from it.
 // 'mode' should be O_RDONLY or O_RDWR.
-// If 'drive_size' is 0, both the partitions and GPT structs reside on the same
-// 'drive_path'.
-// Otherwise, 'drive_size' is taken as the size of the device that all
-// partitions will reside on, and 'drive_path' is where we store GPT structs.
 //
 // Returns CGPT_FAILED if any error happens.
-// Returns CGPT_OK if success and information are stored in 'drive'. */
-int DriveOpen(const char *drive_path, struct drive *drive, int mode,
-              uint64_t drive_size);
+// Returns CGPT_OK if success and information are stored in 'drive'.
+int DriveOpen(const char *drive_path, struct drive *drive, int mode);
 int DriveClose(struct drive *drive, int update_as_needed);
 int CheckValid(const struct drive *drive);
 

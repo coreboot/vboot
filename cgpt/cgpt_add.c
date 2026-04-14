@@ -162,7 +162,7 @@ int CgptSetAttributes(CgptAddParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
 		return CGPT_FAILED;
 
 	if (CgptCheckAddValidity(&drive)) {
@@ -199,7 +199,7 @@ int CgptGetPartitionDetails(CgptAddParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY))
 		return CGPT_FAILED;
 
 	if (CgptCheckAddValidity(&drive)) {
@@ -289,7 +289,7 @@ int CgptAdd(CgptAddParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDWR))
 		return CGPT_FAILED;
 
 	if (CgptCheckAddValidity(&drive)) {

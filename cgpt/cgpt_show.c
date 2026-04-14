@@ -281,18 +281,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params)
 			printf("Drive details:\n");
 			printf("    Total Size (bytes): %" PRIu64 "\n", drive->size);
 			printf("    LBA Size (bytes): %d\n", drive->gpt.sector_bytes);
-			if (drive->gpt.flags & GPT_FLAG_EXTERNAL) {
-				printf("    Drive (where GPT lives) Size (blocks): %" PRIu64
-				       "\n",
-				       drive->gpt.gpt_drive_sectors);
-				printf("    Drive (where partitions live) Size (blocks): "
-				       "%" PRIu64 "\n",
-				       drive->gpt.streaming_drive_sectors);
-			} else {
-				// We know gpt_drive_sectors == streaming_drive_sectors here.
-				printf("    Drive Size (blocks): %" PRIu64 "\n",
-				       drive->gpt.gpt_drive_sectors);
-			}
+			printf("    Drive Size (blocks): %" PRIu64 "\n", drive->gpt.gpt_drive_sectors);
 			printf("\n");
 		}
 
@@ -415,7 +404,7 @@ int CgptShow(CgptShowParams *params)
 	if (params == NULL)
 		return CGPT_FAILED;
 
-	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY, params->drive_size))
+	if (CGPT_OK != DriveOpen(params->drive_name, &drive, O_RDONLY))
 		return CGPT_FAILED;
 
 	int ret = GptShow(&drive, params);

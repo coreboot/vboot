@@ -16,9 +16,6 @@ static void Usage(void)
 	printf("\nUsage: %s create [OPTIONS] DRIVE\n\n"
 	       "Create or reset an empty GPT.\n\n"
 	       "Options:\n"
-	       "  -D NUM       Size (in bytes) of the disk where partitions reside;\n"
-	       "                 default 0, meaning partitions and GPT structs are\n"
-	       "                 both on DRIVE\n"
 	       "  -z           Zero the blocks of the GPT table and entries\n"
 	       "  -p NUM       Size (in blocks) of the disk to pad between the\n"
 	       "                 primary GPT header and its entries, default 0\n"
@@ -36,12 +33,8 @@ int cmd_create(int argc, char *argv[])
 	char *e = 0;
 
 	opterr = 0; // quiet, you
-	while ((c = getopt(argc, argv, ":hzp:D:")) != -1) {
+	while ((c = getopt(argc, argv, ":hzp:")) != -1) {
 		switch (c) {
-		case 'D':
-			params.drive_size = strtoull(optarg, &e, 0);
-			errorcnt += check_int_parse(c, e);
-			break;
 		case 'z':
 			params.zap = 1;
 			break;
