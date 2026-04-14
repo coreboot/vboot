@@ -41,7 +41,6 @@ static int keyblock_verify_fail;  /* 0=ok, 1=sig, 2=hash */
 static int preamble_verify_fail;
 static int verify_data_fail;
 static int unpack_key_fail;
-static int gpt_flag_external;
 
 static struct vb2_gbb_header gbb;
 static struct vb2_kernel_params lkp;
@@ -68,8 +67,6 @@ static void ResetMocks(void)
 	preamble_verify_fail = 0;
 	verify_data_fail = 0;
 	unpack_key_fail = 0;
-
-	gpt_flag_external = 0;
 
 	memset(&gbb, 0, sizeof(gbb));
 	gbb.major_version = VB2_GBB_MAJOR_VER;
@@ -186,9 +183,6 @@ GptEntry *GptNextKernelEntry(GptData *gpt)
 
 	if (!p->e.ending_lba)
 		return NULL;
-
-	if (gpt->flags & GPT_FLAG_EXTERNAL)
-		gpt_flag_external++;
 
 	memcpy(&cur_kbh, &mock_parts[mock_part_next].kbh, sizeof(cur_kbh));
 
@@ -317,7 +311,6 @@ static void load_kernel_tests(void)
 	TEST_EQ(lkp.bootloader_offset, 0xbeadd008, "  bootloader offset");
 	TEST_EQ(lkp.bootloader_size, 0x1234, "  bootloader size");
 	TEST_STR_EQ((char *)lkp.partition_guid.u.raw, fake_guid, "  guid");
-	TEST_EQ(gpt_flag_external, 0, "GPT was internal");
 	TEST_NEQ(sd->flags & VB2_SD_FLAG_KERNEL_SIGNED, 0, "  use signature");
 
 	ResetMocks();
@@ -658,12 +651,6 @@ static void load_kernel_tests(void)
 	ResetMocks();
 	verify_data_fail = 1;
 	test_load_kernel(VB2_ERROR_LK_INVALID_KERNEL_FOUND, "Bad data");
-
-	/* Check that EXTERNAL_GPT flag makes it down */
-	ResetMocks();
-	disk_info.flags |= VB2_DISK_FLAG_EXTERNAL_GPT;
-	test_load_kernel(VB2_SUCCESS, "Succeed external GPT");
-	TEST_EQ(gpt_flag_external, 1, "GPT was external");
 
 	/* Check recovery from unreadble primary GPT */
 	ResetMocks();

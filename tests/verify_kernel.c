@@ -98,9 +98,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* TODO(chromium:441893): support dev-mode flag and external gpt flag */
-	disk_info.flags = 0;
-
 	if (vb2api_init(&workbuf, sizeof(workbuf), &ctx)) {
 		fprintf(stderr, "Can't initialize workbuf\n");
 		return 1;

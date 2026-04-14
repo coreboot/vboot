@@ -41,15 +41,10 @@ int CheckParameters(GptData *gpt)
 		return GPT_ERROR_INVALID_SECTOR_SIZE;
 
 	/*
-	 * gpt_drive_sectors should be reasonable. It cannot be unset, and it
-	 * cannot differ from streaming_drive_sectors if the GPT structs are
-	 * stored on same device.
+	 * gpt_drive_sectors should be reasonable. It cannot be unset.
 	 */
-	if (gpt->gpt_drive_sectors == 0 ||
-		(!(gpt->flags & GPT_FLAG_EXTERNAL) &&
-		 gpt->gpt_drive_sectors != gpt->streaming_drive_sectors)) {
+	if (gpt->gpt_drive_sectors == 0 )
 		return GPT_ERROR_INVALID_SECTOR_NUMBER;
-	}
 
 	/*
 	 * Sector count of a drive should be reasonable. If the given value is
@@ -115,10 +110,7 @@ int CheckHeader(GptHeader *h, int is_secondary,
 	 */
 	if (h->size_of_entry != sizeof(GptEntry))
 		return 1;
-	if ((h->number_of_entries < MIN_NUMBER_OF_ENTRIES) ||
-	    (h->number_of_entries > MAX_NUMBER_OF_ENTRIES) ||
-	    (!(flags & GPT_FLAG_EXTERNAL) &&
-	    h->number_of_entries != MAX_NUMBER_OF_ENTRIES))
+	if (h->number_of_entries != MAX_NUMBER_OF_ENTRIES)
 		return 1;
 
 	/*
@@ -142,13 +134,6 @@ int CheckHeader(GptHeader *h, int is_secondary,
 	/* FirstUsableLBA <= LastUsableLBA. */
 	if (h->first_usable_lba > h->last_usable_lba)
 		return 1;
-
-	if (flags & GPT_FLAG_EXTERNAL) {
-		if (h->last_usable_lba >= streaming_drive_sectors) {
-			return 1;
-		}
-		return 0;
-	}
 
 	/*
 	 * FirstUsableLBA must be after the end of the primary GPT table array.

@@ -67,9 +67,6 @@ enum {
 	GPT_UPDATE_ENTRY_INVALID = 4,
 };
 
-/* If this bit is 1, the GPT is stored in another from the streaming data */
-#define GPT_FLAG_EXTERNAL	0x1
-
 /*
  * A note about stored_on_device and gpt_drive_sectors:
  *

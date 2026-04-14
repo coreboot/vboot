@@ -682,8 +682,6 @@ vb2_error_t vb2api_load_kernel(struct vb2_context *ctx,
 	gpt.streaming_drive_sectors = disk_info->streaming_lba_count
 		?: disk_info->lba_count;
 	gpt.gpt_drive_sectors = disk_info->lba_count;
-	gpt.flags = disk_info->flags & VB2_DISK_FLAG_EXTERNAL_GPT
-			? GPT_FLAG_EXTERNAL : 0;
 	if (AllocAndReadGptData(disk_info->handle, &gpt)) {
 		VB2_DEBUG("Unable to read GPT data\n");
 		goto exit;

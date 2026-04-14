@@ -629,35 +629,6 @@ struct vb2_kernel_params {
 /*****************************************************************************/
 /* Disk access */
 
-/* Flags for vb2_disk_info */
-
-/*
- * Disk selection in the lower 16 bits (where the disk lives), and disk
- * attributes in the higher 16 bits (extra information about the disk
- * needed to access it correctly).
- */
-#define VB2_DISK_FLAG_SELECT_MASK 0xffff
-#define VB2_DISK_FLAG_ATTRIBUTE_MASK (0xffff << 16)
-
-/*
- * Disks are used in two ways:
- * - As a random-access device to read and write the GPT
- * - As a streaming device to read the kernel
- * These are implemented differently on raw NAND vs eMMC/SATA/USB
- * - On eMMC/SATA/USB, both of these refer to the same underlying
- *   storage, so they have the same size and LBA size. In this case,
- *   the GPT should not point to the same address as itself.
- * - On raw NAND, the GPT is held on a portion of the SPI flash.
- *   Random access GPT operations refer to the SPI and streaming
- *   operations refer to NAND. The GPT may therefore point into
- *   the same offsets as itself.
- * These types are distinguished by the following flag and vb2_disk_info
- * has separate fields to describe the random-access ("GPT") and
- * streaming aspects of the disk. If a disk is random-access (i.e.
- * not raw NAND) then these fields are equal.
- */
-#define VB2_DISK_FLAG_EXTERNAL_GPT (1 << 16)
-
 /* Information on a single disk. */
 struct vb2_disk_info {
 	/* Disk handle. */
@@ -671,8 +642,6 @@ struct vb2_disk_info {
 	uint64_t lba_count;
 	/* Number of streaming sectors on the device. */
 	uint64_t streaming_lba_count;
-	/* Flags (see VB2_DISK_FLAG_* constants). */
-	uint32_t flags;
 	/*
 	 * Optional name string, for use in debugging.  May be empty or null if
 	 * not available.
