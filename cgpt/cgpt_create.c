@@ -54,7 +54,7 @@ static int GptCreate(struct drive *drive, CgptCreateParams *params)
 		h->revision = GPT_HEADER_REVISION;
 		h->size = sizeof(GptHeader);
 		h->my_lba = GPT_PMBR_SECTORS; /* The second sector on drive. */
-		h->alternate_lba = drive->gpt.gpt_drive_sectors - GPT_HEADER_SECTORS;
+		h->alternate_lba = drive->gpt.drive_sectors - GPT_HEADER_SECTORS;
 		if (CGPT_OK != GenerateGuid(&h->disk_uuid)) {
 			Error("Unable to generate new GUID.\n");
 			return -1;

@@ -20,8 +20,7 @@ struct MockDisk {
 struct GptDataParams {
 	uint32_t sector_shift;
 	uint32_t flags;
-	uint64_t streaming_drive_sectors;
-	uint64_t gpt_drive_sectors;
+	uint64_t drive_sectors;
 } __attribute__((packed));
 
 static struct MockDisk mock_disk;
@@ -68,8 +67,7 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
 	GptData gpt;
 	memset(&gpt, 0, sizeof(gpt));
 	gpt.sector_bytes = 1ULL << params.sector_shift;
-	gpt.streaming_drive_sectors = params.streaming_drive_sectors;
-	gpt.gpt_drive_sectors = params.gpt_drive_sectors;
+	gpt.drive_sectors = params.drive_sectors;
 	gpt.flags = params.flags;
 
 	if (0 == AllocAndReadGptData(0, &gpt)) {

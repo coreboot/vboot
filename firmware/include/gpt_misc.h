@@ -91,10 +91,8 @@ typedef struct {
 	uint8_t *secondary_entries;
 	/* Size of a LBA sector, in bytes */
 	uint32_t sector_bytes;
-	/* Size of drive (that the partitions are on) in LBA sectors */
-	uint64_t streaming_drive_sectors;
-	/* Size of the device that holds the GPT structures, 512-byte sectors */
-	uint64_t gpt_drive_sectors;
+	/* Size of drive in LBA sectors */
+	uint64_t drive_sectors;
 	/* Flags */
 	uint32_t flags;
 

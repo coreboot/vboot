@@ -281,7 +281,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params)
 			printf("Drive details:\n");
 			printf("    Total Size (bytes): %" PRIu64 "\n", drive->size);
 			printf("    LBA Size (bytes): %d\n", drive->gpt.sector_bytes);
-			printf("    Drive Size (blocks): %" PRIu64 "\n", drive->gpt.gpt_drive_sectors);
+			printf("    Drive Size (blocks): %" PRIu64 "\n", drive->gpt.drive_sectors);
 			printf("\n");
 		}
 
@@ -334,7 +334,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params)
 		/****************************** Secondary *************************/
 		if (drive->gpt.ignored & MASK_SECONDARY) {
 			printf(GPT_FMT,
-			       (uint64_t)(drive->gpt.gpt_drive_sectors - GPT_HEADER_SECTORS),
+			       (uint64_t)(drive->gpt.drive_sectors - GPT_HEADER_SECTORS),
 			       (uint64_t)GPT_HEADER_SECTORS, "IGNORED", "Sec GPT header");
 		} else {
 			GptHeader *secondary_header = (GptHeader *)drive->gpt.secondary_header;
@@ -360,7 +360,7 @@ static int GptShow(struct drive *drive, CgptShowParams *params)
 
 			if (drive->gpt.valid_headers & MASK_SECONDARY) {
 				printf(GPT_FMT,
-				       (uint64_t)(drive->gpt.gpt_drive_sectors -
+				       (uint64_t)(drive->gpt.drive_sectors -
 						  GPT_HEADER_SECTORS),
 				       (uint64_t)GPT_HEADER_SECTORS, "", "Sec GPT header");
 			} else {

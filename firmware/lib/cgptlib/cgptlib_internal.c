@@ -41,9 +41,9 @@ int CheckParameters(GptData *gpt)
 		return GPT_ERROR_INVALID_SECTOR_SIZE;
 
 	/*
-	 * gpt_drive_sectors should be reasonable. It cannot be unset.
+	 * drive_sectors should be reasonable. It cannot be unset.
 	 */
-	if (gpt->gpt_drive_sectors == 0 )
+	if (gpt->drive_sectors == 0 )
 		return GPT_ERROR_INVALID_SECTOR_NUMBER;
 
 	/*
@@ -51,7 +51,7 @@ int CheckParameters(GptData *gpt)
 	 * too small to contain basic GPT structure (PMBR + Headers + Entries),
 	 * the value is wrong.
 	 */
-	if (gpt->gpt_drive_sectors <
+	if (gpt->drive_sectors <
 		(1 + 2 * (1 + MIN_NUMBER_OF_ENTRIES /
 				(gpt->sector_bytes / sizeof(GptEntry)))))
 		return GPT_ERROR_INVALID_SECTOR_NUMBER;
@@ -72,10 +72,8 @@ uint32_t HeaderCrc(GptHeader *h)
 	return crc32;
 }
 
-int CheckHeader(GptHeader *h, int is_secondary,
-		uint64_t streaming_drive_sectors,
-		uint64_t gpt_drive_sectors, uint32_t flags,
-		uint32_t sector_bytes)
+int CheckHeader(GptHeader *h, int is_secondary, uint64_t drive_sectors,
+		uint32_t flags,	uint32_t sector_bytes)
 {
 	if (!h)
 		return 1;
@@ -119,7 +117,7 @@ int CheckHeader(GptHeader *h, int is_secondary,
 	 * secondary is at the end of the drive, preceded by its entries.
 	 */
 	if (is_secondary) {
-		if (h->my_lba != gpt_drive_sectors - GPT_HEADER_SECTORS)
+		if (h->my_lba != drive_sectors - GPT_HEADER_SECTORS)
 			return 1;
 		if (h->entries_lba != h->my_lba - CalculateEntriesSectors(h,
 								sector_bytes))
@@ -143,9 +141,8 @@ int CheckHeader(GptHeader *h, int is_secondary,
 	/* TODO(namnguyen): Also check for padding between header & entries. */
 	if (h->first_usable_lba < 2 + CalculateEntriesSectors(h, sector_bytes))
 		return 1;
-	if (h->last_usable_lba >=
-			streaming_drive_sectors - 1 - CalculateEntriesSectors(h,
-								sector_bytes))
+	if (h->last_usable_lba >= drive_sectors - 1 -
+				  CalculateEntriesSectors(h, sector_bytes))
 		return 1;
 
 	if (CalculateEntriesSectors(h, sector_bytes) * sector_bytes >
@@ -268,8 +265,7 @@ int GptValidityCheck(GptData *gpt)
 		return retval;
 
 	/* Check both headers; we need at least one valid header. */
-	if (0 == CheckHeader(header1, 0, gpt->streaming_drive_sectors,
-			     gpt->gpt_drive_sectors, gpt->flags,
+	if (0 == CheckHeader(header1, 0, gpt->drive_sectors, gpt->flags,
 			     gpt->sector_bytes)) {
 		gpt->valid_headers |= MASK_PRIMARY;
 		goodhdr = header1;
@@ -279,8 +275,7 @@ int GptValidityCheck(GptData *gpt)
 		   GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE)) {
 		gpt->ignored |= MASK_PRIMARY;
 	}
-	if (0 == CheckHeader(header2, 1, gpt->streaming_drive_sectors,
-			     gpt->gpt_drive_sectors, gpt->flags,
+	if (0 == CheckHeader(header2, 1, gpt->drive_sectors, gpt->flags,
 			     gpt->sector_bytes)) {
 		gpt->valid_headers |= MASK_SECONDARY;
 		if (!goodhdr)
@@ -355,7 +350,7 @@ void GptRepair(GptData *gpt)
 	if (MASK_PRIMARY == gpt->valid_headers) {
 		/* Primary is good, secondary is bad */
 		memcpy(header2, header1, sizeof(GptHeader));
-		header2->my_lba = gpt->gpt_drive_sectors - GPT_HEADER_SECTORS;
+		header2->my_lba = gpt->drive_sectors - GPT_HEADER_SECTORS;
 		header2->alternate_lba = GPT_PMBR_SECTORS;  /* Second sector. */
 		header2->entries_lba = header2->my_lba -
 			CalculateEntriesSectors(header1, gpt->sector_bytes);
@@ -366,8 +361,7 @@ void GptRepair(GptData *gpt)
 		/* Secondary is good, primary is bad */
 		memcpy(header1, header2, sizeof(GptHeader));
 		header1->my_lba = GPT_PMBR_SECTORS;  /* Second sector. */
-		header1->alternate_lba =
-			gpt->streaming_drive_sectors - GPT_HEADER_SECTORS;
+		header1->alternate_lba = gpt->drive_sectors - GPT_HEADER_SECTORS;
 		/* TODO (namnguyen): Preserve (header, entries) padding. */
 		header1->entries_lba = header1->my_lba + 1;
 		header1->header_crc32 = HeaderCrc(header1);

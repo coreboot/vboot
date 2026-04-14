@@ -14,7 +14,7 @@
 /**
  * Allocate and read GPT data from the drive.
  *
- * The sector_bytes and gpt_drive_sectors fields should be filled on input.  The
+ * The sector_bytes and drive_sectors fields should be filled on input.  The
  * primary and secondary header and entries are filled on output.
  *
  * Returns 0 if successful, 1 if error.
@@ -56,8 +56,7 @@ int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	/* Only read primary GPT if the primary header is valid */
 	GptHeader* primary_header = (GptHeader*)gptdata->primary_header;
 	if (0 == CheckHeader(primary_header, 0,
-			gptdata->streaming_drive_sectors,
-			gptdata->gpt_drive_sectors,
+			gptdata->drive_sectors,
 			gptdata->flags,
 			gptdata->sector_bytes)) {
 		primary_valid = 1;
@@ -83,7 +82,7 @@ int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	}
 
 	/* Read secondary header from the end of the drive */
-	if (0 != VbExDiskRead(disk_handle, gptdata->gpt_drive_sectors - 1, 1,
+	if (0 != VbExDiskRead(disk_handle, gptdata->drive_sectors - 1, 1,
 			      gptdata->secondary_header)) {
 		VB2_DEBUG("Read error in secondary GPT header\n");
 		memset(gptdata->secondary_header, 0, gptdata->sector_bytes);
@@ -92,8 +91,7 @@ int AllocAndReadGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 	/* Only read secondary GPT if the secondary header is valid */
 	GptHeader* secondary_header = (GptHeader*)gptdata->secondary_header;
 	if (0 == CheckHeader(secondary_header, 1,
-			gptdata->streaming_drive_sectors,
-			gptdata->gpt_drive_sectors,
+			gptdata->drive_sectors,
 			gptdata->flags,
 			gptdata->sector_bytes)) {
 		secondary_valid = 1;
@@ -202,7 +200,7 @@ int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 		}
 	}
 
-	entries_lba = (gptdata->gpt_drive_sectors - entries_sectors -
+	entries_lba = (gptdata->drive_sectors - entries_sectors -
 		GPT_HEADER_SECTORS);
 	if (gptdata->secondary_header && !(gptdata->ignored & MASK_SECONDARY)) {
 		GptHeader *h = (GptHeader *)(gptdata->secondary_header);
@@ -210,7 +208,7 @@ int WriteAndFreeGptData(vb2ex_disk_handle_t disk_handle, GptData *gptdata)
 		if (gptdata->modified & GPT_MODIFIED_HEADER2) {
 			VB2_DEBUG("Updating GPT header 2\n");
 			if (0 != VbExDiskWrite(disk_handle,
-					       gptdata->gpt_drive_sectors - 1, 1,
+					       gptdata->drive_sectors - 1, 1,
 					       gptdata->secondary_header))
 				goto fail;
 		}

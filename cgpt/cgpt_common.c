@@ -169,7 +169,7 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 		      (long long unsigned int)drive->size, drive->gpt.sector_bytes);
 		return -1;
 	}
-	drive->gpt.streaming_drive_sectors = drive->size / drive->gpt.sector_bytes;
+	drive->gpt.drive_sectors = drive->size / drive->gpt.sector_bytes;
 
 	drive->gpt.primary_header = malloc(drive->gpt.sector_bytes);
 	drive->gpt.secondary_header = malloc(drive->gpt.sector_bytes);
@@ -186,14 +186,13 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 		return -1;
 	}
 	if (CGPT_OK != Load(drive, drive->gpt.secondary_header,
-			    drive->gpt.gpt_drive_sectors - GPT_PMBR_SECTORS,
+			    drive->gpt.drive_sectors - GPT_PMBR_SECTORS,
 			    drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
 		Error("Cannot read secondary GPT header\n");
 		return -1;
 	}
 	GptHeader *primary_header = (GptHeader *)drive->gpt.primary_header;
-	if (CheckHeader(primary_header, 0, drive->gpt.streaming_drive_sectors,
-			drive->gpt.gpt_drive_sectors, drive->gpt.flags,
+	if (CheckHeader(primary_header, 0, drive->gpt.drive_sectors, drive->gpt.flags,
 			drive->gpt.sector_bytes) == 0) {
 		if (CGPT_OK !=
 		    Load(drive, drive->gpt.primary_entries, primary_header->entries_lba,
@@ -210,8 +209,7 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 				: "being ignored");
 	}
 	GptHeader *secondary_header = (GptHeader *)drive->gpt.secondary_header;
-	if (CheckHeader(secondary_header, 1, drive->gpt.streaming_drive_sectors,
-			drive->gpt.gpt_drive_sectors, drive->gpt.flags,
+	if (CheckHeader(secondary_header, 1, drive->gpt.drive_sectors, drive->gpt.flags,
 			drive->gpt.sector_bytes) == 0) {
 		if (CGPT_OK !=
 		    Load(drive, drive->gpt.secondary_entries, secondary_header->entries_lba,
@@ -266,7 +264,7 @@ static int GptSave(struct drive *drive)
 	if (!errors && !(drive->gpt.ignored & MASK_SECONDARY)) {
 		if (drive->gpt.modified & GPT_MODIFIED_HEADER2) {
 			if (CGPT_OK != Save(drive, drive->gpt.secondary_header,
-					    drive->gpt.gpt_drive_sectors - GPT_PMBR_SECTORS,
+					    drive->gpt.drive_sectors - GPT_PMBR_SECTORS,
 					    drive->gpt.sector_bytes, GPT_HEADER_SECTORS)) {
 				errors++;
 				Error("Cannot write secondary header: %s\n", strerror(errno));
@@ -344,7 +342,7 @@ int DriveOpen(const char *drive_path, struct drive *drive, int mode)
 		goto error_close;
 	}
 
-	drive->gpt.gpt_drive_sectors = drive_size / sector_bytes;
+	drive->gpt.drive_sectors = drive_size / sector_bytes;
 	drive->size = drive_size;
 	drive->gpt.flags = 0;
 
@@ -393,7 +391,7 @@ uint64_t DriveLastUsableLBA(const struct drive *drive)
 {
 	GptHeader *h = (GptHeader *)drive->gpt.primary_header;
 
-	return (drive->gpt.streaming_drive_sectors - GPT_HEADER_SECTORS -
+	return (drive->gpt.drive_sectors - GPT_HEADER_SECTORS -
 		CalculateEntriesSectors(h, drive->gpt.sector_bytes) - 1);
 }
 
@@ -1019,7 +1017,7 @@ uint8_t RepairHeader(GptData *gpt, const uint32_t valid_headers)
 		}
 	} else if (valid_headers == MASK_PRIMARY) {
 		memcpy(secondary_header, primary_header, sizeof(GptHeader));
-		secondary_header->my_lba = gpt->gpt_drive_sectors - 1; /* the last sector */
+		secondary_header->my_lba = gpt->drive_sectors - 1; /* the last sector */
 		secondary_header->alternate_lba = primary_header->my_lba;
 		secondary_header->entries_lba =
 			secondary_header->my_lba -

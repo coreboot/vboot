@@ -114,8 +114,7 @@ int CheckParameters(GptData* gpt);
  * Returns 0 if header is valid, 1 if invalid.
  */
 int CheckHeader(GptHeader *h, int is_secondary,
-		uint64_t streaming_drive_sectors,
-		uint64_t gpt_drive_sectors, uint32_t flags,
+		uint64_t drive_sectors, uint32_t flags,
 		uint32_t sector_bytes);
 
 /**
