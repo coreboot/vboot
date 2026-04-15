@@ -211,6 +211,11 @@ enum vb2_context_flags {
 	 * See more: b/484260435
 	 */
 	VB2_CONTEXT_FASTBOOT_ALLOWED = (1 << 30),
+
+	/*
+	 * OEM Lock is enabled.
+	 */
+	VB2_CONTEXT_OEM_LOCK_ENABLED = (1 << 31),
 };
 
 /* Helper for aligning fields in vb2_context. */

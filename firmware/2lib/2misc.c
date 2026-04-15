@@ -592,9 +592,12 @@ void vb2_fill_dev_boot_flags(struct vb2_context *ctx)
 {
 	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 
+	if (vb2_nv_get(ctx, VB2_NV_OEM_LOCK))
+		ctx->flags |= VB2_CONTEXT_OEM_LOCK_ENABLED;
+
 	if ((!vb2_secdata_fwmp_get_flag(ctx,
 				       VB2_SECDATA_FWMP_DEV_DISABLE_BOOT) &&
-	     !vb2_nv_get(ctx, VB2_NV_OEM_LOCK)) ||
+	     !(ctx->flags & VB2_CONTEXT_OEM_LOCK_ENABLED)) ||
 	    (gbb->flags & VB2_GBB_FLAG_FORCE_DEV_SWITCH_ON))
 		ctx->flags |= VB2_CONTEXT_DEV_BOOT_ALLOWED;
 

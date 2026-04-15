@@ -1200,6 +1200,20 @@ static void fill_dev_boot_flags_tests(void)
 	vb2_fill_dev_boot_flags(ctx);
 	TEST_FALSE(ctx->flags & VB2_CONTEXT_FASTBOOT_ALLOWED,
 		   "fastboot not allowed - normal mode + OEM lock + no GBB flag");
+
+	/* OEM Lock - enabled if non-zero */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 1);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_TRUE(ctx->flags & VB2_CONTEXT_OEM_LOCK_ENABLED,
+		   "OEM Lock enabled - OEM Lock");
+
+	/* OEM Lock - disabled if zero */
+	reset_common_data();
+	vb2_nv_set(ctx, VB2_NV_OEM_LOCK, 0);
+	vb2_fill_dev_boot_flags(ctx);
+	TEST_FALSE(ctx->flags & VB2_CONTEXT_OEM_LOCK_ENABLED,
+		   "OEM Lock disabled - OEM unlock");
 }
 
 static void use_dev_screen_short_delay_tests(void)
