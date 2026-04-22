@@ -13,6 +13,11 @@ UTILLIB = ${BUILD}/libvboot_util.a
 HOSTLIB_DEF = ${BUILD}/tests/libvboot_host_def.txt
 HOSTLIB_UNDEF = ${BUILD}/tests/libvboot_host_undef.txt
 
+# Utility-specific flags and rules
+ifeq ($(OPENSSL_VERSION),3)
+CFLAGS += -Wno-error=deprecated-declarations
+endif
+
 # Maintain behaviour of default on.
 USE_FLASHROM ?= 1
 
