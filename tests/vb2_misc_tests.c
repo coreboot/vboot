@@ -576,15 +576,15 @@ static void dev_switch_tests(void)
 	TEST_NEQ(ctx->flags & VB2_CONTEXT_DEVELOPER_MODE, 0, "  ctx in dev");
 	TEST_EQ(mock_tpm_clear_called, 0, "  no tpm clear");
 
-	/* Any normal mode boot clears dev boot flags */
+	/* Any normal mode boot clears dev boot flags except boot external which is set */
 	reset_common_data();
-	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
+	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 0);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_ALTFW, 1);
 	vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 1);
 	vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, 1);
 	TEST_SUCC(vb2_check_dev_switch(ctx), "dev mode off");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_EXTERNAL),
-		0, "  cleared dev boot external");
+		1, "  set dev boot external");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_ALTFW),
 		0, "  cleared dev boot altfw");
 	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY),

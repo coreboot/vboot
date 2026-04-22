@@ -292,10 +292,14 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		 * initially disabled if the user later transitions back into
 		 * developer mode.
 		 */
-		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_ALTFW, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, 0);
+		/*
+		 * Enable option to boot from external so it is set by default
+		 * when the user transitions into developer mode.
+		 */
+		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
 	}
 
 	if (ctx->flags & VB2_CONTEXT_FORCE_WIPEOUT_MODE)
