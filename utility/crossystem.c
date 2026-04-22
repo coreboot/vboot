@@ -48,6 +48,7 @@ const Param sys_param_list[] = {
   {"dev_default_boot", IS_STRING|CAN_WRITE,
    "Default boot from disk, altfw or usb"},
   {"dev_enable_udc", CAN_WRITE, "Enable USB Device Controller"},
+  {"dev_fastboot_en", CAN_WRITE, "Enable fastboot in developer mode"},
   {"devsw_boot", 0, "Developer switch position at boot"},
   {"devsw_cur",  0, "Developer switch current position"},
   {"diagnostic_request", CAN_WRITE, "Request diagnostic rom run on next boot"},

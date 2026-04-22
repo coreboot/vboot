@@ -509,6 +509,8 @@ int VbGetSystemPropertyInt(const char *name)
 		value = vb2_get_nv_storage(VB2_NV_DEV_BOOT_SIGNED_ONLY);
 	} else if (!strcasecmp(name,"dev_enable_udc")) {
 		value = vb2_get_nv_storage(VB2_NV_DEV_ENABLE_UDC);
+	} else if (!strcasecmp(name,"dev_fastboot_en")) {
+		value = vb2_get_nv_storage(VB2_NV_DEV_ENABLE_FASTBOOT);
 	} else if (!strcasecmp(name,"display_request")) {
 		value = vb2_get_nv_storage(VB2_NV_DISPLAY_REQUEST);
 	} else if (!strcasecmp(name,"recovery_subcode")) {
@@ -764,6 +766,9 @@ static int VbSetSystemPropertyIntInternal(const char *name, int value)
 		return vb2_set_nv_storage(VB2_NV_POST_EC_SYNC_DELAY, value);
 	} else if (!strcasecmp(name, "oem_lock")) {
 		return vb2_set_nv_storage_with_backup(VB2_NV_OEM_LOCK, value);
+	} else if (!strcasecmp(name, "dev_fastboot_en")) {
+		return vb2_set_nv_storage_with_backup(
+			VB2_NV_DEV_ENABLE_FASTBOOT, value);
 	}
 
 	return -1;

@@ -296,10 +296,11 @@ vb2_error_t vb2_check_dev_switch(struct vb2_context *ctx)
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_SIGNED_ONLY, 0);
 		vb2_nv_set(ctx, VB2_NV_DEV_DEFAULT_BOOT, 0);
 		/*
-		 * Enable option to boot from external so it is set by default
-		 * when the user transitions into developer mode.
+		 * Enable option to boot from external and allow fastboot so it
+		 * is set by default when the user transitions into developer mode.
 		 */
 		vb2_nv_set(ctx, VB2_NV_DEV_BOOT_EXTERNAL, 1);
+		vb2_nv_set(ctx, VB2_NV_DEV_ENABLE_FASTBOOT, 1);
 	}
 
 	if (ctx->flags & VB2_CONTEXT_FORCE_WIPEOUT_MODE)
@@ -618,11 +619,12 @@ void vb2_fill_dev_boot_flags(struct vb2_context *ctx)
 
 	/*
 	 * Allow fastboot in:
-	 *  - Developer mode including forced by GBB flag
+	 *  - Developer mode including forced by GBB flag and enabled by NV flag
 	 *  - Any mode with Fastboot GBB flag enabled
 	 */
 	if ((ctx->boot_mode == VB2_BOOT_MODE_DEVELOPER &&
-	     (ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED)) ||
+	     (ctx->flags & VB2_CONTEXT_DEV_BOOT_ALLOWED) &&
+	     vb2_nv_get(ctx, VB2_NV_DEV_ENABLE_FASTBOOT)) ||
 	    (vb2api_gbb_get_flags(ctx) & VB2_GBB_FLAG_FORCE_UNLOCK_FASTBOOT))
 		ctx->flags |= VB2_CONTEXT_FASTBOOT_ALLOWED;
 }

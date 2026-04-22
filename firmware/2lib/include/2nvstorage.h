@@ -91,9 +91,8 @@ enum vb2_nv_param {
 	/* Request wipeout of the device by the app. */
 	VB2_NV_REQ_WIPEOUT,
 
-	/* Fastboot: Unlock in firmware, 0=disabled, 1=enabled.
-	   Deprecated; see chromium:995172. */
-	VB2_NV_DEPRECATED_FASTBOOT_UNLOCK_IN_FW,
+	/* Allow fastboot in developer mode, 0=no, 1=yes. */
+	VB2_NV_DEV_ENABLE_FASTBOOT,
 	/* Boot system when AC detected (0=no, 1=yes). */
 	VB2_NV_BOOT_ON_AC_DETECT,
 	/*
