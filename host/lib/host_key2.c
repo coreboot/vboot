@@ -114,7 +114,7 @@ struct vb2_private_key *vb2_read_private_key(const char *key_info)
 
 	static const char p11_prefix[] = "remote";
 	static const char local_prefix[] = "local";
-	char *colon = strchr(key_info, ':');
+	const char *colon = strchr(key_info, ':');
 	if (colon) {
 		int prefix_size = colon - key_info;
 		if (!strncmp(key_info, p11_prefix, prefix_size)) {

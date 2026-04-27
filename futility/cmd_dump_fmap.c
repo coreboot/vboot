@@ -49,7 +49,7 @@ typedef enum {
 static int normal_fmap(const FmapHeader *fmh,
 	const void *base_of_rom, size_t size_of_rom,
 	bool extract, format_t format,
-	const char *const *names, size_t names_len)
+	char *const *names, size_t names_len)
 {
 	int retval = 0;
 	char buf[80];		/* DWR: magic number */
@@ -65,7 +65,7 @@ static int normal_fmap(const FmapHeader *fmh,
 	if (extract) {
 		/* prepare the filenames to write areas to */
 		for (int i = 0; i < names_len; i++) {
-			const char *a = names[i];
+			char *a = names[i];
 			char *f = strchr(a, ':');
 			if (!f)
 				continue;
@@ -537,7 +537,7 @@ static int do_dump_fmap(int argc, char *argv[])
 		default:
 			retval = normal_fmap(fmap, base_of_rom, size_of_rom,
 					     opt_extract, opt_format,
-					     (const char **)(argv + optind + 1),
+					     argv + optind + 1,
 					     argc - optind - 1);
 		}
 	} else {
