@@ -8,6 +8,7 @@
 #include <getopt.h>
 #include <inttypes.h>		/* For PRIu64 */
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@ enum {
 	OPT_ALGORITHM,
 	OPT_MODE_PACK,
 	OPT_MODE_UNPACK,
+	OPT_MODE_REPACK,
 	OPT_COPYTO,
 	OPT_HELP,
 };
@@ -35,6 +37,7 @@ static const struct option long_opts[] = {
 	{"algorithm", 1, 0, OPT_ALGORITHM},
 	{"pack", 1, 0, OPT_MODE_PACK},
 	{"unpack", 1, 0, OPT_MODE_UNPACK},
+	{"repack", 1, 0, OPT_MODE_REPACK},
 	{"copyto", 1, 0, OPT_COPYTO},
 	{"help", 0, 0, OPT_HELP},
 	{NULL, 0, 0, 0}
@@ -63,7 +66,16 @@ static void print_help(int argc, char *argv[])
 	       "\n"
 	       "  Optional parameters:\n"
 	       "    --copyto <file>             "
-	       "Write a copy of the key to this file.\n\n", argv[0]);
+	       "Write a copy of the key to this file.\n"
+	       "\nOR\n\n"
+	       "Usage:  " MYNAME " %s --repack <file> --version <number>\n"
+	       "\n"
+	       "  Update the version of an existing .vbpubk file.\n"
+	       "\n"
+	       "  Optional parameters:\n"
+	       "    --copyto <file>             "
+	       "Output to this file instead of modifying the original.\n\n",
+	       argv[0], argv[0]);
 }
 
 /* Pack a .keyb file into a .vbpubk, or a .pem into a .vbprivk */
@@ -103,6 +115,24 @@ static int do_pack(const char *infile, const char *outfile, uint32_t algorithm,
 	return 1;
 }
 
+/* Update the version of an existing .vbpubk file */
+static int do_repack(const char *infile, const char *outfile, uint32_t version)
+{
+	struct vb2_packed_key *pubkey = vb2_read_packed_key(infile);
+	if (!pubkey)
+		FATAL("Unable to parse .vbpubk from %s\n", infile);
+	if (version > VB2_MAX_KEY_VERSION)
+		FATAL("Invalid version: %u > %u\n", version, VB2_MAX_KEY_VERSION);
+
+	pubkey->key_version = version;
+
+	if (vb2_write_packed_key(outfile, pubkey))
+		FATAL("Error writing repacked key to %s\n", outfile);
+
+	free(pubkey);
+	return 0;
+}
+
 /* Unpack a .vbpubk, .vbprivk, or .vbprik2 */
 static int do_unpack(const char *infile, const char *outfile)
 {
@@ -123,7 +153,7 @@ static int do_unpack(const char *infile, const char *outfile)
 		       packed_key_sha1_string(pubkey));
 		if (outfile &&
 		    VB2_SUCCESS != vb2_write_packed_key(outfile, pubkey)) {
-			ERROR("butil_key: Error writing key copy\n");
+			ERROR("vbutil_key: Error writing key copy\n");
 			free(pubkey);
 			return 1;
 		}
@@ -161,6 +191,7 @@ static int do_vbutil_key(int argc, char *argv[])
 	char *outfile = NULL;
 	int mode = 0;
 	int parse_error = 0;
+	bool version_provided = false;
 	uint32_t version = 1;
 	uint32_t algorithm = VB2_ALG_COUNT;
 	char *e;
@@ -183,6 +214,7 @@ static int do_vbutil_key(int argc, char *argv[])
 
 		case OPT_KEY_VERSION:
 			version = strtoul(optarg, &e, 0);
+			version_provided = true;
 			if (!*optarg || (e && *e)) {
 				FATAL("Invalid --version\n");
 				parse_error = 1;
@@ -203,6 +235,7 @@ static int do_vbutil_key(int argc, char *argv[])
 			break;
 
 		case OPT_MODE_UNPACK:
+		case OPT_MODE_REPACK:
 			mode = i;
 			infile = optarg;
 			break;
@@ -223,6 +256,12 @@ static int do_vbutil_key(int argc, char *argv[])
 		return do_pack(infile, outfile, algorithm, version);
 	case OPT_MODE_UNPACK:
 		return do_unpack(infile, outfile);
+	case OPT_MODE_REPACK:
+		if (!version_provided)
+			FATAL("--version is mandatory for --repack\n");
+		if (!outfile)
+			outfile = infile;
+		return do_repack(infile, outfile, version);
 	default:
 		printf("Must specify a mode.\n");
 		print_help(argc, argv);

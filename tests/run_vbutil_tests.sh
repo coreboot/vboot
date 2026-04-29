@@ -34,6 +34,27 @@ function test_vbutil_key_single {
     then
         return_code=255
     fi
+
+    # Repack with different version
+    if ! "${FUTILITY}" vbutil_key \
+        --repack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk" \
+        --version 42
+    then
+        return_code=255
+    fi
+    if ! "${FUTILITY}" show -P "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk" \
+        | grep -q pubkey::version::42
+    then
+        return_code=255
+    fi
+
+    # Must fail: out of range
+    if "${FUTILITY}" vbutil_key \
+        --repack "${TESTKEY_SCRATCH_DIR}/key_alg${algonum}.vbpubk" \
+        --version 1234567 2> /dev/null
+    then
+        return_code=255
+    fi
 }
 
 function test_vbutil_key_all {
