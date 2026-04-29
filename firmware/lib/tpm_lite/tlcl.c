@@ -830,7 +830,7 @@ uint32_t TlclGetFlags(uint8_t* disable,
 
 uint32_t TlclSetGlobalLock(void)
 {
-	uint32_t x;
+	uint32_t x = 0;
 	VB2_DEBUG("TPM: Set global lock\n");
 	return TlclWrite(TPM_NV_INDEX0, (uint8_t*) &x, 0);
 }

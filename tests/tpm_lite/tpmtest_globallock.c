@@ -17,7 +17,7 @@
 
 int main(int argc, char** argv) {
 	uint32_t zero = 0;
-	uint32_t x;
+	uint32_t x = 0;
 
 	TlclLibInit();
 	TPM_CHECK(TlclStartupIfNeeded());

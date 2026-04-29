@@ -14,7 +14,7 @@
 #include "tlcl_tests.h"
 
 int main(int argc, char** argv) {
-	uint32_t x;
+	uint32_t x = 0;
 
 	TlclLibInit();
 	TPM_CHECK(TlclStartup());

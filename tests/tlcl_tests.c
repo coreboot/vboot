@@ -292,7 +292,7 @@ static void DefineSpaceExTest(void) {
 		0xc8, 0x8d, 0xf4,
 	};
 	uint8_t owner_secret[TPM_AUTH_DATA_LEN] = { 0 };
-	TPM_NV_AUTH_POLICY policy;
+	TPM_NV_AUTH_POLICY policy = { 0 };
 
 	ResetMocks();
 	calls[0].rsp = osap_response;
@@ -384,7 +384,7 @@ static void InitNvAuthPolicyTest(void) {
 		  0x23, 0x1a, 0xe7, 0x57, 0x67, 0x64, 0x7f, 0x09,
 		  0x8c, 0x39, 0x8e, 0x79, },
 	};
-	TPM_NV_AUTH_POLICY policy;
+	TPM_NV_AUTH_POLICY policy = { 0 };
 
 	/* Test empty selection. */
 	uint32_t policy_size = sizeof(policy);
@@ -490,7 +490,7 @@ static void GetSpaceInfoTest(void)
 
 	uint32_t attributes = 0;
 	uint32_t size = 0;
-	TPM_NV_AUTH_POLICY policy;
+	TPM_NV_AUTH_POLICY policy = { 0 };
 	uint32_t policy_size = sizeof(policy);
 
 	/* Test successful parsing. */

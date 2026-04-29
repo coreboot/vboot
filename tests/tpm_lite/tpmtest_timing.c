@@ -41,7 +41,7 @@
 } while (0)
 
 int main(int argc, char** argv) {
-	uint32_t x;
+	uint32_t x = 0;
 	uint8_t in[20], out[20];
 	int time_limit_exceeded = 0;
 	int errors = 0;

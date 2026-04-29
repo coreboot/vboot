@@ -16,7 +16,7 @@
 int main(int argc, char** argv) {
 	uint32_t perm;
 	uint32_t result;
-	uint32_t x;
+	uint32_t x = 0;
 
 	TlclLibInit();
 
