@@ -635,13 +635,8 @@ struct vb2_disk_info {
 	vb2ex_disk_handle_t handle;
 	/* Size of a random-access LBA sector in bytes. */
 	uint64_t bytes_per_lba;
-	/* Number of random-access LBA sectors on the device.
-	 * If streaming_lba_count is 0, this stands in for the size of the
-	 * randomly accessed portion as well as the streaming portion.
-	 * Otherwise, this is only the randomly-accessed portion. */
+	/* Number of random-access LBA sectors on the device. */
 	uint64_t lba_count;
-	/* Number of streaming sectors on the device. */
-	uint64_t streaming_lba_count;
 	/*
 	 * Optional name string, for use in debugging.  May be empty or null if
 	 * not available.

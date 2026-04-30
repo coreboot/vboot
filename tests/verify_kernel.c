@@ -29,9 +29,9 @@ vb2_error_t VbExDiskRead(vb2ex_disk_handle_t handle, uint64_t lba_start,
 {
 	if (handle != (vb2ex_disk_handle_t)1)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start >= disk_info.streaming_lba_count)
+	if (lba_start >= disk_info.lba_count)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start + lba_count > disk_info.streaming_lba_count)
+	if (lba_start + lba_count > disk_info.lba_count)
 		return VB2_ERROR_UNKNOWN;
 
 	memcpy(buffer, diskbuf + lba_start * 512, lba_count * 512);
@@ -43,9 +43,9 @@ vb2_error_t VbExDiskWrite(vb2ex_disk_handle_t handle, uint64_t lba_start,
 {
 	if (handle != (vb2ex_disk_handle_t)1)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start >= disk_info.streaming_lba_count)
+	if (lba_start >= disk_info.lba_count)
 		return VB2_ERROR_UNKNOWN;
-	if (lba_start + lba_count > disk_info.streaming_lba_count)
+	if (lba_start + lba_count > disk_info.lba_count)
 		return VB2_ERROR_UNKNOWN;
 
 	memcpy(diskbuf + lba_start * 512, buffer, lba_count * 512);
@@ -88,8 +88,7 @@ int main(int argc, char *argv[])
 	/* Set up params */
 	disk_info.handle = (vb2ex_disk_handle_t)1;
 	disk_info.bytes_per_lba = 512;
-	disk_info.streaming_lba_count = disk_bytes / 512;
-	disk_info.lba_count = disk_info.streaming_lba_count;
+	disk_info.lba_count =  disk_bytes / 512;
 
 	params.kernel_buffer_size = 16 * 1024 * 1024;
 	params.kernel_buffer = malloc(params.kernel_buffer_size);

@@ -79,7 +79,6 @@ static void ResetMocks(void)
 
 	memset(&disk_info, 0, sizeof(disk_info));
 	disk_info.bytes_per_lba = 512;
-	disk_info.streaming_lba_count = 1024;
 	disk_info.lba_count = 1024;
 	disk_info.handle = (vb2ex_disk_handle_t)1;
 

@@ -80,9 +80,6 @@ typedef void *VbExStream_t;
  *
  * @return Error code, or VB2_SUCCESS.
  *
- * This is used for access to the contents of the actual partitions on the
- * device. It is not used to access the GPT. The size of the content addressed
- * is within streaming_lba_count.
  */
 vb2_error_t VbExStreamOpen(vb2ex_disk_handle_t handle, uint64_t lba_start,
 			   uint64_t lba_count, VbExStream_t *stream_ptr);

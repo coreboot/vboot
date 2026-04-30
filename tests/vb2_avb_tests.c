@@ -164,7 +164,6 @@ static void setup_storage(void)
 {
 	memset(&disk_info, 0, sizeof(disk_info));
 	disk_info.bytes_per_lba = BYTES_PER_LBA;
-	disk_info.streaming_lba_count = 1024;
 	disk_info.lba_count = 1024;
 	disk_info.handle = (vb2ex_disk_handle_t)1;
 

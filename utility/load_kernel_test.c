@@ -35,12 +35,12 @@ vb2_error_t VbExDiskRead(vb2ex_disk_handle_t handle, uint64_t lba_start,
 {
 	printf("Read(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
-	if (lba_start >= disk_info.streaming_lba_count ||
-	    lba_start + lba_count > disk_info.streaming_lba_count) {
+	if (lba_start >= disk_info.lba_count ||
+	    lba_start + lba_count > disk_info.lba_count) {
 		fprintf(stderr,
 			"Read overrun: %" PRIu64 " + %" PRIu64
 			" > %" PRIu64 "\n", lba_start,
-			lba_count, disk_info.streaming_lba_count);
+			lba_count, disk_info.lba_count);
 		return 1;
 	}
 
@@ -60,12 +60,12 @@ vb2_error_t VbExDiskWrite(vb2ex_disk_handle_t handle, uint64_t lba_start,
 {
 	printf("Write(%" PRIu64 ", %" PRIu64 ")\n", lba_start, lba_count);
 
-	if (lba_start >= disk_info.streaming_lba_count ||
-	    lba_start + lba_count > disk_info.streaming_lba_count) {
+	if (lba_start >= disk_info.lba_count ||
+	    lba_start + lba_count > disk_info.lba_count) {
 		fprintf(stderr,
 			"Read overrun: %" PRIu64 " + %" PRIu64
 			" > %" PRIu64 "\n", lba_start, lba_count,
-			disk_info.streaming_lba_count);
+			disk_info.lba_count);
 		return 1;
 	}
 
@@ -197,11 +197,9 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	fseek(image_file, 0, SEEK_END);
-	disk_info.streaming_lba_count = (ftell(image_file) / LBA_BYTES);
-	disk_info.lba_count = disk_info.streaming_lba_count;
+	disk_info.lba_count = (ftell(image_file) / LBA_BYTES);
 	rewind(image_file);
-	printf("Streaming LBA count: %" PRIu64 "\n",
-	       disk_info.streaming_lba_count);
+	printf("LBA count: %" PRIu64 "\n", disk_info.lba_count);
 
 	/* Allocate a buffer for the kernel */
 	lkp.kernel_buffer = malloc(KERNEL_BUFFER_SIZE);
