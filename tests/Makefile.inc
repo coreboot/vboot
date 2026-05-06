@@ -179,6 +179,12 @@ ${BUILD}/tests/vb2_common3_tests: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/hmac_test: LDLIBS += ${CRYPTO_LIBS}
 
+# Special build for sha256_x86 test
+${BUILD}/tests/vb2_sha256_x86_tests: \
+	${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
+${BUILD}/tests/vb2_sha256_x86_tests: \
+	LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
+
 # Test runner rules
 .PHONY: tests runtests rununittests runtestscripts runfutiltests runcgpttests runmisctests run2tests runfutiltestscripts
 

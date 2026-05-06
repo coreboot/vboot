@@ -363,7 +363,57 @@ futil: ${FUTIL_BIN}
 .PHONY: test_setup
 test_setup:: cgpt ${UTIL_FILES_SDK} ${UTIL_FILES_BOARD} futil tests
 
+# Generate test keys
+.PHONY: genkeys
+genkeys: install_for_test
+	${RUNTEST} ${SRC_RUN}/tests/gen_test_keys.sh
+
+# Generate test cases
+.PHONY: gentestcases
+gentestcases: install_for_test
+	${RUNTEST} ${SRC_RUN}/tests/gen_test_cases.sh
+
+# Generate test cases for fuzzing
+.PHONY: genfuzztestcases
+genfuzztestcases: install_for_test
+	${RUNTEST} ${SRC_RUN}/tests/gen_fuzz_test_cases.sh
+
 .SECONDARY:
+
+# ----------------------------------------------------------------------------
+# Firmware library
+
+# TPM-specific flags.  These depend on the particular TPM we're targeting for.
+# They are needed here only for compiling parts of the firmware code into
+# user-level tests.
+
+# TPM_BLOCKING_CONTINUESELFTEST is defined if TPM_ContinueSelfTest blocks until
+# the self test has completed.
+
+${TLCL_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
+
+# TPM_MANUAL_SELFTEST is defined if the self test must be started manually
+# (with a call to TPM_ContinueSelfTest) instead of starting automatically at
+# power on.
+#
+# We sincerely hope that TPM_BLOCKING_CONTINUESELFTEST and TPM_MANUAL_SELFTEST
+# are not both defined at the same time.  (See comment in code.)
+
+# CFLAGS += -DTPM_MANUAL_SELFTEST
+
+# NOTE: UNROLL_LOOPS *only* affects SHA256, *not* SHA512. This seems to have
+# been a conscious decision at some point (see b/35501356) but whether it still
+# holds up in all situations on all architectures today might need to be
+# reevaluated. For now, since we currently always use SHA256 for (non-recovery)
+# kernel bodies and don't unroll loops for firmware verification, it's not very
+# relevant in practice. To unroll SHA512, UNROLL_LOOPS_SHA512 would need to be
+# defined.
+ifneq ($(filter-out 0,$(UNROLL_LOOPS)),)
+$(info vboot SHA256 built with unrolled loops (faster, larger code size))
+CFLAGS += -DUNROLL_LOOPS
+else
+$(info vboot SHA256 built with tight loops (slower, smaller code size))
+endif
 
 ##############################################################################
 # Generic build rules

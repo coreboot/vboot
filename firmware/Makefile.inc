@@ -90,6 +90,25 @@ ifneq (,$(filter arm64 x86 x86_64,${ARCH}))
 ENABLE_HWCRYPTO_RSA_TESTS := 1
 endif
 
+ifeq (${ENABLE_HWCRYPTO_RSA_TESTS},1)
+define enable_hwcrypto_rsa_tests
+${BUILD}/$(1): CFLAGS += -DENABLE_HWCRYPTO_RSA_TESTS
+ifeq (${ARCH},arm64)
+${BUILD}/$(1): CFLAGS += -DARM64_RSA_ACCELERATION
+${BUILD}/$(1): ${BUILD}/firmware/2lib/2modpow_neon.o
+${BUILD}/$(1): LIBS += ${BUILD}/firmware/2lib/2modpow_neon.o
+else
+${BUILD}/$(1): CFLAGS += -DVB2_X86_RSA_ACCELERATION
+${BUILD}/$(1): ${BUILD}/firmware/2lib/2modpow_sse2.o
+${BUILD}/$(1): LIBS += ${BUILD}/firmware/2lib/2modpow_sse2.o
+endif
+endef
+
+$(foreach test, ${HWCRYPTO_RSA_TESTS}, \
+	$(eval $(call enable_hwcrypto_rsa_tests,${test})))
+endif
+
+
 # Even if X86_SHA_EXT is 0 we need cflags since this will be compiled for tests
 ${BUILD}/firmware/2lib/2sha256_x86.o: CFLAGS += -mssse3 -mno-avx -msha
 

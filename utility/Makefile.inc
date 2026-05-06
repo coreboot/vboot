@@ -99,3 +99,18 @@ util_install_defaults: ${UTIL_DEFAULTS}
 	${Q}mkdir -p ${DF_DIR}
 	${Q}${INSTALL} -t ${DF_DIR} -m 'u=rw,go=r,a-s' ${UTIL_DEFAULTS}
 
+# ----------------------------------------------------------------------------
+# Utility to generate TLCL structure definition header file.
+
+${BUILD}/utility/tlcl_generator: CFLAGS += -fpack-struct
+
+STRUCTURES_TMP=${BUILD}/tlcl_structures.tmp
+STRUCTURES_SRC=firmware/lib/tpm_lite/include/tlcl_structures.h
+
+.PHONY: update_tlcl_structures
+update_tlcl_structures: ${BUILD}/utility/tlcl_generator
+	@${PRINTF} "    Rebuilding TLCL structures\n"
+	${Q}${BUILD}/utility/tlcl_generator > ${STRUCTURES_TMP}
+	${Q}cmp -s ${STRUCTURES_TMP} ${STRUCTURES_SRC} || \
+		( echo "%% Updating structures.h %%" && \
+		  cp ${STRUCTURES_TMP} ${STRUCTURES_SRC} )
