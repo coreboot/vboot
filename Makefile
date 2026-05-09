@@ -409,8 +409,14 @@ ${TLCL_OBJS}: CFLAGS += -DTPM_BLOCKING_CONTINUESELFTEST
 # relevant in practice. To unroll SHA512, UNROLL_LOOPS_SHA512 would need to be
 # defined.
 ifneq ($(filter-out 0,$(UNROLL_LOOPS)),)
+# Disable unrolling loops in the software SHA256 implementation when
+# ARMV8_CRYPTO_EXT is enabled to save space (b/511201478).
+ifeq ($(filter-out 0,$(ARMV8_CRYPTO_EXT)),)
 $(info vboot SHA256 built with unrolled loops (faster, larger code size))
 CFLAGS += -DUNROLL_LOOPS
+else
+$(info vboot SHA256 built with hardware acceleration (ARMV8_CRYPTO_EXT enabled))
+endif
 else
 $(info vboot SHA256 built with tight loops (slower, smaller code size))
 endif
