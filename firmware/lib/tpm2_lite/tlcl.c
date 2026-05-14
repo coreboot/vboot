@@ -527,9 +527,13 @@ uint32_t TlclRead(uint32_t index, void* data, uint32_t length)
 
 	/*
 	 * 0x14a = RC_NV_UNINITIALIZED (space created but not written)
-	 * 0x28b = RC_HANDLE(2) ("unknown handle" = space does not exist)
+	 * 0x18b = RC_HANDLE(1) (bad auth handle; when PH is disabled the space
+	 *         index itself is used as auth handle to signify
+	 *         "unauthenticated" read, so we get this if it doesn't exist)
+	 * 0x28b = RC_HANDLE(2) (bad space handle; only get here with PH auth))
 	 */
 	case 0x14a:
+	case 0x18b:
 	case 0x28b:
 		return TPM_E_BADINDEX;
 
