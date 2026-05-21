@@ -135,15 +135,17 @@ static AvbIOResult reserve_buffer_for_partition(AvbOps *ops, enum GptPartition p
 	GptData *gpt = avbctx->gpt;
 	struct avb_preload_buffer *parts = avbctx->preloaded;
 	const char *slot_suffix = avbctx->slot_suffix;
-	uint64_t size;
+	uint64_t size = 0;
 	const char *partition_name;
 	AvbIOResult err;
 
 	/* If the partition is not present then skip any preparations */
 	partition_name = GptPartitionNames[part];
 	err = get_partition_size(gpt, partition_name, slot_suffix, &size);
-	if (err)
+	if (err) {
+		*alloced_size = 0;
 		return AVB_IO_RESULT_OK;
+	}
 
 	/* Make sure the buffer is big enough */
 	if (size > available) {
@@ -174,6 +176,7 @@ static AvbIOResult reserve_buffers(AvbOps *ops)
 	enum GptPartition part;
 
 	for (part = GPT_ANDROID_BOOT; part < GPT_ANDROID_PRELOADED_NUM; part++) {
+		size = 0;
 		if (part == GPT_ANDROID_PVMFW) {
 			if (params->pvmfw_buffer_size == 0)
 				continue;
