@@ -163,6 +163,10 @@ int CheckHeader(GptHeader *h, int is_secondary,
 								sector_bytes))
 		return 1;
 
+	if (CalculateEntriesSectors(h, sector_bytes) * sector_bytes >
+	    GPT_ENTRIES_ALLOC_SIZE)
+		return 1;
+
 	/* Success */
 	return 0;
 }
