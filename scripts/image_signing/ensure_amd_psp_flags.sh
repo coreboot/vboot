@@ -67,7 +67,7 @@ main() {
 
   # Find our images.
   declare -a images
-  readarray -t images < <(find "${shellball_dir}" -iname 'bios-*')
+  readarray -t images < <(find "${shellball_dir}" -iname 'bios-*' -o -iname 'ap-*')
 
   # Validate that all our AP FW images are AMD images.
   local image
