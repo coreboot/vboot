@@ -416,7 +416,6 @@ static int manifest_from_signer_config(struct manifest *manifest)
 static int manifest_from_simple_folder(struct manifest *manifest)
 {
 	const char * const host_image_name = "image.bin",
-		   * const old_host_image_name = "bios.bin",
 		   * const ec_name = "ec.bin";
 	struct u_archive *archive = manifest->archive;
 	const char *image_name = NULL;
@@ -426,9 +425,7 @@ static int manifest_from_simple_folder(struct manifest *manifest)
 	VB2_DEBUG("Try to build the manifest from a simple folder\n");
 
 	/* Try to load from current folder. */
-	if (archive_has_entry(archive, old_host_image_name))
-		image_name = old_host_image_name;
-	else if (archive_has_entry(archive, host_image_name))
+	if (archive_has_entry(archive, host_image_name))
 		image_name = host_image_name;
 	else
 		return 1;
