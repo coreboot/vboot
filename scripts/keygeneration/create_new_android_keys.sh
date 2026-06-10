@@ -40,7 +40,7 @@ make_pair() {
 
   # Create a certificate with the public part of the key.
   openssl req -new -x509 -key "${dir}/temp.pem" -out "${dir}/${name}.x509.pem" \
-    -days 10000 -subj "${SUBJECT}"
+    -days 10000 -subj "${SUBJECT}" -sha256
 
   # Create a PKCS#8-formatted version of the private key.
   openssl pkcs8 -in "${dir}/temp.pem" -topk8 -outform DER \
