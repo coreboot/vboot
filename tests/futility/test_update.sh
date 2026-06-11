@@ -487,20 +487,7 @@ mkdir -p "${A}/bin"
 echo 'echo "${CL_TAG}"' >"${A}/bin/vpd"
 chmod +x "${A}/bin/vpd"
 
-cp -f "${LINK_BIOS}" "${A}/bios.bin"
-echo "TEST: Manifest (--manifest, -a, bios.bin)"
-"${FUTILITY}" update -a "${A}" --manifest >"${TMP_JSON_OUT}"
-cmp \
-  <(jq -S <"${TMP_JSON_OUT}") \
-  <(jq -S <"${SCRIPT_DIR}/futility/link_bios.manifest.json")
-
-echo "TEST: Manifest parseable (--parseable-manifest, -a, bios.bin)"
-"${FUTILITY}" update -a "${A}" --parseable-manifest >"${TMP_PARSEABLE_OUT}"
-diff -u \
-  <(sort "${TMP_PARSEABLE_OUT}") \
-  <(sort "${SCRIPT_DIR}/futility/link_bios.manifest.parseable")
-
-mv -f "${A}/bios.bin" "${A}/image.bin"
+cp -f "${LINK_BIOS}" "${A}/image.bin"
 echo "TEST: Manifest (--manifest, -a, image.bin)"
 "${FUTILITY}" update -a "${A}" --manifest >"${TMP_JSON_OUT}"
 cmp \

@@ -149,7 +149,7 @@ dofile() {
           sudo umount "$TMPMNT"
           CLEAN_UM=
 
-          showbios "$TMPDIR/bios.bin" "  "
+          showbios "$TMPDIR/image.bin" "  "
         fi
 
       done
