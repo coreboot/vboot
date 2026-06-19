@@ -27,6 +27,7 @@
 #include "2hmac.h"
 #include "2id.h"
 #include "2info.h"
+#include "2nvstorage_params.h"
 #include "2recovery_reasons.h"
 #include "2return_codes.h"
 #include "2rsa.h"
@@ -796,14 +797,6 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx);
 uint32_t vb2api_get_locale_id(struct vb2_context *ctx);
 
 /**
- * Set the locale id in nvdata.
- *
- * @param ctx		Vboot context
- * @param locale_id 	The locale id to be set
- */
-void vb2api_set_locale_id(struct vb2_context *ctx, uint32_t locale_id);
-
-/**
  * Whether diagnostic UI functionality is enabled or not.
  *
  * @param ctx		Vboot context
@@ -866,11 +859,14 @@ vb2_error_t vb2api_enable_developer_mode(struct vb2_context *ctx);
 vb2_error_t vb2api_disable_developer_mode(struct vb2_context *ctx);
 
 /**
- * Request diagnostics by setting VB2_NV_DIAG_REQUEST.
+ * Set NV data parameter. Only subset of all parameters can be set using this API.
  *
  * @param ctx		Vboot context
+ * @param param		NV data parameter to set
+ * @param value		Value to set
+ * @return VB2_SUCCESS, or error code.
  */
-void vb2api_request_diagnostics(struct vb2_context *ctx);
+vb2_error_t vb2api_nv_set(struct vb2_context *ctx, enum vb2_nv_param param, uint32_t value);
 
 /*****************************************************************************/
 /* APIs provided by the caller to verified boot */

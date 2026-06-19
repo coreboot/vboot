@@ -369,6 +369,19 @@ vb2_error_t vb2_check_tpm_clear(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
+vb2_error_t vb2api_nv_set(struct vb2_context *ctx, enum vb2_nv_param param, uint32_t value)
+{
+	switch (param) {
+	case VB2_NV_CLEAR_TPM_OWNER_REQUEST:
+	case VB2_NV_DIAG_REQUEST:
+	case VB2_NV_LOCALIZATION_INDEX:
+		vb2_nv_set(ctx, param, value);
+		return VB2_SUCCESS;
+	default:
+		return VB2_ERROR_API_NV_SET_NOT_ALLOWED;
+	}
+}
+
 test_mockable
 vb2_error_t vb2_select_fw_slot(struct vb2_context *ctx)
 {
@@ -470,11 +483,6 @@ vb2_error_t vb2api_disable_developer_mode(struct vb2_context *ctx)
 	return VB2_SUCCESS;
 }
 
-void vb2api_request_diagnostics(struct vb2_context *ctx) {
-	vb2_nv_set(ctx, VB2_NV_DIAG_REQUEST, 1);
-	VB2_DEBUG("Diagnostics requested\n");
-}
-
 void vb2api_clear_recovery(struct vb2_context *ctx)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
@@ -518,11 +526,6 @@ uint32_t vb2api_get_recovery_reason(struct vb2_context *ctx)
 uint32_t vb2api_get_locale_id(struct vb2_context *ctx)
 {
 	return vb2_nv_get(ctx, VB2_NV_LOCALIZATION_INDEX);
-}
-
-void vb2api_set_locale_id(struct vb2_context *ctx, uint32_t locale_id)
-{
-	vb2_nv_set(ctx, VB2_NV_LOCALIZATION_INDEX, locale_id);
 }
 
 void vb2api_export_vbsd(struct vb2_context *ctx, void *dest)
