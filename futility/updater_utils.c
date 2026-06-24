@@ -628,6 +628,19 @@ static int is_the_same_programmer(const struct firmware_image *image1,
 	return strcmp(image1->programmer, image2->programmer) == 0;
 }
 
+static void handle_retry_delay_and_servo(const struct updater_config *cfg,
+					 int i, int tries, const char *op)
+{
+	if (cfg->prepare_ctrl_name) {
+		WARN("Retry %s firmware (%d/%d) after 5s recovery delay...\n",
+		     op, i, tries);
+		/* Delay to allow GSC and servod to recover after reset */
+		sleep(5);
+	} else {
+		WARN("Retry %s firmware (%d/%d)...\n", op, i, tries);
+	}
+}
+
 test_mockable
 int load_system_firmware(struct updater_config *cfg,
 			 struct firmware_image *image)
@@ -642,7 +655,7 @@ int load_system_firmware(struct updater_config *cfg,
 
 	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
-			WARN("Retry reading firmware (%d/%d)...\n", i, tries);
+			handle_retry_delay_and_servo(cfg, i, tries, "reading");
 		INFO("Reading SPI Flash (programmer %s)...\n",
 		     image->programmer);
 		if (flashrom_read_image(image, NULL, 0, verbose) == VB2_SUCCESS)
@@ -685,7 +698,7 @@ int write_system_firmware(struct updater_config *cfg,
 
 	for (i = 1, r = -1; i <= tries && r != 0; i++, verbose++) {
 		if (i > 1)
-			WARN("Retry writing firmware (%d/%d)...\n", i, tries);
+			handle_retry_delay_and_servo(cfg, i, tries, "writing");
 		INFO("Writing SPI Flash (programmer %s)...\n",
 		     image->programmer);
 		if (flashrom_write_image(image, regions, regions_len, flash_contents,

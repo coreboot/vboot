@@ -334,6 +334,7 @@ static int do_update(int argc, char *argv[])
 			errorcnt++;
 		else if (!args.programmer)
 			args.programmer = servo_programmer;
+		cfg->prepare_ctrl_name = prepare_ctrl_name;
 	}
 	/*
 	 * Some boards may need to fetch firmware before starting to
