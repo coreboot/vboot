@@ -543,8 +543,6 @@ int VbGetSystemPropertyInt(const char *name)
 		value = GetVdatInt(VDAT_INT_RECOVERY_REASON);
 	} else if (!strcasecmp(name, "boot_on_ac_detect")) {
 		value = vb2_get_nv_storage(VB2_NV_BOOT_ON_AC_DETECT);
-	} else if (!strcasecmp(name, "try_ro_sync")) {
-		value = vb2_get_nv_storage(VB2_NV_TRY_RO_SYNC);
 	} else if (!strcasecmp(name, "battery_cutoff_request")) {
 		value = vb2_get_nv_storage(VB2_NV_BATTERY_CUTOFF_REQUEST);
 	} else if (!strcasecmp(name, "inside_vm")) {
@@ -755,9 +753,6 @@ static int VbSetSystemPropertyIntInternal(const char *name, int value)
 	} else if (!strcasecmp(name, "boot_on_ac_detect")) {
 		return vb2_set_nv_storage_with_backup(
 			VB2_NV_BOOT_ON_AC_DETECT, value);
-	} else if (!strcasecmp(name, "try_ro_sync")) {
-		return vb2_set_nv_storage_with_backup(
-			VB2_NV_TRY_RO_SYNC, value);
 	} else if (!strcasecmp(name, "battery_cutoff_request")) {
 		return vb2_set_nv_storage(VB2_NV_BATTERY_CUTOFF_REQUEST, value);
 	} else if (!strcasecmp(name,"kernel_max_rollforward")) {

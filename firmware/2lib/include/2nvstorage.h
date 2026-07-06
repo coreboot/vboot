@@ -99,7 +99,7 @@ enum vb2_nv_param {
 	 * Try to update the EC-RO image after updating the EC-RW image
 	 * (0=no, 1=yes).
 	 */
-	VB2_NV_TRY_RO_SYNC,
+	VB2_NV_DEPRECATED_TRY_RO_SYNC,
 	/* Cut off battery and shutdown on next boot. */
 	VB2_NV_BATTERY_CUTOFF_REQUEST,
 	/* Maximum kernel version to roll forward to */

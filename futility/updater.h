@@ -68,7 +68,6 @@ enum quirk_types {
 enum {
 	EC_RECOVERY_FULL = 0,  /* Must be 0 as default value of quirks. */
 	EC_RECOVERY_RO,
-	EC_RECOVERY_DONE
 };
 
 enum try_update_type {

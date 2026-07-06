@@ -233,18 +233,6 @@ static vb2_error_t sync_ec(struct vb2_context *ctx)
 		VB2_TRY(vb2ex_ec_jump_to_rw(), ctx, VB2_RECOVERY_EC_JUMP_RW);
 	}
 
-	/* Might need to update EC-RO */
-	if (sd->flags & VB2_SD_FLAG_ECSYNC_EC_RO) {
-		VB2_DEBUG("RO Software Sync\n");
-
-		/* Reset RO Software Sync NV flag */
-		vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 0);
-
-		/* Update the RO Image */
-		VB2_TRY(update_ec(ctx, VB_SELECT_FIRMWARE_READONLY),
-			ctx, VB2_RECOVERY_EC_UPDATE);
-	}
-
 	/* Protect RW flash */
 	VB2_TRY(vb2ex_ec_protect(), ctx, VB2_RECOVERY_EC_PROTECT);
 
@@ -299,12 +287,6 @@ static vb2_error_t ec_sync_phase1(struct vb2_context *ctx)
 	/* Check if we need to update RW. Failures trigger recovery mode. */
 	if (check_ec_hash(ctx, VB_SELECT_FIRMWARE_EC_ACTIVE))
 		return VB2_REQUEST_REBOOT_EC_TO_RO;
-
-	/* See if we need to update EC-RO. */
-	if (vb2_nv_get(ctx, VB2_NV_TRY_RO_SYNC) &&
-	    check_ec_hash(ctx, VB_SELECT_FIRMWARE_READONLY)) {
-		return VB2_REQUEST_REBOOT_EC_TO_RO;
-	}
 
 	/*
 	 * If we're in RW, we need to reboot back to RO because RW can't be

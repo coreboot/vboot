@@ -446,34 +446,11 @@ static void VbSoftwareSyncTest(void)
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
-	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
 	test_ssync(0, 0, "Update rw without reboot");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
 	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
 	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
 	TEST_EQ(ec_run_image, 1, "  ec run image");
-
-	ResetMocks();
-	mock_ec_rw_hash[0]++;
-	mock_ec_ro_hash[0]++;
-	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
-	test_ssync(0, 0, "Update rw and ro images without reboot");
-	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
-	TEST_EQ(ec_rw_updated, 1, "  ec rw updated");
-	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
-	TEST_EQ(ec_run_image, 1, "  ec run image");
-
-	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
-	mock_ec_ro_hash[0]++;
-	vb2_nv_set(ctx, VB2_NV_DISPLAY_REQUEST, 1);
-	test_ssync(0, 0, "rw update not needed");
-	TEST_EQ(ec_ro_updated, 1, "  ec ro updated");
-	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
-	TEST_EQ(ec_run_image, 1, "  ec run image");
-	TEST_EQ(vb2_nv_get(ctx, VB2_NV_DISPLAY_REQUEST), 1,
-		"  DISPLAY_REQUEST left untouched");
 
 	ResetMocks();
 	mock_ec_rw_hash[0]++;
@@ -525,20 +502,6 @@ static void VbSoftwareSyncTest(void)
 	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
-	TEST_TRUE(need_display_called, "  need display");
-
-	/* Display not available - RO */
-	ResetMocks();
-	vb2_nv_set(ctx, VB2_NV_TRY_RO_SYNC, 1);
-	mock_ec_ro_hash[0]++;
-	mock_display_available = 0;
-	ctx->flags |= VB2_CONTEXT_EC_SYNC_SLOW;
-	test_ssync(VB2_REQUEST_REBOOT, 0,
-		   "Reboot for display - ec ro");
-	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
-	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
-	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
-	TEST_EQ(ec_run_image, 1, "  ec run image");
 	TEST_TRUE(need_display_called, "  need display");
 
 	/* RW cases, no update */

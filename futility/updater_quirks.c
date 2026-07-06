@@ -78,61 +78,6 @@ static int is_ec_software_sync_enabled(struct updater_config *cfg)
 }
 
 /*
- * Schedules an EC RO software sync (in next boot) if applicable.
- */
-static int ec_ro_software_sync(struct updater_config *cfg)
-{
-	const char *ec_ro_path;
-	uint8_t *ec_ro_data;
-	uint32_t ec_ro_len;
-	int is_same_ec_ro;
-	struct firmware_section ec_ro_sec;
-	const char *image_file = get_firmware_image_temp_file(
-			&cfg->image, &cfg->tempfiles);
-
-	if (!image_file)
-		return 1;
-	find_firmware_section(&ec_ro_sec, &cfg->ec_image, "EC_RO");
-	if (!ec_ro_sec.data || !ec_ro_sec.size) {
-		ERROR("EC image has invalid section '%s'.\n", "EC_RO");
-		return 1;
-	}
-
-	ec_ro_path = create_temp_file(&cfg->tempfiles);
-	if (!ec_ro_path) {
-		ERROR("Failed to create temp file.\n");
-		return 1;
-	}
-	if (cbfstool_extract(image_file, FMAP_RO_CBFS, "ecro", ec_ro_path) ||
-	    !cbfstool_file_exists(image_file, FMAP_RO_CBFS, "ecro.hash")) {
-		INFO("No valid EC RO for software sync in AP firmware.\n");
-		return 1;
-	}
-	if (vb2_read_file(ec_ro_path, &ec_ro_data, &ec_ro_len) != VB2_SUCCESS) {
-		ERROR("Failed to read EC RO.\n");
-		return 1;
-	}
-
-	is_same_ec_ro = (ec_ro_len <= ec_ro_sec.size &&
-			 memcmp(ec_ro_sec.data, ec_ro_data, ec_ro_len) == 0);
-	free(ec_ro_data);
-
-	if (!is_same_ec_ro) {
-		/* TODO(hungte) If change AP RO is not a problem (hash will be
-		 * different, which may be a problem to factory and HWID), or if
-		 * we can be be sure this is for developers, extract EC RO and
-		 * update AP RO CBFS to trigger EC RO sync with new EC.
-		 */
-		ERROR("The EC RO contents specified from AP (--image) and EC "
-		      "(--ec_image) firmware images are different, cannot "
-		      "update by EC RO software sync.\n");
-		return 1;
-	}
-	dut_set_property_int("try_ro_sync", 1, cfg);
-	return 0;
-}
-
-/*
  * Returns True if EC is running in RW.
  */
 static int is_ec_in_rw(struct updater_config *cfg)
@@ -307,9 +252,6 @@ static int quirk_ec_partial_recovery(struct updater_config *cfg)
 		WARN("EC Software Sync detected, will only update EC RO. "
 		     "The contents in EC RW will be updated after reboot.\n");
 		return EC_RECOVERY_RO;
-	} else if (ec_ro_software_sync(cfg) == 0) {
-		INFO("EC RO and RW should be updated after reboot.\n");
-		return EC_RECOVERY_DONE;
 	}
 
 	WARN("Update EC RO+RW and may cause unexpected error later. "

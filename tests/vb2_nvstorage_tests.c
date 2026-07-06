@@ -53,7 +53,6 @@ static struct nv_field nvfields[] = {
 	{VB2_NV_DISPLAY_REQUEST, 0, 1, 0, "oprom needed"},
 	{VB2_NV_BACKUP_NVRAM_REQUEST, 0, 1, 0, "backup nvram request"},
 	{VB2_NV_BOOT_ON_AC_DETECT, 0, 1, 0, "boot on ac detect"},
-	{VB2_NV_TRY_RO_SYNC, 0, 1, 0, "try read only software sync"},
 	{VB2_NV_BATTERY_CUTOFF_REQUEST, 0, 1, 0, "battery cutoff request"},
 	{VB2_NV_KERNEL_MAX_ROLLFORWARD, 0, 0x12345678, 0xFEDCBA98,
 	 "kernel max rollforward"},
