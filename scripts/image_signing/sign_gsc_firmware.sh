@@ -346,9 +346,10 @@ determine_rma_key_base() {
 # Sign GSC RW firmware ELF images into a combined GSC firmware image
 # using the provided production keys and manifests.
 sign_rw() {
-  if [[ $# -ne 9 ]]; then
+  if [[ $# -ne 10 ]]; then
     die "Usage: sign_rw <key_file> <manifest> <fuses>" \
-        "<rma_key_dir> <rw_a> <rw_b> <output> <generation> <image_base>"
+        " <rma_key_dir> <rw_a> <rw_b> <output> <generation> <image_base>" \
+        " <base_name>"
   fi
 
   local key_file="$1"
@@ -359,7 +360,7 @@ sign_rw() {
   local result_file="$7"
   local generation="$8"
   local image_base="$9"
-  local base_name
+  local base_name="$10"
   local rma_key_base=""
   local signer_command_params
   local temp_dir
@@ -393,12 +394,10 @@ sign_rw() {
 
       # Indicate H1 signing.
       signer_command_params+=( "--b" )
-      base_name="cr50"
       ;;
     (d)
       # Indicate D1 signing.
       signer_command_params+=( "--dauntless" "--ihex" )
-      base_name="ti50"
       # Key and hashes used in dev, must not leak into prod signed images.
       prohibited_blobs=(
         "${rma_key_dir}/rma_test_pub_key.bin"
@@ -511,9 +510,10 @@ verify_ro() {
 # downloading the tarball from the BCS expects the image to be in that
 # directory.
 sign_gsc_firmware() {
-  if [[ $# -ne 10 ]]; then
+  if [[ $# -ne 11 ]]; then
     die "Usage: sign_gsc_firmware <key_file> <manifest> <fuses>" \
-        "<rma_key_dir> <ro_a> <ro_b> <rw_a> <rw_b> <output> <generation>"
+        " <rma_key_dir> <ro_a> <ro_b> <rw_a> <rw_b> <output>" \
+        " <generation> <base_name>"
   fi
 
   local key_file="$1"
@@ -526,8 +526,8 @@ sign_gsc_firmware() {
   local rw_b="$8"
   local output_file="$9"
   local generation="${10}"
+  local base_name="${11}"
   local temp_dir
-  local chip_name
 
   temp_dir="$(make_temp_dir)"
 
@@ -536,13 +536,11 @@ sign_gsc_firmware() {
       # H1 flash size, image size must match.
       IMAGE_SIZE="$(( 512 * 1024 ))"
       IMAGE_BASE="0x40000"
-      chip_name="cr50"
       ;;
     (d)
       # D2 flash size, image size must match.
       IMAGE_SIZE="$(( 1024 * 1024 ))"
       IMAGE_BASE="0x80000"
-      chip_name="ti50"
       ;;
   esac
 
@@ -556,7 +554,7 @@ sign_gsc_firmware() {
 
   if ! sign_rw "${key_file}" "${manifest_file}" "${fuses_file}" \
        "${rma_key_dir}" "${rw_a}" "${rw_b}" \
-       "${output_file}" "${generation}" "${IMAGE_BASE}"; then
+       "${output_file}" "${generation}" "${IMAGE_BASE}" "${base_name}"; then
     die "Failed invoking sign_rw for ${rw_a} and ${rw_b}"
   fi
 
@@ -583,7 +581,7 @@ sign_gsc_firmware() {
   done
 
   # Tell the signer how to rename the @CHIP@ portion of the output.
-  echo "${chip_name}" > "${output_file}.rename"
+  echo "${base_name}" > "${output_file}.rename"
 
   info "Image successfully signed to ${output_file}"
 }
@@ -787,7 +785,17 @@ sign_gsc_firmware_dir() {
       rw_b="${input}/ec.RW_B.elf"
       ;;
     (d)
-      base_name="ti50"
+      # The artifact directory name is either ti50 or ti50a_ti50
+      # depending on the build target.
+      local base_dir="$(basename "${input}")"
+
+      case "${base_dir}" in
+        (ti50)
+          base_name="ti50";;
+        (ti50a_ti50)
+          base_name="ti50a";;
+        (*) die "unexpected image directory name ${input}";;
+      esac
       key_file="${ti50_key}"
       rw_a="${input}/rw_A.hex"
       rw_b="${input}/rw_B.hex"
@@ -815,7 +823,8 @@ sign_gsc_firmware_dir() {
           "${rw_a}" \
           "${rw_b}" \
           "${output}" \
-          "${generation}"
+          "${generation}" \
+          "base_name"
 }
 
 main() {
