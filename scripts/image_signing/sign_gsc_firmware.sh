@@ -425,9 +425,9 @@ sign_rw() {
 
     # Make sure output files are not owned by root.
     touch "${bin_signed}" "${hex_signed}"
-    if ! gsc-codesigner "${signer_command_params[@]}" \
+    if ! cr50-codesigner "${signer_command_params[@]}" \
         -i "${rw}" -o "${hex_signed}"; then
-      die "gsc-codesigner ${signer_command_params[*]}" \
+      die "cr50-codesigner ${signer_command_params[*]}" \
         "-i ${rw} -o ${hex_signed} failed"
     fi
 
