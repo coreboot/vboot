@@ -320,27 +320,30 @@ determine_rma_key_base() {
   local curves=( "x25519" "p256" )
   local elf
   local key_file
+  local key_type
   local mask=1
   local result=0
   local rma_key_base
 
   for curve in "${curves[@]}"; do
-    key_file="${base_name}.${curve}.test"
-    for elf in "${elfs[@]}"; do
-      if find_blob_in_blob "${elf}" "${key_file}"; then
-        : $(( result |= mask ))
-      fi
-      : $(( mask <<= 1 ))
+    for key_type in "test" "prod"; do
+     key_file="${base_name}.${curve}.${key_type}"
+     for elf in "${elfs[@]}"; do
+       if find_blob_in_blob "${elf}" "${key_file}"; then
+         : $(( result |= mask ))
+       fi
+       : $(( mask <<= 1 ))
+     done
     done
   done
 
   case "${result}" in
-    (3)  curve="x25519";;
-    (12) curve="p256";;
-    (*)  die "could not determine key type in the ELF files";;
+    (12|192) ;; # Two prod keys found, no swapping needed.
+    (48) echo "${base_name}.p256";; # two p256 test keys found.
+    (3) echo "${base_name}.x25519";; # two x25519 test keys found.
+    (*) echo "unknown" # Make sure the caller fails to handle the swap.
+        die "could not determine key type in the ELF files: ${result}";;
   esac
-
-  echo "${base_name}.${curve}"
 }
 
 # Sign GSC RW firmware ELF images into a combined GSC firmware image
@@ -360,7 +363,7 @@ sign_rw() {
   local result_file="$7"
   local generation="$8"
   local image_base="$9"
-  local base_name="$10"
+  local base_name="${10}"
   local rma_key_base=""
   local signer_command_params
   local temp_dir
@@ -649,8 +652,9 @@ make_nt_image() {
 # appropriate yaml file, and KEYCFG_TI50_KEY to be the name of the key to pass
 # to the openssl invocation.
 openssl_sign_firmware() {
-  if [[ $# -ne 5 ]]; then
-    die "Usage: openssl_sign_firmware <rom_ext_{a,b}> <rw_bin> <ti50 key> <output>"
+  if [[ $# -ne 6 ]]; then
+    die "Usage: openssl_sign_firmware <rom_ext_{a,b}> <rw_bin> " \
+        "<ti50 key> <output> <base_name>"
   fi
 
   if [[ -z ${KMS_PKCS11_CONFIG:-} ]]; then
@@ -661,6 +665,7 @@ openssl_sign_firmware() {
   local rw_bin="$3"
   local ti50_key="$4"
   local output="$5"
+  local base_name="$6"
 
   local hex_code_end
   local ot_tbs
@@ -702,7 +707,7 @@ openssl_sign_firmware() {
   make_nt_image "${rom_ext_a}" "${rom_ext_b}" "${signed_rw_bin}" "${output}"
 
   # Tell the signer how to rename the @CHIP@ portion of the output.
-  echo "ti50" > "${output}.rename"
+  echo "${base_name}" > "${output}.rename"
 }
 
 plug_in_signatures() {
@@ -763,7 +768,8 @@ sign_gsc_firmware_dir() {
   if [[  -n $(ls "${input}"/pao* 2>/dev/null) ]]; then
     # This is an Opentitan tarball, sign it for ECDSA with Cloud KMS.
     openssl_sign_firmware "${input}/rom_ext.A" "${input}/rom_ext.B" \
-                          "${input}/rw.bin.ecdsa" "${ti50_key}" "${output}"
+                          "${input}/rw.bin.ecdsa" "${ti50_key}" \
+                          "${output}" "${base_name}"
     return
   fi
   manifest_source="${input}/prod.json"
@@ -824,7 +830,7 @@ sign_gsc_firmware_dir() {
           "${rw_b}" \
           "${output}" \
           "${generation}" \
-          "base_name"
+          "${base_name}"
 }
 
 main() {
