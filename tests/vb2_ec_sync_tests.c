@@ -198,7 +198,12 @@ static void test_ssync(vb2_error_t retval, int recovery_reason,
 	struct vb2_secdata_kernel_v1 *sec = (void *)ctx->secdata_kernel;
 	if (sec->struct_version >= VB2_SECDATA_KERNEL_VERSION_V10) {
 		const uint8_t *hash = vb2_secdata_kernel_get_ec_hash(ctx);
-		TEST_EQ(memcmp(hash, hexp, sizeof(hexp)), 0, "Hmir synced");
+		const uint8_t *expected = hexp;
+		if ((gbb.flags & VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE) &&
+		    !(gbb.flags & VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC)) {
+			expected = mock_ec_rw_hash;
+		}
+		TEST_EQ(memcmp(hash, expected, sizeof(hexp)), 0, "Hmir synced");
 	}
 }
 
@@ -246,7 +251,47 @@ static void VbSoftwareSyncTest(void)
 	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
 		 "  EC sync complete");
 	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
-	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");;
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
+	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");
+
+	/* Bypass EC RW update (Boot 1: update Hmir, reboot) */
+	ResetMocks();
+	gbb.flags |= VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE;
+	mock_ec_rw_hash[0]++; /* Mismatch EC RW hash */
+	test_ssync(VB2_REQUEST_REBOOT_EC_TO_RO, 0,
+		   "EC sync bypass - Hmir update");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
+	TEST_EQ(ec_run_image, 0, "  ec run image");
+	TEST_EQ(ec_vboot_done_calls, 0, "ec_vboot_done calls");
+
+	/* Bypass EC RW update (Boot 2: Hmir matches Heff, boot RW) */
+	ResetMocks();
+	gbb.flags |= VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE;
+	mock_ec_rw_hash[0]++; /* Mismatch EC RW hash */
+	vb2_secdata_kernel_set_ec_hash(ctx, mock_ec_rw_hash); /* Hmir updated */
+	test_ssync(VB2_SUCCESS, 0, "EC sync bypass - Hmir matches Heff");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+		 "  EC sync complete");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
+	TEST_EQ(ec_rw_protected, 1, "  ec rw protected");
+	TEST_EQ(ec_run_image, 1, "  ec run image");
+	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");
+
+	/* Combined flags: Disable software sync takes precedence */
+	ResetMocks();
+	gbb.flags |= VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE |
+		     VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+	mock_ec_rw_hash[0]++; /* Mismatch EC RW hash */
+	test_ssync(VB2_SUCCESS, 0, "EC sync bypassed and disabled");
+	TEST_NEQ(sd->status & VB2_SD_STATUS_EC_SYNC_COMPLETE, 0,
+		 "  EC sync complete");
+	TEST_EQ(ec_ro_updated, 0, "  ec ro updated");
+	TEST_EQ(ec_rw_updated, 0, "  ec rw updated");
 	TEST_EQ(ec_rw_protected, 0, "  ec rw protected");
 	TEST_EQ(ec_run_image, 0, "  ec run image");
 	TEST_EQ(ec_vboot_done_calls, 1, "ec_vboot_done calls");

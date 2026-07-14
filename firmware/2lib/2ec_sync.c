@@ -56,6 +56,7 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 				 enum vb2_firmware_selection select)
 {
 	struct vb2_shared_data *sd = vb2_get_sd(ctx);
+	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
 	const uint8_t *hexp = NULL;
 	const uint8_t *hmir = NULL;
 	const uint8_t *heff = NULL;
@@ -81,6 +82,24 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 	if (hmir && select == VB_SELECT_FIRMWARE_EC_ACTIVE) {
 		VB2_DEBUG("     %10s: ", "Hmir");
 		print_hash(hmir, hmir_len);
+	}
+
+	/*
+	 * Get effective EC hash and length.
+	 */
+	VB2_TRY(vb2ex_ec_hash_image(select, &heff, &heff_len),
+		ctx, VB2_RECOVERY_EC_HASH_FAILED);
+	VB2_DEBUG("Heff %10s: ", image_name_to_string(select));
+	print_hash(heff, heff_len);
+
+	if (gbb->flags & VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE &&
+	    select == VB_SELECT_FIRMWARE_EC_ACTIVE) {
+		VB2_DEBUG("BYPASS_EC_RW_UPDATE is enabled, setting hexp to heff\n");
+		hexp = heff;
+		hexp_len = heff_len;
+	}
+
+	if (hmir && select == VB_SELECT_FIRMWARE_EC_ACTIVE) {
 		if (hmir_len != hexp_len) {
 			VB2_DEBUG("Hmir size (%d) != Hexp size (%d)\n",
 				  hmir_len, hexp_len);
@@ -94,14 +113,6 @@ static vb2_error_t check_ec_hash(struct vb2_context *ctx,
 			sd->flags |= VB2_SD_FLAG_ECSYNC_HMIR_UPDATED;
 		}
 	}
-
-	/*
-	 * Get effective EC hash and length.
-	 */
-	VB2_TRY(vb2ex_ec_hash_image(select, &heff, &heff_len),
-		ctx, VB2_RECOVERY_EC_HASH_FAILED);
-	VB2_DEBUG("Heff %10s: ", image_name_to_string(select));
-	print_hash(heff, heff_len);
 
 	/* Lengths should match. */
 	if (heff_len != hexp_len) {

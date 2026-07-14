@@ -98,6 +98,9 @@ enum vb2_gbb_flag {
 
 	/* Enforce CSE SYNC, even if current CSE is same as CBFS CSE */
 	VB2_GBB_FLAG_FORCE_CSE_SYNC = 1 << 17,
+
+	/* Bypass EC RW update by forcing the expected EC RW hash to match active EC RW hash */
+	VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE = 1 << 18,
 };
 
 vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,

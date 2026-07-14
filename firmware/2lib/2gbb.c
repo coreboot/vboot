@@ -197,6 +197,11 @@ vb2_error_t vb2_get_gbb_flag_description(enum vb2_gbb_flag flag,
 		*name = "VB2_GBB_FLAG_FORCE_CSE_SYNC";
 		*description = "Always sync CSE, even if it is same as CBFS CSE";
 		break;
+	case VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE:
+		*name = "VB2_GBB_FLAG_BYPASS_EC_RW_UPDATE";
+		*description = "Bypass EC RW update by forcing the expected "
+			       "EC RW hash to match active EC RW hash.";
+		break;
 	default:
 		*name = NULL;
 		*description = NULL;
