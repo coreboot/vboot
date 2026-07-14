@@ -762,10 +762,22 @@ sign_gsc_firmware_dir() {
   local manifest_source
   local manifest_file
   local key_file
+  local base_dir
   local base_name
 
-   # shellcheck disable=SC2012
+  # The artifact directory name could be cr50, ti50, or ti50a_ti50
+  # depending on the build target.
+  base_dir="$(basename "${input}")"
+
+  # shellcheck disable=SC2012
   if [[  -n $(ls "${input}"/pao* 2>/dev/null) ]]; then
+    case "${base_dir}" in
+      (ti50)
+        base_name="ti50";;
+      (ti50a_ti50)
+        base_name="ti50a";;
+      (*) die "unexpected image directory name ${input} in an NT image";;
+    esac
     # This is an Opentitan tarball, sign it for ECDSA with Cloud KMS.
     openssl_sign_firmware "${input}/rom_ext.A" "${input}/rom_ext.B" \
                           "${input}/rw.bin.ecdsa" "${ti50_key}" \
@@ -791,16 +803,12 @@ sign_gsc_firmware_dir() {
       rw_b="${input}/ec.RW_B.elf"
       ;;
     (d)
-      # The artifact directory name is either ti50 or ti50a_ti50
-      # depending on the build target.
-      local base_dir="$(basename "${input}")"
-
       case "${base_dir}" in
         (ti50)
           base_name="ti50";;
         (ti50a_ti50)
           base_name="ti50a";;
-        (*) die "unexpected image directory name ${input}";;
+        (*) die "unexpected image directory name ${input} in a DT image";;
       esac
       key_file="${ti50_key}"
       rw_a="${input}/rw_A.hex"
