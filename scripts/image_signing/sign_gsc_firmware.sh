@@ -772,11 +772,10 @@ sign_gsc_firmware_dir() {
   # shellcheck disable=SC2012
   if [[  -n $(ls "${input}"/pao* 2>/dev/null) ]]; then
     case "${base_dir}" in
-      (ti50)
-        base_name="ti50";;
       (ti50a_ti50)
         base_name="ti50a";;
-      (*) die "unexpected image directory name ${input} in an NT image";;
+      (*)
+        base_name="ti50";;
     esac
     # This is an Opentitan tarball, sign it for ECDSA with Cloud KMS.
     openssl_sign_firmware "${input}/rom_ext.A" "${input}/rom_ext.B" \
@@ -804,11 +803,10 @@ sign_gsc_firmware_dir() {
       ;;
     (d)
       case "${base_dir}" in
-        (ti50)
-          base_name="ti50";;
         (ti50a_ti50)
           base_name="ti50a";;
-        (*) die "unexpected image directory name ${input} in a DT image";;
+        (*)
+          base_name="ti50";;
       esac
       key_file="${ti50_key}"
       rw_a="${input}/rw_A.hex"
