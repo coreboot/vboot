@@ -1,0 +1,13 @@
+# shellcheck configuration matching ChromiumOS cros lint settings
+
+# Enable extra checks configured in cros lint (chromite/cli/cros/cros_lint.py)
+enable=avoid-nullary-conditions,check-unassigned-uppercase,require-variable-braces,quote-safe-variables
+
+# Exclude SC3043 (local variable warning in POSIX sh) as configured in cros lint
+disable=SC3043
+
+# Follow external sources
+external-sources=true
+
+# Source path directory
+source-path=SCRIPTDIR
