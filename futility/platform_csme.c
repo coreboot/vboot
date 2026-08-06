@@ -71,7 +71,7 @@ static bool is_flmstr1_locked(const struct fmba * const fmba)
 	return is_locked;
 }
 
-bool is_flash_descriptor_locked(const struct firmware_image *image)
+static bool is_flash_descriptor_locked(const struct firmware_image *image)
 {
 	/*
 	 * TODO(roccochen) When the flashrom supports exporting FRAP,
@@ -164,7 +164,7 @@ static char *determine_ifd_platform(const char *image_path)
 	return platform;
 }
 
-static bool is_gpr0_enabled(struct updater_config *cfg)
+static bool is_gpr0_enabled(struct updater_config *cfg, const struct firmware_image *image)
 {
 	char buffer[256];
 	struct subprocess_target output = {
@@ -178,7 +178,7 @@ static bool is_gpr0_enabled(struct updater_config *cfg)
 	char *platform;
 	bool is_enabled = false;
 
-	temp_path = get_firmware_image_temp_file(&cfg->image_current, &cfg->tempfiles);
+	temp_path = get_firmware_image_temp_file(image, &cfg->tempfiles);
 	if (!temp_path)
 		return false;
 
@@ -199,14 +199,14 @@ static bool is_gpr0_enabled(struct updater_config *cfg)
 	return is_enabled;
 }
 
-bool is_csme_locked(struct updater_config *cfg)
+bool is_csme_locked(struct updater_config *cfg, const struct firmware_image *image)
 {
-	if (is_flash_descriptor_locked(&cfg->image_current)) {
+	if (is_flash_descriptor_locked(image)) {
 		VB2_DEBUG("Flash descriptor (FLMSTR1) is locked.\n");
 		return true;
 	}
 
-	if (is_gpr0_enabled(cfg)) {
+	if (is_gpr0_enabled(cfg, image)) {
 		VB2_DEBUG("Intel CSME GPR0 protection is enabled.\n");
 		return true;
 	}
@@ -287,14 +287,9 @@ int unlock_csme(struct updater_config *cfg)
 		goto cleanup;
 	}
 
-	/*
-	 * TODO(b:540693049): In a following patch, consider checking GPR0
-	 * status as well to verify both FLMSTR1 and GPR0 are unlocked after
-	 * running ifdtool.
-	 */
-	/* Double check the descriptor was actually unlocked */
-	if (is_flash_descriptor_locked(&cfg->image)) {
-		ERROR("Descriptor is still locked after running ifdtool\n");
+	/* Double check that both FLMSTR1 and GPR0 were actually unlocked */
+	if (is_csme_locked(cfg, &cfg->image)) {
+		ERROR("CSME is still locked after running ifdtool\n");
 		goto cleanup;
 	}
 

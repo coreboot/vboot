@@ -12,9 +12,7 @@
 #include <stdint.h>
 #include "updater_utils.h"
 
-bool is_flash_descriptor_locked(const struct firmware_image *image);
-
-bool is_csme_locked(struct updater_config *cfg);
+bool is_csme_locked(struct updater_config *cfg, const struct firmware_image *image);
 
 /* Unlock the flash descriptor for Skylake and Kabylake platforms. */
 int unlock_csme_eve(struct firmware_image *image);

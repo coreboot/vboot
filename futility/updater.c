@@ -379,7 +379,7 @@ static int preserve_management_engine(struct updater_config *cfg,
 		return 0;
 	}
 
-	if (is_csme_locked(cfg)) {
+	if (is_csme_locked(cfg, image_from)) {
 		int errcnt = 0;
 
 		INFO("CSME is locked by hardware (GPR0/FLMSTR). Preserving ME.\n");
@@ -551,11 +551,7 @@ static bool is_ap_ro_locked_with_verification(struct updater_config *cfg)
 		VB2_DEBUG("%s is exactly the same. RO update should be fine.\n", FMAP_SI_DESC);
 		return false;
 	}
-	/*
-	 * TODO(b:540693049): In a following patch, consider checking
-	 * is_csme_locked(cfg) to account for GPR0 status as well.
-	 */
-	return is_flash_descriptor_locked(current);
+	return is_csme_locked(cfg, current);
 }
 
 /* Returns true if the UNLOCK_CSME_* quirks were requested, otherwise false. */

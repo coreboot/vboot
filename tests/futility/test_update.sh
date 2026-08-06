@@ -752,6 +752,36 @@ test_ifdtool() {
     "${FROM_IMAGE}.locked" "${EXPECTED}/full.locked" \
     -i "${TO_IMAGE}.locked" --wp=0 --debug
 
+  # Test 'AP RO locked with verification turned on': GPR0 enabled only (FLMSTR1 unlocked).
+  local from_gpr0="${FROM_IMAGE}.gpr0"
+  cp -f "${FROM_IMAGE}" "${from_gpr0}"
+  unlock_me "${from_gpr0}"
+  lock_gpr0 "${from_gpr0}"
+
+  local expected_rw_gpr0="${EXPECTED}/rw.gpr0"
+  cp -f "${EXPECTED}/rw" "${expected_rw_gpr0}"
+  unlock_me "${expected_rw_gpr0}"
+  lock_gpr0 "${expected_rw_gpr0}"
+
+  test_update "AP RO locked update (GPR0 enabled, SI_DESC is different)" \
+    "${from_gpr0}" "${expected_rw_gpr0}" \
+    -i "${TO_IMAGE}.unlocked" --wp=0 --debug
+
+  # Test 'AP RO locked with verification turned on': FLMSTR1 locked only (GPR0 disabled).
+  local from_flmstr="${FROM_IMAGE}.flmstr"
+  cp -f "${FROM_IMAGE}" "${from_flmstr}"
+  unlock_me "${from_flmstr}"
+  lock_flmstr "${from_flmstr}"
+
+  local expected_rw_flmstr="${EXPECTED}/rw.flmstr"
+  cp -f "${EXPECTED}/rw" "${expected_rw_flmstr}"
+  unlock_me "${expected_rw_flmstr}"
+  lock_flmstr "${expected_rw_flmstr}"
+
+  test_update "AP RO locked update (FLMSTR1 locked, SI_DESC is different)" \
+    "${from_flmstr}" "${expected_rw_flmstr}" \
+    -i "${TO_IMAGE}.unlocked" --wp=0 --debug
+
   test_update "AP RO locked update (unlocked)" \
     "${FROM_IMAGE}.unlocked" "${EXPECTED}/full" \
     -i "${TO_IMAGE}" --wp=0 --debug
