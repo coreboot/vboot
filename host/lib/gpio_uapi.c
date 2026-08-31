@@ -9,6 +9,17 @@
 #include <linux/fs.h>
 #include <linux/gpio.h>
 #endif
+
+#include <limits.h>
+
+#if !defined(__FreeBSD__)
+#if defined(GPIO_V2_GET_LINE_IOCTL)
+#define USE_V2_GPIO_API 1
+#elif defined(GPIO_GET_LINEHANDLE_IOCTL)
+#define USE_V1_GPIO_API 1
+#endif
+#endif
+
 #include <stdlib.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -18,7 +29,7 @@
 
 #include "gpio_uapi.h"
 
-#if defined(GPIO_V2_GET_LINE_IOCTL)
+#if defined(USE_V2_GPIO_API)
 static int gpio_uapi_v2_read_value(int chip_fd, int idx, bool active_low)
 {
 	struct gpio_v2_line_request request;
@@ -98,7 +109,7 @@ static int gpio_uapi_v2_name_match(int chip_fd, int idx, const char *name)
 	return strncmp(info.name, name, sizeof(info.name)) != 0;
 }
 
-#elif defined(GPIO_GET_LINEHANDLE_IOCTL)
+#elif defined(USE_V1_GPIO_API)
 
 static int gpio_uapi_v1_read_value(int chip_fd, int idx, bool active_low)
 {
@@ -173,9 +184,9 @@ static int gpio_uapi_v1_name_match(int chip_fd, int idx, const char *name)
 
 static int gpio_uapi_read_value_by_idx(int fd, int idx, bool active_low)
 {
-#if defined(GPIO_V2_GET_LINE_IOCTL)
+#if defined(USE_V2_GPIO_API)
 	return gpio_uapi_v2_read_value(fd, idx, active_low);
-#elif defined(GPIO_GET_LINEHANDLE_IOCTL)
+#elif defined(USE_V1_GPIO_API)
 	return gpio_uapi_v1_read_value(fd, idx, active_low);
 #else
 	return -1;
@@ -184,6 +195,7 @@ static int gpio_uapi_read_value_by_idx(int fd, int idx, bool active_low)
 
 static int gpio_uapi_read_value_by_name(int chip_fd, const char *name, bool active_low)
 {
+#if defined(GPIO_GET_CHIPINFO_IOCTL)
 	struct gpiochip_info info;
 	int ret;
 
@@ -193,9 +205,9 @@ static int gpio_uapi_read_value_by_name(int chip_fd, const char *name, bool acti
 	}
 
 	for (int i = 0; i < info.lines; i++) {
-#if defined(GPIO_V2_GET_LINE_IOCTL)
+#if defined(USE_V2_GPIO_API)
 		ret = gpio_uapi_v2_name_match(chip_fd, i, name);
-#elif defined(GPIO_GET_LINEHANDLE_IOCTL)
+#elif defined(USE_V1_GPIO_API)
 		ret = gpio_uapi_v1_name_match(chip_fd, i, name);
 #else
 		return -1;
@@ -207,6 +219,7 @@ static int gpio_uapi_read_value_by_name(int chip_fd, const char *name, bool acti
 			continue;
 		return gpio_uapi_read_value_by_idx(chip_fd, i, active_low);
 	}
+#endif
 
 	return -1;
 }
