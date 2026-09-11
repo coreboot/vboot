@@ -14,6 +14,7 @@
 const char *GptPartitionNames[] = {
 	[GPT_ANDROID_BOOT] = "boot",
 	[GPT_ANDROID_VENDOR_BOOT] = "vendor_boot",
+	[GPT_ANDROID_RECOVERY] = "recovery",
 	[GPT_ANDROID_INIT_BOOT] = "init_boot",
 	[GPT_ANDROID_PVMFW] = "pvmfw",
 	[GPT_ANDROID_DTBO] = "dtbo",
