@@ -215,6 +215,48 @@ static const char *find_avb_prop(AvbSlotVerifyData *verify_data, const char *key
 	return NULL;
 }
 
+static vb2_error_t append_recovery_ramdisk(AvbOps *avb_ops, uint8_t **ramdisk_end)
+{
+	struct boot_img_hdr_v4 *rec_hdr;
+	size_t recovery_size;
+	uint32_t kernel_aligned;
+	uint8_t *rec_ramdisk;
+
+	if (vb2_android_get_buffer(avb_ops, GPT_ANDROID_RECOVERY,
+				   (void **)&rec_hdr, &recovery_size)) {
+		VB2_DEBUG("Cannot get information about preloaded 'recovery' partition\n");
+		return VB2_ERROR_ANDROID_BROKEN_RECOVERY;
+	}
+
+	if (recovery_size < BOOT_HEADER_SIZE ||
+	    memcmp(rec_hdr->magic, BOOT_MAGIC, BOOT_MAGIC_SIZE)) {
+		VB2_DEBUG("Incorrect magic or size (%zu) of 'recovery' image\n",
+			  recovery_size);
+		return VB2_ERROR_ANDROID_BROKEN_RECOVERY;
+	}
+
+	if (rec_hdr->kernel_size > recovery_size - BOOT_HEADER_SIZE) {
+		VB2_DEBUG("Incorrect size (%u) of 'recovery' kernel\n",
+			  rec_hdr->kernel_size);
+		return VB2_ERROR_ANDROID_BROKEN_RECOVERY;
+	}
+
+	kernel_aligned = VB2_ALIGN_UP(rec_hdr->kernel_size, BOOT_HEADER_SIZE);
+	if (recovery_size - BOOT_HEADER_SIZE < kernel_aligned ||
+	    recovery_size - BOOT_HEADER_SIZE - kernel_aligned < rec_hdr->ramdisk_size ||
+	    rec_hdr->ramdisk_size == 0) {
+		VB2_DEBUG("Incorrect 'recovery' header or sizes: ksz=%u, rsz=%u, total=%zu\n",
+			  rec_hdr->kernel_size, rec_hdr->ramdisk_size, recovery_size);
+		return VB2_ERROR_ANDROID_BROKEN_RECOVERY;
+	}
+
+	rec_ramdisk = (uint8_t *)rec_hdr + BOOT_HEADER_SIZE + kernel_aligned;
+	memmove(*ramdisk_end, rec_ramdisk, rec_hdr->ramdisk_size);
+	*ramdisk_end += rec_hdr->ramdisk_size;
+
+	return VB2_SUCCESS;
+}
+
 static vb2_error_t prepare_pvmfw(AvbSlotVerifyData *verify_data,
 				 struct vb2_kernel_params *params)
 {
@@ -256,7 +298,8 @@ static vb2_error_t prepare_pvmfw(AvbSlotVerifyData *verify_data,
  */
 static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 					struct vb2_kernel_params *params,
-					bool recovery_boot)
+					bool recovery_boot,
+					bool dedicated_recovery)
 {
 	struct vendor_boot_img_hdr_v4 *vendor_hdr;
 	struct boot_img_hdr_v4 *init_hdr;
@@ -282,8 +325,13 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	VB2_TRY(save_bootconfig(vendor_hdr, vendor_boot_size, params));
 
 	/* Remove unused ramdisks */
-	VB2_TRY(prepare_vendor_ramdisks(vendor_hdr, vendor_boot_size, recovery_boot,
+	VB2_TRY(prepare_vendor_ramdisks(vendor_hdr, vendor_boot_size,
+					recovery_boot && !dedicated_recovery,
 					&params->ramdisk, &vendor_ramdisk_end));
+
+	if (dedicated_recovery)
+		VB2_TRY(append_recovery_ramdisk(avb_ops, &vendor_ramdisk_end));
+
 	params->ramdisk_size = vendor_ramdisk_end - params->ramdisk;
 
 	/* Validate init_boot partition */
@@ -385,6 +433,14 @@ static vb2_error_t verify_avb_data(const AvbSlotVerifyData *verify_data,
 	/* Verify all requested partitions are loaded and preloaded */
 	for (size_t i = 0; requested_partitions[i] != NULL; i++) {
 		const char *part_name = requested_partitions[i];
+
+		/*
+		 * TODO(b/408266619): Skip checking of recovery partition for now.
+		 * Recovery will be verified when the whole feature in OS is ready.
+		 */
+		if (!strcmp(part_name, GptPartitionNames[GPT_ANDROID_RECOVERY]))
+			continue;
+
 		const AvbPartitionData *part = NULL;
 		bool found = false;
 		for (size_t j = 0; j < verify_data->num_loaded_partitions; j++) {
@@ -472,7 +528,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 {
 	enum vb2_android_bootmode bootmode = VB2_ANDROID_NORMAL_BOOT;
 	AvbSlotVerifyData *verify_data = NULL;
-	AvbOps *avb_ops;
+	AvbOps *avb_ops = NULL;
 	AvbSlotVerifyFlags avb_flags;
 	AvbSlotVerifyResult result;
 	vb2_error_t rv;
@@ -484,6 +540,16 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_BOOT];
 	boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_INIT_BOOT];
 	boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_VENDOR_BOOT];
+
+	rv = vb2ex_handle_android_misc_partition(ctx, disk_handle, gpt, &bootmode);
+	if (rv != VB2_SUCCESS) {
+		VB2_DEBUG("Unable to get android bootmode\n");
+		goto out;
+	}
+
+	bool recovery_boot = bootmode == VB2_ANDROID_RECOVERY_BOOT;
+	if (recovery_boot)
+		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_RECOVERY];
 
 	/* Update flags to mark loaded GKI image */
 	params->flags = VB2_KERNEL_TYPE_BOOTIMG;
@@ -567,20 +633,18 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 
 	*kernel_version = (uint32_t)verify_data->rollback_indexes[0];
 
-	rv = vb2ex_handle_android_misc_partition(ctx, disk_handle, gpt, &bootmode);
-	if (rv != VB2_SUCCESS) {
-		VB2_DEBUG("Unable to get android bootmode\n");
-		goto out;
-	}
-	bool recovery_boot = bootmode == VB2_ANDROID_RECOVERY_BOOT;
-
 	/*
 	 * Before booting we need to rearrange buffers with partition data, which includes:
+	 * - determine source of recovery ramdisk (dedicated 'recovery' or 'vendor_boot' for
+	 *   older images)
 	 * - save bootconfig in separate buffer, so depthcharge can modify it
 	 * - remove unused ramdisks depending on boot type (normal/recovery)
-	 * - concatenate ramdisks from vendor_boot & init_boot partitions
+	 * - concatenate ramdisks from vendor_boot, optional recovery, & init_boot partitions
 	 */
-	rv = rearrange_partitions(avb_ops, params, recovery_boot);
+	bool dedicated_recovery = recovery_boot &&
+		avb_find_part(verify_data, GPT_ANDROID_RECOVERY) != NULL;
+
+	rv = rearrange_partitions(avb_ops, params, recovery_boot, dedicated_recovery);
 	if (rv)
 		goto out;
 
@@ -631,7 +695,8 @@ out:
 	if (verify_data != NULL)
 		avb_slot_verify_data_free(verify_data);
 
-	vboot_avb_ops_free(avb_ops);
+	if (avb_ops != NULL)
+		vboot_avb_ops_free(avb_ops);
 
 	return rv;
 }
