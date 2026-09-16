@@ -178,3 +178,17 @@ bool parse_hash(uint8_t *buf, size_t len, const char *str)
 		return false;
 	return true;
 }
+
+bool is_valid_property_string(const char *str)
+{
+	if (!str)
+		return false;
+
+	for (const char *p = str; *p; p++) {
+		if (*p < 0x20 || *p >= 0x7f)
+			return false;
+		if (*p == '=' || *p == '\\' || *p == '\'' || *p == '"')
+			return false;
+	}
+	return true;
+}

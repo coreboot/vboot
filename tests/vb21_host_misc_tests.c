@@ -27,6 +27,42 @@ static void misc_tests(void)
 	TEST_EQ(vb2_desc_size("foob"), 8, "desc size 'foob'");
 }
 
+static void property_string_tests(void)
+{
+	TEST_FALSE(is_valid_property_string(NULL), "is_valid_property_string(NULL)");
+	TEST_TRUE(is_valid_property_string(""), "is_valid_property_string(empty)");
+	TEST_TRUE(is_valid_property_string("Google_Corsola.15194.0.0"),
+		  "is_valid_property_string(valid FWID)");
+	TEST_TRUE(is_valid_property_string("KRANE C2A-B3C-D4E"),
+		  "is_valid_property_string(valid HWID)");
+	TEST_TRUE(is_valid_property_string("normal"),
+		  "is_valid_property_string(valid mainfw_type)");
+
+	/* Forbidden characters */
+	TEST_FALSE(is_valid_property_string("foo\nbar"),
+		   "is_valid_property_string(newline)");
+	TEST_FALSE(is_valid_property_string("foo\rbar"),
+		   "is_valid_property_string(carriage return)");
+	TEST_FALSE(is_valid_property_string("foo\tbar"),
+		   "is_valid_property_string(tab)");
+	TEST_FALSE(is_valid_property_string("foo=bar"),
+		   "is_valid_property_string('=')");
+	TEST_FALSE(is_valid_property_string("foo\\bar"),
+		   "is_valid_property_string('\\')");
+	TEST_FALSE(is_valid_property_string("foo'bar"),
+		   "is_valid_property_string('\'')");
+	TEST_FALSE(is_valid_property_string("foo\"bar"),
+		   "is_valid_property_string('\"')");
+
+	/* Non-ASCII and control characters */
+	TEST_FALSE(is_valid_property_string("foo\037bar"),
+		   "is_valid_property_string(control char 0x1f)");
+	TEST_FALSE(is_valid_property_string("foo\177bar"),
+		   "is_valid_property_string(DEL 0x7f)");
+	TEST_FALSE(is_valid_property_string("foo\200bar"),
+		   "is_valid_property_string(non-ASCII 0x80)");
+}
+
 static void file_tests(const char *temp_dir)
 {
 	char *testfile;
@@ -79,6 +115,7 @@ int main(int argc, char* argv[])
 	const char *temp_dir = argv[1];
 
 	misc_tests();
+	property_string_tests();
 	file_tests(temp_dir);
 
 	return gTestSuccess ? 0 : 255;

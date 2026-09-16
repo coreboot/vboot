@@ -164,7 +164,16 @@ static char * ReadFdtString(const char *property)
 {
 	void *str = NULL;
 	/* Do not need property size */
-	ReadFdtBlock(property, &str, 0);
+	if (ReadFdtBlock(property, &str, 0) != 0 || !str)
+		return NULL;
+
+	if (!is_valid_property_string(str)) {
+		fprintf(stderr, "WARNING: Property '%s' contains invalid characters\n",
+			property);
+		free(str);
+		return NULL;
+	}
+
 	return (char *)str;
 }
 

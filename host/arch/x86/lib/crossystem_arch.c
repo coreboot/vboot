@@ -147,6 +147,14 @@ static char* ReadAcpiSysfsString(char* dest, int size, const char* name)
 
 	ret = ReadFileFirstLine(dest, size, path);
 	free(path);
+
+	if (ret && !is_valid_property_string(dest)) {
+		fprintf(stderr, "WARNING: Property '%s' contains invalid characters\n",
+			name);
+		dest[0] = '\0';
+		return NULL;
+	}
+
 	return ret;
 }
 

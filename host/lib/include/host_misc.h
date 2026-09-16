@@ -124,4 +124,13 @@ bool parse_hex(uint8_t *val, const char *str);
  */
 bool parse_hash(uint8_t *buf, size_t len, const char *str);
 
+/**
+ * Validate that a property string contains only printable ASCII characters
+ * (0x20..0x7E) and does not contain '=', '\', '\'', or '"'.
+ *
+ * @param str		String to validate
+ * @return true if valid, false if invalid.
+ */
+bool is_valid_property_string(const char *str);
+
 #endif  /* VBOOT_REFERENCE_HOST_MISC_H_ */

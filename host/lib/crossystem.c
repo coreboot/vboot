@@ -585,6 +585,13 @@ int VbGetSystemPropertyString(const char *name, char *dest, size_t size)
 
 		if (chromeos_config_get_string("/", "hwid-override",
 					       &hwid_override) == VB2_SUCCESS) {
+			if (!is_valid_property_string(hwid_override)) {
+				fprintf(stderr,
+					"WARNING: Property 'hwid-override' "
+					"contains invalid characters\n");
+				free(hwid_override);
+				return -1;
+			}
 			StrCopy(dest, hwid_override, size);
 			free(hwid_override);
 			return 0;
