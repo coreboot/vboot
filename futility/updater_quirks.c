@@ -292,24 +292,23 @@ static int quirk_preserve_me(struct updater_config *cfg)
 	/*
 	 * If the quirk config was manually set to >=2 (for developers to
 	 * manually do testing), we should also allow preserving ME in any
-	 * updating modes.
+	 * update mode (including factory update).
 	 *
-	 * However if the quirk config was set to 1 by default, we should
-	 * only preserve the ME if performing an autoupdate-mode firmware
-	 * update. Recovery, factory and any other update modes cannot leave the
-	 * ME as is. Otherwise, a recovery firmware update cannot be relied upon
-	 * to update the ME to a valid version for WP-disabled devices.
+	 * Otherwise, preserve the ME in all non-factory update modes
+	 * (autoupdate, recovery, etc.) to avoid overwriting live SI_ME in S0
+	 * and hanging the AP when CSME is unlocked (b/562584228).
+	 * Note that QUIRK_PRESERVE_ME only preserves SI_ME and still writes
+	 * SI_DESC, so Ti50 AP RO verification (RO_GSCVD) remains intact.
 	 */
 	int mode = get_config_quirk(QUIRK_PRESERVE_ME, cfg);
 	if (mode >= 2) {
 		WARN("FORCED TO PRESERVE CSME. "
 		     "YOUR SYSTEM MAY BE UNSTABLE DUE TO USING AN INCOMPATIBLE CSME.\n");
+	} else if (cfg->factory_update) {
+		WARN("Factory update. Not preserving ME.\n");
+		return 0;
 	} else {
-		if (cfg->try_update == TRY_UPDATE_OFF) {
-			INFO("No auto-update requested. Not preserving ME.\n");
-			return 0;
-		}
-		INFO("Auto-update requested. Preserving ME.\n");
+		INFO("Preserving ME.\n");
 	}
 
 	/*

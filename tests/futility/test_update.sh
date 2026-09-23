@@ -444,8 +444,13 @@ test_update "Full update (--quirks preserve_me with non-host programmer)" \
   -p raiden_debug_spi:target=AP
 
 test_update "Full update (--quirks preserve_me)" \
-  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/full" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/me_preserved" \
   --quirks preserve_me \
+  -i "${TO_IMAGE}" --wp=0
+
+test_update "Full update (--quirks preserve_me, recovery)" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/me_preserved" \
+  --quirks preserve_me -m recovery \
   -i "${TO_IMAGE}" --wp=0
 
 test_update "Full update (--quirks preserve_me, autoupdate)" \
@@ -461,6 +466,11 @@ test_update "Full update (--quirks preserve_me, deferupdate_hold)" \
 test_update "Full update (--quirks preserve_me, factory)" \
   "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/full" \
   --quirks preserve_me -m factory \
+  -i "${TO_IMAGE}" --wp=0
+
+test_update "Full update (--quirks preserve_me=2, factory)" \
+  "${FROM_DIFFERENT_ME_IMAGE}" "${EXPECTED}/me_preserved" \
+  --quirks preserve_me=2 -m factory \
   -i "${TO_IMAGE}" --wp=0
 
 # Test manifest.
