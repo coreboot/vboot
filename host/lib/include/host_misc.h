@@ -73,6 +73,22 @@ vb2_error_t vb2_write_file(const char *filename, const void *buf,
 			   uint32_t size);
 
 /**
+ * Helper to create a temporary file, and optionally write some data
+ * into it.
+ *
+ * @param data		If data needs to be written to the file, a
+ *			pointer to the buffer.  Pass NULL to just
+ *			create an empty temporary file.
+ * @param data_size	The size of the buffer to write, if applicable.
+ * @param path_out	An output pointer for the filename.  Caller
+ *			should free.
+ *
+ * @return VB2_SUCCESS on success, or a relevant error.
+ */
+vb2_error_t vb2_write_temp_file(const uint8_t *data, uint32_t data_size,
+				char **path_out);
+
+/**
  * Write a buffer which starts with a standard vb21_struct_common header.
  *
  * Determines the buffer size from the common header total size field.

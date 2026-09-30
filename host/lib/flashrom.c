@@ -25,63 +25,6 @@
 
 #define FLASHROM_EXEC_NAME "flashrom"
 
-/**
- * Helper to create a temporary file, and optionally write some data
- * into it.
- *
- * @param data		If data needs to be written to the file, a
- *			pointer to the buffer.  Pass NULL to just
- *			create an empty temporary file.
- * @param data_size	The size of the buffer to write, if applicable.
- * @param path_out	An output pointer for the filename.  Caller
- *			should free.
- *
- * @return VB2_SUCCESS on success, or a relevant error.
- */
-static vb2_error_t write_temp_file(const uint8_t *data, uint32_t data_size,
-				   char **path_out)
-{
-	int fd;
-	ssize_t write_rv;
-	vb2_error_t rv;
-	char *path;
-	mode_t umask_save;
-
-	*path_out = NULL;
-
-	path = strdup(VBOOT_TMP_DIR "/vb2_flashrom.XXXXXX");
-
-	/* Set the umask before mkstemp for security considerations. */
-	umask_save = umask(077);
-	fd = mkstemp(path);
-	umask(umask_save);
-	if (fd < 0) {
-		rv = VB2_ERROR_WRITE_FILE_OPEN;
-		goto fail;
-	}
-
-	while (data && data_size > 0) {
-		write_rv = write(fd, data, data_size);
-		if (write_rv < 0) {
-			close(fd);
-			unlink(path);
-			rv = VB2_ERROR_WRITE_FILE_DATA;
-			goto fail;
-		}
-
-		data_size -= write_rv;
-		data += write_rv;
-	}
-
-	close(fd);
-	*path_out = path;
-	return VB2_SUCCESS;
-
-fail:
-	free(path);
-	return rv;
-}
-
 static vb2_error_t run_flashrom(const char *const argv[])
 {
 	int status = subprocess_run(argv, &subprocess_null, &subprocess_null,
@@ -111,7 +54,7 @@ vb2_error_t flashrom_read_region(struct firmware_image *image, const char *regio
 	image->data = NULL;
 	image->size = 0;
 
-	VB2_TRY(write_temp_file(NULL, 0, &tmpfile));
+	VB2_TRY(vb2_write_temp_file(NULL, 0, &tmpfile));
 
 	/* TODO(b/445126698): Remove support for NULL region to align with flashrom_drv.c. */
 	if (region)
@@ -145,7 +88,7 @@ vb2_error_t flashrom_write_region(const struct firmware_image *image, const char
 	char region_param[PATH_MAX];
 	vb2_error_t rv;
 
-	VB2_TRY(write_temp_file(image->data, image->size, &tmpfile));
+	VB2_TRY(vb2_write_temp_file(image->data, image->size, &tmpfile));
 
 	/* TODO(b/445126698): Remove support for NULL region to align with flashrom_drv.c. */
 	if (region)

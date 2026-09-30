@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "fmap.h"
+#include "futility.h"
 
 #define ASPRINTF(strp, ...) do { if (asprintf(strp, __VA_ARGS__) >= 0) break; \
 	ERROR("Failed to allocate memory, abort.\n"); exit(1); } while (0)
@@ -27,28 +28,6 @@ enum active_slot {
 	SLOT_A = 0,
 	SLOT_B,
 };
-
-/* Utilities for managing temporary files. */
-struct tempfile {
-	char *filepath;
-	struct tempfile *next;
-};
-
-/*
- * Create a new temporary file.
- *
- * The parameter head refers to a linked list dummy head.
- * Returns the path of new file, or NULL on failure.
- */
-const char *create_temp_file(struct tempfile *head);
-
-/*
- * Remove all files created by create_temp_file().
- *
- * The parameter head refers to the dummy head of linked list.
- * This is intended to be called only once at end of program execution.
- */
-void remove_all_temp_files(struct tempfile *head);
 
 /* Include definition of 'struct firmware_image;' */
 #include "flashrom.h"

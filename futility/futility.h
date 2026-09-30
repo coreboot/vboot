@@ -300,4 +300,26 @@ enum arch_t {
 int write_to_file(const char *msg, const char *filename, uint8_t *start,
 		  size_t size);
 
+/* Utilities for managing temporary files. */
+struct tempfile {
+	char *filepath;
+	struct tempfile *next;
+};
+
+/*
+ * Create a new temporary file.
+ *
+ * The parameter head refers to a linked list dummy head.
+ * Returns the path of new file, or NULL on failure.
+ */
+const char *create_temp_file(struct tempfile *head);
+
+/*
+ * Remove all files created by create_temp_file().
+ *
+ * The parameter head refers to the dummy head of linked list.
+ * This is intended to be called only once at end of program execution.
+ */
+void remove_all_temp_files(struct tempfile *head);
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_H_ */

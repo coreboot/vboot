@@ -465,3 +465,47 @@ int write_to_file(const char *msg, const char *filename, uint8_t *start,
 
 	return r;
 }
+
+test_mockable
+const char *create_temp_file(struct tempfile *head)
+{
+	struct tempfile *new_temp;
+	char *new_path = NULL;
+
+	if (vb2_write_temp_file(NULL, 0, &new_path) != VB2_SUCCESS) {
+		ERROR("Failed to create new temp file in " VBOOT_TMP_DIR "\n");
+		return NULL;
+	}
+	new_temp = (struct tempfile *)malloc(sizeof(*new_temp));
+	if (!new_temp) {
+		remove(new_path);
+		free(new_path);
+		ERROR("Failed to allocate buffer for new temp file.\n");
+		return NULL;
+	}
+	new_temp->filepath = new_path;
+	VB2_DEBUG("Created new temporary file: %s.\n", new_path);
+	new_temp->next = NULL;
+	while (head->next)
+		head = head->next;
+	head->next = new_temp;
+	return new_temp->filepath;
+}
+
+test_mockable
+void remove_all_temp_files(struct tempfile *head)
+{
+	/* head itself is dummy and should not be removed. */
+	assert(!head->filepath);
+	struct tempfile *next = head->next;
+	head->next = NULL;
+	while (next) {
+		head = next;
+		next = head->next;
+		assert(head->filepath);
+		VB2_DEBUG("Remove temporary file: %s.\n", head->filepath);
+		remove(head->filepath);
+		free(head->filepath);
+		free(head);
+	}
+}

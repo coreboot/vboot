@@ -717,59 +717,6 @@ int write_system_firmware(struct updater_config *cfg,
 }
 
 test_mockable
-const char *create_temp_file(struct tempfile *head)
-{
-	struct tempfile *new_temp;
-	char new_path[] = VBOOT_TMP_DIR "/fwupdater.XXXXXX";
-
-	int fd;
-	mode_t umask_save;
-
-	/* Set the umask before mkstemp for security considerations. */
-	umask_save = umask(077);
-	fd = mkstemp(new_path);
-	umask(umask_save);
-	if (fd < 0) {
-		ERROR("Failed to create new temp file in %s\n", new_path);
-		return NULL;
-	}
-	close(fd);
-	new_temp = (struct tempfile *)malloc(sizeof(*new_temp));
-	if (new_temp)
-		new_temp->filepath = strdup(new_path);
-	if (!new_temp || !new_temp->filepath) {
-		remove(new_path);
-		free(new_temp);
-		ERROR("Failed to allocate buffer for new temp file.\n");
-		return NULL;
-	}
-	VB2_DEBUG("Created new temporary file: %s.\n", new_path);
-	new_temp->next = NULL;
-	while (head->next)
-		head = head->next;
-	head->next = new_temp;
-	return new_temp->filepath;
-}
-
-test_mockable
-void remove_all_temp_files(struct tempfile *head)
-{
-	/* head itself is dummy and should not be removed. */
-	assert(!head->filepath);
-	struct tempfile *next = head->next;
-	head->next = NULL;
-	while (next) {
-		head = next;
-		next = head->next;
-		assert(head->filepath);
-		VB2_DEBUG("Remove temporary file: %s.\n", head->filepath);
-		remove(head->filepath);
-		free(head->filepath);
-		free(head);
-	}
-}
-
-test_mockable
 const char *get_firmware_rootkey_hash(const struct firmware_image *image)
 {
 	const struct vb2_gbb_header *gbb = NULL;

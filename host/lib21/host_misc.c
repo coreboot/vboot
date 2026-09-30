@@ -8,6 +8,8 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "2common.h"
@@ -81,6 +83,52 @@ vb2_error_t vb2_write_file(const char *filename, const void *buf, uint32_t size)
 
 	fclose(f);
 	return VB2_SUCCESS;
+}
+
+vb2_error_t vb2_write_temp_file(const uint8_t *data, uint32_t data_size,
+				char **path_out)
+{
+	int fd;
+	ssize_t write_rv;
+	vb2_error_t rv;
+	char *path;
+	mode_t umask_save;
+
+	*path_out = NULL;
+
+	path = strdup(VBOOT_TMP_DIR "/vb2_tempfile.XXXXXX");
+	if (!path)
+		return VB2_ERROR_WRITE_FILE_OPEN;
+
+	/* Set the umask before mkstemp for security considerations. */
+	umask_save = umask(077);
+	fd = mkstemp(path);
+	umask(umask_save);
+	if (fd < 0) {
+		rv = VB2_ERROR_WRITE_FILE_OPEN;
+		goto fail;
+	}
+
+	while (data && data_size > 0) {
+		write_rv = write(fd, data, data_size);
+		if (write_rv < 0) {
+			close(fd);
+			unlink(path);
+			rv = VB2_ERROR_WRITE_FILE_DATA;
+			goto fail;
+		}
+
+		data_size -= write_rv;
+		data += write_rv;
+	}
+
+	close(fd);
+	*path_out = path;
+	return VB2_SUCCESS;
+
+fail:
+	free(path);
+	return rv;
 }
 
 vb2_error_t vb21_write_object(const char *filename, const void *buf)
