@@ -67,6 +67,8 @@ struct sign_option_s {
 };
 extern struct sign_option_s sign_option;
 
+int load_keyset(void);
+
 #define FILE_MODE_SIGN(sign_options)                                           \
 	(sign_options.create_new_outfile ? FILE_RO : FILE_RW)
 

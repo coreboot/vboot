@@ -509,3 +509,13 @@ void remove_all_temp_files(struct tempfile *head)
 		free(head);
 	}
 }
+
+const char *find_keyset_dir(const char *explicit_keyset)
+{
+	if (explicit_keyset)
+		return explicit_keyset;
+	if (access(DEFAULT_KEYSETDIR "/firmware_data_key.vbprivk", R_OK) != 0 &&
+	    access("/vendor/etc/vboot/devkeys/firmware_data_key.vbprivk", R_OK) == 0)
+		return "/vendor/etc/vboot/devkeys";
+	return DEFAULT_KEYSETDIR;
+}

@@ -139,6 +139,33 @@ static void cbfstool_get_config_string_tests(void)
 	TEST_EQ(strcmp(value, "Coachz"), 0, "  value is Coachz");
 }
 
+static void cbfstool_get_compression_tests(void)
+{
+	char comp[32];
+
+	/* LZMA compressed entry */
+	cbfstool_get_compression(IMAGE, "FW_MAIN_A", "ecrw", "none",
+				 comp, sizeof(comp));
+	TEST_EQ(strcasecmp(comp, "lzma"), 0, "ecrw compression is lzma");
+
+	/* LZ4 compressed entry */
+	cbfstool_get_compression(IMAGE, "FW_MAIN_A", "fallback/romstage",
+				 "none", comp, sizeof(comp));
+	TEST_EQ(strcasecmp(comp, "lz4"), 0,
+		"fallback/romstage compression is lz4");
+
+	/* Uncompressed entry */
+	cbfstool_get_compression(IMAGE, "FW_MAIN_A", "ecrw.hash", "lzma",
+				 comp, sizeof(comp));
+	TEST_EQ(strcmp(comp, "none"), 0, "ecrw.hash compression is none");
+
+	/* Non-existent entry falls back to default */
+	cbfstool_get_compression(IMAGE, "FW_MAIN_A", "no_such_entry", "lzma",
+				 comp, sizeof(comp));
+	TEST_EQ(strcmp(comp, "lzma"), 0,
+		"missing entry falls back to default");
+}
+
 int main(int argc, char *argv[])
 {
 	setup();
@@ -147,6 +174,7 @@ int main(int argc, char *argv[])
 	cbfstool_extract_tests();
 	cbfstool_get_config_bool_tests();
 	cbfstool_get_config_string_tests();
+	cbfstool_get_compression_tests();
 
 	teardown();
 

@@ -322,4 +322,13 @@ const char *create_temp_file(struct tempfile *head);
  */
 void remove_all_temp_files(struct tempfile *head);
 
+#define DEFAULT_KEYSETDIR "/usr/share/vboot/devkeys"
+
+/*
+ * Return the keyset directory to use for signing. If explicit_keyset is
+ * non-NULL, returns explicit_keyset; otherwise checks candidate default
+ * directories and falls back to DEFAULT_KEYSETDIR.
+ */
+const char *find_keyset_dir(const char *explicit_keyset);
+
 #endif  /* VBOOT_REFERENCE_FUTILITY_H_ */

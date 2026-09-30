@@ -29,11 +29,9 @@
 #include "util_misc.h"
 #include "vb1_helper.h"
 
-#define DEFAULT_KEYSETDIR "/usr/share/vboot/devkeys"
-
 /* Options */
 struct sign_option_s sign_option = {
-	.keysetdir = DEFAULT_KEYSETDIR,
+	.keysetdir = NULL,
 	.version = 1,
 	.arch = ARCH_UNSPECIFIED,
 	.kloadaddr = CROS_32BIT_ENTRY_ADDR,
@@ -317,7 +315,7 @@ done:
 	return rv;
 }
 
-static int load_keyset(void)
+int load_keyset(void)
 {
 	char *buf = NULL;
 	int errorcnt = 0;
@@ -325,13 +323,14 @@ static int load_keyset(void)
 	const char *b = NULL;
 	const char *k = NULL;
 	const char *format;
+	const char *keysetdir = find_keyset_dir(sign_option.keysetdir);
 	struct stat sb;
 
-	if (!sign_option.keysetdir)
+	if (!keysetdir)
 		FATAL("Keyset should never be NULL. Aborting\n");
 
 	/* Failure means this is not a directory */
-	if (stat(sign_option.keysetdir, &sb) == -1 ||
+	if (stat(keysetdir, &sb) == -1 ||
 	    (sb.st_mode & S_IFMT) != S_IFDIR)
 		format = "%s%s.%s";
 	else
@@ -356,7 +355,7 @@ static int load_keyset(void)
 	}
 
 	if (s && !sign_option.signprivate) {
-		if (asprintf(&buf, format, sign_option.keysetdir, s,
+		if (asprintf(&buf, format, keysetdir, s,
 			     "vbprivk") <= 0)
 			FATAL("Failed to allocate string\n");
 		INFO("Loading private data key from default keyset: %s\n", buf);
@@ -369,7 +368,7 @@ static int load_keyset(void)
 	}
 
 	if (b && !sign_option.keyblock) {
-		if (asprintf(&buf, format, sign_option.keysetdir, b,
+		if (asprintf(&buf, format, keysetdir, b,
 			     "keyblock") <= 0)
 			FATAL("Failed to allocate string\n");
 		INFO("Loading keyblock from default keyset: %s\n", buf);
@@ -382,7 +381,7 @@ static int load_keyset(void)
 	}
 
 	if (k && !sign_option.kernel_subkey) {
-		if (asprintf(&buf, format, sign_option.keysetdir, k,
+		if (asprintf(&buf, format, keysetdir, k,
 			     "vbpubk") <= 0)
 			FATAL("Failed to allocate string\n");
 		INFO("Loading kernel subkey from default keyset: %s\n", buf);

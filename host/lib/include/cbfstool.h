@@ -22,8 +22,7 @@
  * @param name		CBFS file name.
  * @return true if the CBFS file exists; false otherwise.
  */
-bool cbfstool_file_exists(const char *image_file, const char *region,
-			  const char *name);
+bool cbfstool_file_exists(const char *image_file, const char *region, const char *name);
 
 /*
  * Extract a CBFS file from a firmware image file.
@@ -37,12 +36,11 @@ bool cbfstool_file_exists(const char *image_file, const char *region,
  * @param file		File path to store the extracted file to.
  * @return 0 on success; non-zero on failure.
  */
-int cbfstool_extract(const char *image_file, const char *region,
-		     const char *name, const char *file);
+int cbfstool_extract(const char *image_file, const char *region, const char *name,
+		     const char *file);
 
 /* Truncate CBFS region and store the new CBFS size to `new_size`. */
-vb2_error_t cbfstool_truncate(const char *file, const char *region,
-			      size_t *new_size);
+vb2_error_t cbfstool_truncate(const char *file, const char *region, size_t *new_size);
 
 /*
  * Check whether image under `file` path supports CBFS_VERIFICATION,
@@ -78,3 +76,36 @@ vb2_error_t cbfstool_get_config_bool(const char *file, const char *region,
  */
 vb2_error_t cbfstool_get_config_string(const char *file, const char *region,
 				       const char *config_field, char **value);
+
+/*
+ * Get the compression type ("lzma", "lz4", "none", etc.) of a CBFS file,
+ * falling back to `default_comp` if the entry is not found or has no
+ * explicit compression field.
+ */
+void cbfstool_get_compression(const char *image_file, const char *region, const char *name,
+			      const char *default_comp, char *out_comp, size_t out_size);
+
+/*
+ * Remove a CBFS file if it exists in the specified region.
+ *
+ * @return 0 on success (or if the file does not exist); non-zero on failure.
+ */
+int cbfstool_remove_if_exists(const char *image_file, const char *region, const char *name);
+
+/*
+ * Expand CBFS in the specified FMAP region.
+ *
+ * @return 0 on success; non-zero on failure.
+ */
+int cbfstool_expand(const char *image_file, const char *region);
+
+/*
+ * Add a raw file to CBFS in the specified FMAP region.
+ *
+ * If `ignore_no_space` is true and cbfstool fails due to insufficient space
+ * ("Largest empty slot"), a warning is logged and 0 is returned.
+ *
+ * @return 0 on success; non-zero on failure.
+ */
+int cbfstool_add_raw(const char *image_file, const char *region, const char *comp,
+		     const char *file, const char *name, bool ignore_no_space);

@@ -367,3 +367,112 @@ done:
 	free(raw_value);
 	return rv;
 }
+
+void cbfstool_get_compression(const char *image_file, const char *region, const char *name,
+			      const char *default_comp, char *out_comp, size_t out_size)
+{
+	const size_t buf_sz = 1024 * 128;
+	char *buf = malloc(buf_sz);
+	const char *cbfstool = get_cbfstool_path();
+
+	snprintf(out_comp, out_size, "%s", default_comp);
+	if (!buf)
+		return;
+
+	struct subprocess_target output = {
+		.type = TARGET_BUFFER_NULL_TERMINATED,
+		.buffer =
+			{
+				.buf = buf,
+				.size = buf_sz,
+			},
+	};
+	const char *const argv[] = {
+		cbfstool, image_file, "print", "-k", "-v", ARGV_END(region)
+	};
+
+	if (subprocess_run(argv, &subprocess_null, &output, &subprocess_null) != 0) {
+		free(buf);
+		return;
+	}
+
+	char *to_find = NULL;
+	if (asprintf(&to_find, "\n%s\t", name) < 0)
+		VB2_DIE("Out of memory\n");
+
+	char *line = strstr(buf, to_find);
+	free(to_find);
+	if (line) {
+		line++;
+		char *end = strchr(line, '\n');
+		if (end)
+			*end = '\0';
+
+		const char *comp = strstr(line, "comp:");
+		char *comp_str = NULL;
+		if (comp && sscanf(comp + 5, "%m[a-zA-Z0-9_]", &comp_str) == 1) {
+			snprintf(out_comp, out_size, "%s", comp_str);
+			free(comp_str);
+		} else {
+			snprintf(out_comp, out_size, "none");
+		}
+	}
+
+	free(buf);
+}
+
+int cbfstool_remove_if_exists(const char *image_file, const char *region, const char *name)
+{
+	if (!cbfstool_file_exists(image_file, region, name))
+		return 0;
+
+	const char *cbfstool = get_cbfstool_path();
+	const char *const argv[] = {
+		cbfstool, image_file, "remove", "-n", name, ARGV_END(region)
+	};
+
+	return subprocess_run(argv, &subprocess_null, &subprocess_null, NULL);
+}
+
+int cbfstool_expand(const char *image_file, const char *region)
+{
+	const char *cbfstool = get_cbfstool_path();
+	const char *const argv[] = {cbfstool, image_file, "expand", ARGV_END(region)};
+
+	return subprocess_run(argv, &subprocess_null, &subprocess_null, NULL);
+}
+
+int cbfstool_add_raw(const char *image_file, const char *region, const char *comp,
+		     const char *file, const char *name, bool ignore_no_space)
+{
+	const char *cbfstool = get_cbfstool_path();
+	const char *const argv[] = {
+		cbfstool, image_file, "add", "-t", "raw", "-c", comp,
+		"-f", file, "-n", name, ARGV_END(region)
+	};
+
+	if (!ignore_no_space)
+		return subprocess_run(argv, &subprocess_null, &subprocess_null, NULL);
+
+	char err_buf[4096] = {0};
+	struct subprocess_target err_target = {
+		.type = TARGET_BUFFER_NULL_TERMINATED,
+		.buffer =
+			{
+				.buf = err_buf,
+				.size = sizeof(err_buf),
+			},
+	};
+	int status = subprocess_run(argv, &subprocess_null, &subprocess_null, &err_target);
+
+	if (status != 0) {
+		if (strstr(err_buf, "Largest empty slot")) {
+			VB2_DEBUG("Skipping %s due to insufficient space:\n%s\n", name,
+				  err_buf);
+			return 0;
+		}
+		fprintf(stderr, "%s", err_buf);
+		return status;
+	}
+	return 0;
+}
