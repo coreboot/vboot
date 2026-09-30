@@ -81,6 +81,49 @@ futility dump_fmap -x "${LEGACY_EC_IMAGE}" "RW_FWID:${TMPD}/legacy_ecrw.version"
 	-v "${TMPD}/legacy_ecrw.version" -K "${KEYSET}"
 cmp "${TMP}.1" "${TMP}.2"
 
+# Test swap_cbfs_file with positional CBFS_NAME:FILE arguments
+RTK_PDC="${TMPD}/rtk_pdc.bin"
+RTK_HASH="${TMPD}/rtk_pdc.hash"
+printf "mock-pdc-bin" > "${RTK_PDC}"
+printf "\x00\x2c\x03" > "${RTK_HASH}"
+
+cp -f "${AP_IMAGE}" "${TMP}.cbfs"
+futility swap_cbfs_file -i "${TMP}.cbfs" -K "${KEYSET}" \
+	"rts5453_GOOG0000.bin:${RTK_PDC}" \
+	"rts5453_GOOG0000.hash:${RTK_HASH}"
+
+for region in FW_MAIN_A FW_MAIN_B; do
+	cbfstool "${TMP}.cbfs" extract -r "${region}" \
+		-n rts5453_GOOG0000.bin -f "${TMPD}/rtk.out.bin"
+	cbfstool "${TMP}.cbfs" extract -r "${region}" \
+		-n rts5453_GOOG0000.hash -f "${TMPD}/rtk.out.hash"
+	cmp "${TMPD}/rtk.out.bin" "${RTK_PDC}"
+	cmp "${TMPD}/rtk.out.hash" "${RTK_HASH}"
+	rm -f "${TMPD}/rtk.out.bin" "${TMPD}/rtk.out.hash"
+done
+
+# Test swap_cbfs_file with --pdc using pdctool in PATH
+cat > "${TMPD}/pdctool" <<EOF
+#!/bin/sh
+[ "\$1" = "hash" ] && [ "\$3" = "-o" ] && cp "${RTK_HASH}" "\$4"
+EOF
+chmod +x "${TMPD}/pdctool"
+
+cp -f "${AP_IMAGE}" "${TMP}.both"
+PATH="${TMPD}:${PATH}" "${SWAP}" -i "${TMP}.both" \
+	-K "${KEYSET}" \
+	-e "${EC_IMAGE}" \
+	-p "rts5453_GOOG0000.bin:${RTK_PDC}"
+for region in FW_MAIN_A FW_MAIN_B; do
+	cbfstool "${TMP}.both" extract -r "${region}" \
+		-n rts5453_GOOG0000.bin -f "${TMPD}/rtk.both.bin"
+	cmp "${TMPD}/rtk.both.bin" "${RTK_PDC}"
+	cbfstool "${TMP}.both" extract -r "${region}" \
+		-n rts5453_GOOG0000.hash -f "${TMPD}/rtk.both.hash"
+	cmp "${TMPD}/rtk.both.hash" "${RTK_HASH}"
+	rm -f "${TMPD}/rtk.both.bin" "${TMPD}/rtk.both.hash"
+done
+
 # Cleanup
 rm -rf "${TMPD}"
 exit 0

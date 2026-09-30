@@ -25,6 +25,7 @@
 #include "host_common.h"
 #include "host_key21.h"
 #include "host_misc.h"
+#include "subprocess.h"
 #include "updater_utils.h"
 
 #define CBFS_ECRW_NAME "ecrw"
@@ -37,6 +38,14 @@
 #define COOKIE2_OFFSET 44U
 #define SIZE_OFFSET 36U
 #define MAX_COOKIE_SEARCH_OFFSET 4096U
+
+#define MAX_CBFS_ENTRIES 64
+
+struct cbfs_entry {
+	char *cbfs_name;
+	const char *file_path;
+	const char *default_comp;
+};
 
 static const char *const fmap_regions[] = {
 	"FW_MAIN_A",
@@ -58,6 +67,7 @@ static const struct option long_opts[] = {
 	{"raw-ecrw", 1, NULL, 'r'},
 	{"ec_ver", 1, NULL, 'v'},
 	{"ec-ver", 1, NULL, 'v'},
+	{"pdc", 1, NULL, 'p'},
 	{"keyset", 1, NULL, 'K'},
 	{"help", 0, NULL, 'h'},
 	{NULL, 0, NULL, 0},
@@ -65,9 +75,10 @@ static const struct option long_opts[] = {
 
 static const char usage[] =
 	"\n"
-	"Usage:  " MYNAME " %s [OPTIONS]\n"
+	"Usage:  " MYNAME " %s [OPTIONS] [CBFS_NAME:FILE ...]\n"
 	"\n"
-	"Swap the EC RW (ecrw) binary within an AP firmware (BIOS) image.\n"
+	"Swap the EC RW (ecrw), PDC, and/or other files within an AP firmware "
+	"(BIOS) image.\n"
 	"\n"
 	"Options:\n"
 	"  -i, --image <FILE>             AP firmware file to modify\n"
@@ -77,6 +88,8 @@ static const char usage[] =
 	"  -a, --ap_for_ec <FILE>         AP firmware file as source of EC RW\n"
 	"  -r, --raw_ecrw <FILE>          Raw EC RW file (e.g. 'ec.RW.flat')\n"
 	"  -v, --ec_ver <FILE>            EC version file (e.g. 'ec.version')\n"
+	"  -p, --pdc <CBFS_NAME:FILE>     Swap PDC binary and recalculated "
+	".hash\n"
 	"  -K, --keyset <PATH>            Keyset directory for re-signing\n"
 	"  -h, --help                     Print this help message\n"
 	"\n";
@@ -116,6 +129,105 @@ static int truncate_ec_rw_buf(const uint8_t *buf, uint32_t buf_size, uint32_t *o
 
 	ERROR("No image_data cookies found within %u bytes.\n", MAX_COOKIE_SEARCH_OFFSET);
 	return -1;
+}
+
+static bool ends_with(const char *str, const char *suffix)
+{
+	size_t str_len = strlen(str);
+	size_t suffix_len = strlen(suffix);
+
+	return str_len >= suffix_len && strcmp(str + str_len - suffix_len, suffix) == 0;
+}
+
+static int add_cbfs_entry(struct cbfs_entry *entries, size_t *count, char *cbfs_name,
+			  const char *file_path, const char *default_comp)
+{
+	if (*count >= MAX_CBFS_ENTRIES) {
+		ERROR("Too many CBFS entries (max %d).\n", MAX_CBFS_ENTRIES);
+		free(cbfs_name);
+		return -1;
+	}
+	entries[*count].cbfs_name = cbfs_name;
+	entries[*count].file_path = file_path;
+	entries[*count].default_comp = default_comp;
+	(*count)++;
+	return 0;
+}
+
+static int split_cbfs_arg(const char *arg, char **cbfs_name, const char **file_path)
+{
+	const char *colon = strchr(arg, ':');
+
+	if (!colon || colon == arg || colon[1] == '\0') {
+		ERROR("Invalid argument '%s'. Expected format: <cbfs_name>:<file>\n", arg);
+		return -1;
+	}
+	if (access(colon + 1, R_OK) != 0) {
+		ERROR("File '%s' does not exist.\n", colon + 1);
+		return -1;
+	}
+	*cbfs_name = strndup(arg, colon - arg);
+	if (!*cbfs_name)
+		return -1;
+	*file_path = colon + 1;
+	return 0;
+}
+
+static int parse_cbfs_arg(const char *arg, struct cbfs_entry *entries, size_t *count)
+{
+	char *cbfs_name = NULL;
+	const char *file_path = NULL;
+
+	if (split_cbfs_arg(arg, &cbfs_name, &file_path) != 0)
+		return -1;
+
+	const char *comp = (ends_with(cbfs_name, ".hash") || ends_with(cbfs_name, ".version"))
+				   ? "none"
+				   : "lzma";
+
+	return add_cbfs_entry(entries, count, cbfs_name, file_path, comp);
+}
+
+static int parse_pdc_arg(const char *arg, struct tempfile *tempfiles,
+			 struct cbfs_entry *entries, size_t *count)
+{
+	char *cbfs_name = NULL;
+	const char *pdc_file = NULL;
+
+	if (split_cbfs_arg(arg, &cbfs_name, &pdc_file) != 0)
+		return -1;
+
+	size_t len = strlen(cbfs_name);
+
+	if (len <= 4 || !ends_with(cbfs_name, ".bin")) {
+		ERROR("PDC CBFS name '%s' must end with '.bin'.\n", cbfs_name);
+		free(cbfs_name);
+		return -1;
+	}
+
+	const char *temp_hash = create_temp_file(tempfiles);
+
+	if (!temp_hash) {
+		free(cbfs_name);
+		return -1;
+	}
+
+	const char *const argv[] = {"pdctool", "hash", pdc_file, "-o", temp_hash, NULL};
+
+	if (subprocess_run(argv, &subprocess_null, &subprocess_null, NULL) != 0) {
+		ERROR("Failed to generate PDC hash for '%s'.\n", pdc_file);
+		free(cbfs_name);
+		return -1;
+	}
+
+	char *hash_name = NULL;
+
+	ASPRINTF(&hash_name, "%.*s.hash", (int)(len - 4), cbfs_name);
+	if (add_cbfs_entry(entries, count, cbfs_name, pdc_file, "lzma") != 0) {
+		free(hash_name);
+		return -1;
+	}
+	return add_cbfs_entry(entries, count, hash_name, temp_hash, "none");
 }
 
 static int extract_ecrw_from_ec(const char *ec_file, const char *ecrw_file,
@@ -222,11 +334,13 @@ static int do_swap_cbfs_file(int argc, char *argv[])
 	const char *raw_ecrw = NULL;
 	const char *ec_ver = NULL;
 	const char *keyset = NULL;
+	const char *pdc_args[MAX_CBFS_ENTRIES];
+	size_t pdc_count = 0;
 	char *default_ec_config = NULL;
 	int i;
 
 	optind = 1;
-	while ((i = getopt_long(argc, argv, "i:e:a:r:v:K:h", long_opts, NULL)) != -1) {
+	while ((i = getopt_long(argc, argv, "i:e:a:r:v:p:K:h", long_opts, NULL)) != -1) {
 		switch (i) {
 		case 'i':
 			image = optarg;
@@ -246,6 +360,13 @@ static int do_swap_cbfs_file(int argc, char *argv[])
 		case 'v':
 			ec_ver = optarg;
 			break;
+		case 'p':
+			if (pdc_count >= MAX_CBFS_ENTRIES) {
+				ERROR("Too many --pdc arguments (max %d).\n", MAX_CBFS_ENTRIES);
+				return 1;
+			}
+			pdc_args[pdc_count++] = optarg;
+			break;
 		case 'K':
 			keyset = optarg;
 			break;
@@ -264,13 +385,25 @@ static int do_swap_cbfs_file(int argc, char *argv[])
 	}
 
 	int ec_sources = (ec != NULL) + (ap_for_ec != NULL) + (raw_ecrw != NULL);
+	bool has_ec = ec_sources > 0;
+	bool has_files = pdc_count > 0 || optind < argc;
 
-	if (ec_sources != 1) {
-		ERROR("Exactly one of -e/--ec, -a/--ap_for_ec, or "
-		      "-r/--raw_ecrw is required.\n");
+	if (!has_ec && !has_files) {
+		ERROR("At least one of -e/--ec, -a/--ap_for_ec, "
+		      "-r/--raw_ecrw, -p/--pdc, or CBFS_NAME:FILE is required.\n");
 		return 1;
 	}
 
+	if (has_ec && ec_sources != 1) {
+		ERROR("At most one of -e/--ec, -a/--ap_for_ec, or "
+		      "-r/--raw_ecrw may be specified.\n");
+		return 1;
+	}
+
+	if (!has_ec && (ec_config || ec_ver)) {
+		ERROR("--ec_config and -v/--ec_ver require an EC source.\n");
+		return 1;
+	}
 	if (ap_for_ec && ec_config) {
 		ERROR("-a/--ap_for_ec conflicts with --ec_config.\n");
 		return 1;
@@ -309,48 +442,80 @@ static int do_swap_cbfs_file(int argc, char *argv[])
 	struct tempfile tempfile_head = {0};
 	uint8_t *ecrw_buf = NULL;
 	uint32_t ecrw_size = 0;
+	const char *ecrw_file = NULL;
+	const char *ecrw_hash_file = NULL;
+	struct cbfs_entry entries[MAX_CBFS_ENTRIES] = {0};
+	size_t entry_count = 0;
 	int rv = 1;
 
-	const char *ecrw_file = raw_ecrw ? raw_ecrw : create_temp_file(&tempfile_head);
-	const char *ecrw_hash_file = create_temp_file(&tempfile_head);
-
-	if (!ecrw_file || !ecrw_hash_file)
-		goto cleanup;
-
-	if (ec && extract_ecrw_from_ec(ec, ecrw_file, &tempfile_head, &ec_ver) != 0)
-		goto cleanup;
-	if (ap_for_ec && extract_ecrw_from_ap(ap_for_ec, ecrw_file, &tempfile_head, &ec_ver,
-					      &ec_config) != 0)
-		goto cleanup;
-
-	if (vb2_read_file(ecrw_file, &ecrw_buf, &ecrw_size) != VB2_SUCCESS) {
-		ERROR("Failed to read EC RW file: %s\n", ecrw_file);
-		goto cleanup;
+	for (size_t p = 0; p < pdc_count; p++) {
+		if (parse_pdc_arg(pdc_args[p], &tempfile_head, entries, &entry_count) != 0)
+			goto cleanup;
+	}
+	for (int a = optind; a < argc; a++) {
+		if (parse_cbfs_arg(argv[a], entries, &entry_count) != 0)
+			goto cleanup;
 	}
 
-	struct vb2_hash hash;
+	if (has_ec) {
+		ecrw_file = raw_ecrw ? raw_ecrw : create_temp_file(&tempfile_head);
+		ecrw_hash_file = create_temp_file(&tempfile_head);
 
-	if (vb2_hash_calculate(false, ecrw_buf, ecrw_size, VB2_HASH_SHA256, &hash) !=
-		    VB2_SUCCESS ||
-	    vb2_write_file(ecrw_hash_file, hash.sha256, VB2_SHA256_DIGEST_SIZE) !=
-		    VB2_SUCCESS) {
-		ERROR("Failed to compute or write %s\n", ecrw_hash_file);
-		goto cleanup;
+		if (!ecrw_file || !ecrw_hash_file)
+			goto cleanup;
+
+		if (ec && extract_ecrw_from_ec(ec, ecrw_file, &tempfile_head, &ec_ver) != 0)
+			goto cleanup;
+		if (ap_for_ec && extract_ecrw_from_ap(ap_for_ec, ecrw_file, &tempfile_head,
+						      &ec_ver, &ec_config) != 0)
+			goto cleanup;
+
+		if (vb2_read_file(ecrw_file, &ecrw_buf, &ecrw_size) != VB2_SUCCESS) {
+			ERROR("Failed to read EC RW file: %s\n", ecrw_file);
+			goto cleanup;
+		}
+
+		struct vb2_hash hash;
+
+		if (vb2_hash_calculate(false, ecrw_buf, ecrw_size, VB2_HASH_SHA256, &hash) !=
+			    VB2_SUCCESS ||
+		    vb2_write_file(ecrw_hash_file, hash.sha256, VB2_SHA256_DIGEST_SIZE) !=
+			    VB2_SUCCESS) {
+			ERROR("Failed to compute or write %s\n", ecrw_hash_file);
+			goto cleanup;
+		}
 	}
 
 	for (size_t r = 0; r < ARRAY_SIZE(fmap_regions); r++) {
 		const char *region = fmap_regions[r];
-		char comp_type[32];
+		char ec_comp[32];
+		char entry_comp[MAX_CBFS_ENTRIES][32];
 
-		cbfstool_get_compression(image, region, CBFS_ECRW_NAME, "lzma", comp_type,
-					 sizeof(comp_type));
+		if (has_ec) {
+			cbfstool_get_compression(image, region, CBFS_ECRW_NAME, "lzma", ec_comp,
+						 sizeof(ec_comp));
+			if (cbfstool_remove_if_exists(image, region, CBFS_ECRW_NAME) != 0 ||
+			    cbfstool_remove_if_exists(image, region, CBFS_ECRW_HASH_NAME) !=
+				    0 ||
+			    cbfstool_remove_if_exists(image, region, CBFS_ECRW_VERSION_NAME) !=
+				    0 ||
+			    cbfstool_remove_if_exists(image, region, CBFS_ECRW_CONFIG_NAME) !=
+				    0) {
+				ERROR("Failed to remove old ecrw entries from %s\n", region);
+				goto cleanup;
+			}
+		}
 
-		if (cbfstool_remove_if_exists(image, region, CBFS_ECRW_NAME) != 0 ||
-		    cbfstool_remove_if_exists(image, region, CBFS_ECRW_HASH_NAME) != 0 ||
-		    cbfstool_remove_if_exists(image, region, CBFS_ECRW_VERSION_NAME) != 0 ||
-		    cbfstool_remove_if_exists(image, region, CBFS_ECRW_CONFIG_NAME) != 0) {
-			ERROR("Failed to remove old ecrw entries from %s\n", region);
-			goto cleanup;
+		for (size_t e = 0; e < entry_count; e++) {
+			cbfstool_get_compression(image, region, entries[e].cbfs_name,
+						 entries[e].default_comp, entry_comp[e],
+						 sizeof(entry_comp[e]));
+			if (cbfstool_remove_if_exists(image, region, entries[e].cbfs_name) !=
+			    0) {
+				ERROR("Failed to remove %s from %s\n", entries[e].cbfs_name,
+				      region);
+				goto cleanup;
+			}
 		}
 
 		if (cbfstool_expand(image, region) != 0) {
@@ -358,34 +523,48 @@ static int do_swap_cbfs_file(int argc, char *argv[])
 			goto cleanup;
 		}
 
-		if (cbfstool_add_raw(image, region, comp_type, ecrw_file, CBFS_ECRW_NAME,
-				     false) != 0 ||
-		    cbfstool_add_raw(image, region, "none", ecrw_hash_file, CBFS_ECRW_HASH_NAME,
-				     false) != 0) {
-			ERROR("Failed to add ecrw/ecrw.hash to %s\n", region);
-			goto cleanup;
-		}
-
-		if (ec_ver) {
-			if (cbfstool_add_raw(image, region, "none", ec_ver,
-					     CBFS_ECRW_VERSION_NAME, false) != 0) {
-				ERROR("Failed to add %s to %s\n", CBFS_ECRW_VERSION_NAME,
-				      region);
+		if (has_ec) {
+			if (cbfstool_add_raw(image, region, ec_comp, ecrw_file, CBFS_ECRW_NAME,
+					     false) != 0 ||
+			    cbfstool_add_raw(image, region, "none", ecrw_hash_file,
+					     CBFS_ECRW_HASH_NAME, false) != 0) {
+				ERROR("Failed to add ecrw/ecrw.hash to %s\n", region);
 				goto cleanup;
 			}
-		} else {
-			WARN("%s is missing from source file.\n", CBFS_ECRW_VERSION_NAME);
+
+			if (ec_ver) {
+				if (cbfstool_add_raw(image, region, "none", ec_ver,
+						     CBFS_ECRW_VERSION_NAME, false) != 0) {
+					ERROR("Failed to add %s to %s\n",
+					      CBFS_ECRW_VERSION_NAME, region);
+					goto cleanup;
+				}
+			} else {
+				WARN("%s is missing from source file.\n",
+				     CBFS_ECRW_VERSION_NAME);
+			}
 		}
 
-		if (ec_config) {
-			if (cbfstool_add_raw(image, region, comp_type, ec_config,
-					     CBFS_ECRW_CONFIG_NAME, true) != 0) {
-				ERROR("Failed to add %s to %s\n", CBFS_ECRW_CONFIG_NAME,
-				      region);
+		for (size_t e = 0; e < entry_count; e++) {
+			if (cbfstool_add_raw(image, region, entry_comp[e], entries[e].file_path,
+					     entries[e].cbfs_name, false) != 0) {
+				ERROR("Failed to add %s to %s\n", entries[e].cbfs_name, region);
 				goto cleanup;
 			}
-		} else {
-			WARN("%s is missing from source file.\n", CBFS_ECRW_CONFIG_NAME);
+		}
+
+		if (has_ec) {
+			if (ec_config) {
+				if (cbfstool_add_raw(image, region, ec_comp, ec_config,
+						     CBFS_ECRW_CONFIG_NAME, true) != 0) {
+					ERROR("Failed to add %s to %s\n", CBFS_ECRW_CONFIG_NAME,
+					      region);
+					goto cleanup;
+				}
+			} else {
+				WARN("%s is missing from source file.\n",
+				     CBFS_ECRW_CONFIG_NAME);
+			}
 		}
 	}
 
@@ -405,6 +584,8 @@ cleanup:
 	sign_option.signprivate = NULL;
 	sign_option.keyblock = NULL;
 	sign_option.kernel_subkey = NULL;
+	for (size_t e = 0; e < entry_count; e++)
+		free(entries[e].cbfs_name);
 	free(ecrw_buf);
 	remove_all_temp_files(&tempfile_head);
 	free(default_ec_config);
@@ -412,4 +593,4 @@ cleanup:
 }
 
 DECLARE_FUTIL_COMMAND(swap_cbfs_file, do_swap_cbfs_file, VBOOT_VERSION_ALL,
-		      "Swap EC RW binary in CBFS of AP image");
+		      "Swap EC RW, PDC, or other files in CBFS of AP image");
