@@ -632,12 +632,6 @@ void vb2_fill_dev_boot_flags(struct vb2_context *ctx)
 		ctx->flags |= VB2_CONTEXT_FASTBOOT_ALLOWED;
 }
 
-int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx)
-{
-	struct vb2_gbb_header *gbb = vb2_get_gbb(ctx);
-	return gbb->flags & VB2_GBB_FLAG_DEV_SCREEN_SHORT_DELAY;
-}
-
 static void snprint_sha1_sum(struct vb2_context *ctx,
 			     struct vb2_packed_key *key,
 			     char *dest, size_t dest_size)

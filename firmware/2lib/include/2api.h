@@ -827,14 +827,6 @@ enum vb2_dev_default_boot_target vb2api_get_dev_default_boot_target(
 	struct vb2_context *ctx);
 
 /**
- * Whether to use short delay instead of the normal delay in developer screens.
- *
- * @param ctx		Vboot context
- * @return 1 for short delay and 0 otherwise.
- */
-int vb2api_use_short_dev_screen_delay(struct vb2_context *ctx);
-
-/**
  * Request to enable developer mode.
  *
  * Enables the developer flag in vb2_context firmware secdata.  Note that
