@@ -14,9 +14,12 @@
 #include "host_common.h"
 #include "host_common21.h"
 #include "host_misc.h"
+#include "host_misc21.h"
 
 static void misc_tests(void)
 {
+	struct vb2_id id;
+
 	TEST_EQ(roundup32(0), 0, "roundup32(0)");
 	TEST_EQ(roundup32(15), 16, "roundup32(15)");
 	TEST_EQ(roundup32(16), 16, "roundup32(16)");
@@ -25,6 +28,19 @@ static void misc_tests(void)
 	TEST_EQ(vb2_desc_size(""), 0, "desc size empty");
 	TEST_EQ(vb2_desc_size("foo"), 4, "desc size 'foo'");
 	TEST_EQ(vb2_desc_size("foob"), 8, "desc size 'foob'");
+
+	TEST_EQ(vb2_str_to_id(NULL, &id), VB2_ERROR_STR_TO_ID,
+		"vb2_str_to_id(NULL)");
+	TEST_EQ(vb2_str_to_id("", &id), VB2_ERROR_STR_TO_ID,
+		"vb2_str_to_id(empty)");
+	TEST_EQ(vb2_str_to_id("1", &id), VB2_ERROR_STR_TO_ID,
+		"vb2_str_to_id(single nibble)");
+	TEST_SUCC(vb2_str_to_id("01:ab-EF 4", &id),
+		  "vb2_str_to_id(separators and trailing nibble)");
+	TEST_EQ(id.raw[0], 0x01, "  byte 0");
+	TEST_EQ(id.raw[1], 0xab, "  byte 1");
+	TEST_EQ(id.raw[2], 0xef, "  byte 2");
+	TEST_EQ(id.raw[3], 0x00, "  byte 3 zero-padded");
 }
 
 static void property_string_tests(void)

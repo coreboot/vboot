@@ -146,64 +146,27 @@ uint32_t vb2_desc_size(const char *desc)
 	return roundup32(strlen(desc) + 1);
 }
 
-static const char *onedigit(const char *str, uint8_t *vptr)
-{
-	uint8_t val = 0;
-	char c;
-
-	for (; (c = *str++) && !isxdigit(c);)
-		;
-	if (!c)
-		return 0;
-
-	if (c >= '0' && c <= '9')
-		val = c - '0';
-	else if (c >= 'A' && c <= 'F')
-		val = 10 + c - 'A';
-	else if (c >= 'a' && c <= 'f')
-		val = 10 + c - 'a';
-
-	*vptr = val;
-	return str;
-}
-
-static const char *onebyte(const char *str, uint8_t *vptr)
-{
-	uint8_t val;
-	uint8_t digit;
-
-	str = onedigit(str, &digit);
-	if (!str)
-		return 0;
-	val = digit << 4;
-
-	str = onedigit(str, &digit);
-	if (!str)
-		return 0;
-	val |= digit;
-
-	*vptr = val;
-	return str;
-}
-
 vb2_error_t vb2_str_to_id(const char *str, struct vb2_id *id)
 {
-	uint8_t val = 0;
-	int i;
+	uint8_t val = 0, nib;
+	size_t n;
 
 	if (!str)
 		return VB2_ERROR_STR_TO_ID;
 
 	memset(id, 0, sizeof(*id));
 
-	for (i = 0; i < VB2_ID_NUM_BYTES; i++) {
-
-		str = onebyte(str, &val);
-		if (!str)
+	for (n = 0; n < 2 * VB2_ID_NUM_BYTES; n++, str++) {
+		while (*str && !isxdigit(*str))
+			str++;
+		if (sscanf(str, "%1hhx", &nib) != 1)
 			break;
-		id->raw[i] = val;
+		if (n & 1)
+			id->raw[n / 2] = val | nib;
+		else
+			val = nib << 4;
 	}
 
 	/* If we get at least one valid byte, that's good enough. */
-	return i ? VB2_SUCCESS : VB2_ERROR_STR_TO_ID;
+	return n >= 2 ? VB2_SUCCESS : VB2_ERROR_STR_TO_ID;
 }
