@@ -67,6 +67,7 @@ static void file_tests(const char *temp_dir)
 {
 	char *testfile;
 	const uint8_t test_data[] = "Some test data";
+	uint64_t read_size64 = 1;
 	uint8_t *read_data;
 	uint32_t read_size;
 
@@ -91,6 +92,17 @@ static void file_tests(const char *temp_dir)
 	free(read_data);
 	unlink(testfile);
 
+	TEST_SUCC(WriteFile(testfile, test_data, 0), "WriteFile() empty");
+	TEST_SUCC(vb2_read_file(testfile, &read_data, &read_size),
+		  "vb2_read_file() empty");
+	TEST_EQ(read_size, 0, "  empty data size");
+	free(read_data);
+	read_data = ReadFile(testfile, &read_size64);
+	TEST_PTR_NEQ(read_data, NULL, "ReadFile() empty");
+	TEST_EQ(read_size64, 0, "  empty data size64");
+	free(read_data);
+	unlink(testfile);
+
 	memset(cbuf, 0, sizeof(cbuf));
 	c->fixed_size = sizeof(*c);
 	c->total_size = sizeof(cbuf);
@@ -106,6 +118,32 @@ static void file_tests(const char *temp_dir)
 	unlink(testfile);
 }
 
+static void parse_hash_tests(void)
+{
+	uint8_t buf[4];
+	const uint8_t expected[4] = {0x01, 0xab, 0xcd, 0xef};
+
+	TEST_TRUE(parse_hash(buf, sizeof(buf), "01abcdef"),
+		  "parse_hash() valid");
+	TEST_EQ(memcmp(buf, expected, sizeof(buf)), 0, "  parsed bytes");
+
+	memset(buf, 0, sizeof(buf));
+	TEST_TRUE(parse_hash(buf, sizeof(buf), "  01 AB\tcd\nef"),
+		  "parse_hash() with whitespace and uppercase");
+	TEST_EQ(memcmp(buf, expected, sizeof(buf)), 0, "  parsed bytes");
+
+	TEST_FALSE(parse_hash(buf, sizeof(buf), "01abcde"),
+		   "parse_hash() too short");
+	TEST_FALSE(parse_hash(buf, sizeof(buf), "01abcdef00"),
+		   "parse_hash() too long");
+	TEST_FALSE(parse_hash(buf, sizeof(buf), "01abcdef "),
+		   "parse_hash() trailing space");
+	TEST_FALSE(parse_hash(buf, sizeof(buf), "01abgdef"),
+		   "parse_hash() non-hex char");
+	TEST_FALSE(parse_hash(buf, sizeof(buf), "01-bcdef"),
+		   "parse_hash() negative sign");
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc != 2) {
@@ -116,6 +154,7 @@ int main(int argc, char* argv[])
 
 	misc_tests();
 	property_string_tests();
+	parse_hash_tests();
 	file_tests(temp_dir);
 
 	return gTestSuccess ? 0 : 255;

@@ -51,7 +51,7 @@ vb2_error_t vb2_read_file(const char *filename, uint8_t **data_ptr,
 	}
 	buf[size] = '\0';
 
-	if (1 != fread(buf, size, 1, f)) {
+	if (size && 1 != fread(buf, size, 1, f)) {
 		VB2_DEBUG("Unable to read file %s\n", filename);
 		fclose(f);
 		free(buf);
@@ -74,7 +74,7 @@ vb2_error_t vb2_write_file(const char *filename, const void *buf, uint32_t size)
 		return VB2_ERROR_WRITE_FILE_OPEN;
 	}
 
-	if (1 != fwrite(buf, size, 1, f)) {
+	if (size && 1 != fwrite(buf, size, 1, f)) {
 		VB2_DEBUG("Unable to write to file %s\n", filename);
 		fclose(f);
 		unlink(filename);  /* Delete any partial file */

@@ -5,38 +5,30 @@
  * Utility functions for file and key handling.
  */
 
-#include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "2common.h"
+#include "2return_codes.h"
 #include "2sha.h"
 #include "2sysincludes.h"
 #include "file_keys.h"
-#include "host_common.h"
-#include "signature_digest.h"
+#include "host_misc.h"
 
 vb2_error_t DigestFile(char *input_file, enum vb2_hash_algorithm alg,
 		       uint8_t *digest, uint32_t digest_size)
 {
-	int input_fd, len;
-	uint8_t data[VB2_SHA1_BLOCK_SIZE];
-	struct vb2_digest_context ctx;
+	uint8_t *buf = NULL;
+	uint32_t size = 0;
+	struct vb2_hash hash;
 
-	if ((input_fd = open(input_file, O_RDONLY)) == -1) {
-		fprintf(stderr, "Couldn't open %s\n", input_file);
-		return VB2_ERROR_UNKNOWN;
-	}
-	vb2_digest_init(&ctx, false, alg, 0);
-	while ((len = read(input_fd, data, sizeof(data))) == sizeof(data))
-		vb2_digest_extend(&ctx, data, len);
-	if (len != -1)
-		vb2_digest_extend(&ctx, data, len);
-	close(input_fd);
+	if (digest_size < vb2_digest_size(alg))
+		return VB2_ERROR_SHA_FINALIZE_DIGEST_SIZE;
 
-	return vb2_digest_finalize(&ctx, digest, digest_size);
+	VB2_TRY(vb2_read_file(input_file, &buf, &size));
+	vb2_error_t rv = vb2_hash_calculate(false, buf, size, alg, &hash);
+	free(buf);
+	if (rv == VB2_SUCCESS)
+		memcpy(digest, hash.raw, vb2_digest_size(alg));
+	return rv;
 }

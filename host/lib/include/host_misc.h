@@ -120,16 +120,6 @@ static inline const uint32_t roundup32(uint32_t v)
 uint32_t vb2_desc_size(const char *desc);
 
 /**
- * Parse byte from hex string.
- *
- * @param val		Pointer to the value buffer
- * @param str		String to parse
- * @return true on success, false otherwise.
- * */
-bool parse_hex(uint8_t *val, const char *str);
-
-
-/**
  * Parse hash from string.
  *
  * @param buf		Output buffer. Has to be at least `len` bytes long

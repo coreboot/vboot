@@ -18,7 +18,6 @@
 #include "2common.h"
 #include "2rsa.h"
 #include "2sha.h"
-#include "file_keys.h"
 #include "host_common.h"
 #include "host_key21.h"
 #include "host_signature21.h"

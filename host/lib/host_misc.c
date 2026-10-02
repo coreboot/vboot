@@ -7,6 +7,7 @@
 
 /* TODO: change all 'return 0', 'return 1' into meaningful return codes */
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,13 +43,13 @@ uint8_t* ReadFile(const char* filename, uint64_t* sizeptr)
 	}
 	rewind(f);
 
-	buf = malloc(size);
+	buf = malloc(size ? size : 1);
 	if (!buf) {
 		fclose(f);
 		return NULL;
 	}
 
-	if (1 != fread(buf, size, 1, f)) {
+	if (size && 1 != fread(buf, size, 1, f)) {
 		fprintf(stderr, "Unable to read from file %s\n", filename);
 		fclose(f);
 		free(buf);
@@ -82,7 +83,7 @@ char* ReadFileFirstLine(char* dest, int size, const char* filename)
 
 	/* chomp the trailing newline if any */
 	if (got)
-		dest[strcspn(dest, "\n")] = 0;
+		dest[strcspn(dest, "\r\n")] = 0;
 	return got;
 }
 
@@ -118,7 +119,7 @@ vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size)
 		return 1;
 	}
 
-	if (1 != fwrite(data, size, 1, f)) {
+	if (size && 1 != fwrite(data, size, 1, f)) {
 		fprintf(stderr, "Unable to write to file %s\n", filename);
 		fclose(f);
 		unlink(filename);  /* Delete any partial file */
@@ -129,54 +130,18 @@ vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size)
 	return 0;
 }
 
-bool parse_hex(uint8_t *val, const char *str)
-{
-	uint8_t v = 0;
-	char c;
-	int digit;
-
-	for (digit = 0; digit < 2; digit++) {
-		c = *str;
-		if (!c)
-			return false;
-		if (!isxdigit(c))
-			return false;
-		c = tolower(c);
-		if (c >= '0' && c <= '9')
-			v += c - '0';
-		else
-			v += 10 + c - 'a';
-		if (!digit)
-			v <<= 4;
-		str++;
-	}
-
-	*val = v;
-	return true;
-}
-
 bool parse_hash(uint8_t *buf, size_t len, const char *str)
 {
-	const char *s = str;
-	int i;
-
-	for (i = 0; i < len; i++) {
-		/* skip whitespace */
-		while (*s && isspace(*s))
-			s++;
-		if (!*s)
-			break;
-		if (!parse_hex(buf, s))
-			break;
-
-		/* on to the next byte */
-		s += 2;
-		buf++;
+	for (size_t i = 0; i < len; i++) {
+		while (isspace(*str))
+			str++;
+		if (!isxdigit(str[0]) || !isxdigit(str[1]) ||
+		    sscanf(str, "%2hhx", &buf[i]) != 1)
+			return false;
+		str += 2;
 	}
 
-	if (i != len || *s)
-		return false;
-	return true;
+	return *str == '\0';
 }
 
 bool is_valid_property_string(const char *str)
