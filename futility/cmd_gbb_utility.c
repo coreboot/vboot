@@ -701,19 +701,11 @@ static int do_gbb(int argc, char *argv[])
 		}
 		gbb_base = (uint8_t *) gbb;
 
-		if (opt_hwid) {
-			if (strlen(opt_hwid) + 1 > gbb->hwid_size) {
-				ERROR("null-terminated HWID exceeds capacity (%d)\n",
-					gbb->hwid_size);
-				errorcnt++;
-				break;
-			}
-			/* Wipe data before writing new value. */
-			memset(gbb_base + gbb->hwid_offset, 0,
+		if (opt_hwid && futil_set_gbb_hwid(gbb, opt_hwid)) {
+			ERROR("null-terminated HWID exceeds capacity (%d)\n",
 				gbb->hwid_size);
-			strcpy((char *)(gbb_base + gbb->hwid_offset),
-				opt_hwid);
-			update_hwid_digest(gbb);
+			errorcnt++;
+			break;
 		}
 
 		if (opt_flags) {

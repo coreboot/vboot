@@ -187,23 +187,6 @@ int print_hwid_digest(struct vb2_gbb_header *gbb, const char *banner)
 	return is_valid;
 }
 
-/* Deprecated. Use futil_set_gbb_hwid in future. */
-/* For GBB v1.2 and later, update the hwid_digest field. */
-void update_hwid_digest(struct vb2_gbb_header *gbb)
-{
-	/* There isn't one for v1.1 and earlier */
-	if (gbb->minor_version < 2)
-		return;
-
-	uint8_t *buf = (uint8_t *)gbb;
-	char *hwid_str = (char *)(buf + gbb->hwid_offset);
-	struct vb2_hash hash;
-
-	vb2_hash_calculate(false, buf + gbb->hwid_offset, strlen(hwid_str),
-			   VB2_HASH_SHA256, &hash);
-	memcpy(gbb->hwid_digest, hash.raw, sizeof(gbb->hwid_digest));
-}
-
 /* Sets the HWID string field inside a GBB header. */
 int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid)
 {
@@ -436,34 +419,11 @@ void print_bytes(const void *ptr, size_t len)
 int write_to_file(const char *msg, const char *filename, uint8_t *start,
 		  size_t size)
 {
-	FILE *fp;
-	int r = 0;
-
-	fp = fopen(filename, "wb");
-	if (!fp) {
-		r = errno;
-		ERROR("Unable to open %s for writing: %s\n", filename,
-		      strerror(r));
-		return r;
-	}
-
-	/* Don't write zero bytes */
-	if (size && 1 != fwrite(start, size, 1, fp)) {
-		r = errno;
-		ERROR("Unable to write to %s: %s\n", filename, strerror(r));
-	}
-
-	if (fclose(fp) != 0) {
-		int e = errno;
-		ERROR("Unable to close %s: %s\n", filename, strerror(e));
-		if (!r)
-			r = e;
-	}
-
-	if (!r && msg)
+	if (WriteFile(filename, start, size) != VB2_SUCCESS)
+		return -1;
+	if (msg)
 		printf("%s %s\n", msg, filename);
-
-	return r;
+	return 0;
 }
 
 test_mockable

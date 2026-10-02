@@ -226,9 +226,6 @@ int futil_valid_gbb_header(struct vb2_gbb_header *gbb, uint32_t len,
 /* Sets the HWID string field inside a GBB header. */
 int futil_set_gbb_hwid(struct vb2_gbb_header *gbb, const char *hwid);
 
-/* For GBB v1.2 and later, update the hwid_digest */
-void update_hwid_digest(struct vb2_gbb_header *gbb);
-
 /* For GBB v1.2 and later, print the stored digest of the HWID (and whether
  * it's correct). Return true if it is correct. */
 int print_hwid_digest(struct vb2_gbb_header *gbb, const char *banner);
