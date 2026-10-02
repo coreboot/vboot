@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 CGPT = ${BUILD}/cgpt/cgpt
-CGPT_WRAPPER = ${BUILD}/cgpt/cgpt_wrapper
 
 CGPT_SRCS = \
 	cgpt/cgpt.c \
