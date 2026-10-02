@@ -101,17 +101,6 @@ vb2_error_t vb21_private_key_write(const struct vb2_private_key *key,
 				   const char *filename);
 
 /**
- * Get a private key for an unsigned hash
- *
- * @param key_ptr	Destination for pointer to key.  The key is statically
- *			allocated and must not be freed.
- * @param hash_alg	Hash algorithm to use
- * @return VB2_SUCCESS, or non-zero error code if error.
- */
-vb2_error_t vb2_private_key_hash(const struct vb2_private_key **key_ptr,
-				 enum vb2_hash_algorithm hash_alg);
-
-/**
  * Allocate a public key buffer of sufficient size for the signature algorithm.
  *
  * This only initializes the sig_alg field and the id field to an empty

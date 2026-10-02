@@ -53,44 +53,4 @@ vb2_error_t vb21_sig_size_for_key(uint32_t *size_ptr,
 				  const struct vb2_private_key *key,
 				  const char *desc);
 
-/**
- * Calculate the total signature size for a list of keys.
- *
- * @param size_ptr	On success, contains the signature size in bytes.
- * @param key_list	List of keys to calculate signature length from.
- * @param key_count	Number of keys.
- * @return VB2_SUCCESS, or non-zero error code on failure.
- */
-vb2_error_t vb21_sig_size_for_keys(uint32_t *size_ptr,
-				   const struct vb2_private_key **key_list,
-				   uint32_t key_count);
-
-/**
- * Sign object with a key.
- *
- * @param buf		Buffer containing object to sign, starting with
- *			common header
- * @param sig_offset	Offset in buffer at which to store signature.  All
- *			data before this in the buffer will be signed.
- * @param key		Key to sign object with
- * @param desc		If non-null, description to use for signature
- */
-vb2_error_t vb21_sign_object(uint8_t *buf, uint32_t sig_offset,
-			     struct vb2_private_key *key,
-			     const char *desc);
-
-/**
- * Sign object with list of keys.
- *
- * @param buf		Buffer containing object to sign, starting with
- *			common header
- * @param sig_offset	Offset to start signatures.  All data before this
- *			in the buffer will be signed.
- * @param key_list	List of keys to sign object with
- * @param key_count	Number of keys in list
- */
-vb2_error_t vb21_sign_object_multiple(uint8_t *buf, uint32_t sig_offset,
-				      struct vb2_private_key **key_list,
-				      uint32_t key_count);
-
 #endif  /* VBOOT_REFERENCE_HOST_SIGNATURE2_H_ */

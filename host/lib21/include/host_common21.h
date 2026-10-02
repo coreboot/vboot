@@ -57,28 +57,6 @@ vb2_error_t vb21_verify_common_member(const void *parent, uint32_t *min_offset,
 				      uint32_t member_size);
 
 /**
- * Verify a member which starts with a common header is within the parent
- *
- * This does not verify the contents of the member or its header, only that the
- * member's claimed total size fits within the parent's claimed total size at
- * the specified offset.
- *
- * @param parent	Parent data (starts with struct vb21_struct_common)
- * @param min_offset	Pointer to minimum offset where member can be located.
- *			If this offset is 0 on input, uses the size of the
- *			fixed header (and description, if any).  This will be
- *			updated on return to the end of the passed member.  On
- *			error, the value of min_offset is undefined.
- * @param member_offset Offset of member data from start of parent, in bytes.
- *                      This should be the start of the common header of the
- *                      member.
- * @return VB2_SUCCESS, or non-zero if error.
- */
-vb2_error_t vb21_verify_common_subobject(const void *parent,
-					 uint32_t *min_offset,
-					 uint32_t member_offset);
-
-/**
  * Verify the integrity of a signature struct
  * @param sig		Signature struct
  * @param size		Size of buffer containing signature struct

@@ -33,7 +33,6 @@ static void private_key_tests(const struct alg_combo *combo,
 			      const char *pemfile, const char *temp_dir)
 {
 	struct vb2_private_key *key, *k2;
-	const struct vb2_private_key *ckey;
 	struct vb21_packed_private_key *pkey;
 	char *testfile;
 	const char notapem[] = "not_a_pem";
@@ -83,11 +82,12 @@ static void private_key_tests(const struct alg_combo *combo,
 		VB2_ERROR_PRIVATE_KEY_WRITE_FILE, "Write key to bad path");
 
 	TEST_SUCC(vb21_private_key_write(key, testfile), "Write key good");
+	vb2_free_private_key(key);
 	k2 = vb2_read_private_key(testfile);
 	TEST_PTR_NEQ(k2, NULL, "  key_ptr");
-	TEST_EQ(k2->sig_alg, key->sig_alg, "  sig alg");
-	TEST_EQ(k2->hash_alg, key->hash_alg, "  hash alg");
-	TEST_EQ(memcmp(&k2->id, &key->id, sizeof(k2->id)), 0, "  id");
+	TEST_EQ(k2->sig_alg, combo->sig_alg, "  sig alg");
+	TEST_EQ(k2->hash_alg, combo->hash_alg, "  hash alg");
+	TEST_EQ(memcmp(&k2->id, &test_id, sizeof(k2->id)), 0, "  id");
 	TEST_EQ(strcmp(k2->desc, testdesc), 0, "  desc");
 	vb2_free_private_key(k2);
 
@@ -147,23 +147,6 @@ static void private_key_tests(const struct alg_combo *combo,
 
 	free(buf);
 	free(buf2);
-	unlink(testfile);
-
-	TEST_EQ(vb2_private_key_hash(&ckey, VB2_HASH_INVALID),
-		VB2_ERROR_PRIVATE_KEY_HASH,
-		"Hash key invalid");
-	TEST_PTR_EQ(ckey, NULL, "  key_ptr");
-
-	TEST_SUCC(vb2_private_key_hash(&ckey, combo->hash_alg), "Hash key");
-	TEST_PTR_NEQ(ckey, NULL, "  key_ptr");
-	TEST_EQ(ckey->hash_alg, combo->hash_alg, "  hash_alg");
-	TEST_EQ(ckey->sig_alg, VB2_SIG_NONE, "  sig_alg");
-	TEST_EQ(memcmp(&ckey->id, vb2_hash_id(combo->hash_alg),
-		       sizeof(ckey->id)), 0, "  id");
-
-	TEST_SUCC(vb21_private_key_write(ckey, testfile), "Write hash key");
-	key = vb2_read_private_key(testfile);
-	TEST_PTR_NEQ(key, NULL, "  key_ptr");
 	unlink(testfile);
 }
 

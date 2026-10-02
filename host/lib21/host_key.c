@@ -204,56 +204,6 @@ vb2_error_t vb21_private_key_write(const struct vb2_private_key *key,
 	return rv ? VB2_ERROR_PRIVATE_KEY_WRITE_FILE : VB2_SUCCESS;
 }
 
-vb2_error_t vb2_private_key_hash(const struct vb2_private_key **key_ptr,
-				 enum vb2_hash_algorithm hash_alg)
-{
-	*key_ptr = NULL;
-
-	switch (hash_alg) {
-#if VB2_SUPPORT_SHA1
-	case VB2_HASH_SHA1:
-		{
-			static const struct vb2_private_key key = {
-				.hash_alg = VB2_HASH_SHA1,
-				.sig_alg = VB2_SIG_NONE,
-				.desc = (char *)"Unsigned SHA1",
-				.id = VB2_ID_NONE_SHA1,
-			};
-			*key_ptr = &key;
-			return VB2_SUCCESS;
-		}
-#endif
-#if VB2_SUPPORT_SHA256
-	case VB2_HASH_SHA256:
-		{
-			static const struct vb2_private_key key = {
-				.hash_alg = VB2_HASH_SHA256,
-				.sig_alg = VB2_SIG_NONE,
-				.desc = (char *)"Unsigned SHA-256",
-				.id = VB2_ID_NONE_SHA256,
-			};
-			*key_ptr = &key;
-			return VB2_SUCCESS;
-		}
-#endif
-#if VB2_SUPPORT_SHA512
-	case VB2_HASH_SHA512:
-		{
-			static const struct vb2_private_key key = {
-				.hash_alg = VB2_HASH_SHA512,
-				.sig_alg = VB2_SIG_NONE,
-				.desc = (char *)"Unsigned SHA-512",
-				.id = VB2_ID_NONE_SHA512,
-			};
-			*key_ptr = &key;
-			return VB2_SUCCESS;
-		}
-#endif
-	default:
-		return VB2_ERROR_PRIVATE_KEY_HASH;
-	}
-}
-
 vb2_error_t vb2_public_key_alloc(struct vb2_public_key **key_ptr,
 				 enum vb2_signature_algorithm sig_alg)
 {

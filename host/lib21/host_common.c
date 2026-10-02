@@ -91,40 +91,6 @@ vb2_error_t vb21_verify_common_member(const void *parent, uint32_t *min_offset,
 	return VB2_SUCCESS;
 }
 
-vb2_error_t vb21_verify_common_subobject(const void *parent,
-					 uint32_t *min_offset,
-					 uint32_t member_offset)
-{
-	const struct vb21_struct_common *p = parent;
-	const struct vb21_struct_common *m =
-		(const struct vb21_struct_common *)
-		((const uint8_t *)parent + member_offset);
-	vb2_error_t rv;
-
-	/*
-	 * Verify the parent has space at the member offset for the common
-	 * header.
-	 */
-	rv = vb21_verify_common_member(parent, min_offset, member_offset,
-				      sizeof(*m));
-	if (rv)
-		return rv;
-
-	/*
-	 * Now it's safe to look at the member's header, and verify any
-	 * additional data for the object past its common header fits in the
-	 * parent.
-	 */
-	rv = vb21_verify_common_header(m, p->total_size - member_offset);
-	if (rv)
-		return rv;
-
-	/* Advance the min offset to the end of the subobject */
-	*min_offset = member_offset + m->total_size;
-
-	return VB2_SUCCESS;
-}
-
 uint32_t vb2_sig_size(enum vb2_signature_algorithm sig_alg,
 		      enum vb2_hash_algorithm hash_alg)
 {

@@ -156,23 +156,6 @@ static void test_common_header_functions(void)
 	TEST_EQ(vb21_verify_common_member(cbuf, &m, c->total_size - 4, 8),
 		VB2_ERROR_COMMON_MEMBER_SIZE,
 		"vb21_verify_common_member() size");
-
-	/* Subobject checking */
-	m = 0;
-	TEST_SUCC(vb21_verify_common_subobject(cbuf, &m, desc_end),
-		  "vb21_verify_common_subobject() good offset");
-	TEST_EQ(m, sizeof(cbuf), "  new minimum");
-
-	m = desc_end + 4;
-	TEST_EQ(vb21_verify_common_subobject(cbuf, &m, desc_end),
-		VB2_ERROR_COMMON_MEMBER_OVERLAP,
-		"vb21_verify_common_subobject() overlap");
-
-	m = 0;
-	c2->total_size += 4;
-	TEST_EQ(vb21_verify_common_subobject(cbuf, &m, desc_end),
-		VB2_ERROR_COMMON_TOTAL_SIZE,
-		"vb21_verify_common_subobject() size");
 }
 
 /**
@@ -207,7 +190,10 @@ static void test_sig_size(void)
 static void test_verify_hash(void)
 {
 	struct vb21_signature *sig;
-	struct vb2_private_key *prik;
+	struct vb2_private_key prik = {
+		.hash_alg = VB2_HASH_SHA256,
+		.sig_alg = VB2_SIG_NONE,
+	};
 	struct vb2_public_key pubk;
 	uint8_t workbuf[VB2_VERIFY_DATA_WORKBUF_BYTES]
 		 __attribute__((aligned(VB2_WORKBUF_ALIGN)));
@@ -215,14 +201,12 @@ static void test_verify_hash(void)
 
 	vb2_workbuf_init(&wb, workbuf, sizeof(workbuf));
 
-	TEST_SUCC(vb2_private_key_hash((const struct vb2_private_key **)&prik, VB2_HASH_SHA256),
-		  "create private hash key");
 	TEST_SUCC(vb2_public_key_hash(&pubk, VB2_HASH_SHA256),
 		  "create hash key");
 
 	/* Create the signature */
 	TEST_SUCC(vb21_sign_data(&sig, test_data, sizeof(test_data),
-				 prik, NULL),
+				 &prik, NULL),
 		  "create hash sig");
 
 	TEST_SUCC(vb21_verify_data(test_data, sizeof(test_data),
