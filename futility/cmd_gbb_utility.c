@@ -12,11 +12,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 #include "flash_helpers.h"
 #include "futility.h"
+#include "host_misc.h"
 #include "updater.h"
 #include "updater_utils.h"
 #include "2gbb_flags.h"
@@ -148,7 +147,7 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 	struct vb2_gbb_header *tmp, *gbb_header = NULL;
 	int count = 0;
 
-	for (i = 0; i <= size - GBB_SEARCH_STRIDE; i += GBB_SEARCH_STRIDE) {
+	for (i = 0; i + GBB_SEARCH_STRIDE <= size; i += GBB_SEARCH_STRIDE) {
 		if (memcmp(ptr + i, VB2_GBB_SIGNATURE, VB2_GBB_SIGNATURE_SIZE))
 			continue;
 
@@ -170,7 +169,7 @@ static struct vb2_gbb_header *FindGbbHeader(uint8_t *ptr, size_t size)
 	}
 }
 
-static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
+static uint8_t *create_gbb(const char *desc, uint64_t *sizeptr)
 {
 	char *param, *e = NULL;
 	size_t size = EXPECTED_VB2_GBB_HEADER_SIZE;
@@ -233,55 +232,6 @@ static uint8_t *create_gbb(const char *desc, off_t *sizeptr)
 	return buf;
 }
 
-static uint8_t *read_entire_file(const char *filename, off_t *sizeptr)
-{
-	uint8_t *buf = NULL;
-	struct stat sb;
-
-	FILE *fp = fopen(filename, "rb");
-	if (!fp) {
-		ERROR("Unable to open %s for reading: %s\n", filename,
-		      strerror(errno));
-		goto fail;
-	}
-
-	if (fstat(fileno(fp), &sb)) {
-		ERROR("Can't fstat %s: %s\n", filename, strerror(errno));
-		goto fail;
-	}
-	if (sizeptr)
-		*sizeptr = sb.st_size;
-
-	buf = (uint8_t *) malloc(sb.st_size);
-	if (!buf) {
-		ERROR("Can't malloc %" PRIi64 " bytes: %s\n", sb.st_size,
-		      strerror(errno));
-		goto fail;
-	}
-
-	if (1 != fread(buf, sb.st_size, 1, fp)) {
-		ERROR("Unable to read from %s: %s\n", filename,
-		      strerror(errno));
-		goto fail;
-	}
-
-	if (fclose(fp)) {
-		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
-		fp = NULL;  /* Don't try to close it again */
-		goto fail;
-	}
-
-	return buf;
-
-fail:
-	if (buf)
-		free(buf);
-
-	if (fp && fclose(fp))
-		ERROR("Unable to close %s: %s\n", filename, strerror(errno));
-	return NULL;
-}
-
 static int read_from_file(const char *msg, const char *filename,
 			  uint8_t *start, uint32_t size)
 {
@@ -334,7 +284,7 @@ done_close:
 }
 
 /* Read firmware from flash. */
-static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
+static uint8_t *read_from_flash(struct updater_config *cfg, uint64_t *filesize)
 {
 #ifdef USE_FLASHROM
 	/*
@@ -357,7 +307,7 @@ static uint8_t *read_from_flash(struct updater_config *cfg, off_t *filesize)
 
 /* Write firmware to flash. Takes ownership of inbuf and outbuf data. */
 static int write_to_flash(struct updater_config *cfg, uint8_t *outbuf,
-			  off_t filesize)
+			  uint64_t filesize)
 {
 #ifdef USE_FLASHROM
 	if (is_ap_write_protection_enabled(cfg)) {
@@ -418,7 +368,7 @@ static int do_gbb(int argc, char *argv[])
 	bool sel_flags = false;
 	int explicit_flags = 0;
 	uint8_t *inbuf = NULL;
-	off_t filesize;
+	uint64_t filesize;
 	uint8_t *outbuf = NULL;
 	int i;
 	struct updater_config *cfg = NULL;
@@ -564,7 +514,7 @@ static int do_gbb(int argc, char *argv[])
 				break;
 			}
 			infile = argv[optind++];
-			inbuf = read_entire_file(infile, &filesize);
+			inbuf = ReadFile(infile, &filesize);
 		}
 		if (!inbuf) {
 			errorcnt++;
@@ -652,7 +602,7 @@ static int do_gbb(int argc, char *argv[])
 				break;
 			}
 			infile = argv[optind++];
-			inbuf = read_entire_file(infile, &filesize);
+			inbuf = ReadFile(infile, &filesize);
 			if (!outfile)
 				outfile = (argc - optind < 1) ? infile
 							      : argv[optind++];
@@ -685,7 +635,7 @@ static int do_gbb(int argc, char *argv[])
 
 		outbuf = (uint8_t *) malloc(filesize);
 		if (!outbuf) {
-			ERROR("Can't malloc %" PRIi64 " bytes: %s\n", filesize,
+			ERROR("Can't malloc %" PRIu64 " bytes: %s\n", filesize,
 			      strerror(errno));
 			errorcnt++;
 			break;
