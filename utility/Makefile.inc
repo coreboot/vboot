@@ -7,8 +7,7 @@ UTIL_DEFAULTS = ${BUILD}/default/vboot_reference
 
 # Scripts to install directly (not compiled)
 UTIL_SCRIPT_NAMES_SDK = \
-	utility/dev_make_keypair \
-	utility/vbutil_what_keys
+	utility/dev_make_keypair
 UTIL_SCRIPT_NAMES_BOARD = \
 	utility/chromeos-tpm-recovery \
 	utility/dev_debug_vboot \
