@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
 	const uint8_t* digestinfo = NULL;
 	if (VB2_SUCCESS != vb2_digest_info(hash_alg, &digestinfo,
 					   &digestinfo_size)) {
-		fprintf(stderr, "SignatureBuf(): Couldn't get digest info\n");
+		fprintf(stderr, "Couldn't get digest info\n");
 		goto cleanup;
 	}
 	uint32_t padded_digest_len = digest_size + digestinfo_size;
