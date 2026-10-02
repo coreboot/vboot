@@ -80,8 +80,14 @@ static void file_tests(const char *temp_dir)
 
 	TEST_EQ(vb2_read_file(testfile, &read_data, &read_size),
 		VB2_ERROR_READ_FILE_OPEN, "vb2_read_file() missing");
+	TEST_PTR_EQ(ReadFile(testfile, &read_size64), NULL,
+		    "ReadFile() missing");
 	TEST_EQ(vb2_write_file("no/such/dir", test_data, sizeof(test_data)),
 		VB2_ERROR_WRITE_FILE_OPEN, "vb2_write_file() open");
+	TEST_NEQ(WriteFile("no/such/dir", test_data, sizeof(test_data)), 0,
+		 "WriteFile() open");
+	TEST_NEQ(WriteFile(testfile, test_data, (uint64_t)UINT32_MAX + 1), 0,
+		 "WriteFile() size > UINT32_MAX");
 
 	TEST_SUCC(vb2_write_file(testfile, test_data, sizeof(test_data)),
 		  "vb2_write_file() good");

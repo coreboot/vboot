@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "host_common.h"
 
@@ -25,38 +24,13 @@ char* StrCopy(char* dest, const char* src, int dest_size)
 
 uint8_t* ReadFile(const char* filename, uint64_t* sizeptr)
 {
-	FILE* f;
-	uint8_t* buf;
-	long size;
+	uint8_t *buf;
+	uint32_t size;
 
-	f = fopen(filename, "rb");
-	if (!f) {
-		fprintf(stderr, "Unable to open file %s\n", filename);
-		return NULL;
-	}
-
-	fseek(f, 0, SEEK_END);
-	size = ftell(f);
-	if (size < 0) {
-		fclose(f);
-		return NULL;
-	}
-	rewind(f);
-
-	buf = malloc(size ? size : 1);
-	if (!buf) {
-		fclose(f);
-		return NULL;
-	}
-
-	if (size && 1 != fread(buf, size, 1, f)) {
+	if (vb2_read_file(filename, &buf, &size) != VB2_SUCCESS) {
 		fprintf(stderr, "Unable to read from file %s\n", filename);
-		fclose(f);
-		free(buf);
 		return NULL;
 	}
-
-	fclose(f);
 	if (sizeptr)
 		*sizeptr = size;
 	return buf;
@@ -113,20 +87,11 @@ int ReadFileBit(const char* filename, int bitmask)
 
 vb2_error_t WriteFile(const char* filename, const void *data, uint64_t size)
 {
-	FILE *f = fopen(filename, "wb");
-	if (!f) {
-		fprintf(stderr, "Unable to open file %s\n", filename);
-		return 1;
-	}
-
-	if (size && 1 != fwrite(data, size, 1, f)) {
+	if (size > UINT32_MAX ||
+	    vb2_write_file(filename, data, size) != VB2_SUCCESS) {
 		fprintf(stderr, "Unable to write to file %s\n", filename);
-		fclose(f);
-		unlink(filename);  /* Delete any partial file */
 		return 1;
 	}
-
-	fclose(f);
 	return 0;
 }
 
