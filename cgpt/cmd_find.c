@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "cgpt.h"
+#include "host_misc.h"
 #include "vboot_host.h"
 
 extern const char *progname;
@@ -30,43 +31,6 @@ static void Usage(void)
 	       "\n",
 	       progname);
 	PrintTypes();
-}
-
-// read a file into a buffer, return buffer and update size
-static uint8_t *ReadFile(const char *filename, uint64_t *size)
-{
-	FILE *f;
-	uint8_t *buf;
-	long pos;
-
-	f = fopen(filename, "rb");
-	if (!f) {
-		return NULL;
-	}
-
-	fseek(f, 0, SEEK_END);
-	pos = ftell(f);
-	if (pos < 0) {
-		fclose(f);
-		return NULL;
-	}
-	*size = pos;
-	rewind(f);
-
-	buf = malloc(*size);
-	if (!buf) {
-		fclose(f);
-		return NULL;
-	}
-
-	if (1 != fread(buf, *size, 1, f)) {
-		fclose(f);
-		free(buf);
-		return NULL;
-	}
-
-	fclose(f);
-	return buf;
 }
 
 int cmd_find(int argc, char *argv[])
