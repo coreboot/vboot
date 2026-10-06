@@ -551,7 +551,28 @@ wait_pids() {
   return "${status}"
 }
 
-# Resign a BIOS image and set GBB keys (handling LOEM keys if loem.ini is present).
+# Look up the LOEM key index of a key ID in loem.ini.
+# Args: KEY_ID
+# Outputs: the key index; returns non-zero if not found.
+get_loem_key_index() {
+  local key_id="$1"
+  local match
+
+  # loem.ini has the format KEY_INDEX = KEY_ID_VALUE
+  if ! match="$(grep -E "^[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"; then
+    error "The loem key_id ${key_id} not found in loem.ini! (${KEY_DIR}/loem.ini)"
+    return 1
+  fi
+
+  # shellcheck disable=SC2001
+  echo "${match}" | sed 's/ *= *.*$//g'
+}
+
+# Resign a BIOS image and set GBB keys.
+# The firmware keys are selected by KEY_ID if loem.ini is present; otherwise,
+# the default (non-LOEM) keys are used.
+# If SHELLBALL_KEYSET_DIR is non-empty, also output the per-model root key and
+# vblocks there, for the firmware updater to patch the image at runtime.
 # Args: OUTPUT_NAME BIOS_PATH KEY_ID SHELLBALL_KEYSET_DIR
 sign_bios() {
   local output_name="$1"
@@ -560,31 +581,24 @@ sign_bios() {
   local shellball_keyset_dir="$4"
 
   local extra_args=()
-  local rootkey signprivate keyblock temp_fw full_command
-
-  rootkey="$(get_root_key_vbpubk)"
+  local key_index="" rootkey signprivate keyblock temp_fw full_command
 
   if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-    local match
-    local key_index
-
-    # loem.ini has the format KEY_ID_VALUE = KEY_INDEX
-    if ! match="$(grep -E "^[0-9]+ *= *${key_id}$" "${KEY_DIR}/loem.ini")"; then
-      die "The loem key_id ${key_id} not found in loem.ini! (${KEY_DIR}/loem.ini)"
-    fi
-
-    # shellcheck disable=SC2001
-    key_index="$(echo "${match}" | sed 's/ *= *.*$//g')"
+    key_index="$(get_loem_key_index "${key_id}")" ||
+      die "Failed to get loem key index of ${key_id} for ${output_name}"
     info "Detected key index from loem.ini as ${key_index} for ${key_id}"
     if [[ -z "${key_index}" ]]; then
       die "Failed to extract key_index ${key_id} in loem.ini file for ${output_name}"
     fi
+  fi
 
+  rootkey="$(get_root_key_vbpubk "${key_index}")"
+
+  if [[ -n "${shellball_keyset_dir}" ]]; then
     extra_args+=(
       --loemdir "${shellball_keyset_dir}"
       --loemid "${output_name}"
     )
-    rootkey="$(get_root_key_vbpubk "${key_index}")"
     cp "${rootkey}" "${shellball_keyset_dir}/rootkey.${output_name}"
   fi
 
@@ -748,14 +762,12 @@ resign_firmware_shellball() {
   # The firmware updater scripts then detects what output_name to use at
   # runtime based on the platform.
   local signer_config="${shellball_dir}/signer_config.csv"
+  local shellball_keyset_dir=""
   if [[ -e "${signer_config}" ]]; then
     info "Using signer_config.csv to determine firmware signatures"
     info "See go/cros-unibuild-signing for details"
 
-    if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-      shellball_keyset_dir="${shellball_dir}/keyset"
-      mkdir -p "${shellball_keyset_dir}"
-    fi
+    shellball_keyset_dir="${shellball_dir}/keyset"
 
     declare -A seen_output_names
     declare -A bios_to_ec_map
@@ -808,9 +820,16 @@ resign_firmware_shellball() {
         ec_path="${shellball_dir}/${ec_images[i]}"
       fi
 
+      # Output per-model signature blocks for LOEM keys.
+      local keyset_dir=""
+      if [[ -e "${KEY_DIR}/loem.ini" ]]; then
+        keyset_dir="${shellball_keyset_dir}"
+        mkdir -p "${keyset_dir}"
+      fi
+
       spawn_worker "${num_jobs}" resign_firmware_image \
         "${output_names[i]}" "${bios_path}" "${ec_path}" "${key_ids[i]}" \
-        "${brand_codes[i]}" "${shellball_keyset_dir}" "${board_name}"
+        "${brand_codes[i]}" "${keyset_dir}" "${board_name}"
       pids+=($!)
     done
 
