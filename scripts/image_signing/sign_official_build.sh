@@ -761,6 +761,12 @@ resign_firmware_shellball() {
   # It then outputs the appropriate signature blocks based on the output_name.
   # The firmware updater scripts then detects what output_name to use at
   # runtime based on the platform.
+  #
+  # If an AP image is shared by multiple rows, the rows may still need
+  # different signatures (for example, different key_id or brand_code), while
+  # there is only one copy of the image. Therefore, per-model signature blocks
+  # (rootkey, vblock_A, vblock_B and gscvd) are output for all such rows, even
+  # without loem.ini, for the firmware updater to patch the image at runtime.
   local signer_config="${shellball_dir}/signer_config.csv"
   local shellball_keyset_dir=""
   if [[ -e "${signer_config}" ]]; then
@@ -771,6 +777,7 @@ resign_firmware_shellball() {
 
     declare -A seen_output_names
     declare -A bios_to_ec_map
+    declare -A bios_image_counts
     local output_names=() bios_images=() key_ids=() ec_images=() brand_codes=()
 
     # Parse and validate all rows before spawning any worker.
@@ -798,6 +805,8 @@ resign_firmware_shellball() {
         else
           bios_to_ec_map["${bios_image}"]="${ec_image}"
         fi
+        local count="${bios_image_counts[${bios_image}]:-0}"
+        bios_image_counts["${bios_image}"]=$((count + 1))
 
         output_names+=("${output_name}")
         bios_images+=("${bios_image}")
@@ -820,9 +829,10 @@ resign_firmware_shellball() {
         ec_path="${shellball_dir}/${ec_images[i]}"
       fi
 
-      # Output per-model signature blocks for LOEM keys.
+      # Output per-model signature blocks for LOEM keys or shared AP images.
       local keyset_dir=""
-      if [[ -e "${KEY_DIR}/loem.ini" ]]; then
+      if [[ -e "${KEY_DIR}/loem.ini" ||
+            "${bios_image_counts[${bios_images[i]}]}" -gt 1 ]]; then
         keyset_dir="${shellball_keyset_dir}"
         mkdir -p "${keyset_dir}"
       fi
