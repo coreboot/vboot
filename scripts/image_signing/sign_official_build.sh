@@ -757,14 +757,11 @@ resign_firmware_shellball() {
       mkdir -p "${shellball_keyset_dir}"
     fi
 
-    local num_jobs
-    num_jobs="$(get_num_jobs)"
-    info "Signing firmware with ${num_jobs} jobs in parallel"
-
     declare -A seen_output_names
     declare -A bios_to_ec_map
-    local pids=()
+    local output_names=() bios_images=() key_ids=() ec_images=() brand_codes=()
 
+    # Parse and validate all rows before spawning any worker.
     {
       read -r # Burn the first line (header line)
       while IFS="," read -r output_name bios_image key_id ec_image brand_code; do
@@ -790,19 +787,32 @@ resign_firmware_shellball() {
           bios_to_ec_map["${bios_image}"]="${ec_image}"
         fi
 
-        local bios_path="${shellball_dir}/${bios_image}"
-        local ec_path=""
-        if [[ -n "${ec_image}" ]]; then
-          ec_path="${shellball_dir}/${ec_image}"
-        fi
-
-        spawn_worker "${num_jobs}" resign_firmware_image \
-          "${output_name}" "${bios_path}" "${ec_path}" "${key_id}" \
-          "${brand_code}" "${shellball_keyset_dir}" "${board_name}"
-        pids+=($!)
+        output_names+=("${output_name}")
+        bios_images+=("${bios_image}")
+        key_ids+=("${key_id}")
+        ec_images+=("${ec_image}")
+        brand_codes+=("${brand_code}")
       done
       unset IFS
     } < "${signer_config}"
+
+    local num_jobs
+    num_jobs="$(get_num_jobs)"
+    info "Signing firmware with ${num_jobs} jobs in parallel"
+
+    local i pids=()
+    for i in "${!output_names[@]}"; do
+      local bios_path="${shellball_dir}/${bios_images[i]}"
+      local ec_path=""
+      if [[ -n "${ec_images[i]}" ]]; then
+        ec_path="${shellball_dir}/${ec_images[i]}"
+      fi
+
+      spawn_worker "${num_jobs}" resign_firmware_image \
+        "${output_names[i]}" "${bios_path}" "${ec_path}" "${key_ids[i]}" \
+        "${brand_codes[i]}" "${shellball_keyset_dir}" "${board_name}"
+      pids+=($!)
+    done
 
     wait_pids "${pids[@]}" || die "One or more firmware image signing workers failed."
   else
