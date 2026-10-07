@@ -683,7 +683,11 @@ sign_gscvd() {
 }
 
 # Resign a firmware image for a specific model: EC RW, BIOS, and RO_GSCVD.
-# Args: OUTPUT_NAME BIOS_PATH EC_PATH KEY_ID BRAND_CODE SHELLBALL_KEYSET_DIR [BOARD_NAME]
+# BIOS_PATH and EC_PATH are only read, because they may be shared with other
+# workers running in parallel. The signed images are left in WORKER_DIR as
+# bios.bin and ec.bin.
+# Args: OUTPUT_NAME BIOS_PATH EC_PATH KEY_ID BRAND_CODE SHELLBALL_KEYSET_DIR
+#       WORKER_DIR [BOARD_NAME]
 resign_firmware_image() {
   local output_name="$1"
   local bios_path="$2"
@@ -691,14 +695,13 @@ resign_firmware_image() {
   local key_id="$4"
   local brand_code="$5"
   local shellball_keyset_dir="$6"
-  local board_name="${7:-}"
+  local worker_dir="$7"
+  local board_name="${8:-}"
 
   info "Signing firmware image $(basename "${bios_path}") for ${output_name}"
 
   echo_file_md5 "Initial ${bios_path}" "${bios_path}"
 
-  local worker_dir
-  worker_dir="$(make_temp_dir)"
   local temp_bios="${worker_dir}/bios.bin"
   cp "${bios_path}" "${temp_bios}"
 
@@ -707,7 +710,6 @@ resign_firmware_image() {
     temp_ec="${worker_dir}/ec.bin"
     cp "${ec_path}" "${temp_ec}"
     sign_ec_rw "${temp_bios}" "${temp_ec}"
-    mv -f "${temp_ec}" "${ec_path}"
   fi
 
   sign_bios "${output_name}" "${temp_bios}" "${key_id}" \
@@ -719,9 +721,7 @@ resign_firmware_image() {
       "${shellball_keyset_dir}"
   fi
 
-  mv -f "${temp_bios}" "${bios_path}"
-
-  info "Signed firmware image output to ${bios_path}"
+  info "Signed firmware image $(basename "${bios_path}") for ${output_name}"
 }
 
 # Re-sign the firmware AU payload provided with a new key.
@@ -821,7 +821,12 @@ resign_firmware_shellball() {
     num_jobs="$(get_num_jobs)"
     info "Signing firmware with ${num_jobs} jobs in parallel"
 
-    local i pids=()
+    # The images in shellball_dir may be shared by multiple rows, and hence
+    # read by multiple workers. To avoid races, they must not be modified
+    # while any worker is running. Instead, each worker leaves its signed
+    # images in its own worker_dir, which are moved to shellball_dir in row
+    # order after all workers finish.
+    local i pids=() worker_dirs=()
     for i in "${!output_names[@]}"; do
       local bios_path="${shellball_dir}/${bios_images[i]}"
       local ec_path=""
@@ -837,13 +842,23 @@ resign_firmware_shellball() {
         mkdir -p "${keyset_dir}"
       fi
 
+      worker_dirs[i]="$(make_temp_dir)"
       spawn_worker "${num_jobs}" resign_firmware_image \
         "${output_names[i]}" "${bios_path}" "${ec_path}" "${key_ids[i]}" \
-        "${brand_codes[i]}" "${keyset_dir}" "${board_name}"
+        "${brand_codes[i]}" "${keyset_dir}" "${worker_dirs[i]}" "${board_name}"
       pids+=($!)
     done
 
     wait_pids "${pids[@]}" || die "One or more firmware image signing workers failed."
+
+    for i in "${!output_names[@]}"; do
+      mv -f "${worker_dirs[i]}/bios.bin" "${shellball_dir}/${bios_images[i]}"
+      if [[ -n "${ec_images[i]}" ]]; then
+        mv -f "${worker_dirs[i]}/ec.bin" "${shellball_dir}/${ec_images[i]}"
+      fi
+      info "Signed firmware image output to ${bios_images[i]}" \
+        "for ${output_names[i]}"
+    done
   else
     local image_file sign_args=() loem_sfx loem_output_dir
     for image_file in "${shellball_dir}"/bios*.bin; do
