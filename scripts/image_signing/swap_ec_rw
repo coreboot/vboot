@@ -3,4 +3,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# Outside the SDK (e.g. pack_firmware.py on builders), /usr/share/vboot/devkeys
+# is not installed, and futility swap_cbfs_file cannot find the devkeys in the
+# source tree. In that case, pass them to futility with -K. If the caller of
+# this script also passes -K/--keyset, futility uses the caller's value, since
+# the last -K wins.
+DEVKEYS="$(dirname "$0")/../../tests/devkeys"
+if [ ! -d /usr/share/vboot/devkeys ] && [ -d "${DEVKEYS}" ]; then
+  exec "${FUTILITY:-futility}" swap_cbfs_file -K "${DEVKEYS}" "$@"
+fi
+
 exec "${FUTILITY:-futility}" swap_cbfs_file "$@"

@@ -38,6 +38,12 @@ cp -f "${AP_IMAGE}" "${TMP}"
 "${SWAP}" -i "${TMP}" -e "${EC_IMAGE}" -K "${KEYSET}"
 cmp "${TMP}" "${DATA}/bios.expect.bin"
 
+# Good case: call swap_ec_rw without -K/--keyset (as pack_firmware.py does),
+# so swap_ec_rw must find the default keyset itself
+cp -f "${AP_IMAGE}" "${TMP}"
+"${SWAP}" -i "${TMP}" -e "${EC_IMAGE}"
+cmp "${TMP}" "${DATA}/bios.expect.bin"
+
 # Good case: swap from EC source (--ec), with ecrw.version
 cp -f "${AP_IMAGE}" "${TMP}"
 cbfstool "${TMP}" extract -r "FW_MAIN_A" -n ecrw.version -f "${TMPD}/v.old"
