@@ -224,8 +224,8 @@ static vb2_error_t append_recovery_ramdisk(AvbOps *avb_ops, uint8_t **ramdisk_en
 
 	if (vb2_android_get_buffer(avb_ops, GPT_ANDROID_RECOVERY,
 				   (void **)&rec_hdr, &recovery_size)) {
-		VB2_DEBUG("Cannot get information about preloaded 'recovery' partition\n");
-		return VB2_ERROR_ANDROID_BROKEN_RECOVERY;
+		VB2_DEBUG("No dedicated 'recovery' partition\n");
+		return VB2_SUCCESS;
 	}
 
 	if (recovery_size < BOOT_HEADER_SIZE ||
@@ -298,8 +298,7 @@ static vb2_error_t prepare_pvmfw(AvbSlotVerifyData *verify_data,
  */
 static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 					struct vb2_kernel_params *params,
-					bool recovery_boot,
-					bool dedicated_recovery)
+					bool recovery_boot)
 {
 	struct vendor_boot_img_hdr_v4 *vendor_hdr;
 	struct boot_img_hdr_v4 *init_hdr;
@@ -325,11 +324,10 @@ static vb2_error_t rearrange_partitions(AvbOps *avb_ops,
 	VB2_TRY(save_bootconfig(vendor_hdr, vendor_boot_size, params));
 
 	/* Remove unused ramdisks */
-	VB2_TRY(prepare_vendor_ramdisks(vendor_hdr, vendor_boot_size,
-					recovery_boot && !dedicated_recovery,
+	VB2_TRY(prepare_vendor_ramdisks(vendor_hdr, vendor_boot_size, recovery_boot,
 					&params->ramdisk, &vendor_ramdisk_end));
 
-	if (dedicated_recovery)
+	if (recovery_boot)
 		VB2_TRY(append_recovery_ramdisk(avb_ops, &vendor_ramdisk_end));
 
 	params->ramdisk_size = vendor_ramdisk_end - params->ramdisk;
@@ -410,6 +408,21 @@ static void print_avb_slot_verify_data(const AvbSlotVerifyData *data)
 	VB2_DEBUG("  rollback_index: %"PRIu64"\n", (uint64_t)data->rollback_indexes[0]);
 }
 
+static const enum GptPartition optional_partitions[] = {
+	GPT_ANDROID_RECOVERY,
+	GPT_ANDROID_PVMFW,
+	GPT_ANDROID_DTBO,
+};
+
+static bool is_optional_partition(const char *part_name)
+{
+	for (size_t o = 0; o < ARRAY_SIZE(optional_partitions); o++) {
+		if (!strcmp(part_name, GptPartitionNames[optional_partitions[o]]))
+			return true;
+	}
+	return false;
+}
+
 static vb2_error_t verify_avb_data(const AvbSlotVerifyData *verify_data,
 				   AvbOps *avb_ops,
 				   const char *expected_slot_suffix,
@@ -434,13 +447,6 @@ static vb2_error_t verify_avb_data(const AvbSlotVerifyData *verify_data,
 	for (size_t i = 0; requested_partitions[i] != NULL; i++) {
 		const char *part_name = requested_partitions[i];
 
-		/*
-		 * TODO(b/408266619): Skip checking of recovery partition for now.
-		 * Recovery will be verified when the whole feature in OS is ready.
-		 */
-		if (!strcmp(part_name, GptPartitionNames[GPT_ANDROID_RECOVERY]))
-			continue;
-
 		const AvbPartitionData *part = NULL;
 		bool found = false;
 		for (size_t j = 0; j < verify_data->num_loaded_partitions; j++) {
@@ -453,6 +459,11 @@ static vb2_error_t verify_avb_data(const AvbSlotVerifyData *verify_data,
 		}
 
 		if (!found) {
+			if (is_optional_partition(part_name)) {
+				VB2_DEBUG("Image contains no '%s' partition.\n", part_name);
+				continue;
+			}
+
 			VB2_DEBUG("ERROR: partition %s not found in loaded partitions\n",
 				  part_name);
 			return VB2_ERROR_AVB_ERROR_VERIFICATION;
@@ -548,8 +559,6 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	}
 
 	bool recovery_boot = bootmode == VB2_ANDROID_RECOVERY_BOOT;
-	if (recovery_boot)
-		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_RECOVERY];
 
 	/* Update flags to mark loaded GKI image */
 	params->flags = VB2_KERNEL_TYPE_BOOTIMG;
@@ -562,22 +571,6 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	else
 		return VB2_ERROR_ANDROID_INVALID_SLOT_SUFFIX;
 
-	/*
-	 * Check if the pvmfw buffer is zero sized
-	 * (ie. pvmfw loading is not requested)
-	 */
-	if (params->pvmfw_buffer_size &&
-	    GptFindEntryByName(gpt, GptPartitionNames[GPT_ANDROID_PVMFW], slot_suffix)) {
-		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_PVMFW];
-	} else {
-		VB2_DEBUG("Not loading pvmfw: not requested or partition not present.\n");
-		params->pvmfw_out_size = 0;
-	}
-
-	/* If DTBO partition exists, include it in the list of partitions to be pre-loaded. */
-	if (GptFindEntryByName(gpt, GptPartitionNames[GPT_ANDROID_DTBO], slot_suffix))
-		boot_partitions[partition_count++] = GptPartitionNames[GPT_ANDROID_DTBO];
-
 	avb_ops = vboot_avb_ops_new(ctx, params, gpt, disk_handle, slot_suffix);
 	if (!avb_ops)
 		return VB2_ERROR_ANDROID_MEMORY_ALLOC;
@@ -586,6 +579,29 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 	if (!need_verification &&
 	    !vb2_secdata_fwmp_get_flag(ctx, VB2_SECDATA_FWMP_DEV_USE_KEY_HASH))
 		avb_flags |= AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR;
+
+	/* Add optional partitions to be loaded and verified */
+	for (size_t o = 0; o < ARRAY_SIZE(optional_partitions); o++) {
+		const char *name = GptPartitionNames[optional_partitions[o]];
+
+		/* Skip pvmfw if caller did not provide a buffer for it */
+		if (optional_partitions[o] == GPT_ANDROID_PVMFW && !params->pvmfw_buffer_size)
+			continue;
+
+		/* Load recovery partition only when booting into recovery mode */
+		if (optional_partitions[o] == GPT_ANDROID_RECOVERY && !recovery_boot)
+			continue;
+
+		/*
+		 * When verification errors are allowed, AVB tries to get the partition
+		 * size unconditionally and fails if the partition is not present in GPT.
+		 */
+		if ((avb_flags & AVB_SLOT_VERIFY_FLAGS_ALLOW_VERIFICATION_ERROR) &&
+		    !GptFindEntryByName(gpt, name, slot_suffix))
+			continue;
+
+		boot_partitions[partition_count++] = name;
+	}
 
 	VB2_ASSERT(boot_partitions[ARRAY_SIZE(boot_partitions) - 1] == NULL);
 	result = avb_slot_verify(avb_ops, boot_partitions, slot_suffix, avb_flags,
@@ -635,16 +651,11 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 
 	/*
 	 * Before booting we need to rearrange buffers with partition data, which includes:
-	 * - determine source of recovery ramdisk (dedicated 'recovery' or 'vendor_boot' for
-	 *   older images)
 	 * - save bootconfig in separate buffer, so depthcharge can modify it
 	 * - remove unused ramdisks depending on boot type (normal/recovery)
 	 * - concatenate ramdisks from vendor_boot, optional recovery, & init_boot partitions
 	 */
-	bool dedicated_recovery = recovery_boot &&
-		avb_find_part(verify_data, GPT_ANDROID_RECOVERY) != NULL;
-
-	rv = rearrange_partitions(avb_ops, params, recovery_boot, dedicated_recovery);
+	rv = rearrange_partitions(avb_ops, params, recovery_boot);
 	if (rv)
 		goto out;
 

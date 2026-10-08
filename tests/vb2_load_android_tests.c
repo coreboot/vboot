@@ -122,7 +122,6 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 	verify_data->rollback_indexes[0] = rollback_value;
 	verify_data->cmdline = (char *)"";
 	verify_data->ab_suffix = strdup(ab_suffix);
-	verify_data->num_loaded_partitions = num_loaded;
 	verify_data->loaded_partitions = calloc(num_loaded, sizeof(AvbPartitionData));
 
 	size_t idx = 0;
@@ -131,6 +130,15 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 			continue;
 		if (strcmp(requested_partitions[i], "vendor_boot") == 0 && vendor_boot_missing)
 			continue;
+
+		char full_name[64];
+		snprintf(full_name, sizeof(full_name), "%s%s", requested_partitions[i],
+			 ab_suffix);
+		if (ops->get_preloaded_partition(ops, full_name, part_size_bytes,
+						 &out_pointer,
+						 &num_bytes) != AVB_IO_RESULT_OK)
+			continue;
+
 		AvbPartitionData *part = &verify_data->loaded_partitions[idx++];
 		part->partition_name = strdup(requested_partitions[i]);
 		part->preloaded = true;
@@ -138,17 +146,10 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 		part->digest = malloc(32);
 		memset(part->digest, 0xaa, 32);
 		part->digest_size = 32;
-
-		char full_name[64];
-		snprintf(full_name, sizeof(full_name), "%s%s", requested_partitions[i],
-			 ab_suffix);
-		if (ops->get_preloaded_partition(ops, full_name, part_size_bytes,
-						 &out_pointer,
-						 &num_bytes) == AVB_IO_RESULT_OK) {
-			part->data = out_pointer;
-			part->data_size = num_bytes;
-		}
+		part->data = out_pointer;
+		part->data_size = num_bytes;
 	}
+	verify_data->num_loaded_partitions = idx;
 
 	*out_data = verify_data;
 
