@@ -90,8 +90,8 @@ TEST21_NAMES = \
 
 TEST_NAMES += ${TEST2X_NAMES} ${TEST21_NAMES}
 
-ifeq (${ARCH}, x86_64)
-DUT_TEST_NAMES += tests/vb2_sha256_x86_tests
+ifneq (,$(filter arm64 x86_64,${ARCH}))
+DUT_TEST_NAMES += tests/vb2_sha256_tests
 endif
 
 HWCRYPTO_RSA_TESTS = \
@@ -180,10 +180,21 @@ ${BUILD}/tests/verify_kernel: LDLIBS += ${CRYPTO_LIBS}
 ${BUILD}/tests/hmac_test: LDLIBS += ${CRYPTO_LIBS}
 
 # Special build for sha256_x86 test
-${BUILD}/tests/vb2_sha256_x86_tests: \
+ifeq (${ARCH},arm64)
+${BUILD}/tests/vb2_sha256_tests: \
+	${BUILD}/firmware/2lib/2sha256_arm.o \
+	${BUILD}/firmware/2lib/sha256_armv8a_ce_a64.o \
+	${BUILD}/firmware/2lib/2hwcrypto.o
+${BUILD}/tests/vb2_sha256_tests: \
+	LIBS += ${BUILD}/firmware/2lib/2sha256_arm.o \
+	${BUILD}/firmware/2lib/sha256_armv8a_ce_a64.o \
+	${BUILD}/firmware/2lib/2hwcrypto.o
+else
+${BUILD}/tests/vb2_sha256_tests: \
 	${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
-${BUILD}/tests/vb2_sha256_x86_tests: \
+${BUILD}/tests/vb2_sha256_tests: \
 	LIBS += ${BUILD}/firmware/2lib/2sha256_x86.o ${BUILD}/firmware/2lib/2hwcrypto.o
+endif
 
 # Test runner rules
 .PHONY: tests runtests rununittests runtestscripts runfutiltests runcgpttests runmisctests run2tests runfutiltestscripts

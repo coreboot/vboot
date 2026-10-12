@@ -5,7 +5,12 @@
 
 /* FIPS 180-2 Tests for message digest functions. */
 
+#if defined(__x86_64__) || defined(__i386__)
 #include <cpuid.h>
+#elif defined(__aarch64__)
+#include <asm/hwcap.h>
+#include <sys/auxv.h>
+#endif
 #include <stdio.h>
 
 #include "2api.h"
@@ -115,6 +120,7 @@ static void known_value_tests(void)
 
 int main(int argc, char *argv[])
 {
+#if defined(__x86_64__) || defined(__i386__)
 	uint32_t a, b = 0, c, d;
 	/* EAX = 07H, sub-leaf 0 */
 	__get_cpuid_count(7, 0, &a, &b, &c, &d);
@@ -122,6 +128,13 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "SHA-NI not supported.\n");
 		return 254;
 	}
+#elif defined(__aarch64__)
+	unsigned long hwcap = getauxval(AT_HWCAP);
+	if (!(hwcap & HWCAP_SHA2)) {
+		fprintf(stderr, "SHA256 hardware acceleration not supported.\n");
+		return 254;
+	}
+#endif
 
 	/* Initialize long_msg with 'a' x 1,000,000 */
 	long_msg = (char *) malloc(1000001);
