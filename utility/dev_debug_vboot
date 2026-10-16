@@ -172,7 +172,7 @@ report_firmware_mismatch() {
   local cros_fwid="$(crossystem fwid 2>/dev/null)"
 
   local model="$(cros_config / name || echo unknown)"
-  local manifest="$(chromeos-firmwareupdate --manifest 2>/dev/null)"
+  local manifest="$(chromeos-firmwareupdate --manifest --fast 2>/dev/null)"
   local expect_fwid=$(echo "${manifest}" |
     jq -c -r ".${model}.host.versions.rw" 2>/dev/null)
 
