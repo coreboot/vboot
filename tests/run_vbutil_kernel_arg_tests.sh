@@ -192,6 +192,30 @@ else
   echo -e "${COL_GREEN}PASSED${COL_STOP}"
 fi
 
+# A pipe can't seek, so the config must still be found by reading.
+piped=$("${FUTILITY}" dump_kernel_config <(cat "${USB_KERN}"))
+echo -n "check piped kernel config ..."
+: $(( tests++ ))
+if [ "${orig}" != "${piped}" ]; then
+  echo -e "${COL_RED}FAILED${COL_STOP}"
+  : $(( errs++ ))
+else
+  echo -e "${COL_GREEN}PASSED${COL_STOP}"
+fi
+
+# A blob that ends inside the keyblock must be rejected.
+truncated="${TMPDIR}/truncated.bin"
+head -c 512 "${USB_KERN}" > "${truncated}"
+echo -n "check truncated kernel blob ..."
+: $(( tests++ ))
+if "${FUTILITY}" dump_kernel_config "${truncated}" 2>&1 |
+   grep -q "keyblock_size advances past the end of the blob"; then
+  echo -e "${COL_GREEN}PASSED${COL_STOP}"
+else
+  echo -e "${COL_RED}FAILED${COL_STOP}"
+  : $(( errs++ ))
+fi
+
 # Summary
 ME=$(basename "$0")
 if [ "$errs" -ne 0 ]; then

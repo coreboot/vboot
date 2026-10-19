@@ -55,6 +55,30 @@ static int SkipWithRead(int fd, size_t count)
 	return 0;
 }
 
+/* Skip |count| bytes of the stream. Return 0 on success. */
+static int Skip(int fd, size_t count)
+{
+	struct stat st;
+	off_t pos;
+
+	if (fstat(fd, &st) < 0)
+		return -1;
+
+	/* Not seekable (e.g. pipe): fall back to reading. */
+	if (!S_ISREG(st.st_mode) && !S_ISBLK(st.st_mode))
+		return SkipWithRead(fd, count);
+
+	pos = lseek(fd, count, SEEK_CUR);
+	if (pos < 0)
+		return -1;
+
+	/* lseek() allows seeking past EOF on regular files; reject it. */
+	if (S_ISREG(st.st_mode) && pos > st.st_size)
+		return -1;
+
+	return 0;
+}
+
 static char *FindKernelConfigFromStream(int fd,
 					uint64_t kernel_body_load_address)
 {
@@ -69,7 +93,7 @@ static char *FindKernelConfigFromStream(int fd,
 		return NULL;
 	}
 	ssize_t to_skip = keyblock.keyblock_size - sizeof(keyblock);
-	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
+	if (to_skip < 0 || Skip(fd, to_skip)) {
 		FATAL("keyblock_size advances past the end of the blob\n");
 		return NULL;
 	}
@@ -81,7 +105,7 @@ static char *FindKernelConfigFromStream(int fd,
 		return NULL;
 	}
 	to_skip = preamble.preamble_size - sizeof(preamble);
-	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
+	if (to_skip < 0 || Skip(fd, to_skip)) {
 		FATAL("preamble_size advances past the end of the blob\n");
 		return NULL;
 	}
@@ -99,7 +123,7 @@ static char *FindKernelConfigFromStream(int fd,
 	    (kernel_body_load_address + CROS_PARAMS_SIZE +
 	     CROS_CONFIG_SIZE) + now;
 	to_skip = offset - now;
-	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
+	if (to_skip < 0 || Skip(fd, to_skip)) {
 		FATAL("params are outside of the memory blob: %x\n", offset);
 		return NULL;
 	}
