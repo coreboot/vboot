@@ -22,12 +22,9 @@
 #include "vboot_api.h"
 #include "vboot_host.h"
 
-typedef ssize_t (*ReadFullyFn)(void *ctx, void *buf, size_t count);
-
-static ssize_t ReadFullyWithRead(void *ctx, void *buf, size_t count)
+static ssize_t ReadFully(int fd, void *buf, size_t count)
 {
 	ssize_t nr_read = 0;
-	int fd = *((int*)ctx);
 	while (nr_read < count) {
 		ssize_t to_read = count - nr_read;
 		ssize_t chunk = read(fd, buf + nr_read, to_read);
@@ -41,8 +38,8 @@ static ssize_t ReadFullyWithRead(void *ctx, void *buf, size_t count)
 	return nr_read;
 }
 
-/* Skip the stream by calling |read_fn| many times. Return 0 on success. */
-static int SkipWithRead(void *ctx, ReadFullyFn read_fn, size_t count)
+/* Skip the stream by calling ReadFully() many times. Return 0 on success. */
+static int SkipWithRead(int fd, size_t count)
 {
 	char buf[1024];
 	ssize_t nr_skipped = 0;
@@ -51,15 +48,14 @@ static int SkipWithRead(void *ctx, ReadFullyFn read_fn, size_t count)
 		if (to_read > sizeof(buf)) {
 			to_read = sizeof(buf);
 		}
-		if (read_fn(ctx, buf, to_read) != to_read) {
+		if (ReadFully(fd, buf, to_read) != to_read)
 			return -1;
-		}
 		nr_skipped += to_read;
 	}
 	return 0;
 }
 
-static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
+static char *FindKernelConfigFromStream(int fd,
 					uint64_t kernel_body_load_address)
 {
 	struct vb2_keyblock keyblock;
@@ -68,24 +64,24 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 	uint32_t offset = 0;
 
 	/* Skip the keyblock */
-	if (read_fn(ctx, &keyblock, sizeof(keyblock)) != sizeof(keyblock)) {
+	if (ReadFully(fd, &keyblock, sizeof(keyblock)) != sizeof(keyblock)) {
 		FATAL("not enough data to fill keyblock header\n");
 		return NULL;
 	}
 	ssize_t to_skip = keyblock.keyblock_size - sizeof(keyblock);
-	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
+	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
 		FATAL("keyblock_size advances past the end of the blob\n");
 		return NULL;
 	}
 	now += keyblock.keyblock_size;
 
 	/* Open up the preamble */
-	if (read_fn(ctx, &preamble, sizeof(preamble)) != sizeof(preamble)) {
+	if (ReadFully(fd, &preamble, sizeof(preamble)) != sizeof(preamble)) {
 		FATAL("not enough data to fill preamble\n");
 		return NULL;
 	}
 	to_skip = preamble.preamble_size - sizeof(preamble);
-	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
+	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
 		FATAL("preamble_size advances past the end of the blob\n");
 		return NULL;
 	}
@@ -103,7 +99,7 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 	    (kernel_body_load_address + CROS_PARAMS_SIZE +
 	     CROS_CONFIG_SIZE) + now;
 	to_skip = offset - now;
-	if (to_skip < 0 || SkipWithRead(ctx, read_fn, to_skip)) {
+	if (to_skip < 0 || SkipWithRead(fd, to_skip)) {
 		FATAL("params are outside of the memory blob: %x\n", offset);
 		return NULL;
 	}
@@ -112,7 +108,7 @@ static char *FindKernelConfigFromStream(void *ctx, ReadFullyFn read_fn,
 		FATAL("No memory\n");
 		return NULL;
 	}
-	if (read_fn(ctx, ret, CROS_CONFIG_SIZE) != CROS_CONFIG_SIZE) {
+	if (ReadFully(fd, ret, CROS_CONFIG_SIZE) != CROS_CONFIG_SIZE) {
 		FATAL("Cannot read kernel config\n");
 		free(ret);
 		ret = NULL;
@@ -134,11 +130,7 @@ char *FindKernelConfig(const char *infile, uint64_t kernel_body_load_address)
 		return NULL;
 	}
 
-	void *ctx = &fd;
-	ReadFullyFn read_fn = ReadFullyWithRead;
-
-	newstr = FindKernelConfigFromStream(ctx, read_fn,
-					    kernel_body_load_address);
+	newstr = FindKernelConfigFromStream(fd, kernel_body_load_address);
 
 	close(fd);
 
