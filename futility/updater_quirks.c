@@ -232,14 +232,13 @@ static int quirk_eve_smm_store(struct updater_config *cfg)
  *
  * Some EC will reset TCPC when doing sysjump, and will make rootfs unavailable
  * if the system was boot from USB, or other unexpected issues even if the
- * system was boot from internal disk. To prevent that, try to partial update
- * only RO and expect EC software sync to update RW later, or perform EC RO
- * software sync.
- *
- * Note: EC RO software sync was not fully tested and may cause problems
- *       (b/218612817, b/187789991).
- *       RO-update (without extra sysjump) needs support from flashrom and is
- *       currently disabled.
+ * system was boot from internal disk. In addition, full RO+RW updates force an
+ * unconditional sysjump from RW to RO in flashrom's cros_ec_prepare(), which
+ * resets XIP ECs (such as ITE IT8xxx2) or drops host communication while the
+ * AP is in S0 (b/574563907). With flashrom support for RO-only updates without
+ * sysjump when already in RW (b/278652302), partial update only WP_RO when EC
+ * is active in RW with software sync enabled, and expect EC software sync to
+ * update RW on the next boot.
  *
  * Returns:
  *  EC_RECOVERY_FULL to indicate a full recovery is needed.
@@ -426,6 +425,7 @@ void updater_register_quirks(struct updater_config *cfg)
 	quirks->name = "ec_partial_recovery";
 	quirks->help = "chromium/1024401; recover EC by partial RO update.";
 	quirks->apply = quirk_ec_partial_recovery;
+	quirks->value = 1;
 
 	quirks = &cfg->quirks[QUIRK_OVERRIDE_CUSTOM_LABEL];
 	quirks->name = "override_custom_label";

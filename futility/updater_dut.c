@@ -42,6 +42,7 @@ int dut_set_property_string(const char *key, const char *value,
 	return VbSetSystemPropertyString(key, value);
 }
 
+test_mockable
 int dut_get_property_string(const char *key, char *dest, size_t size,
 			    struct updater_config *cfg)
 {
@@ -62,6 +63,7 @@ int dut_set_property_int(const char *key, const int value,
 	return VbSetSystemPropertyInt(key, value);
 }
 
+test_mockable
 int dut_get_property_int(const char *key, struct updater_config *cfg)
 {
 	if (cfg->dut_is_remote) {

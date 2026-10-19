@@ -5,6 +5,8 @@
 
 #include "unit_tests.h"
 #include "updater_utils.c"
+#include "crossystem.h"
+#include "vboot_struct.h"
 
 #define IMAGE_MAIN	 GET_WORK_COPY_TEST_DATA_FILE_PATH("image.bin")
 #define ARCHIVE		 GET_WORK_COPY_TEST_DATA_FILE_PATH("images.zip")
@@ -613,6 +615,97 @@ unit_cleanup:
 	UNIT_TEST_RETURN;
 }
 
+static bool mock_dut_props;
+static int mock_vdat_flags;
+static const char *mock_ecfw_act;
+
+int dut_get_property_int(const char *key, struct updater_config *cfg)
+{
+	if (cfg->dut_is_remote)
+		return -1;
+	if (mock_dut_props) {
+		if (strcmp(key, "vdat_flags") == 0)
+			return mock_vdat_flags;
+		return -1;
+	}
+	return VbGetSystemPropertyInt(key);
+}
+
+int dut_get_property_string(const char *key, char *dest, size_t size,
+			    struct updater_config *cfg)
+{
+	if (cfg->dut_is_remote)
+		return -1;
+	if (mock_dut_props) {
+		if (strcmp(key, "ecfw_act") == 0 && mock_ecfw_act) {
+			strncpy(dest, mock_ecfw_act, size);
+			dest[size - 1] = '\0';
+			return 0;
+		}
+		return -1;
+	}
+	return VbGetSystemPropertyString(key, dest, size);
+}
+
+static enum unit_result test_ec_partial_recovery(void)
+{
+	UNIT_TEST_BEGIN;
+	struct updater_config *cfg = updater_new_config();
+	struct vb2_gbb_header *gbb = NULL; /* Do not free. */
+	FmapAreaHeader *ah = NULL;	   /* Do not free. */
+
+	mock_dut_props = true;
+	UNIT_ASSERT(cfg != NULL);
+	TEST_EQ(get_config_quirk(QUIRK_EC_PARTIAL_RECOVERY, cfg), 1,
+		"Default ec_partial_recovery quirk is enabled");
+
+	UNIT_ASSERT(load_firmware_image(&cfg->image, IMAGE_MAIN, NULL) == 0);
+	UNIT_ASSERT(load_firmware_image(&cfg->ec_image, IMAGE_MAIN, NULL) == 0);
+
+	mock_vdat_flags = VBSD_EC_SOFTWARE_SYNC;
+	mock_ecfw_act = "RW";
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_RO,
+		"EC partial recovery: EC in RW with software sync enabled -> WP_RO only");
+
+	mock_ecfw_act = "RO";
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: EC in RO -> full update");
+
+	mock_ecfw_act = "RW";
+	mock_vdat_flags = 0;
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: software sync not enabled -> full update");
+
+	mock_vdat_flags = -1;
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: unknown vdat_flags -> full update");
+
+	mock_vdat_flags = VBSD_EC_SOFTWARE_SYNC;
+	gbb = (struct vb2_gbb_header *)find_gbb(&cfg->image);
+	UNIT_ASSERT(gbb != NULL);
+	gbb->flags |= VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: GBB disables software sync -> full update");
+	gbb->flags &= ~VB2_GBB_FLAG_DISABLE_EC_SOFTWARE_SYNC;
+
+	cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].value = 0;
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: quirk disabled (=0) -> full update");
+	cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].value = 1;
+
+	UNIT_ASSERT(fmap_find_by_name(cfg->ec_image.data, cfg->ec_image.size,
+				      cfg->ec_image.fmap_header, "WP_RO", &ah) != NULL);
+	ah->area_name[0] = '\0';
+	TEST_EQ(cfg->quirks[QUIRK_EC_PARTIAL_RECOVERY].apply(cfg), EC_RECOVERY_FULL,
+		"EC partial recovery: missing WP_RO section -> full update");
+
+unit_cleanup:
+	mock_dut_props = false;
+	if (cfg)
+		updater_delete_config(cfg);
+	UNIT_TEST_RETURN;
+}
+
 int main(int argc, char *argv[])
 {
 	if (prepare_test_data() == UNIT_FAIL) {
@@ -631,6 +724,7 @@ int main(int argc, char *argv[])
 	test_preserve_firmware_section();
 	test_gbb();
 	test_misc();
+	test_ec_partial_recovery();
 
 	return !gTestSuccess;
 }
