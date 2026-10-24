@@ -305,8 +305,16 @@ BIOS_IMAGE="${OPT_BIOS}"
 if [ -z "${BIOS_IMAGE}" ]; then
   info "Reading BIOS image from flash..."
   BIOS_IMAGE="bios.rom"
-  if ! log futility read "${BIOS_IMAGE}" ; then
-    logdie "Fail to read BIOS."
+  # Reading the whole flash takes seconds of CPU time, so read only the
+  # regions used below.
+  regions=
+  if log futility read -r FMAP "${BIOS_IMAGE}"; then
+    regions=$(futility dump_fmap -p "${BIOS_IMAGE}" | cut -d' ' -f1 |
+      grep -xE 'FMAP|BOOTBLOCK|COREBOOT|RO_GSCVD|GBB|(VBLOCK|FW_MAIN)_[AB]' |
+      paste -sd, -)
+  fi
+  if [ -z "${regions}" ] || ! log futility read -r "${regions}" "${BIOS_IMAGE}"; then
+    log futility read "${BIOS_IMAGE}" || logdie "Fail to read BIOS."
   fi
 fi
 
