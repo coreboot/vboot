@@ -41,6 +41,9 @@ GptHeader gpt_hdr;
 GptEntry entries[NUM_OF_ENTRIES];
 struct vendor_boot_img_hdr_v4 vendor_boot_hdr;
 struct boot_img_hdr_v4 init_boot_hdr;
+AvbVBMetaImageHeader vbmeta_hdr;
+AvbVBMetaData vbmeta_image;
+size_t num_vbmeta_images;
 
 enum avb_fail {NO_FAIL, VERIFY_FAIL, ROLLBACK_FAIL};
 
@@ -123,6 +126,8 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps *ops, const char *const *requested_pa
 	verify_data->cmdline = (char *)"";
 	verify_data->ab_suffix = strdup(ab_suffix);
 	verify_data->loaded_partitions = calloc(num_loaded, sizeof(AvbPartitionData));
+	verify_data->num_vbmeta_images = num_vbmeta_images;
+	verify_data->vbmeta_images = &vbmeta_image;
 
 	size_t idx = 0;
 	for (size_t i = 0; requested_partitions[i] != NULL; i++) {
@@ -225,11 +230,24 @@ vb2_error_t vb2ex_slice_disk(vb2ex_disk_handle_t parent, uint64_t offset, uint64
 /* Reset mock data (for use before each test) */
 static void reset_mocks(void)
 {
+	struct vb2_packed_key *packed_key;
+
 	rollback_value = 0x1;
 	avb_verification_fails = NO_FAIL;
 	init_boot_missing = false;
 	vendor_boot_missing = false;
 	ota_recovery_sector = OTA_RECOVERY_A_PART;
+
+	memset(&vbmeta_hdr, 0, sizeof(vbmeta_hdr));
+	memcpy(vbmeta_hdr.magic, AVB_MAGIC, AVB_MAGIC_LEN);
+	vbmeta_hdr.algorithm_type = htobe32(AVB_ALGORITHM_TYPE_SHA256_RSA2048);
+
+	memset(&vbmeta_image, 0, sizeof(vbmeta_image));
+	vbmeta_image.partition_name = (char *)"vbmeta";
+	vbmeta_image.vbmeta_data = (uint8_t *)&vbmeta_hdr;
+	vbmeta_image.vbmeta_size = sizeof(vbmeta_hdr);
+	vbmeta_image.verify_result = AVB_VBMETA_VERIFY_RESULT_OK;
+	num_vbmeta_images = 1;
 
 	memset(&gbb, 0, sizeof(gbb));
 	gbb.major_version = VB2_GBB_MAJOR_VER;
@@ -287,6 +305,11 @@ static void reset_mocks(void)
 
 	sd = vb2_get_sd(ctx);
 	sd->status |= VB2_SD_STATUS_SECDATA_FWMP_INIT;
+	sd->kernel_key_offset = sd->workbuf_used;
+	sd->kernel_key_size = sizeof(*packed_key);
+	vb2_set_workbuf_used(ctx, sd->kernel_key_offset + sd->kernel_key_size);
+	packed_key = vb2_member_of(sd, sd->kernel_key_offset);
+	packed_key->algorithm = VB2_ALG_RSA2048_SHA256;
 
 	SET_BOOT_MODE(ctx, VB2_BOOT_MODE_NORMAL);
 }
@@ -373,6 +396,18 @@ static void load_android_tests(void)
 	vendor_boot_hdr.vendor_ramdisk_size = 16384;
 	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_ERROR_LK_INVALID_KERNEL_FOUND,
 		"vendor_boot ramdisk table too big");
+
+	// Unexpected number of VBMeta images
+	reset_mocks();
+	num_vbmeta_images = 2;
+	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		"Unexpected number of VBMeta images");
+
+	// VBMeta algorithm mismatch
+	reset_mocks();
+	vbmeta_hdr.algorithm_type = htobe32(AVB_ALGORITHM_TYPE_SHA256_RSA4096);
+	TEST_EQ(vb2api_load_kernel(ctx, &lkp, &disk_info), VB2_ERROR_LK_INVALID_KERNEL_FOUND,
+		"VBMeta algorithm mismatch");
 }
 
 static void load_ota_recovery_tests(void)
