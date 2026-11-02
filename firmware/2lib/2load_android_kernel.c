@@ -134,13 +134,18 @@ static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor
 					   uint8_t **vendor_ramdisk,
 					   uint8_t **vendor_ramdisk_end)
 {
-	uint32_t ramdisk_offset;
-	uint32_t ramdisk_table_offset;
+	size_t ramdisk_offset;
+	size_t ramdisk_table_offset;
 	uint32_t ramdisk_table_size = vendor_hdr->vendor_ramdisk_table_size;
 	uint32_t ramdisk_table_entry_size = vendor_hdr->vendor_ramdisk_table_entry_size;
 	uint32_t ramdisk_table_entry_num = vendor_hdr->vendor_ramdisk_table_entry_num;
 	uint32_t page_size = vendor_hdr->page_size;
 	uintptr_t fragment_ptr;
+
+	if (!page_size || (page_size & (page_size - 1))) {
+		VB2_DEBUG("Broken 'vendor_boot' image\n");
+		return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
+	}
 
 	/* Calculate address offset of vendor_ramdisk section on vendor_boot partition */
 	ramdisk_offset = VB2_ALIGN_UP(sizeof(struct vendor_boot_img_hdr_v4), page_size);
@@ -154,7 +159,7 @@ static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor
 	    ramdisk_table_entry_size < sizeof(struct vendor_ramdisk_table_entry_v4) ||
 	    total_size - ramdisk_offset < vendor_hdr->vendor_ramdisk_size ||
 	    total_size - ramdisk_table_offset < ramdisk_table_size ||
-	    ramdisk_table_size < (ramdisk_table_entry_num * ramdisk_table_entry_size)) {
+	    ramdisk_table_size < (uint64_t)ramdisk_table_entry_num * ramdisk_table_entry_size) {
 		VB2_DEBUG("Broken 'vendor_boot' image\n");
 		return VB2_ERROR_ANDROID_BROKEN_VENDOR_BOOT;
 	}
@@ -174,9 +179,11 @@ static vb2_error_t prepare_vendor_ramdisks(struct vendor_boot_img_hdr_v4 *vendor
 
 		uint32_t fragment_size = fragment->ramdisk_size;
 		uint32_t fragment_offset = fragment->ramdisk_offset;
+		size_t copied_size = *vendor_ramdisk_end - *vendor_ramdisk;
 
 		if (fragment_offset > vendor_hdr->vendor_ramdisk_size ||
-		    vendor_hdr->vendor_ramdisk_size - fragment_offset < fragment_size) {
+		    vendor_hdr->vendor_ramdisk_size - fragment_offset < fragment_size ||
+		    vendor_hdr->vendor_ramdisk_size - copied_size < fragment_size) {
 			VB2_DEBUG("Incorrect fragment - offset:%x size:%x, ramdisk_size: %x\n",
 				  fragment_offset, fragment_size,
 				  vendor_hdr->vendor_ramdisk_size);
