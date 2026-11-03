@@ -8,6 +8,7 @@
 
 #include <cinttypes>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 #include "include/libziparchive_wrapper.h"
