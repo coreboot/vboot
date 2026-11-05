@@ -237,11 +237,12 @@ static void test_helper_functions(void)
 
 	{
 		uint8_t *p = (uint8_t *)test_helper_functions;
+		const void *before = (const void *)((uintptr_t)p - 4);
 		TEST_SUCC(vb2_verify_member_inside(p, 20, p, 6, 11, 3),
 			  "vb2_verify_member_inside() ok 1");
 		TEST_SUCC(vb2_verify_member_inside(p, 20, p+4, 4, 8, 4),
 			  "vb2_verify_member_inside() ok 2");
-		TEST_EQ(vb2_verify_member_inside(p, 20, p-4, 4, 8, 4),
+		TEST_EQ(vb2_verify_member_inside(p, 20, before, 4, 8, 4),
 			VB2_ERROR_INSIDE_MEMBER_OUTSIDE,
 			"vb2_verify_member_inside() member before parent");
 		TEST_EQ(vb2_verify_member_inside(p, 20, p+20, 4, 8, 4),
