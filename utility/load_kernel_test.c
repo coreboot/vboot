@@ -167,6 +167,13 @@ int main(int argc, char* argv[])
 			free(key_blob);
 			return 1;
 		}
+		if (key_size < sizeof(*key_blob) ||
+		    vb2_verify_packed_key_inside(key_blob, key_size, key_blob)) {
+			fprintf(stderr, "Invalid key blob in %s\n",
+				argv[optind+1]);
+			free(key_blob);
+			return 1;
+		}
 	}
 
 	/* Initialize the GBB */
@@ -224,6 +231,11 @@ int main(int argc, char* argv[])
 			key_blob->key_offset + key_blob->key_size;
 		vb2_workbuf_from_ctx(ctx, &wb);
 		dst = vb2_workbuf_alloc(&wb, kernkey_size);
+		if (!dst) {
+			fprintf(stderr, "Can't allocate kernel key in workbuf\n");
+			free(key_blob);
+			return 1;
+		}
 		memcpy(dst, key_blob, kernkey_size);
 		vb2_set_workbuf_used(ctx, vb2_offset_of(sd, wb.buf));
 		sd->kernel_key_offset = vb2_offset_of(sd, dst);

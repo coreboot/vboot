@@ -57,6 +57,11 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Could not read file: %s\n", argv[2]);
 		goto cleanup;
 	}
+	if (len != digest_size) {
+		fprintf(stderr, "Digest file size %u does not match digest size %u\n",
+			len, digest_size);
+		goto cleanup;
+	}
 
 	padded_digest = PrependDigestInfo(hash_alg, digest);
 	if (padded_digest &&
