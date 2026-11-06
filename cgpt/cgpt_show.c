@@ -69,14 +69,28 @@ static void PrintSignature(const char *indent, const char *sig, size_t n, int ra
 	printf("\n");
 }
 
+/*
+ * The header may have failed CheckHeader() (e.g. with -d), so its size fields are checked
+ * against the GptLoad() buffers before computing any CRC: the header buffer holds one
+ * sector (at least MAX_SIZE_OF_HEADER bytes) and the entries buffer holds
+ * GPT_ENTRIES_ALLOC_SIZE bytes.
+ */
 static void HeaderDetails(GptHeader *header, GptEntry *entries, const char *indent, int raw)
 {
+	const char *status;
+	uint64_t entries_size;
+
 	PrintSignature(indent, header->signature, sizeof(header->signature), raw);
 
 	printf("%sRev: 0x%08x\n", indent, header->revision);
 	printf("%sSize: %d (blocks)\n", indent, header->size);
-	printf("%sHeader CRC: 0x%08x %s\n", indent, header->header_crc32,
-	       (HeaderCrc(header) != header->header_crc32) ? "(INVALID)" : "");
+	if (header->size < MIN_SIZE_OF_HEADER || header->size > MAX_SIZE_OF_HEADER)
+		status = "(size out of range)";
+	else if (HeaderCrc(header) != header->header_crc32)
+		status = "(INVALID)";
+	else
+		status = "";
+	printf("%sHeader CRC: 0x%08x %s\n", indent, header->header_crc32, status);
 	printf("%sMy LBA: %lld\n", indent, (long long)header->my_lba);
 	printf("%sAlternate LBA: %lld\n", indent, (long long)header->alternate_lba);
 	printf("%sFirst LBA: %lld\n", indent, (long long)header->first_usable_lba);
@@ -91,11 +105,14 @@ static void HeaderDetails(GptHeader *header, GptEntry *entries, const char *inde
 	printf("%sEntries LBA: %lld\n", indent, (long long)header->entries_lba);
 	printf("%sNumber of entries: %d\n", indent, header->number_of_entries);
 	printf("%sSize of entry: %d\n", indent, header->size_of_entry);
-	printf("%sEntries CRC: 0x%08x %s\n", indent, header->entries_crc32,
-	       header->entries_crc32 != Crc32((const uint8_t *)entries,
-					      header->size_of_entry * header->number_of_entries)
-		       ? "INVALID"
-		       : "");
+	entries_size = (uint64_t)header->size_of_entry * header->number_of_entries;
+	if (entries_size > GPT_ENTRIES_ALLOC_SIZE)
+		status = "(size out of range)";
+	else if (Crc32((const uint8_t *)entries, entries_size) != header->entries_crc32)
+		status = "INVALID";
+	else
+		status = "";
+	printf("%sEntries CRC: 0x%08x %s\n", indent, header->entries_crc32, status);
 }
 
 void EntryDetails(GptEntry *entry, uint32_t index, int raw)

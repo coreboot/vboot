@@ -330,6 +330,67 @@ dd if=/dev/zero of=${DEV} bs=512 seek=$((2 * NUM_SECTORS)) count=0 2>/dev/null
 # Restore size (truncate).
 dd if=/dev/zero of=${DEV} bs=512 count=${NUM_SECTORS} 2>/dev/null
 
+# Write the 32-bit little-endian value $2 at byte offset $1 of ${DEV}.
+poke_le32() {
+  local fmt
+  fmt=$(printf '\\x%02x\\x%02x\\x%02x\\x%02x' $(($2 & 0xff)) \
+    $((($2 >> 8) & 0xff)) $((($2 >> 16) & 0xff)) $((($2 >> 24) & 0xff)))
+  # shellcheck disable=SC2059
+  printf "${fmt}" | dd of=${DEV} bs=1 seek="$1" conv=notrunc 2>/dev/null
+}
+
+# Create a GPT with one partition, then corrupt the size, number_of_entries
+# and size_of_entry fields of the primary header.
+make_bad_pri_sizes() {
+  "${CGPT}" create ${DEV}
+  "${CGPT}" add -b ${DATA_START} -s ${DATA_SIZE} -t ${DATA_GUID} \
+    -l "${DATA_LABEL}" ${DEV}
+  poke_le32 $((512 + 12)) 0x7fffffff
+  poke_le32 $((512 + 80)) 0xffffffff
+  poke_le32 $((512 + 84)) 0x10000
+}
+
+echo "Test with out-of-range primary GPT header sizes..."
+make_bad_pri_sizes
+X=$("${CGPT}" show -d ${DEV} 2>/dev/null) || error
+[ "$(echo "$X" | grep -c 'CRC: .*(size out of range)$')" = 2 ] || error
+"${CGPT}" legacy -e ${DEV} 2>/dev/null || error
+("${CGPT}" show ${DEV} | grep -q INVALID) && error
+X=$("${CGPT}" show -i ${DATA_NUM} -l ${DEV})
+[ "$X" = "${DATA_LABEL}" ] || error
+
+make_bad_pri_sizes
+"${CGPT}" legacy ${DEV} 2>/dev/null || error
+"${CGPT}" legacy -e ${DEV} || error
+("${CGPT}" show ${DEV} | grep -q INVALID) && error
+X=$("${CGPT}" show -i ${DATA_NUM} -l ${DEV})
+[ "$X" = "${DATA_LABEL}" ] || error
+
+echo "Test legacy -e with an invalid secondary GPT header..."
+"${CGPT}" create ${DEV}
+"${CGPT}" add -b ${DATA_START} -s ${DATA_SIZE} -t ${DATA_GUID} \
+  -l "${DATA_LABEL}" ${DEV}
+# Corrupt the header CRC.
+poke_le32 $(((NUM_SECTORS - 1) * 512 + 16)) 0x12345678
+"${CGPT}" legacy -e ${DEV} 2>/dev/null || error
+("${CGPT}" show ${DEV} | grep -q INVALID) && error
+X=$("${CGPT}" show -i ${DATA_NUM} -l ${DEV})
+[ "$X" = "${DATA_LABEL}" ] || error
+
+echo "Test legacy with an invalid secondary GPT..."
+"${CGPT}" create ${DEV}
+"${CGPT}" add -b ${DATA_START} -s ${DATA_SIZE} -t ${DATA_GUID} \
+  -l "${DATA_LABEL}" ${DEV}
+# Corrupt the header CRC and wipe the first sector of the entries.
+poke_le32 $(((NUM_SECTORS - 1) * 512 + 16)) 0x12345678
+dd if=/dev/zero of=${DEV} seek=$((NUM_SECTORS - 33)) conv=notrunc bs=512 \
+  count=1 2>/dev/null
+"${CGPT}" legacy ${DEV} 2>/dev/null || error
+"${CGPT}" legacy -e ${DEV} || error
+("${CGPT}" show ${DEV} | grep -q INVALID) && error
+X=$("${CGPT}" show -i ${DATA_NUM} -l ${DEV})
+[ "$X" = "${DATA_LABEL}" ] || error
+
 echo "Test with IGNOREME primary GPT..."
 "${CGPT}" create ${DEV}
 "${CGPT}" legacy -p ${DEV}

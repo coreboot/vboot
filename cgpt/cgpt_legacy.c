@@ -30,6 +30,11 @@ int CgptLegacy(CgptLegacyParams *params)
 	h2 = (GptHeader *)drive.gpt.secondary_header;
 	if (params->mode == CGPT_LEGACY_MODE_EFIPART) {
 		drive.gpt.ignored = MASK_NONE;
+		/*
+		 * Rebuild the header and entries that failed validation from the valid copies,
+		 * so that the code below and UpdateCrc() don't use their unchecked sizes.
+		 */
+		GptRepair(&drive.gpt);
 		memcpy(h1->signature, GPT_HEADER_SIGNATURE, GPT_HEADER_SIGNATURE_SIZE);
 		memcpy(h2->signature, GPT_HEADER_SIGNATURE, GPT_HEADER_SIGNATURE_SIZE);
 		RepairEntries(&drive.gpt, MASK_SECONDARY);
@@ -47,6 +52,8 @@ int CgptLegacy(CgptLegacyParams *params)
 		memcpy(h1->signature, GPT_HEADER_SIGNATURE_IGNORED, GPT_HEADER_SIGNATURE_SIZE);
 		drive.gpt.modified |= GPT_MODIFIED_HEADER1;
 	} else {
+		/* Rebuild the invalid copies as above before GptSave() writes them. */
+		GptRepair(&drive.gpt);
 		memcpy(h1->signature, GPT_HEADER_SIGNATURE2, GPT_HEADER_SIGNATURE_SIZE);
 		memcpy(h2->signature, GPT_HEADER_SIGNATURE2, GPT_HEADER_SIGNATURE_SIZE);
 		memset(drive.gpt.primary_entries, 0, drive.gpt.sector_bytes);

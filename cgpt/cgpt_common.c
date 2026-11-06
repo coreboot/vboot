@@ -164,6 +164,15 @@ int Save(struct drive *drive, const uint8_t *buf, const uint64_t sector,
 static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 {
 	drive->gpt.sector_bytes = sector_bytes;
+	/*
+	 * The entries buffers hold GPT_ENTRIES_ALLOC_SIZE bytes and are read and
+	 * written in whole sectors, so the sector size must divide that size.
+	 */
+	if (sector_bytes < 512 || sector_bytes > GPT_ENTRIES_ALLOC_SIZE ||
+	    (sector_bytes & (sector_bytes - 1))) {
+		Error("Unsupported sector size %u\n", sector_bytes);
+		return -1;
+	}
 	if (drive->size % drive->gpt.sector_bytes) {
 		Error("Media size (%llu) is not a multiple of sector size(%d)\n",
 		      (long long unsigned int)drive->size, drive->gpt.sector_bytes);
@@ -173,8 +182,9 @@ static int GptLoad(struct drive *drive, uint32_t sector_bytes)
 
 	drive->gpt.primary_header = malloc(drive->gpt.sector_bytes);
 	drive->gpt.secondary_header = malloc(drive->gpt.sector_bytes);
-	drive->gpt.primary_entries = malloc(GPT_ENTRIES_ALLOC_SIZE);
-	drive->gpt.secondary_entries = malloc(GPT_ENTRIES_ALLOC_SIZE);
+	/* Entries are only read for valid headers; keep the others zeroed. */
+	drive->gpt.primary_entries = calloc(1, GPT_ENTRIES_ALLOC_SIZE);
+	drive->gpt.secondary_entries = calloc(1, GPT_ENTRIES_ALLOC_SIZE);
 	if (!drive->gpt.primary_header || !drive->gpt.secondary_header ||
 	    !drive->gpt.primary_entries || !drive->gpt.secondary_entries)
 		return -1;
@@ -342,7 +352,6 @@ int DriveOpen(const char *drive_path, struct drive *drive, int mode)
 		goto error_close;
 	}
 
-	drive->gpt.drive_sectors = drive_size / sector_bytes;
 	drive->size = drive_size;
 	drive->gpt.flags = 0;
 
