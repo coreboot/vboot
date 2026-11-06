@@ -926,11 +926,17 @@ uint32_t TlclGetSpaceInfo(uint32_t index, uint32_t *attributes, uint32_t *size,
 	if (response_size > sizeof(response)) {
 		return TPM_E_RESPONSE_TOO_LARGE;
 	}
+	if (response_size < kTpmResponseHeaderLength + sizeof(uint32_t))
+		return TPM_E_INVALID_RESPONSE;
 
 	const uint8_t* cursor = response + kTpmResponseHeaderLength;
 	uint32_t cap_size = ReadTpmUint32(&cursor);
-	if (cap_size >
-	    response_size - sizeof(cap_size) - kTpmResponseHeaderLength) {
+	/*
+	 * cap_size must fit in the response, and TPM_NV_DATA_PUBLIC must at
+	 * least hold its 2-byte tag and 4-byte index.
+	 */
+	if (cap_size < sizeof(uint16_t) + sizeof(uint32_t) ||
+	    cap_size > response_size - sizeof(cap_size) - kTpmResponseHeaderLength) {
 		return TPM_E_INVALID_RESPONSE;
 	}
 	const uint8_t* end = cursor + cap_size;
@@ -1028,8 +1034,8 @@ uint32_t TlclGetVersion(uint32_t* vendor, uint64_t* firmware_version,
 	/* Verify size >= sizeof(TPM_CAP_VERSION_INFO). */
 	const uint32_t kSizeofCapVersionInfo = 15;
 	if (size < kSizeofCapVersionInfo ||
-	    kTpmResponseHeaderLength + sizeof(size) + size >
-			TPM_LARGE_ENOUGH_COMMAND_SIZE) {
+	    size > TPM_LARGE_ENOUGH_COMMAND_SIZE - kTpmResponseHeaderLength -
+			sizeof(size)) {
 		return TPM_E_IOERROR;
 	}
 

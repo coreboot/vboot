@@ -525,6 +525,26 @@ static void GetSpaceInfoTest(void)
 		TPM_E_INVALID_RESPONSE, "GetSpaceInfo short length");
 	ToTpmUint32(response + 10, 0x47);
 
+	/* Test whether a response too short for the capability size fails. */
+	ResetMocks();
+	calls[0].rsp = response;
+	calls[0].rsp_size = sizeof(response);
+	ToTpmUint32(response + 2, kTpmResponseHeaderLength + sizeof(uint32_t) - 1);
+	TEST_EQ(TlclGetSpaceInfo(0x20000004, &attributes, &size, &policy,
+				 &policy_size),
+		TPM_E_INVALID_RESPONSE, "GetSpaceInfo short response");
+	ToTpmUint32(response + 2, sizeof(response));
+
+	/* Test whether a capability too short for the tag and index fails. */
+	ResetMocks();
+	calls[0].rsp = response;
+	calls[0].rsp_size = sizeof(response);
+	ToTpmUint32(response + 10, sizeof(uint16_t) + sizeof(uint32_t) - 1);
+	TEST_EQ(TlclGetSpaceInfo(0x20000004, &attributes, &size, &policy,
+				 &policy_size),
+		TPM_E_INVALID_RESPONSE, "GetSpaceInfo short capability");
+	ToTpmUint32(response + 10, 0x47);
+
 	/* Test whether an overlong PCR selection length causes failure. */
 	ResetMocks();
 	calls[0].rsp = response;
@@ -680,6 +700,16 @@ static void GetVersionTest(void)
 	calls[0].rsp_size = sizeof(response);
 	TEST_EQ(TlclGetVersion(&vendor, &firmware_version, NULL, NULL),
 		TPM_E_IOERROR, "GetVersion -- long");
+	TEST_EQ(calls[0].req_cmd, TPM_ORD_GetCapability, "  cmd");
+
+	/* Adjust response to indicate a payload size so large that adding the
+	 * header length to it overflows 32 bits. */
+	ToTpmUint32(response + kTpmResponseHeaderLength, 0xfffffff2);
+	ResetMocks();
+	calls[0].rsp = response;
+	calls[0].rsp_size = sizeof(response);
+	TEST_EQ(TlclGetVersion(&vendor, &firmware_version, NULL, NULL),
+		TPM_E_IOERROR, "GetVersion -- huge");
 	TEST_EQ(calls[0].req_cmd, TPM_ORD_GetCapability, "  cmd");
 
 	/* Restore the original payload length and adjust response to contain
