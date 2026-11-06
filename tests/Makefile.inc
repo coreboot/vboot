@@ -31,6 +31,7 @@ endif
 TEST_FUTIL_NAMES = \
 	tests/futility/binary_editor \
 	tests/futility/test_file_types \
+	tests/futility/test_fmap \
 	tests/futility/test_not_really
 
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
@@ -285,6 +286,7 @@ runfutiltestscripts: install_for_test
 
 runfutiltests: install_for_test runfutiltestscripts
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_file_types
+	${RUNTEST} ${BUILD_RUN}/tests/futility/test_fmap
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_not_really
 ifneq ($(filter-out 0,${USE_FLASHROM}),)
 	${RUNTEST} ${BUILD_RUN}/tests/futility/test_misc

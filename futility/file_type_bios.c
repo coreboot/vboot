@@ -21,17 +21,6 @@
 #include "host_common.h"
 #include "vb1_helper.h"
 
-static void fmap_limit_area(FmapAreaHeader *ah, uint32_t len)
-{
-	const uint32_t sum = ah->area_offset + ah->area_size;
-	if (sum < ah->area_size || sum > len) {
-		VB2_DEBUG("%.*s %#x + %#x > %#x\n", FMAP_NAMELEN,
-			  ah->area_name, ah->area_offset, ah->area_size, len);
-		ah->area_offset = 0;
-		ah->area_size = 0;
-	}
-}
-
 /** Show functions **/
 
 static int show_gscvd_buf(const char *fname, uint8_t *buf, uint32_t len,
@@ -268,8 +257,6 @@ int ft_show_bios(const char *fname)
 		FmapAreaHeader *ah = NULL;
 		/* We know one of these will work, too */
 		if (fmap_find_by_name(buf, len, fmap, fmap_name[c], &ah)) {
-			/* But the file might be truncated */
-			fmap_limit_area(ah, len);
 			if (asprintf((char **)&ft_print_header, "bios::%s",
 				     fmap_name[c]) <= 0) {
 				ERROR("Failed to allocate buffer for FT_PRINT");
@@ -448,7 +435,6 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 			__func__, fw_main_name);
 		return 1;
 	}
-	fmap_limit_area(ah, len);
 	state->area[fw_c].buf = buf + ah->area_offset;
 	if (state->area[fw_c].fw_size > ah->area_size) {
 		ERROR("%s size is incorrect.\n", fmap_name[fw_c]);
@@ -462,7 +448,6 @@ static int prepare_slot(uint8_t *buf, uint32_t len, enum bios_component fw_c,
 		ERROR("%s area not found in FMAP\n", vblock_name);
 		return 1;
 	}
-	fmap_limit_area(ah, len);
 	state->area[vblock_c].buf = buf + ah->area_offset;
 	state->area[vblock_c].len = ah->area_size;
 

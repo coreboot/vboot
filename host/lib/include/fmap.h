@@ -45,7 +45,10 @@ typedef struct _FmapAreaHeader {
 /* Find and point to the FMAP header within the buffer */
 FmapHeader *fmap_find(uint8_t *ptr, size_t size);
 
-/* Search for an area by name, return pointer to its beginning */
+/*
+ * Search for an area by name, return pointer to its beginning. Return NULL if
+ * the area does not lie entirely within the buffer.
+ */
 uint8_t *fmap_find_by_name(uint8_t *ptr, size_t size,
 			   /* optional, will call fmap_find() if NULL */
 			   FmapHeader *fmap,
