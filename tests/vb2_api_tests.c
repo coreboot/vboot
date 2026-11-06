@@ -863,6 +863,12 @@ static void get_metadata_hash_test(void)
 
 	reset_common_data(FOR_METADATA_HASH);
 	pre = vb2_member_of(sd, sd->preamble_offset);
+	pre->body_signature.sig_size = offsetof(struct vb2_hash, raw) - 1;
+	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
+		VB2_ERROR_API_CHECK_HASH_SIG_SIZE, "check sig size without algo");
+
+	reset_common_data(FOR_METADATA_HASH);
+	pre = vb2_member_of(sd, sd->preamble_offset);
 	pre->body_signature.data_size = mock_body_size;
 	TEST_EQ(vb2api_get_metadata_hash(ctx, &hash),
 		VB2_ERROR_API_INIT_HASH_DATA_KEY, "check incorrect data size");

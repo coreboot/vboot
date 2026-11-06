@@ -460,6 +460,10 @@ vb2_error_t vb2api_get_metadata_hash(struct vb2_context *ctx,
 	if (pre->body_signature.data_size)
 		return VB2_ERROR_API_INIT_HASH_DATA_KEY;
 
+	/* Make sure the signature is large enough to hold hash->algo. */
+	if (pre->body_signature.sig_size < offsetof(struct vb2_hash, raw))
+		return VB2_ERROR_API_CHECK_HASH_SIG_SIZE;
+
 	struct vb2_hash *hash =
 		(struct vb2_hash *)vb2_signature_data(&pre->body_signature);
 	const uint32_t hsize = vb2_digest_size(hash->algo);
