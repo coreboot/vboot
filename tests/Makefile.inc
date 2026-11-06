@@ -24,6 +24,10 @@ ifeq ($(filter-out 0,${MOCK_TPM})$(filter-out 0,${TPM2_MODE}),)
 TEST_NAMES += tests/tlcl_tests
 endif
 
+ifneq ($(filter-out 0,${TPM2_MODE}),)
+TEST_NAMES += tests/tpm2_marshaling_tests
+endif
+
 TEST_FUTIL_NAMES = \
 	tests/futility/binary_editor \
 	tests/futility/test_file_types \
@@ -229,6 +233,9 @@ runmisctests: install_for_test
 	${RUNTEST} ${BUILD_RUN}/tests/subprocess_tests
 ifeq ($(filter-out 0,${MOCK_TPM})$(filter-out 0,${TPM2_MODE}),)
 	${RUNTEST} ${BUILD_RUN}/tests/tlcl_tests
+endif
+ifneq ($(filter-out 0,${TPM2_MODE}),)
+	${RUNTEST} ${BUILD_RUN}/tests/tpm2_marshaling_tests
 endif
 
 run2tests: install_for_test

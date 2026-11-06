@@ -43,6 +43,16 @@ static inline uint32_t read_be32(const void *src)
 }
 
 /*
+ * Check if the remaining buffer space can hold @size bytes. A negative
+ * @buffer_space indicates an earlier failure, and never has room. Comparing
+ * an int with a size_t directly would convert -1 to SIZE_MAX instead.
+ */
+static bool has_space(int buffer_space, size_t size)
+{
+	return buffer_space >= 0 && (size_t)buffer_space >= size;
+}
+
+/*
  * Each unmarshaling function receives a pointer to the buffer pointer and a
  * pointer to the size of data still in the buffer. The function extracts data
  * from the buffer and adjusts both buffer pointer and remaining data size.
@@ -57,7 +67,7 @@ static uint8_t unmarshal_u8(void **buffer, int *buffer_space)
 {
 	uint8_t value;
 
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1; /* Indicate a failure. */
 		return 0;
 	}
@@ -73,7 +83,7 @@ static uint16_t unmarshal_u16(void **buffer, int *buffer_space)
 {
 	uint16_t value;
 
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1; /* Indicate a failure. */
 		return 0;
 	}
@@ -89,7 +99,7 @@ static uint32_t unmarshal_u32(void **buffer, int *buffer_space)
 {
 	uint32_t value;
 
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1; /* Indicate a failure. */
 		return 0;
 	}
@@ -263,6 +273,8 @@ static void unmarshal_create_primary(void **buffer, int *size,
 				     struct create_primary_response *resp)
 {
 	resp->object_handle = unmarshal_TPM_HANDLE(buffer, size);
+	if (*size < 0)
+		return;
 
 	/* Drain the remaining sections. */
 	*buffer = ((uint8_t *)(*buffer)) + *size;
@@ -282,7 +294,7 @@ static void unmarshal_create_primary(void **buffer, int *size,
 static void marshal_blob(void **buffer, void *blob,
 			 size_t blob_size, int *buffer_space)
 {
-	if (*buffer_space < blob_size) {
+	if (!has_space(*buffer_space, blob_size)) {
 		*buffer_space = -1;
 		return;
 	}
@@ -296,7 +308,7 @@ static void marshal_u8(void **buffer, uint8_t value, int *buffer_space)
 {
 	uint8_t *bp = *buffer;
 
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1;
 		return;
 	}
@@ -308,7 +320,7 @@ static void marshal_u8(void **buffer, uint8_t value, int *buffer_space)
 
 static void marshal_u16(void **buffer, uint16_t value, int *buffer_space)
 {
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1;
 		return;
 	}
@@ -319,7 +331,7 @@ static void marshal_u16(void **buffer, uint16_t value, int *buffer_space)
 
 static void marshal_u32(void **buffer, uint32_t value, int *buffer_space)
 {
-	if (*buffer_space < sizeof(value)) {
+	if (!has_space(*buffer_space, sizeof(value))) {
 		*buffer_space = -1;
 		return;
 	}
@@ -412,7 +424,7 @@ static void marshal_TPM2B(void **buffer,
 {
 	size_t total_size = data->size + sizeof(data->size);
 
-	if (total_size > *buffer_space) {
+	if (!has_space(*buffer_space, total_size)) {
 		*buffer_space = -1;
 		return;
 	}
@@ -876,7 +888,7 @@ int tpm_unmarshal_response(TPM_CC command,
 			   int cr_size,
 			   struct tpm2_response *response)
 {
-	if (cr_size < sizeof(struct tpm_header))
+	if (!has_space(cr_size, sizeof(struct tpm_header)))
 		return -1;
 
 	response->hdr.tpm_tag = unmarshal_u16(&response_body, &cr_size);
