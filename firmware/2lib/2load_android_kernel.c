@@ -430,28 +430,7 @@ static bool is_optional_partition(const char *part_name)
 	return false;
 }
 
-static AvbAlgorithmType vb2_to_avb_algorithm(enum vb2_crypto_algorithm vb2_alg)
-{
-	switch (vb2_alg) {
-	case VB2_ALG_RSA2048_SHA256:
-		return AVB_ALGORITHM_TYPE_SHA256_RSA2048;
-	case VB2_ALG_RSA2048_SHA512:
-		return AVB_ALGORITHM_TYPE_SHA512_RSA2048;
-	case VB2_ALG_RSA4096_SHA256:
-		return AVB_ALGORITHM_TYPE_SHA256_RSA4096;
-	case VB2_ALG_RSA4096_SHA512:
-		return AVB_ALGORITHM_TYPE_SHA512_RSA4096;
-	case VB2_ALG_RSA8192_SHA256:
-		return AVB_ALGORITHM_TYPE_SHA256_RSA8192;
-	case VB2_ALG_RSA8192_SHA512:
-		return AVB_ALGORITHM_TYPE_SHA512_RSA8192;
-	default:
-		return AVB_ALGORITHM_TYPE_NONE;
-	}
-}
-
-static vb2_error_t verify_avb_data(struct vb2_context *ctx,
-				   const AvbSlotVerifyData *verify_data,
+static vb2_error_t verify_avb_data(const AvbSlotVerifyData *verify_data,
 				   AvbOps *avb_ops,
 				   const char *expected_slot_suffix,
 				   const char **requested_partitions,
@@ -546,38 +525,15 @@ static vb2_error_t verify_avb_data(struct vb2_context *ctx,
 	if (!need_verification)
 		goto out;
 
-	if (verify_data->num_vbmeta_images != 1) {
-		VB2_DEBUG("ERROR: Unexpected number of VBMeta images: %zu\n",
-			  verify_data->num_vbmeta_images);
-		return VB2_ERROR_AVB_ERROR_VERIFICATION;
-	}
-
-	const AvbVBMetaData *vbmeta = &verify_data->vbmeta_images[0];
-	if (vbmeta->verify_result != AVB_VBMETA_VERIFY_RESULT_OK) {
-		VB2_DEBUG("ERROR: VBMeta image %s verification failed: %d\n",
-			  vbmeta->partition_name ? vbmeta->partition_name : "(null)",
-			  vbmeta->verify_result);
-		return VB2_ERROR_AVB_ERROR_VERIFICATION;
-	}
-
-	struct vb2_shared_data *sd = vb2_get_sd(ctx);
-	const struct vb2_packed_key *packed_key = vb2_member_of(sd, sd->kernel_key_offset);
-	AvbAlgorithmType expected_alg = vb2_to_avb_algorithm(packed_key->algorithm);
-
-	if (!vbmeta->vbmeta_data ||
-	    vbmeta->vbmeta_size < sizeof(AvbVBMetaImageHeader)) {
-		VB2_DEBUG("ERROR: Invalid VBMeta header\n");
-		return VB2_ERROR_AVB_ERROR_VERIFICATION;
-	}
-
-	const AvbVBMetaImageHeader *vbmeta_hdr =
-	    (const AvbVBMetaImageHeader *)vbmeta->vbmeta_data;
-	uint32_t vbmeta_alg = be32toh(vbmeta_hdr->algorithm_type);
-	if (expected_alg == AVB_ALGORITHM_TYPE_NONE ||
-	    vbmeta_alg != expected_alg) {
-		VB2_DEBUG("ERROR: VBMeta algorithm mismatch: got %u, expected %u\n",
-			  vbmeta_alg, expected_alg);
-		return VB2_ERROR_AVB_ERROR_VERIFICATION;
+	/* Verify vbmeta images if verification is needed */
+	for (size_t i = 0; i < verify_data->num_vbmeta_images; i++) {
+		const AvbVBMetaData *vbmeta = &verify_data->vbmeta_images[i];
+		if (vbmeta->verify_result != AVB_VBMETA_VERIFY_RESULT_OK) {
+			VB2_DEBUG("ERROR: VBMeta image %s verification failed: %d\n",
+				  vbmeta->partition_name ? vbmeta->partition_name : "(null)",
+				  vbmeta->verify_result);
+			return VB2_ERROR_AVB_ERROR_VERIFICATION;
+		}
 	}
 
 out:
@@ -687,7 +643,7 @@ vb2_error_t vb2_load_android(struct vb2_context *ctx, GptData *gpt, GptEntry *en
 
 	print_avb_slot_verify_data(verify_data);
 
-	rv = verify_avb_data(ctx, verify_data, avb_ops, slot_suffix, boot_partitions,
+	rv = verify_avb_data(verify_data, avb_ops, slot_suffix, boot_partitions,
 			     need_verification);
 	if (rv != VB2_SUCCESS)
 		goto out;
