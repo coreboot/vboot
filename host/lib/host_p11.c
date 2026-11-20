@@ -3,9 +3,12 @@
  * found in the LICENSE file.
  */
 
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 #include <dlfcn.h>
 
@@ -17,6 +20,29 @@
 #include "util_misc.h"
 
 #define ENV_PKCS11_PIN "VBOOT_PKCS11_PIN"
+#define PKCS11_MAX_ATTEMPTS 4
+
+/* Log a failed PKCS#11 call and sleep with backoff + jitter if attempts remain. */
+static bool pkcs11_retry_wait(const char *op, CK_RV result, int attempt)
+{
+	fprintf(stderr, "Failed to %s (attempt %d/%d): 0x%lx\n",
+		op, attempt, PKCS11_MAX_ATTEMPTS, (unsigned long)result);
+	if (attempt >= PKCS11_MAX_ATTEMPTS)
+		return false;
+
+	/* Backoff 1s, 2s, 4s + 0..499ms jitter to desynchronize parallel workers. */
+	struct timespec now = {0};
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	unsigned int jitter_ms =
+		(((unsigned int)getpid() * 131U) ^ (unsigned int)(now.tv_nsec / 1000)) % 500;
+	struct timespec ts = {
+		.tv_sec = (time_t)1 << (attempt - 1),
+		.tv_nsec = (long)jitter_ms * 1000000L,
+	};
+	while (nanosleep(&ts, &ts) == -1 && errno == EINTR)
+		;
+	return true;
+}
 
 struct pkcs11_key {
 	CK_OBJECT_HANDLE handle;
@@ -111,12 +137,16 @@ vb2_error_t pkcs11_init(const char *pkcs11_lib)
 		return VB2_ERROR_UNKNOWN;
 	}
 
-	CK_RV result = p11->C_Initialize(NULL);
-	if (result != CKR_OK) {
-		fprintf(stderr, "Failed to C_Initialize\n");
-		dlclose(pkcs11_mod);
-		pkcs11_mod = NULL;
-		return VB2_ERROR_UNKNOWN;
+	for (int attempt = 1; ; attempt++) {
+		CK_RV result = p11->C_Initialize(NULL);
+		if (result == CKR_OK)
+			break;
+		if (!pkcs11_retry_wait("C_Initialize", result, attempt)) {
+			dlclose(pkcs11_mod);
+			pkcs11_mod = NULL;
+			p11 = NULL;
+			return VB2_ERROR_UNKNOWN;
+		}
 	}
 	loaded_pkcs11_lib = strdup(pkcs11_lib);
 	return VB2_SUCCESS;
@@ -305,19 +335,21 @@ vb2_error_t pkcs11_sign(struct pkcs11_key *p11_key, enum vb2_hash_algorithm hash
 	mechanism.pParameter = NULL;
 	mechanism.ulParameterLen = 0;
 
-	CK_RV result = p11->C_SignInit(p11_key->session, &mechanism, p11_key->handle);
-	if (result != CKR_OK) {
-		fprintf(stderr, "Failed to sign init\n");
-		return VB2_ERROR_UNKNOWN;
+	for (int attempt = 1; ; attempt++) {
+		CK_RV result = p11->C_SignInit(p11_key->session, &mechanism, p11_key->handle);
+		if (result != CKR_OK) {
+			if (pkcs11_retry_wait("C_SignInit", result, attempt))
+				continue;
+			return VB2_ERROR_UNKNOWN;
+		}
+		CK_ULONG ck_sig_size = sig_size;
+		result = p11->C_Sign(p11_key->session, (unsigned char *)data, data_size, sig,
+				     &ck_sig_size);
+		if (result == CKR_OK)
+			return VB2_SUCCESS;
+		if (!pkcs11_retry_wait("C_Sign", result, attempt))
+			return VB2_ERROR_UNKNOWN;
 	}
-	CK_ULONG ck_sig_size = sig_size;
-	result = p11->C_Sign(p11_key->session, (unsigned char *)data, data_size, sig,
-			     &ck_sig_size);
-	if (result != CKR_OK) {
-		fprintf(stderr, "Failed to sign\n");
-		return VB2_ERROR_UNKNOWN;
-	}
-	return VB2_SUCCESS;
 }
 
 void pkcs11_free_key(struct pkcs11_key *p11_key)
