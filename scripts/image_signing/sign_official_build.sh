@@ -38,7 +38,6 @@ where <type> is one of:
              recovery (sign a USB recovery image)
              factory (sign a factory install image)
              update_payload (sign a delta update hash)
-             firmware (sign a firmware image)
              verify (verify an image including rootfs hashes)
              accessory_usbpd (sign USB-PD accessory firmware)
              accessory_rwsig (sign accessory RW firmware)
@@ -372,21 +371,6 @@ repack_firmware_bundle() {
     tar zcf - -C "${input_dir}" . |
       uuencode firmware_package.tgz >>"${target}"
   fi
-}
-
-# Sign a firmware in-place with the given keys.
-# Args: FIRMWARE_IMAGE KEY_DIR FIRMWARE_VERSION [LOEM_OUTPUT_DIR]
-sign_firmware() {
-  local image=$1
-  local key_dir=$2
-  local firmware_version=$3
-  local loem_output_dir=${4:-}
-
-  # Resign the firmware with new keys, also replacing the root and recovery
-  # public keys in the GBB.
-  "${SCRIPT_DIR}/sign_firmware.sh" "${image}" "${key_dir}" "${image}" \
-    "${firmware_version}" "${loem_output_dir}"
-  info "Signed firmware image output to ${image}"
 }
 
 # Sign a delta update payload (usually created by paygen).
@@ -768,112 +752,99 @@ resign_firmware_shellball() {
   # (rootkey, vblock_A, vblock_B and gscvd) are output for all such rows, even
   # without loem.ini, for the firmware updater to patch the image at runtime.
   local signer_config="${shellball_dir}/signer_config.csv"
-  local shellball_keyset_dir=""
-  if [[ -e "${signer_config}" ]]; then
-    info "Using signer_config.csv to determine firmware signatures"
-    info "See go/cros-unibuild-signing for details"
-
-    shellball_keyset_dir="${shellball_dir}/keyset"
-
-    declare -A seen_output_names
-    declare -A bios_to_ec_map
-    declare -A bios_image_counts
-    local output_names=() bios_images=() key_ids=() ec_images=() brand_codes=()
-
-    # Parse and validate all rows before spawning any worker.
-    {
-      read -r # Burn the first line (header line)
-      while IFS="," read -r output_name bios_image key_id ec_image brand_code; do
-        # Check that output_name and bios_image are not empty.
-        if [[ -z "${output_name}" || -z "${bios_image}" ]]; then
-          die "Invalid row in ${signer_config}: output_name or bios_image is empty"
-        fi
-
-        # Check that all output_name entries in signer_config.csv are distinct.
-        if [[ -n "${seen_output_names[${output_name}]:-}" ]]; then
-          die "Duplicate output_name '${output_name}' in ${signer_config}"
-        fi
-        seen_output_names["${output_name}"]=1
-
-        # Check that the bios_image to ec_image mapping is unique.
-        if [[ -n "${bios_to_ec_map[${bios_image}]+set}" ]]; then
-          if [[ "${bios_to_ec_map[${bios_image}]}" != "${ec_image}" ]]; then
-            die "bios_image '${bios_image}' maps to multiple distinct" \
-              "ec_images ('${bios_to_ec_map[${bios_image}]}' vs '${ec_image}')" \
-              "in ${signer_config}"
-          fi
-        else
-          bios_to_ec_map["${bios_image}"]="${ec_image}"
-        fi
-        local count="${bios_image_counts[${bios_image}]:-0}"
-        bios_image_counts["${bios_image}"]=$((count + 1))
-
-        output_names+=("${output_name}")
-        bios_images+=("${bios_image}")
-        key_ids+=("${key_id}")
-        ec_images+=("${ec_image}")
-        brand_codes+=("${brand_code}")
-      done
-      unset IFS
-    } < "${signer_config}"
-
-    local num_jobs
-    num_jobs="$(get_num_jobs)"
-    info "Signing firmware with ${num_jobs} jobs in parallel"
-
-    # The images in shellball_dir may be shared by multiple rows, and hence
-    # read by multiple workers. To avoid races, they must not be modified
-    # while any worker is running. Instead, each worker leaves its signed
-    # images in its own worker_dir, which are moved to shellball_dir in row
-    # order after all workers finish.
-    local i pids=() worker_dirs=()
-    for i in "${!output_names[@]}"; do
-      local bios_path="${shellball_dir}/${bios_images[i]}"
-      local ec_path=""
-      if [[ -n "${ec_images[i]}" ]]; then
-        ec_path="${shellball_dir}/${ec_images[i]}"
-      fi
-
-      # Output per-model signature blocks for LOEM keys or shared AP images.
-      local keyset_dir=""
-      if [[ -e "${KEY_DIR}/loem.ini" ||
-            "${bios_image_counts[${bios_images[i]}]}" -gt 1 ]]; then
-        keyset_dir="${shellball_keyset_dir}"
-        mkdir -p "${keyset_dir}"
-      fi
-
-      worker_dirs[i]="$(make_temp_dir)"
-      spawn_worker "${num_jobs}" resign_firmware_image \
-        "${output_names[i]}" "${bios_path}" "${ec_path}" "${key_ids[i]}" \
-        "${brand_codes[i]}" "${keyset_dir}" "${worker_dirs[i]}" "${board_name}"
-      pids+=($!)
-    done
-
-    wait_pids "${pids[@]}" || die "One or more firmware image signing workers failed."
-
-    for i in "${!output_names[@]}"; do
-      mv -f "${worker_dirs[i]}/bios.bin" "${shellball_dir}/${bios_images[i]}"
-      if [[ -n "${ec_images[i]}" ]]; then
-        mv -f "${worker_dirs[i]}/ec.bin" "${shellball_dir}/${ec_images[i]}"
-      fi
-      info "Signed firmware image output to ${bios_images[i]}" \
-        "for ${output_names[i]}"
-    done
-  else
-    local image_file sign_args=() loem_sfx loem_output_dir
-    for image_file in "${shellball_dir}"/bios*.bin; do
-      if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-        # Extract the extended details from "bios.bin" and use that in the
-        # subdir for the keyset.
-        loem_sfx=$(sed -r 's:.*/bios([^/]*)[.]bin$:\1:' <<<"${image_file}")
-        loem_output_dir="${shellball_dir}/keyset${loem_sfx}"
-        sign_args=( "${loem_output_dir}" )
-        mkdir -p "${loem_output_dir}"
-      fi
-      sign_firmware "${image_file}" "${KEY_DIR}" "${FIRMWARE_VERSION}" \
-        "${sign_args[@]}"
-    done
+  if [[ ! -e "${signer_config}" ]]; then
+    die "Missing signer_config.csv in ${firmware_bundle}"
   fi
+
+  info "Using signer_config.csv to determine firmware signatures"
+  info "See go/cros-unibuild-signing for details"
+
+  local shellball_keyset_dir="${shellball_dir}/keyset"
+
+  declare -A seen_output_names
+  declare -A bios_to_ec_map
+  declare -A bios_image_counts
+  local output_names=() bios_images=() key_ids=() ec_images=() brand_codes=()
+
+  # Parse and validate all rows before spawning any worker.
+  {
+    read -r # Burn the first line (header line)
+    while IFS="," read -r output_name bios_image key_id ec_image brand_code; do
+      # Check that output_name and bios_image are not empty.
+      if [[ -z "${output_name}" || -z "${bios_image}" ]]; then
+        die "Invalid row in ${signer_config}: output_name or bios_image is empty"
+      fi
+
+      # Check that all output_name entries in signer_config.csv are distinct.
+      if [[ -n "${seen_output_names[${output_name}]:-}" ]]; then
+        die "Duplicate output_name '${output_name}' in ${signer_config}"
+      fi
+      seen_output_names["${output_name}"]=1
+
+      # Check that the bios_image to ec_image mapping is unique.
+      if [[ -n "${bios_to_ec_map[${bios_image}]+set}" ]]; then
+        if [[ "${bios_to_ec_map[${bios_image}]}" != "${ec_image}" ]]; then
+          die "bios_image '${bios_image}' maps to multiple distinct" \
+            "ec_images ('${bios_to_ec_map[${bios_image}]}' vs '${ec_image}')" \
+            "in ${signer_config}"
+        fi
+      else
+        bios_to_ec_map["${bios_image}"]="${ec_image}"
+      fi
+      local count="${bios_image_counts[${bios_image}]:-0}"
+      bios_image_counts["${bios_image}"]=$((count + 1))
+
+      output_names+=("${output_name}")
+      bios_images+=("${bios_image}")
+      key_ids+=("${key_id}")
+      ec_images+=("${ec_image}")
+      brand_codes+=("${brand_code}")
+    done
+    unset IFS
+  } < "${signer_config}"
+
+  local num_jobs
+  num_jobs="$(get_num_jobs)"
+  info "Signing firmware with ${num_jobs} jobs in parallel"
+
+  # The images in shellball_dir may be shared by multiple rows, and hence
+  # read by multiple workers. To avoid races, they must not be modified
+  # while any worker is running. Instead, each worker leaves its signed
+  # images in its own worker_dir, which are moved to shellball_dir in row
+  # order after all workers finish.
+  local i pids=() worker_dirs=()
+  for i in "${!output_names[@]}"; do
+    local bios_path="${shellball_dir}/${bios_images[i]}"
+    local ec_path=""
+    if [[ -n "${ec_images[i]}" ]]; then
+      ec_path="${shellball_dir}/${ec_images[i]}"
+    fi
+
+    # Output per-model signature blocks for LOEM keys or shared AP images.
+    local keyset_dir=""
+    if [[ -e "${KEY_DIR}/loem.ini" ||
+          "${bios_image_counts[${bios_images[i]}]}" -gt 1 ]]; then
+      keyset_dir="${shellball_keyset_dir}"
+      mkdir -p "${keyset_dir}"
+    fi
+
+    worker_dirs[i]="$(make_temp_dir)"
+    spawn_worker "${num_jobs}" resign_firmware_image \
+      "${output_names[i]}" "${bios_path}" "${ec_path}" "${key_ids[i]}" \
+      "${brand_codes[i]}" "${keyset_dir}" "${worker_dirs[i]}" "${board_name}"
+    pids+=($!)
+  done
+
+  wait_pids "${pids[@]}" || die "One or more firmware image signing workers failed."
+
+  for i in "${!output_names[@]}"; do
+    mv -f "${worker_dirs[i]}/bios.bin" "${shellball_dir}/${bios_images[i]}"
+    if [[ -n "${ec_images[i]}" ]]; then
+      mv -f "${worker_dirs[i]}/ec.bin" "${shellball_dir}/${ec_images[i]}"
+    fi
+    info "Signed firmware image output to ${bios_images[i]}" \
+      "for ${output_names[i]}"
+  done
 
   local signer_notes="${shellball_dir}/VERSION.signer"
   echo "" >"${signer_notes}"
@@ -1655,12 +1626,6 @@ main() {
       "" \
       "" \
       ""
-  elif [[ "${TYPE}" == "firmware" ]]; then
-    if [[ -e "${KEY_DIR}/loem.ini" ]]; then
-      die "LOEM signing not implemented yet for firmware images"
-    fi
-    cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
-    sign_firmware "${OUTPUT_IMAGE}" "${KEY_DIR}" "${FIRMWARE_VERSION}"
   elif [[ "${TYPE}" == "shellball" ]]; then
     cp "${INPUT_IMAGE}" "${OUTPUT_IMAGE}"
     resign_firmware_shellball "${OUTPUT_IMAGE}" "${BOARD:-}"
