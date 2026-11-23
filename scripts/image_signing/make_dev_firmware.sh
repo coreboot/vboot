@@ -328,24 +328,18 @@ main() {
   echo "Preparing new firmware image..."
 
   debug_msg "Resign the firmware code (A/B) with new keys"
-  # Note resign_firmwarefd.sh needs the original rootkey to determine firmware
-  # body size, so we must resign image before changing GBB rootkey.
-
-  local unsigned_image="$(make_temp_file)"
-  local optional_opts=""
-  if [ -n "$FLAGS_preamble_flags" ]; then
-    debug_msg "Setting FLAGS=$FLAGS_preamble_flags"
-    optional_opts="$FLAGS_preamble_flags"
+  set -- \
+    --signprivate "${firmware_prvkey}" \
+    --keyblock "${firmware_keyblock}" \
+    --kernelkey "${kernel_sub_pubkey}"
+  if [ -n "${firmware_version}" ]; then
+    set -- "$@" --version "${firmware_version}"
   fi
-  cp -f "${IMAGE_BIOS}" "$unsigned_image"
-  execute "$SCRIPT_BASE/resign_firmwarefd.sh" \
-    "${unsigned_image}" \
-    "${IMAGE_BIOS}" \
-    "${firmware_prvkey}" \
-    "${firmware_keyblock}" \
-    "${kernel_sub_pubkey}" \
-    "${firmware_version}" \
-    ${optional_opts} ||
+  if [ -n "${FLAGS_preamble_flags}" ]; then
+    debug_msg "Setting FLAGS=${FLAGS_preamble_flags}"
+    set -- "$@" --flags "${FLAGS_preamble_flags}"
+  fi
+  execute "${FUTILITY}" sign "$@" "${IMAGE_BIOS}" ||
     die "Failed to re-sign firmware. (message: $(cat "${EXEC_LOG}"))"
 
   debug_msg "Extract current HWID"
@@ -437,7 +431,6 @@ main() {
   fi
 
   # TODO(hungte) use 'futility verify' to check if the new firmware is valid.
-  # Or, do verification in resign_firmwarefd.sh and trust it.
 
   debug_msg "Write the image"
   write_image ||
